@@ -29,6 +29,7 @@ const (
 	mInput // eine Zeile Text (Ordnername)
 	mQuick // Schnellbefehle (quick.go)
 	mText  // blätterbarer Text (Config-Diff, Konfiguration)
+	mLLM   // KI-Status (llmhealth.go)
 )
 
 type modal struct {
@@ -194,6 +195,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.pasteKey(key)
 	case mMenu:
 		return a.menuKey(key)
+	case mLLM:
+		return a.llmStatusKey(key)
 	case mInfo:
 		if key == "esc" || key == "enter" || key == "q" {
 			a.modal = nil
@@ -254,6 +257,8 @@ func (a *App) modalView() string {
 		return a.menuView(a.modal)
 	case mQuick:
 		return a.quickModalView(a.modal)
+	case mLLM:
+		return a.llmStatusView()
 	}
 	return a.modal.view(a.s, a.w, a.h)
 }

@@ -113,11 +113,17 @@ func (a *App) sessionBar(s *session) string {
 		nT = len(s.tunnels.List())
 	}
 	cfg := a.st.LLM()
+	// KI: Punkt = Zustand des Endpunkts (llmhealth.go), Klick = Erklärung
+	h := a.llmHealth()
 	ai := st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22))
-	if !cfg.SuggestEnabled {
-		ai = st.Badge.Foreground(st.T.Muted).Render("✦ aus")
+	if t := h.badgeText(); t != "" {
+		ai = st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22) + " · " + t)
 	}
-	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { a.returnToTerminal = true; return a.openSettings() })
+	if !cfg.SuggestEnabled {
+		ai = st.Badge.Foreground(st.T.Muted).Render("✦ Ghost aus")
+	}
+	ai = st.Badge.Foreground(a.llmColor(h.level)).PaddingRight(0).Render(h.dot(a.lh.probing)) + ai
+	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
 	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, "Tunnel", "Tunnel")))
 	goal := ""
 	if s.goal.active {

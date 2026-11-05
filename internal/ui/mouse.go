@@ -151,7 +151,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	case a.pal != nil:
 		a.pal = nil
 	case a.modal != nil:
-		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo {
+		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo || a.modal.kind == mLLM {
 			a.modal = nil
 		}
 	case a.scr == scrTerminal && s != nil && s.panel != panelNone && !s.files.open && a.inPanel(s, m.X, m.Y):
@@ -503,6 +503,8 @@ func (a *App) modalButtons() string {
 		keys = [][2]string{{"Esc", "schließen"}}
 	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", "schließen"}}
+	case mLLM:
+		keys = [][2]string{{"p", "jetzt prüfen"}, {"e", "Einstellungen"}, {"Esc", "schließen"}}
 	case mTour:
 		keys = tourButtons(a.modal)
 	case mQuick:
