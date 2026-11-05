@@ -32,8 +32,12 @@ class H(BaseHTTPRequestHandler):
             text = json.dumps([{"befehl": "docker ps", "grund": "laufende Container"}, {"befehl": "free -h", "grund": "Speicher"},
                                {"befehl": "df -h", "grund": "freier Platz"}, {"befehl": "docker system prune -a", "grund": "Platz schaffen"}])
         elif "Ziel" in sysm:
-            n = len(re.findall(r"^\d+\. .*\((ausgeführt|vom Menschen übersprungen)\)$", user, re.M))
+            n = len(re.findall(r"^\d+\. .*\((ausgeführt[^)]*|vom Menschen übersprungen)\)$", user, re.M))
             text = json.dumps(STEPS[min(n, len(STEPS)-1)])
+        elif "Protokoll" in sysm:
+            text = "<think>kurz nachdenken</think>- Paketinstallation von `nginxx` fehlgeschlagen (Tippfehler)\n- Dateisystem mit `df -h` geprüft\n- Offen: nginx installieren"
+        elif "fehlgeschlagen" in sysm:
+            text = "Warum: Das Paket heißt anders: `nginxx` gibt es nicht, gemeint ist vermutlich `nginx`.\n\nFix:\n\n```sh\nsudo apt-get install -y nginx\n```\n"
         elif sysm.startswith("Antworte nur mit"):
             text = "OK"
         else:

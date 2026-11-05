@@ -28,6 +28,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/update"
@@ -45,6 +46,7 @@ const (
 	scrTunnelForm
 	scrTerminal
 	scrSync
+	scrLogs
 	scrQuickForm
 	scrImport
 	scrKeys
@@ -84,6 +86,9 @@ type App struct {
 	restartPending string
 	restart        bool // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
+
+	book *sessionlog.Book // Sitzungsprotokolle (Schlüssel nur bei entsperrtem Store)
+	logs logsState
 
 	sync    syncState
 	wiz     *syncWizard
@@ -200,6 +205,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			}
+			a.startLog(s)
 			var cmd tea.Cmd
 			if s.rc.active {
 				cmd = a.onReconnected(s)
@@ -273,6 +279,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.llmMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.logsMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.filesMsg(msg); ok {
 		return a, cmd
 	}
@@ -295,7 +304,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pal != nil {
 			return a, a.paletteKey(k)
 		}
-		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) {
+		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs) {
 			return a, a.openPalette()
 		}
 	}
@@ -326,6 +335,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateTerminal(msg)
 	case scrSync:
 		return a, a.updateSync(msg)
+	case scrLogs:
+		return a, a.updateLogs(msg)
 	case scrImport:
 		return a, a.updateImport(msg)
 	case scrKeys:
@@ -340,8 +351,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a *App) quit() tea.Cmd {
 	for _, s := range a.sessions {
+		a.endLog(s)
 		s.close()
 	}
+	a.closeBook()
 	a.st.Lock()
 	return tea.Quit
 }
@@ -352,6 +365,7 @@ func (a *App) onTick() tea.Cmd {
 	// Auto-Sperre nur ohne offene Sitzungen (sonst würden Shells hängen bleiben).
 	if set := a.st.Settings(); set.LockAfterMin > 0 && a.scr != scrUnlock && len(a.sessions) == 0 &&
 		time.Since(a.lastKey) > time.Duration(set.LockAfterMin)*time.Minute {
+		a.closeBook()
 		a.st.Lock()
 		a.unlock = newUnlock(a.st)
 		a.scr = scrUnlock
@@ -364,6 +378,7 @@ func (a *App) onTick() tea.Cmd {
 		if s.term != nil && s.term.TakeBell() {
 			cmds = append(cmds, func() tea.Msg { return nil })
 		}
+		a.commandTick(s)
 		if c := a.followTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
@@ -398,6 +413,8 @@ func (a *App) View() tea.View {
 		body, cur = a.viewTerminal()
 	case scrSync:
 		body = a.frame(a.viewSync(), a.syncKeys())
+	case scrLogs:
+		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrImport:
 		body = a.frame(a.viewImport(), a.importKeys())
 	case scrKeys:

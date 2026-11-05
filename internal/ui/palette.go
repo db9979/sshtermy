@@ -74,6 +74,10 @@ func (a *App) paletteItems() []palItem {
 				run: func() tea.Cmd { return a.startAsk(s, q) }})
 	}
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
+	if inTerm && s.fail != nil && match("fehler warum fix "+s.fail.Command) {
+		items = append(items, palItem{group: pgAI, icon: "✗", label: "Warum ist „" + trunc(oneLine(s.fail.Command), 40) + "“ fehlgeschlagen? Fix vorschlagen", hint: "Alt+0",
+			run: func() tea.Cmd { return a.explainFailure(s) }})
+	}
 	if inTerm {
 		for _, c := range s.chips {
 			c := c
@@ -174,6 +178,8 @@ func (a *App) paletteItems() []palItem {
 		{icon: "★", label: "Was ist neu (Changelog)", hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
 		{icon: "⟳", label: reconnectLabel(a.autoReconnect()), hint: "Reconnect", run: func() tea.Cmd { return a.toggleAutoReconnect() }},
+		{icon: "☰", label: "Sitzungsprotokolle durchsuchen", hint: "l", run: func() tea.Cmd { return a.openLogs() }},
+		{icon: "●", label: logLabel(a.logsEnabled()), hint: "Protokoll", run: func() tea.Cmd { return a.toggleSessionLog() }},
 		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
 		{icon: "?", label: cheatLabel(a.cheatOn()), hint: "F9", run: func() tea.Cmd { return a.toggleCheat() }},
 		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},

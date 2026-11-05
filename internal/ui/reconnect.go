@@ -234,6 +234,7 @@ func (a *App) onShellClosed(s *session, m shellClosedMsg) {
 		a.beginReconnect(s, cause)
 		return
 	}
+	a.endLog(s)
 	s.close()
 	s.err = "Sitzung beendet"
 	if m.dropped {
@@ -249,6 +250,7 @@ func (a *App) beginReconnect(s *session, cause string) {
 		s.rc.since = time.Now()
 	}
 	if s.rc.attempts >= len(reconnectWaits) {
+		a.endLog(s)
 		s.close()
 		s.err = cause + " · mehrmals hintereinander abgebrochen, ⏎ verbindet neu"
 		s.rc = reconnState{}
@@ -337,6 +339,7 @@ func (a *App) reconnectNow(s *session) tea.Cmd {
 // cancelReconnect: Esc im Wartebild.
 func (a *App) cancelReconnect(s *session) {
 	s.rc = reconnState{}
+	a.endLog(s)
 	s.close()
 	s.err = "Neuverbinden abgebrochen"
 }
@@ -348,6 +351,7 @@ func (a *App) onReconnectErr(s *session, err error) {
 	if !retryable(err) || s.rc.attempts >= len(reconnectWaits) {
 		msg := s.rc.cause + " · Neuverbinden fehlgeschlagen: " + err.Error()
 		s.rc = reconnState{}
+		a.endLog(s)
 		s.close()
 		s.err = msg
 		return

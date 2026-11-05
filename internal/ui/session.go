@@ -9,6 +9,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/termemu"
 )
@@ -74,6 +75,12 @@ type session struct {
 	ask        askState
 	tunSel     int
 	files      filesState
+
+	// laufender Befehl, letzter Fehlschlag, Sitzungsprotokoll (cmdlog.go)
+	run    *cmdRun
+	fail   *agent.Failure
+	log    *sessionlog.Log
+	logErr bool // Fehler beim Schreiben schon gemeldet
 
 	// Maus im Terminal
 	scroll    int          // Zeilen zurück im Verlauf (0 = live)
