@@ -107,6 +107,8 @@ type App struct {
 
 	bc   *bcState   // Broadcast an mehrere Hosts
 	scan *scanState // Netzwerk-Scan
+
+	intro *introState // Startanimation, nil = aus oder vorbei
 }
 
 func New(st *store.Store) (*App, error) {
@@ -118,6 +120,9 @@ func New(st *store.Store) (*App, error) {
 	a.unlock = newUnlock(st)
 	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
+	if IntroEnabled(st.Dir) {
+		a.intro = &introState{}
+	}
 	return a, nil
 }
 
@@ -145,7 +150,12 @@ func checkUpdate() tea.Cmd {
 }
 
 func (a *App) Init() tea.Cmd {
-	return tea.Batch(a.listen(), tick(), a.tryDPAPI())
+	var intro tea.Cmd
+	if a.intro != nil {
+		a.intro.start = time.Now()
+		intro = introFrame()
+	}
+	return tea.Batch(a.listen(), tick(), a.tryDPAPI(), intro)
 }
 
 func (a *App) flash(s string) {
@@ -171,6 +181,9 @@ func (a *App) byID(id int) *session {
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.logInput(msg)
+	if cmd, ok := a.introMsg(msg); ok {
+		return a, cmd
+	}
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.w, a.h = m.Width, m.Height
@@ -458,6 +471,10 @@ func (a *App) View() tea.View {
 	} else if a.pal != nil {
 		body = a.overlay(body, a.viewPalette())
 		cur = nil
+	}
+	if a.intro != nil && introFits(a.w, a.h) {
+		a.z.reset() // während der Animation ist nichts klickbar
+		body, cur = a.viewIntro(), nil
 	}
 	v := tea.NewView(body)
 	v.AltScreen = true

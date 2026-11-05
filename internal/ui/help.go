@@ -180,6 +180,7 @@ var helpSections = []helpSection{
 		{"a", "Dunkel · Hell · Kontrast"},
 		{"b", "Tastenkürzel belegen"},
 		{"Strg +/−", "Schrift (Terminalfenster)"},
+		{"Palette", "„Startanimation aus“"},
 	}},
 	{hcNone, "⌖", "Maus", "", false, [][2]string{
 		{"Klick", "Tabs, Listen, Felder"},
