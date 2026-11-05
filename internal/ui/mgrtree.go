@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
 )
@@ -580,14 +582,21 @@ func (a *App) mgrDragMouse(msg tea.MouseMsg) tea.Cmd {
 	return nil
 }
 
-// viewFolderDetails: rechte Spalte für einen Ordner.
-func (a *App) viewFolderDetails(n *domain.TreeNode) string {
+// viewFolderDetails: rechte Spalte für einen Ordner (w = Spaltenbreite).
+func (a *App) viewFolderDetails(n *domain.TreeNode, w int) string {
 	s := a.s
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(" ▾ "+n.Name) + "  " + s.Muted.Render(domain.PathParent(n.Path)) + "\n\n")
-	row := func(k, v string) { b.WriteString(" " + s.Label.Render(k) + s.Text.Render(v) + "\n") }
+	b.WriteString(s.Accent.Render(" ▾ "+trunc(n.Name, max(8, w-4))) + "\n\n")
+	label := detailLabel(s, w)
+	textW := max(10, w-1-label.GetWidth())
+	row := func(k, v string) {
+		b.WriteString(" " + label.Render(k) + s.Text.Render(ansi.Truncate(v, textW, "…")) + "\n")
+	}
 	row("Pfad", n.Path)
-	row("Inhalt", plural(n.Total, "Verbindung", "Verbindungen")+", "+plural(len(n.Folders), "Unterordner", "Unterordner"))
+	row("Inhalt", plural(n.Total, "Verbindung", "Verbindungen"))
+	if len(n.Folders) > 0 {
+		row("Unterordner", fmt.Sprintf("%d", len(n.Folders)))
+	}
 	if c := a.connectedIn(n.Path); c > 0 {
 		row("Verbunden", plural(c, "Sitzung", "Sitzungen"))
 	}
@@ -610,20 +619,40 @@ func (a *App) viewFolderDetails(n *domain.TreeNode) string {
 			ts = append(ts, "#"+t)
 		}
 		sort.Strings(ts)
-		row("Tags", trunc(strings.Join(ts, " "), 60))
+		row("Tags", strings.Join(ts, " "))
 	}
 	km := a.keys
 	b.WriteString("\n " + s.PanelTitle.Render("Ordner") + "\n")
-	for _, k := range [][2]string{
+	keys := [][2]string{
 		{"⏎", "auf-/zuklappen"}, {"n", "neue Verbindung hier"}, {km.label(actFolderNew), "Unterordner anlegen"},
-		{km.label(actRename), "umbenennen"}, {km.label(actMoveTo), "verschieben"}, {km.label(actMoveUp) + "/" + keyLabel("down"), "Reihenfolge"},
-		{"d", "auflösen (Inhalt bleibt)"}, {km.label(actFoldAll) + " " + km.label(actUnfoldAll), "alle zu/auf"},
-	} {
-		b.WriteString("  " + a.keyChip(k[0], k[1]) + "\n")
+		{km.label(actRename), "umbenennen"}, {km.label(actMoveTo), "verschieben"}, {km.label(actMoveUp) + " " + keyLabel("shift+down"), "Reihenfolge"},
+		{"d", "auflösen, Inhalt bleibt"}, {km.label(actFoldAll) + " " + km.label(actUnfoldAll), "alle zu / auf"},
 	}
-	b.WriteString("\n  " + s.Muted.Render("Mit der Maus: Zeilen ziehen und auf einen Ordner oder") + "\n  " +
-		s.Muted.Render("zwischen Verbindungen loslassen.") + "\n")
+	for i := range keys {
+		keys[i][0] = strings.ReplaceAll(keys[i][0], "Shift+", "⇧")
+	}
+	kw := 0
+	for _, k := range keys {
+		kw = max(kw, lipgloss.Width(k[0]))
+	}
+	for _, k := range keys {
+		line := " " + s.Accent.Render(fmt.Sprintf(" %-*s", kw, k[0])) + "  " + s.Text.Render(trunc(k[1], max(6, w-kw-5)))
+		if parts := strings.Fields(k[0]); len(parts) == 1 {
+			line = a.keyZone(k[0], line)
+		}
+		b.WriteString(line + "\n")
+	}
+	hint := "Mit der Maus: eine Zeile ziehen und auf einem Ordner oder zwischen zwei Verbindungen loslassen."
+	b.WriteString("\n" + lipgloss.NewStyle().Foreground(s.T.Muted).PaddingLeft(2).Width(max(20, w-1)).Render(hint) + "\n")
 	return b.String()
+}
+
+// detailLabel: Beschriftungsspalte der Details, schmaler bei engem Fenster.
+func detailLabel(s Styles, w int) lipgloss.Style {
+	if w < 70 {
+		return s.Label.Width(13)
+	}
+	return s.Label
 }
 
 // jumpChainText: „bastion → jump-lan → ziel“ (bzw. Hinweis bei Fehlern).
