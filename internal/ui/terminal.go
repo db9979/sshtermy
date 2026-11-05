@@ -89,7 +89,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		// globale Tasten der Terminal-Ansicht
 		switch key {
 		case "f1":
-			a.modal = helpModal()
+			a.modal = a.helpModal()
 			return nil
 		case "f12":
 			a.modal = a.aboutModal()

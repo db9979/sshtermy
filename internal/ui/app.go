@@ -220,6 +220,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.modal != nil {
 			return a, a.modalKey(k)
 		}
+		if k.String() == "f1" && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm) {
+			a.modal = a.helpModal()
+			return a, nil
+		}
 		if a.pal != nil {
 			return a, a.paletteKey(k)
 		}
@@ -297,7 +301,7 @@ func (a *App) View() tea.View {
 		body, cur = a.viewTerminal()
 	}
 	if a.modal != nil {
-		body = a.overlay(body, a.modal.view(a.s, a.w))
+		body = a.overlay(body, a.modal.view(a.s, a.w, a.h))
 		cur = nil
 	} else if a.pal != nil {
 		body = a.overlay(body, a.viewPalette())

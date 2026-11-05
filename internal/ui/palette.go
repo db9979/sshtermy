@@ -158,7 +158,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "≡", label: "Verbindungs-Manager", hint: "F10", run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: "Neue Verbindung", hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
 		{icon: "✦", label: "KI-Einstellungen", hint: "s", run: func() tea.Cmd { return a.openSettings() }},
-		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = helpModal(); return nil }},
+		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		{icon: "i", label: "Über sshTermy / Update", hint: "F12", run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
 	}
 	if !inTerm {

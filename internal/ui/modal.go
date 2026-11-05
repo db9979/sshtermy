@@ -23,13 +23,15 @@ const (
 )
 
 type modal struct {
-	kind  modalKind
-	title string
-	body  string
-	hk    hostKeyAskMsg
-	sec   secretAskMsg
-	in    textinput.Model
-	onYes func() tea.Cmd
+	kind   modalKind
+	title  string
+	body   string
+	hk     hostKeyAskMsg
+	sec    secretAskMsg
+	in     textinput.Model
+	onYes  func() tea.Cmd
+	ctx    helpCtx // nur Hilfe: aktueller Bereich
+	scroll int     // nur Hilfe: Scroll-Position
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
@@ -63,22 +65,6 @@ func (a *App) aboutModal() *modal {
 	}
 	b += "Esc = schließen"
 	return &modal{kind: mAbout, title: "Über " + version.Name, body: b}
-}
-
-func helpModal() *modal {
-	return &modal{kind: mHelp, title: "Tastenkürzel", body: strings.TrimSpace(`
-Manager      ⏎ verbinden · n neu · e bearbeiten · d löschen · / suchen · s KI-Einstellungen
-KI-Einst.    Strg+T Endpunkt testen · Strg+L Modell aus der Liste wählen
-Dateien (F5) Tab Seite · c kopieren (hoch/runter) · n Ordner · d löschen · . versteckte
-Terminal     Tab/→ Ghost-Text übernehmen · Alt+1…4 Folgebefehl einfügen
-             F2 Ziel-Modus (Agent) · F3 KI fragen · F4 Tunnel · F5 Dateien · F7/F8 Tabs · F10 Manager
-Ziel-Modus   ↑↓ Runbook wählen · Strg+S als Runbook speichern · Strg+D Runbook löschen
-             ⏎ ausführen · i nur einfügen (Dry-Run) · e bearbeiten · s überspringen
-             r neu vorschlagen · x Ziel beenden · Esc zurück ins Terminal
-Rote Befehle (löschen, neu starten, Firewall …) brauchen zweimal ⏎.
-Palette      Strg+Leertaste: Ziel, Frage, Vorschläge, Tunnel, Verbindungen, Aktionen
-             ⏎ ausführen · Tab KI fragen · ↑↓ wählen · Esc schließen
-Überall      F1 Hilfe · F12 Über/Update · Strg+Q beenden`)}
 }
 
 func firstLines(s string, n int) string {
@@ -141,12 +127,17 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 			a.modal = nil
 		}
 	case mHelp:
-		a.modal = nil
+		if m.helpKey(key) {
+			a.modal = nil
+		}
 	}
 	return nil
 }
 
-func (m *modal) view(s Styles, w int) string {
+func (m *modal) view(s Styles, w, h int) string {
+	if m.kind == mHelp {
+		return m.helpView(s, w, h)
+	}
 	title := s.Accent.Render(m.title)
 	if m.kind == mHostKey {
 		title = s.Warn.Render("⚠ " + m.title)

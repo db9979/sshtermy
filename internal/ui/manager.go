@@ -114,7 +114,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			a.scr = scrTerminal
 		}
 	case "f1":
-		a.modal = helpModal()
+		a.modal = a.helpModal()
 	case "f12":
 		a.modal = a.aboutModal()
 	}
