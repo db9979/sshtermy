@@ -57,6 +57,14 @@ func main() {
 	if _, err := tea.NewProgram(app).Run(); err != nil {
 		fail(err)
 	}
+	if app.Restart() {
+		// Update installiert: Terminal ist wiederhergestellt, Sitzungen sind
+		// zu, Store ist gesperrt. Jetzt die neue Programmdatei starten.
+		fmt.Println("Starte " + version.Name + " neu …")
+		if err := update.Restart(); err != nil {
+			fail(fmt.Errorf("Neustart fehlgeschlagen, bitte von Hand starten: %w", err))
+		}
+	}
 }
 
 func fail(err error) {
