@@ -33,12 +33,25 @@ type request struct {
 	Temperature float64   `json:"temperature"`
 	Stream      bool      `json:"stream,omitempty"`
 	Stop        []string  `json:"stop,omitempty"`
+	// vLLM/SGLang: Qwen3-Thinking per Chat-Template abschalten.
+	ChatTemplateKwargs map[string]any `json:"chat_template_kwargs,omitempty"`
+}
+
+// msgOut ist eine Antwortnachricht. Reasoning-Modelle (Qwen3, DeepSeek-R1)
+// liefern bei vLLM/SGLang mit Reasoning-Parser die Gedanken getrennt in
+// reasoning_content (ältere Versionen: reasoning); content ist dann nur die
+// eigentliche Antwort und kann leer sein, wenn das Token-Limit vorher endet.
+type msgOut struct {
+	Content          string `json:"content"`
+	ReasoningContent string `json:"reasoning_content"`
+	Reasoning        string `json:"reasoning"`
 }
 
 type response struct {
 	Choices []struct {
-		Message Message `json:"message"`
-		Delta   Message `json:"delta"`
+		Message      msgOut `json:"message"`
+		Delta        msgOut `json:"delta"`
+		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
 	Error *struct {
 		Message string `json:"message"`
@@ -219,10 +232,38 @@ func (c *Client) newRequest(ctx context.Context, body request) (*http.Request, e
 type Opts struct {
 	MaxTokens   int
 	Temperature float64
+	// NoThink bittet Reasoning-Modelle, nicht lange nachzudenken (für kurze
+	// JSON-Antworten). Derzeit nur für Qwen-Modelle über
+	// chat_template_kwargs.enable_thinking=false (vLLM, SGLang); lehnt der
+	// Server das Feld ab, wird ohne wiederholt.
+	NoThink bool
 }
+
+func noThinkKwargs(model string) map[string]any {
+	if strings.Contains(strings.ToLower(model), "qwen") {
+		return map[string]any{"enable_thinking": false}
+	}
+	return nil
+}
+
+// Result ist die erste Antwort mit Zusatzinfos.
+type Result struct {
+	Content      string
+	Reasoning    string // getrennt gelieferte Gedanken (nur zur Diagnose)
+	FinishReason string // "stop", "length", …
+}
+
+// Truncated: das Modell wurde vom Token-Limit abgeschnitten.
+func (r Result) Truncated() bool { return r.FinishReason == "length" }
 
 // Complete schickt eine Anfrage und liefert den Text der ersten Antwort.
 func (c *Client) Complete(ctx context.Context, msgs []Message, o Opts) (string, error) {
+	r, err := c.CompleteResult(ctx, msgs, o)
+	return r.Content, err
+}
+
+// CompleteResult wie Complete, aber mit finish_reason und Reasoning.
+func (c *Client) CompleteResult(ctx context.Context, msgs []Message, o Opts) (Result, error) {
 	mt, temp := c.cfg.MaxTokens, c.cfg.Temperature
 	if o.MaxTokens > 0 {
 		mt = o.MaxTokens
@@ -230,30 +271,48 @@ func (c *Client) Complete(ctx context.Context, msgs []Message, o Opts) (string, 
 	if o.Temperature > 0 {
 		temp = o.Temperature
 	}
-	req, err := c.newRequest(ctx, request{Model: c.cfg.Model, Messages: msgs, MaxTokens: mt, Temperature: temp})
-	if err != nil {
-		return "", err
+	body := request{Model: c.cfg.Model, Messages: msgs, MaxTokens: mt, Temperature: temp}
+	if o.NoThink {
+		body.ChatTemplateKwargs = noThinkKwargs(c.cfg.Model)
 	}
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return "", err
+	status, raw, err := c.post(ctx, body)
+	if err == nil && status == http.StatusBadRequest && body.ChatTemplateKwargs != nil {
+		body.ChatTemplateKwargs = nil // Server kennt das Feld nicht
+		status, raw, err = c.post(ctx, body)
 	}
-	defer resp.Body.Close()
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
 	if err != nil {
-		return "", err
+		return Result{}, err
 	}
 	var r response
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return "", fmt.Errorf("LLM: HTTP %d, keine JSON-Antwort", resp.StatusCode)
+		return Result{}, fmt.Errorf("LLM: HTTP %d, keine JSON-Antwort", status)
 	}
 	if r.Error != nil {
-		return "", fmt.Errorf("LLM: %s", r.Error.Message)
+		return Result{}, fmt.Errorf("LLM: %s", r.Error.Message)
 	}
-	if resp.StatusCode/100 != 2 || len(r.Choices) == 0 {
-		return "", fmt.Errorf("LLM: HTTP %d", resp.StatusCode)
+	if status/100 != 2 || len(r.Choices) == 0 {
+		return Result{}, fmt.Errorf("LLM: HTTP %d", status)
 	}
-	return r.Choices[0].Message.Content, nil
+	ch := r.Choices[0]
+	reasoning := ch.Message.ReasoningContent
+	if reasoning == "" {
+		reasoning = ch.Message.Reasoning
+	}
+	return Result{Content: ch.Message.Content, Reasoning: reasoning, FinishReason: ch.FinishReason}, nil
+}
+
+func (c *Client) post(ctx context.Context, body request) (int, []byte, error) {
+	req, err := c.newRequest(ctx, body)
+	if err != nil {
+		return 0, nil, err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
+	return resp.StatusCode, raw, err
 }
 
 // Stream liefert die Antwort stückweise (Server-Sent Events), z. B. für den

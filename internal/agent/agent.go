@@ -20,8 +20,9 @@
 //     (Schutz gegen Prompt Injection z. B. über eine präparierte README auf dem
 //     Server).
 //   - Vor dem Senden werden offensichtliche Geheimnisse entfernt (redact.go).
-//   - Modellantworten werden strikt geparst (nur das erwartete JSON); was nicht
-//     passt, wird verworfen. Steuerzeichen fliegen raus, damit das Modell keine
+//   - Aus Modellantworten wird nur das erwartete JSON genommen (Denkblöcke von
+//     Reasoning-Modellen und Text drumherum fallen weg); Befehle werden strikt
+//     geprüft, was nicht passt, wird verworfen. Steuerzeichen fliegen raus, damit das Modell keine
 //     ANSI-Sequenzen in unsere Oberfläche schmuggeln kann.
 package agent
 
@@ -101,7 +102,7 @@ func (a *Agent) Complete(ctx context.Context, typed string, c Context) (string, 
 	out, err := a.C.Complete(ctx, []llm.Message{
 		{Role: "system", Content: sysComplete},
 		{Role: "user", Content: "Bisher getippt: " + typed + "\n\n" + material(c)},
-	}, llm.Opts{MaxTokens: 80, Temperature: 0.1})
+	}, llm.Opts{MaxTokens: 80, Temperature: 0.1, NoThink: true})
 	if err != nil {
 		return "", err
 	}
@@ -136,7 +137,7 @@ func (a *Agent) FollowUps(ctx context.Context, c Context) ([]Suggestion, error) 
 	out, err := a.C.Complete(ctx, []llm.Message{
 		{Role: "system", Content: sysFollow},
 		{Role: "user", Content: "Welche Befehle als Nächstes?\n" + material(c)},
-	}, llm.Opts{MaxTokens: 220, Temperature: 0.2})
+	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.2, NoThink: true})
 	if err != nil {
 		return nil, err
 	}
@@ -214,34 +215,96 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 		fmt.Fprintf(&b, "Antwort des Menschen auf deine Frage: %s\n", Redact(x))
 	}
 	b.WriteString("\n" + material(c))
-	out, err := a.C.Complete(ctx, []llm.Message{
+	msgs := []llm.Message{
 		{Role: "system", Content: sysGoal},
 		{Role: "user", Content: b.String()},
-	}, llm.Opts{MaxTokens: 350, Temperature: 0.2})
+	}
+	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true})
 	if err != nil {
 		return Step{}, err
 	}
-	return ParseStep(out, c.OS)
+	st, err := ParseStep(res.Content, c.OS)
+	if err == nil {
+		return st, nil
+	}
+	if res.Truncated() && strings.TrimSpace(stripThink(res.Content)) == "" {
+		return Step{}, unreadable(res) // nochmal fragen hilft nicht, nur mehr Tokens
+	}
+	// Ein zweiter Versuch mit klarer Korrektur; danach eine Fehlermeldung, die
+	// zeigt, was das Modell geschickt hat (statt nur "nicht lesbar").
+	msgs = append(msgs,
+		llm.Message{Role: "assistant", Content: tail(stripThink(res.Content), 1500)},
+		llm.Message{Role: "user", Content: retryHint})
+	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.1, NoThink: true})
+	if err2 == nil {
+		if st, err := ParseStep(res2.Content, c.OS); err == nil {
+			return st, nil
+		}
+		res = res2
+	}
+	return Step{}, unreadable(res)
 }
 
-// ParseStep parst strikt; jede Abweichung ⇒ ErrUnreadable.
+// Reasoning-Modelle (Qwen3, DeepSeek-R1, gpt-oss) denken vor der Antwort oft
+// hunderte Tokens lang; mit einem knappen Limit kommt das JSON nie an.
+const (
+	goalTokens   = 4096
+	followTokens = 2048
+)
+
+const retryHint = "Deine letzte Antwort war kein gültiges JSON-Objekt im verlangten Format. " +
+	`Antworte jetzt NUR mit dem JSON-Objekt ({"befehl": …, "grund": …, "plan": […]} oder {"fertig": true, "grund": …} ` +
+	`oder {"frage": …}), ohne Text davor oder danach.`
+
+// unreadable baut eine Fehlermeldung mit Ursache und Ausschnitt der Antwort.
+func unreadable(r llm.Result) error {
+	body := strings.Join(strings.Fields(Clean(stripThink(r.Content))), " ")
+	switch {
+	case r.Truncated() && body == "":
+		return fmt.Errorf("%w: Token-Limit erreicht, bevor das Modell geantwortet hat (es denkt sehr lange nach). Max-Tokens in den KI-Einstellungen erhöhen oder Thinking abschalten", ErrUnreadable)
+	case r.Truncated():
+		return fmt.Errorf("%w: Antwort am Token-Limit abgeschnitten: „%s“", ErrUnreadable, short(body, 140))
+	case body == "" && r.Reasoning != "":
+		return fmt.Errorf("%w: Modell hat nur nachgedacht, aber keine Antwort geschickt", ErrUnreadable)
+	case body == "":
+		return fmt.Errorf("%w: leere Antwort", ErrUnreadable)
+	}
+	return fmt.Errorf("%w: „%s“", ErrUnreadable, short(body, 140))
+}
+
+func short(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
+}
+
+func tail(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[len(r)-n:])
+}
+
+// ParseStep parst das JSON-Objekt des Ziel-Modus. Unbekannte Schlüssel werden
+// ignoriert (nur bekannte Felder werden je verwendet); der Befehl selbst wird
+// strikt geprüft (eine Zeile, keine Steuerzeichen) ⇒ sonst ErrUnreadable.
 func ParseStep(out, osText string) (Step, error) {
 	var v map[string]json.RawMessage
 	if !strictJSON(out, &v) {
 		return Step{}, ErrUnreadable
 	}
-	allowed := map[string]bool{"befehl": true, "grund": true, "plan": true, "fertig": true, "frage": true}
-	for k := range v {
-		if !allowed[k] {
-			return Step{}, ErrUnreadable
-		}
-	}
 	str := func(k string) string {
 		var s string
 		_ = json.Unmarshal(v[k], &s)
-		return s
+		return strings.TrimSpace(s)
 	}
-	reason, _ := oneLine(str("grund"), maxReason)
+	reason, ok := oneLine(str("grund"), maxReason)
+	if !ok {
+		reason = short(strings.Join(strings.Fields(Clean(str("grund"))), " "), maxReason)
+	}
 	var done bool
 	_ = json.Unmarshal(v["fertig"], &done)
 	if done {
@@ -259,7 +322,7 @@ func ParseStep(out, osText string) (Step, error) {
 		var p []string
 		if json.Unmarshal(raw, &p) == nil {
 			for _, x := range p {
-				if l, ok := oneLine(x, 100); ok && l != "" && len(plan) < maxPlan {
+				if l, ok := oneLine(strings.TrimSpace(x), 100); ok && l != "" && len(plan) < maxPlan {
 					plan = append(plan, l)
 				}
 			}
@@ -283,24 +346,61 @@ func (a *Agent) Ask(ctx context.Context, q string, c Context, onDelta func(strin
 
 // ---------------------------------------------------------------- Helfer
 
-var fence = regexp.MustCompile("(?s)^```(?:json)?\\s*(.*?)\\s*```$")
+var (
+	fence     = regexp.MustCompile("(?s)```(?:json|JSON)?[ \t]*\r?\n?(.*?)```")
+	thinkTags = regexp.MustCompile(`(?s)<(think|thinking|reasoning)>.*?</(think|thinking|reasoning)>`)
+)
 
-// strictJSON: genau ein JSON-Wert, optional in einem ```json-Zaun. Manche
-// Modelle (Qwen3, DeepSeek-R1) schicken vorher <think>…</think>: das wird
-// entfernt, sonst nichts.
+// stripThink entfernt Denkblöcke von Reasoning-Modellen: geschlossene
+// <think>…</think>-Blöcke, alles vor einem allein stehenden </think> (Qwen3
+// mit Chat-Template, das <think> schon in den Prompt schreibt) und einen
+// nie geschlossenen Block am Anfang (Token-Limit erreicht).
+func stripThink(s string) string {
+	t := thinkTags.ReplaceAllString(s, "")
+	for _, end := range []string{"</think>", "</thinking>", "</reasoning>"} {
+		if i := strings.LastIndex(t, end); i >= 0 {
+			t = t[i+len(end):]
+		}
+	}
+	tt := strings.TrimSpace(t)
+	for _, start := range []string{"<think>", "<thinking>", "<reasoning>"} {
+		if strings.HasPrefix(tt, start) {
+			return ""
+		}
+	}
+	return tt
+}
+
+// strictJSON sucht genau einen JSON-Wert in der Modellantwort: nach Entfernen
+// der Denkblöcke direkt, in einem ```json-Zaun oder als erstes vollständiges
+// Objekt bzw. erste Liste im Text (Modelle schreiben gern einen Satz davor).
+// Der Inhalt wird danach von den Aufrufern streng geprüft.
 func strictJSON(s string, v any) bool {
-	t := strings.TrimSpace(s)
-	if i := strings.Index(t, "</think>"); strings.HasPrefix(t, "<think>") && i > 0 {
-		t = strings.TrimSpace(t[i+len("</think>"):])
+	t := stripThink(s)
+	try := func(x string) bool {
+		dec := json.NewDecoder(strings.NewReader(strings.TrimSpace(x)))
+		return dec.Decode(v) == nil && !dec.More()
 	}
-	if m := fence.FindStringSubmatch(t); m != nil {
-		t = m[1]
+	if try(t) {
+		return true
 	}
-	dec := json.NewDecoder(strings.NewReader(t))
-	if err := dec.Decode(v); err != nil {
-		return false
+	for _, m := range fence.FindAllStringSubmatch(t, -1) {
+		if try(m[1]) {
+			return true
+		}
 	}
-	return !dec.More()
+	// Erstes vollständiges JSON-Objekt/-Liste im Fließtext.
+	for i := 0; i < len(t); i++ {
+		if t[i] != '{' && t[i] != '[' {
+			continue
+		}
+		dec := json.NewDecoder(strings.NewReader(t[i:]))
+		var raw json.RawMessage
+		if dec.Decode(&raw) == nil && json.Unmarshal(raw, v) == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // oneLine: genau eine Zeile ohne Steuerzeichen, höchstens n Zeichen.
