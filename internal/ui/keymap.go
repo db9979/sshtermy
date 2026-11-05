@@ -35,9 +35,14 @@ const (
 	actImport    action = "import"
 	actKeys      action = "keys"
 	actNextLook  action = "theme"
+	actCheat     action = "cheat"
+	actQuickEdit action = "quick_edit"
 	actBroadcast action = "broadcast"
 	actScan      action = "scan"
 )
+
+// Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
+var actQuick = [maxQuick]action{"quick1", "quick2", "quick3", "quick4", "quick5", "quick6", "quick7", "quick8"}
 
 type actionDef struct {
 	id    action
@@ -52,6 +57,7 @@ var actionDefs = []actionDef{
 	{actAbout, "Über & Update", "Überall", []string{"f12"}},
 	{actQuit, "Beenden", "Überall", []string{"ctrl+q"}},
 	{actManager, "Manager ↔ Terminal", "Überall", []string{"f10"}},
+	{actCheat, "Spickzettel an/aus", "Überall", []string{"f9"}},
 	{actGoal, "Ziel-Modus (Agent)", "Terminal", []string{"f2"}},
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
@@ -63,10 +69,19 @@ var actionDefs = []actionDef{
 	{actChip2, "Folgebefehl 2 einfügen", "Terminal", []string{"alt+2"}},
 	{actChip3, "Folgebefehl 3 einfügen", "Terminal", []string{"alt+3"}},
 	{actChip4, "Folgebefehl 4 einfügen", "Terminal", []string{"alt+4"}},
+	{actQuick[0], "Schnellbefehl 1", "Terminal", []string{"shift+f1", "f13"}},
+	{actQuick[1], "Schnellbefehl 2", "Terminal", []string{"shift+f2", "f14"}},
+	{actQuick[2], "Schnellbefehl 3", "Terminal", []string{"shift+f3", "f15"}},
+	{actQuick[3], "Schnellbefehl 4", "Terminal", []string{"shift+f4", "f16"}},
+	{actQuick[4], "Schnellbefehl 5", "Terminal", []string{"shift+f5", "f17"}},
+	{actQuick[5], "Schnellbefehl 6", "Terminal", []string{"shift+f6", "f18"}},
+	{actQuick[6], "Schnellbefehl 7", "Terminal", []string{"shift+f7", "f19"}},
+	{actQuick[7], "Schnellbefehl 8", "Terminal", []string{"shift+f8", "f20"}},
 	{actNewline, "Neue Zeile in KI-Eingabe", "KI-Eingabe", []string{"shift+enter", "ctrl+j"}},
 	{actImport, "Verbindungen importieren", "Manager", []string{"i"}},
 	{actNextLook, "Aussehen wechseln", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},
+	{actQuickEdit, "Schnellbefehle bearbeiten", "Manager", []string{"q"}},
 	{actBroadcast, "Broadcast an mehrere Hosts", "Manager", []string{"m"}},
 	{actScan, "Netzwerk-Scan", "Manager", []string{"f"}},
 }

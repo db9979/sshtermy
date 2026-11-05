@@ -46,6 +46,7 @@ const (
 	scrTunnelForm
 	scrTerminal
 	scrSync
+	scrQuickForm
 	scrImport
 	scrKeys
 	scrBroadcast
@@ -67,6 +68,7 @@ type App struct {
 	formID           string // ID des bearbeiteten Datensatzes
 	formBase         domain.Connection
 	formTunnel       domain.Tunnel
+	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	returnToTerminal bool
 
 	sessions []*session
@@ -279,7 +281,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.modal != nil {
 			return a, a.modalKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -311,7 +313,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -378,6 +380,8 @@ func (a *App) View() tea.View {
 		body = a.frame(a.viewManager(), a.managerKeys())
 	case scrConnForm, scrTunnelForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
+	case scrQuickForm:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", "weiter"}, {"Strg+R", "Vorbelegung"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
 	case scrSettings:
 		body = a.frame(a.viewForm(), [][2]string{{"Strg+T", "Endpunkt testen"}, {"Strg+L", "Modell wählen"}, {"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
 	case scrTerminal:
@@ -445,9 +449,20 @@ func (a *App) footer(keys [][2]string) string {
 }
 
 func (a *App) frame(content string, keys [][2]string) string {
+	cheat := ""
+	if a.scr == scrManager {
+		cheat = a.cheatLine()
+	}
 	h := max(1, a.h-2)
+	if cheat != "" {
+		h = max(1, h-1)
+	}
 	box := lipgloss.NewStyle().Width(a.w).Height(h).MaxHeight(h).Render(content)
-	return lipgloss.JoinVertical(lipgloss.Left, a.header(""), box, a.footer(keys))
+	parts := []string{a.header(""), box}
+	if cheat != "" {
+		parts = append(parts, cheat)
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, append(parts, a.footer(keys))...)
 }
 
 // overlay legt ein Modal mittig über den Inhalt (Compositing mit lipgloss v2).
