@@ -9,6 +9,9 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 
 - **Verbindungs-Manager** mit verschlüsseltem Store (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI)
 - **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
+- **Auto-Reconnect**: reißt die Leitung ab (WLAN, VPN, Standby), verbindet sshTermy die Sitzung von selbst neu, startet laufende Tunnel wieder und hängt tmux/screen wieder an (abschaltbar über die Palette)
+- **Schnellverbinden**: `user@host:port` oder `ssh -p 2222 user@host` in die Palette tippen, ohne die Verbindung anzulegen (Agent/Standard-Keys, sonst Passwort)
+- **Statuszeile pro Sitzung**: Verbindungsdauer, Latenz, Zeichensatz, Warnung bei root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) bekommen eine rote Zeile
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)

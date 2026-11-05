@@ -49,7 +49,7 @@ type palette struct {
 func isPaletteKey(k string) bool { return k == "ctrl+space" || k == "ctrl+@" }
 
 func (a *App) openPalette() tea.Cmd {
-	in := newAIInput("Ziel, Frage, Befehl, Tunnel oder Verbindung …")
+	in := newAIInput("Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …")
 	in.MaxHeight = 4
 	a.pal = &palette{in: in, armed: -1}
 	return a.pal.in.Focus()
@@ -61,6 +61,10 @@ func (a *App) paletteItems() []palItem {
 	s := a.current()
 	inTerm := a.scr == scrTerminal && s != nil && s.state == stConnected
 	var items []palItem
+	quick, quickFirst := a.quickItems(q)
+	if quickFirst {
+		items = append(items, quick...) // user@host:port: Verbinden ist gemeint
+	}
 	if q != "" && inTerm {
 		items = append(items,
 			palItem{group: pgAI, icon: "◎", label: "Als Ziel starten: „" + trunc(oneLine(q), 50) + "“", hint: "⏎",
@@ -122,21 +126,16 @@ func (a *App) paletteItems() []palItem {
 			}})
 		}
 	}
+	if !quickFirst {
+		items = append(items, quick...)
+	}
 	for _, c := range a.st.Connections() {
 		c := c
 		if !match(c.Alias + " " + c.Host + " " + c.Group) {
 			continue
 		}
 		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: c.Username + "@" + c.Host,
-			run: func() tea.Cmd {
-				for i, x := range a.sessions {
-					if x.conn.ID == c.ID && x.state != stClosed {
-						a.cur, a.scr = i, scrTerminal
-						return nil
-					}
-				}
-				return a.connect(c)
-			}})
+			run: func() tea.Cmd { return a.openOrConnect(c) }})
 	}
 	actions := []palItem{
 		{icon: "◎", label: "Ziel-Modus öffnen", hint: "F2", run: func() tea.Cmd {
@@ -161,6 +160,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		{icon: "i", label: "Über sshTermy / Update", hint: "F12", run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
+		{icon: "⟳", label: reconnectLabel(a.autoReconnect()), hint: "Reconnect", run: func() tea.Cmd { return a.toggleAutoReconnect() }},
 	}
 	if a.st.SyncConfig().Enabled() {
 		actions = append(actions, palItem{icon: "⇅", label: "Jetzt synchronisieren", hint: "Sync", run: func() tea.Cmd {

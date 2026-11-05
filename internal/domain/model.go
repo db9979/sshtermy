@@ -36,6 +36,9 @@ const (
 	AuthPassword AuthMethod = "password" // Passwort (verschlüsselt im Store)
 	AuthKeyFile  AuthMethod = "keyfile"  // Private Key, als Pfad oder eingebettet (verschlüsselt)
 	AuthAgent    AuthMethod = "agent"    // ssh-agent / Windows OpenSSH-Agent / Pageant-kompatibel
+	// AuthAuto: wie das ssh-Kommando: erst Agent und Standard-Keys
+	// (~/.ssh/id_*), dann Passwort-Abfrage. Für Schnellverbindungen.
+	AuthAuto AuthMethod = "auto"
 )
 
 // DeviceKind: was am anderen Ende hängt. Netzwerkgeräte (Switches, Router,
@@ -191,6 +194,8 @@ type Settings struct {
 	LockAfterMin int    `json:"lock_after_min"`     // 0 = nie automatisch sperren
 	Language     string `json:"language"`           // "de" | "en"
 	NoMouse      bool   `json:"no_mouse,omitempty"` // Maus nicht einfangen (Terminalfenster markiert selbst)
+	// NoAutoReconnect: abgerissene Sitzungen nicht von selbst neu verbinden.
+	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`
 }
 
 // SyncBackend: wohin die verschlüsselte Sync-Datei geschrieben wird.

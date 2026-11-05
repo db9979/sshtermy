@@ -92,8 +92,63 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 		}
 		// Der Agent hält die Private Keys; sshtermy sieht sie nie.
 		return []ssh.AuthMethod{ssh.PublicKeysCallback(agent.NewClient(conn).Signers)}, nil
+
+	case domain.AuthAuto:
+		return autoMethods(c, o), nil
 	}
 	return nil, fmt.Errorf("unbekannte Auth-Methode %q", c.Auth)
+}
+
+// autoMethods: Agent + unverschlüsselte Standard-Keys, danach Passwort und
+// keyboard-interactive mit Rückfrage. Höchstens 5 Keys, sonst bricht OpenSSH
+// mit "Too many authentication failures" ab, bevor das Passwort drankommt.
+func autoMethods(c domain.Connection, o Options) []ssh.AuthMethod {
+	var m []ssh.AuthMethod
+	signers := func() ([]ssh.Signer, error) {
+		var out []ssh.Signer
+		if conn, err := dialAgent(); err == nil {
+			if ss, err := agent.NewClient(conn).Signers(); err == nil {
+				out = append(out, ss...)
+			}
+		}
+		home, _ := os.UserHomeDir()
+		for _, n := range []string{"id_ed25519", "id_ecdsa", "id_rsa"} {
+			b, err := os.ReadFile(filepath.Join(home, ".ssh", n))
+			if err != nil {
+				continue
+			}
+			if s, err := ssh.ParsePrivateKey(b); err == nil {
+				out = append(out, s)
+			}
+		}
+		if len(out) > 5 {
+			out = out[:5]
+		}
+		return out, nil
+	}
+	m = append(m, ssh.PublicKeysCallback(signers))
+	if o.AskSecret == nil {
+		return m
+	}
+	m = append(m, ssh.PasswordCallback(func() (string, error) {
+		return o.AskSecret("Passwort für " + c.Username + "@" + c.Host)
+	}))
+	m = append(m, ssh.KeyboardInteractive(func(_, _ string, qs []string, _ []bool) ([]string, error) {
+		ans := make([]string, len(qs))
+		for i, q := range qs {
+			label := strings.TrimSpace(q)
+			if strings.Contains(strings.ToLower(q), "pass") {
+				label = "Passwort für " + c.Username + "@" + c.Host // gleiche Frage wie oben, nur einmal
+			}
+			a, err := o.AskSecret(label)
+			if err != nil {
+				return nil, err
+			}
+			ans[i] = a
+		}
+		return ans, nil
+	}))
+	return m
 }
 
 func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
