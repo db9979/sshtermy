@@ -147,23 +147,23 @@ func (a *App) quickBar(s *session) string {
 	st := a.s
 	cmds, _ := a.quickCmds(s)
 	var b strings.Builder
-	b.WriteString(st.Muted.Render(" ↯ "))
+	b.WriteString(st.AI.Render(" ↯ "))
 	used := 3
 	for i, c := range cmds {
 		if strings.TrimSpace(c) == "" {
 			continue
 		}
-		style := st.Chip
+		style := st.Muted
 		if len(safety.Check(c, safety.Kind(a.remoteText(s)))) > 0 {
-			style = st.ChipDanger
+			style = st.Danger
 		}
-		chip := st.Key.Render(a.quickLabel(i)) + style.Render(trunc(c, 22))
+		chip := st.Accent.Render(a.quickLabel(i)) + " " + style.Render(trunc(c, 18)) + "  "
 		if used+lipgloss.Width(chip)+1 > a.w {
 			continue // passt nicht mehr, kürzere dahinter evtl. schon
 		}
 		used += lipgloss.Width(chip) + 1
 		i := i
-		b.WriteString(a.z.click(chip, func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.runQuick(s, i) }) + " ")
+		b.WriteString(a.z.click(chip, func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.runQuick(s, i) }))
 	}
 	return b.String()
 }

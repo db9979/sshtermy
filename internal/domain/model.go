@@ -198,7 +198,7 @@ type Settings struct {
 	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
 	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
 	TourDone     bool   `json:"tour_done,omitempty"`
-	HideCheat    bool   `json:"hide_cheat,omitempty"`
+	ExplainKeys  bool   `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (F9)
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.

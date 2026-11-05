@@ -56,7 +56,7 @@ var actionDefs = []actionDef{
 	{actAbout, "Über & Update", "Überall", []string{"f12"}},
 	{actQuit, "Beenden", "Überall", []string{"ctrl+q"}},
 	{actManager, "Manager ↔ Terminal", "Überall", []string{"f10"}},
-	{actCheat, "Spickzettel an/aus", "Überall", []string{"f9"}},
+	{actCheat, "Tastenzeile erklären an/aus", "Überall", []string{"f9"}},
 	{actGoal, "Ziel-Modus (Agent)", "Terminal", []string{"f2"}},
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},

@@ -450,6 +450,9 @@ func (a *App) header(right string) string {
 }
 
 func (a *App) footer(keys [][2]string) string {
+	if c := a.cheatLine(); c != "" {
+		return c // F9: Tastenzeile mit Erklärungen für den aktuellen Bereich
+	}
 	var b strings.Builder
 	for _, k := range keys {
 		b.WriteString(a.keyChip(k[0], k[1]))
@@ -462,20 +465,9 @@ func (a *App) footer(keys [][2]string) string {
 }
 
 func (a *App) frame(content string, keys [][2]string) string {
-	cheat := ""
-	if a.scr == scrManager {
-		cheat = a.cheatLine()
-	}
 	h := max(1, a.h-2)
-	if cheat != "" {
-		h = max(1, h-1)
-	}
 	box := lipgloss.NewStyle().Width(a.w).Height(h).MaxHeight(h).Render(content)
-	parts := []string{a.header(""), box}
-	if cheat != "" {
-		parts = append(parts, cheat)
-	}
-	return lipgloss.JoinVertical(lipgloss.Left, append(parts, a.footer(keys))...)
+	return lipgloss.JoinVertical(lipgloss.Left, a.header(""), box, a.footer(keys))
 }
 
 // overlay legt ein Modal mittig über den Inhalt (Compositing mit lipgloss v2).
