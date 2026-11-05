@@ -34,9 +34,9 @@ var tourSteps = []tourStep{
 	{"◎", "Ziel-Modus", "Beschreibe ein Ziel („Docker aufräumen“), die KI schlägt Schritt für Schritt genau einen Befehl vor. " +
 		"Rote Befehle sind gefährlich und brauchen eine zweite Bestätigung.",
 		[][2]string{{"F2", "Ziel-Modus"}, {"⏎", "Schritt ausführen"}, {"i", "nur einfügen"}, {"x", "Ziel beenden"}}},
-	{"↯", "Schnellbefehle und mehr", "Häufige Befehle liegen auf ⇧F1 bis ⇧F8, je nach Gerät vorbelegt (z. B. „show vlans“ bei Aruba). " +
-		"Mit F9 erklärt die Tastenzeile unten, was die Tasten im aktuellen Bereich bewirken.",
-		[][2]string{{"⇧F1…F8", "Schnellbefehl"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F9", "Tasten erklären"}, {"F1", "alle Tasten"}}},
+	{"↯", "Schnellbefehle und mehr", "Häufige Befehle liegen auf ⇧F1 bis ⇧F8, je nach Gerät vorbelegt (z. B. „show vlans“ bei Aruba). F9 zeigt die Liste. " +
+		"Mit ⇧F9 erklärt die Tastenzeile unten, was die Tasten im aktuellen Bereich bewirken.",
+		[][2]string{{"⇧F1…F8", "Schnellbefehl"}, {"F9", "Schnellbefehle (Liste)"}, {"F4", "Tunnel"}, {"⇧F9", "Tasten erklären"}, {"F1", "alle Tasten"}}},
 }
 
 func (a *App) tourModal() *modal { return &modal{kind: mTour, title: "Einführung"} }
@@ -164,7 +164,7 @@ func (a *App) cheatTips() [][2]string {
 	case len(s.chips) > 0:
 		return [][2]string{{"Alt+1…4", "fügt den Vorschlag ein (ohne ⏎)"}, {"rot", "= gefährlich, zweimal drücken"}}
 	}
-	return [][2]string{{"⇧F1…F8", "Schnellbefehle"}, {"F2", "Ziel an die KI"}, {"F3", "Frage an die KI"}, {"Strg+Space", "findet alles"}}
+	return [][2]string{{"F9", "Schnellbefehle"}, {"F2", "Ziel an die KI"}, {"F3", "Frage an die KI"}, {"Strg+Space", "findet alles"}}
 }
 
 // cheatLine: Tastenzeile mit Erklärungen (leer, wenn aus oder nichts passt;
@@ -186,7 +186,7 @@ func (a *App) cheatLine() string {
 		}
 		out += a.keyZone(t[0], st.Key.Render(t[0])) + bg.Foreground(st.T.Text).Render(" "+t[1])
 	}
-	k := a.keys.label(actCheat)
+	k := strings.ReplaceAll(a.keys.label(actCheat), "Shift+", "⇧")
 	back := a.keyZone(k, st.Key.Render(k)+st.KeyDesc.Render(" Tasten"))
 	gap := a.w - lipgloss.Width(out) - lipgloss.Width(back)
 	if gap < 1 {

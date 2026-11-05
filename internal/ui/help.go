@@ -28,6 +28,7 @@ const (
 	hcLogs
 	hcBroadcast
 	hcScan
+	hcHost
 )
 
 type helpSection struct {
@@ -43,7 +44,7 @@ var helpSections = []helpSection{
 	{hcNone, "◆", "Überall", "", false, [][2]string{
 		{"Strg+Space", "Befehlspalette"},
 		{"F1", "diese Hilfe"},
-		{"F9", "Tastenzeile erklären"},
+		{"⇧F9", "Tastenzeile erklären"},
 		{"F12", "Über & Update"},
 		{"F12 w", "Was ist neu"},
 		{"Strg+Q", "beenden"},
@@ -76,10 +77,12 @@ var helpSections = []helpSection{
 		{"Alt+1…4", "Folgebefehl einfügen"},
 		{"Alt+0", "Fehler: Warum? & Fix"},
 		{"⇧F1…F8", "Schnellbefehl ausführen"},
+		{"F9", "Schnellbefehle (Liste)"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
+		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},
 		{"F10", "zum Manager"},
 	}},
@@ -107,6 +110,14 @@ var helpSections = []helpSection{
 		{"n", "neuer Tunnel"},
 		{"e", "bearbeiten"},
 		{"d", "löschen"},
+	}},
+	{hcHost, "▣", "Host-Übersicht", "F6", false, [][2]string{
+		{"r / ⏎", "abfragen"},
+		{"b", "Switch-Config sichern"},
+		{"↑ ↓", "Sicherung wählen"},
+		{"d", "Diff zur Vorversion"},
+		{"v", "Sicherung ansehen"},
+		{"x", "Abfrage abbrechen"},
 	}},
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{
 		{"Tab", "Seite wechseln"},
@@ -205,6 +216,8 @@ func (a *App) helpContext() helpCtx {
 				return hcAsk
 			case panelTunnels:
 				return hcTunnel
+			case panelHost:
+				return hcHost
 			}
 		}
 		return hcTerminal

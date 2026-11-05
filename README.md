@@ -10,6 +10,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Verbindungs-Manager** mit verschlüsseltem Store (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI)
 - **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen
+- **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, Platte, Laufzeit und offene Updates. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
+- **Config-Sicherung für Switches**: `b` sichert `show running-config` verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
   die Ergebnisse stehen in Spalten nebeneinander. Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
   Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
@@ -79,6 +81,7 @@ sshtermy --update     # auf die neueste Version aktualisieren
 | | F3 | KI fragen |
 | | F4 | Tunnel an/aus, Web-Service im Browser öffnen |
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), n Ordner, d löschen, . versteckte |
+| | F6 | Host-Übersicht: r/⏎ abfragen, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
 | | Strg+Klick / Rechtsklick | URL im Browser öffnen / Menü zu Link, IP oder Host: verbinden (direkt oder über den Server), Ping vom Server oder von hier, kopieren |
@@ -127,6 +130,8 @@ PuTTY-Export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), eine port
 | ![](docs/bilder/12-dateien.png) | ![](docs/bilder/11-runbooks.png) |
 | **KI-Endpunkt testen, Modell wählen** | |
 | ![](docs/bilder/10-ki-test.png) | |
+| **Host-Übersicht Server (F6)** | **Switch: Übersicht und Config-Sicherung** |
+| ![](docs/bilder/15-host-server.png) | ![](docs/bilder/14-host-switch.png) |
 
 Die Bilder sind echte Aufnahmen der App (gegen einen Test-SSH-Server und ein Test-LLM aus `tools/dev`).
 

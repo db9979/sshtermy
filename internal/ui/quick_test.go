@@ -77,3 +77,14 @@ func TestTourFitsWindow(t *testing.T) {
 		}
 	}
 }
+
+func TestSortFKeys(t *testing.T) {
+	in := [][2]string{{"Strg+Space", "p"}, {"F10", "m"}, {"F2", "z"}, {"Shift+F9", "e"}, {"F1", "h"}, {"F9", "q"}, {"Strg+Q", "x"}}
+	got := sortFKeys(in)
+	want := []string{"Strg+Space", "F1", "F2", "F9", "F10", "Shift+F9", "Strg+Q"}
+	for i, w := range want {
+		if got[i][0] != w {
+			t.Fatalf("Reihenfolge %v, erwartet %v", got, want)
+		}
+	}
+}

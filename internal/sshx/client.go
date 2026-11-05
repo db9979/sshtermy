@@ -162,15 +162,42 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 	if o.Timeout == 0 {
 		o.Timeout = 15 * time.Second
 	}
+	var (
+		raw  net.Conn
+		jump *Client
+	)
+	// Die Handshake-Frist darf nicht ablaufen, während der Benutzer im Dialog
+	// (Host-Key, Passwort) überlegt. Sonst kam nach „j“ nur noch
+	// "handshake failed: i/o timeout".
+	pause := func() {
+		if raw != nil {
+			_ = raw.SetDeadline(time.Time{})
+		}
+	}
+	resume := func() {
+		if raw != nil {
+			_ = raw.SetDeadline(time.Now().Add(o.Timeout))
+		}
+	}
+	if p := o.Prompt; p != nil {
+		o.Prompt = func(host, fp, typ string) bool {
+			pause()
+			defer resume()
+			return p(host, fp, typ)
+		}
+	}
+	if ask := o.AskSecret; ask != nil {
+		o.AskSecret = func(label string) (string, error) {
+			pause()
+			defer resume()
+			return ask(label)
+		}
+	}
 	cfg, err := clientConfig(c, o)
 	if err != nil {
 		return nil, err
 	}
 
-	var (
-		raw  net.Conn
-		jump *Client
-	)
 	if c.JumpHostID != "" {
 		if o.Resolve == nil {
 			return nil, errors.New("Jump-Host kann nicht aufgelöst werden")

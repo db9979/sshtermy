@@ -23,6 +23,7 @@ const (
 	actAsk       action = "ask"
 	actTunnels   action = "tunnels"
 	actFiles     action = "files"
+	actHost      action = "host"
 	actPrevTab   action = "prev_tab"
 	actNextTab   action = "next_tab"
 	actManager   action = "manager"
@@ -36,6 +37,7 @@ const (
 	actNextLook  action = "theme"
 	actCheat     action = "cheat"
 	actQuickEdit action = "quick_edit"
+	actQuickMenu action = "quick_menu"
 	actBroadcast action = "broadcast"
 	actScan      action = "scan"
 )
@@ -56,17 +58,19 @@ var actionDefs = []actionDef{
 	{actAbout, "Über & Update", "Überall", []string{"f12"}},
 	{actQuit, "Beenden", "Überall", []string{"ctrl+q"}},
 	{actManager, "Manager ↔ Terminal", "Überall", []string{"f10"}},
-	{actCheat, "Tastenzeile erklären an/aus", "Überall", []string{"f9"}},
+	{actCheat, "Tastenzeile erklären an/aus", "Überall", []string{"shift+f9", "f21"}},
 	{actGoal, "Ziel-Modus (Agent)", "Terminal", []string{"f2"}},
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
+	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},
 	{actChip1, "Folgebefehl 1 einfügen", "Terminal", []string{"alt+1"}},
 	{actChip2, "Folgebefehl 2 einfügen", "Terminal", []string{"alt+2"}},
 	{actChip3, "Folgebefehl 3 einfügen", "Terminal", []string{"alt+3"}},
 	{actChip4, "Folgebefehl 4 einfügen", "Terminal", []string{"alt+4"}},
+	{actQuickMenu, "Schnellbefehle (Liste)", "Terminal", []string{"f9"}},
 	{actQuick[0], "Schnellbefehl 1", "Terminal", []string{"shift+f1", "f13"}},
 	{actQuick[1], "Schnellbefehl 2", "Terminal", []string{"shift+f2", "f14"}},
 	{actQuick[2], "Schnellbefehl 3", "Terminal", []string{"shift+f3", "f15"}},

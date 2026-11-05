@@ -93,7 +93,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll = 0
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu) {
 		case actHelp:
 			a.modal = a.helpModal()
 			return nil
@@ -105,6 +105,11 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return nil
 		case actCheat:
 			return a.toggleCheat()
+		case actQuickMenu:
+			if s.state == stConnected {
+				a.modal = a.quickModal(s)
+			}
+			return nil
 		case actPrevTab, actNextTab:
 			if len(a.sessions) > 1 {
 				d := 1
@@ -127,9 +132,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if i, ok := a.quickIndex(key); ok {
 			return a.runQuick(s, i)
 		}
-		switch id := a.keys.which(key, actGoal, actAsk, actTunnels); id {
-		case actGoal, actAsk, actTunnels:
-			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels}[id]
+		switch id := a.keys.which(key, actGoal, actAsk, actTunnels, actHost); id {
+		case actGoal, actAsk, actTunnels, actHost:
+			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels, actHost: panelHost}[id]
 			if s.panel == kind && s.panelFocus {
 				s.panel, s.panelFocus = panelNone, false
 			} else {
@@ -368,6 +373,9 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
 	right := goal + " " + tun + " " + ai
+	if hb := a.hostBadge(s); hb != "" {
+		right = goal + " " + hb + " " + tun + " " + ai
+	}
 	gap := max(1, a.w-lipgloss.Width(info)-lipgloss.Width(right)-1)
 	bar := st.Header.Render(" "+trunc(info, a.w-lipgloss.Width(right)-3)+strings.Repeat(" ", gap)) + right
 	bar = ansi.Truncate(bar, a.w, "")
@@ -452,8 +460,6 @@ func (a *App) chipList(s *session, b *strings.Builder) {
 		if len(s.chips) > 0 && s.chips[0].Reason != "" {
 			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))
 		}
-	} else {
-		b.WriteString(a.quickBar(s))
 	}
 }
 
@@ -465,13 +471,14 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		return a.panelKeys(s)
 	}
 	k := a.keys
-	keys := [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel/Agent"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
-		{k.label(actFiles), "Dateien"}}
+	keys := [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
+		{k.label(actFiles), "Dateien"}, {k.label(actHost), "Host"}}
 	if len(a.sessions) > 1 {
 		keys = append(keys, [2]string{k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"})
 	}
-	keys = append(keys, [2]string{k.label(actManager), "Manager"}, [2]string{k.label(actHelp), "Hilfe"},
-		[2]string{k.label(actCheat), "erklären"}, [2]string{k.label(actQuit), "beenden"})
+	keys = append(keys, [2]string{k.label(actQuickMenu), "Schnellbefehle"}, [2]string{k.label(actManager), "Manager"},
+		[2]string{k.label(actHelp), "Hilfe"}, [2]string{k.label(actCheat), "erklären"}, [2]string{k.label(actQuit), "beenden"})
+	keys = sortFKeys(keys)
 	if s.fail != nil {
 		keys = append([][2]string{{"Alt+0", "Warum? & Fix"}}, keys...)
 	}

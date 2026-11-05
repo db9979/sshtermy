@@ -29,6 +29,7 @@ const (
 	panelGoal
 	panelAsk
 	panelTunnels
+	panelHost
 )
 
 // session ist eine offene SSH-Sitzung (ein Tab).
@@ -66,6 +67,8 @@ type session struct {
 	ask        askState
 	tunSel     int
 	files      filesState
+	host       hostState // F6: Host-Übersicht und Config-Sicherung
+	cap        shellCap  // mitgeschnittene Shell-Ausgabe während einer Abfrage
 
 	// laufender Befehl, letzter Fehlschlag, Sitzungsprotokoll (cmdlog.go)
 	run    *cmdRun
@@ -91,6 +94,7 @@ type outWriter struct {
 type outputMsg struct{ sid int }
 
 func (w outWriter) Write(p []byte) (int, error) {
+	w.s.cap.feed(p)
 	n, err := w.s.term.Write(p)
 	if w.s.pending.CompareAndSwap(false, true) {
 		select {
@@ -186,6 +190,7 @@ func (s *session) close() {
 	}
 	s.goal.cancel()
 	s.ask.cancel()
+	s.host.cancel()
 	if s.tunnels != nil {
 		s.tunnels.StopAll()
 	}

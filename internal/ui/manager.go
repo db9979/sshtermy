@@ -49,7 +49,7 @@ func (a *App) managerKeys() [][2]string {
 	if len(a.sessions) > 0 {
 		k = append([][2]string{{km.label(actManager), "zum Terminal"}}, k...)
 	}
-	return k
+	return sortFKeys(k)
 }
 
 func (a *App) updateManager(msg tea.Msg) tea.Cmd {

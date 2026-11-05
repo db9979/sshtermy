@@ -181,7 +181,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "☰", label: "Sitzungsprotokolle durchsuchen", hint: "l", run: func() tea.Cmd { return a.openLogs() }},
 		{icon: "●", label: logLabel(a.logsEnabled()), hint: "Protokoll", run: func() tea.Cmd { return a.toggleSessionLog() }},
 		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
-		{icon: "?", label: cheatLabel(a.cheatOn()), hint: "F9", run: func() tea.Cmd { return a.toggleCheat() }},
+		{icon: "?", label: cheatLabel(a.cheatOn()), hint: a.keys.label(actCheat), run: func() tea.Cmd { return a.toggleCheat() }},
 		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
 	}
 	for _, t := range Themes {
@@ -203,6 +203,21 @@ func (a *App) paletteItems() []palItem {
 	}
 	if !inTerm {
 		actions = actions[3:]
+	} else {
+		actions = append(actions, palItem{icon: "▤", label: "Host-Übersicht", hint: a.keys.label(actHost), run: func() tea.Cmd {
+			withPanel(s, panelHost)
+			a.resize(s)
+			return a.panelOpened(s)
+		}})
+		if s.client != nil && s.client.NetDevice {
+			actions = append(actions, palItem{icon: "▣", label: "Switch-Config sichern und vergleichen", hint: "b", run: func() tea.Cmd {
+				withPanel(s, panelHost)
+				s.panelFocus = false
+				a.resize(s)
+				s.host.backups = a.st.Backups(s.conn.ID)
+				return a.hostNetCmd(s, false, true)
+			}})
+		}
 	}
 	for _, x := range actions {
 		x.group = pgAction
