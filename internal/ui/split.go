@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// Geteilte Ansicht (F6)
+// Geteilte Ansicht (Strg+T)
 //
 // Zwei Sitzungen nebeneinander oder untereinander, oder vier im Raster.
 // Jeder Bereich hat eine eigene Titelzeile; der aktive ist blau. Strg+Pfeil
@@ -254,7 +254,7 @@ func indexInt(xs []int, v int) int {
 	return -1
 }
 
-// cycleSplit: F6 schaltet weiter: eine → nebeneinander → untereinander →
+// cycleSplit: Strg+T schaltet weiter: eine → nebeneinander → untereinander →
 // vier → eine.
 func (a *App) cycleSplit() {
 	next := (a.split + 1) % 4

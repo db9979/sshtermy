@@ -58,7 +58,7 @@ var actionDefs = []actionDef{
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
 	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
-	{actSplit, "Ansicht teilen (2 / 4)", "Terminal", []string{"f6"}},
+	{actSplit, "Ansicht teilen (2 / 4)", "Terminal", []string{"ctrl+t"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},
 	{actChip1, "Folgebefehl 1 einfügen", "Terminal", []string{"alt+1"}},

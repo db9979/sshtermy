@@ -207,7 +207,7 @@ func (a *App) paletteItems() []palItem {
 			if m == splitOff {
 				label = "Ansicht nicht mehr teilen"
 			}
-			actions = append(actions, palItem{icon: "▦", label: label, hint: "F6", run: func() tea.Cmd { a.setSplit(m); return nil }})
+			actions = append(actions, palItem{icon: "▦", label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
 	}
 	for _, x := range actions {

@@ -75,7 +75,7 @@ var helpSections = []helpSection{
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
-		{"F6", "Ansicht teilen (2 / 4)"},
+		{"Strg+T", "Ansicht teilen (2 / 4)"},
 		{"Strg+Pfeil", "Bereich wechseln (geteilt)"},
 		{"Strg+F", "im Verlauf suchen"},
 		{"F7 / F8", "Tab wechseln"},
