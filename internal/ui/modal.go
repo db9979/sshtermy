@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"strings"
+	"unicode"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
@@ -88,15 +89,49 @@ func firstLines(s string, n int) string {
 	return strings.Join(l, "\n")
 }
 
+// yesNo: 1 = ja (j/y), -1 = nein (n/Esc), 0 = andere Taste. Groß/klein egal
+// (Feststelltaste) und unabhängig davon, ob das Terminal Text mitliefert
+// (Windows-Konsole liefert je nach Modus nur Code/BaseCode).
+func yesNo(k tea.KeyPressMsg) int {
+	if k.Code == tea.KeyEscape {
+		return -1
+	}
+	if k.Mod&^(tea.ModShift|tea.ModCapsLock|tea.ModNumLock) != 0 {
+		return 0
+	}
+	rs := []rune{k.Code, k.ShiftedCode, firstRune(k.Text)}
+	if k.Code == 0 {
+		rs = append(rs, k.BaseCode) // Windows-VT-Eingabe: Zeichen nur in BaseCode
+	}
+	// BaseCode sonst nicht: das ist die US-Tastenposition (deutsches „z“ wäre „y“).
+	for _, r := range rs {
+		switch unicode.ToLower(r) {
+		case 'j', 'y':
+			return 1
+		case 'n':
+			return -1
+		}
+	}
+	return 0
+}
+
+func firstRune(s string) rune {
+	for _, r := range s {
+		return r
+	}
+	return 0
+}
+
 func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	m := a.modal
 	key := k.String()
 	switch m.kind {
 	case mHostKey:
-		if key == "j" || key == "y" {
+		switch yesNo(k) {
+		case 1:
 			m.hk.reply <- true
 			a.modal = nil
-		} else if key == "n" || key == "esc" {
+		case -1:
 			m.hk.reply <- false
 			a.modal = nil
 		}
@@ -116,12 +151,13 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		m.in, cmd = m.in.Update(k)
 		return cmd
 	case mConfirm:
-		if key == "j" || key == "y" {
+		switch yesNo(k) {
+		case 1:
 			a.modal = nil
 			if m.onYes != nil {
 				return m.onYes()
 			}
-		} else if key == "n" || key == "esc" {
+		case -1:
 			a.modal = nil
 		}
 	case mAbout:
