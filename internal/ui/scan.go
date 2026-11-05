@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/netscan"
 	"github.com/db9979/sshtermy/internal/store"
 )
@@ -63,7 +64,7 @@ func (a *App) openScan() tea.Cmd {
 	if prev != nil {
 		sc.seq = prev.seq
 	}
-	f := &form{title: "Netzwerk-Scan: SSH-Geräte finden"}
+	f := &form{title: i18n.T("Netzwerk-Scan: SSH-Geräte finden")}
 	subnet := ""
 	if l := netscan.LocalSubnets(); len(l) > 0 {
 		subnet = l[0]
@@ -72,20 +73,20 @@ func (a *App) openScan() tea.Cmd {
 	if user == "" {
 		user = os.Getenv("USERNAME")
 	}
-	auth, keypath, group := string(domain.AuthAgent), "", "Netzwerk-Scan"
+	auth, keypath, group := string(domain.AuthAgent), "", i18n.T("Netzwerk-Scan")
 	if prev != nil && prev.f != nil {
 		subnet, user, auth, keypath, group = prev.f.str("subnet"), prev.f.str("user"), prev.f.sel("auth"), prev.f.str("keypath"), prev.f.str("group")
 	}
-	f.text("subnet", "Subnetz", subnet, "z. B. 192.168.1.0/24 · 10.0.0.10-50 · mehrere mit Komma (höchstens 4096 Adressen)")
+	f.text("subnet", i18n.T("Subnetz"), subnet, i18n.T("z. B. 192.168.1.0/24 · 10.0.0.10-50 · mehrere mit Komma (höchstens 4096 Adressen)"))
 	port := 22
 	if prev != nil && prev.f != nil && prev.f.num("port") > 0 {
 		port = prev.f.num("port")
 	}
-	f.number("port", "Port", port, "Standard 22")
-	f.text("user", "Benutzer", user, "für die neuen Verbindungen")
-	f.choice("auth", "Anmeldung", []string{"agent", "keyfile", "password"}, auth, "agent = ssh-agent (empfohlen) · Passwort fragt beim Verbinden")
-	f.text("keypath", "Keyfile", keypath, "z. B. ~/.ssh/id_ed25519").hidden = func(f *form) bool { return f.sel("auth") != "keyfile" }
-	f.text("group", "Ordner", group, "Ordner der neuen Verbindungen, „A / B“ verschachtelt (leer = oberste Ebene)")
+	f.number("port", "Port", port, i18n.T("Standard 22"))
+	f.text("user", i18n.T("Benutzer"), user, i18n.T("für die neuen Verbindungen"))
+	f.choice("auth", i18n.T("Anmeldung"), []string{"agent", "keyfile", "password"}, auth, i18n.T("agent = ssh-agent (empfohlen) · Passwort fragt beim Verbinden"))
+	f.text("keypath", "Keyfile", keypath, i18n.T("z. B. ~/.ssh/id_ed25519")).hidden = func(f *form) bool { return f.sel("auth") != "keyfile" }
+	f.text("group", i18n.T("Ordner"), group, i18n.T("Ordner der neuen Verbindungen, „A / B“ verschachtelt (leer = oberste Ebene)"))
 	sc.f = f
 	a.scan = sc
 	a.scr = scrScan
@@ -102,7 +103,7 @@ func (a *App) scanStart() tea.Cmd {
 		return nil
 	}
 	if f.str("user") == "" {
-		f.err = "Benutzer fehlt (wird für die neuen Verbindungen gebraucht)"
+		f.err = i18n.T("Benutzer fehlt (wird für die neuen Verbindungen gebraucht)")
 		return nil
 	}
 	port := f.num("port")
@@ -171,7 +172,7 @@ func (a *App) scanMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if sc != nil && m.seq == sc.seq {
 			sc.running, sc.done = false, sc.total
 			sc.elapsed = time.Since(sc.started)
-			a.flash(fmt.Sprintf("Scan fertig: %s gefunden", plural(len(sc.hosts), "SSH-Gerät", "SSH-Geräte")))
+			a.flash(fmt.Sprintf(i18n.T("Scan fertig: %s gefunden"), plural(len(sc.hosts), i18n.T("SSH-Gerät"), i18n.T("SSH-Geräte"))))
 		}
 		return a.listen(), true
 	}
@@ -250,14 +251,14 @@ func (a *App) scanCreate() tea.Cmd {
 	}
 	switch {
 	case firstErr != nil:
-		a.flash("Nicht alle angelegt: " + firstErr.Error())
+		a.flash(i18n.T("Nicht alle angelegt: ") + firstErr.Error())
 	case n == 0:
-		a.flash("Nichts gewählt (Leertaste wählt, a = alle)")
+		a.flash(i18n.T("Nichts gewählt (Leertaste wählt, a = alle)"))
 		return nil
 	default:
-		msg := plural(n, "Verbindung", "Verbindungen") + " angelegt"
+		msg := plural(n, i18n.T("Verbindung"), i18n.T("Verbindungen")) + i18n.T(" angelegt")
 		if nets > 0 {
-			msg += fmt.Sprintf(", davon %d als Netzwerkgerät", nets)
+			msg += fmt.Sprintf(i18n.T(", davon %d als Netzwerkgerät"), nets)
 		}
 		a.flash(msg)
 	}
@@ -340,13 +341,13 @@ func (a *App) updateScan(msg tea.Msg) tea.Cmd {
 
 func (a *App) scanKeys() [][2]string {
 	if a.scan == nil || a.scan.phase == scSetup {
-		return [][2]string{{"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "Scan starten"}, {"Esc", "abbrechen"}, {"F1", "Hilfe"}}
+		return [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("Scan starten")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
 	}
-	k := [][2]string{{"Space", "wählen"}, {"a", "alle"}, {"⏎", "anlegen"}}
+	k := [][2]string{{"Space", i18n.T("wählen")}, {"a", i18n.T("alle")}, {"⏎", i18n.T("anlegen")}}
 	if a.scan.running {
-		k = append(k, [2]string{"x", "stoppen"})
+		k = append(k, [2]string{"x", i18n.T("stoppen")})
 	}
-	return append(k, [2]string{"r", "neu scannen"}, [2]string{"Esc", "zum Manager"}, [2]string{"F1", "Hilfe"})
+	return append(k, [2]string{"r", i18n.T("neu scannen")}, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{"F1", i18n.T("Hilfe")})
 }
 
 func (a *App) viewScan() string {
@@ -358,17 +359,17 @@ func (a *App) viewScan() string {
 	if sc.phase == scSetup {
 		var o strings.Builder
 		o.WriteString(sc.f.view(s, w-4, &a.z))
-		o.WriteString("\n" + s.Muted.Render("Gesucht wird nur nach offenem SSH-Port und der SSH-Kennung (ohne Anmeldung).\n"+
-			"Switches und Router (Aruba, Cisco, MikroTik …) werden am Banner erkannt.") + "\n")
+		o.WriteString("\n" + s.Muted.Render(i18n.T("Gesucht wird nur nach offenem SSH-Port und der SSH-Kennung (ohne Anmeldung).\n")+
+			i18n.T("Switches und Router (Aruba, Cisco, MikroTik …) werden am Banner erkannt.")) + "\n")
 		if l := netscan.LocalSubnets(); len(l) > 1 {
-			o.WriteString(s.Muted.Render("Eigene Netze: "+strings.Join(l, ", ")) + "\n")
+			o.WriteString(s.Muted.Render(i18n.T("Eigene Netze: ")+strings.Join(l, ", ")) + "\n")
 		}
-		o.WriteString("\n" + s.Muted.Render("Strg+S oder ⏎ im letzten Feld startet den Scan"))
+		o.WriteString("\n" + s.Muted.Render(i18n.T("Strg+S oder ⏎ im letzten Feld startet den Scan")))
 		return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, s.Panel.Width(w).Render(o.String()))
 	}
 
 	var o strings.Builder
-	o.WriteString(s.Accent.Render("⌕ Netzwerk-Scan ") + s.Text.Render(trunc(sc.spec, 40)) + s.Muted.Render(fmt.Sprintf("  Port %d", sc.f.num("port"))) + "\n")
+	o.WriteString(s.Accent.Render(i18n.T("⌕ Netzwerk-Scan ")) + s.Text.Render(trunc(sc.spec, 40)) + s.Muted.Render(fmt.Sprintf(i18n.T("  Port %d"), sc.f.num("port"))) + "\n")
 	// Fortschrittsbalken
 	barW := max(10, w-40)
 	frac := 0.0
@@ -377,7 +378,7 @@ func (a *App) viewScan() string {
 	}
 	fill := int(frac * float64(barW))
 	bar := s.OK.Render(strings.Repeat("█", fill)) + s.Muted.Render(strings.Repeat("░", barW-fill))
-	status := fmt.Sprintf(" %d/%d · %s", sc.done, sc.total, plural(len(sc.hosts), "Fund", "Funde"))
+	status := fmt.Sprintf(" %d/%d · %s", sc.done, sc.total, plural(len(sc.hosts), i18n.T("Fund"), i18n.T("Funde")))
 	if !sc.running {
 		status += " · " + bcDur(sc.elapsed)
 	}
@@ -391,12 +392,12 @@ func (a *App) viewScan() string {
 	}
 	if len(sc.hosts) == 0 {
 		if sc.running {
-			o.WriteString(s.Muted.Render("  suche …") + "\n")
+			o.WriteString(s.Muted.Render(i18n.T("  suche …")) + "\n")
 		} else {
-			o.WriteString(s.Muted.Render("  Keine SSH-Geräte gefunden. Subnetz oder Port prüfen (r).") + "\n")
+			o.WriteString(s.Muted.Render(i18n.T("  Keine SSH-Geräte gefunden. Subnetz oder Port prüfen (r).")) + "\n")
 		}
 	} else {
-		o.WriteString(s.Muted.Render(fmt.Sprintf("  %d gewählt · Ordner „%s“ · Benutzer %s", picked, orDefault(domain.NormPath(sc.f.str("group")), "oberste Ebene"), sc.f.str("user"))) + "\n")
+		o.WriteString(s.Muted.Render(fmt.Sprintf(i18n.T("  %d gewählt · Ordner „%s“ · Benutzer %s"), picked, orDefault(domain.NormPath(sc.f.str("group")), i18n.T("oberste Ebene")), sc.f.str("user"))) + "\n")
 	}
 	rows := max(3, a.h-2-12)
 	start := 0
@@ -412,11 +413,11 @@ func (a *App) viewScan() string {
 		}
 		kind := s.Text.Render("Server       ")
 		if h.Network {
-			kind = s.Warn.Render("Netzwerkgerät")
+			kind = s.Warn.Render(i18n.T("Netzwerkgerät"))
 		}
 		extra := ""
 		if alias, ok := sc.known[k]; ok {
-			extra = s.Muted.Render(" · schon gespeichert: " + alias)
+			extra = s.Muted.Render(i18n.T(" · schon gespeichert: ") + alias)
 		}
 		line := fmt.Sprintf("  %s %-15s %-22s %s  %s%s", box, h.IP, trunc(h.Name, 22), kind, s.Muted.Render(trunc(h.Label(), 30)), extra)
 		if i == sc.cur {

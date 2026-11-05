@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // PuTTY speichert Sitzungen unter
@@ -67,10 +68,10 @@ func puttyEntries(sessions map[string]puttySession) []Entry {
 		fillUser(&e)
 		keyAuth(&e, s.str("PublicKeyFile"))
 		if ph := s.str("ProxyHost"); ph != "" && s.num("ProxyMethod") != 0 {
-			e.Notes = append(e.Notes, "Proxy "+ph+" nicht übernommen")
+			e.Notes = append(e.Notes, "Proxy "+ph+i18n.T(" nicht übernommen"))
 		}
 		if s.str("PortForwardings") != "" {
-			e.Notes = append(e.Notes, "Port-Weiterleitungen bitte als Tunnel (t) anlegen")
+			e.Notes = append(e.Notes, i18n.T("Port-Weiterleitungen bitte als Tunnel (t) anlegen"))
 		}
 		out = append(out, e)
 	}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -90,7 +91,7 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 	switch s.panel {
 	case panelGoal:
 		if !s.goal.inited {
-			s.goal.input = newAIInput("z. B. Installiere Docker und richte Nginx als Reverse Proxy ein")
+			s.goal.input = newAIInput(i18n.T("z. B. Installiere Docker und richte Nginx als Reverse Proxy ein"))
 			s.goal.edit, s.goal.answer = newCommandInput(), newAIInput("")
 			s.goal.inited, s.goal.rbSel = true, -1
 		}
@@ -101,7 +102,7 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 		return a.hostOpened(s)
 	case panelAsk:
 		if !s.ask.inited {
-			s.ask.input = newAIInput("Frage, z. B. Warum startet nginx nicht?")
+			s.ask.input = newAIInput(i18n.T("Frage, z. B. Warum startet nginx nicht?"))
 			s.ask.inited = true
 		}
 		return s.ask.input.Focus()
@@ -190,11 +191,11 @@ func (a *App) requestStep(s *session) tea.Cmd {
 	}
 	g.times = recent
 	if len(recent) >= limit {
-		g.err = fmt.Sprintf("Ratenlimit: höchstens %d Schritte pro Minute. r = erneut versuchen", limit)
+		g.err = fmt.Sprintf(i18n.T("Ratenlimit: höchstens %d Schritte pro Minute. r = erneut versuchen"), limit)
 		return nil
 	}
 	if len(g.steps) >= maxGoalSteps {
-		g.err = "Maximal 40 Schritte pro Ziel. Ziel neu setzen (x)."
+		g.err = i18n.T("Maximal 40 Schritte pro Ziel. Ziel neu setzen (x).")
 		return nil
 	}
 	ag, err := a.agentClient()
@@ -322,7 +323,7 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		case "ctrl+d":
 			if g.rbSel >= 0 && g.rbSel < len(rbs) {
 				rb := rbs[g.rbSel]
-				a.modal = confirmModal("Runbook löschen?", "„"+rb.Name+"“ löschen?", func() tea.Cmd {
+				a.modal = confirmModal(i18n.T("Runbook löschen?"), "„"+rb.Name+i18n.T("“ löschen?"), func() tea.Cmd {
 					_ = a.st.DeleteRunbook(rb.ID)
 					g.rbSel = -1
 					g.input.SetValue("")
@@ -367,7 +368,7 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 			if cmd != "" {
 				st := *g.cur
 				st.Command = cmd
-				st.Reason = "von dir bearbeitet"
+				st.Reason = i18n.T("von dir bearbeitet")
 				*g.cur = st
 				fresh := agent.ParseStepCommand(cmd, s.client.Remote.String())
 				g.cur.Danger, g.cur.Elevated = fresh.Danger, fresh.Elevated
@@ -465,11 +466,11 @@ func (a *App) tunnelKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			t := list[s.tunSel]
 			if s.tunnels.Get(t.ID) != nil {
 				s.tunnels.Stop(t.ID)
-				a.flash("Tunnel gestoppt: " + t.Name)
+				a.flash(i18n.T("Tunnel gestoppt: ") + t.Name)
 			} else if at, err := s.tunnels.Start(t); err != nil {
-				a.flash("Tunnel: " + err.Error())
+				a.flash(i18n.T("Tunnel: ") + err.Error())
 			} else if at.URL() != "" {
-				a.flash("Web-Service bereit: " + at.URL())
+				a.flash(i18n.T("Web-Service bereit: ") + at.URL())
 			}
 		}
 	case "o":
@@ -489,7 +490,7 @@ func (a *App) tunnelKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	case "d":
 		if s.tunSel < len(list) {
 			t := list[s.tunSel]
-			a.modal = confirmModal("Tunnel löschen", "„"+t.Name+"“ löschen?", func() tea.Cmd {
+			a.modal = confirmModal(i18n.T("Tunnel löschen"), "„"+t.Name+i18n.T("“ löschen?"), func() tea.Cmd {
 				if s.tunnels != nil {
 					s.tunnels.Stop(t.ID)
 				}
@@ -507,46 +508,46 @@ func (a *App) panelKeys(s *session) [][2]string {
 		g := s.goal
 		if !g.active {
 			if g.done {
-				return [][2]string{{"Strg+S", "als Runbook merken"}, {"⏎", "neues Ziel"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
+				return [][2]string{{"Strg+S", i18n.T("als Runbook merken")}, {"⏎", i18n.T("neues Ziel")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
 			}
 			if len(a.st.Runbooks(s.conn.ID)) == 0 {
-				return [][2]string{{"⏎", "Ziel starten"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
+				return [][2]string{{"⏎", i18n.T("Ziel starten")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
 			}
-			return [][2]string{{"⏎", "Ziel starten"}, {"↑↓", "Runbook"}, {"Strg+D", "Runbook löschen"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
+			return [][2]string{{"⏎", i18n.T("Ziel starten")}, {"↑↓", "Runbook"}, {"Strg+D", i18n.T("Runbook löschen")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
 		}
 		if g.cur != nil && g.cur.Question != "" {
-			return [][2]string{{"⏎", "antworten"}, {"Esc", "Terminal"}}
+			return [][2]string{{"⏎", i18n.T("antworten")}, {"Esc", "Terminal"}}
 		}
 		if g.editing {
-			return [][2]string{{"⏎", "übernehmen"}, {"Esc", "Terminal"}}
+			return [][2]string{{"⏎", i18n.T("übernehmen")}, {"Esc", "Terminal"}}
 		}
-		return [][2]string{{"⏎", "ausführen"}, {"i", "nur einfügen"}, {"e", "bearbeiten"}, {"s", "überspringen"},
-			{"r", "neu"}, {"x", "Ziel beenden"}, {"Strg+S", "Runbook"}, {"Esc", "Terminal"}}
+		return [][2]string{{"⏎", i18n.T("ausführen")}, {"i", i18n.T("nur einfügen")}, {"e", i18n.T("bearbeiten")}, {"s", i18n.T("überspringen")},
+			{"r", i18n.T("neu")}, {"x", i18n.T("Ziel beenden")}, {"Strg+S", "Runbook"}, {"Esc", "Terminal"}}
 	case panelAsk:
 		q := &s.ask
 		switch {
 		case q.busy:
-			return [][2]string{{"Esc", "Terminal"}, {a.keys.label(actAsk), "schließen"}}
+			return [][2]string{{"Esc", "Terminal"}, {a.keys.label(actAsk), i18n.T("schließen")}}
 		case q.question == "":
-			return [][2]string{{"⏎", "fragen"}, {"Esc", "Terminal"}, {a.keys.label(actAsk), "schließen"}}
+			return [][2]string{{"⏎", i18n.T("fragen")}, {"Esc", "Terminal"}, {a.keys.label(actAsk), i18n.T("schließen")}}
 		}
 		k := [][2]string{}
 		if n := len(extractCommands(agent.VisibleAnswer(q.answer.String()))); n > 0 {
-			k = append(k, [2]string{"1…" + fmt.Sprint(min(9, n)), "Befehl einfügen"})
+			k = append(k, [2]string{"1…" + fmt.Sprint(min(9, n)), i18n.T("Befehl einfügen")})
 		}
-		return append(k, [2]string{"n", "neue Frage"}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actAsk), "schließen"})
+		return append(k, [2]string{"n", i18n.T("neue Frage")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actAsk), i18n.T("schließen")})
 	case panelTunnels:
 		list := a.st.Tunnels(s.conn.ID)
 		if len(list) == 0 {
-			return [][2]string{{"n", "neuer Tunnel"}, {"Esc", "zurück"}}
+			return [][2]string{{"n", i18n.T("neuer Tunnel")}, {"Esc", i18n.T("zurück")}}
 		}
-		k := [][2]string{{"⏎", "an/aus"}}
+		k := [][2]string{{"⏎", i18n.T("an/aus")}}
 		if s.tunSel < len(list) && s.tunnels != nil {
 			if at := s.tunnels.Get(list[s.tunSel].ID); at != nil && at.URL() != "" {
 				k = append(k, [2]string{"o", "Browser"})
 			}
 		}
-		return append(k, [2]string{"n", "neu"}, [2]string{"e", "bearbeiten"}, [2]string{"d", "löschen"}, [2]string{"Esc", "zurück"})
+		return append(k, [2]string{"n", i18n.T("neu")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")}, [2]string{"Esc", i18n.T("zurück")})
 	case panelHost:
 		return a.hostPanelKeys(s)
 	}
@@ -586,21 +587,21 @@ func wrap(s string, w int) string { return lipgloss.NewStyle().Width(w).Render(s
 func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	st := a.s
 	g := &s.goal
-	b.WriteString(st.PanelTitle.Render("◎ Ziel-Modus") + st.Muted.Render("  KI-Agent") + "\n\n")
+	b.WriteString(st.PanelTitle.Render(i18n.T("◎ Ziel-Modus")) + st.Muted.Render(i18n.T("  KI-Agent")) + "\n\n")
 	if !g.active && !g.done {
-		b.WriteString(st.Text.Render("Was willst du auf "+s.conn.Alias+" erreichen?") + "\n\n")
+		b.WriteString(st.Text.Render(i18n.T("Was willst du auf ")+s.conn.Alias+i18n.T(" erreichen?")) + "\n\n")
 		g.input.SetWidth(w - 2)
 		b.WriteString(promptBlock(st.Accent.Render("› "), g.input.View()) + "\n\n")
-		b.WriteString(wrap(st.Muted.Render("Die KI zerlegt das Ziel in einzelne Befehle, erklärt jeden kurz und wartet auf "+
-			"deine Bestätigung. Sie tippt nie selbst."), w))
+		b.WriteString(wrap(st.Muted.Render(i18n.T("Die KI zerlegt das Ziel in einzelne Befehle, erklärt jeden kurz und wartet auf ")+
+			i18n.T("deine Bestätigung. Sie tippt nie selbst.")), w))
 		if rbs := a.st.Runbooks(s.conn.ID); len(rbs) > 0 {
-			b.WriteString("\n\n" + st.Muted.Render("RUNBOOKS  ↑↓ wählen · ⏎ starten") + "\n")
+			b.WriteString("\n\n" + st.Muted.Render(i18n.T("RUNBOOKS  ↑↓ wählen · ⏎ starten")) + "\n")
 			for i, rb := range rbs {
 				if i >= 8 {
-					b.WriteString(st.Muted.Render(fmt.Sprintf("  … %d weitere (Strg+Leertaste sucht)", len(rbs)-8)) + "\n")
+					b.WriteString(st.Muted.Render(fmt.Sprintf(i18n.T("  … %d weitere (Strg+Leertaste sucht)"), len(rbs)-8)) + "\n")
 					break
 				}
-				meta := plural(len(rb.Steps), "Schritt", "Schritte")
+				meta := plural(len(rb.Steps), i18n.T("Schritt"), i18n.T("Schritte"))
 				line := "▶ " + trunc(rb.Name, w-lipgloss.Width(meta)-4)
 				gap := max(1, w-lipgloss.Width(line)-lipgloss.Width(meta))
 				row := st.AI.Render("▶ ") + st.Text.Render(line[len("▶ "):]) + strings.Repeat(" ", gap) + st.Muted.Render(meta)
@@ -624,11 +625,11 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	}
 	switch {
 	case len(g.recipe) > 0:
-		b.WriteString(st.Badge.Foreground(st.T.AI).Render("▶ Runbook") + " " + st.Muted.Render(plural(len(g.recipe), "Schritt", "Schritte")+" als Vorlage") + "\n")
+		b.WriteString(st.Badge.Foreground(st.T.AI).Render(i18n.T("▶ Runbook")) + " " + st.Muted.Render(plural(len(g.recipe), i18n.T("Schritt"), i18n.T("Schritte"))+i18n.T(" als Vorlage")) + "\n")
 	case g.runbookID != "":
-		b.WriteString(st.Badge.Foreground(st.T.AI).Render("▶ als Runbook gespeichert") + "\n")
+		b.WriteString(st.Badge.Foreground(st.T.AI).Render(i18n.T("▶ als Runbook gespeichert")) + "\n")
 	}
-	b.WriteString(st.Muted.Render("Ziel") + "\n" + wrap(st.Text.Bold(true).Render(g.goal), w) + "\n\n")
+	b.WriteString(st.Muted.Render(i18n.T("Ziel")) + "\n" + wrap(st.Text.Bold(true).Render(g.goal), w) + "\n\n")
 	// Fortschritt
 	for _, d := range g.steps {
 		mark := st.OK.Render("✓ ")
@@ -638,10 +639,10 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		b.WriteString(mark + st.Muted.Render(trunc(d.Command, w-3)) + "\n")
 	}
 	if g.waiting {
-		b.WriteString(st.Warn.Render("◌ läuft … ") + st.Muted.Render(fmt.Sprintf("%ds", int(time.Since(g.waitSince).Seconds()))) + "\n")
+		b.WriteString(st.Warn.Render(i18n.T("◌ läuft … ")) + st.Muted.Render(fmt.Sprintf("%ds", int(time.Since(g.waitSince).Seconds()))) + "\n")
 	}
 	if g.manualPending {
-		b.WriteString(st.Warn.Render("◌ eingefügt, drück im Terminal ⏎") + "\n")
+		b.WriteString(st.Warn.Render(i18n.T("◌ eingefügt, drück im Terminal ⏎")) + "\n")
 	}
 	if len(g.plan) > 0 && !g.done {
 		b.WriteString("\n" + st.Muted.Render("Plan") + "\n")
@@ -652,24 +653,24 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	b.WriteString("\n")
 	switch {
 	case g.done:
-		b.WriteString(st.OK.Render("✓ Ziel erreicht") + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + st.Muted.Render("Strg+S als Runbook merken · ⏎ neues Ziel · "+a.keys.label(actGoal)+" schließen"))
+		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + st.Muted.Render(i18n.T("Strg+S als Runbook merken · ⏎ neues Ziel · ")+a.keys.label(actGoal)+i18n.T(" schließen")))
 		if s.panelFocus && g.done {
 			g.active = false
 		}
 	case g.busy:
-		b.WriteString(st.AI.Render("✦ denkt über den nächsten Schritt nach …"))
+		b.WriteString(st.AI.Render(i18n.T("✦ denkt über den nächsten Schritt nach …")))
 	case g.err != "":
 		b.WriteString(wrap(st.Danger.Render("✗ "+g.err), w))
 	case g.cur != nil && g.cur.Question != "":
-		b.WriteString(st.AI.Render("✦ Rückfrage") + "\n" + wrap(st.Text.Render(g.cur.Question), w) + "\n\n")
+		b.WriteString(st.AI.Render(i18n.T("✦ Rückfrage")) + "\n" + wrap(st.Text.Render(g.cur.Question), w) + "\n\n")
 		g.answer.SetWidth(w - 2)
 		b.WriteString(promptBlock(st.Accent.Render("› "), g.answer.View()))
 	case g.cur != nil:
 		c := g.cur
-		head := st.AI.Render("✦ Nächster Schritt")
+		head := st.AI.Render(i18n.T("✦ Nächster Schritt"))
 		box := st.Panel
 		if len(c.Danger) > 0 {
-			head = st.Danger.Render("⚠ Vorsicht: " + c.Danger[0].Reason)
+			head = st.Danger.Render(i18n.T("⚠ Vorsicht: ") + c.Danger[0].Reason)
 			box = st.DangerBox
 		}
 		cmdLine := c.Command
@@ -685,10 +686,10 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 			b.WriteString(wrap(st.Muted.Render(c.Reason), w) + "\n")
 		}
 		if c.Elevated {
-			b.WriteString(st.Warn.Render("⬆ läuft mit erhöhten Rechten (sudo)") + "\n")
+			b.WriteString(st.Warn.Render(i18n.T("⬆ läuft mit erhöhten Rechten (sudo)")) + "\n")
 		}
 		if g.armed {
-			b.WriteString("\n" + st.Danger.Render("Nochmal ⏎ zum Ausführen. Esc/s zum Abbrechen.") + "\n")
+			b.WriteString("\n" + st.Danger.Render(i18n.T("Nochmal ⏎ zum Ausführen. Esc/s zum Abbrechen.")) + "\n")
 		}
 	}
 }
@@ -696,16 +697,16 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	st := a.s
 	q := &s.ask
-	b.WriteString(st.PanelTitle.Render("✦ KI fragen") + st.Muted.Render("  mit Terminal-Kontext") + "\n\n")
+	b.WriteString(st.PanelTitle.Render(i18n.T("✦ KI fragen")) + st.Muted.Render(i18n.T("  mit Terminal-Kontext")) + "\n\n")
 	q.input.SetWidth(w - 2)
 	if q.input.Focused() || q.question == "" {
 		b.WriteString(promptBlock(st.Accent.Render("› "), q.input.View()) + "\n\n")
 	} else {
-		b.WriteString(st.Muted.Render("Frage") + "\n" + wrap(st.Text.Bold(true).Render(q.question), w) + "\n\n")
+		b.WriteString(st.Muted.Render(i18n.T("Frage")) + "\n" + wrap(st.Text.Bold(true).Render(q.question), w) + "\n\n")
 	}
 	ans := agent.VisibleAnswer(q.answer.String())
 	if ans == "" && q.busy && q.answer.Len() > 0 {
-		b.WriteString(st.Muted.Render("denkt nach …") + "\n")
+		b.WriteString(st.Muted.Render(i18n.T("denkt nach …")) + "\n")
 	}
 	if ans != "" {
 		// Codeblöcke nummerieren, damit 1…9 sie einfügen kann
@@ -736,10 +737,10 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 
 func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 	st := a.s
-	b.WriteString(st.PanelTitle.Foreground(st.T.Accent).Render("⇄ Tunnel & Web-Services") + "\n\n")
+	b.WriteString(st.PanelTitle.Foreground(st.T.Accent).Render(i18n.T("⇄ Tunnel & Web-Services")) + "\n\n")
 	list := a.st.Tunnels(s.conn.ID)
 	if len(list) == 0 {
-		b.WriteString(st.Muted.Render("Noch keine Tunnel für diese Verbindung.\nn = neuer Tunnel (z. B. -L 3000:localhost:3000)"))
+		b.WriteString(st.Muted.Render(i18n.T("Noch keine Tunnel für diese Verbindung.\nn = neuer Tunnel (z. B. -L 3000:localhost:3000)")))
 		return
 	}
 	for i, t := range list {
@@ -766,12 +767,12 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		b.WriteString("  " + st.Muted.Render(t.Spec()) + "\n")
 		if at != nil {
 			if u := at.URL(); u != "" {
-				b.WriteString("  " + a.z.click(st.Accent.Underline(true).Render(u)+st.Muted.Render("  o öffnen"),
+				b.WriteString("  " + a.z.click(st.Accent.Underline(true).Render(u)+st.Muted.Render(i18n.T("  o öffnen")),
 					func(tea.Mouse, bool) tea.Cmd { _ = sshx.OpenBrowser(u); return nil }) + "\n")
 			} else {
-				b.WriteString("  " + st.Text.Render("lauscht auf "+at.Addr) + "\n")
+				b.WriteString("  " + st.Text.Render(i18n.T("lauscht auf ")+at.Addr) + "\n")
 			}
-			b.WriteString("  " + st.Muted.Render(fmt.Sprintf("%d offen · %d gesamt · ↓%s ↑%s", at.Conns.Load(), at.Total.Load(),
+			b.WriteString("  " + st.Muted.Render(fmt.Sprintf(i18n.T("%d offen · %d gesamt · ↓%s ↑%s"), at.Conns.Load(), at.Total.Load(),
 				human(at.BytesIn.Load()), human(at.BytesOut.Load()))) + "\n")
 			if e, _ := at.LastError.Load().(string); e != "" {
 				b.WriteString("  " + st.Danger.Render(trunc(e, w-4)) + "\n")
@@ -867,7 +868,7 @@ func (a *App) saveRunbook(s *session) {
 		goal = strings.TrimSpace(g.goal)
 	}
 	if goal == "" {
-		a.flash("Kein Ziel zum Speichern")
+		a.flash(i18n.T("Kein Ziel zum Speichern"))
 		return
 	}
 	var steps []string
@@ -897,11 +898,11 @@ func (a *App) saveRunbook(s *session) {
 	}
 	saved, err := a.st.UpsertRunbook(rb)
 	if err != nil {
-		a.flash("Runbook: " + err.Error())
+		a.flash(i18n.T("Runbook: ") + err.Error())
 		return
 	}
 	if running {
 		g.runbookID = saved.ID
 	}
-	a.flash("Runbook gespeichert: " + trunc(saved.Name, 40) + " (" + plural(len(saved.Steps), "Schritt", "Schritte") + ")")
+	a.flash(i18n.T("Runbook gespeichert: ") + trunc(saved.Name, 40) + " (" + plural(len(saved.Steps), i18n.T("Schritt"), i18n.T("Schritte")) + ")")
 }

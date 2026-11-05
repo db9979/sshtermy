@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/vault"
 )
 
@@ -188,15 +189,15 @@ func (s *Store) Connection(id string) (domain.Connection, bool) {
 func Validate(c domain.Connection) error {
 	switch {
 	case strings.TrimSpace(c.Alias) == "":
-		return errors.New("Alias fehlt")
+		return errors.New(i18n.T("Alias fehlt"))
 	case strings.TrimSpace(c.Host) == "":
-		return errors.New("Host fehlt")
+		return errors.New(i18n.T("Host fehlt"))
 	case c.Port < 0 || c.Port > 65535:
-		return errors.New("Port ungültig")
+		return errors.New(i18n.T("Port ungültig"))
 	case strings.TrimSpace(c.Username) == "":
-		return errors.New("Benutzer fehlt")
+		return errors.New(i18n.T("Benutzer fehlt"))
 	case c.Auth == domain.AuthKeyFile && c.KeyPath == "" && !c.KeyPEM.IsSet():
-		return errors.New("Keyfile: Pfad oder eingebetteten Key angeben")
+		return errors.New(i18n.T("Keyfile: Pfad oder eingebetteten Key angeben"))
 	}
 	return nil
 }
@@ -498,7 +499,7 @@ func (s *Store) Runbooks(connID string) []domain.Runbook {
 func (s *Store) UpsertRunbook(r domain.Runbook) (domain.Runbook, error) {
 	r.Name, r.Goal = strings.TrimSpace(r.Name), strings.TrimSpace(r.Goal)
 	if r.Goal == "" {
-		return r, errors.New("Ziel fehlt")
+		return r, errors.New(i18n.T("Ziel fehlt"))
 	}
 	if r.Name == "" {
 		r.Name = r.Goal

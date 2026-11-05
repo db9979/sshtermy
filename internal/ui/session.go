@@ -9,6 +9,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/termemu"
@@ -282,6 +283,6 @@ func (a *App) rememberNetDevice(s *session) {
 	c.Device = domain.DeviceNetwork
 	if saved, err := a.st.UpsertConnection(c); err == nil {
 		s.conn = saved
-		a.flash(c.Alias + " als Netzwerkgerät gemerkt (ohne Systemabfrage)")
+		a.flash(c.Alias + i18n.T(" als Netzwerkgerät gemerkt (ohne Systemabfrage)"))
 	}
 }

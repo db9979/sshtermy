@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 type Message struct {
@@ -77,7 +78,7 @@ func New(cfg domain.LLMConfig) (*Client, error) {
 // einen fremden Host, außer AllowInsecure ist bewusst gesetzt.
 func Check(cfg domain.LLMConfig) error {
 	if cfg.Model == "" {
-		return errors.New("Modellname fehlt")
+		return errors.New(i18n.T("Modellname fehlt"))
 	}
 	return CheckEndpoint(cfg)
 }
@@ -87,10 +88,10 @@ func Check(cfg domain.LLMConfig) error {
 func CheckEndpoint(cfg domain.LLMConfig) error {
 	u, err := url.Parse(strings.TrimRight(cfg.BaseURL, "/"))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return errors.New("Base-URL ungültig (http(s)://host[:port]/v1)")
+		return errors.New(i18n.T("Base-URL ungültig (http(s)://host[:port]/v1)"))
 	}
 	if u.Scheme == "http" && cfg.APIKey.IsSet() && !cfg.AllowInsecure && !isLocal(u.Hostname()) {
-		return errors.New("API-Key würde unverschlüsselt (http) übertragen; https nutzen oder 'unsicher erlauben' setzen")
+		return errors.New(i18n.T("API-Key würde unverschlüsselt (http) übertragen; https nutzen oder 'unsicher erlauben' setzen"))
 	}
 	return nil
 }
@@ -152,16 +153,16 @@ func Models(ctx context.Context, cfg domain.LLMConfig) ([]string, error) {
 		} `json:"error"`
 	}
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return nil, fmt.Errorf("HTTP %d: API-Key fehlt oder ist falsch", resp.StatusCode)
+		return nil, fmt.Errorf(i18n.T("HTTP %d: API-Key fehlt oder ist falsch"), resp.StatusCode)
 	}
 	if json.Unmarshal(raw, &r) != nil {
-		return nil, fmt.Errorf("HTTP %d, keine JSON-Antwort von /models", resp.StatusCode)
+		return nil, fmt.Errorf(i18n.T("HTTP %d, keine JSON-Antwort von /models"), resp.StatusCode)
 	}
 	if r.Error != nil {
 		return nil, fmt.Errorf("%s", r.Error.Message)
 	}
 	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("HTTP %d von /models", resp.StatusCode)
+		return nil, fmt.Errorf(i18n.T("HTTP %d von /models"), resp.StatusCode)
 	}
 	var out []string
 	seen := map[string]bool{}
@@ -197,7 +198,7 @@ func Test(ctx context.Context, cfg domain.LLMConfig) TestResult {
 	var r TestResult
 	r.Models, r.ModelsErr = Models(ctx, cfg)
 	if cfg.Model == "" {
-		r.ChatErr = errors.New("kein Modell gewählt")
+		r.ChatErr = errors.New(i18n.T("kein Modell gewählt"))
 		return r
 	}
 	c, err := New(cfg)
@@ -292,7 +293,7 @@ func (c *Client) completeResult(ctx context.Context, msgs []Message, o Opts) (Re
 	}
 	var r response
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return Result{}, fmt.Errorf("LLM: HTTP %d, keine JSON-Antwort", status)
+		return Result{}, fmt.Errorf(i18n.T("LLM: HTTP %d, keine JSON-Antwort"), status)
 	}
 	if r.Error != nil {
 		return Result{}, fmt.Errorf("LLM: %s", r.Error.Message)

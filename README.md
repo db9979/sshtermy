@@ -1,357 +1,376 @@
 # sshTermy
 
-**SSH-Terminal mit KI-Copilot** für Windows 11 ARM64, Windows x86 (32/64 Bit), macOS und Linux.
-*Idee: Dominik Bornhäußer*
+🇬🇧 English · 🇩🇪 [Deutsche Version](README.de.md)
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-unterst%C3%BCtzen-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/zquu1xu570)
+**SSH terminal with an AI copilot** for Windows 11 ARM64, Windows x86 (32/64 bit), macOS and Linux.
+*Idea: Dominik Bornhäußer*
 
-Gefällt dir sshTermy? Über den Button oben, im Über-Dialog (F12 → `b`) oder nach jedem Update (die Seite öffnet sich dann einmal von selbst im Browser) kannst du einen Kaffee spendieren.
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/zquu1xu570)
 
-![Ziel-Modus](docs/bilder/03-ziel-modus.png)
+Like sshTermy? You can buy me a coffee with the button above, in the About dialog (F12 → `b`) or after every update (the page then opens once in your browser by itself).
 
-sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, kein Installer, kein cgo) mit:
+![Goal mode](docs/bilder/03-ziel-modus.png)
 
-- **Verbindungs-Manager** mit verschlüsseltem Store (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI)
-- **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
-- **Auto-Reconnect**: reißt die Leitung ab (WLAN, VPN, Standby), verbindet sshTermy die Sitzung von selbst neu, startet laufende Tunnel wieder und hängt tmux/screen wieder an (abschaltbar über die Palette)
-- **Schnellverbinden**: `user@host:port` oder `ssh -p 2222 user@host` in die Palette tippen, ohne die Verbindung anzulegen (Agent/Standard-Keys, sonst Passwort)
-- **Statuszeile pro Sitzung**: Verbindungsdauer, Latenz, Zeichensatz, Warnung bei root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) bekommen eine rote Zeile
-- **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen
-- **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, Platte, Laufzeit und offene Updates. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
-- **Config-Sicherung für Switches**: `b` sichert `show running-config` verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert
-- **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
-  die Ergebnisse stehen in Spalten nebeneinander. Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
-  Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
-- **Netzwerk-Scan** (f im Manager): ein Subnetz nach SSH-Geräten durchsuchen (nur Port und SSH-Kennung, ohne Anmeldung),
-  Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
-- **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL
-- **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
-  - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
-  - **Ghost-Text** beim Tippen (Tab übernimmt)
-  - **Folgebefehle** nach jedem Enter (Alt+1…4 fügt ein)
-  - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst
-  - **Runbooks**: Ziele mit den ausgeführten Befehlen speichern (Strg+S) und wiederverwenden, der Agent nimmt sie als Vorlage
-  - **Endpunkt-Test und Modellauswahl** in den KI-Einstellungen (Strg+T testet, Strg+L listet die Modelle von `/v1/models`)
-  - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort per 1…9 einfügen
-  - **Systemprofil pro Verbindung**: sshTermy erkennt System, Version und Befehlssatz (Linux mit Paketmanager und
-    Init-System, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware …) aus
-    SSH-Kennung, unsichtbarer Abfrage (nur Server) und dem mitgelesenen Terminal (Netzwerkgeräte, ohne Exec).
-    Das Profil geht in jeden KI-Prompt; Befehle, die das Gerät mit „% Invalid input“ ablehnt, merkt es sich und die
-    KI schlägt sie nicht mehr vor. Im Manager editierbar (System, Befehlssatz, KI-Notizen). In der Palette schreibt
-    „Für dieses System umschreiben“ einen Befehl in den passenden Dialekt um.
-  - **Fehler erklären**: schlägt ein Befehl fehl, bietet die Vorschlagszeile „Warum? & Fix“ an (Alt+0). Die KI bekommt
-    Befehl, Exit-Code und Ausgabe und antwortet mit Ursache und einfügbaren Befehlen
-- **Sitzungsprotokoll** (Manager: `l`): jede Sitzung wird lokal und verschlüsselt mitgeschrieben (Befehle, Ausgabe,
-  Fehlschläge), durchsuchbar, mit KI-Zusammenfassung einer Sitzung (`z`) oder aller Treffer (`Z`, z. B. nach einem Host
-  suchen: „Was habe ich auf Host X gemacht?“) und Markdown-Export (`x`)
-- **Sync zwischen Rechnern**: Verbindungen, Tunnel, Runbooks und Einstellungen Ende-zu-Ende verschlüsselt über einen Cloud-Ordner
-  (OneDrive, Dropbox, iCloud, Syncthing) oder direkt über dein NAS (Synology, QNAP, Nextcloud, jeder WebDAV-Server)
-- **Import** bestehender Verbindungen aus `~/.ssh/config`, PuTTY (Registry oder `.reg`-Export) und MobaXterm
-  (`MobaXterm.ini`, `.mxtsessions`), mit Jump-Hosts und Ordnern, ein Tastendruck (i im Manager)
-- **Themes** Dunkel, Hell und Hochkontrast (a im Manager) und **frei belegbare Tastenkürzel** (b im Manager)
-- **Versionierung und Auto-Update** aus GitHub Releases (signiert)
+sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer, no cgo) with:
 
-Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt aus dem Fernzugang-Assistenten von
-[speech-on-dgx-spark](https://github.com/db9979/speech-on-dgx-spark); die Technik ist hier neu in Go gebaut.
+- **Connection manager** with an encrypted store (AES-256-GCM, Argon2id, plus DPAPI on Windows)
+- **a real SSH terminal** (xterm-256color, truecolor, vim/htop/tmux, scrollback, tabs, jump hosts)
+- **Auto-reconnect**: if the line drops (Wi-Fi, VPN, standby), sshTermy reconnects the session by itself, restarts running tunnels and reattaches tmux/screen (can be turned off in the palette)
+- **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
+- **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag „Produktion“, „prod“, „live“) get a red line
+- **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders
+- **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
+- **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice
+- **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
+  the results are shown side by side in columns. The danger rules apply here too: red needs ⏎ twice.
+  Servers get every step via exec (with exit code), network devices get the commands typed into their shell („-- MORE --“ is paged automatically).
+- **Network scan** (f in the manager): search a subnet for SSH devices (only port and SSH banner, no login),
+  recognize switches and routers by their banner and create the hits as connections with one key press.
+- **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL
+- **AI copilot** for any OpenAI-compatible endpoint (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
+  - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question, plus suggestions, tunnels, connections and actions
+  - **Ghost text** while typing (Tab accepts)
+  - **Follow-up commands** after every Enter (Alt+1…4 inserts)
+  - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
+  - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
+  - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
+  - **Ask AI** (F3) with terminal context, insert commands from the answer with 1…9
+  - **System profile per connection**: sshTermy detects system, version and command set (Linux with package manager and
+    init system, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware …) from the
+    SSH banner, an invisible query (servers only) and the terminal it reads along (network devices, no exec).
+    The profile goes into every AI prompt; commands the device rejects with „% Invalid input“ are remembered and the
+    AI stops suggesting them. Editable in the manager (system, command set, AI notes). In the palette,
+    „Rewrite for this system“ rewrites a command into the matching dialect.
+  - **Explain errors**: when a command fails, the suggestion line offers „Why? & Fix“ (Alt+0). The AI gets the
+    command, exit code and output and answers with the cause and commands you can insert
+- **Session log** (manager: `l`): every session is recorded locally and encrypted (commands, output,
+  failures), searchable, with an AI summary of one session (`z`) or of all matches (`Z`, e.g. search for a host:
+  „What did I do on host X?“) and Markdown export (`x`)
+- **Sync between computers**: connections, tunnels, runbooks and settings end-to-end encrypted via a cloud folder
+  (OneDrive, Dropbox, iCloud, Syncthing) or directly via your NAS (Synology, QNAP, Nextcloud, any WebDAV server)
+- **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export) and MobaXterm
+  (`MobaXterm.ini`, `.mxtsessions`), with jump hosts and folders, one key press (i in the manager)
+- **Themes** dark, light and high contrast (a in the manager) and **freely assignable keyboard shortcuts** (b in the manager)
+- **English and German**: switch the language in the palette („Language“/„Sprache“) or in the About dialog (F12 → `l`);
+  the choice is saved and synced. On first start sshTermy follows the system language
+- **Versioning and auto-update** from GitHub Releases (signed)
+
+The AI interaction concept (suggestions, goal mode, fixed danger rules) comes from the remote access assistant of
+[speech-on-dgx-spark](https://github.com/db9979/speech-on-dgx-spark); the technology was rebuilt from scratch in Go.
 
 ---
 
 ## Installation
 
-Lade die passende Datei aus den [Releases](https://github.com/db9979/sshtermy/releases/latest):
+Download the matching file from the [Releases](https://github.com/db9979/sshtermy/releases/latest):
 
-| System | Datei |
+| System | File |
 |---|---|
 | Windows 11 ARM64 (Surface Pro X/11, Snapdragon X) | `sshtermy_windows_arm64.exe` |
-| Windows x86 32 Bit | `sshtermy_windows_386.exe` |
+| Windows x86 32 bit | `sshtermy_windows_386.exe` |
 | Windows x64 | `sshtermy_windows_amd64.exe` |
 | macOS Apple Silicon / Intel | `sshtermy_darwin_arm64` / `sshtermy_darwin_amd64` |
 | Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` |
 
-Empfohlen unter Windows: **Windows Terminal** (Truecolor, F-Tasten, Unicode). macOS: einmal
+Recommended on Windows: **Windows Terminal** (truecolor, function keys, Unicode). macOS: once
 `xattr -d com.apple.quarantine sshtermy_darwin_arm64 && chmod +x sshtermy_darwin_arm64`.
 
 ```
-sshtermy              # starten
-sshtermy --version    # Version, Commit, Build-Datum
-sshtermy --update     # auf die neueste Version aktualisieren
-sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimation aus“)
+sshtermy              # start
+sshtermy --version    # version, commit, build date
+sshtermy --update     # update to the newest version
+sshtermy --no-intro   # without the start animation (permanently: palette „Start animation off“)
 ```
 
-## Bedienung
+## Usage
 
-| Wo | Taste | Wirkung |
+| Where | Key | Effect |
 |---|---|---|
-| Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
-| | i / a / b | Verbindungen importieren / Aussehen wechseln / Tastenkürzel anpassen |
-| | m / f | Broadcast an mehrere Hosts / Netzwerk-Scan |
-| Ordner | o / r / v / d | Ordner anlegen („A / B“ verschachtelt) / umbenennen / verschieben / auflösen (Inhalt bleibt) |
-| | ← → Space / - + | Ordner zu-/aufklappen / alle zu bzw. auf |
-| | Shift+↑↓ (Alt+↑↓), Maus ziehen | Reihenfolge ändern, in einen Ordner ziehen |
-| | # , /#tag | nach Tag filtern, Suche über Name, Host, Ordner, Tags |
-| Broadcast | Space / g / a, Tab, Strg+S | Host / Ordner / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
-| | ←→ / ↑↓ / z / c / r / x | Host-Spalte / blättern / groß / Ausgabe kopieren / nochmal / abbrechen |
-| Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
-| Terminal | Tab oder → | Ghost-Text übernehmen |
-| | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
-| | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
-| | F2 | Ziel-Modus (Agent) |
-| | F3 | KI fragen |
-| | F4 | Tunnel an/aus, Web-Service im Browser öffnen |
-| | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), n Ordner, d löschen, . versteckte |
-| | F6 | Host-Übersicht: r/⏎ abfragen, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
-| | F7 / F8 | vorheriger / nächster Tab |
-| | F10 | zurück zum Manager (Sitzungen laufen weiter) |
-| | Strg+Klick / Rechtsklick | URL im Browser öffnen / Menü zu Link, IP oder Host: verbinden (direkt oder über den Server), Ping vom Server oder von hier, kopieren |
-| | Einfügen | mehrzeilig erst Vorschau (⏎ einfügen, o ohne letztes Enter, Esc abbrechen); Palette „Einfügeschutz aus“ |
-| Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
-| | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |
-| KI-Eingaben | ⇧⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |
-| Protokolle | / / z / Z / x / d / a | suchen / KI-Zusammenfassung / alle Treffer zusammenfassen / Markdown-Export / löschen / Mitschreiben an/aus |
-| KI-Einstellungen | Strg+T / Strg+L | Endpunkt testen / Modell aus der Liste des Endpunkts wählen |
-| Überall | Strg+Leertaste | Befehlspalette: ⏎ als Ziel starten, Tab KI fragen, ↑↓ Vorschlag/Tunnel/Verbindung wählen |
-| | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden |
+| Manager | ⏎ / n / e / d / / / t / s / y / l | connect / new / edit / delete / search / tunnel / AI settings / sync / session logs |
+| | i / a / b | import connections / switch appearance / customize shortcuts |
+| | m / f | broadcast to several hosts / network scan |
+| Folders | o / r / v / d | create folder („A / B“ nested) / rename / move / dissolve (content stays) |
+| | ← → Space / - + | collapse/expand folder / collapse or expand all |
+| | Shift+↑↓ (Alt+↑↓), drag with the mouse | change the order, drag into a folder |
+| | # , /#tag | filter by tag, search by name, host, folder, tags |
+| Broadcast | Space / g / a, Tab, Ctrl+S | select host / folder / all, hosts·source·command, check and confirm |
+| | ←→ / ↑↓ / z / c / r / x | host column / scroll / enlarge / copy output / again / cancel |
+| Network scan | Ctrl+S, Space / a, ⏎ | start scan, select hits, create as connections |
+| Terminal | Tab or → | accept ghost text |
+| | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
+| | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
+| | F2 | goal mode (agent) |
+| | F3 | ask AI |
+| | F4 | tunnels on/off, open a web service in the browser |
+| | F5 | files (SFTP): Tab side, c copy (up/down), n folder, d delete, . hidden |
+| | F6 | host overview: r/⏎ query, b back up switch config, ↑↓ state, d diff, v view |
+| | F7 / F8 | previous / next tab |
+| | F10 | back to the manager (sessions keep running) |
+| | Ctrl+click / right-click | open URL in the browser / menu for a link, IP or host: connect (directly or via the server), ping from the server or from here, copy |
+| | Paste | multi-line shows a preview first (⏎ paste, o without the last Enter, Esc cancel); palette „Paste guard off“ |
+| Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |
+| | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |
+| AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |
+| Logs | / / z / Z / x / d / a | search / AI summary / summarize all matches / Markdown export / delete / recording on/off |
+| AI settings | Ctrl+T / Ctrl+L | test endpoint / choose a model from the endpoint's list |
+| Everywhere | Ctrl+Space | command palette: ⏎ start as goal, Tab ask AI, ↑↓ choose suggestion/tunnel/connection |
+| | F1 / F12 / Ctrl+Q | help / about + update / quit |
+| | F12 → l | switch language (English ↔ German) |
 
-Warum F-Tasten statt `Strg+A`? `Strg+A` ist in bash/zsh „Zeilenanfang“ und das Präfix von GNU screen. sshTermy
-belegt nur Tasten, die Shells und Vollbildprogramme praktisch nie brauchen.
+Why function keys instead of `Ctrl+A`? In bash/zsh `Ctrl+A` means „beginning of line“ and it is the prefix of GNU screen.
+sshTermy only binds keys that shells and full-screen programs practically never need.
 
-**Tasten anpassen** (b im Manager oder Palette → „Tastenkürzel anpassen“): Aktion wählen, ⏎, neue Taste drücken.
-Entf setzt eine Aktion zurück, r alle. Doppelte Belegungen werden rot markiert. Alt+⏎ ist gesperrt, weil
-Windows Terminal damit auf Vollbild schaltet. Die Belegung wandert mit dem Sync auf deine anderen Rechner.
+**Customize keys** (b in the manager or palette → „Customize shortcuts“): pick an action, ⏎, press the new key.
+Del resets an action, r resets all. Duplicate bindings are marked red. Alt+⏎ is blocked because
+Windows Terminal uses it for full screen. Your bindings travel to your other computers with the sync.
 
-**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast (oder Palette → „Aussehen“). Die Schriftgröße
-gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − unter macOS.
+**Language:** palette (Ctrl+Space) → „Language“ or F12 → `l` switches between English and German, immediately and
+without a restart. The choice is stored in the settings (synced to your other computers) and additionally, unencrypted,
+in the file `language` in the config folder so that the unlock screen already knows it. Without that file the system
+language decides (`LANG`/`LC_ALL`, on Windows the display language): German on a German system, otherwise English.
+The instructions to the AI stay in German internally; with English selected, the AI answers in English.
 
-**Import** (i im Manager): sshTermy sucht selbst nach `~/.ssh/config` (mit `Include`, `Host *`-Vorgaben und
-`ProxyJump`), den PuTTY-Sitzungen in der Registry und `%APPDATA%\MobaXterm\MobaXterm.ini`. Neue Ziele sind
-vorausgewählt, schon vorhandene abgewählt; ⏎ übernimmt. Mit f lädst du eine Datei von woanders, z. B. einen
-PuTTY-Export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), eine portable `MobaXterm.ini` oder eine
-`.mxtsessions`-Datei. Passwörter werden nicht übernommen, sshTermy fragt beim ersten Verbinden. PuTTY-Keys
-(`.ppk`) bitte in Pageant laden oder mit PuTTYgen nach OpenSSH exportieren.
+**Appearance:** a in the manager switches dark → light → high contrast (or palette → „Appearance“). The font size
+belongs to the terminal window: Ctrl + plus/minus in Windows Terminal, ⌘ + / − on macOS.
+
+**Import** (i in the manager): sshTermy looks for `~/.ssh/config` (with `Include`, `Host *` defaults and
+`ProxyJump`), the PuTTY sessions in the registry and `%APPDATA%\MobaXterm\MobaXterm.ini` by itself. New targets are
+preselected, existing ones deselected; ⏎ imports. With f you load a file from somewhere else, e.g. a
+PuTTY export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), a portable `MobaXterm.ini` or an
+`.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. Please load PuTTY keys
+(`.ppk`) into Pageant or export them to OpenSSH with PuTTYgen.
 
 ## Screens
 
-| Entsperren | Verbindungs-Manager |
+The screenshots show the German interface; the English one looks the same.
+
+| Unlock | Connection manager |
 |---|---|
 | ![](docs/bilder/01-entsperren.png) | ![](docs/bilder/02-manager.png) |
-| **Ghost-Text** | **Gefährlicher Befehl** |
+| **Ghost text** | **Dangerous command** |
 | ![](docs/bilder/07-ghost.png) | ![](docs/bilder/04-gefahr.png) |
-| **KI fragen** | **Tunnel & Web-Services** |
+| **Ask AI** | **Tunnels & web services** |
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
-**Befehlspalette (Strg+Leertaste):** ein Feld für alles, Text wird zum Ziel oder zur Frage, darunter Vorschläge, Tunnel, Verbindungen und Aktionen.
+**Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question, below it suggestions, tunnels, connections and actions.
 
-![Befehlspalette](docs/bilder/09-palette.png)
+![Command palette](docs/bilder/09-palette.png)
 
-| Dateien (SFTP, F5) | Runbooks im Ziel-Modus |
+| Files (SFTP, F5) | Runbooks in goal mode |
 |---|---|
 | ![](docs/bilder/12-dateien.png) | ![](docs/bilder/11-runbooks.png) |
-| **KI-Endpunkt testen, Modell wählen** | |
+| **Test the AI endpoint, choose a model** | |
 | ![](docs/bilder/10-ki-test.png) | |
-| **Host-Übersicht Server (F6)** | **Switch: Übersicht und Config-Sicherung** |
+| **Host overview server (F6)** | **Switch: overview and config backup** |
 | ![](docs/bilder/15-host-server.png) | ![](docs/bilder/14-host-switch.png) |
 
-Die Bilder sind echte Aufnahmen der App (gegen einen Test-SSH-Server und ein Test-LLM aus `tools/dev`).
+The images are real captures of the app (against a test SSH server and a test LLM from `tools/dev`).
 
 ---
 
-## Architektur
+## Architecture
 
 ```
-cmd/sshtermy/          Einstieg: Flags (--version, --update), Store öffnen, TUI starten
-cmd/sshtermy-sign/     Ed25519-Schlüssel erzeugen, Releases signieren (CI)
+cmd/sshtermy/          entry point: flags (--version, --update), open store, start TUI
+cmd/sshtermy-sign/     create Ed25519 keys, sign releases (CI)
 internal/
-  domain/              reine Datenmodelle: Connection, Tunnel, LLMConfig, Settings, Secret
-  vault/               Verschlüsselung: AES-256-GCM, Argon2id, DPAPI (Windows)
-  store/               Repository über dem Vault: CRUD, Pfade (%APPDATA%\sshtermy)
-  sshx/                SSH: Dial (+Jump-Host), Auth (Passwort/Key/Agent), Host-Keys (TOFU),
-                       PTY-Shell, Tunnel-Manager (-L/-R/-D), SOCKS5-Server, Browser öffnen,
-                       Befehle per Exec oder in die Shell getippt (Netzwerkgeräte)
-  broadcast/           Befehl/Runbook parallel auf mehreren Hosts, Gefahrenprüfung
-  netscan/             Subnetz nach SSH durchsuchen, Banner lesen, Gerätetyp erkennen
-  llm/                 OpenAI-kompatibler Client (/v1/chat/completions, Streaming per SSE)
-  agent/               KI-Logik: Ghost-Text, Folgebefehle, Ziel-Modus, Frage; Prompts,
-                       striktes Parsen, Entfernen von Geheimnissen
-  sessionlog/          Sitzungsprotokolle: verschlüsselte Dateien je Sitzung, Suche, Markdown
-  safety/              feste Gefahrenregeln (Linux/macOS und Windows/PowerShell)
-  termemu/             Terminal-Emulation (charmbracelet/x/vt): Raster, Scrollback, Ghost-Overlay
-  update/              Auto-Update aus GitHub Releases (SHA-256 + Ed25519)
-  version/             Name, Version, Credits an genau einer Stelle
-  ui/                  Oberfläche (bubbletea v2, lipgloss v2): Screens, Panels, Formulare
-tools/dev/             Test-SSH-Server, Test-LLM, ANSI→HTML für Screenshots
+  domain/              pure data models: Connection, Tunnel, LLMConfig, Settings, Secret
+  vault/               encryption: AES-256-GCM, Argon2id, DPAPI (Windows)
+  store/               repository on top of the vault: CRUD, paths (%APPDATA%\sshtermy)
+  sshx/                SSH: dial (+jump host), auth (password/key/agent), host keys (TOFU),
+                       PTY shell, tunnel manager (-L/-R/-D), SOCKS5 server, open browser,
+                       commands via exec or typed into the shell (network devices)
+  broadcast/           command/runbook in parallel on several hosts, danger check
+  netscan/             scan a subnet for SSH, read banners, detect device type
+  llm/                 OpenAI-compatible client (/v1/chat/completions, streaming via SSE)
+  agent/               AI logic: ghost text, follow-up commands, goal mode, questions; prompts,
+                       strict parsing, removal of secrets
+  sessionlog/          session logs: encrypted files per session, search, Markdown
+  safety/              fixed danger rules (Linux/macOS and Windows/PowerShell)
+  termemu/             terminal emulation (charmbracelet/x/vt): grid, scrollback, ghost overlay
+  update/              auto-update from GitHub Releases (SHA-256 + Ed25519)
+  version/             name, version, credits in exactly one place
+  i18n/                interface language: the German texts are the keys, en.go holds the English version
+  ui/                  interface (bubbletea v2, lipgloss v2): screens, panels, forms
+tools/dev/             test SSH server, test LLM, ANSI→HTML for screenshots
 ```
 
-Abhängigkeiten zeigen nur nach innen: `ui → agent/sshx/store/update → llm/safety/vault → domain`.
-`domain` kennt nichts außer der Standardbibliothek.
+Dependencies only point inwards: `ui → agent/sshx/store/update → llm/safety/vault → domain`.
+`domain` knows nothing but the standard library.
 
-### Ablauf
+### Flow
 
 ```
-Start ─▶ Entsperren (DPAPI automatisch │ Master-Passwort │ Ersteinrichtung)
-      ─▶ Verbindungs-Manager
-           ├─ n/e  Formular (Alias, Host, Port, Benutzer, Auth, Ordner, Tags, Jump-Host-Auswahl mit Suche)
-           ├─ t    Tunnel-Formular (local/remote/dynamic, Web-Service, Autostart)
-           ├─ s    KI-Einstellungen (Base-URL, API-Key, Modell, Tokens, Temperatur …)
-           └─ ⏎    Host-Key prüfen ─▶ Terminal-Tab
-                     ├─ Ghost-Text (Pause beim Tippen → Vorschlag → Tab)
-                     ├─ Enter → Ausgabe ruht → Folgebefehle als Chips
-                     ├─ F2 Ziel → Schritt vorschlagen → ⏎ → Ausgabe ruht, Prompt da → nächster Schritt … ✓ fertig
-                     ├─ F3 Frage (gestreamte Antwort, Befehle nummeriert)
-                     └─ F4 Tunnel (Status, Zähler, URL)
+Start ─▶ Unlock (DPAPI automatically │ master password │ first setup)
+      ─▶ Connection manager
+           ├─ n/e  form (alias, host, port, user, auth, folder, tags, jump host picker with search)
+           ├─ t    tunnel form (local/remote/dynamic, web service, autostart)
+           ├─ s    AI settings (base URL, API key, model, tokens, temperature …)
+           └─ ⏎    check host key ─▶ terminal tab
+                     ├─ ghost text (pause while typing → suggestion → Tab)
+                     ├─ Enter → output settles → follow-up commands as chips
+                     ├─ F2 goal → suggest a step → ⏎ → output settles, prompt is back → next step … ✓ done
+                     ├─ F3 question (streamed answer, numbered commands)
+                     └─ F4 tunnels (status, counters, URL)
 ```
 
-### Technik-Entscheidungen
+### Technical decisions
 
-| Thema | Wahl | Grund |
+| Topic | Choice | Reason |
 |---|---|---|
-| Sprache | Go 1.26 | Ein statisches Binary pro Plattform, Cross-Compile ohne Toolchain (`GOOS=windows GOARCH=arm64`), kein cgo |
-| TUI | bubbletea v2 + lipgloss v2 | aktueller Charm-Stack: echte Cursor-Steuerung, Ebenen für Overlays, Kitty-Keyboard, Windows-Konsole |
-| Terminal-Emulation | charmbracelet/x/vt | aktiv gepflegt, Truecolor, Alt-Screen, Scrollback, Breitzeichen; kodiert Tasten passend zum Modus |
-| SSH | golang.org/x/crypto/ssh | Referenz-Implementierung in Go, Agent, known_hosts, Forwarding |
-| Windows-Agent | Named Pipe via go-winio | Windows-OpenSSH-Agent (`\\.\pipe\openssh-ssh-agent`), 1Password, KeePassXC |
-| Speicher | verschlüsselte JSON-Datei | eine Datei, atomar geschrieben, auch Metadaten (Hosts, Benutzer) verschlüsselt |
+| Language | Go 1.26 | one static binary per platform, cross-compiling without a toolchain (`GOOS=windows GOARCH=arm64`), no cgo |
+| TUI | bubbletea v2 + lipgloss v2 | current Charm stack: real cursor control, layers for overlays, Kitty keyboard, Windows console |
+| Terminal emulation | charmbracelet/x/vt | actively maintained, truecolor, alt screen, scrollback, wide characters; encodes keys to match the mode |
+| SSH | golang.org/x/crypto/ssh | reference implementation in Go, agent, known_hosts, forwarding |
+| Windows agent | named pipe via go-winio | Windows OpenSSH agent (`\\.\pipe\openssh-ssh-agent`), 1Password, KeePassXC |
+| Storage | encrypted JSON file | one file, written atomically, metadata (hosts, users) encrypted too |
+| Languages | own `i18n` package | German texts in the code are the keys, a test makes sure every text has an English version |
 
 ---
 
-## Sicherheit
+## Security
 
-### Verschlüsselter Store (`internal/vault`)
+### Encrypted store (`internal/vault`)
 
 ```
-Master-Passwort ──Argon2id (t=3, 64 MiB, p=4)──▶ KEK ──AES-256-GCM──┐
-                                                                     ├─▶ DEK (256 Bit, zufällig)
-Windows-Anmeldung ──DPAPI CryptProtectData───────────────────────────┘        │
+Master password ──Argon2id (t=3, 64 MiB, p=4)──▶ KEK ──AES-256-GCM──┐
+                                                                     ├─▶ DEK (256 bit, random)
+Windows login ──DPAPI CryptProtectData───────────────────────────────┘        │
                                                                                ▼
-                                         AES-256-GCM(DEK) über den ganzen Store
+                                         AES-256-GCM(DEK) over the whole store
 ```
 
-- **DEK** (Data Encryption Key) aus `crypto/rand` verschlüsselt den **gesamten** Store in einem Stück
-  (Passwörter, Private Keys, Passphrasen, API-Keys und auch Hostnamen, Benutzer, Tunnel).
-- **AES-256-GCM** mit frischer 96-Bit-Nonce bei jedem Speichern. Der Header (KDF-Parameter, Wraps) ist als
-  *Additional Authenticated Data* mitgeprüft: ein Herabsetzen der KDF-Parameter oder Vertauschen von Teilen
-  lässt das Entschlüsseln scheitern (Test `TestTamperedHeaderIsRejected`).
-- **Master-Passwort** wird nie gespeichert; **Argon2id** (RFC 9106) leitet daraus den KEK ab, der den DEK einwickelt.
-- **DPAPI** (nur Windows, `CryptProtectData` ohne `LOCAL_MACHINE`, mit eigenem Entropy-Wert) bindet eine zweite
-  Kopie des DEK an dein Windows-Konto: nach der Windows-Anmeldung entsperrt sich sshTermy ohne Eingabe, ist aber
-  für andere Konten und Rechner unlesbar. Das Master-Passwort bleibt als Wiederherstellung (Umzug, macOS).
-- Datei `store.vault` unter `%APPDATA%\sshtermy` (macOS `~/Library/Application Support/sshtermy`, Linux
-  `~/.config/sshtermy`), Rechte 0600, atomar geschrieben. `SSHTERMY_HOME` für eine portable Installation.
-- Automatische Sperre nach Leerlauf (`LockAfterMin`), DEK wird beim Sperren genullt (best effort).
-- `domain.Secret` gibt sich in Logs und Fehlermeldungen nie preis (`••••••`).
+- The **DEK** (data encryption key) from `crypto/rand` encrypts the **whole** store in one piece
+  (passwords, private keys, passphrases, API keys and also host names, users, tunnels).
+- **AES-256-GCM** with a fresh 96-bit nonce on every save. The header (KDF parameters, wraps) is checked as
+  *additional authenticated data*: lowering the KDF parameters or swapping parts makes decryption fail
+  (test `TestTamperedHeaderIsRejected`).
+- The **master password** is never stored; **Argon2id** (RFC 9106) derives the KEK from it, which wraps the DEK.
+- **DPAPI** (Windows only, `CryptProtectData` without `LOCAL_MACHINE`, with its own entropy value) binds a second
+  copy of the DEK to your Windows account: after the Windows login sshTermy unlocks without input, but it stays
+  unreadable for other accounts and computers. The master password remains as recovery (moving, macOS).
+- File `store.vault` in `%APPDATA%\sshtermy` (macOS `~/Library/Application Support/sshtermy`, Linux
+  `~/.config/sshtermy`), permissions 0600, written atomically. `SSHTERMY_HOME` for a portable installation.
+- Automatic lock after idle time (`LockAfterMin`), the DEK is zeroed when locking (best effort).
+- `domain.Secret` never reveals itself in logs and error messages (`••••••`).
 
 ### SSH
 
-- **Host-Keys:** Trust On First Use mit SHA-256-Fingerprint im Dialog, eigene `known_hosts`. Ein **geänderter**
-  Host-Key bricht die Verbindung ab, ohne „trotzdem verbinden“ (möglicher Man-in-the-Middle).
-- Agent-Auth bevorzugt: Private Keys bleiben im Agent. Eingebettete Keys liegen nur verschlüsselt im Store.
-- Tunnel binden standardmäßig auf `127.0.0.1`. SOCKS5 löst Namen auf dem Server auf (keine lokalen DNS-Leaks).
+- **Host keys:** trust on first use with a SHA-256 fingerprint in the dialog, own `known_hosts`. A **changed**
+  host key aborts the connection, without „connect anyway“ (possible man-in-the-middle).
+- Agent auth preferred: private keys stay in the agent. Embedded keys are only stored encrypted in the store.
+- Tunnels bind to `127.0.0.1` by default. SOCKS5 resolves names on the server (no local DNS leaks).
 
-### KI
+### AI
 
-- Die KI **tippt nie selbst**. Jeder Befehl ist ein Vorschlag; erst deine Bestätigung sendet ihn ans PTY.
-- **Feste Gefahrenregeln** (`internal/safety`), nie das Modell, entscheiden über Rot: `rm -rf`, `dd`, `mkfs`,
-  `curl | sh`, Neustart, Firewall leeren, Benutzer ändern, `git reset --hard`, Pakete entfernen, Docker prune,
-  SSH-Dienst stoppen; für Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)` u. a.
-  Rote Befehle brauchen zwei Bestätigungen; bearbeitete Befehle werden neu geprüft. `sudo` wird markiert.
-- **Einfügeschutz:** Dieselben Regeln prüfen jede eingefügte Zeile. Ein Treffer zeigt die Vorschau mit der
-  roten Zeile und braucht zwei Bestätigungen, auch wenn die Mehrzeilen-Vorschau abgeschaltet ist.
-- **Prompt Injection:** alles aus dem Terminal steht als Material in einem Block `<<< … >>>`, dessen Marker im
-  Inhalt entschärft werden; der System-Prompt sagt, dass Material nie eine Anweisung ist.
-- **Striktes Parsen:** nur das erwartete JSON, keine Steuerzeichen (ESC-Sequenzen aus dem Modell kommen nie auf
-  den Bildschirm), Längenlimits, `<think>` von Reasoning-Modellen wird entfernt.
-- **Geheimnisse** (Private Keys, AWS/GitHub/OpenAI-Keys, Bearer-Token, `password=…`, `user:pass@`) werden vor dem
-  Senden entfernt; an einer Passwortabfrage gibt es keinen Ghost-Text.
-- API-Key geht nie per `http://` an einen fremden Host (außer bewusst erlaubt).
-- Ratenlimit im Ziel-Modus (Standard 6 Schritte/min, max. 40 Schritte pro Ziel).
+- The AI **never types by itself**. Every command is a suggestion; only your confirmation sends it to the PTY.
+- **Fixed danger rules** (`internal/safety`), never the model, decide what is red: `rm -rf`, `dd`, `mkfs`,
+  `curl | sh`, reboot, flushing the firewall, changing users, `git reset --hard`, removing packages, Docker prune,
+  stopping the SSH service; on Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)` and more.
+  Red commands need two confirmations; edited commands are checked again. `sudo` is marked.
+- **Paste guard:** the same rules check every pasted line. A hit shows the preview with the
+  red line and needs two confirmations, even if the multi-line preview is turned off.
+- **Prompt injection:** everything from the terminal is passed as material in a `<<< … >>>` block whose markers are
+  defused inside the content; the system prompt says material is never an instruction.
+- **Strict parsing:** only the expected JSON, no control characters (ESC sequences from the model never reach
+  the screen), length limits, `<think>` from reasoning models is removed.
+- **Secrets** (private keys, AWS/GitHub/OpenAI keys, bearer tokens, `password=…`, `user:pass@`) are removed before
+  sending; there is no ghost text at a password prompt.
+- The API key is never sent via `http://` to a foreign host (unless explicitly allowed).
+- Rate limit in goal mode (default 6 steps/min, at most 40 steps per goal).
 
-### Fehler erkennen und Sitzungsprotokoll
+### Error detection and session log
 
-- **Wann ist ein Befehl fertig?** Nach Enter, sobald wieder ein leerer Prompt dasteht und die Ausgabe ruht. Seine
-  Ausgabe ist der Text zwischen Befehlszeile und neuem Prompt.
-- **Exit-Code:** Meldet die Shell ihn per Shell-Integration (OSC 133;D oder 633;D, wie bei VS Code, WezTerm, iTerm2),
-  zählt der echte Code (130 = Strg+C gilt nicht als Fehler). Für bash reicht z. B. in der `~/.bashrc`:
+- **When is a command done?** After Enter, as soon as an empty prompt is back and the output settles. Its
+  output is the text between the command line and the new prompt.
+- **Exit code:** if the shell reports it via shell integration (OSC 133;D or 633;D, as in VS Code, WezTerm, iTerm2),
+  the real code counts (130 = Ctrl+C is not a failure). For bash, e.g. this in `~/.bashrc` is enough:
   `PROMPT_COMMAND='printf "\033]133;D;%s\007" $?'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`.
-  Ohne Shell-Integration schätzt sshTermy anhand typischer Fehlermeldungen in den letzten Zeilen (`command not found`,
-  `No such file`, `Permission denied`, `E: …`, `% Invalid input` bei Switches u. a.). Das ist nur ein Angebot, nie eine Sperre.
-- **Protokolle** liegen nur lokal in `logs/` im Konfigurationsordner (nie im Sync), eine Datei je Sitzung,
-  AES-256-GCM mit einem aus dem Store-Schlüssel abgeleiteten Schlüssel (HMAC-SHA256); die AAD bindet Format und Datei-ID.
-  Ohne entsperrten Store ist kein Protokoll lesbar.
-- **Nicht protokolliert:** Passwort-Eingaben (sie sind kein Befehl am Prompt und werden nicht angezeigt) und Befehle mit
-  einem **Leerzeichen am Anfang** (wie `HISTCONTROL=ignorespace`). Vor dem Speichern entfernt dieselbe Geheimnis-Filterung wie
-  für die KI Tokens, `password=…`, `--password …` und private Schlüssel. Mitschreiben lässt sich über die Palette oder `a` in den
-  Protokollen ganz abschalten. Der Markdown-Export (in `Downloads`) ist Klartext und passiert nur auf Wunsch.
+  Without shell integration sshTermy estimates from typical error messages in the last lines (`command not found`,
+  `No such file`, `Permission denied`, `E: …`, `% Invalid input` on switches and more). This is only an offer, never a block.
+- **Logs** are stored only locally in `logs/` in the config folder (never synced), one file per session,
+  AES-256-GCM with a key derived from the store key (HMAC-SHA256); the AAD binds format and file ID.
+  Without an unlocked store no log is readable.
+- **Not logged:** password inputs (they are not a command at the prompt and are not displayed) and commands with
+  a **leading space** (like `HISTCONTROL=ignorespace`). Before saving, the same secret filter as for the AI removes
+  tokens, `password=…`, `--password …` and private keys. Recording can be turned off entirely via the palette or `a` in the
+  logs. The Markdown export (to `Downloads`) is plain text and only happens on request.
 
-### Auto-Update
+### Auto-update
 
-- Prüft `releases/latest` von `db9979/sshtermy`, nur HTTPS zu github.com, Weiterleitungen geprüft.
-- **SHA-256** aus `checksums.txt` und **Ed25519-Signatur** `checksums.txt.sig` mit eingebautem Public Key.
-- Austausch: laufende Datei → `.old`, neue an ihren Platz (geht auch unter Windows), beim nächsten Start aufgeräumt.
+- Checks `releases/latest` of `db9979/sshtermy`, HTTPS to github.com only, redirects are checked.
+- **SHA-256** from `checksums.txt` and **Ed25519 signature** `checksums.txt.sig` with a built-in public key.
+- Replacement: running file → `.old`, new one in its place (works on Windows too), cleaned up on the next start.
 
 ---
 
-## Versionierung und Releases
+## Versioning and releases
 
-- Version = `MAJOR.MINOR` aus [`VERSION`](VERSION) + Anzahl der Commits, z. B. `1.0.42`. **Jeder Push auf `main`
-  zählt automatisch hoch** und erzeugt ein Release (`.github/workflows/release.yml`) mit allen Plattformen,
-  `checksums.txt` und Signatur. Die App zeigt die Version in der Kopfzeile, im Über-Dialog (F12) und per `--version`.
-- Neue Hauptversion: `VERSION` auf z. B. `1.1` setzen.
-- Signierschlüssel einmalig anlegen:
+- Version = `MAJOR.MINOR` from [`VERSION`](VERSION) + number of commits, e.g. `1.0.42`. **Every push to `main`
+  counts up automatically** and creates a release (`.github/workflows/release.yml`) with all platforms,
+  `checksums.txt` and signature. The app shows the version in the header, in the About dialog (F12) and via `--version`.
+- New major version: set `VERSION` to e.g. `1.1`.
+- Create the signing key once:
   ```
   go run ./cmd/sshtermy-sign keygen
   ```
-  Public Key als Repository-**Variable** `UPDATE_PUBKEY`, Private Key als **Secret** `UPDATE_SIGNING_KEY`
-  (Settings → Secrets and variables → Actions). Ohne Schlüssel prüft das Update nur die SHA-256-Summe.
+  Public key as repository **variable** `UPDATE_PUBKEY`, private key as **secret** `UPDATE_SIGNING_KEY`
+  (Settings → Secrets and variables → Actions). Without a key the update only checks the SHA-256 sum.
 
-## Entwickeln
+## Development
 
 ```
-make test         # go vet + Tests
+make test         # go vet + tests
 make build        # bin/sshtermy
-make dist         # alle Plattformen nach dist/ + checksums.txt
+make dist         # all platforms to dist/ + checksums.txt
 ```
 
-Lokal testen ohne echten Server und ohne GPU:
+**Interface texts** are written in German in the code and go through `i18n.T("…")` (formats: `i18n.F`, fixed
+errors: `i18n.NewError`). Every new text needs an entry in `internal/i18n/en.go`; `go test ./internal/i18n`
+reports missing entries and mismatched placeholders.
+
+Test locally without a real server and without a GPU:
 
 ```
-cd tools/dev/devsshd && go run .          # Test-SSH-Server auf 127.0.0.1:2222 (jedes Passwort)
-python3 tools/dev/fakellm.py              # Test-LLM auf 127.0.0.1:11434 (/v1/chat/completions)
+cd tools/dev/devsshd && go run .          # test SSH server on 127.0.0.1:2222 (any password)
+python3 tools/dev/fakellm.py              # test LLM on 127.0.0.1:11434 (/v1/chat/completions)
 SSHTERMY_HOME=/tmp/sth go run ./cmd/sshtermy
 ```
 
-## Nächste Schritte (Vorschläge)
+## Next steps (suggestions)
 
-1. Windows-Ressourcen (Icon, Versionsinfo) und Code-Signing der `.exe`, macOS Notarisierung.
-2. macOS-Schlüsselbund als zweiter Entsperr-Weg (wie DPAPI unter Windows).
+1. Windows resources (icon, version info) and code signing of the `.exe`, macOS notarization.
+2. macOS keychain as a second unlock path (like DPAPI on Windows).
 
-## Sync zwischen Rechnern
+## Sync between computers
 
-Im Manager **y** drücken. Der Assistent fragt nur das Nötigste und prüft jede Angabe sofort live
-(Name, Port, Zertifikat, Anmeldung, Ordner, Schreibrecht, vorhandene Sync-Datei). Bei Fehlern steht direkt
-darunter, was zu tun ist, z. B. wo man in DSM oder QTS WebDAV einschaltet.
+Press **y** in the manager. The wizard only asks for what is needed and checks every entry live right away
+(name, port, certificate, login, folder, write permission, existing sync file). If something fails, the line
+below says what to do, e.g. where to enable WebDAV in DSM or QTS.
 
-![Sync-Assistent](docs/bilder/13-sync.png)
+![Sync wizard](docs/bilder/13-sync.png)
 
-| Speicherort | Was du angibst | Hinweise |
+| Location | What you enter | Notes |
 |---|---|---|
-| **Ordner (Cloud)** | einen Ordner in OneDrive, Dropbox, iCloud Drive, Nextcloud-Client, Syncthing oder auf einem Netzlaufwerk | Gefundene Cloud-Ordner werden vorgeschlagen. Konfliktkopien des Cloud-Dienstes werden automatisch eingearbeitet. |
-| **NAS / WebDAV: Synology** | Name/IP, Benutzer, Passwort | Paket „WebDAV Server“ installieren, HTTPS aktivieren. sshTermy findet Port 5006/5005 selbst. Ordner z. B. `/home/sshtermy`. |
-| **NAS / WebDAV: QNAP** | Name/IP, Benutzer, Passwort | Systemsteuerung › Netzwerk- & Dateidienste › WebDAV aktivieren. Ports 8081/443/8080/80 werden durchprobiert. |
-| **NAS / WebDAV: Nextcloud** | Adresse, Benutzer, App-Passwort | Pfad `/remote.php/dav/files/<Benutzer>/` wird automatisch gebaut. |
-| **Andere** | volle WebDAV-URL | jeder WebDAV-Server (Apache, nginx, rclone serve webdav …) |
+| **Folder (cloud)** | a folder in OneDrive, Dropbox, iCloud Drive, the Nextcloud client, Syncthing or on a network drive | Cloud folders that are found are suggested. Conflict copies of the cloud service are merged automatically. |
+| **NAS / WebDAV: Synology** | name/IP, user, password | Install the „WebDAV Server“ package, enable HTTPS. sshTermy finds port 5006/5005 by itself. Folder e.g. `/home/sshtermy`. |
+| **NAS / WebDAV: QNAP** | name/IP, user, password | Control Panel › Network & File Services › enable WebDAV. Ports 8081/443/8080/80 are tried. |
+| **NAS / WebDAV: Nextcloud** | address, user, app password | The path `/remote.php/dav/files/<user>/` is built automatically. |
+| **Other** | full WebDAV URL | any WebDAV server (Apache, nginx, rclone serve webdav …) |
 
-Selbstsignierte NAS-Zertifikate: sshTermy zeigt den SHA-256-Fingerprint und merkt sich nach deiner Bestätigung genau
-dieses Zertifikat (Pinning). Ändert es sich später, bricht der Sync mit einer Warnung ab.
+Self-signed NAS certificates: sshTermy shows the SHA-256 fingerprint and, after your confirmation, remembers exactly
+this certificate (pinning). If it changes later, the sync aborts with a warning.
 
-**Sicherheit:** Synchronisiert wird nur die Datei `sshtermy-sync.vault`. Sie wird vor dem Hochladen mit einem eigenen
-Sync-Schlüssel verschlüsselt (AES-256-GCM), der mit deinem Sync-Passwort (Argon2id) gesichert ist. NAS und Cloud sehen
-keinen Klartext, auch keine Hostnamen. Der lokale Store bleibt wie bisher per Master-Passwort/DPAPI an den jeweiligen
-Rechner gebunden; das Sync-Passwort gibst du pro Rechner nur einmal bei der Einrichtung ein.
+**Security:** only the file `sshtermy-sync.vault` is synced. Before uploading it is encrypted with its own
+sync key (AES-256-GCM), which is protected by your sync password (Argon2id). NAS and cloud never see
+plain text, not even host names. The local store stays bound to each computer via master password/DPAPI as before;
+you enter the sync password only once per computer during setup.
 
-**Zusammenführung pro Eintrag:** Jede Verbindung und jeder Tunnel trägt einen Änderungszeitstempel. Beim Abgleich gewinnt
-pro Eintrag die neuere Änderung, gelöschte Einträge werden als Grabstein gemerkt (180 Tage), und „zuletzt benutzt“
-zählt nicht als Änderung. So gehen Änderungen auf zwei Rechnern nicht verloren, solange sie verschiedene Einträge
-betreffen. Abgeglichen wird beim Start, wenige Sekunden nach jeder Änderung und alle 5 Minuten; manuell über die Palette
-(„Jetzt synchronisieren“). Nicht synchronisiert werden rechnerspezifische Dinge wie DPAPI und die Sync-Einstellungen selbst.
+**Merging per entry:** every connection and every tunnel carries a change timestamp. When syncing, the newer change
+wins per entry, deleted entries are remembered as tombstones (180 days), and „last used“
+does not count as a change. This way changes on two computers are not lost as long as they affect different entries.
+Syncing happens at start, a few seconds after every change and every 5 minutes; manually via the palette
+(„Sync now“). Computer-specific things like DPAPI and the sync settings themselves are not synced.
 
-Zum Ausprobieren ohne NAS: `go run ./tools/dev/devdav` (http auf Port 5005) oder `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
-(selbstsigniert), Benutzer `dominik`, Passwort `nas-pw`.
+To try it without a NAS: `go run ./tools/dev/devdav` (http on port 5005) or `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
+(self-signed), user `dominik`, password `nas-pw`.

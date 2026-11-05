@@ -6,6 +6,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/version"
 )
 
@@ -48,6 +49,7 @@ var helpSections = []helpSection{
 		{"⇧F9", "Tastenzeile erklären"},
 		{"F12", "Über & Update"},
 		{"F12 w", "Was ist neu"},
+		{"F12 l", "Sprache: Deutsch/English"},
 		{"Strg+Q", "beenden"},
 	}},
 	{hcManager, "≡", "Verbindungs-Manager", "F10", false, [][2]string{
@@ -214,7 +216,7 @@ const (
 )
 
 func (a *App) helpModal() *modal {
-	return &modal{kind: mHelp, title: "Tastenkürzel", ctx: a.helpContext()}
+	return &modal{kind: mHelp, title: i18n.T("Tastenkürzel"), ctx: a.helpContext()}
 }
 
 func (a *App) helpContext() helpCtx {
@@ -261,18 +263,18 @@ func (s Styles) helpSection(sec helpSection, ctx helpCtx) []string {
 	if sec.ai {
 		head = lipgloss.NewStyle().Foreground(s.T.AI).Bold(true)
 	}
-	title := head.Render(sec.icon + " " + sec.title)
+	title := head.Render(sec.icon + " " + i18n.T(sec.title))
 	if sec.key != "" {
 		title += " " + s.Muted.Render(relabelDefault(sec.key, sec.ctx))
 	}
 	if sec.ctx != hcNone && sec.ctx == ctx {
-		title += " " + s.Badge.Render("hier")
+		title += " " + s.Badge.Render(i18n.T("hier"))
 	}
 	lines := []string{title}
 	for _, r := range sec.rows {
 		k := s.Key.Render(relabelDefault(r[0], sec.ctx))
 		k += strings.Repeat(" ", max(0, helpKeyW-lipgloss.Width(k)))
-		lines = append(lines, k+s.Text.Render(ansi.Truncate(r[1], helpColW-helpKeyW, "…")))
+		lines = append(lines, k+s.Text.Render(ansi.Truncate(i18n.T(r[1]), helpColW-helpKeyW, "…")))
 	}
 	return lines
 }
@@ -343,17 +345,17 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	body := lipgloss.JoinHorizontal(lipgloss.Top, cols...)
 	cw := lipgloss.Width(body)
 
-	note := s.Muted.Render("Esc führt aus jedem Panel zurück ins Terminal.")
+	note := s.Muted.Render(i18n.T("Esc führt aus jedem Panel zurück ins Terminal."))
 	cw = max(cw, lipgloss.Width(note))
-	header := s.Accent.Render("? Tastenkürzel") + s.Muted.Render("  ·  "+version.Short())
-	warn := s.ChipDanger.Render("ROT") + " " + s.Text.Render("Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. ") +
-		s.AI.Render("KI-Vorschläge") + s.Text.Render(" werden nur eingefügt, nie ausgeführt.")
+	header := s.Accent.Render(i18n.T("? Tastenkürzel")) + s.Muted.Render("  ·  "+version.Short())
+	warn := s.ChipDanger.Render(i18n.T("ROT")) + " " + s.Text.Render(i18n.T("Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. ")) +
+		s.AI.Render(i18n.T("KI-Vorschläge")) + s.Text.Render(i18n.T(" werden nur eingefügt, nie ausgeführt."))
 	warn = lipgloss.NewStyle().Width(cw).Render(warn)
 
 	// Höhe begrenzen: Rand des Fensters (2), Modal-Rahmen und Innenabstand (4),
 	// Kopf (2), Fuß (Leerzeile, Warnung, Hinweiszeile).
 	bodyLines := strings.Split(body, "\n")
-	const closeHint, scrollHint = "beliebige Taste schließt", "▾ mehr · ↑↓ blättern · "
+	closeHint, scrollHint := i18n.T("beliebige Taste schließt"), i18n.T("▾ mehr · ")+i18n.T("↑↓ blättern · ")
 	footH := 1
 	if lipgloss.Width(note)+2+lipgloss.Width(scrollHint+closeHint) > cw {
 		footH = 2
@@ -363,9 +365,9 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	if total := len(bodyLines); total > maxBody {
 		m.scroll = max(0, min(m.scroll, total-maxBody))
 		bodyLines = bodyLines[m.scroll : m.scroll+maxBody]
-		hint = "↑↓ blättern · " + hint
+		hint = i18n.T("↑↓ blättern · ") + hint
 		if m.scroll+maxBody < total {
-			hint = "▾ mehr · " + hint
+			hint = i18n.T("▾ mehr · ") + hint
 		}
 	} else {
 		m.scroll = 0

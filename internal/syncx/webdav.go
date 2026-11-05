@@ -15,6 +15,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // WebDAV spricht mit einem WebDAV-Ordner (Synology „WebDAV Server“, QNAP,
@@ -42,7 +44,7 @@ type CertError struct {
 	Reason      string
 }
 
-func (e *CertError) Error() string { return "Zertifikat nicht vertrauenswürdig: " + e.Reason }
+func (e *CertError) Error() string { return i18n.T("Zertifikat nicht vertrauenswürdig: ") + e.Reason }
 
 // HTTPError: Server hat mit einem unerwarteten Status geantwortet.
 type HTTPError struct {
@@ -75,10 +77,10 @@ func (w *WebDAV) http() *http.Client {
 		tc.InsecureSkipVerify = true // ersetzt durch die Pin-Prüfung unten
 		tc.VerifyPeerCertificate = func(raw [][]byte, _ [][]*x509.Certificate) error {
 			if len(raw) == 0 {
-				return errors.New("kein Zertifikat")
+				return errors.New(i18n.T("kein Zertifikat"))
 			}
 			if p, _ := certPin(raw[0]); p != want {
-				return &CertError{Reason: "das Zertifikat hat sich geändert (anderer Fingerprint als gespeichert)"}
+				return &CertError{Reason: i18n.T("das Zertifikat hat sich geändert (anderer Fingerprint als gespeichert)")}
 			}
 			return nil
 		}
@@ -92,7 +94,7 @@ func (w *WebDAV) http() *http.Client {
 	w.client = &http.Client{Transport: tr, Timeout: 30 * time.Second,
 		CheckRedirect: func(r *http.Request, via []*http.Request) error {
 			if len(via) > 5 {
-				return errors.New("zu viele Weiterleitungen")
+				return errors.New(i18n.T("zu viele Weiterleitungen"))
 			}
 			// Zugangsdaten nur an denselben Host weitergeben
 			if r.URL.Host != via[0].URL.Host {
@@ -144,13 +146,13 @@ func classifyNetErr(err error) error {
 	switch {
 	case errors.As(err, &ua) && ua.Cert != nil:
 		pin, fp := certPin(ua.Cert.Raw)
-		return &CertError{Fingerprint: fp, Pin: pin, Subject: ua.Cert.Subject.CommonName, Reason: "selbstsigniert oder unbekannte Zertifizierungsstelle"}
+		return &CertError{Fingerprint: fp, Pin: pin, Subject: ua.Cert.Subject.CommonName, Reason: i18n.T("selbstsigniert oder unbekannte Zertifizierungsstelle")}
 	case errors.As(err, &hn) && hn.Certificate != nil:
 		pin, fp := certPin(hn.Certificate.Raw)
-		return &CertError{Fingerprint: fp, Pin: pin, Subject: hn.Certificate.Subject.CommonName, Reason: "ausgestellt für einen anderen Namen (" + hn.Host + ")"}
+		return &CertError{Fingerprint: fp, Pin: pin, Subject: hn.Certificate.Subject.CommonName, Reason: i18n.T("ausgestellt für einen anderen Namen (") + hn.Host + ")"}
 	case errors.As(err, &ci) && ci.Cert != nil:
 		pin, fp := certPin(ci.Cert.Raw)
-		return &CertError{Fingerprint: fp, Pin: pin, Subject: ci.Cert.Subject.CommonName, Reason: "abgelaufen oder ungültig"}
+		return &CertError{Fingerprint: fp, Pin: pin, Subject: ci.Cert.Subject.CommonName, Reason: i18n.T("abgelaufen oder ungültig")}
 	}
 	return err
 }

@@ -56,6 +56,8 @@ import (
 	"sync"
 
 	"golang.org/x/crypto/argon2"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 const (
@@ -71,10 +73,10 @@ const (
 )
 
 var (
-	ErrLocked        = errors.New("vault: gesperrt")
-	ErrWrongPassword = errors.New("vault: Master-Passwort falsch oder Datei verändert")
-	ErrNoUnlockPath  = errors.New("vault: kein Entsperr-Weg verfügbar (Passwort nötig)")
-	ErrDPAPI         = errors.New("vault: DPAPI auf diesem System nicht verfügbar")
+	ErrLocked        = i18n.NewError("vault: gesperrt")
+	ErrWrongPassword = i18n.NewError("vault: Master-Passwort falsch oder Datei verändert")
+	ErrNoUnlockPath  = i18n.NewError("vault: kein Entsperr-Weg verfügbar (Passwort nötig)")
+	ErrDPAPI         = i18n.NewError("vault: DPAPI auf diesem System nicht verfügbar")
 )
 
 // KDFParams für Argon2id. Werte werden im Header gespeichert, damit sie später
@@ -141,10 +143,10 @@ func Open(path string) (*Vault, error) {
 	}
 	var f file
 	if err := json.Unmarshal(raw, &f); err != nil {
-		return nil, fmt.Errorf("vault: Datei unlesbar: %w", err)
+		return nil, fmt.Errorf(i18n.T("vault: Datei unlesbar: %w"), err)
 	}
 	if f.Format != formatName || f.Version != formatVer {
-		return nil, fmt.Errorf("vault: unbekanntes Format %q v%d", f.Format, f.Version)
+		return nil, fmt.Errorf(i18n.T("vault: unbekanntes Format %q v%d"), f.Format, f.Version)
 	}
 	v.hdr = f.header
 	return v, nil
@@ -172,7 +174,7 @@ func (v *Vault) findWrap(kind string) *Wrap {
 // gewünscht und verfügbar) DPAPI-Wrap.
 func (v *Vault) Create(password []byte, useDPAPI bool) error {
 	if len(password) < 8 {
-		return errors.New("vault: Master-Passwort braucht mindestens 8 Zeichen")
+		return errors.New(i18n.T("vault: Master-Passwort braucht mindestens 8 Zeichen"))
 	}
 	dek := make([]byte, keyLen)
 	if _, err := rand.Read(dek); err != nil {
@@ -190,7 +192,7 @@ func (v *Vault) Create(password []byte, useDPAPI bool) error {
 	if useDPAPI && DPAPIAvailable() {
 		blob, err := dpapiProtect(dek, []byte(dpapiEntropy))
 		if err != nil {
-			return fmt.Errorf("vault: DPAPI: %w", err)
+			return fmt.Errorf(i18n.T("vault: DPAPI: %w"), err)
 		}
 		hdr.Wraps = append(hdr.Wraps, Wrap{Kind: "dpapi", Blob: blob})
 	}
@@ -208,7 +210,7 @@ func (v *Vault) UnlockDPAPI() error {
 	}
 	dek, err := dpapiUnprotect(w.Blob, []byte(dpapiEntropy))
 	if err != nil || len(dek) != keyLen {
-		return fmt.Errorf("vault: DPAPI-Entsperren fehlgeschlagen: %v", err)
+		return fmt.Errorf(i18n.T("vault: DPAPI-Entsperren fehlgeschlagen: %v"), err)
 	}
 	v.mu.Lock()
 	v.dek = dek
@@ -401,7 +403,7 @@ func (p KDFParams) Derive(password []byte) []byte { return p.derive(password) }
 func (p KDFParams) Check() error {
 	if p.Alg != "argon2id" || len(p.Salt) < saltLen || p.Time < 1 || p.Time > 20 ||
 		p.MemoryKiB < 19*1024 || p.MemoryKiB > 1024*1024 || p.Threads < 1 {
-		return errors.New("vault: ungültige KDF-Parameter")
+		return errors.New(i18n.T("vault: ungültige KDF-Parameter"))
 	}
 	return nil
 }
@@ -457,7 +459,7 @@ func (v *Vault) OpenBlob(blob, aad []byte) ([]byte, error) {
 	}
 	const ns = 12 // GCM-Standard-Nonce
 	if len(blob) < ns {
-		return nil, errors.New("Datei beschädigt")
+		return nil, errors.New(i18n.T("Datei beschädigt"))
 	}
 	return gcmOpen(v.dek, blob[:ns], blob[ns:], aad)
 }

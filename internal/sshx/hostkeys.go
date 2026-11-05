@@ -10,6 +10,8 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // HostKeyPrompt wird bei einem unbekannten Host gefragt (Trust On First Use).
@@ -19,7 +21,7 @@ type HostKeyPrompt func(host string, fingerprint string, keyType string) bool
 // ErrHostKeyChanged: der Server zeigt einen anderen Schlüssel als gespeichert.
 // Das kann ein Man-in-the-Middle sein. sshtermy bietet hier bewusst KEIN
 // "trotzdem verbinden" an; der Eintrag muss bewusst gelöscht werden.
-var ErrHostKeyChanged = errors.New("ACHTUNG: Host-Key hat sich geändert (möglicher Man-in-the-Middle). Verbindung abgebrochen")
+var ErrHostKeyChanged = i18n.NewError("ACHTUNG: Host-Key hat sich geändert (möglicher Man-in-the-Middle). Verbindung abgebrochen")
 
 // HostKeyStore verwaltet eine known_hosts-Datei im OpenSSH-Format.
 type HostKeyStore struct {
@@ -54,7 +56,7 @@ func (h *HostKeyStore) Callback(prompt HostKeyPrompt) ssh.HostKeyCallback {
 			// und der Dialog reagierte auf keine Taste mehr.
 			fp := ssh.FingerprintSHA256(key)
 			if prompt == nil || !prompt(hostname, fp, key.Type()) {
-				return fmt.Errorf("Host-Key von %s abgelehnt", hostname)
+				return fmt.Errorf(i18n.T("Host-Key von %s abgelehnt"), hostname)
 			}
 			h.mu.Lock()
 			defer h.mu.Unlock()

@@ -8,6 +8,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/vault"
 	"github.com/db9979/sshtermy/internal/version"
@@ -25,8 +27,8 @@ type unlockState struct {
 
 func newUnlock(st *store.Store) unlockState {
 	u := unlockState{setup: !st.V.Exists(), pw: newInput("", true), pw2: newInput("", true), dpapi: vault.DPAPIAvailable()}
-	u.pw.Placeholder = "Master-Passwort"
-	u.pw2.Placeholder = "wiederholen"
+	u.pw.Placeholder = i18n.T("Master-Passwort")
+	u.pw2.Placeholder = i18n.T("wiederholen")
 	u.pw.Focus()
 	return u
 }
@@ -61,6 +63,10 @@ func (a *App) updateUnlock(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		a.scr = scrManager
+		if u.setup {
+			// Neuer Store: die Sprache des Entsperr-Bildschirms übernehmen.
+			_ = a.st.UpdateSettings(func(s *domain.Settings) { s.Language = i18n.Lang() })
+		}
 		a.lookSig = ""
 		a.applyLook()
 		a.mgr = newManager()
@@ -101,7 +107,7 @@ func (a *App) updateUnlock(msg tea.Msg) tea.Cmd {
 					return u.pw2.Focus()
 				}
 				if u.pw.Value() != u.pw2.Value() {
-					u.err = "Passwörter stimmen nicht überein"
+					u.err = i18n.T("Passwörter stimmen nicht überein")
 					return nil
 				}
 				dp := u.dpapi
@@ -136,20 +142,20 @@ func (a *App) viewUnlock() string {
 	s := a.s
 	var b strings.Builder
 	b.WriteString(s.Accent.Render(logoArt) + "\n")
-	b.WriteString(s.Muted.Render(" "+version.Slogan+" · v"+version.Version) + "\n")
-	b.WriteString(s.Muted.Italic(true).Render(" "+version.Idea) + "\n\n")
+	b.WriteString(s.Muted.Render(" "+i18n.T(version.Slogan)+" · v"+version.Version) + "\n")
+	b.WriteString(s.Muted.Italic(true).Render(" "+i18n.T(version.Idea)) + "\n\n")
 	if u.setup {
-		b.WriteString(s.Text.Render("Willkommen! Lege ein Master-Passwort für deinen verschlüsselten Store an.") + "\n")
-		b.WriteString(s.Muted.Render("Es wird nie gespeichert. Argon2id + AES-256-GCM schützen Passwörter, Keys und API-Keys.") + "\n\n")
-		b.WriteString(s.Label.Render("Master-Passwort") + u.pw.View() + "\n")
-		b.WriteString(s.Label.Render("Wiederholen") + u.pw2.View() + "\n")
+		b.WriteString(s.Text.Render(i18n.T("Willkommen! Lege ein Master-Passwort für deinen verschlüsselten Store an.")) + "\n")
+		b.WriteString(s.Muted.Render(i18n.T("Es wird nie gespeichert. Argon2id + AES-256-GCM schützen Passwörter, Keys und API-Keys.")) + "\n\n")
+		b.WriteString(s.Label.Render(i18n.T("Master-Passwort")) + u.pw.View() + "\n")
+		b.WriteString(s.Label.Render(i18n.T("Wiederholen")) + u.pw2.View() + "\n")
 		mark := "○"
 		if u.dpapi {
 			mark = s.OK.Render("●")
 		}
-		lbl := "Mit Windows-Anmeldung entsperren (DPAPI)"
+		lbl := i18n.T("Mit Windows-Anmeldung entsperren (DPAPI)")
 		if !vault.DPAPIAvailable() {
-			lbl = "DPAPI nur unter Windows (" + runtime.GOOS + ": nur Master-Passwort)"
+			lbl = i18n.T("DPAPI nur unter Windows (") + runtime.GOOS + i18n.T(": nur Master-Passwort)")
 		}
 		focus := "  "
 		if u.focus == 2 {
@@ -157,16 +163,16 @@ func (a *App) viewUnlock() string {
 		}
 		b.WriteString(focus + mark + " " + s.Text.Render(lbl) + "\n")
 	} else {
-		b.WriteString(s.Text.Render("Store gesperrt.") + "\n\n")
-		b.WriteString(s.Label.Render("Master-Passwort") + u.pw.View() + "\n")
+		b.WriteString(s.Text.Render(i18n.T("Store gesperrt.")) + "\n\n")
+		b.WriteString(s.Label.Render(i18n.T("Master-Passwort")) + u.pw.View() + "\n")
 	}
 	if u.busy {
-		b.WriteString("\n" + s.AI.Render("⠿ Schlüssel wird abgeleitet (Argon2id) …"))
+		b.WriteString("\n" + s.AI.Render(i18n.T("⠿ Schlüssel wird abgeleitet (Argon2id) …")))
 	}
 	if u.err != "" {
 		b.WriteString("\n" + s.Danger.Render("✗ "+u.err))
 	}
-	b.WriteString("\n\n" + s.Muted.Render("⏎ weiter · Tab Feld · Esc beenden"))
+	b.WriteString("\n\n" + s.Muted.Render(i18n.T("⏎ weiter · Tab Feld · Esc beenden")))
 	box := s.Modal.Width(min(86, a.w-4)).Render(b.String())
 	return lipgloss.Place(a.w, a.h, lipgloss.Center, lipgloss.Center, box)
 }

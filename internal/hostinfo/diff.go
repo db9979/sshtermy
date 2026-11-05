@@ -1,5 +1,6 @@
 package hostinfo
 
+import "github.com/db9979/sshtermy/internal/i18n"
 import "fmt"
 
 // DiffOp: Art einer Diff-Zeile.
@@ -118,7 +119,7 @@ func Diff(a, b []string, ctx int) (lines []DiffLine, added, removed int) {
 			if o.op == DiffDel {
 				ln++
 			}
-			lines = append(lines, DiffLine{DiffHunk, fmt.Sprintf("@@ Zeile %d @@", max(1, ln))})
+			lines = append(lines, DiffLine{DiffHunk, fmt.Sprintf(i18n.T("@@ Zeile %d @@"), max(1, ln))})
 		}
 		lines = append(lines, DiffLine{o.op, o.text})
 		last = i

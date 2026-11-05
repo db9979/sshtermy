@@ -17,6 +17,7 @@ import (
 	"github.com/atotto/clipboard"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -234,9 +235,9 @@ type menuItem struct {
 
 func (a *App) openURL(u string) tea.Cmd {
 	if err := sshx.OpenBrowser(u); err != nil {
-		a.flash("Browser ließ sich nicht öffnen: " + err.Error())
+		a.flash(i18n.T("Browser ließ sich nicht öffnen: ") + err.Error())
 	} else {
-		a.flash("Öffne im Browser: " + trunc(u, 60))
+		a.flash(i18n.T("Öffne im Browser: ") + trunc(u, 60))
 	}
 	return nil
 }
@@ -245,28 +246,28 @@ func (a *App) openURL(u string) tea.Cmd {
 func (a *App) linkMenu(s *session, l link, x, y int) *modal {
 	var items []menuItem
 	copyIt := func(t string) menuItem {
-		return menuItem{label: "Kopieren", hint: trunc(t, 30), run: func() tea.Cmd {
+		return menuItem{label: i18n.T("Kopieren"), hint: trunc(t, 30), run: func() tea.Cmd {
 			go func() { _ = clipboard.WriteAll(t) }()
-			a.flash("Kopiert: " + trunc(t, 50))
+			a.flash(i18n.T("Kopiert: ") + trunc(t, 50))
 			return tea.SetClipboard(t)
 		}}
 	}
 	title := trunc(l.text, 40)
 	if l.kind == lkURL {
-		items = append(items, menuItem{label: "Im Browser öffnen", hint: "Strg+Klick", run: func() tea.Cmd { return a.openURL(l.text) }}, copyIt(l.text))
+		items = append(items, menuItem{label: i18n.T("Im Browser öffnen"), hint: "Strg+Klick", run: func() tea.Cmd { return a.openURL(l.text) }}, copyIt(l.text))
 	} else {
 		target := l.host
 		if l.port != 0 {
 			target = net.JoinHostPort(l.host, strconv.Itoa(l.port))
 		}
-		items = append(items, menuItem{label: "Verbinden (SSH)", hint: a.connectHint(s, l), run: func() tea.Cmd { return a.connectTo(s, l, false) }})
+		items = append(items, menuItem{label: i18n.T("Verbinden (SSH)"), hint: a.connectHint(s, l), run: func() tea.Cmd { return a.connectTo(s, l, false) }})
 		if s.conn.ID != "" && !strings.HasPrefix(s.conn.ID, quickPrefix) {
-			items = append(items, menuItem{label: "Verbinden über " + trunc(s.conn.Alias, 18), hint: "Jump-Host", run: func() tea.Cmd { return a.connectTo(s, l, true) }})
+			items = append(items, menuItem{label: i18n.T("Verbinden über ") + trunc(s.conn.Alias, 18), hint: i18n.T("Jump-Host"), run: func() tea.Cmd { return a.connectTo(s, l, true) }})
 		}
 		items = append(items,
-			menuItem{label: "Ping vom Server", hint: trunc(s.conn.Alias, 16), run: func() tea.Cmd { return a.pingRemote(s, l.host) }},
-			menuItem{label: "Ping von diesem Rechner", hint: "lokal", run: func() tea.Cmd { return a.pingLocal(l.host) }},
-			menuItem{label: "Im Browser öffnen", hint: "https://", run: func() tea.Cmd {
+			menuItem{label: i18n.T("Ping vom Server"), hint: trunc(s.conn.Alias, 16), run: func() tea.Cmd { return a.pingRemote(s, l.host) }},
+			menuItem{label: i18n.T("Ping von diesem Rechner"), hint: i18n.T("lokal"), run: func() tea.Cmd { return a.pingLocal(l.host) }},
+			menuItem{label: i18n.T("Im Browser öffnen"), hint: "https://", run: func() tea.Cmd {
 				u := "https://" + target
 				if l.ip && strings.Contains(l.host, ":") && l.port == 0 {
 					u = "https://[" + l.host + "]"
@@ -275,7 +276,7 @@ func (a *App) linkMenu(s *session, l link, x, y int) *modal {
 			}},
 			copyIt(target))
 	}
-	items = append(items, menuItem{label: "Einfügen", hint: "Zwischenablage", run: func() tea.Cmd { return a.pasteClipboard(s) }})
+	items = append(items, menuItem{label: i18n.T("Einfügen"), hint: i18n.T("Zwischenablage"), run: func() tea.Cmd { return a.pasteClipboard(s) }})
 	return &modal{kind: mMenu, title: title, items: items, at: [2]int{x, y}, anchored: true}
 }
 
@@ -360,7 +361,7 @@ func (a *App) pingRemote(s *session, host string) tea.Cmd {
 		s.term.SendText(cmd + "\r")
 	} else {
 		s.term.SendText(cmd)
-		a.flash("Ping eingefügt, ⏎ zum Ausführen")
+		a.flash(i18n.T("Ping eingefügt, ⏎ zum Ausführen"))
 	}
 	return nil
 }
@@ -372,7 +373,7 @@ type pingDoneMsg struct {
 
 // pingLocal pingt vom eigenen Rechner aus und zeigt das Ergebnis im Dialog.
 func (a *App) pingLocal(host string) tea.Cmd {
-	a.modal = &modal{kind: mBusy, title: "Ping " + host, body: "Pinge " + host + " von diesem Rechner …"}
+	a.modal = &modal{kind: mBusy, title: i18n.T("Ping ") + host, body: i18n.T("Pinge ") + host + i18n.T(" von diesem Rechner …")}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
@@ -393,15 +394,15 @@ func (a *App) onPingDone(m pingDoneMsg) {
 	if m.err != nil && body == "" {
 		body = m.err.Error()
 	}
-	head := "✓ erreichbar"
+	head := i18n.T("✓ erreichbar")
 	var ee *exec.ExitError
 	switch {
 	case errors.As(m.err, &ee):
-		head = "✗ nicht erreichbar"
+		head = i18n.T("✗ nicht erreichbar")
 	case m.err != nil:
-		head = "✗ Ping nicht möglich"
+		head = i18n.T("✗ Ping nicht möglich")
 	}
-	a.modal = &modal{kind: mInfo, title: "Ping " + m.host + " · " + head, body: lastLines(body, 14)}
+	a.modal = &modal{kind: mInfo, title: i18n.T("Ping ") + m.host + " · " + head, body: lastLines(body, 14)}
 }
 
 func lastLines(s string, n int) string {

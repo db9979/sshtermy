@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/vault"
 )
 
@@ -80,14 +81,14 @@ func (s *Store) lockData() error {
 func (s *Store) CreateFolder(path string) (string, error) {
 	path = domain.NormPath(path)
 	if path == "" {
-		return "", errors.New("Name fehlt")
+		return "", errors.New(i18n.T("Name fehlt"))
 	}
 	if err := s.lockData(); err != nil {
 		return "", err
 	}
 	if s.folderIdx(path) >= 0 || s.hasConnIn(path) {
 		s.mu.Unlock()
-		return path, errors.New("„" + path + "“ gibt es schon")
+		return path, errors.New("„" + path + i18n.T("“ gibt es schon"))
 	}
 	s.ensureFolder(path, time.Now().UTC())
 	s.mu.Unlock()
@@ -110,13 +111,13 @@ func (s *Store) MoveFolder(old, neu string) error {
 	old, neu = domain.NormPath(old), domain.NormPath(neu)
 	switch {
 	case old == "":
-		return errors.New("kein Ordner gewählt")
+		return errors.New(i18n.T("kein Ordner gewählt"))
 	case neu == "":
-		return errors.New("Name fehlt")
+		return errors.New(i18n.T("Name fehlt"))
 	case old == neu:
 		return nil
 	case domain.InFolder(neu, old):
-		return errors.New("ein Ordner kann nicht in sich selbst liegen")
+		return errors.New(i18n.T("ein Ordner kann nicht in sich selbst liegen"))
 	}
 	if err := s.lockData(); err != nil {
 		return err
@@ -131,7 +132,7 @@ func (s *Store) MoveFolder(old, neu string) error {
 func (s *Store) DeleteFolder(path string) error {
 	path = domain.NormPath(path)
 	if path == "" {
-		return errors.New("kein Ordner gewählt")
+		return errors.New(i18n.T("kein Ordner gewählt"))
 	}
 	if err := s.lockData(); err != nil {
 		return err

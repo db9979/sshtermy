@@ -13,6 +13,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/llm"
 )
 
@@ -240,7 +241,7 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			c := s.chips[i]
 			if len(c.Danger) > 0 && s.chipArmed != i {
 				s.chipArmed = i
-				a.flash("Vorsicht: " + c.Danger[0].Reason + ". Nochmal " + a.keys.label(id) + " zum Einfügen")
+				a.flash(i18n.T("Vorsicht: ") + c.Danger[0].Reason + i18n.T(". Nochmal ") + a.keys.label(id) + i18n.T(" zum Einfügen"))
 				return nil
 			}
 			s.chipArmed = -1
@@ -414,13 +415,13 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	switch {
 	case s.state == stConnecting:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			st.AI.Render("⠿ Verbinde mit "+s.conn.Alias+" ("+s.conn.Addr()+") …"))
+			st.AI.Render(i18n.T("⠿ Verbinde mit ")+s.conn.Alias+" ("+s.conn.Addr()+") …"))
 	case s.state == stReconnect:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.reconnectView(s))
 	case s.state == stClosed:
-		msg := st.Danger.Render("✗ " + orDefault(s.err, "getrennt"))
+		msg := st.Danger.Render("✗ " + orDefault(s.err, i18n.T("getrennt")))
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			msg+"\n\n"+st.Muted.Render("⏎ neu verbinden · x Tab schließen · "+a.keys.label(actManager)+" Manager"))
+			msg+"\n\n"+st.Muted.Render(i18n.T("⏎ neu verbinden · x Tab schließen · ")+a.keys.label(actManager)+" Manager"))
 	case s.search.open && s.search.list:
 		body = a.viewErrorList(s, cols, rows)
 	case s.scroll > 0 || s.sel != nil || s.search.open:
@@ -465,12 +466,12 @@ func (a *App) chipBar(s *session) string {
 	st := a.s
 	var b strings.Builder
 	if g := a.visibleGhost(s); g != "" {
-		b.WriteString(a.z.click(st.AI.Render(" ✦ ")+st.Muted.Render("Tab übernimmt: ")+st.Ghost.Render(trunc(g, 60)),
+		b.WriteString(a.z.click(st.AI.Render(" ✦ ")+st.Muted.Render(i18n.T("Tab übernimmt: "))+st.Ghost.Render(trunc(g, 60)),
 			func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("Tab") }) + "  ")
 	} else {
 		if f := s.fail; f != nil {
-			why := orDefault(f.Reason, "fehlgeschlagen")
-			b.WriteString(a.z.click(st.Danger.Render(" ✗ "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(" Warum? & Fix "),
+			why := orDefault(f.Reason, i18n.T("fehlgeschlagen"))
+			b.WriteString(a.z.click(st.Danger.Render(" ✗ "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(i18n.T(" Warum? & Fix ")),
 				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("alt+0") }) + " ")
 		}
 		a.chipList(s, &b)
@@ -485,7 +486,7 @@ func (a *App) chipBar(s *session) string {
 func (a *App) chipList(s *session, b *strings.Builder) {
 	st := a.s
 	if len(s.chips) > 0 {
-		b.WriteString(st.AI.Render(" ✦ Als Nächstes: "))
+		b.WriteString(st.AI.Render(i18n.T(" ✦ Als Nächstes: ")))
 		for i, c := range s.chips {
 			style := st.Chip
 			if len(c.Danger) > 0 {
@@ -511,39 +512,39 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	}
 	if s.search.open {
 		if s.search.list {
-			return [][2]string{{"↑/↓", "wählen"}, {"⏎", "im Verlauf zeigen"}, {"Tab", "Liste/Verlauf"}, {"Strg+E", "Filter aus"}, {"Esc", "Suche schließen"}}
+			return [][2]string{{"↑/↓", i18n.T("wählen")}, {"⏎", i18n.T("im Verlauf zeigen")}, {"Tab", i18n.T("Liste/Verlauf")}, {"Strg+E", i18n.T("Filter aus")}, {"Esc", i18n.T("Suche schließen")}}
 		}
-		k := [][2]string{{"⏎/↑", "älter"}, {"Shift+⏎/↓", "neuer"}, {"Bild↑/Bild↓", "blättern"}, {"Strg+E", "Fehlerfilter"}}
+		k := [][2]string{{"⏎/↑", i18n.T("älter")}, {"Shift+⏎/↓", i18n.T("neuer")}, {"Bild↑/Bild↓", i18n.T("blättern")}, {"Strg+E", i18n.T("Fehlerfilter")}}
 		if s.search.errors {
-			k = append(k, [2]string{"Tab", "Fehlerliste"})
+			k = append(k, [2]string{"Tab", i18n.T("Fehlerliste")})
 		}
-		return append(k, [2]string{"Esc", "Suche schließen"})
+		return append(k, [2]string{"Esc", i18n.T("Suche schließen")})
 	}
 	k := a.keys
 	keys := [][2]string{{k.label(actPalette), "Palette"}}
 	switch {
 	case s.state == stClosed:
-		keys = append(keys, [2]string{"⏎", "neu verbinden"}, [2]string{"x", "Tab schließen"})
+		keys = append(keys, [2]string{"⏎", i18n.T("neu verbinden")}, [2]string{"x", i18n.T("Tab schließen")})
 	case s.state == stConnected:
 		if s.scroll > 0 {
-			keys = append(keys, [2]string{"Esc", "zurück zur Eingabe"})
+			keys = append(keys, [2]string{"Esc", i18n.T("zurück zur Eingabe")})
 		}
 		if a.visibleGhost(s) != "" {
-			keys = append(keys, [2]string{"Tab", "Vorschlag übernehmen"})
+			keys = append(keys, [2]string{"Tab", i18n.T("Vorschlag übernehmen")})
 		} else if len(s.chips) > 0 {
-			keys = append(keys, [2]string{"Alt+1…" + strconv.Itoa(min(4, len(s.chips))), "Vorschlag einfügen"})
+			keys = append(keys, [2]string{i18n.T("Alt+1…") + strconv.Itoa(min(4, len(s.chips))), i18n.T("Vorschlag einfügen")})
 		}
-		keys = append(keys, [2]string{k.label(actGoal), "Ziel"}, [2]string{k.label(actAsk), "KI fragen"}, [2]string{k.label(actTunnels), "Tunnel"},
-			[2]string{k.label(actFiles), "Dateien"}, [2]string{k.label(actSearch), "Suche"}, [2]string{k.label(actSplit), "Teilen"}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), "Schnellbefehle"})
+		keys = append(keys, [2]string{k.label(actGoal), i18n.T("Ziel")}, [2]string{k.label(actAsk), i18n.T("KI fragen")}, [2]string{k.label(actTunnels), "Tunnel"},
+			[2]string{k.label(actFiles), i18n.T("Dateien")}, [2]string{k.label(actSearch), i18n.T("Suche")}, [2]string{k.label(actSplit), i18n.T("Teilen")}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), i18n.T("Schnellbefehle")})
 	}
 	if len(a.sessions) > 1 {
 		keys = append(keys, [2]string{k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"})
 	}
 	keys = append(keys, [2]string{k.label(actManager), "Manager"},
-		[2]string{k.label(actHelp), "Hilfe"}, [2]string{k.label(actCheat), "erklären"}, [2]string{k.label(actQuit), "beenden"})
+		[2]string{k.label(actHelp), i18n.T("Hilfe")}, [2]string{k.label(actCheat), i18n.T("erklären")}, [2]string{k.label(actQuit), i18n.T("beenden")})
 	keys = sortFKeys(keys)
 	if s.fail != nil {
-		keys = append([][2]string{{"Alt+0", "Warum? & Fix"}}, keys...)
+		keys = append([][2]string{{"Alt+0", i18n.T("Warum? & Fix")}}, keys...)
 	}
 	return keys
 }

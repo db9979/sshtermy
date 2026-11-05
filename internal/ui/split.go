@@ -6,6 +6,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Geteilte Ansicht (Strg+T)
@@ -44,10 +46,10 @@ func (m splitMode) slots() int { c, r := m.grid(); return c * r }
 
 func (m splitMode) label() string {
 	return map[splitMode]string{
-		splitOff:  "eine Sitzung",
-		splitCols: "zwei nebeneinander",
-		splitRows: "zwei untereinander",
-		splitGrid: "vier Bereiche",
+		splitOff:  i18n.T("eine Sitzung"),
+		splitCols: i18n.T("zwei nebeneinander"),
+		splitRows: i18n.T("zwei untereinander"),
+		splitGrid: i18n.T("vier Bereiche"),
 	}[m]
 }
 
@@ -202,7 +204,7 @@ func (a *App) setSplit(m splitMode) {
 	if m != splitOff {
 		c, r := m.grid()
 		if ar := a.areaRect(); ar.w/c < 30 || ar.h/r < 6 {
-			a.flash("Fenster zu klein für „" + m.label() + "“")
+			a.flash(i18n.T("Fenster zu klein für „") + m.label() + "“")
 			return
 		}
 	}
@@ -242,7 +244,7 @@ func (a *App) setSplit(m splitMode) {
 		copy(a.panes, ids)
 	}
 	a.resizeAll()
-	a.flash("Ansicht: " + m.label())
+	a.flash(i18n.T("Ansicht: ") + m.label())
 }
 
 func indexInt(xs []int, v int) int {
@@ -337,8 +339,8 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 		var body string
 		if ps == nil {
 			body = lipgloss.Place(rc.w, rc.h-1, lipgloss.Center, lipgloss.Center,
-				st.Muted.Render("Leerer Bereich")+"\n\n"+st.Muted.Render("Neue Verbindung landet hier:")+"\n"+
-					st.Muted.Render("Strg+Space oder F10 → ⏎"))
+				st.Muted.Render(i18n.T("Leerer Bereich"))+"\n\n"+st.Muted.Render(i18n.T("Neue Verbindung landet hier:"))+"\n"+
+					st.Muted.Render(i18n.T("Strg+Space oder F10 → ⏎")))
 		} else {
 			b, cc := a.paneBody(ps, ps == focus)
 			body = b
@@ -372,22 +374,22 @@ func (a *App) paneTitle(s *session, w int, focused bool) string {
 		bar = lipgloss.NewStyle().Background(st.T.Accent).Foreground(st.T.Bg).Bold(true)
 	}
 	if s == nil {
-		return bar.Width(w).MaxWidth(w).Render(" ○ leer")
+		return bar.Width(w).MaxWidth(w).Render(i18n.T(" ○ leer"))
 	}
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○"}[s.state]
 	left := " " + dot + " " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string
 	if s.search.open {
-		marks = append(marks, "⌕ Suche")
+		marks = append(marks, i18n.T("⌕ Suche"))
 	}
 	if s.goal.active {
-		marks = append(marks, "◎ Ziel")
+		marks = append(marks, i18n.T("◎ Ziel"))
 	}
 	if s.panel != panelNone {
-		marks = append(marks, "▐ Panel")
+		marks = append(marks, i18n.T("▐ Panel"))
 	}
 	if focused && len(marks) == 0 && w >= 60 {
-		marks = append(marks, "Strg+Pfeil wechselt")
+		marks = append(marks, i18n.T("Strg+Pfeil wechselt"))
 	}
 	right := strings.Join(marks, " · ")
 	if right != "" {

@@ -110,7 +110,7 @@ const sysComplete = "Du vervollständigst eine Befehlszeile (Shell oder Geräte-
 // Complete liefert den Rest der Zeile (Ghost-Text) oder "".
 func (a *Agent) Complete(ctx context.Context, typed string, c Context) (string, error) {
 	out, err := a.C.Complete(ctx, []llm.Message{
-		{Role: "system", Content: sysComplete},
+		{Role: "system", Content: sys(sysComplete)},
 		{Role: "user", Content: "Bisher getippt: " + typed + "\n\n" + material(c)},
 	}, llm.Opts{MaxTokens: 80, Temperature: 0.1, NoThink: true})
 	if err != nil {
@@ -145,7 +145,7 @@ type Suggestion struct {
 
 func (a *Agent) FollowUps(ctx context.Context, c Context) ([]Suggestion, error) {
 	out, err := a.C.Complete(ctx, []llm.Message{
-		{Role: "system", Content: sysFollow},
+		{Role: "system", Content: sys(sysFollow)},
 		{Role: "user", Content: "Welche Befehle als Nächstes?\n" + material(c)},
 	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.2, NoThink: true})
 	if err != nil {
@@ -228,7 +228,7 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 	}
 	b.WriteString("\n" + material(c))
 	msgs := []llm.Message{
-		{Role: "system", Content: sysGoal},
+		{Role: "system", Content: sys(sysGoal)},
 		{Role: "user", Content: b.String()},
 	}
 	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true})
@@ -356,7 +356,7 @@ const sysAdapt = "Du schreibst einen Befehl so um, dass er auf dem beschriebenen
 // Leerer Command im Ergebnis: auf diesem System gibt es keine Entsprechung.
 func (a *Agent) Adapt(ctx context.Context, cmd string, c Context) (Suggestion, error) {
 	out, err := a.C.Complete(ctx, []llm.Message{
-		{Role: "system", Content: sysAdapt},
+		{Role: "system", Content: sys(sysAdapt)},
 		{Role: "user", Content: "Befehl: " + Redact(cmd) + "\n\n" + material(c)},
 	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.1, NoThink: true})
 	if err != nil {
@@ -388,7 +388,7 @@ const sysAsk = "Du hilfst einem Admin auf einem Server oder Netzwerkgerät. Antw
 
 func (a *Agent) Ask(ctx context.Context, q string, c Context, onDelta func(string)) error {
 	return a.C.Stream(ctx, []llm.Message{
-		{Role: "system", Content: sysAsk},
+		{Role: "system", Content: sys(sysAsk)},
 		{Role: "user", Content: "Frage: " + Redact(q) + "\n\n" + material(c)},
 	}, llm.Opts{MaxTokens: 700}, func(d string) { onDelta(Clean(d)) })
 }

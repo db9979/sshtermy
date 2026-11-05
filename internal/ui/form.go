@@ -9,6 +9,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // fieldKind: Text, Geheimnis, Zahl, Auswahl oder Schalter.
@@ -222,9 +224,9 @@ func (f *form) view(s Styles, width int, z *zones) string {
 			parts := make([]string, len(fl.options))
 			for j, o := range fl.options {
 				if j == fl.opt {
-					parts[j] = s.Selected.Render(" " + o + " ")
+					parts[j] = s.Selected.Render(" " + i18n.T(o) + " ")
 				} else {
-					parts[j] = s.Muted.Render(" " + o + " ")
+					parts[j] = s.Muted.Render(" " + i18n.T(o) + " ")
 				}
 				if z != nil {
 					i, j, fl := i, j, fl
@@ -234,7 +236,7 @@ func (f *form) view(s Styles, width int, z *zones) string {
 			val = strings.Join(parts, "")
 			if lipgloss.Width(val) > inW && fl.opt < len(fl.options) {
 				// Zu viele Optionen für eine Zeile: nur die gewählte, ←/→ blättert.
-				val = s.Muted.Render("‹ ") + s.Selected.Render(" "+fl.options[fl.opt]+" ") + s.Muted.Render(" ›") +
+				val = s.Muted.Render("‹ ") + s.Selected.Render(" "+i18n.T(fl.options[fl.opt])+" ") + s.Muted.Render(" ›") +
 					s.Muted.Render(fmt.Sprintf("  %d/%d", fl.opt+1, len(fl.options)))
 			}
 		case fPick:
@@ -245,9 +247,9 @@ func (f *form) view(s Styles, width int, z *zones) string {
 			val = ansi.Truncate(v, max(10, inW-2), "…") + s.Muted.Render(" ▾")
 		case fBool:
 			if fl.on {
-				val = s.OK.Render("● an")
+				val = s.OK.Render(i18n.T("● an"))
 			} else {
-				val = s.Muted.Render("○ aus")
+				val = s.Muted.Render(i18n.T("○ aus"))
 			}
 		default:
 			fl.in.SetWidth(inW)

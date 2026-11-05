@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Einführungstour (beim ersten Start, später über die Palette) und der
@@ -39,7 +40,7 @@ var tourSteps = []tourStep{
 		[][2]string{{"⇧F1…F8", "Schnellbefehl"}, {"F9", "Schnellbefehle (Liste)"}, {"F4", "Tunnel"}, {"⇧F9", "Tasten erklären"}, {"F1", "alle Tasten"}}},
 }
 
-func (a *App) tourModal() *modal { return &modal{kind: mTour, title: "Einführung"} }
+func (a *App) tourModal() *modal { return &modal{kind: mTour, title: i18n.T("Einführung")} }
 
 // maybeTour: nach dem Entsperren beim ersten Start (oder solange noch keine
 // Verbindung angelegt und die Tour nie gesehen wurde).
@@ -72,7 +73,7 @@ func (a *App) tourKey(key string) tea.Cmd {
 	case "esc", "q", "s":
 		a.finishTour()
 		if key != "q" {
-			a.flash("Tour übersprungen · Palette „Einführungstour“ startet sie wieder")
+			a.flash(i18n.T("Tour übersprungen · Palette „Einführungstour“ startet sie wieder"))
 		}
 	}
 	return nil
@@ -90,14 +91,14 @@ func (m *modal) tourView(s Styles, w int) string {
 		}
 		dots.WriteString(" ")
 	}
-	head := s.Accent.Render(step.icon+" "+step.title) + "  " + dots.String() +
+	head := s.Accent.Render(step.icon+" "+i18n.T(step.title)) + "  " + dots.String() +
 		s.Muted.Render(" "+strconv.Itoa(m.scroll+1)+"/"+strconv.Itoa(len(tourSteps)))
-	body := lipgloss.NewStyle().Width(cw).Render(s.Text.Render(step.text))
+	body := lipgloss.NewStyle().Width(cw).Render(s.Text.Render(i18n.T(step.text)))
 	var keys []string
 	for _, k := range step.keys {
-		kk := s.Key.Render(k[0])
+		kk := s.Key.Render(i18n.T(k[0]))
 		kk += strings.Repeat(" ", max(0, 14-lipgloss.Width(kk)))
-		keys = append(keys, kk+s.Text.Render(k[1]))
+		keys = append(keys, kk+s.Text.Render(i18n.T(k[1])))
 	}
 	return s.Modal.Render(head + "\n\n" + body + "\n\n" + strings.Join(keys, "\n"))
 }
@@ -105,12 +106,12 @@ func (m *modal) tourView(s Styles, w int) string {
 func tourButtons(m *modal) [][2]string {
 	var keys [][2]string
 	if m.scroll > 0 {
-		keys = append(keys, [2]string{"←", "zurück"})
+		keys = append(keys, [2]string{"←", i18n.T("zurück")})
 	}
 	if m.scroll < len(tourSteps)-1 {
-		keys = append(keys, [2]string{"→", "weiter"}, [2]string{"Esc", "überspringen"})
+		keys = append(keys, [2]string{"→", i18n.T("weiter")}, [2]string{"Esc", i18n.T("überspringen")})
 	} else {
-		keys = append(keys, [2]string{"⏎", "los geht's"})
+		keys = append(keys, [2]string{"⏎", i18n.T("los geht's")})
 	}
 	return keys
 }
@@ -130,9 +131,9 @@ func (a *App) cheatTips() [][2]string {
 	switch a.scr {
 	case scrManager:
 		if len(a.st.Connections()) == 0 {
-			return [][2]string{{"n", "lege deine erste Verbindung an"}, {"s", "KI-Endpunkt einrichten"}, {"Strg+Space", "findet alles"}}
+			return [][2]string{{"n", i18n.T("lege deine erste Verbindung an")}, {"s", i18n.T("KI-Endpunkt einrichten")}, {"Strg+Space", i18n.T("findet alles")}}
 		}
-		return [][2]string{{"⏎", "verbindet"}, {"/", "sucht (auch #tag)"}, {"o", "neuer Ordner"}, {"⇧↑↓", "sortiert"}, {"q", "Schnellbefehle"}, {"Strg+Space", "findet alles"}}
+		return [][2]string{{"⏎", i18n.T("verbindet")}, {"/", i18n.T("sucht (auch #tag)")}, {"o", i18n.T("neuer Ordner")}, {"⇧↑↓", i18n.T("sortiert")}, {"q", i18n.T("Schnellbefehle")}, {"Strg+Space", i18n.T("findet alles")}}
 	case scrTerminal:
 	default:
 		return nil
@@ -143,28 +144,28 @@ func (a *App) cheatTips() [][2]string {
 	}
 	switch a.helpContext() {
 	case hcFiles:
-		return [][2]string{{"Tab", "wechselt die Seite"}, {"c", "kopiert hoch oder runter"}, {"⏎", "öffnet den Ordner"}, {"F5", "schließt"}}
+		return [][2]string{{"Tab", i18n.T("wechselt die Seite")}, {"c", i18n.T("kopiert hoch oder runter")}, {"⏎", i18n.T("öffnet den Ordner")}, {"F5", i18n.T("schließt")}}
 	case hcGoal:
 		if !s.goal.active {
-			return [][2]string{{"⏎", "startet das Ziel"}, {"↑↓", "wählt ein gespeichertes Runbook"}, {"Esc", "zurück ins Terminal"}}
+			return [][2]string{{"⏎", i18n.T("startet das Ziel")}, {"↑↓", i18n.T("wählt ein gespeichertes Runbook")}, {"Esc", i18n.T("zurück ins Terminal")}}
 		}
-		return [][2]string{{"⏎", "führt den Schritt aus"}, {"i", "fügt nur ein"}, {"s", "überspringt"}, {"x", "beendet das Ziel"}}
+		return [][2]string{{"⏎", i18n.T("führt den Schritt aus")}, {"i", i18n.T("fügt nur ein")}, {"s", i18n.T("überspringt")}, {"x", i18n.T("beendet das Ziel")}}
 	case hcAsk:
-		return [][2]string{{"⏎", "sendet die Frage"}, {"1…9", "fügt einen Befehl aus der Antwort ein"}, {"n", "neue Frage"}}
+		return [][2]string{{"⏎", i18n.T("sendet die Frage")}, {"1…9", i18n.T("fügt einen Befehl aus der Antwort ein")}, {"n", i18n.T("neue Frage")}}
 	case hcTunnel:
-		return [][2]string{{"⏎", "startet oder stoppt"}, {"o", "öffnet im Browser"}, {"n", "neuer Tunnel"}}
+		return [][2]string{{"⏎", i18n.T("startet oder stoppt")}, {"o", i18n.T("öffnet im Browser")}, {"n", i18n.T("neuer Tunnel")}}
 	}
 	switch {
 	case s.state != stConnected:
-		return [][2]string{{"⏎", "verbindet neu"}, {"x", "schließt den Tab"}, {"F10", "zum Manager"}}
+		return [][2]string{{"⏎", i18n.T("verbindet neu")}, {"x", i18n.T("schließt den Tab")}, {"F10", i18n.T("zum Manager")}}
 	case s.scroll > 0:
-		return [][2]string{{"Esc", "springt zurück zur Eingabe"}, {"Rad", "blättert im Verlauf"}, {"Ziehen", "markiert und kopiert"}}
+		return [][2]string{{"Esc", i18n.T("springt zurück zur Eingabe")}, {i18n.T("Rad"), i18n.T("blättert im Verlauf")}, {i18n.T("Ziehen"), i18n.T("markiert und kopiert")}}
 	case a.visibleGhost(s) != "":
-		return [][2]string{{"Tab / →", "übernimmt den grauen Vorschlag"}, {"weitertippen", "ignoriert ihn"}}
+		return [][2]string{{i18n.T("Tab / →"), i18n.T("übernimmt den grauen Vorschlag")}, {i18n.T("weitertippen"), i18n.T("ignoriert ihn")}}
 	case len(s.chips) > 0:
-		return [][2]string{{"Alt+1…4", "fügt den Vorschlag ein (ohne ⏎)"}, {"rot", "= gefährlich, zweimal drücken"}}
+		return [][2]string{{i18n.T("Alt+1…4"), i18n.T("fügt den Vorschlag ein (ohne ⏎)")}, {i18n.T("rot"), i18n.T("= gefährlich, zweimal drücken")}}
 	}
-	return [][2]string{{"F9", "Schnellbefehle"}, {"F2", "Ziel an die KI"}, {"F3", "Frage an die KI"}, {"Strg+Space", "findet alles"}}
+	return [][2]string{{"F9", i18n.T("Schnellbefehle")}, {"F2", i18n.T("Ziel an die KI")}, {"F3", i18n.T("Frage an die KI")}, {"Strg+Space", i18n.T("findet alles")}}
 }
 
 // cheatLine: Tastenzeile mit Erklärungen (leer, wenn aus oder nichts passt;
@@ -180,7 +181,7 @@ func (a *App) cheatLine() string {
 	st := a.s
 	bg := st.Footer
 	k := strings.ReplaceAll(a.keys.label(actCheat), "Shift+", "⇧")
-	back := a.keyZone(k, st.Key.Render(k)+st.KeyDesc.Render(" Tasten"))
+	back := a.keyZone(k, st.Key.Render(k)+st.KeyDesc.Render(i18n.T(" Tasten")))
 	// schmale Fenster: Tipps von hinten weglassen, der Rückweg bleibt
 	render := func(n int) string {
 		out := bg.Render(" ")
@@ -188,7 +189,7 @@ func (a *App) cheatLine() string {
 			if i > 0 {
 				out += bg.Render(" · ")
 			}
-			out += a.keyZone(t[0], st.Key.Render(t[0])) + bg.Foreground(st.T.Text).Render(" "+t[1])
+			out += a.keyZone(i18n.Keys(t[0]), st.Key.Render(i18n.Keys(t[0]))) + bg.Foreground(st.T.Text).Render(" "+t[1])
 		}
 		return out
 	}
@@ -206,7 +207,7 @@ func (a *App) cheatLine() string {
 
 func cheatLabel(on bool) string {
 	if on {
-		return "Tastenzeile: nur Tasten"
+		return i18n.T("Tastenzeile: nur Tasten")
 	}
-	return "Tastenzeile: Tasten erklären"
+	return i18n.T("Tastenzeile: Tasten erklären")
 }

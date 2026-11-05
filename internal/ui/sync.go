@@ -12,6 +12,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/syncx"
 )
 
@@ -49,7 +50,7 @@ func deviceName() string {
 	if h, err := os.Hostname(); err == nil {
 		return h
 	}
-	return "unbekannt"
+	return i18n.T("unbekannt")
 }
 
 func backendFor(c domain.SyncConfig) (syncx.Backend, error) {
@@ -59,7 +60,7 @@ func backendFor(c domain.SyncConfig) (syncx.Backend, error) {
 	case domain.SyncWebDAV:
 		return &syncx.WebDAV{URL: c.URL, User: c.User, Password: c.Password.Reveal(), CertPin: c.CertPin}, nil
 	}
-	return nil, errors.New("Sync ist nicht eingerichtet")
+	return nil, errors.New(i18n.T("Sync ist nicht eingerichtet"))
 }
 
 // hookSync verbindet Store-Änderungen mit dem Abgleich.
@@ -148,7 +149,7 @@ func (a *App) syncDone(m syncDoneMsg) tea.Cmd {
 	if m.err != nil {
 		e := m.err.Error()
 		if e != a.sync.lastErr {
-			a.flash("Sync: " + e)
+			a.flash(i18n.T("Sync: ") + e)
 		}
 		a.sync.lastErr = e
 		cfg := a.st.SyncConfig()
@@ -176,15 +177,15 @@ func (a *App) syncDone(m syncDoneMsg) tea.Cmd {
 	if n := m.stats.Added + m.stats.Changed + m.stats.Gone; n > 0 && a.wiz == nil {
 		var parts []string
 		if m.stats.Added > 0 {
-			parts = append(parts, fmt.Sprintf("%d neu", m.stats.Added))
+			parts = append(parts, fmt.Sprintf(i18n.T("%d neu"), m.stats.Added))
 		}
 		if m.stats.Changed > 0 {
-			parts = append(parts, fmt.Sprintf("%d geändert", m.stats.Changed))
+			parts = append(parts, fmt.Sprintf(i18n.T("%d geändert"), m.stats.Changed))
 		}
 		if m.stats.Gone > 0 {
-			parts = append(parts, fmt.Sprintf("%d entfernt", m.stats.Gone))
+			parts = append(parts, fmt.Sprintf(i18n.T("%d entfernt"), m.stats.Gone))
 		}
-		a.flash("Sync: " + strings.Join(parts, ", "))
+		a.flash(i18n.T("Sync: ") + strings.Join(parts, ", "))
 	}
 	a.wizFirstSync(m)
 	if changed {
@@ -206,32 +207,32 @@ func (a *App) syncStatus() string {
 	s := a.s
 	cfg := a.st.SyncConfig()
 	if !cfg.Enabled() {
-		return s.Muted.Render("nicht eingerichtet · y = Assistent")
+		return s.Muted.Render(i18n.T("nicht eingerichtet · y = Assistent"))
 	}
-	where := "Ordner"
+	where := i18n.T("Ordner")
 	if cfg.Backend == domain.SyncWebDAV {
-		where = "NAS " + syncx.PresetLabel(cfg.Preset)
+		where = i18n.T("NAS ") + syncx.PresetLabel(cfg.Preset)
 	}
 	switch {
 	case a.sync.running:
-		return s.AI.Render("⠿ gleicht ab …") + s.Muted.Render(" · "+where)
+		return s.AI.Render(i18n.T("⠿ gleicht ab …")) + s.Muted.Render(" · "+where)
 	case cfg.LastError != "":
 		return s.Danger.Render("✗ "+trunc(cfg.LastError, 60)) + s.Muted.Render(" · y")
 	case !cfg.LastSync.IsZero():
 		return s.OK.Render("✓ "+ago(cfg.LastSync)) + s.Muted.Render(" · "+where)
 	}
-	return s.Muted.Render("eingerichtet · " + where)
+	return s.Muted.Render(i18n.T("eingerichtet · ") + where)
 }
 
 func ago(t time.Time) string {
 	d := time.Since(t)
 	switch {
 	case d < time.Minute:
-		return "gerade eben"
+		return i18n.T("gerade eben")
 	case d < time.Hour:
-		return fmt.Sprintf("vor %d min", int(d.Minutes()))
+		return fmt.Sprintf(i18n.T("vor %d min"), int(d.Minutes()))
 	case d < 24*time.Hour:
-		return fmt.Sprintf("vor %d h", int(d.Hours()))
+		return fmt.Sprintf(i18n.T("vor %d h"), int(d.Hours()))
 	}
 	return t.Local().Format("02.01. 15:04")
 }
@@ -281,20 +282,20 @@ func (a *App) openSync() tea.Cmd {
 	case cfg.Backend == domain.SyncOff && cfg.Preset != "":
 		mode = modeOff
 	}
-	f.choice("mode", "Speicherort", []string{modeFolder, modeNAS, modeOff}, mode,
-		"Ordner = OneDrive, Dropbox, iCloud, Syncthing · NAS = Synology, QNAP, Nextcloud direkt")
+	f.choice("mode", i18n.T("Speicherort"), []string{modeFolder, modeNAS, modeOff}, mode,
+		i18n.T("Ordner = OneDrive, Dropbox, iCloud, Syncthing · NAS = Synology, QNAP, Nextcloud direkt"))
 	folder := cfg.Folder
-	help := "Ordner, den dein Cloud-Dienst abgleicht, z. B. ~/OneDrive/sshtermy"
+	help := i18n.T("Ordner, den dein Cloud-Dienst abgleicht, z. B. ~/OneDrive/sshtermy")
 	if sug := syncx.SuggestFolders(); len(sug) > 0 {
 		if folder == "" {
 			folder = sug[0]
 		}
-		help = "Gefunden: " + strings.Join(sug, " · ")
+		help = i18n.T("Gefunden: ") + strings.Join(sug, " · ")
 	}
 	notFolder := func(f *form) bool { return f.sel("mode") != modeFolder }
 	notNAS := func(f *form) bool { return f.sel("mode") != modeNAS }
 	off := func(f *form) bool { return f.sel("mode") == modeOff }
-	f.text("folder", "Ordner", folder, help).hidden = notFolder
+	f.text("folder", i18n.T("Ordner"), folder, help).hidden = notFolder
 	labels := make([]string, len(syncx.Presets))
 	cur := "Synology"
 	for i, p := range syncx.Presets {
@@ -303,17 +304,17 @@ func (a *App) openSync() tea.Cmd {
 			cur = labels[i]
 		}
 	}
-	f.choice("preset", "Gerät", labels, cur, "wählt Ports, Pfade und Hilfetexte passend aus").hidden = notNAS
-	f.text("addr", "Adresse", cfg.Address, "Name oder IP, z. B. diskstation oder 192.168.1.20 · Port und https sucht sshTermy selbst").hidden = notNAS
-	f.text("user", "Benutzer", cfg.User, "dein Konto auf dem NAS").hidden = notNAS
-	f.secret("pass", "Passwort", cfg.Password.Reveal(), "wird nur lokal verschlüsselt gespeichert").hidden = notNAS
-	f.text("remote", "Ordner am NAS", cfg.Remote, "").hidden = notNAS
-	f.secret("spw", "Sync-Passwort", "", "").hidden = off
-	f.secret("spw2", "Wiederholen", "", "Sync-Passwort noch einmal").hidden = func(f *form) bool {
+	f.choice("preset", i18n.T("Gerät"), labels, cur, i18n.T("wählt Ports, Pfade und Hilfetexte passend aus")).hidden = notNAS
+	f.text("addr", i18n.T("Adresse"), cfg.Address, i18n.T("Name oder IP, z. B. diskstation oder 192.168.1.20 · Port und https sucht sshTermy selbst")).hidden = notNAS
+	f.text("user", i18n.T("Benutzer"), cfg.User, i18n.T("dein Konto auf dem NAS")).hidden = notNAS
+	f.secret("pass", i18n.T("Passwort"), cfg.Password.Reveal(), i18n.T("wird nur lokal verschlüsselt gespeichert")).hidden = notNAS
+	f.text("remote", i18n.T("Ordner am NAS"), cfg.Remote, "").hidden = notNAS
+	f.secret("spw", i18n.T("Sync-Passwort"), "", "").hidden = off
+	f.secret("spw2", i18n.T("Wiederholen"), "", i18n.T("Sync-Passwort noch einmal")).hidden = func(f *form) bool {
 		return off(f) || w.rep == nil || !w.rep.OK() || w.rep.RemoteExists || (w.keepKey() && f.raw("spw") == "")
 	}
-	f.toggle("hostkeys", "Host-Keys", cfg.HostKeys || !cfg.Enabled(), "bekannte Server-Fingerprints mitnehmen (weniger Rückfragen)").hidden = off
-	f.toggle("auto", "Automatisch", cfg.Auto || !cfg.Enabled(), "beim Start, nach Änderungen und alle 5 Minuten").hidden = off
+	f.toggle("hostkeys", i18n.T("Host-Keys"), cfg.HostKeys || !cfg.Enabled(), i18n.T("bekannte Server-Fingerprints mitnehmen (weniger Rückfragen)")).hidden = off
+	f.toggle("auto", i18n.T("Automatisch"), cfg.Auto || !cfg.Enabled(), i18n.T("beim Start, nach Änderungen und alle 5 Minuten")).hidden = off
 	w.f = f
 	a.wiz, a.form, a.scr = w, f, scrSync
 	w.refreshHelp()
@@ -372,23 +373,23 @@ func (w *syncWizard) keepKey() bool {
 func (w *syncWizard) refreshHelp() {
 	f := w.f
 	p := w.presetKey()
-	f.get("remote").help = "leer = " + syncx.DefaultRemote(p)
+	f.get("remote").help = i18n.T("leer = ") + syncx.DefaultRemote(p)
 	switch p {
 	case "synology":
-		f.get("remote").help += " · muss in einem freigegebenen Ordner liegen"
+		f.get("remote").help += i18n.T(" · muss in einem freigegebenen Ordner liegen")
 	case "nextcloud":
-		f.get("remote").help = "relativ zu deinen Dateien, leer = sshtermy · bei 2FA: App-Passwort"
+		f.get("remote").help = i18n.T("relativ zu deinen Dateien, leer = sshtermy · bei 2FA: App-Passwort")
 	}
 	sp := f.get("spw")
 	switch {
 	case w.rep != nil && w.rep.RemoteExists && w.keepKey():
-		sp.help = "leer lassen = bisherigen Schlüssel behalten"
+		sp.help = i18n.T("leer lassen = bisherigen Schlüssel behalten")
 	case w.rep != nil && w.rep.RemoteExists:
-		sp.help = "das Sync-Passwort, das du auf dem anderen Rechner vergeben hast"
+		sp.help = i18n.T("das Sync-Passwort, das du auf dem anderen Rechner vergeben hast")
 	case w.keepKey():
-		sp.help = "leer lassen = bisherigen Schlüssel behalten"
+		sp.help = i18n.T("leer lassen = bisherigen Schlüssel behalten")
 	default:
-		sp.help = "neu, mind. 8 Zeichen · verschlüsselt alles Ende-zu-Ende · gleich auf allen Rechnern"
+		sp.help = i18n.T("neu, mind. 8 Zeichen · verschlüsselt alles Ende-zu-Ende · gleich auf allen Rechnern")
 	}
 }
 
@@ -436,12 +437,12 @@ func (a *App) wizCheckDone(m syncCheckMsg) tea.Cmd {
 		pin := c.Pin
 		name := ""
 		if c.Subject != "" {
-			name = "Ausgestellt für: " + c.Subject + "\n"
+			name = i18n.T("Ausgestellt für: ") + c.Subject + "\n"
 		}
-		a.modal = confirmModal("Eigenes Zertifikat vertrauen?",
-			"Der Server zeigt ein Zertifikat, das keine bekannte Stelle bestätigt\n("+c.Reason+"). Bei einem NAS ist das normal.\n\n"+
-				name+"Fingerprint (SHA-256):\n"+c.Fingerprint+"\n\n"+
-				"Vergleiche den Fingerprint mit der NAS-Oberfläche. sshTermy merkt sich\ngenau dieses Zertifikat und warnt, wenn es sich ändert.",
+		a.modal = confirmModal(i18n.T("Eigenes Zertifikat vertrauen?"),
+			i18n.T("Der Server zeigt ein Zertifikat, das keine bekannte Stelle bestätigt\n(")+c.Reason+i18n.T("). Bei einem NAS ist das normal.\n\n")+
+				name+i18n.T("Fingerprint (SHA-256):\n")+c.Fingerprint+"\n\n"+
+				i18n.T("Vergleiche den Fingerprint mit der NAS-Oberfläche. sshTermy merkt sich\ngenau dieses Zertifikat und warnt, wenn es sich ändert."),
 			func() tea.Cmd {
 				w.pin = pin
 				return a.wizCheck()
@@ -454,7 +455,7 @@ func (a *App) wizCheckDone(m syncCheckMsg) tea.Cmd {
 		if m.rep.OK() {
 			return a.wizSave()
 		}
-		w.f.err = "Bitte erst die rot markierten Punkte beheben (Strg+T testet erneut)."
+		w.f.err = i18n.T("Bitte erst die rot markierten Punkte beheben (Strg+T testet erneut).")
 	}
 	return nil
 }
@@ -515,11 +516,11 @@ func (a *App) wizSave() tea.Cmd {
 			return nil
 		}
 		a.wiz, a.form, a.scr = nil, nil, scrManager
-		a.flash("Sync ausgeschaltet (die Sync-Datei bleibt am Speicherort liegen)")
+		a.flash(i18n.T("Sync ausgeschaltet (die Sync-Datei bleibt am Speicherort liegen)"))
 		return nil
 	}
 	if !w.complete() {
-		f.err = "Bitte die Felder oben ausfüllen."
+		f.err = i18n.T("Bitte die Felder oben ausfüllen.")
 		return nil
 	}
 	if w.rep == nil || w.repSig != w.sig() || w.checking {
@@ -530,7 +531,7 @@ func (a *App) wizSave() tea.Cmd {
 		return a.wizCheck()
 	}
 	if !w.rep.OK() {
-		f.err = "Bitte erst die rot markierten Punkte beheben (Strg+T testet erneut)."
+		f.err = i18n.T("Bitte erst die rot markierten Punkte beheben (Strg+T testet erneut).")
 		return nil
 	}
 	spw, spw2 := f.raw("spw"), f.raw("spw2")
@@ -556,15 +557,15 @@ func (a *App) wizSave() tea.Cmd {
 				return func() tea.Msg { return syncSetupMsg{cfg: nc} }
 			}
 		}
-		f.err = "Die Sync-Datei passt nicht mehr zum gespeicherten Schlüssel: bitte das Sync-Passwort eingeben."
+		f.err = i18n.T("Die Sync-Datei passt nicht mehr zum gespeicherten Schlüssel: bitte das Sync-Passwort eingeben.")
 		return nil
 	}
 	if rep.RemoteExists {
 		if spw == "" {
-			f.err = "Bitte das Sync-Passwort der vorhandenen Sync-Datei eingeben."
+			f.err = i18n.T("Bitte das Sync-Passwort der vorhandenen Sync-Datei eingeben.")
 			return nil
 		}
-		w.busy = "Sync-Passwort wird geprüft (Argon2id) …"
+		w.busy = i18n.T("Sync-Passwort wird geprüft (Argon2id) …")
 		raw := rep.RemoteRaw
 		return func() tea.Msg {
 			k, err := syncx.UnlockKey(raw, []byte(spw))
@@ -577,13 +578,13 @@ func (a *App) wizSave() tea.Cmd {
 	}
 	switch {
 	case len(spw) < 8:
-		f.err = "Das Sync-Passwort braucht mindestens 8 Zeichen."
+		f.err = i18n.T("Das Sync-Passwort braucht mindestens 8 Zeichen.")
 		return nil
 	case spw != spw2:
-		f.err = "Die Sync-Passwörter stimmen nicht überein."
+		f.err = i18n.T("Die Sync-Passwörter stimmen nicht überein.")
 		return nil
 	}
-	w.busy = "Sync-Schlüssel wird erzeugt (Argon2id) …"
+	w.busy = i18n.T("Sync-Schlüssel wird erzeugt (Argon2id) …")
 	return func() tea.Msg {
 		k, err := syncx.NewKey([]byte(spw))
 		if err != nil {
@@ -603,7 +604,7 @@ func (a *App) wizSetupDone(m syncSetupMsg) tea.Cmd {
 	if m.err != nil {
 		w.f.err = m.err.Error()
 		if errors.Is(m.err, syncx.ErrWrongPass) {
-			w.f.err += ". Es ist das Passwort, das beim ersten Einrichten des Syncs vergeben wurde (nicht das NAS-Passwort)."
+			w.f.err += i18n.T(". Es ist das Passwort, das beim ersten Einrichten des Syncs vergeben wurde (nicht das NAS-Passwort).")
 		}
 		return nil
 	}
@@ -613,7 +614,7 @@ func (a *App) wizSetupDone(m syncSetupMsg) tea.Cmd {
 	}
 	w.cfg = m.cfg
 	w.awaitSync = true
-	w.busy = "Erster Abgleich läuft …"
+	w.busy = i18n.T("Erster Abgleich läuft …")
 	return a.runSync()
 }
 
@@ -625,15 +626,15 @@ func (a *App) wizFirstSync(m syncDoneMsg) {
 	}
 	w.awaitSync, w.busy = false, ""
 	if m.err != nil {
-		w.first = &syncx.Step{Title: "Erster Abgleich", State: syncx.StepFail, Detail: m.err.Error(), Hint: "Einstellungen sind gespeichert; Strg+T testet erneut, Esc schließt."}
+		w.first = &syncx.Step{Title: "Erster Abgleich", State: syncx.StepFail, Detail: m.err.Error(), Hint: i18n.T("Einstellungen sind gespeichert; Strg+T testet erneut, Esc schließt.")}
 		return
 	}
-	d := fmt.Sprintf("%s und %s abgeglichen", plural(m.stats.Connections, "Verbindung", "Verbindungen"), plural(m.stats.Tunnels, "Tunnel", "Tunnel"))
+	d := fmt.Sprintf(i18n.T("%s und %s abgeglichen"), plural(m.stats.Connections, i18n.T("Verbindung"), i18n.T("Verbindungen")), plural(m.stats.Tunnels, i18n.Pick("Tunnel", "tunnel"), i18n.Pick("Tunnel", "tunnels")))
 	if m.stats.Added > 0 {
-		d += fmt.Sprintf(", %d von anderen Rechnern übernommen", m.stats.Added)
+		d += fmt.Sprintf(i18n.T(", %d von anderen Rechnern übernommen"), m.stats.Added)
 	}
 	w.first = &syncx.Step{Title: "Erster Abgleich", State: syncx.StepOK, Detail: d,
-		Hint: "Fertig. Auf jedem weiteren Rechner: y drücken, denselben Ort und dasselbe Sync-Passwort angeben."}
+		Hint: i18n.T("Fertig. Auf jedem weiteren Rechner: y drücken, denselben Ort und dasselbe Sync-Passwort angeben.")}
 }
 
 func (a *App) viewSync() string {
@@ -644,12 +645,12 @@ func (a *App) viewSync() string {
 	s := a.s
 	width := min(110, a.w-4)
 	var b strings.Builder
-	b.WriteString(s.Accent.Render("⇅ Sync zwischen Rechnern") + "\n")
-	b.WriteString(s.Muted.Render("Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n"+
-		"gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro Rechner.") + "\n")
+	b.WriteString(s.Accent.Render(i18n.T("⇅ Sync zwischen Rechnern")) + "\n")
+	b.WriteString(s.Muted.Render(i18n.T("Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n")+
+		i18n.T("gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro Rechner.")) + "\n")
 	b.WriteString(w.f.view(s, width-4, &a.z))
 
-	b.WriteString("\n" + s.PanelTitle.Foreground(s.T.Accent).Render("Live-Test") + "\n")
+	b.WriteString("\n" + s.PanelTitle.Foreground(s.T.Accent).Render(i18n.T("Live-Test")) + "\n")
 	steps := []syncx.Step{}
 	if w.rep != nil && w.repSig == w.sig() {
 		steps = append(steps, w.rep.Steps...)
@@ -659,11 +660,11 @@ func (a *App) viewSync() string {
 	}
 	switch {
 	case w.checking:
-		b.WriteString(s.AI.Render("⠿ prüfe Verbindung …") + "\n")
+		b.WriteString(s.AI.Render(i18n.T("⠿ prüfe Verbindung …")) + "\n")
 	case w.busy != "":
 		b.WriteString(s.AI.Render("⠿ "+w.busy) + "\n")
 	case len(steps) == 0 && w.f.sel("mode") != modeOff:
-		b.WriteString(s.Muted.Render("startet automatisch, sobald die Angaben vollständig sind (oder Strg+T)") + "\n")
+		b.WriteString(s.Muted.Render(i18n.T("startet automatisch, sobald die Angaben vollständig sind (oder Strg+T)")) + "\n")
 	}
 	hintW := width - 10
 	for _, st := range steps {
@@ -674,7 +675,7 @@ func (a *App) viewSync() string {
 		case syncx.StepFail:
 			icon, style = "✗", s.Danger
 		}
-		b.WriteString(" " + style.Render(icon) + " " + s.Text.Render(lipgloss.NewStyle().Width(20).Render(st.Title)) + s.Muted.Render(trunc(st.Detail, width-30)) + "\n")
+		b.WriteString(" " + style.Render(icon) + " " + s.Text.Render(lipgloss.NewStyle().Width(20).Render(i18n.T(st.Title))) + s.Muted.Render(trunc(st.Detail, width-30)) + "\n")
 		if st.Hint != "" && (st.State != syncx.StepOK || st.Title == "Erster Abgleich" || (st.Title == "Sync-Datei" && !w.keepKey())) {
 			fg := s.T.Warn
 			if st.State == syncx.StepOK {
@@ -688,7 +689,7 @@ func (a *App) viewSync() string {
 
 func (a *App) syncKeys() [][2]string {
 	if a.wiz != nil && a.wiz.first != nil {
-		return [][2]string{{"⏎/Esc", "fertig"}, {"Strg+T", "erneut testen"}}
+		return [][2]string{{"⏎/Esc", i18n.T("fertig")}, {"Strg+T", i18n.T("erneut testen")}}
 	}
-	return [][2]string{{"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+T", "testen"}, {"Strg+S", "speichern"}, {"Esc", "schließen"}}
+	return [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+T", i18n.T("testen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("schließen")}}
 }

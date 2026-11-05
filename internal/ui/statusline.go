@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Statuszeile pro Sitzung (zweite Zeile im Terminal): wer@wo und System
@@ -70,10 +71,10 @@ func (a *App) sessionBar(s *session) string {
 	// links: Warnungen + wer@wo
 	var left strings.Builder
 	if prod {
-		left.WriteString(lipgloss.NewStyle().Background(st.T.Bg).Foreground(st.T.Danger).Bold(true).Padding(0, 1).Render("PRODUKTIV"))
+		left.WriteString(lipgloss.NewStyle().Background(st.T.Bg).Foreground(st.T.Danger).Bold(true).Padding(0, 1).Render(i18n.T("PRODUKTIV")))
 	}
 	if s.state == stConnected && s.rootNow() {
-		left.WriteString(st.ChipDanger.Bold(true).Render("⚠ root"))
+		left.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("⚠ root")))
 	}
 	info := s.conn.Username + "@" + s.conn.Addr()
 	if s.client != nil {
@@ -120,17 +121,17 @@ func (a *App) sessionBar(s *session) string {
 		ai = st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22) + " · " + t)
 	}
 	if !cfg.SuggestEnabled {
-		ai = st.Badge.Foreground(st.T.Muted).Render("✦ Ghost aus")
+		ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("✦ Ghost aus"))
 	}
 	ai = st.Badge.Foreground(a.llmColor(h.level)).PaddingRight(0).Render(h.dot(a.lh.probing)) + ai
 	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
-	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, "Tunnel", "Tunnel")))
+	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, i18n.Pick("Tunnel", "tunnel"), i18n.Pick("Tunnel", "tunnels"))))
 	goal := ""
 	if s.goal.active {
-		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv"))
+		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render(i18n.T("◎ Ziel aktiv")))
 	}
 	if s.scroll > 0 {
-		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf("⇡ Verlauf −%d · Esc", s.scroll)),
+		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf(i18n.T("⇡ Verlauf −%d · Esc"), s.scroll)),
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
 	if hb := a.hostBadge(s); hb != "" {

@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/update"
 	"github.com/db9979/sshtermy/internal/version"
 )
@@ -55,39 +56,39 @@ type modal struct {
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
-	return &modal{kind: mHostKey, title: "Unbekannter Host", hk: m,
-		body: "Der Server " + m.host + " ist noch nicht bekannt.\n\n" +
-			"Schlüssel: " + m.typ + "\nFingerprint: " + m.fp + "\n\n" +
-			"Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).\n" +
-			"j = vertrauen und merken · n = abbrechen"}
+	return &modal{kind: mHostKey, title: i18n.T("Unbekannter Host"), hk: m,
+		body: i18n.T("Der Server ") + m.host + i18n.T(" ist noch nicht bekannt.\n\n") +
+			i18n.T("Schlüssel: ") + m.typ + i18n.T("\nFingerprint: ") + m.fp + "\n\n" +
+			i18n.T("Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).\n") +
+			i18n.T("j = vertrauen und merken · n = abbrechen")}
 }
 
 func secretModal(m secretAskMsg) *modal {
 	in := newInput("", true)
 	in.Focus()
-	return &modal{kind: mSecret, title: "Eingabe nötig", body: m.label, sec: m, in: in}
+	return &modal{kind: mSecret, title: i18n.T("Eingabe nötig"), body: m.label, sec: m, in: in}
 }
 
 func confirmModal(title, body string, yes func() tea.Cmd) *modal {
-	return &modal{kind: mConfirm, title: title, body: body + "\n\nj = ja · n = nein", onYes: yes}
+	return &modal{kind: mConfirm, title: title, body: body + i18n.T("\n\nj = ja · n = nein"), onYes: yes}
 }
 
 type applyDoneMsg struct{ err error }
 
 func (a *App) aboutModal() *modal {
 	b := version.Long() + "\n\n" +
-		"Sicherheit: AES-256-GCM, Argon2id, DPAPI (Windows), Host-Key-Prüfung (TOFU),\n" +
-		"KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.\n\n" +
-		"☕ Gefällt dir sshTermy? Spendier einen Kaffee: " + version.Coffee + "\n\n"
+		i18n.T("Sicherheit: AES-256-GCM, Argon2id, DPAPI (Windows), Host-Key-Prüfung (TOFU),\n") +
+		i18n.T("KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.\n\n") +
+		i18n.T("☕ Gefällt dir sshTermy? Spendier einen Kaffee: ") + version.Coffee + "\n\n"
 	if a.rel != nil {
-		b += "⬆ Neue Version v" + a.rel.Version + " verfügbar.\n" + firstLines(a.rel.Notes, 6) + "\n\nu = jetzt aktualisieren · "
+		b += i18n.T("⬆ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6) + i18n.T("\n\nu = jetzt aktualisieren · ")
 	} else if a.restartPending != "" {
-		b += "v" + a.restartPending + " ist installiert.\n\nr = jetzt neu starten · "
+		b += "v" + a.restartPending + i18n.T(" ist installiert.\n\nr = jetzt neu starten · ")
 	} else {
-		b += "c = nach Updates suchen · "
+		b += i18n.T("c = nach Updates suchen · ")
 	}
-	b += "w = was ist neu · b = Kaffee spendieren · Esc = schließen"
-	return &modal{kind: mAbout, title: "Über " + version.Name, body: b}
+	b += i18n.T("w = was ist neu · b = Kaffee spendieren · Esc = schließen") + "\nl = " + langLabel()
+	return &modal{kind: mAbout, title: i18n.T("Über ") + version.Name, body: b}
 }
 
 func firstLines(s string, n int) string {
@@ -174,12 +175,12 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		case "u":
 			if a.rel != nil {
 				rel := a.rel
-				a.modal = &modal{kind: mBusy, title: "Update", body: "Lade v" + rel.Version + ", prüfe Signatur und Prüfsumme …"}
+				a.modal = &modal{kind: mBusy, title: "Update", body: i18n.T("Lade v") + rel.Version + i18n.T(", prüfe Signatur und Prüfsumme …")}
 				return func() tea.Msg { return applyDoneMsg{update.Apply(context.Background(), rel)} }
 			}
 		case "c":
 			a.modal = nil
-			a.flash("Suche nach Updates …")
+			a.flash(i18n.T("Suche nach Updates …"))
 			return checkUpdate()
 		case "r":
 			if a.restartPending != "" {
@@ -189,6 +190,10 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 			a.modal = a.changelogModal(nil)
 		case "b":
 			return a.openURL(version.Coffee)
+		case "l":
+			cmd := a.toggleLang()
+			a.modal = a.aboutModal()
+			return cmd
 		case "esc", "q", "enter":
 			a.modal = nil
 		}
@@ -246,10 +251,10 @@ func (m *modal) view(s Styles, w, h int) string {
 	}
 	body := s.Text.Render(m.body)
 	if m.kind == mInput {
-		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render("⏎ übernehmen · Esc abbrechen")
+		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render(i18n.T("⏎ übernehmen · Esc abbrechen"))
 	}
 	if m.kind == mSecret {
-		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render("⏎ senden · Esc abbrechen (wird nicht gespeichert)")
+		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render(i18n.T("⏎ senden · Esc abbrechen (wird nicht gespeichert)"))
 	}
 	return s.Modal.Width(min(90, w-4)).Render(title + "\n\n" + body)
 }

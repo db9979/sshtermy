@@ -15,6 +15,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/broadcast"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -74,7 +75,7 @@ type bcDoneMsg struct{ seq int }
 func (a *App) openBroadcast() tea.Cmd {
 	conns := a.st.Connections()
 	sort.SliceStable(conns, func(i, j int) bool { return conns[i].Group < conns[j].Group })
-	b := &bcState{conns: conns, picked: map[string]bool{}, books: a.st.Runbooks(""), cmd: newAIInput("Befehl, z. B. uptime · ⇧⏎ = weiterer Schritt")}
+	b := &bcState{conns: conns, picked: map[string]bool{}, books: a.st.Runbooks(""), cmd: newAIInput(i18n.T("Befehl, z. B. uptime · ⇧⏎ = weiterer Schritt"))}
 	b.cmd.MaxHeight = 5
 	// Vorauswahl: Ordner der markierten Verbindung (sonst nur sie selbst);
 	// ist ein Ordner markiert, alles darin samt Unterordnern.
@@ -105,7 +106,7 @@ func (a *App) openBroadcast() tea.Cmd {
 	a.bc = b
 	a.scr = scrBroadcast
 	if len(conns) == 0 {
-		b.err = "Noch keine Verbindungen. Mit n anlegen oder mit f im Netz suchen."
+		b.err = i18n.T("Noch keine Verbindungen. Mit n anlegen oder mit f im Netz suchen.")
 	}
 	b.focus = bcFocusCmd
 	return b.cmd.Focus()
@@ -136,7 +137,7 @@ func (b *bcState) stepList() []string {
 }
 
 func (b *bcState) sourceNames() []string {
-	out := []string{"eigener Befehl"}
+	out := []string{i18n.T("eigener Befehl")}
 	for _, r := range b.books {
 		out = append(out, "▶ "+r.Name)
 	}
@@ -247,11 +248,11 @@ func (a *App) updateBroadcast(msg tea.Msg) tea.Cmd {
 func (a *App) bcToConfirm() tea.Cmd {
 	b := a.bc
 	if len(b.chosen()) == 0 {
-		b.err = "Keine Hosts gewählt (Leertaste, g = ganzer Ordner, a = alle)"
+		b.err = i18n.T("Keine Hosts gewählt (Leertaste, g = ganzer Ordner, a = alle)")
 		return nil
 	}
 	if len(b.stepList()) == 0 {
-		b.err = "Kein Befehl"
+		b.err = i18n.T("Kein Befehl")
 		return b.setFocus(bcFocusCmd)
 	}
 	b.err, b.armed, b.phase = "", false, bcConfirm
@@ -374,7 +375,7 @@ func (a *App) bcMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if b := a.bc; b != nil && m.seq == b.seq {
 			b.running = false
 			ok, failed, _ := broadcast.Summary(b.results)
-			a.flash(fmt.Sprintf("Broadcast fertig: %d ok, %d Fehler", ok, failed))
+			a.flash(fmt.Sprintf(i18n.T("Broadcast fertig: %d ok, %d Fehler"), ok, failed))
 		}
 		return a.listen(), true
 	}
@@ -425,7 +426,7 @@ func (a *App) bcRunKey(k tea.KeyPressMsg) tea.Cmd {
 	case "x":
 		if b.running {
 			b.cancel()
-			a.flash("Broadcast wird abgebrochen …")
+			a.flash(i18n.T("Broadcast wird abgebrochen …"))
 		}
 	case "r":
 		if !b.running {
@@ -440,7 +441,7 @@ func (a *App) bcRunKey(k tea.KeyPressMsg) tea.Cmd {
 		if b.sel < n {
 			text := b.results[b.sel].Output
 			go func() { _ = clipboard.WriteAll(text) }()
-			a.flash("Ausgabe von " + b.results[b.sel].Alias + " kopiert")
+			a.flash(i18n.T("Ausgabe von ") + b.results[b.sel].Alias + i18n.T(" kopiert"))
 			return tea.SetClipboard(text)
 		}
 	case "f1":
@@ -456,18 +457,18 @@ func (a *App) broadcastKeys() [][2]string {
 	}
 	switch b.phase {
 	case bcConfirm:
-		return [][2]string{{"⏎", "ausführen"}, {"Esc", "zurück"}}
+		return [][2]string{{"⏎", i18n.T("ausführen")}, {"Esc", i18n.T("zurück")}}
 	case bcRun:
-		k := [][2]string{{"←/→", "Host"}, {"↑/↓", "blättern"}, {"z", "groß"}, {"c", "kopieren"}}
+		k := [][2]string{{"←/→", "Host"}, {"↑/↓", i18n.T("blättern")}, {"z", i18n.T("groß")}, {"c", i18n.T("kopieren")}}
 		if b.running {
-			k = append(k, [2]string{"x", "abbrechen"})
+			k = append(k, [2]string{"x", i18n.T("abbrechen")})
 		} else {
-			k = append(k, [2]string{"r", "nochmal"}, [2]string{"e", "ändern"})
+			k = append(k, [2]string{"r", i18n.T("nochmal")}, [2]string{"e", i18n.T("ändern")})
 		}
-		return append(k, [2]string{"Esc", "zum Manager"}, [2]string{"F1", "Hilfe"})
+		return append(k, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{"F1", i18n.T("Hilfe")})
 	}
-	return [][2]string{{"Tab", "Hosts/Quelle/Befehl"}, {"Space", "Host wählen"}, {"g", "Ordner"}, {"a", "alle"},
-		{"Strg+S", "weiter"}, {"Esc", "abbrechen"}, {"F1", "Hilfe"}}
+	return [][2]string{{"Tab", i18n.T("Hosts/Quelle/Befehl")}, {"Space", i18n.T("Host wählen")}, {"g", i18n.T("Ordner")}, {"a", i18n.T("alle")},
+		{"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -490,7 +491,7 @@ func (a *App) viewBcSetup() string {
 	b, s := a.bc, a.s
 	w := min(110, a.w-4)
 	var o strings.Builder
-	o.WriteString(s.Accent.Render("⇉ Broadcast") + s.Muted.Render("  ein Befehl oder Runbook parallel auf mehreren Hosts") + "\n\n")
+	o.WriteString(s.Accent.Render(i18n.T("⇉ Broadcast")) + s.Muted.Render(i18n.T("  ein Befehl oder Runbook parallel auf mehreren Hosts")) + "\n\n")
 
 	head := func(focus int, title string) string {
 		m := "  "
@@ -504,8 +505,8 @@ func (a *App) viewBcSetup() string {
 
 	// Hosts
 	picked := len(b.chosen())
-	o.WriteString(head(bcFocusHosts, "Hosts") + s.Text.Render(fmt.Sprintf("%d von %d gewählt", picked, len(b.conns))) +
-		s.Muted.Render("   Leertaste wählen · g Ordner · a alle") + "\n")
+	o.WriteString(head(bcFocusHosts, "Hosts") + s.Text.Render(fmt.Sprintf(i18n.T("%d von %d gewählt"), picked, len(b.conns))) +
+		s.Muted.Render(i18n.T("   Leertaste wählen · g Ordner · a alle")) + "\n")
 	steps := b.stepList()
 	stepsH := len(steps)
 	if b.src == 0 {
@@ -524,7 +525,7 @@ func (a *App) viewBcSetup() string {
 			group = c.Group
 			g := group
 			if g == "" {
-				g = "Allgemein"
+				g = i18n.T("Allgemein")
 			}
 			if shown > 0 || i == start {
 				o.WriteString("    " + s.Muted.Render(strings.ToUpper(g)) + "\n")
@@ -537,7 +538,7 @@ func (a *App) viewBcSetup() string {
 		}
 		dev := ""
 		if c.Device == domain.DeviceNetwork {
-			dev = s.Muted.Render(" · Netzwerkgerät")
+			dev = s.Muted.Render(i18n.T(" · Netzwerkgerät"))
 		}
 		line := fmt.Sprintf("    %s %-20s %s%s", box, trunc(c.Alias, 20), s.Muted.Render(trunc(c.Username+"@"+c.Host, 30)), dev)
 		if i == b.cur && b.focus == bcFocusHosts {
@@ -567,12 +568,12 @@ func (a *App) viewBcSetup() string {
 	if lipgloss.Width(src) > w-24 {
 		src = ansi.Truncate(src, w-24, "…")
 	}
-	o.WriteString(head(bcFocusSource, "Quelle") + src + "\n")
+	o.WriteString(head(bcFocusSource, i18n.T("Quelle")) + src + "\n")
 
 	// Befehl bzw. Runbook-Schritte
 	if b.src == 0 {
 		b.cmd.SetWidth(w - 26)
-		o.WriteString(promptBlock(head(bcFocusCmd, "Befehl"), b.cmd.View()) + "\n")
+		o.WriteString(promptBlock(head(bcFocusCmd, i18n.T("Befehl")), b.cmd.View()) + "\n")
 	} else {
 		rb := b.books[b.src-1]
 		o.WriteString("  " + s.Label.Render("Runbook") + s.Muted.Render(trunc(rb.Goal, w-26)) + "\n")
@@ -580,7 +581,7 @@ func (a *App) viewBcSetup() string {
 			o.WriteString("  " + strings.Repeat(" ", 20) + s.Muted.Render(fmt.Sprintf("%d. ", i+1)) + s.Code.Render(trunc(st, w-28)) + "\n")
 		}
 		if len(rb.Steps) == 0 {
-			o.WriteString("  " + strings.Repeat(" ", 20) + s.Warn.Render("Runbook hat keine gespeicherten Schritte") + "\n")
+			o.WriteString("  " + strings.Repeat(" ", 20) + s.Warn.Render(i18n.T("Runbook hat keine gespeicherten Schritte")) + "\n")
 		}
 	}
 	for _, d := range broadcast.Dangers(steps) {
@@ -599,7 +600,7 @@ func (a *App) viewBcConfirm() string {
 	steps := b.stepList()
 	dangers := broadcast.Dangers(steps)
 	var o strings.Builder
-	o.WriteString(s.Accent.Render(fmt.Sprintf("⇉ Auf %s ausführen?", plural(len(hosts), "Host", "Hosts"))) + "\n\n")
+	o.WriteString(s.Accent.Render(fmt.Sprintf(i18n.T("⇉ Auf %s ausführen?"), plural(len(hosts), "Host", "Hosts"))) + "\n\n")
 	var names []string
 	nets := 0
 	for _, c := range hosts {
@@ -617,23 +618,23 @@ func (a *App) viewBcConfirm() string {
 		o.WriteString(pre + s.Code.Render(trunc(st, w-10)) + "\n")
 	}
 	if broadcast.Elevated(steps) {
-		o.WriteString("\n" + s.Warn.Render("⚠ läuft mit erhöhten Rechten (sudo)") + "\n")
+		o.WriteString("\n" + s.Warn.Render(i18n.T("⚠ läuft mit erhöhten Rechten (sudo)")) + "\n")
 	}
 	if nets > 0 {
-		o.WriteString(s.Muted.Render("Netzwerkgeräte bekommen die Befehle in die Shell getippt (ohne Exit-Code).") + "\n")
+		o.WriteString(s.Muted.Render(i18n.T("Netzwerkgeräte bekommen die Befehle in die Shell getippt (ohne Exit-Code).")) + "\n")
 	}
-	hint := s.Muted.Render("⏎ ausführen · Esc zurück")
+	hint := s.Muted.Render(i18n.T("⏎ ausführen · Esc zurück"))
 	if len(dangers) > 0 {
 		var d strings.Builder
-		d.WriteString(s.Danger.Render("GEFAHR") + "\n")
+		d.WriteString(s.Danger.Render(i18n.T("GEFAHR")) + "\n")
 		for _, x := range dangers {
-			d.WriteString(s.Danger.Render(fmt.Sprintf("Schritt %d: %s", x.Step, strings.Join(x.Reasons, ", "))) + "\n")
+			d.WriteString(s.Danger.Render(fmt.Sprintf(i18n.T("Schritt %d: %s"), x.Step, strings.Join(x.Reasons, ", "))) + "\n")
 		}
-		d.WriteString(s.Text.Render(fmt.Sprintf("Das betrifft %s gleichzeitig.", plural(len(hosts), "Host", "Hosts"))))
+		d.WriteString(s.Text.Render(fmt.Sprintf(i18n.T("Das betrifft %s gleichzeitig."), plural(len(hosts), "Host", "Hosts"))))
 		o.WriteString("\n" + s.DangerBox.Width(w-6).Render(d.String()) + "\n")
-		hint = s.Danger.Render("⏎ zweimal drücken zum Ausführen") + s.Muted.Render(" · Esc zurück")
+		hint = s.Danger.Render(i18n.T("⏎ zweimal drücken zum Ausführen")) + s.Muted.Render(i18n.T(" · Esc zurück"))
 		if b.armed {
-			hint = s.Danger.Render("nochmal ⏎ = wirklich ausführen") + s.Muted.Render(" · Esc zurück")
+			hint = s.Danger.Render(i18n.T("nochmal ⏎ = wirklich ausführen")) + s.Muted.Render(i18n.T(" · Esc zurück"))
 		}
 	}
 	o.WriteString("\n" + hint)
@@ -652,30 +653,30 @@ func (a *App) bcStatus(r broadcast.Result, steps int) (icon string, text string,
 	}
 	switch r.State {
 	case broadcast.Waiting:
-		return "○", "wartet", s.Muted
+		return "○", i18n.T("wartet"), s.Muted
 	case broadcast.Connecting:
-		return "◌", "verbinde …", s.Warn
+		return "◌", i18n.T("verbinde …"), s.Warn
 	case broadcast.Running:
 		if steps > 1 {
-			return "◐", fmt.Sprintf("Schritt %d/%d …", r.Step, steps), s.AI
+			return "◐", fmt.Sprintf(i18n.T("Schritt %d/%d …"), r.Step, steps), s.AI
 		}
-		return "◐", "läuft …", s.AI
+		return "◐", i18n.T("läuft …"), s.AI
 	case broadcast.Canceled:
-		return "■", "abgebrochen" + dur, s.Muted
+		return "■", i18n.T("abgebrochen") + dur, s.Muted
 	case broadcast.Failed:
 		return "✗", r.Err + dur, s.Danger
 	}
 	if r.Net {
-		return "✓", "fertig (Netzwerkgerät)" + dur, s.OK
+		return "✓", i18n.T("fertig (Netzwerkgerät)") + dur, s.OK
 	}
 	if r.Exit != 0 {
-		t := fmt.Sprintf("Exit %d", r.Exit)
+		t := fmt.Sprintf(i18n.T("Exit %d"), r.Exit)
 		if r.Err != "" {
 			t = r.Err
 		}
 		return "✗", t + dur, s.Danger
 	}
-	return "✓", "Exit 0" + dur, s.OK
+	return "✓", i18n.T("Exit 0") + dur, s.OK
 }
 
 func (a *App) viewBcRun() string {
@@ -689,7 +690,7 @@ func (a *App) viewBcRun() string {
 	}
 	sum := s.OK.Render(fmt.Sprintf("%d ✓", ok)) + "  " + s.Danger.Render(fmt.Sprintf("%d ✗", failed))
 	if running > 0 {
-		sum += "  " + s.AI.Render(fmt.Sprintf("%d …", running))
+		sum += "  " + s.AI.Render(fmt.Sprintf(i18n.T("%d …"), running))
 	}
 	top := " " + s.Accent.Render("⇉ ") + s.Code.Render(trunc(cmdText, max(10, a.w-30))) + "   " + sum
 	lines := []string{top, ""}
@@ -719,9 +720,9 @@ func (a *App) viewBcRun() string {
 			if out != "" {
 				out += "\n\n"
 			}
-			out += "Fehler: " + r.Err
+			out += i18n.T("Fehler: ") + r.Err
 		} else if out == "" && r.Finished() {
-			out = "(keine Ausgabe)"
+			out = i18n.T("(keine Ausgabe)")
 		}
 		wrapped[c] = strings.Split(ansi.Hardwrap(ansi.Strip(out), colW-1, true), "\n")
 		maxLen = max(maxLen, len(wrapped[c]))
@@ -772,13 +773,13 @@ func (a *App) viewBcRun() string {
 	lines = append(lines, lipgloss.JoinHorizontal(lipgloss.Top, colViews...))
 	more := ""
 	if n > cols {
-		more = fmt.Sprintf("Host %d–%d von %d · ←/→ weitere", b.first+1, min(n, b.first+cols), n)
+		more = fmt.Sprintf(i18n.T("Host %d–%d von %d · ←/→ weitere"), b.first+1, min(n, b.first+cols), n)
 	}
 	if maxLen > bodyH {
 		if more != "" {
 			more += " · "
 		}
-		more += fmt.Sprintf("Zeile %d–%d von %d", b.scroll+1, min(maxLen, b.scroll+bodyH), maxLen)
+		more += fmt.Sprintf(i18n.T("Zeile %d–%d von %d"), b.scroll+1, min(maxLen, b.scroll+bodyH), maxLen)
 	}
 	lines = append(lines, " "+s.Muted.Render(more))
 	return strings.Join(lines, "\n")

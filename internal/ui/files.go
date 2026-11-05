@@ -11,6 +11,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -166,7 +167,7 @@ func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 		d := time.Since(x.start)
 		switch {
 		case m.err == context.Canceled:
-			f.last = a.s.Warn.Render("Abgebrochen: " + x.what)
+			f.last = a.s.Warn.Render(i18n.T("Abgebrochen: ") + x.what)
 		case m.err != nil:
 			f.last = a.s.Danger.Render("✗ " + x.what + ": " + m.err.Error())
 		default:
@@ -191,7 +192,7 @@ func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 func (a *App) startCopy(s *session, overwrite bool) tea.Cmd {
 	f := &s.files
 	if f.xfer != nil {
-		a.flash("Es läuft schon eine Übertragung (x bricht ab)")
+		a.flash(i18n.T("Es läuft schon eine Übertragung (x bricht ab)"))
 		return nil
 	}
 	src, dst := f.panes[f.side], f.panes[1-f.side]
@@ -203,7 +204,7 @@ func (a *App) startCopy(s *session, overwrite bool) tea.Cmd {
 	target := dst.fs.Join(dst.path, e.Name)
 	if !overwrite {
 		if _, err := dst.fs.Stat(target); err == nil {
-			a.modal = confirmModal("Überschreiben?", "„"+e.Name+"“ gibt es in "+dst.path+" schon.",
+			a.modal = confirmModal(i18n.T("Überschreiben?"), "„"+e.Name+i18n.T("“ gibt es in ")+dst.path+i18n.T(" schon."),
 				func() tea.Cmd { return a.startCopy(s, true) })
 			return nil
 		}
@@ -307,7 +308,7 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		return a.startCopy(s, false)
 	case "n":
 		in := newInput("", false)
-		in.Placeholder = "Name des neuen Ordners"
+		in.Placeholder = i18n.T("Name des neuen Ordners")
 		f.mkdir = &in
 		return f.mkdir.Focus()
 	case "d", "delete":
@@ -316,11 +317,11 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		}
 		e := p.entries[p.sel]
 		target := p.fs.Join(p.path, e.Name)
-		what := "Die Datei"
+		what := i18n.T("Die Datei")
 		if e.IsDir {
-			what = "Den Ordner mit allem darin"
+			what = i18n.T("Den Ordner mit allem darin")
 		}
-		a.modal = confirmModal("Löschen?", fmt.Sprintf("%s: %s\n%s endgültig löschen?", p.fs.Label(), target, what), func() tea.Cmd {
+		a.modal = confirmModal(i18n.T("Löschen?"), fmt.Sprintf(i18n.T("%s: %s\n%s endgültig löschen?"), i18n.T(p.fs.Label()), target, what), func() tea.Cmd {
 			if err := p.fs.RemoveAll(target); err != nil {
 				p.err = err.Error()
 			}
@@ -333,12 +334,12 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 
 func (a *App) filesKeys(s *session) [][2]string {
 	if s.files.mkdir != nil {
-		return [][2]string{{"⏎", "anlegen"}, {"Esc", "abbrechen"}}
+		return [][2]string{{"⏎", i18n.T("anlegen")}, {"Esc", i18n.T("abbrechen")}}
 	}
-	k := [][2]string{{"Tab", "Seite"}, {"⏎/←", "öffnen/zurück"}, {"c", "kopieren ⇄"}, {"n", "Ordner"}, {"d", "löschen"},
-		{".", "versteckte"}, {"~", "Home"}, {"r", "neu laden"}, {"Esc/F5", "Terminal"}}
+	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ⇄")}, {"n", i18n.T("Ordner")}, {"d", i18n.T("löschen")},
+		{".", i18n.T("versteckte")}, {"~", "Home"}, {"r", i18n.T("neu laden")}, {"Esc/F5", "Terminal"}}
 	if s.files.xfer != nil {
-		k = append([][2]string{{"x", "abbrechen"}}, k...)
+		k = append([][2]string{{"x", i18n.T("abbrechen")}}, k...)
 	}
 	return k
 }
@@ -348,19 +349,19 @@ func (a *App) viewFiles(s *session, w, h int) string {
 	f := &s.files
 	switch {
 	case f.opening:
-		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.AI.Render("⠿ öffne SFTP-Kanal …"))
+		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.AI.Render(i18n.T("⠿ öffne SFTP-Kanal …")))
 	case f.err != "":
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center,
-			st.Danger.Render("✗ "+f.err)+"\n\n"+st.Muted.Render("Esc zurück zum Terminal"))
+			st.Danger.Render("✗ "+f.err)+"\n\n"+st.Muted.Render(i18n.T("Esc zurück zum Terminal")))
 	case f.panes[0] == nil:
-		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.Muted.Render("keine Verbindung"))
+		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.Muted.Render(i18n.T("keine Verbindung")))
 	}
 	// unten: Status/Fortschritt (2 Zeilen)
 	status := ""
 	switch {
 	case f.mkdir != nil:
 		f.mkdir.SetWidth(w - 20)
-		status = st.Accent.Render(" Neuer Ordner: ") + f.mkdir.View()
+		status = st.Accent.Render(i18n.T(" Neuer Ordner: ")) + f.mkdir.View()
 	case f.xfer != nil:
 		x := f.xfer
 		done, total := x.pr.Done.Load(), x.pr.Total.Load()
@@ -377,7 +378,7 @@ func (a *App) viewFiles(s *session, w, h int) string {
 	case f.last != "":
 		status = " " + f.last
 	default:
-		status = st.Muted.Render(" c kopiert den markierten Eintrag auf die andere Seite: links → rechts lädt hoch, rechts → links lädt herunter")
+		status = st.Muted.Render(i18n.T(" c kopiert den markierten Eintrag auf die andere Seite: links → rechts lädt hoch, rechts → links lädt herunter"))
 	}
 	ph := h - 2
 	lw := (w - 1) / 2
@@ -391,7 +392,7 @@ func (a *App) viewPane(f *filesState, side, w, h int) string {
 	st := a.s
 	p, active := f.panes[side], f.side == side
 	var b strings.Builder
-	title := " " + p.fs.Label() + " "
+	title := " " + i18n.T(p.fs.Label()) + " "
 	ts := st.Tab
 	if active {
 		ts = st.TabActive.Foreground(st.T.Accent)

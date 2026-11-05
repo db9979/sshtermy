@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/pkg/sftp"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Dateiübertragung per SFTP über dieselbe SSH-Verbindung wie die Shell
@@ -120,7 +122,7 @@ type RemoteFS struct {
 func (c *Client) OpenSFTP() (*RemoteFS, error) {
 	sc, err := sftp.NewClient(c.Client, sftp.UseConcurrentWrites(true), sftp.UseConcurrentReads(true))
 	if err != nil {
-		return nil, fmt.Errorf("SFTP nicht verfügbar (Server ohne sftp-Subsystem?): %w", err)
+		return nil, fmt.Errorf(i18n.T("SFTP nicht verfügbar (Server ohne sftp-Subsystem?): %w"), err)
 	}
 	home, err := sc.Getwd()
 	if err != nil || home == "" {
@@ -220,7 +222,7 @@ func Copy(ctx context.Context, src FS, srcPath string, dst FS, dstDir string, pr
 		name = path.Base(srcPath)
 	}
 	if name == "" || name == "." || name == "/" || name == ".." {
-		return errors.New("ungültiger Name")
+		return errors.New(i18n.T("ungültiger Name"))
 	}
 	return copyAny(ctx, src, srcPath, dst, dst.Join(dstDir, name), pr)
 }

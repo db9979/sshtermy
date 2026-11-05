@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/safety"
 )
 
@@ -59,22 +60,22 @@ func (a *App) pasteGuardEnabled() bool { return !a.st.Settings().NoPasteGuard }
 func (a *App) togglePasteGuard() tea.Cmd {
 	on := !a.pasteGuardEnabled()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoPasteGuard = !on }); err != nil {
-		a.flash("Einstellung nicht gespeichert: " + err.Error())
+		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {
-		a.flash("Einfügeschutz an: mehrzeiliges Einfügen zeigt erst eine Vorschau.")
+		a.flash(i18n.T("Einfügeschutz an: mehrzeiliges Einfügen zeigt erst eine Vorschau."))
 	} else {
-		a.flash("Einfügeschutz aus. Gefährliche Befehle fragen trotzdem nach.")
+		a.flash(i18n.T("Einfügeschutz aus. Gefährliche Befehle fragen trotzdem nach."))
 	}
 	return nil
 }
 
 func pasteGuardLabel(on bool) string {
 	if on {
-		return "Einfügeschutz aus (mehrzeilig ohne Vorschau)"
+		return i18n.T("Einfügeschutz aus (mehrzeilig ohne Vorschau)")
 	}
-	return "Einfügeschutz an (Vorschau bei mehreren Zeilen)"
+	return i18n.T("Einfügeschutz an (Vorschau bei mehreren Zeilen)")
 }
 
 // guardedPaste fügt ein oder zeigt zuerst die Vorschau.
@@ -98,9 +99,9 @@ func (a *App) guardedPaste(s *session, text string) tea.Cmd {
 		s.term.Paste(text)
 		return nil
 	}
-	a.modal = &modal{kind: mPaste, title: "Einfügen prüfen", paste: &pc}
+	a.modal = &modal{kind: mPaste, title: i18n.T("Einfügen prüfen"), paste: &pc}
 	if pc.dangerous > 0 {
-		a.modal.title = "⚠ Gefährlicher Befehl beim Einfügen"
+		a.modal.title = i18n.T("⚠ Gefährlicher Befehl beim Einfügen")
 	}
 	return nil
 }
@@ -147,9 +148,9 @@ func (a *App) pasteView(m *modal) string {
 	}
 	b.WriteString(title + "\n\n")
 	n := len(pc.lines)
-	info := plural(n, "Zeile", "Zeilen") + " · " + plural(utf8.RuneCountInString(pc.text), "Zeichen", "Zeichen")
+	info := plural(n, i18n.T("Zeile"), i18n.T("Zeilen")) + " · " + plural(utf8.RuneCountInString(pc.text), i18n.T("Zeichen"), i18n.T("Zeichen"))
 	if pc.multi {
-		info += " · jede Zeile kann sofort laufen"
+		info += i18n.T(" · jede Zeile kann sofort laufen")
 	}
 	b.WriteString(st.Muted.Render(info) + "\n\n")
 
@@ -184,16 +185,16 @@ func (a *App) pasteView(m *modal) string {
 		}
 	}
 	if rest := n - len(show); rest > 0 {
-		b.WriteString(st.Muted.Render(fmt.Sprintf("… und %s mehr", plural(rest, "Zeile", "Zeilen"))) + "\n")
+		b.WriteString(st.Muted.Render(fmt.Sprintf(i18n.T("… und %s mehr"), plural(rest, i18n.T("Zeile"), i18n.T("Zeilen")))) + "\n")
 	}
 	b.WriteString("\n")
 	switch {
 	case pc.dangerous > 0 && pc.armed:
-		b.WriteString(st.Danger.Render("Wirklich? Nochmal ⏎ fügt ein, Esc bricht ab."))
+		b.WriteString(st.Danger.Render(i18n.T("Wirklich? Nochmal ⏎ fügt ein, Esc bricht ab.")))
 	case pc.dangerous > 0:
-		b.WriteString(st.Warn.Render(fmt.Sprintf("Die Gefahrenregeln treffen auf %s zu. ⏎ zweimal drücken zum Einfügen.", plural(pc.dangerous, "Zeile", "Zeilen"))))
+		b.WriteString(st.Warn.Render(fmt.Sprintf(i18n.T("Die Gefahrenregeln treffen auf %s zu. ⏎ zweimal drücken zum Einfügen."), plural(pc.dangerous, i18n.T("Zeile"), i18n.T("Zeilen")))))
 	default:
-		b.WriteString(st.Muted.Render("Prüfe den Text, bevor er in die Shell geht."))
+		b.WriteString(st.Muted.Render(i18n.T("Prüfe den Text, bevor er in die Shell geht.")))
 	}
 	return st.Modal.Width(w).Render(b.String())
 }

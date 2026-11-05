@@ -17,6 +17,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Live-Test für den Einrichtungsassistenten: jeder Schritt meldet, was
@@ -135,7 +137,7 @@ func detectService(dir string) string {
 		d = p
 	}
 	if strings.HasPrefix(dir, `\\`) || strings.HasPrefix(l, "/volumes/") || strings.HasPrefix(l, "/mnt/") {
-		return "Netzlaufwerk"
+		return i18n.T("Netzlaufwerk")
 	}
 	return ""
 }
@@ -145,48 +147,48 @@ func CheckFolder(ctx context.Context, dir string) *Report {
 	r := &Report{}
 	dir = ExpandHome(dir)
 	if dir == "" {
-		r.add("Ordner", StepFail, "kein Ordner angegeben", "Wähle einen Ordner in OneDrive, Dropbox, iCloud Drive, Nextcloud oder Syncthing.")
+		r.add(i18n.T("Ordner"), StepFail, i18n.T("kein Ordner angegeben"), i18n.T("Wähle einen Ordner in OneDrive, Dropbox, iCloud Drive, Nextcloud oder Syncthing."))
 		return r
 	}
 	if !filepath.IsAbs(dir) {
-		r.add("Ordner", StepFail, dir, "Bitte einen vollständigen Pfad angeben, z. B. "+examplePath())
+		r.add(i18n.T("Ordner"), StepFail, dir, i18n.T("Bitte einen vollständigen Pfad angeben, z. B. ")+examplePath())
 		return r
 	}
 	if st, err := os.Stat(dir); err == nil && !st.IsDir() {
-		r.add("Ordner", StepFail, dir+" ist eine Datei", "Bitte einen Ordner angeben.")
+		r.add(i18n.T("Ordner"), StepFail, dir+i18n.T(" ist eine Datei"), i18n.T("Bitte einen Ordner angeben."))
 		return r
 	} else if errors.Is(err, os.ErrNotExist) {
 		if err := os.MkdirAll(dir, 0o700); err != nil {
-			r.add("Ordner", StepFail, err.Error(), "Ordner konnte nicht angelegt werden. Gibt es das übergeordnete Laufwerk, ist der Cloud-Client angemeldet?")
+			r.add(i18n.T("Ordner"), StepFail, err.Error(), i18n.T("Ordner konnte nicht angelegt werden. Gibt es das übergeordnete Laufwerk, ist der Cloud-Client angemeldet?"))
 			return r
 		}
-		r.add("Ordner", StepOK, "angelegt: "+dir, "")
+		r.add(i18n.T("Ordner"), StepOK, i18n.T("angelegt: ")+dir, "")
 	} else if err != nil {
-		r.add("Ordner", StepFail, err.Error(), "Kein Zugriff auf den Ordner.")
+		r.add(i18n.T("Ordner"), StepFail, err.Error(), i18n.T("Kein Zugriff auf den Ordner."))
 		return r
 	} else {
-		r.add("Ordner", StepOK, dir, "")
+		r.add(i18n.T("Ordner"), StepOK, dir, "")
 	}
 
 	test := filepath.Join(dir, randName())
 	data := []byte("sshtermy")
 	if err := os.WriteFile(test, data, 0o600); err != nil {
-		r.add("Schreiben & Lesen", StepFail, err.Error(), "Keine Schreibrechte in diesem Ordner. Anderen Ordner wählen oder Rechte prüfen.")
+		r.add(i18n.T("Schreiben & Lesen"), StepFail, err.Error(), i18n.T("Keine Schreibrechte in diesem Ordner. Anderen Ordner wählen oder Rechte prüfen."))
 		return r
 	}
 	back, err := os.ReadFile(test)
 	_ = os.Remove(test)
 	if err != nil || !bytes.Equal(back, data) {
-		r.add("Schreiben & Lesen", StepFail, "Testdatei kam anders zurück", "Der Ordner verhält sich ungewöhnlich (Cloud-Platzhalter?). In OneDrive „Immer auf diesem Gerät behalten“ wählen.")
+		r.add(i18n.T("Schreiben & Lesen"), StepFail, i18n.T("Testdatei kam anders zurück"), i18n.T("Der Ordner verhält sich ungewöhnlich (Cloud-Platzhalter?). In OneDrive „Immer auf diesem Gerät behalten“ wählen."))
 		return r
 	}
-	r.add("Schreiben & Lesen", StepOK, "Testdatei geschrieben, gelesen, gelöscht", "")
+	r.add(i18n.T("Schreiben & Lesen"), StepOK, i18n.T("Testdatei geschrieben, gelesen, gelöscht"), "")
 
 	if svc := detectService(dir); svc != "" {
-		r.add("Sync-Dienst", StepOK, svc+" erkannt", "")
+		r.add("Sync-Dienst", StepOK, svc+i18n.T(" erkannt"), "")
 	} else {
-		r.add("Sync-Dienst", StepWarn, "kein Sync-Dienst erkannt",
-			"Das klappt nur, wenn dieser Ordner auf allen Rechnern abgeglichen wird (OneDrive, Dropbox, iCloud, Syncthing, Netzlaufwerk). Für ein NAS ist „NAS / WebDAV“ meist einfacher.")
+		r.add("Sync-Dienst", StepWarn, i18n.T("kein Sync-Dienst erkannt"),
+			i18n.T("Das klappt nur, wenn dieser Ordner auf allen Rechnern abgeglichen wird (OneDrive, Dropbox, iCloud, Syncthing, Netzlaufwerk). Für ein NAS ist „NAS / WebDAV“ meist einfacher."))
 	}
 	checkSyncFile(ctx, r, Folder{Dir: dir})
 	return r
@@ -206,16 +208,16 @@ func checkSyncFile(ctx context.Context, r *Report, b Backend) {
 	raw, _, err := b.Read(ctx)
 	switch {
 	case errors.Is(err, ErrNotFound):
-		r.add("Sync-Datei", StepOK, "noch keine vorhanden: wird mit einem neuen Sync-Passwort angelegt", "")
+		r.add("Sync-Datei", StepOK, i18n.T("noch keine vorhanden: wird mit einem neuen Sync-Passwort angelegt"), "")
 	case err != nil:
-		r.add("Sync-Datei", StepFail, err.Error(), "Die vorhandene Sync-Datei konnte nicht gelesen werden.")
+		r.add("Sync-Datei", StepFail, err.Error(), i18n.T("Die vorhandene Sync-Datei konnte nicht gelesen werden."))
 	default:
 		if _, err := peek(raw); err != nil {
-			r.add("Sync-Datei", StepFail, err.Error(), "Im Ordner liegt eine fremde oder beschädigte "+FileName+". Umbenennen oder anderen Ordner wählen.")
+			r.add("Sync-Datei", StepFail, err.Error(), i18n.T("Im Ordner liegt eine fremde oder beschädigte ")+FileName+i18n.T(". Umbenennen oder anderen Ordner wählen."))
 			return
 		}
 		r.RemoteRaw, r.RemoteExists = raw, true
-		r.add("Sync-Datei", StepOK, "vorhanden (von einem anderen Rechner)", "Gib unten das Sync-Passwort ein, das du dort vergeben hast.")
+		r.add("Sync-Datei", StepOK, i18n.T("vorhanden (von einem anderen Rechner)"), i18n.T("Gib unten das Sync-Passwort ein, das du dort vergeben hast."))
 	}
 }
 
@@ -226,7 +228,7 @@ var Presets = []string{"synology", "qnap", "nextcloud", "andere"}
 
 // PresetLabel: Anzeigename.
 func PresetLabel(p string) string {
-	return map[string]string{"synology": "Synology", "qnap": "QNAP", "nextcloud": "Nextcloud", "andere": "Andere"}[p]
+	return map[string]string{"synology": "Synology", "qnap": "QNAP", "nextcloud": "Nextcloud", "andere": i18n.T("Andere")}[p]
 }
 
 // DefaultRemote: sinnvoller Zielordner je Gerät.
@@ -248,17 +250,17 @@ type candidate struct {
 func candidates(preset, addr string) ([]candidate, string, error) {
 	addr = strings.TrimSpace(addr)
 	if addr == "" {
-		return nil, "", errors.New("keine Adresse angegeben")
+		return nil, "", errors.New(i18n.T("keine Adresse angegeben"))
 	}
 	scheme, path := "", ""
 	if i := strings.Index(addr, "://"); i >= 0 {
 		u, err := url.Parse(addr)
 		if err != nil || u.Host == "" {
-			return nil, "", fmt.Errorf("Adresse %q nicht lesbar", addr)
+			return nil, "", fmt.Errorf(i18n.T("Adresse %q nicht lesbar"), addr)
 		}
 		scheme, addr, path = strings.ToLower(u.Scheme), u.Host, u.EscapedPath()
 		if scheme != "http" && scheme != "https" {
-			return nil, "", fmt.Errorf("nur http:// oder https:// möglich, nicht %s://", scheme)
+			return nil, "", fmt.Errorf(i18n.T("nur http:// oder https:// möglich, nicht %s://"), scheme)
 		}
 	} else if i := strings.IndexAny(addr, "/"); i >= 0 {
 		addr, path = addr[:i], addr[i:]
@@ -268,7 +270,7 @@ func candidates(preset, addr string) ([]candidate, string, error) {
 		host, port = strings.Trim(addr, "[]"), ""
 	}
 	if host == "" {
-		return nil, "", errors.New("kein Hostname in der Adresse")
+		return nil, "", errors.New(i18n.T("kein Hostname in der Adresse"))
 	}
 	var out []candidate
 	add := func(s, p string) {
@@ -337,56 +339,56 @@ type WebDAVInput struct {
 func authHint(preset string) string {
 	switch preset {
 	case "synology":
-		return "Benutzer oder Passwort falsch, oder WebDAV ist für dieses Konto nicht erlaubt (DSM › Systemsteuerung › Benutzer › Bearbeiten › Anwendungen › WebDAV). Achtung: nach mehreren Fehlversuchen sperrt DSM deine IP (Systemsteuerung › Sicherheit › Schutz › Auto-Block)."
+		return i18n.T("Benutzer oder Passwort falsch, oder WebDAV ist für dieses Konto nicht erlaubt (DSM › Systemsteuerung › Benutzer › Bearbeiten › Anwendungen › WebDAV). Achtung: nach mehreren Fehlversuchen sperrt DSM deine IP (Systemsteuerung › Sicherheit › Schutz › Auto-Block).")
 	case "qnap":
-		return "Benutzer oder Passwort falsch. QTS › Systemsteuerung › Benutzer: Kennwort prüfen; der Benutzer braucht Rechte am Freigabeordner. Achtung: nach mehreren Fehlversuchen sperrt QTS deine IP (Sicherheit › Zugriffsschutz)."
+		return i18n.T("Benutzer oder Passwort falsch. QTS › Systemsteuerung › Benutzer: Kennwort prüfen; der Benutzer braucht Rechte am Freigabeordner. Achtung: nach mehreren Fehlversuchen sperrt QTS deine IP (Sicherheit › Zugriffsschutz).")
 	case "nextcloud":
-		return "Anmeldung abgelehnt. Mit 2-Faktor-Anmeldung ein App-Passwort anlegen: Nextcloud › Einstellungen › Sicherheit › „Neues App-Passwort erstellen“."
+		return i18n.T("Anmeldung abgelehnt. Mit 2-Faktor-Anmeldung ein App-Passwort anlegen: Nextcloud › Einstellungen › Sicherheit › „Neues App-Passwort erstellen“.")
 	}
-	return "Benutzer oder Passwort falsch."
+	return i18n.T("Benutzer oder Passwort falsch.")
 }
 
 func portHint(preset string) string {
 	switch preset {
 	case "synology":
-		return "Auf der DiskStation: Paket-Zentrum › „WebDAV Server“ installieren und öffnen › HTTPS aktivieren (Port 5006). Firewall in DSM › Sicherheit prüfen."
+		return i18n.T("Auf der DiskStation: Paket-Zentrum › „WebDAV Server“ installieren und öffnen › HTTPS aktivieren (Port 5006). Firewall in DSM › Sicherheit prüfen.")
 	case "qnap":
-		return "Im QTS: Systemsteuerung › Netzwerk- & Dateidienste › Win/Mac/NFS/WebDAV › Reiter WebDAV › „WebDAV aktivieren“. Anwendungen › Webserver muss laufen (HTTP 80 / HTTPS 8081)."
+		return i18n.T("Im QTS: Systemsteuerung › Netzwerk- & Dateidienste › Win/Mac/NFS/WebDAV › Reiter WebDAV › „WebDAV aktivieren“. Anwendungen › Webserver muss laufen (HTTP 80 / HTTPS 8081).")
 	case "nextcloud":
-		return "Läuft Nextcloud unter dieser Adresse? Gib im Zweifel die volle Adresse an, die du im Browser nutzt, z. B. https://cloud.example.de."
+		return i18n.T("Läuft Nextcloud unter dieser Adresse? Gib im Zweifel die volle Adresse an, die du im Browser nutzt, z. B. https://cloud.example.de.")
 	}
-	return "WebDAV-Dienst läuft nicht auf diesem Port. Gib die volle URL mit Port an, z. B. https://server:8443/dav/."
+	return i18n.T("WebDAV-Dienst läuft nicht auf diesem Port. Gib die volle URL mit Port an, z. B. https://server:8443/dav/.")
 }
 
 func permHint(preset string) string {
 	switch preset {
 	case "synology":
-		return "Keine Berechtigung. DSM › Systemsteuerung › Benutzer › Bearbeiten: „Anwendungen › WebDAV“ erlauben und Lese-/Schreibrecht für den freigegebenen Ordner geben."
+		return i18n.T("Keine Berechtigung. DSM › Systemsteuerung › Benutzer › Bearbeiten: „Anwendungen › WebDAV“ erlauben und Lese-/Schreibrecht für den freigegebenen Ordner geben.")
 	case "qnap":
-		return "Keine Berechtigung. QTS › Freigabeordner › Rechte bearbeiten: Lese-/Schreibrecht geben. Bei WebDAV „Freigabeordner-Berechtigungen verwenden“ wählen."
+		return i18n.T("Keine Berechtigung. QTS › Freigabeordner › Rechte bearbeiten: Lese-/Schreibrecht geben. Bei WebDAV „Freigabeordner-Berechtigungen verwenden“ wählen.")
 	}
-	return "Keine Berechtigung für diesen Ordner. Lese-/Schreibrecht am Server vergeben."
+	return i18n.T("Keine Berechtigung für diesen Ordner. Lese-/Schreibrecht am Server vergeben.")
 }
 
 func parentHint(preset string) string {
 	switch preset {
 	case "synology":
-		return "Der Pfad muss mit einem freigegebenen Ordner beginnen. „/home/…“ geht nur, wenn der Benutzer-Home-Dienst aktiv ist (DSM › Benutzer › Erweitert). Sonst z. B. /Freigabename/sshtermy."
+		return i18n.T("Der Pfad muss mit einem freigegebenen Ordner beginnen. „/home/…“ geht nur, wenn der Benutzer-Home-Dienst aktiv ist (DSM › Benutzer › Erweitert). Sonst z. B. /Freigabename/sshtermy.")
 	case "qnap":
-		return "Der Pfad muss mit einem Freigabeordner beginnen, z. B. /home/sshtermy oder /Public/sshtermy."
+		return i18n.T("Der Pfad muss mit einem Freigabeordner beginnen, z. B. /home/sshtermy oder /Public/sshtermy.")
 	case "nextcloud":
-		return "Ordner relativ zu deinen Dateien angeben, z. B. sshtermy oder Backups/sshtermy."
+		return i18n.T("Ordner relativ zu deinen Dateien angeben, z. B. sshtermy oder Backups/sshtermy.")
 	}
-	return "Den übergeordneten Ordner gibt es nicht. Pfad prüfen."
+	return i18n.T("Den übergeordneten Ordner gibt es nicht. Pfad prüfen.")
 }
 
 func netHint(err error, preset string) (detail, hint string) {
 	var ne net.Error
 	switch {
 	case errors.Is(err, syscall.ECONNREFUSED) || strings.Contains(err.Error(), "refused"):
-		return "Verbindung abgelehnt", portHint(preset)
+		return i18n.T("Verbindung abgelehnt"), portHint(preset)
 	case errors.As(err, &ne) && ne.Timeout():
-		return "keine Antwort (Zeitüberschreitung)", "Firewall, falsches Netz oder Gerät aus? Von unterwegs braucht ein NAS im Heimnetz VPN, Tailscale oder QuickConnect-/myQNAPcloud-Adresse."
+		return i18n.T("keine Antwort (Zeitüberschreitung)"), i18n.T("Firewall, falsches Netz oder Gerät aus? Von unterwegs braucht ein NAS im Heimnetz VPN, Tailscale oder QuickConnect-/myQNAPcloud-Adresse.")
 	}
 	return err.Error(), portHint(preset)
 }
@@ -406,7 +408,7 @@ func CheckWebDAV(ctx context.Context, in WebDAVInput) *Report {
 	r := &Report{}
 	cands, urlPath, err := candidates(in.Preset, in.Address)
 	if err != nil {
-		r.add("Adresse", StepFail, err.Error(), "Name oder IP des NAS eingeben, z. B. diskstation, 192.168.1.20 oder https://nas.local:5006.")
+		r.add(i18n.T("Adresse"), StepFail, err.Error(), i18n.T("Name oder IP des NAS eingeben, z. B. diskstation, 192.168.1.20 oder https://nas.local:5006."))
 		return r
 	}
 	host := cands[0].host
@@ -417,23 +419,23 @@ func CheckWebDAV(ctx context.Context, in WebDAVInput) *Report {
 		ips, err := net.DefaultResolver.LookupHost(rctx, host)
 		cancel()
 		if err != nil || len(ips) == 0 {
-			hint := "Name nicht gefunden. Schreibweise prüfen oder die IP-Adresse nehmen"
+			hint := i18n.T("Name nicht gefunden. Schreibweise prüfen oder die IP-Adresse nehmen")
 			switch in.Preset {
 			case "synology":
-				hint += " (Synology Assistant oder der Router zeigen sie an)"
+				hint += i18n.T(" (Synology Assistant oder der Router zeigen sie an)")
 			case "qnap":
-				hint += " (Qfinder Pro oder der Router zeigen sie an)"
+				hint += i18n.T(" (Qfinder Pro oder der Router zeigen sie an)")
 			}
 			if !strings.Contains(host, ".") {
-				hint += "; im Heimnetz hilft oft „" + host + ".local“ oder „" + host + ".fritz.box“"
+				hint += i18n.T("; im Heimnetz hilft oft „") + host + i18n.T(".local“ oder „") + host + i18n.T(".fritz.box“")
 			} else {
-				hint += ". Von unterwegs ist das Heimnetz nur per VPN/Tailscale erreichbar"
+				hint += i18n.T(". Von unterwegs ist das Heimnetz nur per VPN/Tailscale erreichbar")
 			}
 			hint += "."
-			r.add("Name auflösen", StepFail, host+": nicht gefunden", hint)
+			r.add(i18n.T("Name auflösen"), StepFail, host+i18n.T(": nicht gefunden"), hint)
 			return r
 		}
-		r.add("Name auflösen", StepOK, host+" → "+ips[0], "")
+		r.add(i18n.T("Name auflösen"), StepOK, host+" → "+ips[0], "")
 	}
 
 	// 2) Port und Protokoll suchen: erster offener Port, auf dem bei https
@@ -454,7 +456,7 @@ func CheckWebDAV(ctx context.Context, in WebDAVInput) *Report {
 			if err := tlsProbe(ctx, probe, c); err != nil {
 				var rh tls.RecordHeaderError
 				if errors.As(err, &rh) || strings.Contains(err.Error(), "first record does not look like a TLS handshake") {
-					lastErr = fmt.Errorf("Port %s spricht kein https", c.port)
+					lastErr = fmt.Errorf(i18n.T("Port %s spricht kein https"), c.port)
 					continue
 				}
 				found, tlsErr = &c, err
@@ -466,12 +468,12 @@ func CheckWebDAV(ctx context.Context, in WebDAVInput) *Report {
 	}
 	if found == nil {
 		d, h := netHint(lastErr, in.Preset)
-		r.add("Server erreichbar", StepFail, d+" (versucht: "+strings.Join(tried, ", ")+")", h)
+		r.add(i18n.T("Server erreichbar"), StepFail, d+i18n.T(" (versucht: ")+strings.Join(tried, ", ")+")", h)
 		return r
 	}
 	base := found.url(folderPath(in.Preset, urlPath, in.User, in.Remote))
 	r.URL = base
-	r.add("Server erreichbar", StepOK, found.scheme+"://"+found.host+":"+found.port, "")
+	r.add(i18n.T("Server erreichbar"), StepOK, found.scheme+"://"+found.host+":"+found.port, "")
 
 	w := &WebDAV{URL: base, User: in.User, Password: in.Password, CertPin: in.CertPin}
 
@@ -482,78 +484,78 @@ func CheckWebDAV(ctx context.Context, in WebDAVInput) *Report {
 			if errors.As(err, &ce) {
 				if ce.Pin != "" {
 					r.Cert = ce
-					r.add("Zertifikat", StepFail, ce.Reason,
-						"Typisch bei einem NAS. Fingerprint mit der NAS-Oberfläche vergleichen (DSM › Sicherheit › Zertifikat bzw. QTS › Sicherheit › SSL-Zertifikat) und dann vertrauen:\n"+ce.Fingerprint)
+					r.add(i18n.T("Zertifikat"), StepFail, ce.Reason,
+						i18n.T("Typisch bei einem NAS. Fingerprint mit der NAS-Oberfläche vergleichen (DSM › Sicherheit › Zertifikat bzw. QTS › Sicherheit › SSL-Zertifikat) und dann vertrauen:\n")+ce.Fingerprint)
 				} else {
-					r.add("Zertifikat", StepFail, ce.Reason, "Das Zertifikat des Servers ist nicht mehr das, dem du vertraut hast. Wenn du es selbst erneuert hast: Assistent neu testen und erneut vertrauen. Sonst: Vorsicht, möglicher Angriff.")
+					r.add(i18n.T("Zertifikat"), StepFail, ce.Reason, i18n.T("Das Zertifikat des Servers ist nicht mehr das, dem du vertraut hast. Wenn du es selbst erneuert hast: Assistent neu testen und erneut vertrauen. Sonst: Vorsicht, möglicher Angriff."))
 				}
 				return r
 			}
-			r.add("Zertifikat", StepFail, err.Error(), "TLS-Verbindung fehlgeschlagen. Ist auf diesem Port wirklich HTTPS aktiv?")
+			r.add(i18n.T("Zertifikat"), StepFail, err.Error(), i18n.T("TLS-Verbindung fehlgeschlagen. Ist auf diesem Port wirklich HTTPS aktiv?"))
 			return r
 		}
 		if w.CertPin != "" {
-			r.add("Zertifikat", StepOK, "vertrautes eigenes Zertifikat (Fingerprint gespeichert)", "")
+			r.add(i18n.T("Zertifikat"), StepOK, i18n.T("vertrautes eigenes Zertifikat (Fingerprint gespeichert)"), "")
 		} else {
-			r.add("Zertifikat", StepOK, "gültig", "")
+			r.add(i18n.T("Zertifikat"), StepOK, i18n.T("gültig"), "")
 		}
 	} else {
-		hint := "Die Sync-Datei ist trotzdem Ende-zu-Ende verschlüsselt, aber dein NAS-Passwort geht im Klartext durchs Netz. Besser HTTPS aktivieren"
+		hint := i18n.T("Die Sync-Datei ist trotzdem Ende-zu-Ende verschlüsselt, aber dein NAS-Passwort geht im Klartext durchs Netz. Besser HTTPS aktivieren")
 		if in.Preset == "synology" {
-			hint += " (WebDAV Server › HTTPS, Port 5006)."
+			hint += i18n.T(" (WebDAV Server › HTTPS, Port 5006).")
 		} else {
 			hint += "."
 		}
-		r.add("Verschlüsselung", StepWarn, "nur http (unverschlüsselt)", hint)
+		r.add(i18n.T("Verschlüsselung"), StepWarn, i18n.T("nur http (unverschlüsselt)"), hint)
 	}
 
 	// 4) Anmeldung und Ordner
 	if in.User == "" {
-		r.add("Anmeldung", StepFail, "kein Benutzer angegeben", "Benutzername und Passwort deines NAS-Kontos eintragen.")
+		r.add(i18n.T("Anmeldung"), StepFail, i18n.T("kein Benutzer angegeben"), i18n.T("Benutzername und Passwort deines NAS-Kontos eintragen."))
 		return r
 	}
 	code, html, err := w.propfind(ctx, base)
 	if err != nil {
 		d, h := netHint(err, in.Preset)
-		r.add("Anmeldung", StepFail, d, h)
+		r.add(i18n.T("Anmeldung"), StepFail, d, h)
 		return r
 	}
 	switch {
 	case code == 207:
-		r.add("Anmeldung & Ordner", StepOK, "angemeldet als "+in.User+", Ordner vorhanden", "")
+		r.add(i18n.T("Anmeldung & Ordner"), StepOK, i18n.T("angemeldet als ")+in.User+i18n.T(", Ordner vorhanden"), "")
 	case code == 401:
-		r.add("Anmeldung", StepFail, "abgelehnt (HTTP 401)", authHint(in.Preset))
+		r.add(i18n.T("Anmeldung"), StepFail, i18n.T("abgelehnt (HTTP 401)"), authHint(in.Preset))
 		return r
 	case code == 403:
-		r.add("Anmeldung", StepFail, "verboten (HTTP 403)", permHint(in.Preset))
+		r.add(i18n.T("Anmeldung"), StepFail, i18n.T("verboten (HTTP 403)"), permHint(in.Preset))
 		return r
 	case code == 404:
 		mc, err := w.mkcol(ctx, base)
 		switch {
 		case err != nil:
-			r.add("Ordner anlegen", StepFail, err.Error(), "")
+			r.add(i18n.T("Ordner anlegen"), StepFail, err.Error(), "")
 			return r
 		case mc == 201:
-			r.add("Anmeldung & Ordner", StepOK, "angemeldet als "+in.User+", Ordner angelegt", "")
+			r.add(i18n.T("Anmeldung & Ordner"), StepOK, i18n.T("angemeldet als ")+in.User+i18n.T(", Ordner angelegt"), "")
 		case mc == 409:
-			r.add("Ordner anlegen", StepFail, "übergeordneter Ordner fehlt (HTTP 409)", parentHint(in.Preset))
+			r.add(i18n.T("Ordner anlegen"), StepFail, i18n.T("übergeordneter Ordner fehlt (HTTP 409)"), parentHint(in.Preset))
 			return r
 		case mc == 401:
-			r.add("Anmeldung", StepFail, "abgelehnt (HTTP 401)", authHint(in.Preset))
+			r.add(i18n.T("Anmeldung"), StepFail, i18n.T("abgelehnt (HTTP 401)"), authHint(in.Preset))
 			return r
 		case mc == 403 || mc == 405:
-			r.add("Ordner anlegen", StepFail, fmt.Sprintf("nicht erlaubt (HTTP %d)", mc), permHint(in.Preset)+" Alternativ den Ordner selbst anlegen.")
+			r.add(i18n.T("Ordner anlegen"), StepFail, fmt.Sprintf(i18n.T("nicht erlaubt (HTTP %d)"), mc), permHint(in.Preset)+i18n.T(" Alternativ den Ordner selbst anlegen."))
 			return r
 		default:
-			r.add("Ordner anlegen", StepFail, fmt.Sprintf("HTTP %d", mc), parentHint(in.Preset))
+			r.add(i18n.T("Ordner anlegen"), StepFail, fmt.Sprintf("HTTP %d", mc), parentHint(in.Preset))
 			return r
 		}
 	case html || code == 405 || code == 501 || code == 200:
-		r.add("WebDAV", StepFail, fmt.Sprintf("unter dieser Adresse antwortet kein WebDAV (HTTP %d)", code),
-			"Vermutlich die Weboberfläche des NAS statt des WebDAV-Dienstes. "+portHint(in.Preset))
+		r.add("WebDAV", StepFail, fmt.Sprintf(i18n.T("unter dieser Adresse antwortet kein WebDAV (HTTP %d)"), code),
+			i18n.T("Vermutlich die Weboberfläche des NAS statt des WebDAV-Dienstes. ")+portHint(in.Preset))
 		return r
 	default:
-		r.add("Anmeldung", StepFail, fmt.Sprintf("unerwartete Antwort HTTP %d", code), portHint(in.Preset))
+		r.add(i18n.T("Anmeldung"), StepFail, fmt.Sprintf(i18n.T("unerwartete Antwort HTTP %d"), code), portHint(in.Preset))
 		return r
 	}
 
@@ -562,26 +564,26 @@ func CheckWebDAV(ctx context.Context, in WebDAVInput) *Report {
 	data := []byte("sshtermy")
 	resp, _, err := w.do(ctx, "PUT", test, data, nil)
 	if err != nil || (resp.StatusCode != 201 && resp.StatusCode != 204 && resp.StatusCode != 200) {
-		detail := "Schreiben fehlgeschlagen"
+		detail := i18n.T("Schreiben fehlgeschlagen")
 		hint := permHint(in.Preset)
 		if err != nil {
 			detail = err.Error()
 		} else {
-			detail = fmt.Sprintf("Schreiben: HTTP %d", resp.StatusCode)
+			detail = fmt.Sprintf(i18n.T("Schreiben: HTTP %d"), resp.StatusCode)
 			if resp.StatusCode == 507 {
-				hint = "Der Speicher bzw. das Kontingent auf dem Server ist voll."
+				hint = i18n.T("Der Speicher bzw. das Kontingent auf dem Server ist voll.")
 			}
 		}
-		r.add("Schreiben & Lesen", StepFail, detail, hint)
+		r.add(i18n.T("Schreiben & Lesen"), StepFail, detail, hint)
 		return r
 	}
 	resp, back, err := w.do(ctx, "GET", test, nil, nil)
 	_ = w.del(ctx, test)
 	if err != nil || resp.StatusCode != 200 || !bytes.Equal(back, data) {
-		r.add("Schreiben & Lesen", StepFail, "Testdatei kam nicht unverändert zurück", "Ein Proxy oder Virenscanner verändert die Daten? Anderen Ordner probieren.")
+		r.add(i18n.T("Schreiben & Lesen"), StepFail, i18n.T("Testdatei kam nicht unverändert zurück"), i18n.T("Ein Proxy oder Virenscanner verändert die Daten? Anderen Ordner probieren."))
 		return r
 	}
-	r.add("Schreiben & Lesen", StepOK, "Testdatei geschrieben, gelesen, gelöscht", "")
+	r.add(i18n.T("Schreiben & Lesen"), StepOK, i18n.T("Testdatei geschrieben, gelesen, gelöscht"), "")
 
 	checkSyncFile(ctx, r, w)
 	return r

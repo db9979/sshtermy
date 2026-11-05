@@ -26,6 +26,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/db9979/sshtermy/internal/hostinfo"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/store"
 )
 
@@ -134,7 +135,7 @@ func (a *App) hostServerCmd(s *session, quiet bool) tea.Cmd {
 	h := &s.host
 	h.cancel()
 	h.seq++
-	h.busy, h.err, h.step = true, "", "Kennzahlen abfragen …"
+	h.busy, h.err, h.step = true, "", i18n.T("Kennzahlen abfragen …")
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	h.cancelFn = cancel
 	sid, seq, cl := s.id, h.seq, s.client
@@ -161,14 +162,14 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 	}
 	prompt := strings.TrimSpace(s.term.CursorLine())
 	if s.term.AltScreen() || !hostinfo.IsPrompt(prompt) {
-		h.err = "Abfrage nur an einem leeren Prompt (z. B. switch#). Bitte erst Eingabe beenden oder ⏎ drücken."
+		h.err = i18n.T("Abfrage nur an einem leeren Prompt (z. B. switch#). Bitte erst Eingabe beenden oder ⏎ drücken.")
 		return nil
 	}
 	h.seq++
 	h.busy, h.err, h.note = true, "", ""
-	h.step = "Übersicht abfragen …"
+	h.step = i18n.T("Übersicht abfragen …")
 	if backup && !info {
-		h.step = "show running-config sichern …"
+		h.step = i18n.T("show running-config sichern …")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	h.cancelFn = cancel
@@ -257,9 +258,9 @@ func checkConfig(cfg string) error {
 	l := strings.ToLower(cfg)
 	switch {
 	case strings.Count(cfg, "\n") < 2:
-		return errors.New("keine Konfiguration erhalten")
+		return errors.New(i18n.T("keine Konfiguration erhalten"))
 	case strings.Contains(l, "invalid input") || strings.Contains(l, "unknown command") || strings.Contains(l, "invalid command"):
-		return errors.New("Gerät kennt „show running-config“ nicht")
+		return errors.New(i18n.T("Gerät kennt „show running-config“ nicht"))
 	}
 	return nil
 }
@@ -278,7 +279,7 @@ func shellRun(ctx context.Context, s *session, prompt, cmd string, limit time.Du
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, errors.New("abgebrochen")
+			return nil, errors.New(i18n.T("abgebrochen"))
 		case <-t.C:
 		}
 		raw, last := s.cap.peek()
@@ -295,9 +296,9 @@ func shellRun(ctx context.Context, s *session, prompt, cmd string, limit time.Du
 		case done && idle > 300*time.Millisecond:
 			return lines, nil
 		case raw == "" && time.Since(start) > 10*time.Second:
-			return nil, fmt.Errorf("„%s“: keine Antwort", cmd)
+			return nil, fmt.Errorf(i18n.T("„%s“: keine Antwort"), cmd)
 		case time.Since(start) > limit || (raw != "" && idle > 10*time.Second):
-			return lines, fmt.Errorf("„%s“: Prompt kam nicht zurück", cmd)
+			return lines, fmt.Errorf(i18n.T("„%s“: Prompt kam nicht zurück"), cmd)
 		}
 	}
 }
@@ -313,7 +314,7 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 		h := &s.host
 		h.busy, h.cancelFn = false, nil
 		if m.err != nil {
-			h.err = "Abfrage fehlgeschlagen: " + m.err.Error()
+			h.err = i18n.T("Abfrage fehlgeschlagen: ") + m.err.Error()
 			return nil, true
 		}
 		srv := m.srv
@@ -341,11 +342,11 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 		case r.err != nil:
 			h.err = r.err.Error()
 		case r.unchanged:
-			h.note = "Unverändert seit " + localTime(r.prev.Taken) + ", nichts Neues gespeichert."
+			h.note = i18n.T("Unverändert seit ") + localTime(r.prev.Taken) + i18n.T(", nichts Neues gespeichert.")
 		case r.backup != nil && r.prev != nil:
-			h.note = fmt.Sprintf("Gesichert: +%d −%d Zeilen gegenüber %s. d zeigt den Diff.", r.added, r.removed, localTime(r.prev.Taken))
+			h.note = fmt.Sprintf(i18n.T("Gesichert: +%d −%d Zeilen gegenüber %s. d zeigt den Diff."), r.added, r.removed, localTime(r.prev.Taken))
 		case r.backup != nil:
-			h.note = "Erste Sicherung gespeichert (" + plural(r.backup.Lines, "Zeile", "Zeilen") + ")."
+			h.note = i18n.T("Erste Sicherung gespeichert (") + plural(r.backup.Lines, i18n.T("Zeile"), i18n.T("Zeilen")) + ")."
 		}
 		if r.backup != nil || r.unchanged {
 			h.backups, h.sel = a.st.Backups(s.conn.ID), 0
@@ -366,7 +367,7 @@ func firstSentence(s string) string {
 func localTime(t time.Time) string {
 	lt := t.Local()
 	if y, m, d := lt.Date(); time.Now().Year() == y && time.Now().Month() == m && time.Now().Day() == d {
-		return "heute " + lt.Format("15:04")
+		return i18n.T("heute ") + lt.Format("15:04")
 	}
 	return lt.Format("02.01.06 15:04")
 }
@@ -394,7 +395,7 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	case "x":
 		if h.busy {
 			h.cancel()
-			h.busy, h.err = false, "Abgebrochen."
+			h.busy, h.err = false, i18n.T("Abgebrochen.")
 		}
 	case "r", "enter":
 		if h.busy {
@@ -426,7 +427,7 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 func (a *App) showBackupDiff(s *session) {
 	h := &s.host
 	if h.sel < 0 || h.sel+1 >= len(h.backups) {
-		h.err = "Für einen Vergleich braucht es mindestens zwei Sicherungen."
+		h.err = i18n.T("Für einen Vergleich braucht es mindestens zwei Sicherungen.")
 		return
 	}
 	cur, prev := h.backups[h.sel], h.backups[h.sel+1]
@@ -452,9 +453,9 @@ func (a *App) showBackupDiff(s *session) {
 		}
 	}
 	if len(out) == 0 {
-		out = []string{st.Muted.Render("Keine inhaltlichen Änderungen.")}
+		out = []string{st.Muted.Render(i18n.T("Keine inhaltlichen Änderungen."))}
 	}
-	title := fmt.Sprintf("Diff %s · %s → %s  ", s.conn.Alias, localTime(prev.Taken), localTime(cur.Taken)) +
+	title := fmt.Sprintf(i18n.T("Diff %s · %s → %s  "), s.conn.Alias, localTime(prev.Taken), localTime(cur.Taken)) +
 		st.OK.Render(fmt.Sprintf("+%d", add)) + " " + st.Danger.Render(fmt.Sprintf("−%d", del))
 	a.modal = textModal(title, out)
 }
@@ -470,24 +471,24 @@ func (a *App) showBackup(s *session) {
 		h.err = err.Error()
 		return
 	}
-	a.modal = textModal("Konfiguration "+s.conn.Alias+" · "+localTime(b.Taken), strings.Split(strings.TrimRight(txt, "\n"), "\n"))
+	a.modal = textModal(i18n.T("Konfiguration ")+s.conn.Alias+" · "+localTime(b.Taken), strings.Split(strings.TrimRight(txt, "\n"), "\n"))
 }
 
 func (a *App) hostPanelKeys(s *session) [][2]string {
 	if s.host.busy {
-		return [][2]string{{"x", "abbrechen"}, {"Esc", "Terminal"}, {"F6", "schließen"}}
+		return [][2]string{{"x", i18n.T("abbrechen")}, {"Esc", "Terminal"}, {"F6", i18n.T("schließen")}}
 	}
 	if s.client != nil && s.client.NetDevice {
-		k := [][2]string{{"⏎", "abfragen"}, {"b", "Config sichern"}}
+		k := [][2]string{{"⏎", i18n.T("abfragen")}, {"b", i18n.T("Config sichern")}}
 		if len(s.host.backups) > 1 {
 			k = append(k, [2]string{"d", "Diff"})
 		}
 		if len(s.host.backups) > 0 {
-			k = append(k, [2]string{"↑↓", "Stand"}, [2]string{"v", "ansehen"})
+			k = append(k, [2]string{"↑↓", i18n.T("Stand")}, [2]string{"v", i18n.T("ansehen")})
 		}
-		return append(k, [2]string{"Esc", "Terminal"}, [2]string{"F6", "schließen"})
+		return append(k, [2]string{"Esc", "Terminal"}, [2]string{"F6", i18n.T("schließen")})
 	}
-	return [][2]string{{"r", "aktualisieren"}, {"Esc", "Terminal"}, {"F6", "schließen"}}
+	return [][2]string{{"r", i18n.T("aktualisieren")}, {"Esc", "Terminal"}, {"F6", i18n.T("schließen")}}
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -505,7 +506,7 @@ func (a *App) hostBadge(s *session) string {
 	case h.sw != nil:
 		txt = "▤ " + h.sw.Summary()
 	case s.client != nil && s.client.NetDevice:
-		txt = "▤ F6 Übersicht"
+		txt = i18n.T("▤ F6 Übersicht")
 	default:
 		return ""
 	}
@@ -519,7 +520,7 @@ func (a *App) hostBadge(s *session) string {
 func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 	st := a.s
 	h := &s.host
-	b.WriteString(st.PanelTitle.Foreground(st.T.Accent).Render("▤ Host-Übersicht") + "\n\n")
+	b.WriteString(st.PanelTitle.Foreground(st.T.Accent).Render(i18n.T("▤ Host-Übersicht")) + "\n\n")
 	row := func(k, v string) {
 		b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", k)) + st.Text.Render(trunc(v, w-10)) + "\n")
 	}
@@ -528,7 +529,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 	if h.busy {
 		b.WriteString(st.Warn.Render("◌ "+h.step) + "\n")
 		if net {
-			b.WriteString(st.Muted.Render("Die Befehle laufen sichtbar im Terminal.") + "\n")
+			b.WriteString(st.Muted.Render(i18n.T("Die Befehle laufen sichtbar im Terminal.")) + "\n")
 		}
 		b.WriteString("\n")
 	}
@@ -540,16 +541,16 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		srv := h.srv
 		if srv == nil {
 			if !h.busy {
-				b.WriteString(st.Muted.Render("Noch keine Daten. r = abfragen") + "\n")
+				b.WriteString(st.Muted.Render(i18n.T("Noch keine Daten. r = abfragen")) + "\n")
 			}
 			return
 		}
 		if s.client != nil {
 			row("System", s.client.Remote.OS)
 		}
-		cpu := fmt.Sprintf("%d Kerne", srv.CPUs)
+		cpu := fmt.Sprintf(i18n.T("%d Kerne"), srv.CPUs)
 		if srv.HasLoad {
-			cpu += fmt.Sprintf(" · Last %.2f %.2f %.2f", srv.Load[0], srv.Load[1], srv.Load[2])
+			cpu += fmt.Sprintf(i18n.T(" · Last %.2f %.2f %.2f"), srv.Load[0], srv.Load[1], srv.Load[2])
 		}
 		row("CPU", cpu)
 		if srv.MemTotal > 0 {
@@ -557,52 +558,52 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.MemPct(), w-10) + "\n")
 		}
 		if srv.DiskTotal > 0 {
-			row("Platte /", fmt.Sprintf("%s / %s", hostinfo.Bytes(srv.DiskUsed), hostinfo.Bytes(srv.DiskTotal)))
+			row(i18n.T("Platte /"), fmt.Sprintf("%s / %s", hostinfo.Bytes(srv.DiskUsed), hostinfo.Bytes(srv.DiskTotal)))
 			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.DiskPct(), w-10) + "\n")
 		}
 		if srv.Uptime > 0 {
-			row("Laufzeit", hostinfo.Duration(srv.Uptime))
+			row(i18n.T("Laufzeit"), hostinfo.Duration(srv.Uptime))
 		}
 		switch {
 		case srv.UpdateTool == "":
-			row("Updates", "unbekannt")
+			row("Updates", i18n.T("unbekannt"))
 		case srv.Updates < 0:
-			row("Updates", "unbekannt ("+srv.UpdateTool+")")
+			row("Updates", i18n.T("unbekannt (")+srv.UpdateTool+")")
 		case srv.Updates == 0:
-			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "Updates")) + st.OK.Render("aktuell") + st.Muted.Render(" · "+srv.UpdateTool) + "\n")
+			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "Updates")) + st.OK.Render(i18n.T("aktuell")) + st.Muted.Render(" · "+srv.UpdateTool) + "\n")
 		default:
-			v := plural(srv.Updates, "Paket", "Pakete")
+			v := plural(srv.Updates, i18n.T("Paket"), i18n.T("Pakete"))
 			if srv.Security > 0 {
-				v += fmt.Sprintf(" (%d Sicherheit)", srv.Security)
+				v += fmt.Sprintf(i18n.T(" (%d Sicherheit)"), srv.Security)
 			}
 			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "Updates")) + st.Warn.Render(v) + st.Muted.Render(" · "+srv.UpdateTool) + "\n")
 		}
 		if srv.RebootNeeded {
-			b.WriteString(st.Warn.Render("⟳ Neustart erforderlich") + "\n")
+			b.WriteString(st.Warn.Render(i18n.T("⟳ Neustart erforderlich")) + "\n")
 		}
-		b.WriteString("\n" + st.Muted.Render("Stand "+srv.At.Format("15:04:05")+" · r aktualisieren") + "\n")
+		b.WriteString("\n" + st.Muted.Render(i18n.T("Stand ")+srv.At.Format("15:04:05")+i18n.T(" · r aktualisieren")) + "\n")
 		if srv.UpdateTool == "apt" {
-			b.WriteString(st.Muted.Render(wrap("Updates laut lokaler Paketliste (ohne apt update).", w)) + "\n")
+			b.WriteString(st.Muted.Render(wrap(i18n.T("Updates laut lokaler Paketliste (ohne apt update)."), w)) + "\n")
 		}
 		return
 	}
 
 	// Netzwerkgerät
 	if sw := h.sw; sw != nil {
-		row("Gerät", sw.Vendor.Name())
+		row(i18n.T("Gerät"), sw.Vendor.Name())
 		if sw.Name != "" {
 			row("Name", sw.Name)
 		}
 		if sw.Model != "" {
-			row("Modell", sw.Model)
+			row(i18n.T("Modell"), sw.Model)
 		}
 		row("Firmware", orDefault(sw.Firmware, "?"))
 		if sw.Uptime != "" {
-			row("Laufzeit", sw.Uptime)
+			row(i18n.T("Laufzeit"), sw.Uptime)
 		}
 		if n := sw.PortsUp + sw.PortsDown; n > 0 {
-			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "Ports")) + st.OK.Render(fmt.Sprintf("%d aktiv", sw.PortsUp)) +
-				st.Muted.Render(fmt.Sprintf(" · %d inaktiv", sw.PortsDown)) + "\n")
+			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "Ports")) + st.OK.Render(fmt.Sprintf(i18n.T("%d aktiv"), sw.PortsUp)) +
+				st.Muted.Render(fmt.Sprintf(i18n.T(" · %d inaktiv"), sw.PortsDown)) + "\n")
 		}
 		if len(sw.VLANs) > 0 {
 			var vs []string
@@ -611,25 +612,25 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			}
 			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "VLANs")) + st.Text.Render(lipgloss.NewStyle().Width(w-10).Render(trunc(strings.Join(vs, ", "), 3*(w-10)))) + "\n")
 		}
-		b.WriteString(st.Muted.Render("Stand "+sw.At.Format("15:04:05")) + "\n")
+		b.WriteString(st.Muted.Render(i18n.T("Stand ")+sw.At.Format("15:04:05")) + "\n")
 	} else if !h.busy {
-		b.WriteString(st.Text.Render(wrap("⏎ fragt Firmware, Ports und VLANs ab. sshTermy tippt dafür show-Befehle sichtbar am Prompt (keine versteckte Sitzung, die den Switch trennen könnte).", w)) + "\n")
+		b.WriteString(st.Text.Render(wrap(i18n.T("⏎ fragt Firmware, Ports und VLANs ab. sshTermy tippt dafür show-Befehle sichtbar am Prompt (keine versteckte Sitzung, die den Switch trennen könnte)."), w)) + "\n")
 	}
 
-	b.WriteString("\n" + st.PanelTitle.Foreground(st.T.Accent).Render("▣ Config-Sicherung") + "\n")
+	b.WriteString("\n" + st.PanelTitle.Foreground(st.T.Accent).Render(i18n.T("▣ Config-Sicherung")) + "\n")
 	if h.note != "" {
 		b.WriteString(st.OK.Render(wrap(h.note, w)) + "\n")
 	}
 	if len(h.backups) == 0 {
-		b.WriteString(st.Muted.Render(wrap("Noch keine Sicherung. b sichert „show running-config“ verschlüsselt auf diesem Rechner.", w)) + "\n")
+		b.WriteString(st.Muted.Render(wrap(i18n.T("Noch keine Sicherung. b sichert „show running-config“ verschlüsselt auf diesem Rechner."), w)) + "\n")
 		return
 	}
 	for i, bk := range h.backups {
 		if i >= 8 {
-			b.WriteString(st.Muted.Render(fmt.Sprintf("  … %d ältere", len(h.backups)-8)) + "\n")
+			b.WriteString(st.Muted.Render(fmt.Sprintf(i18n.T("  … %d ältere"), len(h.backups)-8)) + "\n")
 			break
 		}
-		line := fmt.Sprintf("%s  %s", localTime(bk.Taken), plural(bk.Lines, "Zeile", "Zeilen"))
+		line := fmt.Sprintf("%s  %s", localTime(bk.Taken), plural(bk.Lines, i18n.T("Zeile"), i18n.T("Zeilen")))
 		mark := "  "
 		if i == h.sel {
 			mark = st.Accent.Render("▸ ")
@@ -676,9 +677,9 @@ func (m *modal) textView(s Styles, w, h int) string {
 	for _, l := range m.lines[m.scroll:end] {
 		body = append(body, trunc(l, width))
 	}
-	hint := "Esc schließen"
+	hint := i18n.T("Esc schließen")
 	if total > maxBody {
-		hint = fmt.Sprintf("Zeile %d–%d von %d · ↑↓ PgUp/PgDn Pos1/Ende · ", m.scroll+1, end, total) + hint
+		hint = fmt.Sprintf(i18n.T("Zeile %d–%d von %d · ↑↓ PgUp/PgDn Pos1/Ende · "), m.scroll+1, end, total) + hint
 	}
 	out := s.Accent.Render(m.title) + "\n\n" + strings.Join(body, "\n") + "\n\n" + s.Muted.Render(hint)
 	return s.Modal.Width(min(w-4, width+6)).Render(out)

@@ -11,6 +11,7 @@ import (
 	uv "github.com/charmbracelet/ultraviolet"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/termemu"
 )
 
@@ -42,13 +43,13 @@ func (a *App) mouseEnabled() bool { return !a.st.Settings().NoMouse }
 func (a *App) toggleMouse() tea.Cmd {
 	on := !a.mouseEnabled()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoMouse = !on }); err != nil {
-		a.flash("Einstellung nicht gespeichert: " + err.Error())
+		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {
-		a.flash("Maus an: Klicken, Markieren, Rad. Shift+Ziehen markiert im Fenster.")
+		a.flash(i18n.T("Maus an: Klicken, Markieren, Rad. Shift+Ziehen markiert im Fenster."))
 	} else {
-		a.flash("Maus aus: das Terminalfenster markiert und kopiert selbst.")
+		a.flash(i18n.T("Maus aus: das Terminalfenster markiert und kopiert selbst."))
 	}
 	return nil
 }
@@ -212,6 +213,7 @@ func keyFromLabel(label string) (tea.KeyPressMsg, bool) {
 		"Space": tea.KeySpace, "Leertaste": tea.KeySpace, "Entf": tea.KeyDelete, "⌫": tea.KeyBackspace,
 		"↑": tea.KeyUp, "↓": tea.KeyDown, "←": tea.KeyLeft, "→": tea.KeyRight,
 		"Bild↑": tea.KeyPgUp, "Bild↓": tea.KeyPgDown, "Pos1": tea.KeyHome, "Ende": tea.KeyEnd,
+		"Del": tea.KeyDelete, "PgUp": tea.KeyPgUp, "PgDn": tea.KeyPgDown, "Home": tea.KeyHome, "End": tea.KeyEnd,
 		"F1": tea.KeyF1, "F2": tea.KeyF2, "F3": tea.KeyF3, "F4": tea.KeyF4, "F5": tea.KeyF5, "F6": tea.KeyF6,
 		"F7": tea.KeyF7, "F8": tea.KeyF8, "F9": tea.KeyF9, "F10": tea.KeyF10, "F11": tea.KeyF11, "F12": tea.KeyF12,
 	}
@@ -447,9 +449,9 @@ func (a *App) copySel(s *session) tea.Cmd {
 	go func() { _ = clipboard.WriteAll(text) }()
 	n := utf8.RuneCountInString(text)
 	if lines := strings.Count(text, "\n") + 1; lines > 1 {
-		a.flash("Kopiert: " + plural(lines, "Zeile", "Zeilen") + " · Rechtsklick fügt ein")
+		a.flash(i18n.T("Kopiert: ") + plural(lines, i18n.T("Zeile"), i18n.T("Zeilen")) + i18n.T(" · Rechtsklick fügt ein"))
 	} else {
-		a.flash("Kopiert: " + plural(n, "Zeichen", "Zeichen") + " · Rechtsklick fügt ein")
+		a.flash(i18n.T("Kopiert: ") + plural(n, i18n.T("Zeichen"), i18n.T("Zeichen")) + i18n.T(" · Rechtsklick fügt ein"))
 	}
 	return tea.SetClipboard(text)
 }
@@ -474,7 +476,7 @@ func (a *App) onPaste(m pasteMsg) tea.Cmd {
 		return nil
 	}
 	if m.err != nil || m.text == "" {
-		a.flash("Zwischenablage leer oder nicht lesbar. Einfügen mit Strg+Shift+V im Terminalfenster.")
+		a.flash(i18n.T("Zwischenablage leer oder nicht lesbar. Einfügen mit Strg+Shift+V im Terminalfenster."))
 		return nil
 	}
 	return a.guardedPaste(s, m.text)
@@ -485,36 +487,36 @@ func (a *App) modalButtons() string {
 	var keys [][2]string
 	switch a.modal.kind {
 	case mHostKey:
-		keys = [][2]string{{"j", "vertrauen"}, {"n", "abbrechen"}}
+		keys = [][2]string{{yesKey(), i18n.T("vertrauen")}, {"n", i18n.T("abbrechen")}}
 	case mConfirm:
-		keys = [][2]string{{"j", "ja"}, {"n", "nein"}}
+		keys = [][2]string{{yesKey(), i18n.T("ja")}, {"n", i18n.T("nein")}}
 	case mSecret:
-		keys = [][2]string{{"⏎", "senden"}, {"Esc", "abbrechen"}}
+		keys = [][2]string{{"⏎", i18n.T("senden")}, {"Esc", i18n.T("abbrechen")}}
 	case mAbout:
 		if a.rel != nil {
-			keys = append(keys, [2]string{"u", "aktualisieren"})
+			keys = append(keys, [2]string{"u", i18n.T("aktualisieren")})
 		} else if a.restartPending != "" {
-			keys = append(keys, [2]string{"r", "neu starten"})
+			keys = append(keys, [2]string{"r", i18n.T("neu starten")})
 		} else {
-			keys = append(keys, [2]string{"c", "nach Updates suchen"})
+			keys = append(keys, [2]string{"c", i18n.T("nach Updates suchen")})
 		}
-		keys = append(keys, [2]string{"w", "was ist neu"}, [2]string{"b", "☕ Kaffee spendieren"}, [2]string{"Esc", "schließen"})
+		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("☕ Kaffee spendieren")}, [2]string{"l", "Language"}, [2]string{"Esc", i18n.T("schließen")})
 	case mChangelog:
-		keys = [][2]string{{"b", "☕ Kaffee spendieren"}, {"Esc", "schließen"}}
+		keys = [][2]string{{"b", i18n.T("☕ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
 	case mHelp, mInfo:
-		keys = [][2]string{{"Esc", "schließen"}}
+		keys = [][2]string{{"Esc", i18n.T("schließen")}}
 	case mLLM:
-		keys = [][2]string{{"p", "jetzt prüfen"}, {"e", "Einstellungen"}, {"Esc", "schließen"}}
+		keys = [][2]string{{"p", i18n.T("jetzt prüfen")}, {"e", i18n.T("Einstellungen")}, {"Esc", i18n.T("schließen")}}
 	case mTour:
 		keys = tourButtons(a.modal)
 	case mQuick:
-		keys = [][2]string{{"⏎", "ausführen"}, {"e", "bearbeiten"}, {"Esc", "schließen"}}
+		keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
 	case mPaste:
-		keys = [][2]string{{"⏎", "einfügen"}}
+		keys = [][2]string{{"⏎", i18n.T("einfügen")}}
 		if a.modal.paste.multi {
-			keys = append(keys, [2]string{"o", "ohne letztes ⏎"})
+			keys = append(keys, [2]string{"o", i18n.T("ohne letztes ⏎")})
 		}
-		keys = append(keys, [2]string{"Esc", "abbrechen"})
+		keys = append(keys, [2]string{"Esc", i18n.T("abbrechen")})
 	default:
 		return ""
 	}
@@ -530,9 +532,9 @@ func (a *App) modalButtons() string {
 
 func mouseLabel(on bool) string {
 	if on {
-		return "Maus aus (Terminalfenster markiert selbst)"
+		return i18n.T("Maus aus (Terminalfenster markiert selbst)")
 	}
-	return "Maus an (klicken, markieren, scrollen)"
+	return i18n.T("Maus an (klicken, markieren, scrollen)")
 }
 
 // mouseHelp: Abschnitt für die Hilfe (F1).

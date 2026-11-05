@@ -18,6 +18,7 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sysprof"
 )
 
@@ -241,26 +242,26 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 
 	if c.JumpHostID != "" {
 		if o.Resolve == nil {
-			return nil, errors.New("Jump-Host kann nicht aufgelöst werden")
+			return nil, errors.New(i18n.T("Jump-Host kann nicht aufgelöst werden"))
 		}
 		jc, ok := o.Resolve(c.JumpHostID)
 		if !ok {
-			return nil, errors.New("Jump-Host nicht gefunden")
+			return nil, errors.New(i18n.T("Jump-Host nicht gefunden"))
 		}
 		hops := append(append([]string(nil), o.hops...), c.ID)
 		for _, h := range hops {
 			if h == jc.ID {
-				return nil, errors.New("Jump-Host-Schleife: " + jc.Alias + " kommt in der Kette zweimal vor")
+				return nil, errors.New(i18n.T("Jump-Host-Schleife: ") + jc.Alias + i18n.T(" kommt in der Kette zweimal vor"))
 			}
 		}
 		if len(hops) >= maxJumpHops {
-			return nil, fmt.Errorf("Jump-Host-Kette zu lang (mehr als %d Stationen)", maxJumpHops)
+			return nil, fmt.Errorf(i18n.T("Jump-Host-Kette zu lang (mehr als %d Stationen)"), maxJumpHops)
 		}
 		jo := o
 		jo.forceNet, jo.legacy, jo.hops = false, false, hops
 		jump, err = Dial(ctx, jc, jo)
 		if err != nil {
-			return nil, fmt.Errorf("Jump-Host %s: %w", jc.Alias, err)
+			return nil, fmt.Errorf(i18n.T("Jump-Host %s: %w"), jc.Alias, err)
 		}
 		raw, err = jump.Dial("tcp", c.Addr())
 	} else {
@@ -302,7 +303,7 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		if cl.Profile.Family != domain.FamilyNetwork {
 			cl.Profile.Family, cl.Profile.Dialect = domain.FamilyNetwork, "network"
 		}
-		cl.Remote = RemoteInfo{OS: "Netzwerkgerät (" + strings.TrimPrefix(banner, "SSH-2.0-") + ")"}
+		cl.Remote = RemoteInfo{OS: i18n.T("Netzwerkgerät (") + strings.TrimPrefix(banner, "SSH-2.0-") + ")"}
 		if cl.Profile.OS != "" {
 			cl.Remote.OS = cl.Profile.OS
 		}
@@ -314,7 +315,7 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		}
 		cl.Remote = RemoteInfo{OS: cl.Profile.OS, Kernel: pr.Version, Shell: pr.Shell, Locale: locale}
 		if cl.Remote.OS == "" && cl.Remote.Kernel == "" {
-			cl.Remote.OS = "Windows (OpenSSH) oder unbekannt"
+			cl.Remote.OS = i18n.T("Windows (OpenSSH) oder unbekannt")
 		}
 	}
 	go cl.keepAlive(kctx, c.KeepAlive)
@@ -504,7 +505,7 @@ func (c *Client) probe() (domain.SystemProfile, string) {
 // fürs Terminal). Nicht für Netzwerkgeräte: dort beendet Exec die Verbindung.
 func (c *Client) Output(cmd string, d time.Duration) (string, error) {
 	if c.NetDevice {
-		return "", errors.New("keine Exec-Befehle auf Netzwerkgeräten")
+		return "", errors.New(i18n.T("keine Exec-Befehle auf Netzwerkgeräten"))
 	}
 	s, err := c.NewSession()
 	if err != nil {
@@ -521,6 +522,6 @@ func (c *Client) Output(cmd string, d time.Duration) (string, error) {
 	case r := <-done:
 		return string(r.out), r.err
 	case <-time.After(d):
-		return "", errors.New("Zeitüberschreitung")
+		return "", errors.New(i18n.T("Zeitüberschreitung"))
 	}
 }

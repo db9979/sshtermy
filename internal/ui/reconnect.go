@@ -11,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -71,9 +72,9 @@ func (m muxState) attachCmd() string {
 
 func (m muxState) label() string {
 	if m.name != "" {
-		return m.kind + "-Sitzung „" + m.name + "“"
+		return m.kind + i18n.T("-Sitzung „") + m.name + "“"
 	}
-	return m.kind + "-Sitzung"
+	return m.kind + i18n.T("-Sitzung")
 }
 
 func shellQuote(s string) string {
@@ -201,22 +202,22 @@ func (a *App) autoReconnect() bool { return !a.st.Settings().NoAutoReconnect }
 func (a *App) toggleAutoReconnect() tea.Cmd {
 	on := !a.autoReconnect()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoAutoReconnect = !on }); err != nil {
-		a.flash("Einstellung nicht gespeichert: " + err.Error())
+		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {
-		a.flash("Auto-Reconnect an: abgerissene Sitzungen verbinden sich neu.")
+		a.flash(i18n.T("Auto-Reconnect an: abgerissene Sitzungen verbinden sich neu."))
 	} else {
-		a.flash("Auto-Reconnect aus: nach einem Abbruch ⏎ zum Neuverbinden.")
+		a.flash(i18n.T("Auto-Reconnect aus: nach einem Abbruch ⏎ zum Neuverbinden."))
 	}
 	return nil
 }
 
 func reconnectLabel(on bool) string {
 	if on {
-		return "Auto-Reconnect aus"
+		return i18n.T("Auto-Reconnect aus")
 	}
-	return "Auto-Reconnect an (Sitzung nach Abbruch neu verbinden)"
+	return i18n.T("Auto-Reconnect an (Sitzung nach Abbruch neu verbinden)")
 }
 
 // onShellClosed entscheidet: neu verbinden oder Sitzung beenden.
@@ -225,7 +226,7 @@ func (a *App) onShellClosed(s *session, m shellClosedMsg) {
 		return // alte Shell, Sitzung ist schon weiter
 	}
 	if m.dropped && a.autoReconnect() && !s.wantedEnd() {
-		cause := "Verbindung verloren"
+		cause := i18n.T("Verbindung verloren")
 		if m.err != nil && !errors.Is(m.err, context.Canceled) {
 			if e := strings.TrimSpace(m.err.Error()); e != "" && !strings.Contains(e, "without exit status") {
 				cause += " (" + e + ")"
@@ -236,9 +237,9 @@ func (a *App) onShellClosed(s *session, m shellClosedMsg) {
 	}
 	a.endLog(s)
 	s.close()
-	s.err = "Sitzung beendet"
+	s.err = i18n.T("Sitzung beendet")
 	if m.dropped {
-		s.err = "Verbindung verloren"
+		s.err = i18n.T("Verbindung verloren")
 	}
 }
 
@@ -252,7 +253,7 @@ func (a *App) beginReconnect(s *session, cause string) {
 	if s.rc.attempts >= len(reconnectWaits) {
 		a.endLog(s)
 		s.close()
-		s.err = cause + " · mehrmals hintereinander abgebrochen, ⏎ verbindet neu"
+		s.err = cause + i18n.T(" · mehrmals hintereinander abgebrochen, ⏎ verbindet neu")
 		s.rc = reconnState{}
 		return
 	}
@@ -341,7 +342,7 @@ func (a *App) cancelReconnect(s *session) {
 	s.rc = reconnState{}
 	a.endLog(s)
 	s.close()
-	s.err = "Neuverbinden abgebrochen"
+	s.err = i18n.T("Neuverbinden abgebrochen")
 }
 
 // onReconnectErr: Versuch fehlgeschlagen → nächsten planen oder aufgeben.
@@ -349,7 +350,7 @@ func (a *App) onReconnectErr(s *session, err error) {
 	s.rc.dialing = false
 	s.rc.lastErr = err.Error()
 	if !retryable(err) || s.rc.attempts >= len(reconnectWaits) {
-		msg := s.rc.cause + " · Neuverbinden fehlgeschlagen: " + err.Error()
+		msg := s.rc.cause + i18n.T(" · Neuverbinden fehlgeschlagen: ") + err.Error()
 		s.rc = reconnState{}
 		a.endLog(s)
 		s.close()
@@ -371,7 +372,7 @@ func (a *App) onReconnected(s *session) tea.Cmd {
 			a.flash("Tunnel " + t.Name + ": " + err.Error())
 		}
 	}
-	msg := fmt.Sprintf("%s wieder verbunden (%s getrennt)", s.conn.Alias, down)
+	msg := fmt.Sprintf(i18n.T("%s wieder verbunden (%s getrennt)"), s.conn.Alias, down)
 	var probe tea.Cmd
 	if s.mux.kind == "" && s.rc.alt && !s.client.NetDevice {
 		// Vollbild lief, aber kein tmux-Aufruf gesehen (z. B. tmux startet aus
@@ -382,7 +383,7 @@ func (a *App) onReconnected(s *session) tea.Cmd {
 		s.rc.active, s.rc.dialing = false, false
 		s.rc.tunnels = nil
 		s.muxPending = true
-		msg += ", hänge " + s.mux.label() + " wieder an …"
+		msg += i18n.T(", hänge ") + s.mux.label() + i18n.T(" wieder an …")
 	} else {
 		s.rc = reconnState{attempts: s.rc.attempts}
 	}
@@ -430,7 +431,7 @@ func (a *App) onMuxProbe(m muxProbeMsg) {
 		return
 	}
 	s.mux, s.muxPending = m.m, true
-	a.flash("Hänge " + m.m.label() + " wieder an …")
+	a.flash(i18n.T("Hänge ") + m.m.label() + i18n.T(" wieder an …"))
 }
 
 // resumeMux schickt den Befehl zum Anhängen, sobald der Prompt steht.
@@ -463,7 +464,12 @@ func retryable(err error) bool {
 		return false
 	}
 	m := err.Error()
-	return !strings.Contains(m, "Host-Key") && !strings.Contains(m, "Keyfile") && !strings.Contains(m, "passphrase")
+	for _, s := range []string{"Host-Key", "host key", "Keyfile", "Key file", "passphrase"} {
+		if strings.Contains(m, s) {
+			return false
+		}
+	}
+	return true
 }
 
 func isAuthFailure(err error) bool {
@@ -516,21 +522,21 @@ func (a *App) reconnectView(s *session) string {
 	head := st.Warn.Render("⟳ " + r.cause + ": " + where)
 	var line string
 	if r.dialing {
-		line = st.AI.Render(fmt.Sprintf("Verbinde neu … (Versuch %d von %d)", r.attempts, len(reconnectWaits)))
+		line = st.AI.Render(fmt.Sprintf(i18n.T("Verbinde neu … (Versuch %d von %d)"), r.attempts, len(reconnectWaits)))
 	} else {
 		left := max(0, int(time.Until(r.due).Round(time.Second)/time.Second))
-		line = st.Text.Render(fmt.Sprintf("Neuer Versuch in %d s (Versuch %d von %d)", left, r.attempts+1, len(reconnectWaits)))
+		line = st.Text.Render(fmt.Sprintf(i18n.T("Neuer Versuch in %d s (Versuch %d von %d)"), left, r.attempts+1, len(reconnectWaits)))
 	}
 	out := head + "\n\n" + line
 	if r.lastErr != "" {
-		out += "\n" + st.Muted.Render("Letzter Fehler: "+trunc(r.lastErr, 70))
+		out += "\n" + st.Muted.Render(i18n.T("Letzter Fehler: ")+trunc(r.lastErr, 70))
 	}
 	if s.mux.kind != "" && !r.netDev {
-		out += "\n" + st.OK.Render("Danach wird die "+s.mux.label()+" wieder angehängt.")
+		out += "\n" + st.OK.Render(i18n.T("Danach wird die ")+s.mux.label()+i18n.T(" wieder angehängt."))
 	}
 	if n := len(r.tunnels); n > 0 {
-		out += "\n" + st.Muted.Render(plural(n, "Tunnel startet", "Tunnel starten")+" wieder.")
+		out += "\n" + st.Muted.Render(plural(n, i18n.T("Tunnel startet"), i18n.T("Tunnel starten"))+i18n.T(" wieder."))
 	}
-	return out + "\n\n" + a.keyZone("⏎", st.Muted.Render("⏎ jetzt versuchen")) + st.Muted.Render(" · ") +
-		a.keyZone("Esc", st.Muted.Render("Esc abbrechen")) + st.Muted.Render(" · x Tab schließen · F10 Manager")
+	return out + "\n\n" + a.keyZone("⏎", st.Muted.Render(i18n.T("⏎ jetzt versuchen"))) + st.Muted.Render(" · ") +
+		a.keyZone("Esc", st.Muted.Render(i18n.T("Esc abbrechen"))) + st.Muted.Render(i18n.T(" · x Tab schließen · F10 Manager"))
 }
