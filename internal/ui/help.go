@@ -25,6 +25,7 @@ const (
 	hcPalette
 	hcFiles
 	hcSettings
+	hcHost
 )
 
 type helpSection struct {
@@ -66,6 +67,7 @@ var helpSections = []helpSection{
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
+		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},
 		{"F10", "zum Manager"},
 	}},
@@ -93,6 +95,14 @@ var helpSections = []helpSection{
 		{"n", "neuer Tunnel"},
 		{"e", "bearbeiten"},
 		{"d", "löschen"},
+	}},
+	{hcHost, "▣", "Host-Übersicht", "F6", false, [][2]string{
+		{"r / ⏎", "abfragen"},
+		{"b", "Switch-Config sichern"},
+		{"↑ ↓", "Sicherung wählen"},
+		{"d", "Diff zur Vorversion"},
+		{"v", "Sicherung ansehen"},
+		{"x", "Abfrage abbrechen"},
 	}},
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{
 		{"Tab", "Seite wechseln"},
@@ -152,6 +162,8 @@ func (a *App) helpContext() helpCtx {
 				return hcAsk
 			case panelTunnels:
 				return hcTunnel
+			case panelHost:
+				return hcHost
 			}
 		}
 		return hcTerminal

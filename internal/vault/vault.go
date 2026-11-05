@@ -412,3 +412,34 @@ func OpenGCM(key, nonce, ct, aad []byte) ([]byte, error) { return gcmOpen(key, n
 
 // Wipe überschreibt einen Puffer (best effort).
 func Wipe(b []byte) { wipe(b) }
+
+// SealBlob verschlüsselt einzelne Daten außerhalb des Stores (z. B. gesicherte
+// Switch-Konfigurationen) mit demselben Datenschlüssel. aad bindet das
+// Chiffrat an seinen Ablageort, damit Dateien nicht vertauscht werden können.
+// Ergebnis: Nonce || Chiffrat.
+func (v *Vault) SealBlob(plain, aad []byte) ([]byte, error) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.dek == nil {
+		return nil, ErrLocked
+	}
+	nonce, ct, err := gcmSeal(v.dek, plain, aad)
+	if err != nil {
+		return nil, err
+	}
+	return append(nonce, ct...), nil
+}
+
+// OpenBlob entschlüsselt ein Ergebnis von SealBlob.
+func (v *Vault) OpenBlob(blob, aad []byte) ([]byte, error) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.dek == nil {
+		return nil, ErrLocked
+	}
+	const ns = 12 // GCM-Standard-Nonce
+	if len(blob) < ns {
+		return nil, errors.New("Datei beschädigt")
+	}
+	return gcmOpen(v.dek, blob[:ns], blob[ns:], aad)
+}

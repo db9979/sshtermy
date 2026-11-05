@@ -127,8 +127,8 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.filesKey(s, m)
 		}
 		switch key {
-		case "f2", "f3", "f4":
-			kind := map[string]panelKind{"f2": panelGoal, "f3": panelAsk, "f4": panelTunnels}[key]
+		case "f2", "f3", "f4", "f6":
+			kind := map[string]panelKind{"f2": panelGoal, "f3": panelAsk, "f4": panelTunnels, "f6": panelHost}[key]
 			if s.panel == kind && s.panelFocus {
 				s.panel, s.panelFocus = panelNone, false
 			} else {
@@ -358,6 +358,9 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
 	right := goal + " " + tun + " " + ai
+	if hb := a.hostBadge(s); hb != "" {
+		right = goal + " " + hb + " " + tun + " " + ai
+	}
 	gap := max(1, a.w-lipgloss.Width(info)-lipgloss.Width(right)-1)
 	bar := st.Header.Render(" "+trunc(info, a.w-lipgloss.Width(right)-3)+strings.Repeat(" ", gap)) + right
 	bar = ansi.Truncate(bar, a.w, "")
@@ -439,6 +442,6 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	if s.panelFocus {
 		return a.panelKeys(s)
 	}
-	return [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F7/F8", "Tabs"},
+	return [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F6", "Host"}, {"F7/F8", "Tabs"},
 		{"F10", "Manager"}, {"F1", "Hilfe"}, {"Strg+Q", "beenden"}}
 }

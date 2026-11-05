@@ -12,6 +12,7 @@
 //	                     ├─ F2 Ziel-Modus (Agent)       ⏎ ausführen · i einfügen · s überspringen
 //	                     ├─ F3 Frage an die KI          1…9 Befehl aus der Antwort einfügen
 //	                     ├─ F4 Tunnel                   ⏎ an/aus · o im Browser öffnen
+//	                     ├─ F6 Host-Übersicht           r/⏎ abfragen · b Switch-Config sichern · d Diff
 //	                     └─ F10 zurück zum Manager (Sitzungen laufen weiter), F7/F8 Tabs
 package ui
 
@@ -181,6 +182,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			a.resize(s)
+			return a, a.hostOnConnect(s)
 		}
 		return a, nil
 	case connectErrMsg:
@@ -230,6 +232,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, cmd
 	}
 	if cmd, ok := a.filesMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.hostMsg(msg); ok {
 		return a, cmd
 	}
 

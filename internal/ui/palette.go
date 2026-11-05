@@ -170,6 +170,21 @@ func (a *App) paletteItems() []palItem {
 	}
 	if !inTerm {
 		actions = actions[2:]
+	} else {
+		actions = append(actions, palItem{icon: "▤", label: "Host-Übersicht", hint: "F6", run: func() tea.Cmd {
+			withPanel(s, panelHost)
+			a.resize(s)
+			return a.panelOpened(s)
+		}})
+		if s.client != nil && s.client.NetDevice {
+			actions = append(actions, palItem{icon: "▣", label: "Switch-Config sichern und vergleichen", hint: "b", run: func() tea.Cmd {
+				withPanel(s, panelHost)
+				s.panelFocus = false
+				a.resize(s)
+				s.host.backups = a.st.Backups(s.conn.ID)
+				return a.hostNetCmd(s, false, true)
+			}})
+		}
 	}
 	for _, x := range actions {
 		x.group = pgAction

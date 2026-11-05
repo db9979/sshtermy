@@ -20,6 +20,7 @@ const (
 	mAbout
 	mHelp
 	mBusy
+	mText // blätterbarer Text (Config-Diff, Konfiguration)
 )
 
 type modal struct {
@@ -30,8 +31,9 @@ type modal struct {
 	sec    secretAskMsg
 	in     textinput.Model
 	onYes  func() tea.Cmd
-	ctx    helpCtx // nur Hilfe: aktueller Bereich
-	scroll int     // nur Hilfe: Scroll-Position
+	ctx    helpCtx  // nur Hilfe: aktueller Bereich
+	scroll int      // Hilfe/Text: Scroll-Position
+	lines  []string // nur Text
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
@@ -130,6 +132,10 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		if m.helpKey(key) {
 			a.modal = nil
 		}
+	case mText:
+		if m.textKey(key) {
+			a.modal = nil
+		}
 	}
 	return nil
 }
@@ -137,6 +143,9 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 func (m *modal) view(s Styles, w, h int) string {
 	if m.kind == mHelp {
 		return m.helpView(s, w, h)
+	}
+	if m.kind == mText {
+		return m.textView(s, w, h)
 	}
 	title := s.Accent.Render(m.title)
 	if m.kind == mHostKey {

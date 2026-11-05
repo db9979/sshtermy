@@ -10,6 +10,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Verbindungs-Manager** mit verschlüsseltem Store (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI)
 - **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen
+- **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, Platte, Laufzeit und offene Updates. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
+- **Config-Sicherung für Switches**: `b` sichert `show running-config` verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
@@ -60,6 +62,7 @@ sshtermy --update     # auf die neueste Version aktualisieren
 | | F3 | KI fragen |
 | | F4 | Tunnel an/aus, Web-Service im Browser öffnen |
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), n Ordner, d löschen, . versteckte |
+| | F6 | Host-Übersicht: r/⏎ abfragen, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
@@ -91,6 +94,8 @@ belegt nur Tasten, die Shells und Vollbildprogramme praktisch nie brauchen.
 | ![](docs/bilder/12-dateien.png) | ![](docs/bilder/11-runbooks.png) |
 | **KI-Endpunkt testen, Modell wählen** | |
 | ![](docs/bilder/10-ki-test.png) | |
+| **Host-Übersicht Server (F6)** | **Switch: Übersicht und Config-Sicherung** |
+| ![](docs/bilder/15-host-server.png) | ![](docs/bilder/14-host-switch.png) |
 
 Die Bilder sind echte Aufnahmen der App (gegen einen Test-SSH-Server und ein Test-LLM aus `tools/dev`).
 
