@@ -20,6 +20,7 @@ const (
 	stConnecting sessState = iota
 	stConnected
 	stClosed
+	stReconnect // Verbindung abgerissen, sshTermy verbindet gleich neu
 )
 
 type panelKind int
@@ -43,6 +44,14 @@ type session struct {
 	state   sessState
 	err     string
 	started time.Time
+
+	connectedAt time.Time    // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
+	quitAt      time.Time    // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
+	rc          reconnState  // Auto-Reconnect
+	mux         muxState     // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
+	secrets     *secretCache // Antworten auf Passwort-Rückfragen, nur im Speicher
+	muxPending  bool         // tmux/screen nach dem Neuverbinden anhängen
+	rootPrompt  bool         // letzter Prompt endete auf „#“
 
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
@@ -116,8 +125,10 @@ type connectErrMsg struct {
 	err error
 }
 type shellClosedMsg struct {
-	sid int
-	err error
+	sid     int
+	shell   *sshx.Shell
+	err     error
+	dropped bool // Leitung weggebrochen (nicht exit/logout)
 }
 
 // hostKeyAskMsg / secretAskMsg: der Verbindungsaufbau wartet auf die Antwort.
@@ -135,6 +146,11 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 	hk := a.hostKeys
 	st := a.st
 	cols, rows := a.termSize(s)
+	if s.secrets == nil {
+		s.secrets = &secretCache{}
+	}
+	sc := s.secrets
+	keepTerm := s.term != nil && s.rc.active // Auto-Reconnect: Verlauf bleibt stehen
 	return func() tea.Msg {
 		opts := sshx.Options{
 			HostKeys: hk,
@@ -144,7 +160,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 				ev <- hostKeyAskMsg{host, fp, typ, r}
 				return <-r
 			},
-			AskSecret: func(label string) (string, error) {
+			AskSecret: sc.wrap(func(label string) (string, error) {
 				r := make(chan string, 1)
 				ev <- secretAskMsg{label, r}
 				v := <-r
@@ -152,21 +168,32 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 					return "", context.Canceled
 				}
 				return v, nil
-			},
+			}),
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		c, err := sshx.Dial(ctx, s.conn, opts)
 		if err != nil {
+			if isAuthFailure(err) {
+				sc.forget() // falsches Passwort nicht beim nächsten Versuch wiederholen
+			}
 			return connectErrMsg{s.id, err}
 		}
-		s.term = termemu.New(cols, rows, shellWriter{s})
+		if !keepTerm {
+			s.term = termemu.New(cols, rows, shellWriter{s})
+		}
 		sh, err := c.OpenShell(cols, rows, outWriter{s, ev})
 		if err != nil {
 			c.Close()
 			return connectErrMsg{s.id, err}
 		}
-		go func() { err := <-sh.Done; ev <- shellClosedMsg{s.id, err} }()
+		go func() {
+			err := <-sh.Done
+			// exit/logout endet mit Exit-Status; ohne Status (oder mit Fehler)
+			// prüfen, ob die ganze Leitung weg ist → Auto-Reconnect.
+			dropped := err != nil && c.WaitDropped(1500*time.Millisecond)
+			ev <- shellClosedMsg{s.id, sh, err, dropped}
+		}()
 		return connectedMsg{s.id, c, sh}
 	}
 }

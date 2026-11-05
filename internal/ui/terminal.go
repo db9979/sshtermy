@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -141,6 +140,17 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
 		}
+		if s.state == stReconnect {
+			switch key {
+			case "enter", "r":
+				return a.reconnectNow(s)
+			case "esc":
+				a.cancelReconnect(s)
+			case "x":
+				a.closeTab(s)
+			}
+			return nil
+		}
 		if s.state != stConnected {
 			switch key {
 			case "enter", "r":
@@ -217,6 +227,7 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
 			a.beginCommand(s, typed)
 			s.history = append(s.history, strings.TrimSpace(typed))
+			s.noteCommand(strings.TrimSpace(typed))
 			if len(s.history) > 200 {
 				s.history = s.history[len(s.history)-200:]
 			}
@@ -228,6 +239,9 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			s.goal.manualPending = false
 			s.goal.startWait()
 		}
+	}
+	if key == "ctrl+d" && s.term.AtIdlePrompt() {
+		s.quitAt = time.Now() // Strg+D am leeren Prompt = abmelden
 	}
 	s.term.SendKey(uv.KeyPressEvent(k))
 	if key == "enter" || key == "ctrl+c" {
@@ -324,7 +338,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	// Tabs rechts in der Kopfzeile
 	var tabs strings.Builder
 	for i, x := range a.sessions {
-		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○")}[x.state]
+		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
 		label := " " + trunc(x.conn.Alias, 16) + " "
 		tab := st.Tab.Render(dot + label)
 		if i == a.cur {
@@ -341,39 +355,8 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	}
 	top := a.header(tabs.String())
 
-	// Sitzungszeile
-	info := ""
-	if s.client != nil {
-		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.client.Remote.String()
-	} else {
-		info = s.conn.Username + "@" + s.conn.Addr()
-	}
-	nT := 0
-	if s.tunnels != nil {
-		nT = len(s.tunnels.List())
-	}
-	cfg := a.st.LLM()
-	ai := st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22))
-	if !cfg.SuggestEnabled {
-		ai = st.Badge.Foreground(st.T.Muted).Render("✦ aus")
-	}
-	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { a.returnToTerminal = true; return a.openSettings() })
-	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, "Tunnel", "Tunnel")))
-	goal := ""
-	if s.goal.active {
-		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv"))
-	}
-	if s.scroll > 0 {
-		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf("⇡ Verlauf −%d · Esc", s.scroll)),
-			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
-	}
-	right := goal + " " + tun + " " + ai
-	if hb := a.hostBadge(s); hb != "" {
-		right = goal + " " + hb + " " + tun + " " + ai
-	}
-	gap := max(1, a.w-lipgloss.Width(info)-lipgloss.Width(right)-1)
-	bar := st.Header.Render(" "+trunc(info, a.w-lipgloss.Width(right)-3)+strings.Repeat(" ", gap)) + right
-	bar = ansi.Truncate(bar, a.w, "")
+	// Sitzungszeile (statusline.go)
+	bar := a.sessionBar(s)
 
 	// Terminalfläche
 	cols, rows := a.termSize(s)
@@ -383,6 +366,8 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	case s.state == stConnecting:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
 			st.AI.Render("⠿ Verbinde mit "+s.conn.Alias+" ("+s.conn.Addr()+") …"))
+	case s.state == stReconnect:
+		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.reconnectView(s))
 	case s.state == stClosed:
 		msg := st.Danger.Render("✗ " + orDefault(s.err, "getrennt"))
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
