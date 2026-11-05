@@ -53,7 +53,7 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{"/", "suchen"},
 		{"t", "Tunnel anlegen"},
-		{"b", "Broadcast an mehrere Hosts"},
+		{"m", "Broadcast an mehrere Hosts"},
 		{"f", "Netzwerk-Scan"},
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
@@ -109,7 +109,7 @@ var helpSections = []helpSection{
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
 	}},
-	{hcBroadcast, "⇉", "Broadcast", "b", false, [][2]string{
+	{hcBroadcast, "⇉", "Broadcast", "m", false, [][2]string{
 		{"Space / g / a", "Host / Gruppe / alle"},
 		{"Tab", "Hosts · Quelle · Befehl"},
 		{"⇧⏎", "weiterer Schritt"},

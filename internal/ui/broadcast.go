@@ -18,7 +18,7 @@ import (
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
-// Broadcast (Manager: b): ein Befehl oder ein Runbook läuft parallel auf
+// Broadcast (Manager: m = an mehrere Hosts): ein Befehl oder ein Runbook läuft parallel auf
 // mehreren Verbindungen, die Ergebnisse stehen nebeneinander.
 //
 // Ablauf: Hosts und Befehl wählen ─▶ Bestätigen (rot bei Gefahr: zweimal ⏎)

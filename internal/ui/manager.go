@@ -43,7 +43,7 @@ func (a *App) filtered() []domain.Connection {
 
 func (a *App) managerKeys() [][2]string {
 	k := [][2]string{{"Strg+Space", "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
-		{"t", "Tunnel"}, {"b", "Broadcast"}, {"f", "Scan"}, {"s", "KI"}, {"y", "Sync"}, {"F1", "Hilfe"}, {"F12", "Über"}, {"Strg+Q", "beenden"}}
+		{"t", "Tunnel"}, {"m", "Broadcast"}, {"f", "Scan"}, {"s", "KI"}, {"y", "Sync"}, {"F1", "Hilfe"}, {"F12", "Über"}, {"Strg+Q", "beenden"}}
 	if len(a.sessions) > 0 {
 		k = append([][2]string{{"F10", "zum Terminal"}}, k...)
 	}
@@ -105,7 +105,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		}
 	case "s":
 		return a.openSettings()
-	case "b":
+	case "m":
 		return a.openBroadcast()
 	case "f":
 		return a.openScan()

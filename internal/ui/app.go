@@ -6,7 +6,7 @@
 //	      ─▶ Verbindungs-Manager (Liste, Details, Tunnel, Suche)
 //	           ├─ n/e  Verbindung anlegen/bearbeiten  ─▶ Formular
 //	           ├─ s    KI-Einstellungen (Endpunkt, Modell, Test)
-//	           ├─ b    Broadcast: Befehl/Runbook auf mehreren Hosts, Ergebnisse nebeneinander
+//	           ├─ m    Broadcast: Befehl/Runbook auf mehreren Hosts, Ergebnisse nebeneinander
 //	           ├─ f    Netzwerk-Scan: Subnetz nach SSH-Geräten durchsuchen, Funde anlegen
 //	           └─ ⏎    Verbinden ─▶ (Host-Key prüfen) ─▶ Terminal (Tab)
 //	                     ├─ Ghost-Text beim Tippen      Tab/→ übernimmt
