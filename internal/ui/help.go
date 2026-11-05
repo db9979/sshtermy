@@ -85,6 +85,7 @@ var helpSections = []helpSection{
 		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},
 		{"F10", "zum Manager"},
+		{"Abbruch", "verbindet neu (⏎ / Esc)"},
 	}},
 	{hcGoal, "◎", "Ziel-Modus", "F2", true, [][2]string{
 		{"⏎", "Ziel starten / ausführen"},
@@ -157,6 +158,7 @@ var helpSections = []helpSection{
 	}},
 	{hcPalette, "❯", "Befehlspalette", "Strg+Space", false, [][2]string{
 		{"tippen", "filtern / Ziel / Frage"},
+		{"user@host", "schnell verbinden"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
 		{"Esc", "schließen"},
