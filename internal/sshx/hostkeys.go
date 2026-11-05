@@ -39,12 +39,8 @@ func NewHostKeyStore(path string) (*HostKeyStore, error) {
 func (h *HostKeyStore) Callback(prompt HostKeyPrompt) ssh.HostKeyCallback {
 	return func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		h.mu.Lock()
-		defer h.mu.Unlock()
-		check, err := knownhosts.New(h.path)
-		if err != nil {
-			return err
-		}
-		err = check(hostname, remote, key)
+		err := h.check(hostname, remote, key)
+		h.mu.Unlock()
 		var ke *knownhosts.KeyError
 		switch {
 		case err == nil:
@@ -52,15 +48,37 @@ func (h *HostKeyStore) Callback(prompt HostKeyPrompt) ssh.HostKeyCallback {
 		case errors.As(err, &ke) && len(ke.Want) > 0:
 			return ErrHostKeyChanged
 		case errors.As(err, &ke):
+			// Die Rückfrage läuft OHNE Sperre: sie wartet auf den Benutzer, und
+			// die Oberfläche greift währenddessen selbst auf den Store zu
+			// (z. B. Sync liest Lines()). Mit gehaltener Sperre fror die UI ein
+			// und der Dialog reagierte auf keine Taste mehr.
 			fp := ssh.FingerprintSHA256(key)
 			if prompt == nil || !prompt(hostname, fp, key.Type()) {
 				return fmt.Errorf("Host-Key von %s abgelehnt", hostname)
+			}
+			h.mu.Lock()
+			defer h.mu.Unlock()
+			// Inzwischen evtl. von einer parallelen Verbindung oder dem Sync ergänzt.
+			switch err := h.check(hostname, remote, key); {
+			case err == nil:
+				return nil
+			case errors.As(err, &ke) && len(ke.Want) > 0:
+				return ErrHostKeyChanged
 			}
 			return h.add(hostname, remote, key)
 		default:
 			return err
 		}
 	}
+}
+
+// check prüft gegen die known_hosts-Datei (Aufrufer hält h.mu).
+func (h *HostKeyStore) check(hostname string, remote net.Addr, key ssh.PublicKey) error {
+	check, err := knownhosts.New(h.path)
+	if err != nil {
+		return err
+	}
+	return check(hostname, remote, key)
 }
 
 func (h *HostKeyStore) add(hostname string, remote net.Addr, key ssh.PublicKey) error {
