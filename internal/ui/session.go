@@ -64,6 +64,7 @@ type session struct {
 	ask        askState
 	tunSel     int
 	files      filesState
+	search     searchState // Strg+F
 
 	// Maus im Terminal
 	scroll    int          // Zeilen zurück im Verlauf (0 = live)

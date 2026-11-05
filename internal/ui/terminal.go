@@ -27,14 +27,17 @@ func (a *App) panelWidth(s *session) int {
 	if s == nil || s.panel == panelNone {
 		return 0
 	}
-	if a.w >= 110 {
+	w := a.termRect(s).w
+	if w >= 110 {
 		return 48
 	}
-	return a.w / 2
+	return w / 2
 }
 
+// termSize: Spalten und Zeilen des Terminals (Bereich minus Seitenpanel).
 func (a *App) termSize(s *session) (int, int) {
-	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows)
+	r := a.termRect(s)
+	return max(20, r.w-a.panelWidth(s)), max(3, r.h)
 }
 
 func (a *App) resize(s *session) {
@@ -69,6 +72,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 	}
 	switch m := msg.(type) {
 	case tea.PasteMsg:
+		if s.search.open && !s.panelFocus && !s.files.open {
+			return a.searchPaste(s, m)
+		}
 		if s.files.open {
 			if s.files.mkdir != nil {
 				var cmd tea.Cmd
@@ -87,6 +93,16 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		return nil
 	case tea.KeyPressMsg:
 		key := m.String()
+		// geteilte Ansicht: Strg+Pfeil wechselt den Bereich
+		if dir, ok := paneDir(key); ok && a.split != splitOff {
+			a.movePane(dir)
+			return nil
+		}
+		if s.search.open && !s.panelFocus && !s.files.open {
+			if cmd, ok := a.searchKey(s, m); ok {
+				return cmd
+			}
+		}
 		// Tippen beendet Markierung und Rückblick (Esc nur das)
 		if s.scroll > 0 && key == "esc" && !s.panelFocus && !s.files.open {
 			s.scroll, s.sel = 0, nil
@@ -113,8 +129,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				if key == "f7" {
 					d = -1
 				}
-				a.cur = (a.cur + d + len(a.sessions)) % len(a.sessions)
-				a.resize(a.current())
+				a.focusSession((a.cur + d + len(a.sessions)) % len(a.sessions))
 			}
 			return nil
 		case "f5":
@@ -125,6 +140,10 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if s.files.open {
 			return a.filesKey(s, m)
+		}
+		if key == "f6" {
+			a.cycleSplit()
+			return nil
 		}
 		switch key {
 		case "f2", "f3", "f4":
@@ -139,6 +158,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
+		}
+		if key == "ctrl+f" {
+			return a.openSearch(s)
 		}
 		if s.state != stConnected {
 			switch key {
@@ -166,6 +188,7 @@ func (a *App) closeTab(s *session) {
 	if len(a.sessions) == 0 {
 		a.scr = scrManager
 	}
+	a.fixFocus()
 }
 
 func (a *App) visibleGhost(s *session) string {
@@ -322,10 +345,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		}
 		i := i
 		tabs.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
-			if i < len(a.sessions) {
-				a.cur = i
-				a.resize(a.current())
-			}
+			a.focusSession(i)
 			return nil
 		}))
 	}
@@ -362,8 +382,30 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	bar := st.Header.Render(" "+trunc(info, a.w-lipgloss.Width(right)-3)+strings.Repeat(" ", gap)) + right
 	bar = ansi.Truncate(bar, a.w, "")
 
-	// Terminalfläche
+	// Terminalfläche (eine Sitzung oder geteilt)
+	var body string
+	var cur *tea.Cursor
+	if a.split != splitOff && a.slotOf(s) >= 0 {
+		body, cur = a.viewSplit(s)
+	} else {
+		body, cur = a.paneBody(s, true)
+	}
+	bottom := a.chipBar(s)
+	if s.search.open {
+		bottom = a.searchBar(s)
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, bottom, a.footer(a.terminalKeys(s))), cur
+}
+
+// paneBody zeichnet die Terminalfläche einer Sitzung (samt Panel/Dateien).
+// Nur die aktive Sitzung bekommt Cursor und Ghost-Text.
+func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
+	st := a.s
 	cols, rows := a.termSize(s)
+	tr := a.termRect(s)
+	if s.search.open {
+		a.refreshSearch(s, false)
+	}
 	var body string
 	var cur *tea.Cursor
 	switch {
@@ -374,21 +416,31 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		msg := st.Danger.Render("✗ " + orDefault(s.err, "getrennt"))
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
 			msg+"\n\n"+st.Muted.Render("⏎ neu verbinden · x Tab schließen · F10 Manager"))
-	case s.scroll > 0 || s.sel != nil:
+	case s.search.open && s.search.list:
+		body = a.viewErrorList(s, cols, rows)
+	case s.scroll > 0 || s.sel != nil || s.search.open:
 		// Rückblick im Verlauf und/oder Markierung
 		if sb := s.term.ScrollbackLen(); s.scroll > 0 && sb > s.sbSeen {
 			s.scroll = min(sb, s.scroll+sb-s.sbSeen) // neue Ausgabe verschiebt die Ansicht nicht
 		}
 		s.scroll = min(s.scroll, s.term.ScrollbackLen())
-		body = s.term.Render(s.scroll, s.sel)
-		if x, y, vis := s.term.Cursor(); vis && !s.panelFocus && s.scroll == 0 {
-			cur = tea.NewCursor(x, y+topRows)
+		if s.search.open {
+			body = s.term.RenderMarked(s.scroll, s.sel, a.searchMarks(s), a.markStyle())
+		} else {
+			body = s.term.Render(s.scroll, s.sel)
+		}
+		if x, y, vis := s.term.Cursor(); vis && focused && !s.panelFocus && s.scroll == 0 && !s.search.open {
+			cur = tea.NewCursor(tr.x+x, tr.y+y)
 			cur.Color = st.T.Accent
 		}
 	default:
-		body = s.term.View(a.visibleGhost(s), func(g string) string { return st.Ghost.Render(g) })
-		if x, y, vis := s.term.Cursor(); vis && !s.panelFocus {
-			cur = tea.NewCursor(x, y+topRows)
+		ghost := ""
+		if focused {
+			ghost = a.visibleGhost(s)
+		}
+		body = s.term.View(ghost, func(g string) string { return st.Ghost.Render(g) })
+		if x, y, vis := s.term.Cursor(); vis && focused && !s.panelFocus {
+			cur = tea.NewCursor(tr.x+x, tr.y+y)
 			cur.Color = st.T.Accent
 		}
 	}
@@ -396,12 +448,12 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		s.sbSeen = s.term.ScrollbackLen()
 	}
 	if s.files.open {
-		body, cur = a.viewFiles(s, a.w, rows), nil
+		body, cur = a.viewFiles(s, tr.w, rows), nil
 	} else if s.panel != panelNone {
 		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, a.chipBar(s), a.footer(a.terminalKeys(s))), cur
+	return body, cur
 }
 
 func (a *App) chipBar(s *session) string {
@@ -439,6 +491,16 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	if s.panelFocus {
 		return a.panelKeys(s)
 	}
-	return [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F7/F8", "Tabs"},
-		{"F10", "Manager"}, {"F1", "Hilfe"}, {"Strg+Q", "beenden"}}
+	if s.search.open {
+		if s.search.list {
+			return [][2]string{{"↑/↓", "wählen"}, {"⏎", "im Verlauf zeigen"}, {"Tab", "Liste/Verlauf"}, {"Strg+E", "Filter aus"}, {"Esc", "Suche schließen"}}
+		}
+		k := [][2]string{{"⏎/↑", "älter"}, {"Shift+⏎/↓", "neuer"}, {"Bild↑/Bild↓", "blättern"}, {"Strg+E", "Fehlerfilter"}}
+		if s.search.errors {
+			k = append(k, [2]string{"Tab", "Fehlerliste"})
+		}
+		return append(k, [2]string{"Esc", "Suche schließen"})
+	}
+	k := [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"Strg+F", "Suche"}, {"F6", "Teilen"}}
+	return append(k, [][2]string{{"F7/F8", "Tabs"}, {"F10", "Manager"}, {"F1", "Hilfe"}, {"Strg+Q", "beenden"}}...)
 }

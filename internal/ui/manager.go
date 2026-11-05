@@ -127,7 +127,7 @@ func (a *App) connect(c domain.Connection) tea.Cmd {
 	a.nextSID++
 	s := &session{id: a.nextSID, conn: c, state: stConnecting, started: time.Now(), chipArmed: -1}
 	a.sessions = append(a.sessions, s)
-	a.cur = len(a.sessions) - 1
+	a.focusSession(len(a.sessions) - 1)
 	a.scr = scrTerminal
 	return a.connectCmd(s)
 }
