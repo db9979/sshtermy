@@ -44,7 +44,9 @@ package vault
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -412,6 +414,22 @@ func OpenGCM(key, nonce, ct, aad []byte) ([]byte, error) { return gcmOpen(key, n
 
 // Wipe überschreibt einen Puffer (best effort).
 func Wipe(b []byte) { wipe(b) }
+
+// DeriveKey leitet aus dem DEK einen eigenen Schlüssel für einen Zweck ab
+// (HMAC-SHA256, Domänentrennung über purpose), z. B. für die Sitzungsprotokolle.
+// So braucht es keinen weiteren gespeicherten Schlüssel, und ein Wechsel des
+// Master-Passworts lässt alte Protokolle lesbar (der DEK bleibt gleich). Der
+// Aufrufer sollte den Schlüssel nach Gebrauch mit Wipe nullen.
+func (v *Vault) DeriveKey(purpose string) ([]byte, error) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.dek == nil {
+		return nil, ErrLocked
+	}
+	m := hmac.New(sha256.New, v.dek)
+	m.Write([]byte("sshtermy/v1/derive/" + purpose))
+	return m.Sum(nil), nil
+}
 
 // SealBlob verschlüsselt einzelne Daten außerhalb des Stores (z. B. gesicherte
 // Switch-Konfigurationen) mit demselben Datenschlüssel. aad bindet das

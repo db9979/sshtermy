@@ -26,6 +26,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   - **Runbooks**: Ziele mit den ausgeführten Befehlen speichern (Strg+S) und wiederverwenden, der Agent nimmt sie als Vorlage
   - **Endpunkt-Test und Modellauswahl** in den KI-Einstellungen (Strg+T testet, Strg+L listet die Modelle von `/v1/models`)
   - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort per 1…9 einfügen
+  - **Fehler erklären**: schlägt ein Befehl fehl, bietet die Vorschlagszeile „Warum? & Fix“ an (Alt+0). Die KI bekommt
+    Befehl, Exit-Code und Ausgabe und antwortet mit Ursache und einfügbaren Befehlen
+- **Sitzungsprotokoll** (Manager: `l`): jede Sitzung wird lokal und verschlüsselt mitgeschrieben (Befehle, Ausgabe,
+  Fehlschläge), durchsuchbar, mit KI-Zusammenfassung einer Sitzung (`z`) oder aller Treffer (`Z`, z. B. nach einem Host
+  suchen: „Was habe ich auf Host X gemacht?“) und Markdown-Export (`x`)
 - **Sync zwischen Rechnern**: Verbindungen, Tunnel, Runbooks und Einstellungen Ende-zu-Ende verschlüsselt über einen Cloud-Ordner
   (OneDrive, Dropbox, iCloud, Syncthing) oder direkt über dein NAS (Synology, QNAP, Nextcloud, jeder WebDAV-Server)
 - **Import** bestehender Verbindungen aus `~/.ssh/config`, PuTTY (Registry oder `.reg`-Export) und MobaXterm
@@ -63,7 +68,7 @@ sshtermy --update     # auf die neueste Version aktualisieren
 
 | Wo | Taste | Wirkung |
 |---|---|---|
-| Manager | ⏎ / n / e / d / / / t / s / y | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync |
+| Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
 | | i / a / b | Verbindungen importieren / Aussehen wechseln / Tastenkürzel anpassen |
 | | m / f | Broadcast an mehrere Hosts / Netzwerk-Scan |
 | Broadcast | Space / g / a, Tab, Strg+S | Host / Gruppe / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
@@ -71,6 +76,7 @@ sshtermy --update     # auf die neueste Version aktualisieren
 | Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
 | Terminal | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
+| | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
 | | F2 | Ziel-Modus (Agent) |
 | | F3 | KI fragen |
 | | F4 | Tunnel an/aus, Web-Service im Browser öffnen |
@@ -83,6 +89,7 @@ sshtermy --update     # auf die neueste Version aktualisieren
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
 | | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |
 | KI-Eingaben | ⇧⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |
+| Protokolle | / / z / Z / x / d / a | suchen / KI-Zusammenfassung / alle Treffer zusammenfassen / Markdown-Export / löschen / Mitschreiben an/aus |
 | KI-Einstellungen | Strg+T / Strg+L | Endpunkt testen / Modell aus der Liste des Endpunkts wählen |
 | Überall | Strg+Leertaste | Befehlspalette: ⏎ als Ziel starten, Tab KI fragen, ↑↓ Vorschlag/Tunnel/Verbindung wählen |
 | | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden |
@@ -147,6 +154,7 @@ internal/
   llm/                 OpenAI-kompatibler Client (/v1/chat/completions, Streaming per SSE)
   agent/               KI-Logik: Ghost-Text, Folgebefehle, Ziel-Modus, Frage; Prompts,
                        striktes Parsen, Entfernen von Geheimnissen
+  sessionlog/          Sitzungsprotokolle: verschlüsselte Dateien je Sitzung, Suche, Markdown
   safety/              feste Gefahrenregeln (Linux/macOS und Windows/PowerShell)
   termemu/             Terminal-Emulation (charmbracelet/x/vt): Raster, Scrollback, Ghost-Overlay
   update/              Auto-Update aus GitHub Releases (SHA-256 + Ed25519)
@@ -237,6 +245,23 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   Senden entfernt; an einer Passwortabfrage gibt es keinen Ghost-Text.
 - API-Key geht nie per `http://` an einen fremden Host (außer bewusst erlaubt).
 - Ratenlimit im Ziel-Modus (Standard 6 Schritte/min, max. 40 Schritte pro Ziel).
+
+### Fehler erkennen und Sitzungsprotokoll
+
+- **Wann ist ein Befehl fertig?** Nach Enter, sobald wieder ein leerer Prompt dasteht und die Ausgabe ruht. Seine
+  Ausgabe ist der Text zwischen Befehlszeile und neuem Prompt.
+- **Exit-Code:** Meldet die Shell ihn per Shell-Integration (OSC 133;D oder 633;D, wie bei VS Code, WezTerm, iTerm2),
+  zählt der echte Code (130 = Strg+C gilt nicht als Fehler). Für bash reicht z. B. in der `~/.bashrc`:
+  `PROMPT_COMMAND='printf "\033]133;D;%s\007" $?'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`.
+  Ohne Shell-Integration schätzt sshTermy anhand typischer Fehlermeldungen in den letzten Zeilen (`command not found`,
+  `No such file`, `Permission denied`, `E: …`, `% Invalid input` bei Switches u. a.). Das ist nur ein Angebot, nie eine Sperre.
+- **Protokolle** liegen nur lokal in `logs/` im Konfigurationsordner (nie im Sync), eine Datei je Sitzung,
+  AES-256-GCM mit einem aus dem Store-Schlüssel abgeleiteten Schlüssel (HMAC-SHA256); die AAD bindet Format und Datei-ID.
+  Ohne entsperrten Store ist kein Protokoll lesbar.
+- **Nicht protokolliert:** Passwort-Eingaben (sie sind kein Befehl am Prompt und werden nicht angezeigt) und Befehle mit
+  einem **Leerzeichen am Anfang** (wie `HISTCONTROL=ignorespace`). Vor dem Speichern entfernt dieselbe Geheimnis-Filterung wie
+  für die KI Tokens, `password=…`, `--password …` und private Schlüssel. Mitschreiben lässt sich über die Palette oder `a` in den
+  Protokollen ganz abschalten. Der Markdown-Export (in `Downloads`) ist Klartext und passiert nur auf Wunsch.
 
 ### Auto-Update
 

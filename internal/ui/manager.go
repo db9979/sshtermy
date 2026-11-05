@@ -44,7 +44,7 @@ func (a *App) filtered() []domain.Connection {
 func (a *App) managerKeys() [][2]string {
 	km := a.keys
 	k := [][2]string{{km.label(actPalette), "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
-		{"t", "Tunnel"}, {km.label(actBroadcast), "Broadcast"}, {km.label(actScan), "Scan"}, {km.label(actImport), "Import"}, {km.label(actQuickEdit), "Schnellbefehle"}, {"s", "KI"}, {"y", "Sync"},
+		{"t", "Tunnel"}, {km.label(actBroadcast), "Broadcast"}, {km.label(actScan), "Scan"}, {km.label(actImport), "Import"}, {km.label(actQuickEdit), "Schnellbefehle"}, {"s", "KI"}, {"y", "Sync"}, {"l", "Protokolle"},
 		{km.label(actHelp), "Hilfe"}, {km.label(actAbout), "Über"}, {km.label(actQuit), "beenden"}}
 	if len(a.sessions) > 0 {
 		k = append([][2]string{{km.label(actManager), "zum Terminal"}}, k...)
@@ -139,6 +139,8 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		return a.openSettings()
 	case "y":
 		return a.openSync()
+	case "l":
+		return a.openLogs()
 	case "enter":
 		if m.sel < len(list) {
 			return a.connect(list[m.sel])
