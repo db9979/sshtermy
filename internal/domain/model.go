@@ -60,8 +60,9 @@ type Connection struct {
 	Port     int        `json:"port"`
 	Username string     `json:"username"`
 	Auth     AuthMethod `json:"auth"`
-	Group    string     `json:"group,omitempty"` // z. B. "Produktion", "Homelab"
+	Group    string     `json:"group,omitempty"` // Ordner, verschachtelt mit „ / “, z. B. "Produktion / Web"
 	Tags     []string   `json:"tags,omitempty"`
+	Order    float64    `json:"order,omitempty"` // Reihenfolge im Ordner (0 = alphabetisch)
 
 	Password      Secret `json:"password,omitempty"`       // AuthPassword
 	KeyPath       string `json:"key_path,omitempty"`       // AuthKeyFile: Datei auf der Platte …
@@ -256,6 +257,7 @@ type Data struct {
 	Connections []Connection `json:"connections"`
 	Tunnels     []Tunnel     `json:"tunnels"`
 	Runbooks    []Runbook    `json:"runbooks,omitempty"`
+	Folders     []Folder     `json:"folders,omitempty"`
 	LLM         LLMConfig    `json:"llm"`
 	Settings    Settings     `json:"settings"`
 

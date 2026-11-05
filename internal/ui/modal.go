@@ -26,6 +26,7 @@ const (
 	mPaste // Einfügeschutz (pasteguard.go)
 	mMenu  // Kontextmenü, z. B. zu Links (links.go)
 	mInfo  // Ergebnis anzeigen (Ping)
+	mInput // eine Zeile Text (Ordnername)
 	mQuick // Schnellbefehle (quick.go)
 	mText  // blätterbarer Text (Config-Diff, Konfiguration)
 )
@@ -38,11 +39,12 @@ type modal struct {
 	sec      secretAskMsg
 	in       textinput.Model
 	onYes    func() tea.Cmd
-	ctx      helpCtx  // nur Hilfe: aktueller Bereich
-	scroll   int      // Hilfe/Changelog/Text: Scroll-Position; Schnellbefehle: Auswahl
-	quickSID int      // nur Schnellbefehle: Sitzung
-	armed    int      // nur Schnellbefehle: roter Befehl nach dem ersten ⏎
-	lines    []string // Changelog/Text: fertig gestaltete Zeilen
+	onText   func(string) tea.Cmd // nur Texteingabe
+	ctx      helpCtx              // nur Hilfe: aktueller Bereich
+	scroll   int                  // Hilfe/Changelog/Text: Scroll-Position; Schnellbefehle: Auswahl
+	quickSID int                  // nur Schnellbefehle: Sitzung
+	armed    int                  // nur Schnellbefehle: roter Befehl nach dem ersten ⏎
+	lines    []string             // Changelog/Text: fertig gestaltete Zeilen
 
 	paste    *pasteCheck // nur Einfügeschutz
 	items    []menuItem  // nur Menü
@@ -186,6 +188,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		case "esc", "q", "enter":
 			a.modal = nil
 		}
+	case mInput:
+		return a.inputKey(k)
 	case mPaste:
 		return a.pasteKey(key)
 	case mMenu:
@@ -232,6 +236,9 @@ func (m *modal) view(s Styles, w, h int) string {
 		title = s.Warn.Render("⚠ " + m.title)
 	}
 	body := s.Text.Render(m.body)
+	if m.kind == mInput {
+		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render("⏎ übernehmen · Esc abbrechen")
+	}
 	if m.kind == mSecret {
 		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render("⏎ senden · Esc abbrechen (wird nicht gespeichert)")
 	}

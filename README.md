@@ -80,7 +80,11 @@ sshtermy --update     # auf die neueste Version aktualisieren
 | Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
 | | i / a / b | Verbindungen importieren / Aussehen wechseln / Tastenkürzel anpassen |
 | | m / f | Broadcast an mehrere Hosts / Netzwerk-Scan |
-| Broadcast | Space / g / a, Tab, Strg+S | Host / Gruppe / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
+| Ordner | o / r / v / d | Ordner anlegen („A / B“ verschachtelt) / umbenennen / verschieben / auflösen (Inhalt bleibt) |
+| | ← → Space / - + | Ordner zu-/aufklappen / alle zu bzw. auf |
+| | Shift+↑↓ (Alt+↑↓), Maus ziehen | Reihenfolge ändern, in einen Ordner ziehen |
+| | # , /#tag | nach Tag filtern, Suche über Name, Host, Ordner, Tags |
+| Broadcast | Space / g / a, Tab, Strg+S | Host / Ordner / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
 | | ←→ / ↑↓ / z / c / r / x | Host-Spalte / blättern / groß / Ausgabe kopieren / nochmal / abbrechen |
 | Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
 | Terminal | Tab oder → | Ghost-Text übernehmen |
@@ -180,7 +184,7 @@ Abhängigkeiten zeigen nur nach innen: `ui → agent/sshx/store/update → llm/s
 ```
 Start ─▶ Entsperren (DPAPI automatisch │ Master-Passwort │ Ersteinrichtung)
       ─▶ Verbindungs-Manager
-           ├─ n/e  Formular (Alias, Host, Port, Benutzer, Auth, Gruppe, Tags, Jump-Host)
+           ├─ n/e  Formular (Alias, Host, Port, Benutzer, Auth, Ordner, Tags, Jump-Host-Auswahl mit Suche)
            ├─ t    Tunnel-Formular (local/remote/dynamic, Web-Service, Autostart)
            ├─ s    KI-Einstellungen (Base-URL, API-Key, Modell, Tokens, Temperatur …)
            └─ ⏎    Host-Key prüfen ─▶ Terminal-Tab

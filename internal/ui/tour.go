@@ -132,7 +132,7 @@ func (a *App) cheatTips() [][2]string {
 		if len(a.st.Connections()) == 0 {
 			return [][2]string{{"n", "lege deine erste Verbindung an"}, {"s", "KI-Endpunkt einrichten"}, {"Strg+Space", "findet alles"}}
 		}
-		return [][2]string{{"⏎", "verbindet"}, {"/", "sucht nach Name, Gruppe, Tag"}, {"q", "Schnellbefehle der Verbindung"}, {"Strg+Space", "findet alles"}}
+		return [][2]string{{"⏎", "verbindet"}, {"/", "sucht (auch #tag)"}, {"o", "neuer Ordner"}, {"⇧↑↓", "sortiert"}, {"q", "Schnellbefehle"}, {"Strg+Space", "findet alles"}}
 	case scrTerminal:
 	default:
 		return nil

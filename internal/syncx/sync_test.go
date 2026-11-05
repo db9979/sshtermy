@@ -298,3 +298,28 @@ func TestCandidates(t *testing.T) {
 		t.Fatal(fp)
 	}
 }
+
+func TestMergeFolders(t *testing.T) {
+	t0 := time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC)
+	// Rechner A sortiert um und klappt zu, Rechner B legt denselben Ordner neu an
+	a := &Payload{Folders: []domain.Folder{{ID: "f1", Path: "Prod", Order: 2, Collapsed: true, UpdatedAt: t0.Add(time.Minute)}, {ID: "f2", Path: "Lab", Order: 1, UpdatedAt: t0}}}
+	b := &Payload{Folders: []domain.Folder{{ID: "f1", Path: "Prod", UpdatedAt: t0}, {ID: "f3", Path: "Lab", UpdatedAt: t0.Add(time.Hour)}}}
+	now := t0.Add(2 * time.Hour)
+	m1, m2 := Merge(a, b, now), Merge(b, a, now)
+	if !equalContent(m1, m2) || !equalContent(Merge(m1, a, now), m1) {
+		t.Fatal("Ordner-Merge nicht kommutativ/idempotent")
+	}
+	got := map[string]domain.Folder{}
+	for _, f := range m1.Folders {
+		got[f.Path] = f
+	}
+	if len(m1.Folders) != 2 || !got["Prod"].Collapsed || got["Prod"].Order != 2 || got["Lab"].ID != "f3" {
+		t.Fatalf("Ordner: %+v", m1.Folders)
+	}
+	// FromData/ApplyTo tragen die Ordner mit
+	d := domain.NewData()
+	m1.ApplyTo(d)
+	if len(FromData(d, nil).Folders) != 2 {
+		t.Fatal("Ordner gehen beim Übernehmen verloren")
+	}
+}
