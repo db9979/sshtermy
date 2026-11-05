@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
@@ -23,7 +22,7 @@ const maxGoalSteps = 40
 // goalState: Ziel-Modus. Das Modell schlägt immer genau EINEN Befehl vor;
 // ausgeführt wird erst nach Bestätigung (⏎), rote Befehle nach zweitem ⏎.
 type goalState struct {
-	input, edit, answer textinput.Model
+	input, edit, answer aiInput
 	inited              bool
 	goal                string
 	active, done        bool
@@ -55,7 +54,7 @@ func (g *goalState) cancel() {
 func (g *goalState) startWait() { g.waiting, g.waitSince = true, time.Now() }
 
 type askState struct {
-	input    textinput.Model
+	input    aiInput
 	inited   bool
 	question string
 	answer   strings.Builder
@@ -91,9 +90,8 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 	switch s.panel {
 	case panelGoal:
 		if !s.goal.inited {
-			s.goal.input = newInput("", false)
-			s.goal.input.Placeholder = "z. B. Installiere Docker und richte Nginx als Reverse Proxy ein"
-			s.goal.edit, s.goal.answer = newInput("", false), newInput("", false)
+			s.goal.input = newAIInput("z. B. Installiere Docker und richte Nginx als Reverse Proxy ein")
+			s.goal.edit, s.goal.answer = newCommandInput(), newAIInput("")
 			s.goal.inited, s.goal.rbSel = true, -1
 		}
 		if !s.goal.active {
@@ -101,8 +99,7 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 		}
 	case panelAsk:
 		if !s.ask.inited {
-			s.ask.input = newInput("", false)
-			s.ask.input.Placeholder = "Frage, z. B. Warum startet nginx nicht?"
+			s.ask.input = newAIInput("Frage, z. B. Warum startet nginx nicht?")
 			s.ask.inited = true
 		}
 		return s.ask.input.Focus()
@@ -557,7 +554,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	if !g.active && !g.done {
 		b.WriteString(st.Text.Render("Was willst du auf "+s.conn.Alias+" erreichen?") + "\n\n")
 		g.input.SetWidth(w - 2)
-		b.WriteString(st.Accent.Render("› ") + g.input.View() + "\n\n")
+		b.WriteString(promptBlock(st.Accent.Render("› "), g.input.View()) + "\n\n")
 		b.WriteString(wrap(st.Muted.Render("Die KI zerlegt das Ziel in einzelne Befehle, erklärt jeden kurz und wartet auf "+
 			"deine Bestätigung. Sie tippt nie selbst."), w))
 		if rbs := a.st.Runbooks(s.conn.ID); len(rbs) > 0 {
@@ -630,7 +627,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	case g.cur != nil && g.cur.Question != "":
 		b.WriteString(st.AI.Render("✦ Rückfrage") + "\n" + wrap(st.Text.Render(g.cur.Question), w) + "\n\n")
 		g.answer.SetWidth(w - 2)
-		b.WriteString(st.Accent.Render("› ") + g.answer.View())
+		b.WriteString(promptBlock(st.Accent.Render("› "), g.answer.View()))
 	case g.cur != nil:
 		c := g.cur
 		head := st.AI.Render("✦ Nächster Schritt")
@@ -666,7 +663,7 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	b.WriteString(st.PanelTitle.Render("✦ KI fragen") + st.Muted.Render("  mit Terminal-Kontext") + "\n\n")
 	q.input.SetWidth(w - 2)
 	if q.input.Focused() || q.question == "" {
-		b.WriteString(st.Accent.Render("› ") + q.input.View() + "\n\n")
+		b.WriteString(promptBlock(st.Accent.Render("› "), q.input.View()) + "\n\n")
 	} else {
 		b.WriteString(st.Muted.Render("Frage") + "\n" + wrap(st.Text.Bold(true).Render(q.question), w) + "\n\n")
 	}

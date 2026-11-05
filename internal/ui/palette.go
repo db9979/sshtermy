@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -42,7 +41,7 @@ type palItem struct {
 }
 
 type palette struct {
-	in    textinput.Model
+	in    aiInput
 	sel   int
 	armed int
 }
@@ -50,8 +49,8 @@ type palette struct {
 func isPaletteKey(k string) bool { return k == "ctrl+space" || k == "ctrl+@" }
 
 func (a *App) openPalette() tea.Cmd {
-	in := newInput("", false)
-	in.Placeholder = "Ziel, Frage, Befehl, Tunnel oder Verbindung …"
+	in := newAIInput("Ziel, Frage, Befehl, Tunnel oder Verbindung …")
+	in.MaxHeight = 4
 	a.pal = &palette{in: in, armed: -1}
 	return a.pal.in.Focus()
 }
@@ -64,9 +63,9 @@ func (a *App) paletteItems() []palItem {
 	var items []palItem
 	if q != "" && inTerm {
 		items = append(items,
-			palItem{group: pgAI, icon: "◎", label: "Als Ziel starten: „" + trunc(q, 50) + "“", hint: "⏎",
+			palItem{group: pgAI, icon: "◎", label: "Als Ziel starten: „" + trunc(oneLine(q), 50) + "“", hint: "⏎",
 				run: func() tea.Cmd { return a.startGoal(s, q) }},
-			palItem{group: pgAI, icon: "✦", label: "KI fragen: „" + trunc(q, 50) + "“", hint: "Tab",
+			palItem{group: pgAI, icon: "✦", label: "KI fragen: „" + trunc(oneLine(q), 50) + "“", hint: "Tab",
 				run: func() tea.Cmd { return a.startAsk(s, q) }})
 	}
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
@@ -234,7 +233,7 @@ func (a *App) viewPalette() string {
 	}
 	p.in.SetWidth(w - 8)
 	var b strings.Builder
-	b.WriteString(st.AI.Bold(true).Render("✦ ") + p.in.View() + "\n")
+	b.WriteString(promptBlock(st.AI.Bold(true).Render("✦ "), p.in.View()) + "\n")
 	b.WriteString(lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w-4)) + "\n")
 	maxRows := max(5, a.h-12)
 	// Fenster um die Auswahl
