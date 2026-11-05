@@ -51,6 +51,7 @@ var helpSections = []helpSection{
 		{"/", "suchen"},
 		{"t", "Tunnel anlegen"},
 		{"s", "KI-Einstellungen"},
+		{"y", "Sync zwischen Rechnern"},
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{

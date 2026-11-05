@@ -158,8 +158,15 @@ func (a *App) paletteItems() []palItem {
 		{icon: "≡", label: "Verbindungs-Manager", hint: "F10", run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: "Neue Verbindung", hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
 		{icon: "✦", label: "KI-Einstellungen", hint: "s", run: func() tea.Cmd { return a.openSettings() }},
+		{icon: "⇅", label: "Sync zwischen Rechnern einrichten", hint: "y", run: func() tea.Cmd { return a.openSync() }},
 		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		{icon: "i", label: "Über sshTermy / Update", hint: "F12", run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
+	}
+	if a.st.SyncConfig().Enabled() {
+		actions = append(actions, palItem{icon: "⇅", label: "Jetzt synchronisieren", hint: "Sync", run: func() tea.Cmd {
+			a.flash("Sync läuft …")
+			return a.runSync()
+		}})
 	}
 	if !inTerm {
 		actions = actions[2:]

@@ -43,7 +43,7 @@ func (a *App) filtered() []domain.Connection {
 
 func (a *App) managerKeys() [][2]string {
 	k := [][2]string{{"Strg+Space", "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
-		{"t", "Tunnel"}, {"s", "KI"}, {"F1", "Hilfe"}, {"F12", "Über"}, {"Strg+Q", "beenden"}}
+		{"t", "Tunnel"}, {"s", "KI"}, {"y", "Sync"}, {"F1", "Hilfe"}, {"F12", "Über"}, {"Strg+Q", "beenden"}}
 	if len(a.sessions) > 0 {
 		k = append([][2]string{{"F10", "zum Terminal"}}, k...)
 	}
@@ -105,6 +105,8 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		}
 	case "s":
 		return a.openSettings()
+	case "y":
+		return a.openSync()
 	case "enter":
 		if m.sel < len(list) {
 			return a.connect(list[m.sel])
@@ -218,6 +220,9 @@ func (a *App) viewManager() string {
 		cfg := a.st.LLM()
 		rb.WriteString("\n " + s.PanelTitle.Render("KI-Copilot") + "\n")
 		rb.WriteString("  " + s.Muted.Render(cfg.Model+" @ "+cfg.BaseURL) + "\n")
+	}
+	if len(list) > 0 || a.st.SyncConfig().Enabled() {
+		rb.WriteString("\n " + s.PanelTitle.Render("Sync") + "\n  " + a.syncStatus() + "\n")
 	}
 	right := lipgloss.NewStyle().Width(rightW).Height(h).Render(rb.String())
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, sep, right)

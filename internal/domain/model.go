@@ -59,7 +59,17 @@ type Connection struct {
 	KeepAlive  int      `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
 
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	LastUsed  time.Time `json:"last_used,omitempty"`
+}
+
+// Rev ist der Zeitstempel, nach dem der Sync entscheidet (alte Einträge ohne
+// UpdatedAt zählen mit ihrem Anlagedatum).
+func (c Connection) Rev() time.Time {
+	if c.UpdatedAt.IsZero() {
+		return c.CreatedAt
+	}
+	return c.UpdatedAt
 }
 
 // Addr liefert host:port (IPv6 korrekt geklammert).
@@ -111,6 +121,8 @@ type Tunnel struct {
 	WebPath   string `json:"web_path,omitempty"`   // z. B. "/admin"
 	AutoOpen  bool   `json:"auto_open,omitempty"`  // Browser nach Start öffnen
 	AutoStart bool   `json:"auto_start,omitempty"` // mit der Verbindung starten
+
+	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync)
 }
 
 // Spec gibt die OpenSSH-Schreibweise zurück, z. B. "-L 8080:localhost:80".
@@ -168,6 +180,41 @@ type Settings struct {
 	Language     string `json:"language"`       // "de" | "en"
 }
 
+// SyncBackend: wohin die verschlüsselte Sync-Datei geschrieben wird.
+type SyncBackend string
+
+const (
+	SyncOff    SyncBackend = ""       // kein Sync
+	SyncFolder SyncBackend = "folder" // Ordner, den OneDrive/Dropbox/iCloud/Syncthing abgleicht
+	SyncWebDAV SyncBackend = "webdav" // eigenes NAS (Synology, QNAP), Nextcloud, jeder WebDAV-Server
+)
+
+// SyncConfig ist rein lokal: sie wird nie in die Sync-Datei geschrieben.
+// Key enthält den Sync-Schlüssel (nicht das Sync-Passwort); er liegt nur im
+// lokalen, verschlüsselten Store und ist damit wie alles andere per
+// Master-Passwort bzw. DPAPI geschützt.
+type SyncConfig struct {
+	Backend SyncBackend `json:"backend,omitempty"`
+	Folder  string      `json:"folder,omitempty"` // SyncFolder
+
+	Preset   string `json:"preset,omitempty"`  // "synology" | "qnap" | "nextcloud" | "andere"
+	Address  string `json:"address,omitempty"` // Eingabe des Nutzers (Name, IP oder URL)
+	URL      string `json:"url,omitempty"`     // gefundene WebDAV-Ordner-URL
+	User     string `json:"user,omitempty"`
+	Password Secret `json:"password,omitempty"`
+	Remote   string `json:"remote,omitempty"`   // Ordner am Server, z. B. /home/sshtermy
+	CertPin  string `json:"cert_pin,omitempty"` // SHA-256 des vertrauten (selbstsignierten) Zertifikats
+
+	Key       Secret    `json:"key,omitempty"` // Sync-Schlüssel (Base64), nicht das Passwort
+	HostKeys  bool      `json:"host_keys"`     // known_hosts mit abgleichen
+	Auto      bool      `json:"auto"`          // beim Start, nach Änderungen und alle 5 Minuten
+	LastSync  time.Time `json:"last_sync,omitempty"`
+	LastError string    `json:"last_error,omitempty"`
+}
+
+// Enabled: ist Sync eingerichtet?
+func (c SyncConfig) Enabled() bool { return c.Backend != SyncOff && c.Key.IsSet() }
+
 // Data ist alles, was verschlüsselt auf der Platte liegt.
 type Data struct {
 	Version     int          `json:"version"`
@@ -176,6 +223,12 @@ type Data struct {
 	Runbooks    []Runbook    `json:"runbooks,omitempty"`
 	LLM         LLMConfig    `json:"llm"`
 	Settings    Settings     `json:"settings"`
+
+	// Sync: Zeitstempel für die Zusammenführung pro Eintrag.
+	LLMUpdatedAt      time.Time            `json:"llm_updated_at,omitempty"`
+	SettingsUpdatedAt time.Time            `json:"settings_updated_at,omitempty"`
+	Deleted           map[string]time.Time `json:"deleted,omitempty"` // ID → Löschzeit (Grabsteine)
+	Sync              SyncConfig           `json:"sync,omitempty"`
 }
 
 // NewData: leerer Store mit Standardwerten.
@@ -197,4 +250,13 @@ type Runbook struct {
 	CreatedAt    time.Time `json:"created_at"`
 	LastUsed     time.Time `json:"last_used,omitempty"`
 	Uses         int       `json:"uses,omitempty"`
+	UpdatedAt    time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync)
+}
+
+// Rev: Zeitstempel für den Sync (alte Einträge zählen mit dem Anlagedatum).
+func (r Runbook) Rev() time.Time {
+	if r.UpdatedAt.IsZero() {
+		return r.CreatedAt
+	}
+	return r.UpdatedAt
 }

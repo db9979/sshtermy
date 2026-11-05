@@ -42,6 +42,7 @@ const (
 	scrSettings
 	scrTunnelForm
 	scrTerminal
+	scrSync
 )
 
 // App ist das Wurzel-Modell.
@@ -72,6 +73,9 @@ type App struct {
 	toastUntil time.Time
 	rel        *update.Release
 	lastKey    time.Time
+
+	sync syncState
+	wiz  *syncWizard
 }
 
 func New(st *store.Store) (*App, error) {
@@ -81,6 +85,7 @@ func New(st *store.Store) (*App, error) {
 	}
 	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now()}
 	a.unlock = newUnlock(st)
+	a.hookSync()
 	return a, nil
 }
 
@@ -201,6 +206,11 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 	}
 
+	// Sync zwischen Rechnern
+	if cmd, ok := a.syncMsg(msg); ok {
+		return a, cmd
+	}
+
 	// Nachrichten der Sitzungen (KI, Ziel, Frage)
 	if cmd, ok := a.sessionMsg(msg); ok {
 		return a, cmd
@@ -247,6 +257,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
+	case scrSync:
+		return a, a.updateSync(msg)
 	}
 	return a, nil
 }
@@ -268,6 +280,9 @@ func (a *App) onTick() tea.Cmd {
 		a.unlock = newUnlock(a.st)
 		a.scr = scrUnlock
 		return nil
+	}
+	if c := a.syncTick(); c != nil {
+		cmds = append(cmds, c)
 	}
 	for _, s := range a.sessions {
 		if s.term != nil && s.term.TakeBell() {
@@ -299,6 +314,8 @@ func (a *App) View() tea.View {
 		body = a.frame(a.viewForm(), [][2]string{{"Strg+T", "Endpunkt testen"}, {"Strg+L", "Modell wählen"}, {"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
 	case scrTerminal:
 		body, cur = a.viewTerminal()
+	case scrSync:
+		body = a.frame(a.viewSync(), a.syncKeys())
 	}
 	if a.modal != nil {
 		body = a.overlay(body, a.modal.view(a.s, a.w, a.h))

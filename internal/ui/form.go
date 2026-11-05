@@ -185,7 +185,11 @@ func (f *form) update(msg tea.Msg) (submit bool, cmd tea.Cmd) {
 
 func (f *form) view(s Styles, width int) string {
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(f.title) + "\n\n")
+	if f.title != "" {
+		b.WriteString(s.Accent.Render(f.title) + "\n\n")
+	} else {
+		b.WriteString("\n")
+	}
 	inW := max(20, width-26)
 	for _, i := range f.visible() {
 		fl := f.fields[i]
