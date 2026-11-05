@@ -174,6 +174,9 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 	h.cancelFn = cancel
 	sid, seq := s.id, h.seq
 	vendor, pagingOff := h.vendor, h.pagingOff
+	if vendor == hostinfo.VendorUnknown {
+		vendor = hostVendor(s.prof) // aus dem Systemprofil
+	}
 	st := a.st
 	connID := s.conn.ID
 	return func() tea.Msg {
@@ -333,6 +336,7 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if h.sw != nil && h.sw.Model == "" && r.model != "" {
 			h.sw.Model = r.model
 		}
+		a.profileFromSwitch(s, r.vendor, h.sw)
 		switch {
 		case r.err != nil:
 			h.err = r.err.Error()

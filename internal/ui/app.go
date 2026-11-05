@@ -203,6 +203,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.client.Learned {
 				a.rememberNetDevice(s)
 			}
+			a.profileConnected(s)
 			for _, t := range a.st.Tunnels(s.conn.ID) {
 				if t.AutoStart {
 					if _, err := s.tunnels.Start(t); err != nil {
@@ -218,6 +219,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.resize(s)
 			return a, tea.Batch(cmd, a.hostOnConnect(s))
 		}
+		return a, nil
+	case adaptMsg:
+		a.onAdapt(m)
 		return a, nil
 	case muxProbeMsg:
 		a.onMuxProbe(m)
@@ -393,6 +397,7 @@ func (a *App) onTick() tea.Cmd {
 		if c := a.goalTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
+		a.profileTick(s)
 		if c := a.reconnectTick(s); c != nil {
 			cmds = append(cmds, c)
 		}

@@ -18,6 +18,7 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/sysprof"
 )
 
 // Resolver liefert eine gespeicherte Verbindung (für Jump-Hosts).
@@ -29,6 +30,9 @@ type Client struct {
 	Conn   domain.Connection
 	jump   *Client
 	Remote RemoteInfo
+	// Profile: frisch erkanntes Systemprofil (SSH-Kennung + Abfrage). Die
+	// UI legt es mit sysprof.Merge über das gespeicherte Profil.
+	Profile domain.SystemProfile
 	// NetDevice: Gegenstelle ist ein Switch/Router. Dann gibt es keine
 	// Exec-Abfragen, und die Shell wird möglichst schlicht angefordert.
 	NetDevice bool
@@ -279,11 +283,29 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		cl.NetDevice = true
 	case c.Device == domain.DeviceAuto && IsNetworkBanner(banner):
 		cl.NetDevice = true
+	case c.Device == domain.DeviceAuto && c.Profile != nil && c.Profile.Family == domain.FamilyNetwork:
+		cl.NetDevice = true // früher als Netzwerkgerät erkannt (Profil)
 	}
+	cl.Profile = sysprof.FromBanner(banner)
 	if cl.NetDevice {
+		// Keine Abfrage: nur die Kennung, der Rest kommt passiv aus dem Terminal.
+		if cl.Profile.Family != domain.FamilyNetwork {
+			cl.Profile.Family, cl.Profile.Dialect = domain.FamilyNetwork, "network"
+		}
 		cl.Remote = RemoteInfo{OS: "Netzwerkgerät (" + strings.TrimPrefix(banner, "SSH-2.0-") + ")"}
+		if cl.Profile.OS != "" {
+			cl.Remote.OS = cl.Profile.OS
+		}
 	} else {
-		cl.Remote = cl.probe()
+		pr, locale := cl.probe()
+		if pr.OS != "" || pr.Version != "" {
+			pr.Banner = cl.Profile.Banner
+			cl.Profile = pr
+		}
+		cl.Remote = RemoteInfo{OS: cl.Profile.OS, Kernel: pr.Version, Shell: pr.Shell, Locale: locale}
+		if cl.Remote.OS == "" && cl.Remote.Kernel == "" {
+			cl.Remote.OS = "Windows (OpenSSH) oder unbekannt"
+		}
 	}
 	go cl.keepAlive(kctx, c.KeepAlive)
 	return cl, nil
@@ -445,33 +467,26 @@ func (c *Client) keepAliveLoop(ctx context.Context, ping, deadAfter time.Duratio
 	}
 }
 
-// probe fragt Betriebssystem, Kernel und Shell ab, in einer eigenen
-// Exec-Sitzung, also unsichtbar für das Terminal des Nutzers.
-func (c *Client) probe() RemoteInfo {
+// probe fragt System, Kernel, Shell, Paketmanager und Init-System ab, in
+// einer eigenen Exec-Sitzung, also unsichtbar für das Terminal des Nutzers.
+func (c *Client) probe() (domain.SystemProfile, string) {
 	s, err := c.NewSession()
 	if err != nil {
-		return RemoteInfo{}
+		return domain.SystemProfile{}, ""
 	}
 	defer s.Close()
-	const cmd = `(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") || sw_vers -productName 2>/dev/null || echo; uname -srm 2>/dev/null || echo; echo "$SHELL"; echo "${LC_ALL:-${LC_CTYPE:-$LANG}}"`
 	done := make(chan []byte, 1)
-	go func() { out, _ := s.Output(cmd); done <- out }()
+	go func() { out, _ := s.Output(sysprof.ProbeCommand); done <- out }()
 	select {
 	case out := <-done:
 		lines := strings.Split(strings.ReplaceAll(string(out), "\r", ""), "\n")
-		get := func(i int) string {
-			if i < len(lines) {
-				return strings.TrimSpace(lines[i])
-			}
-			return ""
+		locale := ""
+		if len(lines) > 5 {
+			locale = strings.TrimSpace(lines[5])
 		}
-		ri := RemoteInfo{OS: get(0), Kernel: get(1), Shell: get(2), Locale: get(3)}
-		if ri.OS == "" && ri.Kernel == "" {
-			ri.OS = "Windows (OpenSSH) oder unbekannt"
-		}
-		return ri
+		return sysprof.FromProbe(string(out)), locale
 	case <-time.After(4 * time.Second):
-		return RemoteInfo{}
+		return domain.SystemProfile{}, ""
 	}
 }
 

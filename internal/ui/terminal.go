@@ -232,6 +232,7 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
 			a.beginCommand(s, typed)
 			s.history = append(s.history, strings.TrimSpace(typed))
+			a.profileCommand(s, strings.TrimSpace(typed))
 			s.noteCommand(strings.TrimSpace(typed))
 			if len(s.history) > 200 {
 				s.history = s.history[len(s.history)-200:]

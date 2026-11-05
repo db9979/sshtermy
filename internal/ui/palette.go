@@ -71,7 +71,9 @@ func (a *App) paletteItems() []palItem {
 			palItem{group: pgAI, icon: "◎", label: "Als Ziel starten: „" + trunc(oneLine(q), 50) + "“", hint: "⏎",
 				run: func() tea.Cmd { return a.startGoal(s, q) }},
 			palItem{group: pgAI, icon: "✦", label: "KI fragen: „" + trunc(oneLine(q), 50) + "“", hint: "Tab",
-				run: func() tea.Cmd { return a.startAsk(s, q) }})
+				run: func() tea.Cmd { return a.startAsk(s, q) }},
+			palItem{group: pgAI, icon: "⇆", label: "Für dieses System umschreiben: „" + trunc(oneLine(q), 40) + "“", hint: "Befehl",
+				run: func() tea.Cmd { return a.startAdapt(s, oneLine(q)) }})
 	}
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
 	if inTerm && s.fail != nil && match("fehler warum fix "+s.fail.Command) {

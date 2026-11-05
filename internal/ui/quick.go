@@ -96,7 +96,7 @@ func (a *App) quickCmds(s *session) (cmds []string, preset string) {
 
 func (a *App) remoteText(s *session) string {
 	if s.client != nil {
-		return s.client.Remote.String()
+		return s.profileSummary() + " " + s.client.Remote.String()
 	}
 	return ""
 }
