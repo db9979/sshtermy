@@ -243,6 +243,7 @@ func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 		s.panelFocus = false
 		return
 	}
+	a.beginCommand(s, cmd)
 	s.term.SendText(cmd + "\r")
 	g.startWait()
 }
@@ -424,7 +425,7 @@ func (a *App) askKey(s *session, msg tea.Msg) tea.Cmd {
 	if isKey && !q.input.Focused() {
 		key := k.String()
 		if len(key) == 1 && key[0] >= '1' && key[0] <= '9' {
-			cmds := extractCommands(q.answer.String())
+			cmds := extractCommands(agent.VisibleAnswer(q.answer.String()))
 			if i := int(key[0] - '1'); i < len(cmds) {
 				s.term.SendText(cmds[i]) // nur einfügen, Enter drückt der Mensch
 				s.panelFocus = false
@@ -667,7 +668,10 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	} else {
 		b.WriteString(st.Muted.Render("Frage") + "\n" + wrap(st.Text.Bold(true).Render(q.question), w) + "\n\n")
 	}
-	ans := q.answer.String()
+	ans := agent.VisibleAnswer(q.answer.String())
+	if ans == "" && q.busy && q.answer.Len() > 0 {
+		b.WriteString(st.Muted.Render("denkt nach …") + "\n")
+	}
 	if ans != "" {
 		// Codeblöcke nummerieren, damit 1…9 sie einfügen kann
 		n := 0

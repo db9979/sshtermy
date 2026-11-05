@@ -156,6 +156,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 }
 
 func (a *App) closeTab(s *session) {
+	a.endLog(s)
 	s.close()
 	for i, x := range a.sessions {
 		if x == s {
@@ -188,6 +189,10 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		s.ghost = ""
 		return nil
 	}
+	// fehlgeschlagener Befehl: Warum? & Fix
+	if key == "alt+0" && s.fail != nil {
+		return a.explainFailure(s)
+	}
 	// Folgebefehle einfügen (ohne Enter)
 	if strings.HasPrefix(key, "alt+") && len(key) == 5 && key[4] >= '1' && key[4] <= '4' {
 		i := int(key[4] - '1')
@@ -204,8 +209,12 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
+	if key == "ctrl+c" && s.run != nil {
+		s.run.interrupted = true
+	}
 	if key == "enter" {
-		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" {
+		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
+			a.beginCommand(s, typed)
 			s.history = append(s.history, strings.TrimSpace(typed))
 			if len(s.history) > 200 {
 				s.history = s.history[len(s.history)-200:]
@@ -410,7 +419,24 @@ func (a *App) chipBar(s *session) string {
 	if g := a.visibleGhost(s); g != "" {
 		b.WriteString(a.z.click(st.AI.Render(" ✦ ")+st.Muted.Render("Tab übernimmt: ")+st.Ghost.Render(trunc(g, 60)),
 			func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("Tab") }) + "  ")
-	} else if len(s.chips) > 0 {
+	} else {
+		if f := s.fail; f != nil {
+			why := orDefault(f.Reason, "fehlgeschlagen")
+			b.WriteString(a.z.click(st.Danger.Render(" ✗ "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(" Warum? & Fix "),
+				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("alt+0") }) + " ")
+		}
+		a.chipList(s, &b)
+	}
+	out := b.String()
+	if w := lipgloss.Width(out); w < a.w {
+		out += strings.Repeat(" ", a.w-w)
+	}
+	return ansi.Truncate(out, a.w, "")
+}
+
+func (a *App) chipList(s *session, b *strings.Builder) {
+	st := a.s
+	if len(s.chips) > 0 {
 		b.WriteString(st.AI.Render(" ✦ Als Nächstes: "))
 		for i, c := range s.chips {
 			style := st.Chip
@@ -425,11 +451,6 @@ func (a *App) chipBar(s *session) string {
 			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))
 		}
 	}
-	out := b.String()
-	if w := lipgloss.Width(out); w < a.w {
-		out += strings.Repeat(" ", a.w-w)
-	}
-	return ansi.Truncate(out, a.w, "")
 }
 
 func (a *App) terminalKeys(s *session) [][2]string {
@@ -439,6 +460,10 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	if s.panelFocus {
 		return a.panelKeys(s)
 	}
-	return [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F7/F8", "Tabs"},
+	k := [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F7/F8", "Tabs"},
 		{"F10", "Manager"}, {"F1", "Hilfe"}, {"Strg+Q", "beenden"}}
+	if s.fail != nil {
+		k = append([][2]string{{"Alt+0", "Warum? & Fix"}}, k...)
+	}
+	return k
 }

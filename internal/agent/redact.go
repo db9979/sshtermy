@@ -14,6 +14,7 @@ var redactions = []*regexp.Regexp{
 	regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9\-]{10,}`),                  // Slack
 	regexp.MustCompile(`(?i)\b(bearer)\s+[A-Za-z0-9._\-]{16,}`),
 	regexp.MustCompile(`(?i)\b(password|passwd|pwd|secret|token|api[_-]?key)\s*[=:]\s*\S+`),
+	regexp.MustCompile(`(?i)(--?(password|passwd|pass)[= ]|sshpass -p ?)\S+`), // mysql --password x, sshpass -p x
 }
 
 var urlCreds = regexp.MustCompile(`(?i)(://[^:/\s]+:)[^@/\s]+@`) // user:pass@ in URLs

@@ -69,6 +69,10 @@ func (a *App) paletteItems() []palItem {
 				run: func() tea.Cmd { return a.startAsk(s, q) }})
 	}
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
+	if inTerm && s.fail != nil && match("fehler warum fix "+s.fail.Command) {
+		items = append(items, palItem{group: pgAI, icon: "✗", label: "Warum ist „" + trunc(oneLine(s.fail.Command), 40) + "“ fehlgeschlagen? Fix vorschlagen", hint: "Alt+0",
+			run: func() tea.Cmd { return a.explainFailure(s) }})
+	}
 	if inTerm {
 		for _, c := range s.chips {
 			c := c
@@ -161,6 +165,8 @@ func (a *App) paletteItems() []palItem {
 		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		{icon: "i", label: "Über sshTermy / Update", hint: "F12", run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
+		{icon: "☰", label: "Sitzungsprotokolle durchsuchen", hint: "l", run: func() tea.Cmd { return a.openLogs() }},
+		{icon: "●", label: logLabel(a.logsEnabled()), hint: "Protokoll", run: func() tea.Cmd { return a.toggleSessionLog() }},
 	}
 	if a.st.SyncConfig().Enabled() {
 		actions = append(actions, palItem{icon: "⇅", label: "Jetzt synchronisieren", hint: "Sync", run: func() tea.Cmd {

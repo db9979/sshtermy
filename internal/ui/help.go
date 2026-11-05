@@ -25,6 +25,7 @@ const (
 	hcPalette
 	hcFiles
 	hcSettings
+	hcLogs
 )
 
 type helpSection struct {
@@ -52,6 +53,7 @@ var helpSections = []helpSection{
 		{"t", "Tunnel anlegen"},
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
+		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
@@ -62,6 +64,7 @@ var helpSections = []helpSection{
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{
 		{"Tab / →", "Ghost-Text übernehmen"},
 		{"Alt+1…4", "Folgebefehl einfügen"},
+		{"Alt+0", "Fehler: Warum? & Fix"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
@@ -104,6 +107,15 @@ var helpSections = []helpSection{
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
 	}},
+	{hcLogs, "☰", "Sitzungsprotokolle", "l", false, [][2]string{
+		{"/", "suchen (auch Ausgabe)"},
+		{"z", "KI-Zusammenfassung"},
+		{"Z", "alle Treffer zusammenfassen"},
+		{"x", "als Markdown exportieren"},
+		{"d", "löschen"},
+		{"a", "Mitschreiben an/aus"},
+		{"⎵ Befehl", "nicht protokollieren"},
+	}},
 	{hcPalette, "❯", "Befehlspalette", "Strg+Space", false, [][2]string{
 		{"tippen", "filtern / Ziel / Frage"},
 		{"⏎", "ausführen"},
@@ -140,6 +152,8 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
+	case scrLogs:
+		return hcLogs
 	case scrTerminal:
 		if s := a.current(); s != nil && s.files.open {
 			return hcFiles
