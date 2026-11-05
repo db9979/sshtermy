@@ -72,8 +72,19 @@ Download the matching file from the [Releases](https://github.com/db9979/sshterm
 | macOS Apple Silicon / Intel | `sshtermy_darwin_arm64` / `sshtermy_darwin_amd64` |
 | Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` |
 
-Recommended on Windows: **Windows Terminal** (truecolor, function keys, Unicode). macOS: once
-`xattr -d com.apple.quarantine sshtermy_darwin_arm64 && chmod +x sshtermy_darwin_arm64`.
+**macOS (and Linux): one line in Terminal** installs the latest version, checks its checksum and creates
+`~/Applications/sshTermy.app` (double-click or Spotlight "sshTermy" opens it in Terminal, or iTerm if installed)
+plus the command `~/.local/bin/sshtermy`:
+
+```
+curl -fsSL https://raw.githubusercontent.com/db9979/sshtermy/main/install.sh | sh
+```
+
+A file downloaded with the browser is marked as quarantined by macOS and blocked on double-click ("cannot be
+opened"). If you still want to use it: `xattr -d com.apple.quarantine sshtermy_darwin_arm64 && chmod +x
+sshtermy_darwin_arm64`, then start it from Terminal with `./sshtermy_darwin_arm64`.
+
+Recommended on Windows: **Windows Terminal** (truecolor, function keys, Unicode).
 
 ```
 sshtermy              # start
