@@ -68,6 +68,7 @@ func (a *App) aboutModal() *modal {
 func helpModal() *modal {
 	return &modal{kind: mHelp, title: "Tastenkürzel", body: strings.TrimSpace(`
 Manager      ⏎ verbinden · n neu · e bearbeiten · d löschen · / suchen · s KI-Einstellungen
+             y Sync zwischen Rechnern (Ordner/Cloud oder NAS per WebDAV)
 KI-Einst.    Strg+T Endpunkt testen · Strg+L Modell aus der Liste wählen
 Dateien (F5) Tab Seite · c kopieren (hoch/runter) · n Ordner · d löschen · . versteckte
 Terminal     Tab/→ Ghost-Text übernehmen · Alt+1…4 Folgebefehl einfügen
