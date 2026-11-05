@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/db9979/sshtermy/internal/version"
 )
 
 func TestYesNo(t *testing.T) {
@@ -35,5 +38,15 @@ func TestHostKeyModalClosesOnCapitalJ(t *testing.T) {
 	a.modalKey(tea.KeyPressMsg{Code: 'j', ShiftedCode: 'J', Text: "J"})
 	if a.modal != nil || !<-r {
 		t.Fatal("Dialog bleibt offen oder Antwort falsch")
+	}
+}
+
+func TestAboutShowsCoffeeLink(t *testing.T) {
+	m := (&App{}).aboutModal()
+	if !strings.Contains(m.body, version.Coffee) || !strings.Contains(m.body, "k = Kaffee") {
+		t.Fatalf("Kaffee-Link fehlt im Über-Dialog:\n%s", m.body)
+	}
+	if !strings.HasPrefix(version.Coffee, "https://buymeacoffee.com/") {
+		t.Fatal("Coffee-Link falsch")
 	}
 }
