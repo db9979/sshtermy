@@ -183,6 +183,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if s.state != stConnected {
 			switch key {
 			case "enter", "r":
+				if fresh, ok := a.st.Connection(s.conn.ID); ok {
+					s.conn = fresh // inzwischen geändert (z. B. Schlüsseldatei gewählt)
+				}
 				s.state, s.err = stConnecting, ""
 				return a.connectCmd(s)
 			case "x", "esc":

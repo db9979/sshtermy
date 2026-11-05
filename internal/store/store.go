@@ -153,6 +153,9 @@ func (s *Store) Connections() []domain.Connection {
 		return nil
 	}
 	out := append([]domain.Connection(nil), s.data.Connections...)
+	for i := range out {
+		out[i] = s.withLocalKey(out[i])
+	}
 	sort.SliceStable(out, func(i, j int) bool {
 		if out[i].Group != out[j].Group {
 			return out[i].Group < out[j].Group
@@ -179,10 +182,81 @@ func (s *Store) Connection(id string) (domain.Connection, bool) {
 	}
 	for _, c := range s.data.Connections {
 		if c.ID == id {
-			return c, true
+			return s.withLocalKey(c), true
 		}
 	}
 	return domain.Connection{}, false
+}
+
+// withLocalKey: Verbindung, wie dieser Rechner sie benutzt (eigener Pfad zur
+// Schlüsseldatei statt des synchronisierten). Aufrufer hält s.mu.
+func (s *Store) withLocalKey(c domain.Connection) domain.Connection {
+	if p := s.data.LocalKeys[c.ID]; p != "" && c.Auth == domain.AuthKeyFile {
+		c.KeyPath = p
+	}
+	return c
+}
+
+// SetLocalKeyPath legt fest, wo die Schlüsseldatei einer Verbindung auf
+// diesem Rechner liegt. Der synchronisierte Pfad (für die anderen Rechner)
+// bleibt unverändert. Leer = wieder den synchronisierten Pfad nehmen.
+func (s *Store) SetLocalKeyPath(id, path string) error {
+	home, _ := os.UserHomeDir()
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return vault.ErrLocked
+	}
+	s.setLocalKey(id, domain.PortableKeyPath(path, home))
+	s.mu.Unlock()
+	return s.save()
+}
+
+// setLocalKey (Aufrufer hält s.mu).
+func (s *Store) setLocalKey(id, path string) {
+	if path == "" {
+		delete(s.data.LocalKeys, id)
+		return
+	}
+	if s.data.LocalKeys == nil {
+		s.data.LocalKeys = map[string]string{}
+	}
+	s.data.LocalKeys[id] = path
+}
+
+// keyPathFor: Schlüsselpfad beim Speichern aufteilen. Der synchronisierte
+// Pfad gehört dem Rechner, auf dem er gewählt wurde. Gibt es ihn hier nicht
+// (z. B. C:\Users\… am Mac) und wird ein anderer gewählt, gilt der neue nur
+// lokal, sonst bräche der Sync die Verbindung auf dem anderen Rechner.
+// Aufrufer hält s.mu.
+func (s *Store) keyPathFor(c *domain.Connection, old domain.Connection, found bool, home string) {
+	if c.Auth != domain.AuthKeyFile || c.KeyPath == "" {
+		s.setLocalKey(c.ID, "")
+		return
+	}
+	c.KeyPath = domain.PortableKeyPath(c.KeyPath, home)
+	if !found {
+		return
+	}
+	local := s.data.LocalKeys[c.ID]
+	eff := old.KeyPath
+	if local != "" {
+		eff = local
+	}
+	switch {
+	case c.KeyPath == domain.PortableKeyPath(eff, home): // Pfad nicht geändert
+		c.KeyPath = old.KeyPath
+	case old.Auth == domain.AuthKeyFile && old.KeyPath != "" && (local != "" || !fileExists(domain.ExpandKeyPath(old.KeyPath, home))):
+		s.setLocalKey(c.ID, c.KeyPath)
+		c.KeyPath = old.KeyPath
+	default:
+		s.setLocalKey(c.ID, "")
+	}
+}
+
+func fileExists(p string) bool {
+	st, err := os.Stat(p)
+	return err == nil && !st.IsDir()
 }
 
 // Validate prüft Pflichtfelder (die Oberfläche zeigt den Text an).
@@ -208,13 +282,23 @@ func (s *Store) UpsertConnection(c domain.Connection) (domain.Connection, error)
 		return c, err
 	}
 	c.Group = domain.NormPath(c.Group)
+	home, _ := os.UserHomeDir()
 	s.mu.Lock()
 	c.UpdatedAt = time.Now().UTC()
 	if c.ID == "" {
 		c.ID, c.CreatedAt = newID(), time.Now()
 		c.Order = s.nextOrder(c.Group)
+		s.keyPathFor(&c, domain.Connection{}, false, home)
 		s.data.Connections = append(s.data.Connections, c)
 	} else {
+		var old domain.Connection
+		found := false
+		for _, o := range s.data.Connections {
+			if o.ID == c.ID {
+				old, found = o, true
+			}
+		}
+		s.keyPathFor(&c, old, found, home)
 		for i := range s.data.Connections {
 			if s.data.Connections[i].ID == c.ID {
 				if s.data.Connections[i].Group != c.Group { // anderer Ordner: hinten anstellen
@@ -223,7 +307,11 @@ func (s *Store) UpsertConnection(c domain.Connection) (domain.Connection, error)
 				s.data.Connections[i] = c
 			}
 		}
+		if !found {
+			s.data.Connections = append(s.data.Connections, c)
+		}
 	}
+	c = s.withLocalKey(c)
 	s.mu.Unlock()
 	return c, s.save()
 }
@@ -265,10 +353,14 @@ func (s *Store) AddConnections(cs []domain.Connection) ([]domain.Connection, err
 		return nil, vault.ErrLocked
 	}
 	now := time.Now().UTC()
+	home, _ := os.UserHomeDir()
 	out := make([]domain.Connection, len(cs))
 	for i, c := range cs {
 		if c.ID == "" {
 			c.ID = newID()
+		}
+		if c.Auth == domain.AuthKeyFile {
+			c.KeyPath = domain.PortableKeyPath(c.KeyPath, home)
 		}
 		c.Group = domain.NormPath(c.Group)
 		c.Order = s.nextOrder(c.Group)
@@ -293,6 +385,7 @@ func (s *Store) DeleteConnection(id string) error {
 		}
 	}
 	s.data.Connections = cs
+	delete(s.data.LocalKeys, id)
 	s.tombstone(id)
 	ts := s.data.Tunnels[:0]
 	for _, t := range s.data.Tunnels {
