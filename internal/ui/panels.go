@@ -499,9 +499,9 @@ func (a *App) panelKeys(s *session) [][2]string {
 		g := s.goal
 		if !g.active {
 			if g.done {
-				return [][2]string{{"Strg+S", "als Runbook merken"}, {"⏎", "neues Ziel"}, {"Esc", "Terminal"}, {"F2", "schließen"}}
+				return [][2]string{{"Strg+S", "als Runbook merken"}, {"⏎", "neues Ziel"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
 			}
-			return [][2]string{{"⏎", "Ziel starten"}, {"↑↓", "Runbook"}, {"Strg+D", "Runbook löschen"}, {"Esc", "Terminal"}, {"F2", "schließen"}}
+			return [][2]string{{"⏎", "Ziel starten"}, {"↑↓", "Runbook"}, {"Strg+D", "Runbook löschen"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
 		}
 		if g.cur != nil && g.cur.Question != "" {
 			return [][2]string{{"⏎", "antworten"}, {"Esc", "Terminal"}}
@@ -616,7 +616,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	b.WriteString("\n")
 	switch {
 	case g.done:
-		b.WriteString(st.OK.Render("✓ Ziel erreicht") + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + st.Muted.Render("Strg+S als Runbook merken · ⏎ neues Ziel · F2 schließen"))
+		b.WriteString(st.OK.Render("✓ Ziel erreicht") + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + st.Muted.Render("Strg+S als Runbook merken · ⏎ neues Ziel · "+a.keys.label(actGoal)+" schließen"))
 		if s.panelFocus && g.done {
 			g.active = false
 		}

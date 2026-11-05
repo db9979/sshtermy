@@ -99,6 +99,9 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		if act := a.z.at(m.X, m.Y, true); act != nil {
 			return act.wheel(up)
 		}
+		if a.modal != nil && (a.modal.kind == mHelp || a.modal.kind == mChangelog) {
+			return a.pressKey(wheelKey(up))
+		}
 		if a.modal != nil || a.pal != nil {
 			return nil
 		}
@@ -128,7 +131,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	case a.pal != nil:
 		a.pal = nil
 	case a.modal != nil:
-		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mMenu || a.modal.kind == mInfo {
+		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo {
 			a.modal = nil
 		}
 	case a.scr == scrTerminal && s != nil && s.panel != panelNone && !s.files.open && m.X >= a.w-a.panelWidth(s):
@@ -458,10 +461,14 @@ func (a *App) modalButtons() string {
 	case mAbout:
 		if a.rel != nil {
 			keys = append(keys, [2]string{"u", "aktualisieren"})
+		} else if a.restartPending != "" {
+			keys = append(keys, [2]string{"r", "neu starten"})
 		} else {
 			keys = append(keys, [2]string{"c", "nach Updates suchen"})
 		}
-		keys = append(keys, [2]string{"Esc", "schließen"})
+		keys = append(keys, [2]string{"w", "was ist neu"}, [2]string{"Esc", "schließen"})
+	case mChangelog:
+		keys = [][2]string{{"Esc", "schließen"}}
 	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", "schließen"}}
 	case mPaste:
