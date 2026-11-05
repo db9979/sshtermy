@@ -509,7 +509,7 @@ func (a *App) hostBadge(s *session) string {
 	if h.srv != nil && (h.srv.DiskPct() >= 90 || h.srv.MemPct() >= 90) {
 		style = style.Foreground(st.T.Warn)
 	}
-	return a.keyZone("F6", style.Render(trunc(txt, 46)))
+	return a.keyZone(a.keys.label(actHost), style.Render(trunc(txt, 46)))
 }
 
 func (a *App) viewHost(b *strings.Builder, s *session, w int) {

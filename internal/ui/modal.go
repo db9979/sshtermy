@@ -20,6 +20,7 @@ const (
 	mAbout
 	mHelp
 	mBusy
+	mChangelog
 	mText // blätterbarer Text (Config-Diff, Konfiguration)
 )
 
@@ -32,8 +33,8 @@ type modal struct {
 	in     textinput.Model
 	onYes  func() tea.Cmd
 	ctx    helpCtx  // nur Hilfe: aktueller Bereich
-	scroll int      // Hilfe/Text: Scroll-Position
-	lines  []string // nur Text
+	scroll int      // Hilfe/Changelog/Text: Scroll-Position
+	lines  []string // Changelog/Text: fertig gestaltete Zeilen
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
@@ -62,10 +63,12 @@ func (a *App) aboutModal() *modal {
 		"KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.\n\n"
 	if a.rel != nil {
 		b += "⬆ Neue Version v" + a.rel.Version + " verfügbar.\n" + firstLines(a.rel.Notes, 6) + "\n\nu = jetzt aktualisieren · "
+	} else if a.restartPending != "" {
+		b += "v" + a.restartPending + " ist installiert.\n\nr = jetzt neu starten · "
 	} else {
 		b += "c = nach Updates suchen · "
 	}
-	b += "Esc = schließen"
+	b += "w = was ist neu · Esc = schließen"
 	return &modal{kind: mAbout, title: "Über " + version.Name, body: b}
 }
 
@@ -125,11 +128,21 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 			a.modal = nil
 			a.flash("Suche nach Updates …")
 			return checkUpdate()
+		case "r":
+			if a.restartPending != "" {
+				return a.askRestart()
+			}
+		case "w":
+			a.modal = a.changelogModal(nil)
 		case "esc", "q", "enter":
 			a.modal = nil
 		}
 	case mHelp:
 		if m.helpKey(key) {
+			a.modal = nil
+		}
+	case mChangelog:
+		if m.changelogKey(key, a.h) {
 			a.modal = nil
 		}
 	case mText:
@@ -143,6 +156,9 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 func (m *modal) view(s Styles, w, h int) string {
 	if m.kind == mHelp {
 		return m.helpView(s, w, h)
+	}
+	if m.kind == mChangelog {
+		return m.changelogView(s, w, h)
 	}
 	if m.kind == mText {
 		return m.textView(s, w, h)

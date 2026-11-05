@@ -44,6 +44,8 @@ const (
 	scrTunnelForm
 	scrTerminal
 	scrSync
+	scrImport
+	scrKeys
 )
 
 // App ist das Wurzel-Modell.
@@ -73,10 +75,18 @@ type App struct {
 	toast      string
 	toastUntil time.Time
 	rel        *update.Release
-	lastKey    time.Time
+	// restartPending: installierte, noch nicht gestartete Version.
+	restartPending string
+	restart        bool // nach dem Beenden neu starten (siehe Restart)
+	lastKey        time.Time
 
-	sync  syncState
-	wiz   *syncWizard
+	sync    syncState
+	wiz     *syncWizard
+	imp     importState // Import aus ssh-config, PuTTY, MobaXterm
+	keyEd   keyEditor   // Tastenkürzel anpassen
+	keys    keymap      // aktuelle Tastenbelegung
+	lookSig string      // Theme+Tasten, zuletzt übernommen
+
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
 }
@@ -86,7 +96,7 @@ func New(st *store.Store) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now()}
+	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
 	a.unlock = newUnlock(st)
 	a.hookSync()
 	return a, nil
@@ -206,17 +216,20 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case updateMsg:
 		if m.rel != nil {
 			a.rel = m.rel
-			a.flash("Update auf v" + m.rel.Version + " verfügbar (F12)")
+			a.flash("Update auf v" + m.rel.Version + " verfügbar (" + a.keys.label(actAbout) + ")")
 		}
 		return a, nil
 	case applyDoneMsg:
 		a.modal = nil
 		if m.err != nil {
 			a.flash("Update fehlgeschlagen: " + m.err.Error())
-		} else {
-			a.flash("Update installiert. Bitte sshTermy neu starten.")
+			return a, nil
 		}
-		return a, nil
+		if a.rel != nil {
+			a.restartPending = a.rel.Version
+		}
+		a.rel = nil
+		return a, a.askRestart()
 	}
 
 	// Sync zwischen Rechnern
@@ -240,20 +253,23 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if k, ok := msg.(tea.KeyPressMsg); ok {
 		a.lastKey = time.Now()
-		if k.String() == "ctrl+q" {
+		if a.scr == scrKeys && a.keyEd.capturing && a.modal == nil {
+			return a, a.updateKeys(k) // neue Taste: nichts anderes darf sie abfangen
+		}
+		if a.keys.is(actQuit, k.String()) {
 			return a, a.quit()
 		}
 		if a.modal != nil {
 			return a, a.modalKey(k)
 		}
-		if k.String() == "f1" && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
 		if a.pal != nil {
 			return a, a.paletteKey(k)
 		}
-		if isPaletteKey(k.String()) && (a.scr == scrTerminal || a.scr == scrManager) {
+		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) {
 			return a, a.openPalette()
 		}
 	}
@@ -275,6 +291,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateTerminal(msg)
 	case scrSync:
 		return a, a.updateSync(msg)
+	case scrImport:
+		return a, a.updateImport(msg)
+	case scrKeys:
+		return a, a.updateKeys(msg)
 	}
 	return a, nil
 }
@@ -289,6 +309,7 @@ func (a *App) quit() tea.Cmd {
 
 func (a *App) onTick() tea.Cmd {
 	var cmds []tea.Cmd
+	a.applyLook() // Theme/Tasten können per Sync von einem anderen Rechner kommen
 	// Auto-Sperre nur ohne offene Sitzungen (sonst würden Shells hängen bleiben).
 	if set := a.st.Settings(); set.LockAfterMin > 0 && a.scr != scrUnlock && len(a.sessions) == 0 &&
 		time.Since(a.lastKey) > time.Duration(set.LockAfterMin)*time.Minute {
@@ -333,6 +354,10 @@ func (a *App) View() tea.View {
 		body, cur = a.viewTerminal()
 	case scrSync:
 		body = a.frame(a.viewSync(), a.syncKeys())
+	case scrImport:
+		body = a.frame(a.viewImport(), a.importKeys())
+	case scrKeys:
+		body = a.frame(a.viewKeys(), a.keysKeys())
 	}
 	body = a.z.scan(body, 0, 0)
 	if a.modal != nil {
@@ -351,6 +376,7 @@ func (a *App) View() tea.View {
 		v.WindowTitle = version.Name + " · " + s.conn.Alias
 	}
 	v.BackgroundColor = a.s.T.Bg
+	v.ForegroundColor = a.s.T.Text // sonst bliebe ungefärbter Text auf Hell unsichtbar
 	return v
 }
 
@@ -360,7 +386,9 @@ func (a *App) header(right string) string {
 	if a.toast != "" && time.Now().Before(a.toastUntil) {
 		right = a.s.Header.Foreground(a.s.T.Warn).Render(" " + a.toast + " ")
 	} else if a.rel != nil && right == "" {
-		right = a.keyZone("F12", a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+" verfügbar · F12 "))
+		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+" verfügbar · "+a.keys.label(actAbout)+" "))
+	} else if a.restartPending != "" && right == "" {
+		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+" installiert · Neustart "+a.keys.label(actAbout)+" "))
 	}
 	gap := a.w - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 0 {

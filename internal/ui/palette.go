@@ -46,7 +46,7 @@ type palette struct {
 	armed int
 }
 
-func isPaletteKey(k string) bool { return k == "ctrl+space" || k == "ctrl+@" }
+func isPaletteKey(k string) bool { return activeKeys.is(actPalette, k) }
 
 func (a *App) openPalette() tea.Cmd {
 	in := newAIInput("Ziel, Frage, Befehl, Tunnel oder Verbindung …")
@@ -139,7 +139,7 @@ func (a *App) paletteItems() []palItem {
 			}})
 	}
 	actions := []palItem{
-		{icon: "◎", label: "Ziel-Modus öffnen", hint: "F2", run: func() tea.Cmd {
+		{icon: "◎", label: "Ziel-Modus öffnen", hint: a.keys.label(actGoal), run: func() tea.Cmd {
 			if inTerm {
 				withPanel(s, panelGoal)
 				a.resize(s)
@@ -147,20 +147,34 @@ func (a *App) paletteItems() []palItem {
 			}
 			return nil
 		}},
-		{icon: "⇄", label: "Tunnel-Panel", hint: "F4", run: func() tea.Cmd {
+		{icon: "⇄", label: "Tunnel-Panel", hint: a.keys.label(actTunnels), run: func() tea.Cmd {
 			if inTerm {
 				withPanel(s, panelTunnels)
 				a.resize(s)
 			}
 			return nil
 		}},
-		{icon: "≡", label: "Verbindungs-Manager", hint: "F10", run: func() tea.Cmd { a.scr = scrManager; return nil }},
+		{icon: "≡", label: "Verbindungs-Manager", hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: "Neue Verbindung", hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
 		{icon: "✦", label: "KI-Einstellungen", hint: "s", run: func() tea.Cmd { return a.openSettings() }},
 		{icon: "⇅", label: "Sync zwischen Rechnern einrichten", hint: "y", run: func() tea.Cmd { return a.openSync() }},
-		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
-		{icon: "i", label: "Über sshTermy / Update", hint: "F12", run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
+		{icon: "⇩", label: "Verbindungen importieren (ssh-config, PuTTY, MobaXterm)", hint: a.keys.label(actImport), run: func() tea.Cmd { return a.openImport() }},
+		{icon: "?", label: "Tastenkürzel anzeigen", hint: a.keys.label(actHelp), run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
+		{icon: "⌨", label: "Tastenkürzel anpassen", hint: a.keys.label(actKeys), run: func() tea.Cmd { return a.openKeys() }},
+		{icon: "i", label: "Über sshTermy / Update", hint: a.keys.label(actAbout), run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
+		{icon: "★", label: "Was ist neu (Changelog)", hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
+	}
+	for _, t := range Themes {
+		t := t
+		hint := ""
+		if ThemeByName(a.st.Settings().Theme).Name == t.Name {
+			hint = "aktiv"
+		}
+		actions = append(actions, palItem{icon: "◐", label: "Aussehen: " + t.Label, hint: hint, run: func() tea.Cmd { return a.setTheme(t.Name) }})
+	}
+	if a.restartPending != "" {
+		actions = append(actions, palItem{icon: "⟳", label: "Neu starten (v" + a.restartPending + " aktivieren)", hint: "Update", run: func() tea.Cmd { return a.askRestart() }})
 	}
 	if a.st.SyncConfig().Enabled() {
 		actions = append(actions, palItem{icon: "⇅", label: "Jetzt synchronisieren", hint: "Sync", run: func() tea.Cmd {
@@ -171,7 +185,7 @@ func (a *App) paletteItems() []palItem {
 	if !inTerm {
 		actions = actions[2:]
 	} else {
-		actions = append(actions, palItem{icon: "▤", label: "Host-Übersicht", hint: "F6", run: func() tea.Cmd {
+		actions = append(actions, palItem{icon: "▤", label: "Host-Übersicht", hint: a.keys.label(actHost), run: func() tea.Cmd {
 			withPanel(s, panelHost)
 			a.resize(s)
 			return a.panelOpened(s)
