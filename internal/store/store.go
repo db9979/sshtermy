@@ -48,6 +48,11 @@ type Store struct {
 	V    *vault.Vault
 	data *domain.Data
 	Dir  string
+
+	// OnChange wird nach jeder lokalen Änderung aufgerufen (nicht nach dem
+	// Übernehmen eines Sync-Stands), z. B. um einen Abgleich anzustoßen.
+	OnChange func()
+	rev      uint64 // zählt lokale Änderungen
 }
 
 // Open öffnet (oder bereitet vor) den Store im Standardordner.
@@ -102,12 +107,33 @@ func (s *Store) Lock() {
 }
 
 func (s *Store) save() error {
+	if err := s.persist(); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.rev++
+	s.mu.Unlock()
+	if s.OnChange != nil {
+		s.OnChange()
+	}
+	return nil
+}
+
+func (s *Store) persist() error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if s.data == nil {
 		return vault.ErrLocked
 	}
 	return s.V.Save(s.data)
+}
+
+// tombstone merkt eine gelöschte ID für den Sync (Aufrufer hält s.mu).
+func (s *Store) tombstone(id string) {
+	if s.data.Deleted == nil {
+		s.data.Deleted = map[string]time.Time{}
+	}
+	s.data.Deleted[id] = time.Now().UTC()
 }
 
 func newID() string {
@@ -170,6 +196,7 @@ func (s *Store) UpsertConnection(c domain.Connection) (domain.Connection, error)
 		return c, err
 	}
 	s.mu.Lock()
+	c.UpdatedAt = time.Now().UTC()
 	if c.ID == "" {
 		c.ID, c.CreatedAt = newID(), time.Now()
 		s.data.Connections = append(s.data.Connections, c)
@@ -194,10 +221,13 @@ func (s *Store) DeleteConnection(id string) error {
 		}
 	}
 	s.data.Connections = cs
+	s.tombstone(id)
 	ts := s.data.Tunnels[:0]
 	for _, t := range s.data.Tunnels {
 		if t.ConnectionID != id {
 			ts = append(ts, t)
+		} else {
+			s.tombstone(t.ID)
 		}
 	}
 	s.data.Tunnels = ts
@@ -238,6 +268,7 @@ func (s *Store) UpsertTunnel(t domain.Tunnel) (domain.Tunnel, error) {
 		t.BindHost = "127.0.0.1"
 	}
 	s.mu.Lock()
+	t.UpdatedAt = time.Now().UTC()
 	if t.ID == "" {
 		t.ID = newID()
 		s.data.Tunnels = append(s.data.Tunnels, t)
@@ -261,6 +292,7 @@ func (s *Store) DeleteTunnel(id string) error {
 		}
 	}
 	s.data.Tunnels = ts
+	s.tombstone(id)
 	s.mu.Unlock()
 	return s.save()
 }
@@ -277,6 +309,7 @@ func (s *Store) LLM() domain.LLMConfig {
 func (s *Store) SetLLM(c domain.LLMConfig) error {
 	s.mu.Lock()
 	s.data.LLM = c
+	s.data.LLMUpdatedAt = time.Now().UTC()
 	s.mu.Unlock()
 	return s.save()
 }
@@ -288,4 +321,60 @@ func (s *Store) Settings() domain.Settings {
 		return domain.Settings{}
 	}
 	return s.data.Settings
+}
+
+// ---------------------------------------------------------------- Sync
+
+// SyncConfig: lokale Sync-Einstellungen.
+func (s *Store) SyncConfig() domain.SyncConfig {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data == nil {
+		return domain.SyncConfig{}
+	}
+	return s.data.Sync
+}
+
+// SetSyncConfig speichert die Sync-Einstellungen (löst keinen Abgleich aus).
+func (s *Store) SetSyncConfig(c domain.SyncConfig) error {
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return vault.ErrLocked
+	}
+	s.data.Sync = c
+	s.mu.Unlock()
+	return s.persist()
+}
+
+// Snapshot liefert eine Kopie der Daten und den Änderungszähler.
+func (s *Store) Snapshot() (*domain.Data, uint64, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data == nil {
+		return nil, 0, vault.ErrLocked
+	}
+	d := *s.data
+	d.Connections = append([]domain.Connection(nil), s.data.Connections...)
+	d.Tunnels = append([]domain.Tunnel(nil), s.data.Tunnels...)
+	d.Deleted = map[string]time.Time{}
+	for k, v := range s.data.Deleted {
+		d.Deleted[k] = v
+	}
+	return &d, s.rev, nil
+}
+
+// ApplySync übernimmt einen Sync-Stand. Gab es seit dem Snapshot (rev)
+// lokale Änderungen, wird stattdessen merge auf den aktuellen Stand
+// angewendet und changed = true gemeldet (dann bitte erneut abgleichen).
+func (s *Store) ApplySync(rev uint64, apply func(d *domain.Data)) (changed bool, err error) {
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return false, vault.ErrLocked
+	}
+	apply(s.data)
+	changed = s.rev != rev
+	s.mu.Unlock()
+	return changed, s.persist()
 }

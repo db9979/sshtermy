@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"sync"
 
 	"golang.org/x/crypto/ssh"
@@ -118,3 +119,53 @@ type dummyKey struct{}
 func (dummyKey) Type() string                        { return "sshtermy-dummy" }
 func (dummyKey) Marshal() []byte                     { return []byte("sshtermy-dummy") }
 func (dummyKey) Verify([]byte, *ssh.Signature) error { return errors.New("dummy") }
+
+// Lines liefert die Einträge der known_hosts-Datei (für den Sync).
+func (h *HostKeyStore) Lines() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	b, err := os.ReadFile(h.path)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, l := range strings.Split(string(b), "\n") {
+		if l = strings.TrimSpace(l); l != "" && !strings.HasPrefix(l, "#") {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// AddLines ergänzt fehlende Einträge (aus dem Sync). Ungültige Zeilen werden
+// verworfen; vorhandene Einträge bleiben unverändert.
+func (h *HostKeyStore) AddLines(lines []string) (int, error) {
+	have := map[string]bool{}
+	for _, l := range h.Lines() {
+		have[l] = true
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	var add []string
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if l == "" || have[l] {
+			continue
+		}
+		if _, _, _, _, _, err := ssh.ParseKnownHosts([]byte(l)); err != nil {
+			continue
+		}
+		have[l] = true
+		add = append(add, l)
+	}
+	if len(add) == 0 {
+		return 0, nil
+	}
+	f, err := os.OpenFile(h.path, os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+	_, err = f.WriteString(strings.Join(add, "\n") + "\n")
+	return len(add), err
+}

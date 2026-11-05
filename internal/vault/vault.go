@@ -384,3 +384,31 @@ func wipe(b []byte) {
 	}
 	subtle.ConstantTimeCompare(b, b) // verhindert, dass der Compiler die Schleife wegoptimiert
 }
+
+// ---------------------------------------------------------------- Bausteine
+//
+// Exportierte Grundfunktionen für andere verschlüsselte Formate (z. B. die
+// Sync-Datei in internal/syncx). Sie verwenden dieselben Primitive wie der
+// lokale Store, damit es im Projekt genau eine Krypto-Implementierung gibt.
+
+// Derive leitet mit Argon2id einen 256-Bit-Schlüssel ab.
+func (p KDFParams) Derive(password []byte) []byte { return p.derive(password) }
+
+// Check lehnt KDF-Parameter ab, die zu schwach (Downgrade) oder absurd groß
+// (Speicher-DoS durch eine manipulierte Datei) sind.
+func (p KDFParams) Check() error {
+	if p.Alg != "argon2id" || len(p.Salt) < saltLen || p.Time < 1 || p.Time > 20 ||
+		p.MemoryKiB < 19*1024 || p.MemoryKiB > 1024*1024 || p.Threads < 1 {
+		return errors.New("vault: ungültige KDF-Parameter")
+	}
+	return nil
+}
+
+// SealGCM verschlüsselt mit AES-256-GCM und frischer Zufalls-Nonce.
+func SealGCM(key, plain, aad []byte) (nonce, ct []byte, err error) { return gcmSeal(key, plain, aad) }
+
+// OpenGCM entschlüsselt und prüft Tag und AAD.
+func OpenGCM(key, nonce, ct, aad []byte) ([]byte, error) { return gcmOpen(key, nonce, ct, aad) }
+
+// Wipe überschreibt einen Puffer (best effort).
+func Wipe(b []byte) { wipe(b) }
