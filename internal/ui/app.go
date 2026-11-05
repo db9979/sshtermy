@@ -20,6 +20,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -55,6 +56,7 @@ const (
 	scrKeys
 	scrBroadcast
 	scrScan
+	scrKeyForm // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
 )
 
 // App ist das Wurzel-Modell.
@@ -74,6 +76,7 @@ type App struct {
 	formBase         domain.Connection
 	formTunnel       domain.Tunnel
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
+	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
 	returnToTerminal bool
 
 	sessions []*session
@@ -254,6 +257,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.onReconnectErr(s, m.err)
 			} else {
 				s.state, s.err = stClosed, m.err.Error()
+				var km *sshx.KeyMissingError
+				if errors.As(m.err, &km) && a.form == nil && a.modal == nil && a.pick == nil && a.pal == nil && a.scr == scrTerminal {
+					return a, a.openKeyFix(s.id, km)
+				}
 			}
 		}
 		return a, nil
@@ -334,7 +341,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pick != nil {
 			return a, a.pickerKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrKeyForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -372,7 +379,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrKeyForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -447,7 +454,7 @@ func (a *App) View() tea.View {
 		body = a.viewUnlock()
 	case scrManager:
 		body = a.frame(a.viewManager(), a.managerKeys())
-	case scrConnForm, scrTunnelForm:
+	case scrConnForm, scrTunnelForm, scrKeyForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})

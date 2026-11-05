@@ -157,14 +157,9 @@ func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
 	if c.KeyPEM.IsSet() {
 		pem = []byte(c.KeyPEM.Reveal())
 	} else {
-		p := c.KeyPath
-		if strings.HasPrefix(p, "~") {
-			home, _ := os.UserHomeDir()
-			p = filepath.Join(home, p[1:])
-		}
-		b, err := os.ReadFile(p)
+		b, err := readKeyFile(c)
 		if err != nil {
-			return nil, fmt.Errorf(i18n.T("Keyfile: %w"), err)
+			return nil, err
 		}
 		pem = b
 	}
@@ -185,4 +180,94 @@ func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
 		signer, err = ssh.ParsePrivateKeyWithPassphrase(pem, []byte(pass))
 	}
 	return signer, err
+}
+
+// KeyMissingError: Die Schlüsseldatei einer Verbindung gibt es auf diesem
+// Rechner nicht (typisch nach dem Sync von einem anderen Rechner). Die
+// Oberfläche fragt dann, wo der Key hier liegt.
+type KeyMissingError struct {
+	ConnID, Alias, Path string
+	Err                 error
+}
+
+func (e *KeyMissingError) Error() string { return fmt.Errorf(i18n.T("Keyfile: %w"), e.Err).Error() }
+func (e *KeyMissingError) Unwrap() error { return e.Err }
+
+// readKeyFile liest die Schlüsseldatei. Fehlt sie unter dem gespeicherten
+// Pfad, werden naheliegende Orte auf diesem Rechner probiert (gleicher Pfad
+// unter dem eigenen Home, ~/.ssh/<Dateiname>).
+func readKeyFile(c domain.Connection) ([]byte, error) {
+	home, _ := os.UserHomeDir()
+	cands := domain.KeyPathCandidates(c.KeyPath, home)
+	var first error
+	for _, p := range cands {
+		b, err := os.ReadFile(p)
+		if err == nil {
+			return b, nil
+		}
+		if first == nil {
+			first = err
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf(i18n.T("Keyfile: %w"), err) // z. B. keine Rechte: nicht weitersuchen
+		}
+	}
+	if first == nil {
+		first = os.ErrNotExist
+	}
+	return nil, &KeyMissingError{ConnID: c.ID, Alias: c.Alias, Path: c.KeyPath, Err: first}
+}
+
+// CheckKeyFile prüft, ob unter p ein privater SSH-Key liegt (verschlüsselt
+// oder nicht).
+func CheckKeyFile(p string) error {
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return fmt.Errorf(i18n.T("Keyfile: %w"), err)
+	}
+	defer func() {
+		for i := range b {
+			b[i] = 0
+		}
+	}()
+	_, err = ssh.ParseRawPrivateKey(b)
+	var missing *ssh.PassphraseMissingError
+	if err != nil && !errors.As(err, &missing) {
+		return errors.New(i18n.T("Das ist kein privater SSH-Key (OpenSSH- oder PEM-Format)"))
+	}
+	return nil
+}
+
+// LocalKeys listet private Keys in ~/.ssh (als „~/.ssh/<Name>“), damit die
+// Oberfläche sie zur Auswahl anbieten kann.
+func LocalKeys() []string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil
+	}
+	dir := filepath.Join(home, ".ssh")
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, e := range ents {
+		if e.IsDir() || strings.HasSuffix(e.Name(), ".pub") {
+			continue
+		}
+		if info, err := e.Info(); err != nil || info.Size() > 64<<10 {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			continue
+		}
+		if strings.Contains(string(b[:min(len(b), 80)]), "PRIVATE KEY") {
+			out = append(out, "~/.ssh/"+e.Name())
+		}
+		for i := range b {
+			b[i] = 0
+		}
+	}
+	return out
 }

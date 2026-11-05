@@ -266,6 +266,12 @@ type Data struct {
 	SettingsUpdatedAt time.Time            `json:"settings_updated_at,omitempty"`
 	Deleted           map[string]time.Time `json:"deleted,omitempty"` // ID → Löschzeit (Grabsteine)
 	Sync              SyncConfig           `json:"sync,omitempty"`
+
+	// LocalKeys: Schlüsseldatei pro Verbindung (ID → Pfad), nur für diesen
+	// Rechner. Rein lokal wie Sync, geht nie in die Sync-Datei. Hat Vorrang
+	// vor Connection.KeyPath, wenn der Key hier woanders liegt als auf dem
+	// Rechner, der die Verbindung angelegt hat.
+	LocalKeys map[string]string `json:"local_keys,omitempty"`
 }
 
 // NewData: leerer Store mit Standardwerten.

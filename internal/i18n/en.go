@@ -1374,4 +1374,17 @@ var en = map[string]string{
 	"⠿ öffne SFTP-Kanal …":                     "⠿ opening SFTP channel …",
 	"⬆ Neue Version v":                         "⬆ New version v",
 	"⬆ läuft mit erhöhten Rechten (sudo)":      "⬆ runs with elevated rights (sudo)",
+
+	// Schlüsseldatei nach Sync
+	" (gibt es hier nicht; andere Rechner behalten ihren Pfad)": " (not on this computer; other computers keep their path)",
+	"Das ist kein privater SSH-Key (OpenSSH- oder PEM-Format)":  "This is not a private SSH key (OpenSSH or PEM format)",
+	"Key eingebettet (verschlüsselt, geht mit dem Sync mit)":    "Key embedded (encrypted, travels with sync)",
+	"Key mitnehmen": "Embed key",
+	"Key verschlüsselt im Store speichern und mitsynchronisieren: dann braucht kein Rechner mehr die Datei": "Store the key encrypted and sync it: then no computer needs the file any more",
+	"Pfad zur Schlüsseldatei fehlt":             "Path to the key file is missing",
+	"Schlüsseldatei für diesen Rechner gemerkt": "Key file remembered for this computer",
+	"Schlüsseldatei für „":                      "Key file for “",
+	"gespeichert: ":                             "saved: ",
+	"“ auf diesem Rechner":                      "” on this computer",
+	"eigener Pfad":                              "other path",
 }

@@ -675,7 +675,11 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		return cmd
 	}
 	var err error
+	var next tea.Cmd
+	wasKey := a.scr == scrKeyForm
 	switch a.scr {
+	case scrKeyForm:
+		next, err = a.saveKeyFix()
 	case scrConnForm:
 		err = a.saveConn()
 	case scrTunnelForm:
@@ -694,8 +698,10 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	if a.returnToTerminal {
 		a.scr, a.returnToTerminal = scrTerminal, false
 	}
-	a.flash(i18n.T("Gespeichert (verschlüsselt)"))
-	return nil
+	if !wasKey {
+		a.flash(i18n.T("Gespeichert (verschlüsselt)"))
+	}
+	return next
 }
 
 func (a *App) saveConn() error {
