@@ -222,6 +222,27 @@ func (a *App) paletteItems() []palItem {
 			}})
 		}
 	}
+	if a.scr == scrTerminal && s != nil {
+		actions = append(actions,
+			palItem{icon: "⌕", label: "Im Verlauf suchen", hint: "Strg+F", run: func() tea.Cmd { return a.openSearch(s) }},
+			palItem{icon: "⚠", label: "Fehlerzeilen im Verlauf zeigen", hint: "Strg+F Strg+E", run: func() tea.Cmd {
+				cmd := a.openSearch(s)
+				s.search.errors, s.search.list = true, true
+				a.refreshSearch(s, true)
+				return cmd
+			}})
+		for _, m := range []splitMode{splitCols, splitRows, splitGrid, splitOff} {
+			if m == a.split || (m == splitOff && a.split == splitOff) {
+				continue
+			}
+			m := m
+			label := "Ansicht teilen: " + m.label()
+			if m == splitOff {
+				label = "Ansicht nicht mehr teilen"
+			}
+			actions = append(actions, palItem{icon: "▦", label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
+		}
+	}
 	for _, x := range actions {
 		x.group = pgAction
 		if match(x.label) {

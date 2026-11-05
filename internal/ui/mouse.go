@@ -85,8 +85,22 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	// Terminalfläche zuerst: Markieren und Weiterleiten dürfen nicht an
 	// Zonen hängen bleiben (z. B. beim Ziehen über den Rand hinaus).
 	s := a.current()
+	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil && !s.selecting && !s.fwdHeld {
+		// geteilte Ansicht: Klick holt den Bereich nach vorn, das Rad
+		// blättert im Bereich unter der Maus
+		if p := a.paneAt(m.X, m.Y); p != nil && p != s {
+			if isClick {
+				a.focusSession(a.indexOf(p))
+				s = p
+			} else if isWheel && a.inTermArea(p, m.X, m.Y) && !p.files.open {
+				return a.termMouse(p, msg, 0)
+			}
+		}
+	}
 	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil {
-		if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open) {
+		if s.search.open && s.search.list && !s.selecting && a.inTermArea(s, m.X, m.Y) && !isWheel {
+			// Fehlerliste: Zeilen sind Zonen
+		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open) {
 			return a.termMouse(s, msg, clicks)
 		}
 	}
@@ -140,7 +154,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo {
 			a.modal = nil
 		}
-	case a.scr == scrTerminal && s != nil && s.panel != panelNone && !s.files.open && m.X >= a.w-a.panelWidth(s):
+	case a.scr == scrTerminal && s != nil && s.panel != panelNone && !s.files.open && a.inPanel(s, m.X, m.Y):
 		s.panelFocus = true
 	}
 	return nil
@@ -285,13 +299,21 @@ func (a *App) button(key, label string) string {
 
 func (a *App) inTermArea(s *session, x, y int) bool {
 	cols, rows := a.termSize(s)
-	return x >= 0 && x < cols && y >= topRows && y < topRows+rows
+	r := a.termRect(s)
+	return x >= r.x && x < r.x+cols && y >= r.y && y < r.y+rows
+}
+
+// inPanel: liegt (x, y) im Seitenpanel der Sitzung?
+func (a *App) inPanel(s *session, x, y int) bool {
+	r := a.termRect(s)
+	return r.has(x, y) && x >= r.x+r.w-a.panelWidth(s)
 }
 
 func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 	m := msg.Mouse()
 	cols, rows := a.termSize(s)
-	tx, ty := m.X, m.Y-topRows
+	r := a.termRect(s)
+	tx, ty := m.X-r.x, m.Y-r.y
 	if s.term == nil || s.state != stConnected {
 		return nil
 	}

@@ -78,6 +78,8 @@ type App struct {
 	sessions []*session
 	cur      int
 	nextSID  int
+	split    splitMode // geteilte Ansicht (Strg+T)
+	panes    []int     // Sitzungs-IDs je Bereich, 0 = leer
 
 	modal      *modal
 	pal        *palette

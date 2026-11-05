@@ -179,7 +179,8 @@ func (a *App) quickItems(q string) (items []palItem, strong bool) {
 func (a *App) openOrConnect(c domain.Connection) tea.Cmd {
 	for i, x := range a.sessions {
 		if x.conn.ID == c.ID && x.state != stClosed {
-			a.cur, a.scr = i, scrTerminal
+			a.focusSession(i)
+			a.scr = scrTerminal
 			return nil
 		}
 	}

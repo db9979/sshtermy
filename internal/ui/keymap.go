@@ -50,6 +50,8 @@ const (
 	actUnfoldAll action = "unfold_all"
 	actBroadcast action = "broadcast"
 	actScan      action = "scan"
+	actSplit     action = "split"
+	actSearch    action = "search"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -73,6 +75,8 @@ var actionDefs = []actionDef{
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
+	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
+	{actSplit, "Ansicht teilen (2 / 4)", "Terminal", []string{"ctrl+t"}},
 	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},

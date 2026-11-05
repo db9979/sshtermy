@@ -81,8 +81,9 @@ type session struct {
 	ask        askState
 	tunSel     int
 	files      filesState
-	host       hostState // F6: Host-Übersicht und Config-Sicherung
-	cap        shellCap  // mitgeschnittene Shell-Ausgabe während einer Abfrage
+	search     searchState // Strg+F
+	host       hostState   // F6: Host-Übersicht und Config-Sicherung
+	cap        shellCap    // mitgeschnittene Shell-Ausgabe während einer Abfrage
 
 	// laufender Befehl, letzter Fehlschlag, Sitzungsprotokoll (cmdlog.go)
 	run    *cmdRun

@@ -25,6 +25,7 @@ const (
 	hcPalette
 	hcFiles
 	hcSettings
+	hcSearch
 	hcLogs
 	hcBroadcast
 	hcScan
@@ -89,6 +90,9 @@ var helpSections = []helpSection{
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
+		{"Strg+T", "Ansicht teilen (2 / 4)"},
+		{"Strg+Pfeil", "Bereich wechseln (geteilt)"},
+		{"Strg+F", "im Verlauf suchen"},
 		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},
 		{"F10", "zum Manager"},
@@ -136,6 +140,14 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
+	}},
+	{hcSearch, "⌕", "Suche im Verlauf", "Strg+F", false, [][2]string{
+		{"tippen", "suchen (Groß = genau)"},
+		{"⏎ / ↑", "nächster (älter)"},
+		{"⇧⏎ / ↓", "zurück (neuer)"},
+		{"Strg+E", "nur Fehlerzeilen"},
+		{"Tab", "Fehlerliste / Verlauf"},
+		{"Esc", "schließen"},
 	}},
 	{hcLogs, "☰", "Sitzungsprotokolle", "l", false, [][2]string{
 		{"/", "suchen (auch Ausgabe)"},
@@ -223,6 +235,9 @@ func (a *App) helpContext() helpCtx {
 	case scrTerminal:
 		if s := a.current(); s != nil && s.files.open {
 			return hcFiles
+		}
+		if s := a.current(); s != nil && s.search.open && !s.panelFocus {
+			return hcSearch
 		}
 		if s := a.current(); s != nil && s.panelFocus {
 			switch s.panel {

@@ -109,7 +109,10 @@ func (t *Term) cellAt(sb int, p Pos) *uv.Cell {
 
 // Render zeichnet den Bildschirm, um offset Zeilen in den Scrollback
 // zurückversetzt, und hebt sel (falls gesetzt) invertiert hervor.
-func (t *Term) Render(offset int, sel *Sel) string {
+func (t *Term) Render(offset int, sel *Sel) string { return t.render(offset, sel, nil) }
+
+// render: hook darf jede Zelle vor dem Zeichnen verändern (Suchtreffer).
+func (t *Term) render(offset int, sel *Sel, hook func(line, x int, c *uv.Cell)) string {
 	w, h := t.Size()
 	sb := t.ScrollbackLen()
 	offset = max(0, min(offset, sb))
@@ -130,6 +133,9 @@ func (t *Term) Render(offset int, sel *Sel) string {
 					line[x].Content, line[x].Width = " ", 1
 				}
 				line[x].Style.Attrs ^= uv.AttrReverse
+			}
+			if hook != nil && !line[x].IsZero() {
+				hook(abs, x, &line[x])
 			}
 		}
 		r := line.Render()
