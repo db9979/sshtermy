@@ -278,6 +278,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		}
 	}
 	f.choice("jump", "Jump-Host", jumps, cur, "wie ssh -J")
+	f.choice("device", "Gerätetyp", deviceLabels, deviceLabel(c.Device), "Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage")
 	a.form, a.formID, a.scr = f, c.ID, scrConnForm
 	a.formBase = c
 	return f.setFocus(0)
@@ -392,6 +393,7 @@ func (a *App) saveConn() error {
 			c.Tags = append(c.Tags, t)
 		}
 	}
+	c.Device = deviceFromLabel(f.sel("device"))
 	c.JumpHostID = ""
 	for _, o := range a.st.Connections() {
 		if o.Alias == f.sel("jump") && o.ID != c.ID {
@@ -449,3 +451,25 @@ func (a *App) viewForm() string {
 var _ = store.Dir
 
 func newConnDefaults() domain.Connection { return domain.Connection{Port: 22, Auth: domain.AuthAgent} }
+
+var deviceLabels = []string{"automatisch", "Server", "Netzwerkgerät"}
+
+func deviceLabel(d domain.DeviceKind) string {
+	switch d {
+	case domain.DeviceServer:
+		return deviceLabels[1]
+	case domain.DeviceNetwork:
+		return deviceLabels[2]
+	}
+	return deviceLabels[0]
+}
+
+func deviceFromLabel(l string) domain.DeviceKind {
+	switch l {
+	case deviceLabels[1]:
+		return domain.DeviceServer
+	case deviceLabels[2]:
+		return domain.DeviceNetwork
+	}
+	return domain.DeviceAuto
+}

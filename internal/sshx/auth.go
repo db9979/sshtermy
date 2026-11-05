@@ -24,7 +24,7 @@ func clientConfig(c domain.Connection, o Options) (*ssh.ClientConfig, error) {
 	if o.HostKeys == nil {
 		return nil, errors.New("keine Host-Key-Prüfung konfiguriert") // nie InsecureIgnoreHostKey
 	}
-	return &ssh.ClientConfig{
+	cfg := &ssh.ClientConfig{
 		User:            c.Username,
 		Auth:            methods,
 		HostKeyCallback: o.HostKeys.Callback(o.Prompt),
@@ -33,7 +33,19 @@ func clientConfig(c domain.Connection, o Options) (*ssh.ClientConfig, error) {
 		HostKeyAlgorithms: o.HostKeys.Algorithms(c.Addr()),
 		Timeout:           o.Timeout,
 		ClientVersion:     "SSH-2.0-sshtermy",
-	}, nil
+	}
+	if o.legacy {
+		// Nur als zweiter Versuch, wenn der Server keine moderne Kombination
+		// anbietet (alte Switches/Router). Moderne Verfahren stehen vorn.
+		sup, old := ssh.SupportedAlgorithms(), ssh.InsecureAlgorithms()
+		cfg.KeyExchanges = append(sup.KeyExchanges, old.KeyExchanges...)
+		cfg.Ciphers = append(sup.Ciphers, old.Ciphers...)
+		cfg.MACs = append(sup.MACs, old.MACs...)
+		if len(cfg.HostKeyAlgorithms) == 0 {
+			cfg.HostKeyAlgorithms = append(sup.HostKeys, old.HostKeys...)
+		}
+	}
+	return cfg, nil
 }
 
 func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {

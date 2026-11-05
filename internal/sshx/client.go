@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -26,7 +27,10 @@ type Client struct {
 	Conn   domain.Connection
 	jump   *Client
 	Remote RemoteInfo
-	cancel context.CancelFunc
+	// NetDevice: Gegenstelle ist ein Switch/Router. Dann gibt es keine
+	// Exec-Abfragen, und die Shell wird möglichst schlicht angefordert.
+	NetDevice bool
+	cancel    context.CancelFunc
 }
 
 // RemoteInfo: was wir über das Zielsystem wissen (Kontext fürs LLM).
@@ -56,11 +60,46 @@ type Options struct {
 	Resolve   Resolver
 	AskSecret SecretPrompt // fehlende Passwörter/Passphrasen erfragen (optional)
 	Timeout   time.Duration
+
+	forceNet bool // intern: zweiter Versuch nach abgebrochener Systemabfrage
+	legacy   bool // intern: alte Algorithmen (nur wenn der Server nichts anderes kann)
 }
 
 // Dial baut die Verbindung auf. Bei JumpHostID wird zuerst der Jump-Host
 // verbunden und die Zielverbindung durch ihn getunnelt (wie ssh -J).
+//
+// Netzwerkgeräte: Viele Switches (z. B. Aruba/ProCurve) beenden die ganze
+// Verbindung, sobald ein Exec-Kanal kommt oder der erste Kanal schließt. Dann
+// käme nach dem Login sofort EOF. Deshalb: bei bekanntem Banner oder
+// Gerätetyp "network" keine Systemabfrage; bricht die Verbindung nach der
+// Abfrage trotzdem ab, wird einmal ohne Abfrage neu verbunden.
 func Dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) {
+	if o.AskSecret != nil {
+		o.AskSecret = rememberSecrets(o.AskSecret) // Neuverbindung fragt nicht doppelt
+	}
+	cl, err := dial(ctx, c, o)
+	if err != nil && c.Device != domain.DeviceServer && isNoCommonAlgo(err) {
+		// Alte Geräte können oft nur diffie-hellman-group14-sha1, aes-cbc
+		// oder ssh-rsa. Die Aushandlung bevorzugt trotzdem moderne Verfahren.
+		o.legacy = true
+		cl, err = dial(ctx, c, o)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if cl.NetDevice || c.Device == domain.DeviceServer {
+		return cl, nil
+	}
+	if cl.alive() {
+		return cl, nil
+	}
+	// Verbindung hat die Systemabfrage nicht überlebt → Netzwerkgerät.
+	cl.Close()
+	o.forceNet = true
+	return dial(ctx, c, o)
+}
+
+func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) {
 	if o.Timeout == 0 {
 		o.Timeout = 15 * time.Second
 	}
@@ -84,7 +123,9 @@ func Dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		if jc.JumpHostID == c.ID {
 			return nil, errors.New("Jump-Host-Schleife")
 		}
-		jump, err = Dial(ctx, jc, o)
+		jo := o
+		jo.forceNet, jo.legacy = false, false
+		jump, err = Dial(ctx, jc, jo)
 		if err != nil {
 			return nil, fmt.Errorf("Jump-Host %s: %w", jc.Alias, err)
 		}
@@ -112,9 +153,84 @@ func Dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 
 	kctx, cancel := context.WithCancel(context.Background())
 	cl := &Client{Client: ssh.NewClient(sc, chans, reqs), Conn: c, jump: jump, cancel: cancel}
+	banner := string(sc.ServerVersion())
+	switch {
+	case o.forceNet || c.Device == domain.DeviceNetwork:
+		cl.NetDevice = true
+	case c.Device == domain.DeviceAuto && IsNetworkBanner(banner):
+		cl.NetDevice = true
+	}
+	if cl.NetDevice {
+		cl.Remote = RemoteInfo{OS: "Netzwerkgerät (" + strings.TrimPrefix(banner, "SSH-2.0-") + ")"}
+	} else {
+		cl.Remote = cl.probe()
+	}
 	go cl.keepAlive(kctx, c.KeepAlive)
-	cl.Remote = cl.probe()
 	return cl, nil
+}
+
+// alive prüft mit einer Rundreise, ob die Verbindung noch steht. Ein Server,
+// der nach der Exec-Abfrage auflegt, hat das bis zur Antwort getan (SSH
+// verarbeitet Pakete der Reihe nach). Keine Antwort in 3 s gilt als lebendig.
+func (c *Client) alive() bool {
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := c.SendRequest("keepalive@openssh.com", true, nil)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		return err == nil
+	case <-time.After(3 * time.Second):
+		return true
+	}
+}
+
+// networkBanners: Teile der SSH-Kennung typischer Switches/Router/Firewalls.
+// Geräte mit OpenSSH (z. B. ArubaOS-CX, Junos) erkennt das nicht; dort greift
+// der Rückfall in Dial oder der Gerätetyp in der Verbindung.
+var networkBanners = []string{
+	"cisco", "rosssh", "mikrotik", "huawei", "comware", "h3c", "romsshell",
+	"allegro", "mocana", "procurve", "aruba", "netscreen", "fortissh",
+	"zte", "lancom", "ruckus", "brocade", "extreme", "dell networking",
+	"ssh-2.0--", // ältere Cisco-IOS-Varianten
+}
+
+// IsNetworkBanner sagt, ob die SSH-Kennung des Servers nach Netzwerkgerät aussieht.
+func IsNetworkBanner(v string) bool {
+	l := strings.ToLower(v)
+	for _, b := range networkBanners {
+		if strings.Contains(l, b) {
+			return true
+		}
+	}
+	return false
+}
+
+func isNoCommonAlgo(err error) bool {
+	return strings.Contains(err.Error(), "no common algorithm")
+}
+
+// rememberSecrets merkt sich Antworten auf Rückfragen, damit ein zweiter
+// Verbindungsversuch nicht erneut nach Passwort oder Passphrase fragt.
+func rememberSecrets(ask SecretPrompt) SecretPrompt {
+	var mu sync.Mutex
+	seen := map[string]string{}
+	return func(label string) (string, error) {
+		mu.Lock()
+		v, ok := seen[label]
+		mu.Unlock()
+		if ok {
+			return v, nil
+		}
+		v, err := ask(label)
+		if err == nil {
+			mu.Lock()
+			seen[label] = v
+			mu.Unlock()
+		}
+		return v, err
+	}
 }
 
 // Close schließt Ziel und Jump-Host.
