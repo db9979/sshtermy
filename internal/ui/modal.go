@@ -21,6 +21,7 @@ const (
 	mHelp
 	mBusy
 	mChangelog
+	mTour
 	mPaste // Einfügeschutz (pasteguard.go)
 	mMenu  // Kontextmenü, z. B. zu Links (links.go)
 	mInfo  // Ergebnis anzeigen (Ping)
@@ -161,6 +162,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		if m.changelogKey(key, a.h) {
 			a.modal = nil
 		}
+	case mTour:
+		return a.tourKey(key)
 	}
 	return nil
 }
@@ -171,6 +174,9 @@ func (m *modal) view(s Styles, w, h int) string {
 	}
 	if m.kind == mChangelog {
 		return m.changelogView(s, w, h)
+	}
+	if m.kind == mTour {
+		return m.tourView(s, w)
 	}
 	title := s.Accent.Render(m.title)
 	if m.kind == mHostKey {
