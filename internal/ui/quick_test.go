@@ -88,3 +88,28 @@ func TestSortFKeys(t *testing.T) {
 		}
 	}
 }
+
+func TestFooterFitsNarrowWindow(t *testing.T) {
+	a := &App{keys: newKeymap(nil), s: NewStyles(Nacht)}
+	keys := [][2]string{{"Strg+Space", "Palette"}, {"F1", "Hilfe"}, {"F2", "Ziel"}, {"F3", "KI fragen"}, {"F4", "Tunnel"},
+		{"F5", "Dateien"}, {"F6", "Host"}, {"F9", "Schnellbefehle"}, {"F10", "Manager"}, {"Shift+F9", "erklären"}, {"Strg+Q", "beenden"}}
+	for _, w := range []int{200, 120, 90, 60, 40, 20} {
+		a.w = w
+		got := a.fitFooter(keys)
+		width := 0
+		hasHelp := false
+		for _, k := range got {
+			width += lipgloss.Width(a.s.Key.Render(k[0]))
+			if k[1] != "" {
+				width += lipgloss.Width(a.s.KeyDesc.Render(k[1]))
+			}
+			hasHelp = hasHelp || k[0] == "F1"
+		}
+		if width > w || !hasHelp {
+			t.Errorf("Breite %d: Fußzeile %d breit, Hilfe sichtbar=%v (%v)", w, width, hasHelp, got)
+		}
+		if w == 200 && len(got) != len(keys) {
+			t.Errorf("breites Fenster: Tasten fehlen")
+		}
+	}
+}

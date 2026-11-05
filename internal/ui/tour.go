@@ -179,15 +179,24 @@ func (a *App) cheatLine() string {
 	}
 	st := a.s
 	bg := st.Footer
-	out := bg.Render(" ")
-	for i, t := range tips {
-		if i > 0 {
-			out += bg.Render(" · ")
-		}
-		out += a.keyZone(t[0], st.Key.Render(t[0])) + bg.Foreground(st.T.Text).Render(" "+t[1])
-	}
 	k := strings.ReplaceAll(a.keys.label(actCheat), "Shift+", "⇧")
 	back := a.keyZone(k, st.Key.Render(k)+st.KeyDesc.Render(" Tasten"))
+	// schmale Fenster: Tipps von hinten weglassen, der Rückweg bleibt
+	render := func(n int) string {
+		out := bg.Render(" ")
+		for i, t := range tips[:n] {
+			if i > 0 {
+				out += bg.Render(" · ")
+			}
+			out += a.keyZone(t[0], st.Key.Render(t[0])) + bg.Foreground(st.T.Text).Render(" "+t[1])
+		}
+		return out
+	}
+	n := len(tips)
+	for n > 1 && lipgloss.Width(render(n))+1+lipgloss.Width(back) > a.w {
+		n--
+	}
+	out := render(n)
 	gap := a.w - lipgloss.Width(out) - lipgloss.Width(back)
 	if gap < 1 {
 		return ansi.Truncate(out, a.w, "")

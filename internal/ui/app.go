@@ -495,14 +495,58 @@ func (a *App) footer(keys [][2]string) string {
 		return c // F9: Tastenzeile mit Erklärungen für den aktuellen Bereich
 	}
 	var b strings.Builder
-	for _, k := range keys {
-		b.WriteString(a.keyChip(strings.ReplaceAll(k[0], "Shift+", "⇧"), k[1])) // kürzer: ⇧F9
+	for _, k := range a.fitFooter(keys) {
+		if k[1] == "" {
+			b.WriteString(a.keyZone(k[0], a.s.Key.Render(k[0])))
+		} else {
+			b.WriteString(a.keyChip(k[0], k[1]))
+		}
 	}
 	out := b.String()
 	if w := lipgloss.Width(out); w < a.w {
 		out += a.s.Footer.Render(strings.Repeat(" ", a.w-w))
 	}
 	return ansi.Truncate(out, a.w, "")
+}
+
+// fitFooter passt die Tastenzeile an schmale Fenster an: Zuerst fallen
+// Beschreibungen weg (von hinten), dann ganze Tasten von hinten. „F1 Hilfe“
+// bleibt bis zuletzt sichtbar, dort steht alles.
+func (a *App) fitFooter(keys [][2]string) [][2]string {
+	out := make([][2]string, len(keys))
+	help := a.keys.label(actHelp)
+	for i, k := range keys {
+		out[i] = [2]string{strings.ReplaceAll(k[0], "Shift+", "⇧"), k[1]} // kürzer: ⇧F9
+	}
+	width := func(ks [][2]string) int {
+		w := 0
+		for _, k := range ks {
+			w += lipgloss.Width(a.s.Key.Render(k[0]))
+			if k[1] != "" {
+				w += lipgloss.Width(a.s.KeyDesc.Render(k[1]))
+			}
+		}
+		return w
+	}
+	// 1. Beschreibungen von hinten weglassen (nicht die der Hilfe)
+	for i := len(out) - 1; i >= 0 && width(out) > a.w; i-- {
+		if out[i][0] != help {
+			out[i][1] = ""
+		}
+	}
+	// 2. ganze Tasten von hinten weglassen, nie die Hilfe
+	for i := len(out) - 1; i >= 0 && width(out) > a.w; i-- {
+		if out[i][0] != help {
+			out = append(out[:i], out[i+1:]...)
+		}
+	}
+	// 3. zur Not auch „Hilfe“ nur als Taste
+	for i := range out {
+		if width(out) > a.w && out[i][0] == help {
+			out[i][1] = ""
+		}
+	}
+	return out
 }
 
 func (a *App) frame(content string, keys [][2]string) string {
