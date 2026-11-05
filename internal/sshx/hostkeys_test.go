@@ -1,14 +1,18 @@
 package sshx
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"net"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
 	"golang.org/x/crypto/ssh"
+
+	"github.com/db9979/sshtermy/internal/domain"
 )
 
 func testKey(t *testing.T) ssh.PublicKey {
@@ -82,4 +86,30 @@ func TestCallbackReject(t *testing.T) {
 	if err == nil || len(hs.Lines()) != 0 {
 		t.Fatalf("Ablehnen: err=%v lines=%v", err, hs.Lines())
 	}
+}
+
+// Wer im Host-Key-Dialog länger überlegt als die Handshake-Frist, darf danach
+// nicht mit "i/o timeout" rausfliegen.
+func TestSlowHostKeyAnswerKeepsHandshake(t *testing.T) {
+	fs := startFakeSwitch(t, "SSH-2.0-OpenSSH_9.6")
+	hs, err := NewHostKeyStore(filepath.Join(t.TempDir(), "known_hosts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	host, port, _ := net.SplitHostPort(fs.addr)
+	p, _ := strconv.Atoi(port)
+	c := domain.Connection{Alias: "srv", Host: host, Port: p, Username: "u",
+		Auth: domain.AuthPassword, Password: "x", Device: domain.DeviceServer}
+	cl, err := Dial(context.Background(), c, Options{
+		HostKeys: hs,
+		Prompt: func(string, string, string) bool {
+			time.Sleep(700 * time.Millisecond) // länger als Timeout
+			return true
+		},
+		Timeout: 300 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("Dial nach langsamer Antwort: %v", err)
+	}
+	cl.Close()
 }

@@ -25,6 +25,10 @@ const (
 	hcPalette
 	hcFiles
 	hcSettings
+	hcLogs
+	hcBroadcast
+	hcScan
+	hcHost
 )
 
 type helpSection struct {
@@ -40,6 +44,7 @@ var helpSections = []helpSection{
 	{hcNone, "◆", "Überall", "", false, [][2]string{
 		{"Strg+Space", "Befehlspalette"},
 		{"F1", "diese Hilfe"},
+		{"F9", "Spickzettel an/aus"},
 		{"F12", "Über & Update"},
 		{"F12 w", "Was ist neu"},
 		{"Strg+Q", "beenden"},
@@ -51,11 +56,15 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{"/", "suchen"},
 		{"t", "Tunnel anlegen"},
+		{"q", "Schnellbefehle"},
+		{"m", "Broadcast an mehrere Hosts"},
+		{"f", "Netzwerk-Scan"},
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
 		{"i", "Verbindungen importieren"},
 		{"a", "Aussehen wechseln"},
 		{"b", "Tastenkürzel anpassen"},
+		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
@@ -66,10 +75,13 @@ var helpSections = []helpSection{
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{
 		{"Tab / →", "Ghost-Text übernehmen"},
 		{"Alt+1…4", "Folgebefehl einfügen"},
+		{"Alt+0", "Fehler: Warum? & Fix"},
+		{"⇧F1…F8", "Schnellbefehl ausführen"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
+		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},
 		{"F10", "zum Manager"},
 	}},
@@ -98,6 +110,14 @@ var helpSections = []helpSection{
 		{"e", "bearbeiten"},
 		{"d", "löschen"},
 	}},
+	{hcHost, "▣", "Host-Übersicht", "F6", false, [][2]string{
+		{"r / ⏎", "abfragen"},
+		{"b", "Switch-Config sichern"},
+		{"↑ ↓", "Sicherung wählen"},
+		{"d", "Diff zur Vorversion"},
+		{"v", "Sicherung ansehen"},
+		{"x", "Abfrage abbrechen"},
+	}},
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{
 		{"Tab", "Seite wechseln"},
 		{"⏎ / →", "Ordner öffnen"},
@@ -107,6 +127,32 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
+	}},
+	{hcLogs, "☰", "Sitzungsprotokolle", "l", false, [][2]string{
+		{"/", "suchen (auch Ausgabe)"},
+		{"z", "KI-Zusammenfassung"},
+		{"Z", "alle Treffer zusammenfassen"},
+		{"x", "als Markdown exportieren"},
+		{"d", "löschen"},
+		{"a", "Mitschreiben an/aus"},
+		{"⎵ Befehl", "nicht protokollieren"},
+	}},
+	{hcBroadcast, "⇉", "Broadcast", "m", false, [][2]string{
+		{"Space / g / a", "Host / Gruppe / alle"},
+		{"Tab", "Hosts · Quelle · Befehl"},
+		{"⇧⏎", "weiterer Schritt"},
+		{"Strg+S", "prüfen, dann ⏎"},
+		{"← / →", "Host-Spalte wählen"},
+		{"↑ ↓ Bild↑↓", "Ausgabe blättern"},
+		{"z / c", "groß / kopieren"},
+		{"r / e / x", "nochmal / ändern / Stopp"},
+	}},
+	{hcScan, "⌕", "Netzwerk-Scan", "f", false, [][2]string{
+		{"Strg+S", "Scan starten"},
+		{"Space / a", "Fund / alle wählen"},
+		{"⏎", "als Verbindungen anlegen"},
+		{"x", "Scan stoppen"},
+		{"r", "neu scannen"},
 	}},
 	{hcPalette, "❯", "Befehlspalette", "Strg+Space", false, [][2]string{
 		{"tippen", "filtern / Ziel / Frage"},
@@ -130,6 +176,8 @@ var helpSections = []helpSection{
 		{"Doppelklick", "öffnen / Wort"},
 		{"Ziehen", "markieren + kopieren"},
 		{"Rechtsklick", "einfügen"},
+		{"Rechtsklick Link", "Menü: Verbinden, Ping"},
+		{"Strg+Klick", "URL im Browser"},
 		{"Rad", "im Verlauf blättern"},
 		{"Shift+Ziehen", "markieren in htop/vim"},
 		{"Palette", "„Maus aus“"},
@@ -155,6 +203,12 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
+	case scrLogs:
+		return hcLogs
+	case scrBroadcast:
+		return hcBroadcast
+	case scrScan:
+		return hcScan
 	case scrTerminal:
 		if s := a.current(); s != nil && s.files.open {
 			return hcFiles
@@ -167,6 +221,8 @@ func (a *App) helpContext() helpCtx {
 				return hcAsk
 			case panelTunnels:
 				return hcTunnel
+			case panelHost:
+				return hcHost
 			}
 		}
 		return hcTerminal

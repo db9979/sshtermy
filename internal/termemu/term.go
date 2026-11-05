@@ -24,6 +24,10 @@ type Term struct {
 	title string
 	bell  bool
 	mouse map[ansi.DECMode]bool // vom Programm angeforderte Maus-Modi
+
+	// Shell-Integration (OSC 133 / OSC 633): Exit-Code des letzten Befehls
+	exitSeq  int
+	exitCode int
 }
 
 // New erzeugt das Terminal. toHost bekommt alle Bytes, die zum Server sollen
@@ -38,8 +42,55 @@ func New(cols, rows int, toHost io.Writer) *Term {
 		EnableMode:  func(m ansi.Mode) { t.onMode(m, true) },
 		DisableMode: func(m ansi.Mode) { t.onMode(m, false) },
 	})
+	// FinalTerm/VS-Code-Shell-Integration: "133;D;<exit>" bzw. "633;D;<exit>"
+	// nach jedem Befehl. Liefert die Shell das, kennt sshTermy den echten
+	// Exit-Code statt ihn aus der Ausgabe zu schätzen.
+	for _, cmd := range []int{133, 633} {
+		t.emu.RegisterOscHandler(cmd, func(data []byte) bool {
+			if code, ok := parseCommandDone(string(data)); ok {
+				t.mu.Lock()
+				t.exitSeq++
+				t.exitCode = code
+				t.mu.Unlock()
+			}
+			return true // A/B/C (Prompt-Marker) still schlucken
+		})
+	}
 	go func() { _, _ = io.Copy(toHost, t.emu) }()
 	return t
+}
+
+// parseCommandDone liest "133;D;1" (auch ohne Präfix oder ohne Code = 0).
+func parseCommandDone(s string) (int, bool) {
+	parts := strings.Split(s, ";")
+	if len(parts) > 0 && (parts[0] == "133" || parts[0] == "633") {
+		parts = parts[1:]
+	}
+	if len(parts) == 0 || parts[0] != "D" {
+		return 0, false
+	}
+	if len(parts) < 2 || parts[1] == "" {
+		return 0, true
+	}
+	n := 0
+	for _, c := range parts[1] {
+		if c < '0' || c > '9' {
+			return 0, false
+		}
+		n = n*10 + int(c-'0')
+		if n > 1<<16 {
+			return 0, false
+		}
+	}
+	return n, true
+}
+
+// LastExit: Zähler und Exit-Code der letzten OSC-133-D-Meldung. Ändert sich
+// der Zähler zwischen Enter und Prompt, hat die Shell den Code gemeldet.
+func (t *Term) LastExit() (seq, code int) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.exitSeq, t.exitCode
 }
 
 // Write füttert Ausgabe des Servers in den Emulator.
@@ -188,4 +239,38 @@ func (t *Term) TypedInput() (typed string, atPrompt bool) {
 func (t *Term) AtIdlePrompt() bool {
 	typed, ok := t.TypedInput()
 	return ok && strings.TrimSpace(typed) == ""
+}
+
+// CommandOutput liefert die Ausgabe des zuletzt ausgeführten Befehls cmd:
+// alles zwischen der Prompt-Zeile mit cmd und dem aktuellen Prompt (letzte
+// Zeile). Gesucht wird in den letzten n Zeilen; ein umgebrochener langer Befehl
+// darf über bis zu drei Zeilen gehen. line ist der Befehl, wie er am Prompt
+// steht: beim Enter war das Echo der letzten Zeichen evtl. noch unterwegs
+// (schnelles Tippen, Einfügen), dann ist cmd nur der Anfang davon. found =
+// false, wenn die Befehlszeile nicht mehr zu sehen ist (z. B. nach clear oder
+// sehr langer Ausgabe); dann kommen höchstens die letzten 60 Zeilen.
+func (t *Term) CommandOutput(cmd string, n int) (out, line string, found bool) {
+	cmd = strings.TrimSpace(cmd)
+	lines := strings.Split(t.PlainLines(n), "\n")
+	if len(lines) == 0 {
+		return "", cmd, false
+	}
+	end := len(lines) - 1 // aktuelle Prompt-Zeile
+	for i := end - 1; i >= 0 && cmd != ""; i-- {
+		locs := promptEnd.FindAllStringIndex(lines[i], -1)
+		if len(locs) == 0 {
+			continue
+		}
+		joined := ""
+		for k := 0; k < 3 && i+k < end; k++ {
+			joined += lines[i+k]
+			// nach irgendeinem Prompt-Ende (der Befehl selbst kann "$ " enthalten)
+			for _, loc := range locs {
+				if rest := strings.TrimSpace(joined[loc[1]:]); strings.HasPrefix(rest, cmd) {
+					return strings.Join(lines[i+k+1:end], "\n"), rest, true
+				}
+			}
+		}
+	}
+	return strings.Join(lines[max(0, end-60):end], "\n"), cmd, false
 }

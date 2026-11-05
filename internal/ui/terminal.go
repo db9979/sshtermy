@@ -34,7 +34,7 @@ func (a *App) panelWidth(s *session) int {
 }
 
 func (a *App) termSize(s *session) (int, int) {
-	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows)
+	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows-a.cheatRows())
 }
 
 func (a *App) resize(s *session) {
@@ -80,11 +80,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
 		}
-		if s.term != nil && s.state == stConnected {
-			s.sel, s.scroll = nil, 0
-			s.term.Paste(m.Content)
-		}
-		return nil
+		return a.guardedPaste(s, m.Content)
 	case tea.KeyPressMsg:
 		key := m.String()
 		// Tippen beendet Markierung und Rückblick (Esc nur das)
@@ -97,7 +93,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll = 0
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat) {
 		case actHelp:
 			a.modal = a.helpModal()
 			return nil
@@ -107,6 +103,8 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		case actManager:
 			a.scr = scrManager
 			return nil
+		case actCheat:
+			return a.toggleCheat()
 		case actPrevTab, actNextTab:
 			if len(a.sessions) > 1 {
 				d := 1
@@ -126,9 +124,12 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if s.files.open {
 			return a.filesKey(s, m)
 		}
-		switch id := a.keys.which(key, actGoal, actAsk, actTunnels); id {
-		case actGoal, actAsk, actTunnels:
-			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels}[id]
+		if i, ok := a.quickIndex(key); ok {
+			return a.runQuick(s, i)
+		}
+		switch id := a.keys.which(key, actGoal, actAsk, actTunnels, actHost); id {
+		case actGoal, actAsk, actTunnels, actHost:
+			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels, actHost: panelHost}[id]
 			if s.panel == kind && s.panelFocus {
 				s.panel, s.panelFocus = panelNone, false
 			} else {
@@ -156,6 +157,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 }
 
 func (a *App) closeTab(s *session) {
+	a.endLog(s)
 	s.close()
 	for i, x := range a.sessions {
 		if x == s {
@@ -188,6 +190,10 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		s.ghost = ""
 		return nil
 	}
+	// fehlgeschlagener Befehl: Warum? & Fix
+	if key == "alt+0" && s.fail != nil {
+		return a.explainFailure(s)
+	}
 	// Folgebefehle einfügen (ohne Enter)
 	if id := a.keys.which(key, actChip1, actChip2, actChip3, actChip4); id != "" {
 		i := int(id[len(id)-1] - '1')
@@ -204,8 +210,12 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
+	if key == "ctrl+c" && s.run != nil {
+		s.run.interrupted = true
+	}
 	if key == "enter" {
-		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" {
+		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
+			a.beginCommand(s, typed)
 			s.history = append(s.history, strings.TrimSpace(typed))
 			a.profileCommand(s, strings.TrimSpace(typed))
 			if len(s.history) > 200 {
@@ -359,6 +369,9 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
 	right := goal + " " + tun + " " + ai
+	if hb := a.hostBadge(s); hb != "" {
+		right = goal + " " + hb + " " + tun + " " + ai
+	}
 	gap := max(1, a.w-lipgloss.Width(info)-lipgloss.Width(right)-1)
 	bar := st.Header.Render(" "+trunc(info, a.w-lipgloss.Width(right)-3)+strings.Repeat(" ", gap)) + right
 	bar = ansi.Truncate(bar, a.w, "")
@@ -402,7 +415,13 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, a.chipBar(s), a.footer(a.terminalKeys(s))), cur
+	parts := []string{top, bar, body, a.chipBar(s)}
+	if a.cheatRows() > 0 {
+		cl := a.cheatLine()
+		parts = append(parts, cl+strings.Repeat(" ", max(0, a.w-lipgloss.Width(cl))))
+	}
+	parts = append(parts, a.footer(a.terminalKeys(s)))
+	return lipgloss.JoinVertical(lipgloss.Left, parts...), cur
 }
 
 func (a *App) chipBar(s *session) string {
@@ -411,7 +430,24 @@ func (a *App) chipBar(s *session) string {
 	if g := a.visibleGhost(s); g != "" {
 		b.WriteString(a.z.click(st.AI.Render(" ✦ ")+st.Muted.Render("Tab übernimmt: ")+st.Ghost.Render(trunc(g, 60)),
 			func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("Tab") }) + "  ")
-	} else if len(s.chips) > 0 {
+	} else {
+		if f := s.fail; f != nil {
+			why := orDefault(f.Reason, "fehlgeschlagen")
+			b.WriteString(a.z.click(st.Danger.Render(" ✗ "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(" Warum? & Fix "),
+				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("alt+0") }) + " ")
+		}
+		a.chipList(s, &b)
+	}
+	out := b.String()
+	if w := lipgloss.Width(out); w < a.w {
+		out += strings.Repeat(" ", a.w-w)
+	}
+	return ansi.Truncate(out, a.w, "")
+}
+
+func (a *App) chipList(s *session, b *strings.Builder) {
+	st := a.s
+	if len(s.chips) > 0 {
 		b.WriteString(st.AI.Render(" ✦ Als Nächstes: "))
 		for i, c := range s.chips {
 			style := st.Chip
@@ -426,12 +462,9 @@ func (a *App) chipBar(s *session) string {
 		if len(s.chips) > 0 && s.chips[0].Reason != "" {
 			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))
 		}
+	} else {
+		b.WriteString(a.quickBar(s))
 	}
-	out := b.String()
-	if w := lipgloss.Width(out); w < a.w {
-		out += strings.Repeat(" ", a.w-w)
-	}
-	return ansi.Truncate(out, a.w, "")
 }
 
 func (a *App) terminalKeys(s *session) [][2]string {
@@ -442,7 +475,11 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		return a.panelKeys(s)
 	}
 	k := a.keys
-	return [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel/Agent"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
-		{k.label(actFiles), "Dateien"}, {k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"},
+	keys := [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel/Agent"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
+		{k.label(actFiles), "Dateien"}, {k.label(actHost), "Host"}, {k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"},
 		{k.label(actManager), "Manager"}, {k.label(actHelp), "Hilfe"}, {k.label(actQuit), "beenden"}}
+	if s.fail != nil {
+		keys = append([][2]string{{"Alt+0", "Warum? & Fix"}}, keys...)
+	}
+	return keys
 }

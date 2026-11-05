@@ -9,6 +9,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/sysprof"
 )
 
@@ -87,6 +88,37 @@ func (a *App) profileTick(s *session) {
 	if changed {
 		a.saveProfile(s)
 	}
+}
+
+// profileFromSwitch: Die Host-Übersicht hat „show version“ gelesen; was sie
+// dabei über Hersteller, Modell und Firmware erfahren hat, kommt ins Profil.
+func (a *App) profileFromSwitch(s *session, v hostinfo.Vendor, sw *hostinfo.Switch) {
+	dia := map[hostinfo.Vendor]string{hostinfo.VendorProCurve: "procurve", hostinfo.VendorArubaCX: "arubaos-cx", hostinfo.VendorCisco: "cisco-ios"}[v]
+	if dia == "" {
+		return
+	}
+	fresh := domain.SystemProfile{Family: domain.FamilyNetwork, OS: v.Name(), Dialect: dia}
+	if sw != nil {
+		fresh.Model, fresh.Version = sw.Model, sw.Firmware
+	}
+	var ch bool
+	if s.prof, ch = sysprof.Merge(s.prof, fresh); ch {
+		a.saveProfile(s)
+	}
+}
+
+// hostVendor: Familie für die Host-Übersicht aus dem Profil (spart dort
+// „show version“ beim ersten Aufruf nicht, aber wählt passende Befehle).
+func hostVendor(p domain.SystemProfile) hostinfo.Vendor {
+	switch p.Dialect {
+	case "procurve":
+		return hostinfo.VendorProCurve
+	case "arubaos-cx":
+		return hostinfo.VendorArubaCX
+	case "cisco-ios":
+		return hostinfo.VendorCisco
+	}
+	return hostinfo.VendorUnknown
 }
 
 // rejectionFits: Ablehnungen im Stil einer Geräte-CLI („% Invalid input“)

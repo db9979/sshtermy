@@ -44,7 +44,7 @@ func (a *App) filtered() []domain.Connection {
 func (a *App) managerKeys() [][2]string {
 	km := a.keys
 	k := [][2]string{{km.label(actPalette), "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
-		{"t", "Tunnel"}, {km.label(actImport), "Import"}, {"s", "KI"}, {"y", "Sync"},
+		{"t", "Tunnel"}, {km.label(actBroadcast), "Broadcast"}, {km.label(actScan), "Scan"}, {km.label(actImport), "Import"}, {km.label(actQuickEdit), "Schnellbefehle"}, {"s", "KI"}, {"y", "Sync"}, {"l", "Protokolle"},
 		{km.label(actHelp), "Hilfe"}, {km.label(actAbout), "Über"}, {km.label(actQuit), "beenden"}}
 	if len(a.sessions) > 0 {
 		k = append([][2]string{{km.label(actManager), "zum Terminal"}}, k...)
@@ -76,7 +76,14 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		}
 		return nil
 	}
-	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys) {
+	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit) {
+	case actCheat:
+		return a.toggleCheat()
+	case actQuickEdit:
+		if m.sel < len(list) {
+			return a.openQuickForm(list[m.sel], "")
+		}
+		return nil
 	case actManager:
 		if len(a.sessions) > 0 {
 			a.scr = scrTerminal
@@ -94,6 +101,10 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		return a.cycleTheme()
 	case actKeys:
 		return a.openKeys()
+	case actBroadcast:
+		return a.openBroadcast()
+	case actScan:
+		return a.openScan()
 	}
 	switch k.String() {
 	case "up", "k":
@@ -128,6 +139,8 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		return a.openSettings()
 	case "y":
 		return a.openSync()
+	case "l":
+		return a.openLogs()
 	case "enter":
 		if m.sel < len(list) {
 			return a.connect(list[m.sel])
@@ -138,7 +151,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 
 func (a *App) connect(c domain.Connection) tea.Cmd {
 	a.nextSID++
-	s := &session{id: a.nextSID, conn: c, state: stConnecting, started: time.Now(), chipArmed: -1}
+	s := &session{id: a.nextSID, conn: c, state: stConnecting, started: time.Now(), chipArmed: -1, quickArmed: -1}
 	a.sessions = append(a.sessions, s)
 	a.cur = len(a.sessions) - 1
 	a.scr = scrTerminal
@@ -374,6 +387,9 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 			return cmd
 		}
 	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrQuickForm && a.quickFormKey(k) {
+		return nil
+	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" {
 		a.form = nil
 		a.scr = scrManager
@@ -394,6 +410,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveTunnel()
 	case scrSettings:
 		err = a.saveSettings()
+	case scrQuickForm:
+		err = a.saveQuick()
 	}
 	if err != nil {
 		a.form.err = err.Error()

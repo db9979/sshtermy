@@ -528,3 +528,10 @@ func (s *Store) UseRunbook(id string) {
 	s.mu.Unlock()
 	_ = s.save()
 }
+
+// LogDir: Ordner der verschlüsselten Sitzungsprotokolle (nur lokal, nie im Sync).
+func (s *Store) LogDir() string { return filepath.Join(s.Dir, "logs") }
+
+// SessionLogKey: eigener Schlüssel für die Sitzungsprotokolle, abgeleitet aus
+// dem Store-Schlüssel (nur bei entsperrtem Store).
+func (s *Store) SessionLogKey() ([]byte, error) { return s.V.DeriveKey("sessionlog") }

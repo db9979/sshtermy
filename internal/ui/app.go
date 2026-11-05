@@ -6,18 +6,22 @@
 //	      ─▶ Verbindungs-Manager (Liste, Details, Tunnel, Suche)
 //	           ├─ n/e  Verbindung anlegen/bearbeiten  ─▶ Formular
 //	           ├─ s    KI-Einstellungen (Endpunkt, Modell, Test)
+//	           ├─ m    Broadcast: Befehl/Runbook auf mehreren Hosts, Ergebnisse nebeneinander
+//	           ├─ f    Netzwerk-Scan: Subnetz nach SSH-Geräten durchsuchen, Funde anlegen
 //	           └─ ⏎    Verbinden ─▶ (Host-Key prüfen) ─▶ Terminal (Tab)
 //	                     ├─ Ghost-Text beim Tippen      Tab/→ übernimmt
 //	                     ├─ Folgebefehle nach Enter     Alt+1…4 fügt ein
 //	                     ├─ F2 Ziel-Modus (Agent)       ⏎ ausführen · i einfügen · s überspringen
 //	                     ├─ F3 Frage an die KI          1…9 Befehl aus der Antwort einfügen
 //	                     ├─ F4 Tunnel                   ⏎ an/aus · o im Browser öffnen
+//	                     ├─ F6 Host-Übersicht           r/⏎ abfragen · b Switch-Config sichern · d Diff
 //	                     └─ F10 zurück zum Manager (Sitzungen laufen weiter), F7/F8 Tabs
 package ui
 
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -26,6 +30,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/update"
@@ -43,12 +48,17 @@ const (
 	scrTunnelForm
 	scrTerminal
 	scrSync
+	scrLogs
+	scrQuickForm
 	scrImport
 	scrKeys
+	scrBroadcast
+	scrScan
 )
 
 // App ist das Wurzel-Modell.
 type App struct {
+	inputLog *os.File // nur mit SSHTERMY_DEBUG=1
 	st       *store.Store
 	hostKeys *sshx.HostKeyStore
 	s        Styles
@@ -62,6 +72,7 @@ type App struct {
 	formID           string // ID des bearbeiteten Datensatzes
 	formBase         domain.Connection
 	formTunnel       domain.Tunnel
+	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	returnToTerminal bool
 
 	sessions []*session
@@ -79,6 +90,9 @@ type App struct {
 	restart        bool // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
 
+	book *sessionlog.Book // Sitzungsprotokolle (Schlüssel nur bei entsperrtem Store)
+	logs logsState
+
 	sync    syncState
 	wiz     *syncWizard
 	imp     importState // Import aus ssh-config, PuTTY, MobaXterm
@@ -88,6 +102,9 @@ type App struct {
 
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
+
+	bc   *bcState   // Broadcast an mehrere Hosts
+	scan *scanState // Netzwerk-Scan
 }
 
 func New(st *store.Store) (*App, error) {
@@ -97,6 +114,7 @@ func New(st *store.Store) (*App, error) {
 	}
 	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
 	a.unlock = newUnlock(st)
+	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
 	return a, nil
 }
@@ -150,6 +168,7 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	a.logInput(msg)
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.w, a.h = m.Width, m.Height
@@ -191,7 +210,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			}
+			a.startLog(s)
 			a.resize(s)
+			return a, a.hostOnConnect(s)
 		}
 		return a, nil
 	case adaptMsg:
@@ -204,6 +225,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 	case shellClosedMsg:
 		if s := a.byID(m.sid); s != nil {
+			a.endLog(s)
 			s.close()
 			s.err = "Sitzung beendet"
 		}
@@ -212,7 +234,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg, tea.MouseWheelMsg:
 		return a, a.mouse(msg.(tea.MouseMsg))
 	case pasteMsg:
-		a.onPaste(m)
+		return a, a.onPaste(m)
+	case pingDoneMsg:
+		a.onPingDone(m)
 		return a, nil
 
 	case updateMsg:
@@ -234,6 +258,14 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.askRestart()
 	}
 
+	// Broadcast und Netzwerk-Scan (Fortschritt kommt über a.events)
+	if cmd, ok := a.bcMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.scanMsg(msg); ok {
+		return a, cmd
+	}
+
 	// Sync zwischen Rechnern
 	if cmd, ok := a.syncMsg(msg); ok {
 		return a, cmd
@@ -246,7 +278,13 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.llmMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.logsMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.filesMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.hostMsg(msg); ok {
 		return a, cmd
 	}
 
@@ -261,16 +299,25 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.modal != nil {
 			return a, a.modalKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
 		if a.pal != nil {
 			return a, a.paletteKey(k)
 		}
-		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) {
+		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs) {
 			return a, a.openPalette()
 		}
+	}
+	if pm, ok := msg.(tea.PasteMsg); ok && a.modal != nil {
+		// Einfügen in einen offenen Dialog: nur das Eingabefeld nimmt es an.
+		if a.modal.kind == mSecret {
+			var cmd tea.Cmd
+			a.modal.in, cmd = a.modal.in.Update(pm)
+			return a, cmd
+		}
+		return a, nil
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.pal != nil && a.modal == nil {
 		var cmd tea.Cmd
@@ -284,24 +331,32 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
 	case scrSync:
 		return a, a.updateSync(msg)
+	case scrLogs:
+		return a, a.updateLogs(msg)
 	case scrImport:
 		return a, a.updateImport(msg)
 	case scrKeys:
 		return a, a.updateKeys(msg)
+	case scrBroadcast:
+		return a, a.updateBroadcast(msg)
+	case scrScan:
+		return a, a.updateScan(msg)
 	}
 	return a, nil
 }
 
 func (a *App) quit() tea.Cmd {
 	for _, s := range a.sessions {
+		a.endLog(s)
 		s.close()
 	}
+	a.closeBook()
 	a.st.Lock()
 	return tea.Quit
 }
@@ -312,6 +367,7 @@ func (a *App) onTick() tea.Cmd {
 	// Auto-Sperre nur ohne offene Sitzungen (sonst würden Shells hängen bleiben).
 	if set := a.st.Settings(); set.LockAfterMin > 0 && a.scr != scrUnlock && len(a.sessions) == 0 &&
 		time.Since(a.lastKey) > time.Duration(set.LockAfterMin)*time.Minute {
+		a.closeBook()
 		a.st.Lock()
 		a.unlock = newUnlock(a.st)
 		a.scr = scrUnlock
@@ -324,6 +380,7 @@ func (a *App) onTick() tea.Cmd {
 		if s.term != nil && s.term.TakeBell() {
 			cmds = append(cmds, func() tea.Msg { return nil })
 		}
+		a.commandTick(s)
 		if c := a.followTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
@@ -348,20 +405,28 @@ func (a *App) View() tea.View {
 		body = a.frame(a.viewManager(), a.managerKeys())
 	case scrConnForm, scrTunnelForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
+	case scrQuickForm:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", "weiter"}, {"Strg+R", "Vorbelegung"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
 	case scrSettings:
 		body = a.frame(a.viewForm(), [][2]string{{"Strg+T", "Endpunkt testen"}, {"Strg+L", "Modell wählen"}, {"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
 	case scrTerminal:
 		body, cur = a.viewTerminal()
 	case scrSync:
 		body = a.frame(a.viewSync(), a.syncKeys())
+	case scrLogs:
+		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrImport:
 		body = a.frame(a.viewImport(), a.importKeys())
 	case scrKeys:
 		body = a.frame(a.viewKeys(), a.keysKeys())
+	case scrBroadcast:
+		body = a.frame(a.viewBroadcast(), a.broadcastKeys())
+	case scrScan:
+		body = a.frame(a.viewScan(), a.scanKeys())
 	}
 	body = a.z.scan(body, 0, 0)
 	if a.modal != nil {
-		body = a.overlay(body, a.modal.view(a.s, a.w, a.h))
+		body = a.overlay(body, a.modalView())
 		cur = nil
 	} else if a.pal != nil {
 		body = a.overlay(body, a.viewPalette())
@@ -411,9 +476,20 @@ func (a *App) footer(keys [][2]string) string {
 }
 
 func (a *App) frame(content string, keys [][2]string) string {
+	cheat := ""
+	if a.scr == scrManager {
+		cheat = a.cheatLine()
+	}
 	h := max(1, a.h-2)
+	if cheat != "" {
+		h = max(1, h-1)
+	}
 	box := lipgloss.NewStyle().Width(a.w).Height(h).MaxHeight(h).Render(content)
-	return lipgloss.JoinVertical(lipgloss.Left, a.header(""), box, a.footer(keys))
+	parts := []string{a.header(""), box}
+	if cheat != "" {
+		parts = append(parts, cheat)
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, append(parts, a.footer(keys))...)
 }
 
 // overlay legt ein Modal mittig über den Inhalt (Compositing mit lipgloss v2).
@@ -426,6 +502,9 @@ func (a *App) overlay(base, box string) string {
 	}
 	bw, bh := lipgloss.Width(box), lipgloss.Height(box)
 	x, y := max(0, (a.w-bw)/2), max(0, (a.h-bh)/2)
+	if m := a.modal; m != nil && m.anchored {
+		x, y = clamp(m.at[0]+1, 0, max(0, a.w-bw)), clamp(m.at[1]+1, 0, max(0, a.h-bh))
+	}
 	a.z.rects = a.z.rects[:0]
 	box = a.z.scan(box, x, y)
 	c := lipgloss.NewCompositor(lipgloss.NewLayer(base), lipgloss.NewLayer(box).X(x).Y(y).Z(1))

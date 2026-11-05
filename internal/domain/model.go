@@ -75,6 +75,9 @@ type Connection struct {
 	// richtigen Dialekt kommen. Liegt wie alles andere verschlüsselt im Store.
 	Profile *SystemProfile `json:"profile,omitempty"`
 
+	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
+	QuickCmds []string `json:"quick_cmds,omitempty"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	LastUsed  time.Time `json:"last_used,omitempty"`
@@ -191,12 +194,16 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`                  // "nacht" | "hell" | "kontrast"
-	UseDPAPI     bool   `json:"use_dpapi"`              // Windows: Store-Schlüssel zusätzlich per DPAPI
-	LockAfterMin int    `json:"lock_after_min"`         // 0 = nie automatisch sperren
-	Language     string `json:"language"`               // "de" | "en"
-	NoMouse      bool   `json:"no_mouse,omitempty"`     // Maus nicht einfangen (Terminalfenster markiert selbst)
-	LastVersion  string `json:"last_version,omitempty"` // zuletzt gestartete Version (für „Was ist neu“)
+	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast"
+	UseDPAPI     bool   `json:"use_dpapi"`                // Windows: Store-Schlüssel zusätzlich per DPAPI
+	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
+	Language     string `json:"language"`                 // "de" | "en"
+	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
+	NoSessionLog bool   `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
+	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
+	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
+	TourDone     bool   `json:"tour_done,omitempty"`
+	HideCheat    bool   `json:"hide_cheat,omitempty"`
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.

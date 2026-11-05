@@ -23,13 +23,14 @@ type palGroup int
 const (
 	pgAI palGroup = iota
 	pgSuggest
+	pgQuick
 	pgRunbook
 	pgTunnel
 	pgConnect
 	pgAction
 )
 
-var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN"}
+var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgQuick: "SCHNELLBEFEHLE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN"}
 
 type palItem struct {
 	group  palGroup
@@ -71,6 +72,10 @@ func (a *App) paletteItems() []palItem {
 				run: func() tea.Cmd { return a.startAdapt(s, oneLine(q)) }})
 	}
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
+	if inTerm && s.fail != nil && match("fehler warum fix "+s.fail.Command) {
+		items = append(items, palItem{group: pgAI, icon: "✗", label: "Warum ist „" + trunc(oneLine(s.fail.Command), 40) + "“ fehlgeschlagen? Fix vorschlagen", hint: "Alt+0",
+			run: func() tea.Cmd { return a.explainFailure(s) }})
+	}
 	if inTerm {
 		for _, c := range s.chips {
 			c := c
@@ -86,6 +91,7 @@ func (a *App) paletteItems() []palItem {
 			}
 			items = append(items, it)
 		}
+		items = append(items, a.quickPaletteItems(s, match)...)
 		for _, rb := range a.st.Runbooks(s.conn.ID) {
 			rb := rb
 			if !match(rb.Name + " " + rb.Goal + " " + strings.Join(rb.Steps, " ")) {
@@ -156,8 +162,16 @@ func (a *App) paletteItems() []palItem {
 			}
 			return nil
 		}},
+		{icon: "↯", label: "Schnellbefehle bearbeiten", hint: "Liste", run: func() tea.Cmd {
+			if inTerm {
+				return a.editQuickFor(s)
+			}
+			return nil
+		}},
 		{icon: "≡", label: "Verbindungs-Manager", hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: "Neue Verbindung", hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		{icon: "⇉", label: "Broadcast: Befehl auf mehreren Hosts", hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
+		{icon: "⌕", label: "Netzwerk-Scan: SSH-Geräte finden", hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
 		{icon: "✦", label: "KI-Einstellungen", hint: "s", run: func() tea.Cmd { return a.openSettings() }},
 		{icon: "⇅", label: "Sync zwischen Rechnern einrichten", hint: "y", run: func() tea.Cmd { return a.openSync() }},
 		{icon: "⇩", label: "Verbindungen importieren (ssh-config, PuTTY, MobaXterm)", hint: a.keys.label(actImport), run: func() tea.Cmd { return a.openImport() }},
@@ -166,6 +180,11 @@ func (a *App) paletteItems() []palItem {
 		{icon: "i", label: "Über sshTermy / Update", hint: a.keys.label(actAbout), run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
 		{icon: "★", label: "Was ist neu (Changelog)", hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
+		{icon: "☰", label: "Sitzungsprotokolle durchsuchen", hint: "l", run: func() tea.Cmd { return a.openLogs() }},
+		{icon: "●", label: logLabel(a.logsEnabled()), hint: "Protokoll", run: func() tea.Cmd { return a.toggleSessionLog() }},
+		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
+		{icon: "?", label: cheatLabel(a.cheatOn()), hint: "F9", run: func() tea.Cmd { return a.toggleCheat() }},
+		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
 	}
 	for _, t := range Themes {
 		t := t
@@ -185,7 +204,22 @@ func (a *App) paletteItems() []palItem {
 		}})
 	}
 	if !inTerm {
-		actions = actions[2:]
+		actions = actions[3:]
+	} else {
+		actions = append(actions, palItem{icon: "▤", label: "Host-Übersicht", hint: a.keys.label(actHost), run: func() tea.Cmd {
+			withPanel(s, panelHost)
+			a.resize(s)
+			return a.panelOpened(s)
+		}})
+		if s.client != nil && s.client.NetDevice {
+			actions = append(actions, palItem{icon: "▣", label: "Switch-Config sichern und vergleichen", hint: "b", run: func() tea.Cmd {
+				withPanel(s, panelHost)
+				s.panelFocus = false
+				a.resize(s)
+				s.host.backups = a.st.Backups(s.conn.ID)
+				return a.hostNetCmd(s, false, true)
+			}})
+		}
 	}
 	for _, x := range actions {
 		x.group = pgAction
