@@ -70,6 +70,11 @@ type Connection struct {
 	KeepAlive  int        `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
 	Device     DeviceKind `json:"device,omitempty"`       // Server oder Netzwerkgerät, leer = automatisch
 
+	// Profile: was für ein System dahinter steckt (automatisch erkannt,
+	// vom Nutzer ergänzbar). Geht in jeden KI-Prompt, damit Befehle im
+	// richtigen Dialekt kommen. Liegt wie alles andere verschlüsselt im Store.
+	Profile *SystemProfile `json:"profile,omitempty"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	LastUsed  time.Time `json:"last_used,omitempty"`

@@ -58,6 +58,11 @@ type session struct {
 	lastFollow time.Time
 	followDue  time.Time
 
+	// Systemprofil (siehe profile.go)
+	prof    domain.SystemProfile
+	profDue time.Time // nach Ruhe im Terminal mitlesen
+	profCmd string    // zuletzt eingegebener Befehl (Ablehnung prüfen)
+
 	panel      panelKind
 	panelFocus bool
 	goal       goalState
@@ -204,8 +209,9 @@ func (a *App) agentContext(s *session, withScreen bool) agent.Context {
 	cfg := a.st.LLM()
 	c := agent.Context{Host: s.conn.Alias, Commands: lastN(s.history, 10)}
 	if s.client != nil {
-		c.OS = s.client.Remote.String()
+		c.OS = s.profileSummary()
 		c.Shell = s.client.Remote.Shell
+		c.Profile = s.prof.Prompt()
 	}
 	if withScreen && cfg.SendScreen && s.term != nil {
 		n := cfg.ContextLines

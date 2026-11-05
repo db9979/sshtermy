@@ -244,6 +244,7 @@ func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 		return
 	}
 	s.term.SendText(cmd + "\r")
+	a.profileCommand(s, cmd)
 	g.startWait()
 }
 

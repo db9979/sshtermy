@@ -221,6 +221,21 @@ func (a *App) viewManager() string {
 		if len(c.Tags) > 0 {
 			row("Tags", strings.Join(c.Tags, ", "))
 		}
+		if c.Profile != nil && !c.Profile.Empty() {
+			sum := c.Profile.Summary()
+			if c.Profile.Manual {
+				sum += "  (von Hand)"
+			}
+			row("System", trunc(sum, max(10, rightW-22)))
+			if c.Profile.Notes != "" {
+				row("Notizen", trunc(c.Profile.Notes, max(10, rightW-22)))
+			}
+			if n := len(c.Profile.Failed); n > 0 {
+				row("Gelernt", plural(n, "abgelehnter Befehl", "abgelehnte Befehle")+" · schlägt die KI nicht mehr vor")
+			}
+		} else {
+			row("System", s.Muted.Render("wird beim ersten Verbinden erkannt"))
+		}
 		if !c.LastUsed.IsZero() {
 			row("Zuletzt", c.LastUsed.Format("02.01.2006 15:04"))
 		}
@@ -292,6 +307,16 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	}
 	f.choice("jump", "Jump-Host", jumps, cur, "wie ssh -J")
 	f.choice("device", "Gerätetyp", deviceLabels, deviceLabel(c.Device), "Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage")
+	var pr domain.SystemProfile
+	if c.Profile != nil {
+		pr = *c.Profile
+	}
+	f.text("p_os", "System", pr.OS, "erkannt beim Verbinden; eigene Angabe hat Vorrang, z. B. „ArubaOS-CX 10.13“")
+	f.choice("p_dialect", "Befehlssatz", dialectLabels(), dialectLabel(pr.Dialect), "welche Befehle die KI vorschlägt (automatisch = erkennen)")
+	f.text("p_notes", "KI-Notizen", pr.Notes, "eigene Hinweise, z. B. „Core-Switch, VLAN 99 = Management, nie reload“")
+	if len(pr.Failed) > 0 {
+		f.toggle("p_forget", "Gelerntes löschen", false, plural(len(pr.Failed), "abgelehnter Befehl", "abgelehnte Befehle")+" gemerkt")
+	}
 	a.form, a.formID, a.scr = f, c.ID, scrConnForm
 	a.formBase = c
 	return f.setFocus(0)
@@ -407,13 +432,26 @@ func (a *App) saveConn() error {
 		}
 	}
 	c.Device = deviceFromLabel(f.sel("device"))
+	c.Profile = profileFromForm(f, a.formBase.Profile)
 	c.JumpHostID = ""
 	for _, o := range a.st.Connections() {
 		if o.Alias == f.sel("jump") && o.ID != c.ID {
 			c.JumpHostID = o.ID
 		}
 	}
-	_, err := a.st.UpsertConnection(c)
+	saved, err := a.st.UpsertConnection(c)
+	if err == nil {
+		// Offene Sitzungen arbeiten ab sofort mit dem bearbeiteten Profil
+		// (sonst schriebe die nächste Erkennung die alten Notizen zurück).
+		for _, s := range a.sessions {
+			if s.conn.ID == saved.ID {
+				s.prof = domain.SystemProfile{}
+				if saved.Profile != nil {
+					s.prof = *saved.Profile
+				}
+			}
+		}
+	}
 	return err
 }
 
@@ -485,4 +523,59 @@ func deviceFromLabel(l string) domain.DeviceKind {
 		return domain.DeviceNetwork
 	}
 	return domain.DeviceAuto
+}
+
+// ---------------------------------------------------------------- Systemprofil
+
+const dialectAuto = "automatisch"
+
+func dialectLabels() []string {
+	l := []string{dialectAuto}
+	for _, d := range domain.Dialects {
+		l = append(l, d.Name)
+	}
+	return l
+}
+
+func dialectLabel(id string) string {
+	if d, ok := domain.DialectByID(id); ok {
+		return d.Name
+	}
+	return dialectAuto
+}
+
+// profileFromForm übernimmt System, Befehlssatz und Notizen aus dem
+// Formular. Weicht System oder Befehlssatz von der Erkennung ab, gilt das
+// Profil als „von Hand“ und wird nicht mehr automatisch überschrieben;
+// „automatisch“ bei leerem System gibt es wieder frei.
+func profileFromForm(f *form, base *domain.SystemProfile) *domain.SystemProfile {
+	var p domain.SystemProfile
+	if base != nil {
+		p = *base
+		p.Failed = append([]string(nil), base.Failed...)
+	}
+	osText, notes := f.str("p_os"), f.str("p_notes")
+	dia := ""
+	if d, ok := domain.DialectByName(f.sel("p_dialect")); ok {
+		dia = d.ID
+	}
+	if osText != p.OS || dia != p.Dialect {
+		p.OS = osText
+		if dia != "" {
+			p.Dialect = dia
+			p.Family = domain.FamilyOf(dia)
+		}
+		p.Manual = dia != "" || osText != ""
+	}
+	if dia == "" && osText == "" {
+		p.Manual, p.Dialect = false, ""
+	}
+	p.Notes = notes
+	if fl := f.get("p_forget"); fl != nil && fl.on {
+		p.Failed = nil
+	}
+	if p.Empty() && p.Banner == "" {
+		return nil
+	}
+	return &p
 }

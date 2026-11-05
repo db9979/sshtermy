@@ -112,7 +112,13 @@ var helpSections = []helpSection{
 		{"tippen", "filtern / Ziel / Frage"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
+		{"↓ „umschreiben“", "Befehl fürs System anpassen"},
 		{"Esc", "schließen"},
+	}},
+	{hcNone, "ⓘ", "Systemprofil", "", false, [][2]string{
+		{"automatisch", "System + Befehlssatz erkennen"},
+		{"e (Manager)", "System, Befehlssatz, KI-Notizen"},
+		{"„% Invalid input“", "Befehl wird gemerkt + gemieden"},
 	}},
 	{hcNone, "◐", "Aussehen & Tasten", "", false, [][2]string{
 		{"a", "Dunkel · Hell · Kontrast"},

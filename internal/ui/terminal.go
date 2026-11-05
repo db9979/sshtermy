@@ -207,6 +207,7 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	if key == "enter" {
 		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" {
 			s.history = append(s.history, strings.TrimSpace(typed))
+			a.profileCommand(s, strings.TrimSpace(typed))
 			if len(s.history) > 200 {
 				s.history = s.history[len(s.history)-200:]
 			}
@@ -334,7 +335,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	// Sitzungszeile
 	info := ""
 	if s.client != nil {
-		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.client.Remote.String()
+		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.profileSummary()
 	} else {
 		info = s.conn.Username + "@" + s.conn.Addr()
 	}
