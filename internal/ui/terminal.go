@@ -96,28 +96,28 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
 			s.scroll = 0
 		}
-		// globale Tasten der Terminal-Ansicht
-		switch key {
-		case "f1":
+		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles) {
+		case actHelp:
 			a.modal = a.helpModal()
 			return nil
-		case "f12":
+		case actAbout:
 			a.modal = a.aboutModal()
 			return nil
-		case "f10":
+		case actManager:
 			a.scr = scrManager
 			return nil
-		case "f7", "f8":
+		case actPrevTab, actNextTab:
 			if len(a.sessions) > 1 {
 				d := 1
-				if key == "f7" {
+				if a.keys.is(actPrevTab, key) {
 					d = -1
 				}
 				a.cur = (a.cur + d + len(a.sessions)) % len(a.sessions)
 				a.resize(a.current())
 			}
 			return nil
-		case "f5":
+		case actFiles:
 			if s.state == stConnected {
 				return a.toggleFiles(s)
 			}
@@ -126,9 +126,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if s.files.open {
 			return a.filesKey(s, m)
 		}
-		switch key {
-		case "f2", "f3", "f4":
-			kind := map[string]panelKind{"f2": panelGoal, "f3": panelAsk, "f4": panelTunnels}[key]
+		switch id := a.keys.which(key, actGoal, actAsk, actTunnels); id {
+		case actGoal, actAsk, actTunnels:
+			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels}[id]
 			if s.panel == kind && s.panelFocus {
 				s.panel, s.panelFocus = panelNone, false
 			} else {
@@ -189,13 +189,13 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		return nil
 	}
 	// Folgebefehle einfügen (ohne Enter)
-	if strings.HasPrefix(key, "alt+") && len(key) == 5 && key[4] >= '1' && key[4] <= '4' {
-		i := int(key[4] - '1')
+	if id := a.keys.which(key, actChip1, actChip2, actChip3, actChip4); id != "" {
+		i := int(id[len(id)-1] - '1')
 		if i < len(s.chips) {
 			c := s.chips[i]
 			if len(c.Danger) > 0 && s.chipArmed != i {
 				s.chipArmed = i
-				a.flash("Vorsicht: " + c.Danger[0].Reason + ". Nochmal Alt+" + string(key[4]) + " zum Einfügen")
+				a.flash("Vorsicht: " + c.Danger[0].Reason + ". Nochmal " + a.keys.label(id) + " zum Einfügen")
 				return nil
 			}
 			s.chipArmed = -1
@@ -348,10 +348,10 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		ai = st.Badge.Foreground(st.T.Muted).Render("✦ aus")
 	}
 	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { a.returnToTerminal = true; return a.openSettings() })
-	tun := a.keyZone("F4", st.Badge.Render("⇄ "+plural(nT, "Tunnel", "Tunnel")))
+	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, "Tunnel", "Tunnel")))
 	goal := ""
 	if s.goal.active {
-		goal = a.keyZone("F2", st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv"))
+		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv"))
 	}
 	if s.scroll > 0 {
 		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf("⇡ Verlauf −%d · Esc", s.scroll)),
@@ -373,7 +373,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	case s.state == stClosed:
 		msg := st.Danger.Render("✗ " + orDefault(s.err, "getrennt"))
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			msg+"\n\n"+st.Muted.Render("⏎ neu verbinden · x Tab schließen · F10 Manager"))
+			msg+"\n\n"+st.Muted.Render("⏎ neu verbinden · x Tab schließen · "+a.keys.label(actManager)+" Manager"))
 	case s.scroll > 0 || s.sel != nil:
 		// Rückblick im Verlauf und/oder Markierung
 		if sb := s.term.ScrollbackLen(); s.scroll > 0 && sb > s.sbSeen {
@@ -417,9 +417,10 @@ func (a *App) chipBar(s *session) string {
 			if len(c.Danger) > 0 {
 				style = st.ChipDanger
 			}
-			key := fmt.Sprintf("alt+%d", i+1)
-			b.WriteString(a.z.click(st.Key.Render(fmt.Sprintf("Alt+%d", i+1))+style.Render(trunc(c.Command, 34)),
-				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey(key) }) + " ")
+			id := []action{actChip1, actChip2, actChip3, actChip4}[min(i, 3)]
+			lbl := a.keys.label(id)
+			b.WriteString(a.z.click(st.Key.Render(lbl)+style.Render(trunc(c.Command, 34)),
+				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey(lbl) }) + " ")
 		}
 		if len(s.chips) > 0 && s.chips[0].Reason != "" {
 			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))
@@ -439,6 +440,8 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	if s.panelFocus {
 		return a.panelKeys(s)
 	}
-	return [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F7/F8", "Tabs"},
-		{"F10", "Manager"}, {"F1", "Hilfe"}, {"Strg+Q", "beenden"}}
+	k := a.keys
+	return [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel/Agent"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
+		{k.label(actFiles), "Dateien"}, {k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"},
+		{k.label(actManager), "Manager"}, {k.label(actHelp), "Hilfe"}, {k.label(actQuit), "beenden"}}
 }

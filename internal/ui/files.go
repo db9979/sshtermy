@@ -259,7 +259,7 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
-	if key == "esc" || key == "f5" {
+	if key == "esc" || a.keys.is(actFiles, key) {
 		f.open = false
 		return nil
 	}
