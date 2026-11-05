@@ -43,6 +43,7 @@ var helpSections = []helpSection{
 		{"Strg+Space", "Befehlspalette"},
 		{"F1", "diese Hilfe"},
 		{"F12", "Über & Update"},
+		{"F12 w", "Was ist neu"},
 		{"Strg+Q", "beenden"},
 	}},
 	{hcManager, "≡", "Verbindungs-Manager", "F10", false, [][2]string{
