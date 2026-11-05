@@ -74,8 +74,10 @@ type App struct {
 	rel        *update.Release
 	lastKey    time.Time
 
-	sync syncState
-	wiz  *syncWizard
+	sync  syncState
+	wiz   *syncWizard
+	z     zones      // klickbare Bereiche des letzten Bildes
+	click clickState // für Doppel-/Dreifachklick
 }
 
 func New(st *store.Store) (*App, error) {
@@ -190,6 +192,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return a, a.listen()
 
+	case tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg, tea.MouseWheelMsg:
+		return a, a.mouse(msg.(tea.MouseMsg))
+	case pasteMsg:
+		a.onPaste(m)
+		return a, nil
+
 	case updateMsg:
 		if m.rel != nil {
 			a.rel = m.rel
@@ -301,6 +309,7 @@ func (a *App) onTick() tea.Cmd {
 // ---------------------------------------------------------------- Layout
 
 func (a *App) View() tea.View {
+	a.z.reset()
 	var body string
 	var cur *tea.Cursor
 	switch a.scr {
@@ -317,6 +326,7 @@ func (a *App) View() tea.View {
 	case scrSync:
 		body = a.frame(a.viewSync(), a.syncKeys())
 	}
+	body = a.z.scan(body, 0, 0)
 	if a.modal != nil {
 		body = a.overlay(body, a.modal.view(a.s, a.w, a.h))
 		cur = nil
@@ -326,6 +336,7 @@ func (a *App) View() tea.View {
 	}
 	v := tea.NewView(body)
 	v.AltScreen = true
+	v.MouseMode = a.mouseMode()
 	v.Cursor = cur
 	v.WindowTitle = version.Name
 	if s := a.current(); a.scr == scrTerminal && s != nil {
@@ -341,7 +352,7 @@ func (a *App) header(right string) string {
 	if a.toast != "" && time.Now().Before(a.toastUntil) {
 		right = a.s.Header.Foreground(a.s.T.Warn).Render(" " + a.toast + " ")
 	} else if a.rel != nil && right == "" {
-		right = a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v" + a.rel.Version + " verfügbar · F12 ")
+		right = a.keyZone("F12", a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+" verfügbar · F12 "))
 	}
 	gap := a.w - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 0 {
@@ -354,7 +365,7 @@ func (a *App) header(right string) string {
 func (a *App) footer(keys [][2]string) string {
 	var b strings.Builder
 	for _, k := range keys {
-		b.WriteString(a.s.Key.Render(k[0]) + a.s.KeyDesc.Render(k[1]))
+		b.WriteString(a.keyChip(k[0], k[1]))
 	}
 	out := b.String()
 	if w := lipgloss.Width(out); w < a.w {
@@ -370,9 +381,17 @@ func (a *App) frame(content string, keys [][2]string) string {
 }
 
 // overlay legt ein Modal mittig über den Inhalt (Compositing mit lipgloss v2).
+// Klickbar ist dann nur noch das Modal (die Zonen darunter verfallen).
 func (a *App) overlay(base, box string) string {
+	if a.modal != nil {
+		if b := a.modalButtons(); b != "" {
+			box = lipgloss.JoinVertical(lipgloss.Center, box, b)
+		}
+	}
 	bw, bh := lipgloss.Width(box), lipgloss.Height(box)
 	x, y := max(0, (a.w-bw)/2), max(0, (a.h-bh)/2)
+	a.z.rects = a.z.rects[:0]
+	box = a.z.scan(box, x, y)
 	c := lipgloss.NewCompositor(lipgloss.NewLayer(base), lipgloss.NewLayer(box).X(x).Y(y).Z(1))
 	return c.Render()
 }

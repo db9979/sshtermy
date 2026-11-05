@@ -647,7 +647,7 @@ func (a *App) viewSync() string {
 	b.WriteString(s.Accent.Render("⇅ Sync zwischen Rechnern") + "\n")
 	b.WriteString(s.Muted.Render("Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n"+
 		"gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro Rechner.") + "\n")
-	b.WriteString(w.f.view(s, width-4))
+	b.WriteString(w.f.view(s, width-4, &a.z))
 
 	b.WriteString("\n" + s.PanelTitle.Foreground(s.T.Accent).Render("Live-Test") + "\n")
 	steps := []syncx.Step{}

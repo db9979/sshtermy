@@ -108,6 +108,15 @@ var helpSections = []helpSection{
 		{"Tab", "KI fragen"},
 		{"Esc", "schließen"},
 	}},
+	{hcNone, "⌖", "Maus", "", false, [][2]string{
+		{"Klick", "Tabs, Listen, Felder"},
+		{"Doppelklick", "öffnen / Wort"},
+		{"Ziehen", "markieren + kopieren"},
+		{"Rechtsklick", "einfügen"},
+		{"Rad", "im Verlauf blättern"},
+		{"Shift+Ziehen", "markieren in htop/vim"},
+		{"Palette", "„Maus aus“"},
+	}},
 }
 
 const (

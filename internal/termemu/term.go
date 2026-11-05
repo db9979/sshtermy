@@ -23,6 +23,7 @@ type Term struct {
 	mu    sync.Mutex
 	title string
 	bell  bool
+	mouse map[ansi.DECMode]bool // vom Programm angeforderte Maus-Modi
 }
 
 // New erzeugt das Terminal. toHost bekommt alle Bytes, die zum Server sollen
@@ -33,6 +34,9 @@ func New(cols, rows int, toHost io.Writer) *Term {
 	t.emu.SetCallbacks(vt.Callbacks{
 		Title: func(s string) { t.mu.Lock(); t.title = s; t.mu.Unlock() },
 		Bell:  func() { t.mu.Lock(); t.bell = true; t.mu.Unlock() },
+		// läuft innerhalb von Write (Emulator gesperrt): nur eigene Felder anfassen
+		EnableMode:  func(m ansi.Mode) { t.onMode(m, true) },
+		DisableMode: func(m ansi.Mode) { t.onMode(m, false) },
 	})
 	go func() { _, _ = io.Copy(toHost, t.emu) }()
 	return t

@@ -183,7 +183,9 @@ func (f *form) update(msg tea.Msg) (submit bool, cmd tea.Cmd) {
 	return false, cmd
 }
 
-func (f *form) view(s Styles, width int) string {
+// z (optional) macht Felder anklickbar: Klick setzt den Fokus, wählt eine
+// Option oder schaltet einen Schalter um.
+func (f *form) view(s Styles, width int, z *zones) string {
 	var b strings.Builder
 	if f.title != "" {
 		b.WriteString(s.Accent.Render(f.title) + "\n\n")
@@ -205,6 +207,10 @@ func (f *form) view(s Styles, width int) string {
 				} else {
 					parts[j] = s.Muted.Render(" " + o + " ")
 				}
+				if z != nil {
+					i, j, fl := i, j, fl
+					parts[j] = z.click(parts[j], func(tea.Mouse, bool) tea.Cmd { fl.opt = j; return f.setFocus(i) })
+				}
 			}
 			val = strings.Join(parts, "")
 		case fBool:
@@ -222,7 +228,17 @@ func (f *form) view(s Styles, width int) string {
 			marker = s.Accent.Render("▌ ")
 			label = lipgloss.NewStyle().Foreground(s.T.Text).Bold(true).Width(20).Render(fl.label)
 		}
-		b.WriteString(marker + label + val + "\n")
+		row := marker + label + val
+		if z != nil {
+			i, fl := i, fl
+			row = z.click(row, func(_ tea.Mouse, _ bool) tea.Cmd {
+				if fl.kind == fBool {
+					fl.on = !fl.on
+				}
+				return f.setFocus(i)
+			})
+		}
+		b.WriteString(row + "\n")
 		if focused && fl.help != "" {
 			b.WriteString("  " + strings.Repeat(" ", 20) + s.Muted.Render(fl.help) + "\n")
 		}

@@ -221,6 +221,11 @@ func (a *App) viewLLMExtra(w int) string {
 			if i == p.sel {
 				line = a.s.Selected.Width(w - 2).Render("  " + trunc(vis[i], w-6))
 			}
+			i := i
+			line = a.z.mark(line, zoneAction{
+				click: func(tea.Mouse, bool) tea.Cmd { p.sel = i; return a.pressKey("⏎") },
+				wheel: func(up bool) tea.Cmd { return a.pressKey(wheelKey(up)) },
+			})
 			b.WriteString(line + "\n")
 		}
 		if len(vis) == 0 {
