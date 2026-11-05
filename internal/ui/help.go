@@ -25,6 +25,7 @@ const (
 	hcPalette
 	hcFiles
 	hcSettings
+	hcLogs
 	hcBroadcast
 	hcScan
 )
@@ -62,6 +63,7 @@ var helpSections = []helpSection{
 		{"i", "Verbindungen importieren"},
 		{"a", "Aussehen wechseln"},
 		{"b", "Tastenkürzel anpassen"},
+		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
@@ -72,6 +74,7 @@ var helpSections = []helpSection{
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{
 		{"Tab / →", "Ghost-Text übernehmen"},
 		{"Alt+1…4", "Folgebefehl einfügen"},
+		{"Alt+0", "Fehler: Warum? & Fix"},
 		{"⇧F1…F8", "Schnellbefehl ausführen"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
@@ -114,6 +117,15 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
+	}},
+	{hcLogs, "☰", "Sitzungsprotokolle", "l", false, [][2]string{
+		{"/", "suchen (auch Ausgabe)"},
+		{"z", "KI-Zusammenfassung"},
+		{"Z", "alle Treffer zusammenfassen"},
+		{"x", "als Markdown exportieren"},
+		{"d", "löschen"},
+		{"a", "Mitschreiben an/aus"},
+		{"⎵ Befehl", "nicht protokollieren"},
 	}},
 	{hcBroadcast, "⇉", "Broadcast", "m", false, [][2]string{
 		{"Space / g / a", "Host / Gruppe / alle"},
@@ -175,6 +187,8 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
+	case scrLogs:
+		return hcLogs
 	case scrBroadcast:
 		return hcBroadcast
 	case scrScan:
