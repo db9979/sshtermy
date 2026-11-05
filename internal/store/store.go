@@ -289,3 +289,79 @@ func (s *Store) Settings() domain.Settings {
 	}
 	return s.data.Settings
 }
+
+// Runbooks liefert alle Runbooks, die für connID gelten (eigene und globale),
+// zuletzt benutzte zuerst.
+func (s *Store) Runbooks(connID string) []domain.Runbook {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data == nil {
+		return nil
+	}
+	var out []domain.Runbook
+	for _, r := range s.data.Runbooks {
+		if connID == "" || r.ConnectionID == "" || r.ConnectionID == connID {
+			out = append(out, r)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		a, b := out[i].LastUsed, out[j].LastUsed
+		if a.IsZero() {
+			a = out[i].CreatedAt
+		}
+		if b.IsZero() {
+			b = out[j].CreatedAt
+		}
+		return a.After(b)
+	})
+	return out
+}
+
+func (s *Store) UpsertRunbook(r domain.Runbook) (domain.Runbook, error) {
+	r.Name, r.Goal = strings.TrimSpace(r.Name), strings.TrimSpace(r.Goal)
+	if r.Goal == "" {
+		return r, errors.New("Ziel fehlt")
+	}
+	if r.Name == "" {
+		r.Name = r.Goal
+	}
+	s.mu.Lock()
+	if r.ID == "" {
+		r.ID, r.CreatedAt = newID(), time.Now()
+		s.data.Runbooks = append(s.data.Runbooks, r)
+	} else {
+		for i := range s.data.Runbooks {
+			if s.data.Runbooks[i].ID == r.ID {
+				s.data.Runbooks[i] = r
+			}
+		}
+	}
+	s.mu.Unlock()
+	return r, s.save()
+}
+
+func (s *Store) DeleteRunbook(id string) error {
+	s.mu.Lock()
+	rs := s.data.Runbooks[:0]
+	for _, r := range s.data.Runbooks {
+		if r.ID != id {
+			rs = append(rs, r)
+		}
+	}
+	s.data.Runbooks = rs
+	s.mu.Unlock()
+	return s.save()
+}
+
+// UseRunbook zählt eine Benutzung (für die Sortierung).
+func (s *Store) UseRunbook(id string) {
+	s.mu.Lock()
+	for i := range s.data.Runbooks {
+		if s.data.Runbooks[i].ID == id {
+			s.data.Runbooks[i].Uses++
+			s.data.Runbooks[i].LastUsed = time.Now()
+		}
+	}
+	s.mu.Unlock()
+	_ = s.save()
+}

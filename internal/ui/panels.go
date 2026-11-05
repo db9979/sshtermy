@@ -40,6 +40,9 @@ type goalState struct {
 	cancelFn            context.CancelFunc
 	answers             []string
 	times               []time.Time
+	recipe              []string // Vorlage aus einem Runbook
+	runbookID           string
+	rbSel               int // gewähltes Runbook in der Liste (-1 = keins)
 }
 
 func (g *goalState) cancel() {
@@ -91,7 +94,7 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 			s.goal.input = newInput("", false)
 			s.goal.input.Placeholder = "z. B. Installiere Docker und richte Nginx als Reverse Proxy ein"
 			s.goal.edit, s.goal.answer = newInput("", false), newInput("", false)
-			s.goal.inited = true
+			s.goal.inited, s.goal.rbSel = true, -1
 		}
 		if !s.goal.active {
 			return s.goal.input.Focus()
@@ -208,10 +211,11 @@ func (a *App) requestStep(s *session) tea.Cmd {
 	g.busy, g.cur, g.err = true, nil, ""
 	sid, seq := s.id, g.seq
 	goal, hist, ans := g.goal, append([]agent.DoneStep(nil), g.steps...), append([]string(nil), g.answers...)
+	recipe := g.recipe
 	c := a.agentContext(s, true)
 	return func() tea.Msg {
 		defer cancel()
-		st, err := ag.NextStep(ctx, goal, hist, ans, c)
+		st, err := ag.NextStep(ctx, goal, recipe, hist, ans, c)
 		return goalStepMsg{sid, seq, st, err}
 	}
 }
@@ -278,10 +282,58 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	if isKey {
 		key = k.String()
 	}
-	// 1) noch kein Ziel: Eingabe
+	if key == "ctrl+s" {
+		a.saveRunbook(s)
+		return nil
+	}
+	// 1) noch kein Ziel: Eingabe, darunter die gespeicherten Runbooks
+	if !g.active && g.done {
+		if key == "enter" || key == "x" {
+			g.done, g.rbSel, g.runbookID, g.recipe = false, -1, "", nil
+			g.input.SetValue("")
+			return g.input.Focus()
+		}
+		return nil
+	}
 	if !g.active {
-		if key == "enter" && strings.TrimSpace(g.input.Value()) != "" {
-			return a.startGoal(s, g.input.Value())
+		rbs := a.st.Runbooks(s.conn.ID)
+		switch key {
+		case "up", "down":
+			if len(rbs) == 0 {
+				return nil
+			}
+			if key == "down" {
+				g.rbSel = min(len(rbs)-1, g.rbSel+1)
+			} else {
+				g.rbSel = max(-1, g.rbSel-1)
+			}
+			if g.rbSel >= 0 {
+				g.input.SetValue(rbs[g.rbSel].Goal)
+				g.input.CursorEnd()
+			} else {
+				g.input.SetValue("")
+			}
+			return nil
+		case "ctrl+d":
+			if g.rbSel >= 0 && g.rbSel < len(rbs) {
+				rb := rbs[g.rbSel]
+				a.modal = confirmModal("Runbook löschen?", "„"+rb.Name+"“ löschen?", func() tea.Cmd {
+					_ = a.st.DeleteRunbook(rb.ID)
+					g.rbSel = -1
+					g.input.SetValue("")
+					return nil
+				})
+			}
+			return nil
+		case "enter":
+			text := strings.TrimSpace(g.input.Value())
+			if text == "" {
+				return nil
+			}
+			if g.rbSel >= 0 && g.rbSel < len(rbs) && rbs[g.rbSel].Goal == text {
+				return a.startRunbook(s, rbs[g.rbSel])
+			}
+			return a.startGoal(s, text)
 		}
 		var cmd tea.Cmd
 		g.input, cmd = g.input.Update(msg)
@@ -325,7 +377,7 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	switch key {
 	case "x":
 		g.cancel()
-		g.active, g.busy, g.cur = false, false, nil
+		g.active, g.busy, g.cur, g.rbSel = false, false, nil, -1
 		g.input.SetValue("")
 		return g.input.Focus()
 	case "r":
@@ -449,7 +501,10 @@ func (a *App) panelKeys(s *session) [][2]string {
 	case panelGoal:
 		g := s.goal
 		if !g.active {
-			return [][2]string{{"⏎", "Ziel starten"}, {"Esc", "Terminal"}, {"F2", "schließen"}}
+			if g.done {
+				return [][2]string{{"Strg+S", "als Runbook merken"}, {"⏎", "neues Ziel"}, {"Esc", "Terminal"}, {"F2", "schließen"}}
+			}
+			return [][2]string{{"⏎", "Ziel starten"}, {"↑↓", "Runbook"}, {"Strg+D", "Runbook löschen"}, {"Esc", "Terminal"}, {"F2", "schließen"}}
 		}
 		if g.cur != nil && g.cur.Question != "" {
 			return [][2]string{{"⏎", "antworten"}, {"Esc", "Terminal"}}
@@ -458,7 +513,7 @@ func (a *App) panelKeys(s *session) [][2]string {
 			return [][2]string{{"⏎", "übernehmen"}, {"Esc", "Terminal"}}
 		}
 		return [][2]string{{"⏎", "ausführen"}, {"i", "nur einfügen"}, {"e", "bearbeiten"}, {"s", "überspringen"},
-			{"r", "neu"}, {"x", "Ziel beenden"}, {"Esc", "Terminal"}}
+			{"r", "neu"}, {"x", "Ziel beenden"}, {"Strg+S", "Runbook"}, {"Esc", "Terminal"}}
 	case panelAsk:
 		return [][2]string{{"⏎", "fragen"}, {"1…9", "Befehl einfügen"}, {"n", "neue Frage"}, {"Esc", "Terminal"}}
 	case panelTunnels:
@@ -505,7 +560,30 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		b.WriteString(st.Accent.Render("› ") + g.input.View() + "\n\n")
 		b.WriteString(wrap(st.Muted.Render("Die KI zerlegt das Ziel in einzelne Befehle, erklärt jeden kurz und wartet auf "+
 			"deine Bestätigung. Sie tippt nie selbst."), w))
+		if rbs := a.st.Runbooks(s.conn.ID); len(rbs) > 0 {
+			b.WriteString("\n\n" + st.Muted.Render("RUNBOOKS  ↑↓ wählen · ⏎ starten") + "\n")
+			for i, rb := range rbs {
+				if i >= 8 {
+					b.WriteString(st.Muted.Render(fmt.Sprintf("  … %d weitere (Strg+Leertaste sucht)", len(rbs)-8)) + "\n")
+					break
+				}
+				meta := plural(len(rb.Steps), "Schritt", "Schritte")
+				line := "▶ " + trunc(rb.Name, w-lipgloss.Width(meta)-4)
+				gap := max(1, w-lipgloss.Width(line)-lipgloss.Width(meta))
+				if i == g.rbSel {
+					b.WriteString(st.Selected.Width(w).Render(line+strings.Repeat(" ", gap)+meta) + "\n")
+				} else {
+					b.WriteString(st.AI.Render("▶ ") + st.Text.Render(line[len("▶ "):]) + strings.Repeat(" ", gap) + st.Muted.Render(meta) + "\n")
+				}
+			}
+		}
 		return
+	}
+	switch {
+	case len(g.recipe) > 0:
+		b.WriteString(st.Badge.Foreground(st.T.AI).Render("▶ Runbook") + " " + st.Muted.Render(plural(len(g.recipe), "Schritt", "Schritte")+" als Vorlage") + "\n")
+	case g.runbookID != "":
+		b.WriteString(st.Badge.Foreground(st.T.AI).Render("▶ als Runbook gespeichert") + "\n")
 	}
 	b.WriteString(st.Muted.Render("Ziel") + "\n" + wrap(st.Text.Bold(true).Render(g.goal), w) + "\n\n")
 	// Fortschritt
@@ -531,7 +609,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	b.WriteString("\n")
 	switch {
 	case g.done:
-		b.WriteString(st.OK.Render("✓ Ziel erreicht") + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + st.Muted.Render("F2 schließen · neues Ziel: x"))
+		b.WriteString(st.OK.Render("✓ Ziel erreicht") + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + st.Muted.Render("Strg+S als Runbook merken · ⏎ neues Ziel · F2 schließen"))
 		if s.panelFocus && g.done {
 			g.active = false
 		}
@@ -653,12 +731,24 @@ func human(n int64) string {
 }
 
 // startGoal setzt ein neues Ziel und fragt den ersten Schritt an (Panel und Palette).
-func (a *App) startGoal(s *session, text string) tea.Cmd {
+func (a *App) startGoal(s *session, text string) tea.Cmd { return a.startGoalWith(s, text, nil) }
+
+// startRunbook startet ein gespeichertes Ziel; die damals ausgeführten
+// Befehle gehen dem Agenten als Vorlage mit.
+func (a *App) startRunbook(s *session, rb domain.Runbook) tea.Cmd {
+	a.st.UseRunbook(rb.ID)
+	return a.startGoalWith(s, rb.Goal, &rb)
+}
+
+func (a *App) startGoalWith(s *session, text string, rb *domain.Runbook) tea.Cmd {
 	a.panelOpened(withPanel(s, panelGoal))
 	g := &s.goal
 	g.cancel()
 	*g = goalState{input: g.input, edit: g.edit, answer: g.answer, inited: true,
-		goal: strings.TrimSpace(text), active: true}
+		goal: strings.TrimSpace(text), active: true, rbSel: -1}
+	if rb != nil {
+		g.recipe, g.runbookID = rb.Steps, rb.ID
+	}
 	g.input.SetValue(g.goal)
 	g.input.Blur()
 	a.resize(s)
@@ -701,4 +791,54 @@ func (a *App) startAsk(s *session, text string) tea.Cmd {
 func withPanel(s *session, k panelKind) *session {
 	s.panel, s.panelFocus = k, true
 	return s
+}
+
+// saveRunbook merkt sich das aktuelle (oder gerade erreichte) Ziel samt den
+// ausgeführten Befehlen. Kam das Ziel aus einem Runbook, wird dieses
+// aktualisiert statt dupliziert.
+func (a *App) saveRunbook(s *session) {
+	g := &s.goal
+	running := g.active || g.done
+	goal := strings.TrimSpace(g.input.Value())
+	if running {
+		goal = strings.TrimSpace(g.goal)
+	}
+	if goal == "" {
+		a.flash("Kein Ziel zum Speichern")
+		return
+	}
+	var steps []string
+	for _, d := range g.steps {
+		if !running {
+			break
+		}
+		if !d.Skipped {
+			steps = append(steps, d.Command)
+		}
+	}
+	rb := domain.Runbook{Name: goal, Goal: goal, Steps: steps}
+	if s.client != nil {
+		rb.OS = s.client.Remote.OS
+	}
+	for _, x := range a.st.Runbooks("") {
+		if (running && x.ID == g.runbookID) || x.Goal == goal {
+			rb.ID, rb.CreatedAt, rb.Uses, rb.LastUsed, rb.ConnectionID = x.ID, x.CreatedAt, x.Uses, x.LastUsed, x.ConnectionID
+			if x.Goal == goal {
+				rb.Name = x.Name
+			}
+			if len(steps) == 0 {
+				rb.Steps = x.Steps
+			}
+			break
+		}
+	}
+	saved, err := a.st.UpsertRunbook(rb)
+	if err != nil {
+		a.flash("Runbook: " + err.Error())
+		return
+	}
+	if running {
+		g.runbookID = saved.ID
+	}
+	a.flash("Runbook gespeichert: " + trunc(saved.Name, 40) + " (" + plural(len(saved.Steps), "Schritt", "Schritte") + ")")
 }

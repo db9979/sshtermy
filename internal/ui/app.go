@@ -208,6 +208,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.llmMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.filesMsg(msg); ok {
+		return a, cmd
+	}
 
 	if k, ok := msg.(tea.KeyPressMsg); ok {
 		a.lastKey = time.Now()

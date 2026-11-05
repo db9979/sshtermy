@@ -63,6 +63,7 @@ type session struct {
 	goal       goalState
 	ask        askState
 	tunSel     int
+	files      filesState
 }
 
 // writer für den PTY-Strom: füttert den Emulator und meldet der Oberfläche,
@@ -172,6 +173,12 @@ func (s *session) close() {
 	s.ask.cancel()
 	if s.tunnels != nil {
 		s.tunnels.StopAll()
+	}
+	if s.files.xfer != nil {
+		s.files.xfer.cancel()
+	}
+	if s.files.remote != nil {
+		s.files.remote.Close()
 	}
 	if s.shell != nil {
 		s.shell.Close()
