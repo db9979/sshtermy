@@ -509,6 +509,9 @@ func (a *App) panelKeys(s *session) [][2]string {
 			if g.done {
 				return [][2]string{{"Strg+S", "als Runbook merken"}, {"⏎", "neues Ziel"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
 			}
+			if len(a.st.Runbooks(s.conn.ID)) == 0 {
+				return [][2]string{{"⏎", "Ziel starten"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
+			}
 			return [][2]string{{"⏎", "Ziel starten"}, {"↑↓", "Runbook"}, {"Strg+D", "Runbook löschen"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
 		}
 		if g.cur != nil && g.cur.Question != "" {
@@ -520,9 +523,30 @@ func (a *App) panelKeys(s *session) [][2]string {
 		return [][2]string{{"⏎", "ausführen"}, {"i", "nur einfügen"}, {"e", "bearbeiten"}, {"s", "überspringen"},
 			{"r", "neu"}, {"x", "Ziel beenden"}, {"Strg+S", "Runbook"}, {"Esc", "Terminal"}}
 	case panelAsk:
-		return [][2]string{{"⏎", "fragen"}, {"1…9", "Befehl einfügen"}, {"n", "neue Frage"}, {"Esc", "Terminal"}}
+		q := &s.ask
+		switch {
+		case q.busy:
+			return [][2]string{{"Esc", "Terminal"}, {a.keys.label(actAsk), "schließen"}}
+		case q.question == "":
+			return [][2]string{{"⏎", "fragen"}, {"Esc", "Terminal"}, {a.keys.label(actAsk), "schließen"}}
+		}
+		k := [][2]string{}
+		if n := len(extractCommands(agent.VisibleAnswer(q.answer.String()))); n > 0 {
+			k = append(k, [2]string{"1…" + fmt.Sprint(min(9, n)), "Befehl einfügen"})
+		}
+		return append(k, [2]string{"n", "neue Frage"}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actAsk), "schließen"})
 	case panelTunnels:
-		return [][2]string{{"⏎", "an/aus"}, {"o", "Browser"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"Esc", "zurück"}}
+		list := a.st.Tunnels(s.conn.ID)
+		if len(list) == 0 {
+			return [][2]string{{"n", "neuer Tunnel"}, {"Esc", "zurück"}}
+		}
+		k := [][2]string{{"⏎", "an/aus"}}
+		if s.tunSel < len(list) && s.tunnels != nil {
+			if at := s.tunnels.Get(list[s.tunSel].ID); at != nil && at.URL() != "" {
+				k = append(k, [2]string{"o", "Browser"})
+			}
+		}
+		return append(k, [2]string{"n", "neu"}, [2]string{"e", "bearbeiten"}, [2]string{"d", "löschen"}, [2]string{"Esc", "zurück"})
 	case panelHost:
 		return a.hostPanelKeys(s)
 	}

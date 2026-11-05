@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
@@ -457,12 +458,26 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		return a.panelKeys(s)
 	}
 	k := a.keys
-	keys := [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
-		{k.label(actFiles), "Dateien"}, {k.label(actHost), "Host"}}
+	keys := [][2]string{{k.label(actPalette), "Palette"}}
+	switch {
+	case s.state == stClosed:
+		keys = append(keys, [2]string{"⏎", "neu verbinden"}, [2]string{"x", "Tab schließen"})
+	case s.state == stConnected:
+		if s.scroll > 0 {
+			keys = append(keys, [2]string{"Esc", "zurück zur Eingabe"})
+		}
+		if a.visibleGhost(s) != "" {
+			keys = append(keys, [2]string{"Tab", "Vorschlag übernehmen"})
+		} else if len(s.chips) > 0 {
+			keys = append(keys, [2]string{"Alt+1…" + strconv.Itoa(min(4, len(s.chips))), "Vorschlag einfügen"})
+		}
+		keys = append(keys, [2]string{k.label(actGoal), "Ziel"}, [2]string{k.label(actAsk), "KI fragen"}, [2]string{k.label(actTunnels), "Tunnel"},
+			[2]string{k.label(actFiles), "Dateien"}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), "Schnellbefehle"})
+	}
 	if len(a.sessions) > 1 {
 		keys = append(keys, [2]string{k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"})
 	}
-	keys = append(keys, [2]string{k.label(actQuickMenu), "Schnellbefehle"}, [2]string{k.label(actManager), "Manager"},
+	keys = append(keys, [2]string{k.label(actManager), "Manager"},
 		[2]string{k.label(actHelp), "Hilfe"}, [2]string{k.label(actCheat), "erklären"}, [2]string{k.label(actQuit), "beenden"})
 	keys = sortFKeys(keys)
 	if s.fail != nil {

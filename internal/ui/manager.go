@@ -33,16 +33,66 @@ func newManager() managerState {
 	return managerState{search: in}
 }
 
+// managerKeys: nur Tasten, die in der aktuellen Lage etwas tun (Auswahl
+// Ordner/Verbindung, leere Liste, Suche, Filter, offene Sitzungen).
 func (a *App) managerKeys() [][2]string {
 	km := a.keys
-	k := [][2]string{{km.label(actPalette), "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
-		{km.label(actFolderNew), "Ordner"}, {km.label(actMoveTo), "verschieben"}, {km.label(actMoveUp) + "/" + keyLabel("down"), "sortieren"}, {km.label(actTagFilter), "Tags"},
-		{"t", "Tunnel"}, {km.label(actBroadcast), "Broadcast"}, {km.label(actScan), "Scan"}, {km.label(actImport), "Import"}, {km.label(actQuickEdit), "Schnellbefehle"}, {"s", "KI"}, {"y", "Sync"}, {"l", "Protokolle"},
-		{km.label(actHelp), "Hilfe"}, {km.label(actCheat), "erklären"}, {km.label(actAbout), "Über"}, {km.label(actQuit), "beenden"}}
-	if len(a.sessions) > 0 {
-		k = append([][2]string{{km.label(actManager), "zum Terminal"}}, k...)
+	m := &a.mgr
+	if m.searching {
+		return [][2]string{{"⏎", "fertig"}, {"↑↓", "zur Liste"}, {"Esc", "Suche löschen"}, {km.label(actHelp), "Hilfe"}}
 	}
+	rows := a.mgrRows()
+	var cur mgrRow
+	have := m.sel < len(rows)
+	if have {
+		cur = rows[m.sel]
+	}
+	k := [][2]string{{km.label(actPalette), "Palette"}}
+	if len(a.sessions) > 0 {
+		k = append(k, [2]string{km.label(actManager), "zum Terminal"})
+	}
+	switch {
+	case have && cur.isFolder():
+		open := "zuklappen"
+		if cur.node.Collapsed {
+			open = "aufklappen"
+		}
+		k = append(k, [2]string{"⏎", open}, [2]string{"n", "neu hier"}, [2]string{"e", "umbenennen"}, [2]string{"d", "löschen"},
+			[2]string{km.label(actMoveTo), "verschieben"})
+	case have:
+		k = append(k, [2]string{"⏎", "verbinden"}, [2]string{"n", "neu"}, [2]string{"e", "bearbeiten"}, [2]string{"d", "löschen"},
+			[2]string{km.label(actMoveTo), "verschieben"}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), "Schnellbefehle"})
+	default:
+		k = append(k, [2]string{"n", "neue Verbindung"}, [2]string{km.label(actImport), "Import"}, [2]string{km.label(actScan), "Scan"})
+	}
+	if m.tag != "" || m.search.Value() != "" {
+		k = append(k, [2]string{"Esc", "Filter aus"})
+	}
+	if len(rows) > 1 {
+		k = append(k, [2]string{"/", "suchen"})
+		if have && !a.mgrFiltering() {
+			k = append(k, [2]string{km.label(actMoveUp) + "/" + keyLabel("down"), "sortieren"})
+		}
+	}
+	k = append(k, [2]string{km.label(actFolderNew), "Ordner"})
+	if a.hasTags() {
+		k = append(k, [2]string{km.label(actTagFilter), "Tags"})
+	}
+	if have {
+		k = append(k, [2]string{km.label(actBroadcast), "Broadcast"}, [2]string{km.label(actScan), "Scan"}, [2]string{km.label(actImport), "Import"})
+	}
+	k = append(k, [2]string{"s", "KI"}, [2]string{"y", "Sync"}, [2]string{"l", "Protokolle"},
+		[2]string{km.label(actHelp), "Hilfe"}, [2]string{km.label(actCheat), "erklären"}, [2]string{km.label(actAbout), "Über"}, [2]string{km.label(actQuit), "beenden"})
 	return sortFKeys(k)
+}
+
+func (a *App) hasTags() bool {
+	for _, c := range a.st.Connections() {
+		if len(c.Tags) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *App) updateManager(msg tea.Msg) tea.Cmd {
