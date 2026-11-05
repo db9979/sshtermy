@@ -25,6 +25,10 @@ type fakeSwitch struct {
 	addr   string
 	execs  atomic.Int32
 	shells atomic.Int32
+	// busy: so lange nach dem Auflegen lehnt der Switch neue Verbindungen
+	// mitten im Handshake ab (Sitzung noch nicht freigegeben).
+	busy      time.Duration
+	busyUntil atomic.Int64
 }
 
 func startFakeSwitch(t *testing.T, banner string) *fakeSwitch {
@@ -54,6 +58,10 @@ func startFakeSwitch(t *testing.T, banner string) *fakeSwitch {
 			if err != nil {
 				return
 			}
+			if time.Now().UnixNano() < fs.busyUntil.Load() {
+				nc.Close() // → "ssh: handshake failed: EOF" beim Client
+				continue
+			}
 			go fs.serve(nc, cfg)
 		}
 	}()
@@ -77,6 +85,7 @@ func (fs *fakeSwitch) serve(nc net.Conn, cfg *ssh.ServerConfig) {
 				switch r.Type {
 				case "exec":
 					fs.execs.Add(1)
+					fs.busyUntil.Store(time.Now().Add(fs.busy).UnixNano())
 					sc.Close() // wie der Switch: Verbindung weg → EOF beim Client
 					return
 				case "pty-req":
@@ -104,9 +113,10 @@ func dialFake(t *testing.T, fs *fakeSwitch, dev domain.DeviceKind) *Client {
 	c := domain.Connection{Alias: "sw", Host: host, Port: p, Username: "admin",
 		Auth: domain.AuthPassword, Password: "x", Device: dev}
 	cl, err := Dial(context.Background(), c, Options{
-		HostKeys: hs,
-		Prompt:   func(string, string, string) bool { return true },
-		Timeout:  5 * time.Second,
+		HostKeys:  hs,
+		Prompt:    func(string, string, string) bool { return true },
+		Timeout:   5 * time.Second,
+		waitScale: 0.05,
 	})
 	if err != nil {
 		t.Fatalf("Dial: %v", err)
@@ -149,6 +159,18 @@ func TestSwitchHangsUpOnExecFallsBack(t *testing.T) {
 	if fs.execs.Load() != 1 {
 		t.Fatalf("erwartet genau eine Exec-Probe, waren %d", fs.execs.Load())
 	}
+}
+
+// Wie bei Dominiks Aruba: nach dem Auflegen ist der Switch kurz belegt. Der
+// zweite Aufbau darf dann nicht mit "handshake failed: EOF" scheitern.
+func TestSwitchBusyAfterHangupRetries(t *testing.T) {
+	fs := startFakeSwitch(t, "SSH-2.0-Unbekannt_1.0")
+	fs.busy = 150 * time.Millisecond // länger als die erste Wartezeit (75 ms)
+	cl := dialFake(t, fs, domain.DeviceAuto)
+	if !cl.NetDevice || !cl.Learned {
+		t.Fatalf("NetDevice=%v Learned=%v, erwartet beides", cl.NetDevice, cl.Learned)
+	}
+	expectPrompt(t, cl)
 }
 
 // Bekanntes Banner oder Gerätetyp "network": gar keine Exec-Anfrage.

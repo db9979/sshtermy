@@ -170,6 +170,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.client, s.shell, s.state = m.client, m.shell, stConnected
 			s.tunnels = sshx.NewTunnelManager(m.client)
 			a.st.Touch(s.conn.ID)
+			if m.client.Learned {
+				a.rememberNetDevice(s)
+			}
 			for _, t := range a.st.Tunnels(s.conn.ID) {
 				if t.AutoStart {
 					if _, err := s.tunnels.Start(t); err != nil {

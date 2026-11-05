@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -30,7 +31,10 @@ type Client struct {
 	// NetDevice: Gegenstelle ist ein Switch/Router. Dann gibt es keine
 	// Exec-Abfragen, und die Shell wird möglichst schlicht angefordert.
 	NetDevice bool
-	cancel    context.CancelFunc
+	// Learned: NetDevice wurde erst durch den Rückfall erkannt (Verbindung
+	// starb nach der Systemabfrage). Die UI merkt sich das in der Verbindung.
+	Learned bool
+	cancel  context.CancelFunc
 }
 
 // RemoteInfo: was wir über das Zielsystem wissen (Kontext fürs LLM).
@@ -61,8 +65,9 @@ type Options struct {
 	AskSecret SecretPrompt // fehlende Passwörter/Passphrasen erfragen (optional)
 	Timeout   time.Duration
 
-	forceNet bool // intern: zweiter Versuch nach abgebrochener Systemabfrage
-	legacy   bool // intern: alte Algorithmen (nur wenn der Server nichts anderes kann)
+	forceNet  bool    // intern: zweiter Versuch nach abgebrochener Systemabfrage
+	legacy    bool    // intern: alte Algorithmen (nur wenn der Server nichts anderes kann)
+	waitScale float64 // intern: Wartezeiten zwischen Versuchen skalieren (Tests)
 }
 
 // Dial baut die Verbindung auf. Bei JumpHostID wird zuerst der Jump-Host
@@ -77,12 +82,12 @@ func Dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 	if o.AskSecret != nil {
 		o.AskSecret = rememberSecrets(o.AskSecret) // Neuverbindung fragt nicht doppelt
 	}
-	cl, err := dial(ctx, c, o)
+	cl, err := dialRetry(ctx, c, o, 2*time.Second)
 	if err != nil && c.Device != domain.DeviceServer && isNoCommonAlgo(err) {
 		// Alte Geräte können oft nur diffie-hellman-group14-sha1, aes-cbc
 		// oder ssh-rsa. Die Aushandlung bevorzugt trotzdem moderne Verfahren.
 		o.legacy = true
-		cl, err = dial(ctx, c, o)
+		cl, err = dialRetry(ctx, c, o, 2*time.Second)
 	}
 	if err != nil {
 		return nil, err
@@ -93,10 +98,64 @@ func Dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 	if cl.alive() {
 		return cl, nil
 	}
-	// Verbindung hat die Systemabfrage nicht überlebt → Netzwerkgerät.
+	// Verbindung hat die Systemabfrage nicht überlebt → Netzwerkgerät. Der
+	// Switch gibt die abgebrochene Sitzung erst nach ein paar Sekunden frei
+	// (sonst "handshake failed: EOF"), deshalb kurz warten und notfalls
+	// mehrmals versuchen.
 	cl.Close()
 	o.forceNet = true
-	return dial(ctx, c, o)
+	if err := sleepCtx(ctx, o.retryWait(1500*time.Millisecond)); err != nil {
+		return nil, err
+	}
+	cl, err = dialRetry(ctx, c, o, 2*time.Second, 4*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	cl.Learned = true
+	return cl, nil
+}
+
+// dialRetry wiederholt den Aufbau, wenn die Gegenstelle mitten im Handshake
+// auflegt (EOF/Reset). Typisch für Switches mit wenigen SSH-Plätzen, solange
+// eine alte Sitzung noch nicht freigegeben ist. Andere Fehler (falsches
+// Passwort, Host-Key abgelehnt, Timeout) werden nicht wiederholt.
+func dialRetry(ctx context.Context, c domain.Connection, o Options, waits ...time.Duration) (*Client, error) {
+	for i := 0; ; i++ {
+		cl, err := dial(ctx, c, o)
+		if err == nil || i >= len(waits) || !isHangup(err) {
+			return cl, err
+		}
+		if err := sleepCtx(ctx, o.retryWait(waits[i])); err != nil {
+			return nil, err
+		}
+	}
+}
+
+func isHangup(err error) bool {
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	m := err.Error()
+	return strings.Contains(m, "connection reset") || strings.HasSuffix(m, ": EOF")
+}
+
+func sleepCtx(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
+}
+
+// retryWait: in Tests verkürzt.
+func (o Options) retryWait(d time.Duration) time.Duration {
+	if o.waitScale > 0 {
+		return time.Duration(float64(d) * o.waitScale)
+	}
+	return d
 }
 
 func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) {
