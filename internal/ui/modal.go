@@ -26,6 +26,7 @@ const (
 	mPaste // Einfügeschutz (pasteguard.go)
 	mMenu  // Kontextmenü, z. B. zu Links (links.go)
 	mInfo  // Ergebnis anzeigen (Ping)
+	mText  // blätterbarer Text (Config-Diff, Konfiguration)
 )
 
 type modal struct {
@@ -37,8 +38,8 @@ type modal struct {
 	in     textinput.Model
 	onYes  func() tea.Cmd
 	ctx    helpCtx  // nur Hilfe: aktueller Bereich
-	scroll int      // Hilfe/Changelog: Scroll-Position
-	lines  []string // nur Changelog: fertig gestaltete Zeilen
+	scroll int      // Hilfe/Changelog/Text: Scroll-Position
+	lines  []string // Changelog/Text: fertig gestaltete Zeilen
 
 	paste    *pasteCheck // nur Einfügeschutz
 	items    []menuItem  // nur Menü
@@ -200,6 +201,10 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		}
 	case mTour:
 		return a.tourKey(key)
+	case mText:
+		if m.textKey(key) {
+			a.modal = nil
+		}
 	}
 	return nil
 }
@@ -213,6 +218,9 @@ func (m *modal) view(s Styles, w, h int) string {
 	}
 	if m.kind == mTour {
 		return m.tourView(s, w)
+	}
+	if m.kind == mText {
+		return m.textView(s, w, h)
 	}
 	title := s.Accent.Render(m.title)
 	if m.kind == mHostKey {
