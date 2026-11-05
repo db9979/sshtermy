@@ -1,0 +1,382 @@
+package ui
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
+
+	"github.com/db9979/sshtermy/internal/agent"
+	"github.com/db9979/sshtermy/internal/llm"
+	"github.com/db9979/sshtermy/internal/domain"
+)
+
+const (
+	topRows    = 2 // Kopfzeile + Sitzungszeile
+	bottomRows = 2 // Vorschläge + Tasten
+)
+
+func checkLLM(c domain.LLMConfig) error { return llm.Check(c) }
+
+func (a *App) panelWidth(s *session) int {
+	if s == nil || s.panel == panelNone {
+		return 0
+	}
+	if a.w >= 110 {
+		return 48
+	}
+	return a.w / 2
+}
+
+func (a *App) termSize(s *session) (int, int) {
+	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows)
+}
+
+func (a *App) resize(s *session) {
+	if s.term == nil {
+		return
+	}
+	c, r := a.termSize(s)
+	if cw, rh := s.term.Size(); cw == c && rh == r {
+		return
+	}
+	s.term.Resize(c, r)
+	if s.shell != nil {
+		_ = s.shell.Resize(c, r)
+	}
+}
+
+func (a *App) agentClient() (*agent.Agent, error) {
+	c, err := llm.New(a.st.LLM())
+	if err != nil {
+		return nil, err
+	}
+	return &agent.Agent{C: c}, nil
+}
+
+// ---------------------------------------------------------------- Tasten
+
+func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
+	s := a.current()
+	if s == nil {
+		a.scr = scrManager
+		return nil
+	}
+	switch m := msg.(type) {
+	case tea.PasteMsg:
+		if s.panelFocus {
+			return a.panelMsg(s, msg)
+		}
+		if s.term != nil && s.state == stConnected {
+			s.term.Paste(m.Content)
+		}
+		return nil
+	case tea.KeyPressMsg:
+		key := m.String()
+		// globale Tasten der Terminal-Ansicht
+		switch key {
+		case "f1":
+			a.modal = helpModal()
+			return nil
+		case "f12":
+			a.modal = a.aboutModal()
+			return nil
+		case "f10":
+			a.scr = scrManager
+			return nil
+		case "f7", "f8":
+			if len(a.sessions) > 1 {
+				d := 1
+				if key == "f7" {
+					d = -1
+				}
+				a.cur = (a.cur + d + len(a.sessions)) % len(a.sessions)
+				a.resize(a.current())
+			}
+			return nil
+		case "f2", "f3", "f4":
+			kind := map[string]panelKind{"f2": panelGoal, "f3": panelAsk, "f4": panelTunnels}[key]
+			if s.panel == kind && s.panelFocus {
+				s.panel, s.panelFocus = panelNone, false
+			} else {
+				s.panel, s.panelFocus = kind, true
+			}
+			a.resize(s)
+			return a.panelOpened(s)
+		}
+		if s.panelFocus {
+			return a.panelMsg(s, msg)
+		}
+		if s.state != stConnected {
+			switch key {
+			case "enter", "r":
+				s.state, s.err = stConnecting, ""
+				return a.connectCmd(s)
+			case "x", "esc":
+				a.closeTab(s)
+			}
+			return nil
+		}
+		return a.terminalKey(s, m)
+	}
+	return nil
+}
+
+func (a *App) closeTab(s *session) {
+	s.close()
+	for i, x := range a.sessions {
+		if x == s {
+			a.sessions = append(a.sessions[:i], a.sessions[i+1:]...)
+		}
+	}
+	a.cur = max(0, min(a.cur, len(a.sessions)-1))
+	if len(a.sessions) == 0 {
+		a.scr = scrManager
+	}
+}
+
+func (a *App) visibleGhost(s *session) string {
+	if s.ghost == "" || s.term == nil {
+		return ""
+	}
+	typed, ok := s.term.TypedInput()
+	full := s.ghostFor + s.ghost
+	if !ok || !strings.HasPrefix(typed, s.ghostFor) || !strings.HasPrefix(full, typed) || len(full) == len(typed) {
+		return ""
+	}
+	return full[len(typed):]
+}
+
+func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
+	key := k.String()
+	// Ghost-Text übernehmen
+	if g := a.visibleGhost(s); g != "" && (key == "tab" || key == "right" || key == "end") {
+		s.term.SendText(g)
+		s.ghost = ""
+		return nil
+	}
+	// Folgebefehle einfügen (ohne Enter)
+	if strings.HasPrefix(key, "alt+") && len(key) == 5 && key[4] >= '1' && key[4] <= '4' {
+		i := int(key[4] - '1')
+		if i < len(s.chips) {
+			c := s.chips[i]
+			if len(c.Danger) > 0 && s.chipArmed != i {
+				s.chipArmed = i
+				a.flash("Vorsicht: " + c.Danger[0].Reason + ". Nochmal Alt+" + string(key[4]) + " zum Einfügen")
+				return nil
+			}
+			s.chipArmed = -1
+			s.term.SendText(c.Command)
+			s.chips = nil
+		}
+		return nil
+	}
+	if key == "enter" {
+		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" {
+			s.history = append(s.history, strings.TrimSpace(typed))
+			if len(s.history) > 200 {
+				s.history = s.history[len(s.history)-200:]
+			}
+			s.followDue = time.Now().Add(1200 * time.Millisecond)
+		}
+		s.chips, s.chipArmed = nil, -1
+		s.ghost = ""
+		if s.goal.active && s.goal.manualPending {
+			s.goal.manualPending = false
+			s.goal.startWait()
+		}
+	}
+	s.term.SendKey(uv.KeyPressEvent(k))
+	if key == "enter" || key == "ctrl+c" {
+		return nil
+	}
+	return a.scheduleGhost(s)
+}
+
+// ---------------------------------------------------------------- Ghost-Text
+
+type ghostTickMsg struct{ sid, seq int }
+type ghostMsg struct {
+	sid, seq    int
+	typed, rest string
+}
+
+func (a *App) scheduleGhost(s *session) tea.Cmd {
+	cfg := a.st.LLM()
+	if !cfg.SuggestEnabled {
+		return nil
+	}
+	s.ghostSeq++
+	if s.ghostCancel != nil {
+		s.ghostCancel()
+		s.ghostCancel = nil
+	}
+	sid, seq := s.id, s.ghostSeq
+	d := time.Duration(max(150, cfg.SuggestDelayMS)) * time.Millisecond
+	return tea.Tick(d, func(time.Time) tea.Msg { return ghostTickMsg{sid, seq} })
+}
+
+func (a *App) fireGhost(s *session, seq int) tea.Cmd {
+	if seq != s.ghostSeq || s.term == nil {
+		return nil
+	}
+	typed, ok := s.term.TypedInput()
+	if !ok || len(strings.TrimSpace(typed)) < 2 || agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
+		return nil
+	}
+	ag, err := a.agentClient()
+	if err != nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	s.ghostCancel = cancel
+	c := a.agentContext(s, true)
+	sid := s.id
+	return func() tea.Msg {
+		defer cancel()
+		rest, _ := ag.Complete(ctx, typed, c)
+		return ghostMsg{sid, seq, typed, rest}
+	}
+}
+
+// ---------------------------------------------------------------- Folgebefehle
+
+type followMsg struct {
+	sid, seq int
+	chips    []agent.Suggestion
+}
+
+func (a *App) followTick(s *session) tea.Cmd {
+	if s.followDue.IsZero() || time.Now().Before(s.followDue) || s.term == nil || s.goal.active {
+		return nil
+	}
+	if time.Since(s.lastOutput) < 800*time.Millisecond || !s.term.AtIdlePrompt() {
+		return nil
+	}
+	s.followDue = time.Time{}
+	if time.Since(s.lastFollow) < 5*time.Second {
+		return nil
+	}
+	ag, err := a.agentClient()
+	if err != nil {
+		return nil
+	}
+	s.lastFollow = time.Now()
+	s.chipSeq++
+	sid, seq := s.id, s.chipSeq
+	c := a.agentContext(s, true)
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		v, _ := ag.FollowUps(ctx, c)
+		return followMsg{sid, seq, v}
+	}
+}
+
+// ---------------------------------------------------------------- Ansicht
+
+func (a *App) viewTerminal() (string, *tea.Cursor) {
+	s := a.current()
+	st := a.s
+	// Tabs rechts in der Kopfzeile
+	var tabs strings.Builder
+	for i, x := range a.sessions {
+		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○")}[x.state]
+		label := " " + trunc(x.conn.Alias, 16) + " "
+		if i == a.cur {
+			tabs.WriteString(st.TabActive.Render(dot + label))
+		} else {
+			tabs.WriteString(st.Tab.Render(dot + label))
+		}
+	}
+	top := a.header(tabs.String())
+
+	// Sitzungszeile
+	info := ""
+	if s.client != nil {
+		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.client.Remote.String()
+	} else {
+		info = s.conn.Username + "@" + s.conn.Addr()
+	}
+	nT := 0
+	if s.tunnels != nil {
+		nT = len(s.tunnels.List())
+	}
+	cfg := a.st.LLM()
+	ai := st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22))
+	if !cfg.SuggestEnabled {
+		ai = st.Badge.Foreground(st.T.Muted).Render("✦ aus")
+	}
+	tun := st.Badge.Render("⇄ " + plural(nT, "Tunnel", "Tunnel"))
+	goal := ""
+	if s.goal.active {
+		goal = st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv")
+	}
+	right := goal + " " + tun + " " + ai
+	gap := max(1, a.w-lipgloss.Width(info)-lipgloss.Width(right)-1)
+	bar := st.Header.Render(" "+trunc(info, a.w-lipgloss.Width(right)-3)+strings.Repeat(" ", gap)) + right
+	bar = ansi.Truncate(bar, a.w, "")
+
+	// Terminalfläche
+	cols, rows := a.termSize(s)
+	var body string
+	var cur *tea.Cursor
+	switch {
+	case s.state == stConnecting:
+		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
+			st.AI.Render("⠿ Verbinde mit "+s.conn.Alias+" ("+s.conn.Addr()+") …"))
+	case s.state == stClosed:
+		msg := st.Danger.Render("✗ " + orDefault(s.err, "getrennt"))
+		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
+			msg+"\n\n"+st.Muted.Render("⏎ neu verbinden · x Tab schließen · F10 Manager"))
+	default:
+		body = s.term.View(a.visibleGhost(s), func(g string) string { return st.Ghost.Render(g) })
+		if x, y, vis := s.term.Cursor(); vis && !s.panelFocus {
+			cur = tea.NewCursor(x, y+topRows)
+			cur.Color = st.T.Accent
+		}
+	}
+	if s.panel != panelNone {
+		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, a.chipBar(s), a.footer(a.terminalKeys(s))), cur
+}
+
+func (a *App) chipBar(s *session) string {
+	st := a.s
+	var b strings.Builder
+	if g := a.visibleGhost(s); g != "" {
+		b.WriteString(st.AI.Render(" ✦ ") + st.Muted.Render("Tab übernimmt: ") + st.Ghost.Render(trunc(g, 60)) + "  ")
+	} else if len(s.chips) > 0 {
+		b.WriteString(st.AI.Render(" ✦ Als Nächstes: "))
+		for i, c := range s.chips {
+			style := st.Chip
+			if len(c.Danger) > 0 {
+				style = st.ChipDanger
+			}
+			b.WriteString(st.Key.Render(fmt.Sprintf("Alt+%d", i+1)) + style.Render(trunc(c.Command, 34)) + " ")
+		}
+		if len(s.chips) > 0 && s.chips[0].Reason != "" {
+			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))
+		}
+	}
+	out := b.String()
+	if w := lipgloss.Width(out); w < a.w {
+		out += strings.Repeat(" ", a.w-w)
+	}
+	return ansi.Truncate(out, a.w, "")
+}
+
+func (a *App) terminalKeys(s *session) [][2]string {
+	if s.panelFocus {
+		return a.panelKeys(s)
+	}
+	return [][2]string{{"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F7/F8", "Tabs"},
+		{"F10", "Manager"}, {"F1", "Hilfe"}, {"Strg+Q", "beenden"}}
+}

@@ -1,0 +1,341 @@
+// Package ui ist die Oberfläche (bubbletea v2 + lipgloss v2).
+//
+// Ablauf (Interaction Flow):
+//
+//	Start ─▶ Entsperren (DPAPI automatisch / Master-Passwort / Ersteinrichtung)
+//	      ─▶ Verbindungs-Manager (Liste, Details, Tunnel, Suche)
+//	           ├─ n/e  Verbindung anlegen/bearbeiten  ─▶ Formular
+//	           ├─ s    KI-Einstellungen (Endpunkt, Modell, Test)
+//	           └─ ⏎    Verbinden ─▶ (Host-Key prüfen) ─▶ Terminal (Tab)
+//	                     ├─ Ghost-Text beim Tippen      Tab/→ übernimmt
+//	                     ├─ Folgebefehle nach Enter     Alt+1…4 fügt ein
+//	                     ├─ F2 Ziel-Modus (Agent)       ⏎ ausführen · i einfügen · s überspringen
+//	                     ├─ F3 Frage an die KI          1…9 Befehl aus der Antwort einfügen
+//	                     ├─ F4 Tunnel                   ⏎ an/aus · o im Browser öffnen
+//	                     └─ F10 zurück zum Manager (Sitzungen laufen weiter), F7/F8 Tabs
+package ui
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
+
+	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/store"
+	"github.com/db9979/sshtermy/internal/sshx"
+	"github.com/db9979/sshtermy/internal/update"
+	"github.com/db9979/sshtermy/internal/version"
+	"github.com/db9979/sshtermy/internal/vault"
+)
+
+type screen int
+
+const (
+	scrUnlock screen = iota
+	scrManager
+	scrConnForm
+	scrSettings
+	scrTunnelForm
+	scrTerminal
+)
+
+// App ist das Wurzel-Modell.
+type App struct {
+	st       *store.Store
+	hostKeys *sshx.HostKeyStore
+	s        Styles
+	w, h     int
+	scr      screen
+	events   chan tea.Msg
+
+	unlock unlockState
+	mgr    managerState
+	form   *form
+	formID string // ID des bearbeiteten Datensatzes
+	formBase   domain.Connection
+	formTunnel domain.Tunnel
+	returnToTerminal bool
+
+	sessions []*session
+	cur      int
+	nextSID  int
+
+	modal *modal
+	toast string
+	toastUntil time.Time
+	rel   *update.Release
+	lastKey time.Time
+}
+
+func New(st *store.Store) (*App, error) {
+	hk, err := sshx.NewHostKeyStore(st.KnownHostsPath())
+	if err != nil {
+		return nil, err
+	}
+	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now()}
+	a.unlock = newUnlock(st)
+	return a, nil
+}
+
+func (a *App) listen() tea.Cmd {
+	ev := a.events
+	return func() tea.Msg { return <-ev }
+}
+
+type tickMsg time.Time
+
+func tick() tea.Cmd { return tea.Tick(time.Second, func(t time.Time) tea.Msg { return tickMsg(t) }) }
+
+type updateMsg struct {
+	rel *update.Release
+	err error
+}
+
+func checkUpdate() tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		r, err := update.Check(ctx)
+		return updateMsg{r, err}
+	}
+}
+
+func (a *App) Init() tea.Cmd {
+	return tea.Batch(a.listen(), tick(), a.tryDPAPI())
+}
+
+func (a *App) flash(s string) {
+	a.toast = s
+	a.toastUntil = time.Now().Add(4 * time.Second)
+}
+
+func (a *App) current() *session {
+	if a.cur >= 0 && a.cur < len(a.sessions) {
+		return a.sessions[a.cur]
+	}
+	return nil
+}
+
+func (a *App) byID(id int) *session {
+	for _, s := range a.sessions {
+		if s.id == id {
+			return s
+		}
+	}
+	return nil
+}
+
+func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch m := msg.(type) {
+	case tea.WindowSizeMsg:
+		a.w, a.h = m.Width, m.Height
+		for _, s := range a.sessions {
+			a.resize(s)
+		}
+		return a, nil
+
+	case tickMsg:
+		return a, tea.Batch(tick(), a.onTick())
+
+	case outputMsg:
+		if s := a.byID(m.sid); s != nil {
+			s.pending.Store(false)
+			s.lastOutput = time.Now()
+		}
+		return a, a.listen()
+
+	case hostKeyAskMsg:
+		a.modal = hostKeyModal(m)
+		return a, a.listen()
+	case secretAskMsg:
+		a.modal = secretModal(m)
+		return a, a.listen()
+
+	case connectedMsg:
+		if s := a.byID(m.sid); s != nil {
+			s.client, s.shell, s.state = m.client, m.shell, stConnected
+			s.tunnels = sshx.NewTunnelManager(m.client)
+			a.st.Touch(s.conn.ID)
+			for _, t := range a.st.Tunnels(s.conn.ID) {
+				if t.AutoStart {
+					if _, err := s.tunnels.Start(t); err != nil {
+						a.flash("Tunnel " + t.Name + ": " + err.Error())
+					}
+				}
+			}
+			a.resize(s)
+		}
+		return a, nil
+	case connectErrMsg:
+		if s := a.byID(m.sid); s != nil {
+			s.state, s.err = stClosed, m.err.Error()
+		}
+		return a, nil
+	case shellClosedMsg:
+		if s := a.byID(m.sid); s != nil {
+			s.close()
+			s.err = "Sitzung beendet"
+		}
+		return a, a.listen()
+
+	case updateMsg:
+		if m.rel != nil {
+			a.rel = m.rel
+			a.flash("Update auf v" + m.rel.Version + " verfügbar (F12)")
+		}
+		return a, nil
+	case applyDoneMsg:
+		a.modal = nil
+		if m.err != nil {
+			a.flash("Update fehlgeschlagen: " + m.err.Error())
+		} else {
+			a.flash("Update installiert. Bitte sshTermy neu starten.")
+		}
+		return a, nil
+	}
+
+	// Nachrichten der Sitzungen (KI, Ziel, Frage)
+	if cmd, ok := a.sessionMsg(msg); ok {
+		return a, cmd
+	}
+
+	if k, ok := msg.(tea.KeyPressMsg); ok {
+		a.lastKey = time.Now()
+		if k.String() == "ctrl+q" {
+			return a, a.quit()
+		}
+		if a.modal != nil {
+			return a, a.modalKey(k)
+		}
+	}
+
+	switch a.scr {
+	case scrUnlock:
+		return a, a.updateUnlock(msg)
+	case scrManager:
+		return a, a.updateManager(msg)
+	case scrConnForm, scrSettings, scrTunnelForm:
+		return a, a.updateForm(msg)
+	case scrTerminal:
+		return a, a.updateTerminal(msg)
+	}
+	return a, nil
+}
+
+func (a *App) quit() tea.Cmd {
+	for _, s := range a.sessions {
+		s.close()
+	}
+	a.st.Lock()
+	return tea.Quit
+}
+
+func (a *App) onTick() tea.Cmd {
+	var cmds []tea.Cmd
+	// Auto-Sperre nur ohne offene Sitzungen (sonst würden Shells hängen bleiben).
+	if set := a.st.Settings(); set.LockAfterMin > 0 && a.scr != scrUnlock && len(a.sessions) == 0 &&
+		time.Since(a.lastKey) > time.Duration(set.LockAfterMin)*time.Minute {
+		a.st.Lock()
+		a.unlock = newUnlock(a.st)
+		a.scr = scrUnlock
+		return nil
+	}
+	for _, s := range a.sessions {
+		if s.term != nil && s.term.TakeBell() {
+			cmds = append(cmds, func() tea.Msg { return nil })
+		}
+		if c := a.followTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
+		if c := a.goalTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
+	}
+	return tea.Batch(cmds...)
+}
+
+// ---------------------------------------------------------------- Layout
+
+func (a *App) View() tea.View {
+	var body string
+	var cur *tea.Cursor
+	switch a.scr {
+	case scrUnlock:
+		body = a.viewUnlock()
+	case scrManager:
+		body = a.frame(a.viewManager(), a.managerKeys())
+	case scrConnForm, scrSettings, scrTunnelForm:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
+	case scrTerminal:
+		body, cur = a.viewTerminal()
+	}
+	if a.modal != nil {
+		body = a.overlay(body, a.modal.view(a.s, a.w))
+		cur = nil
+	}
+	v := tea.NewView(body)
+	v.AltScreen = true
+	v.Cursor = cur
+	v.WindowTitle = version.Name
+	if s := a.current(); a.scr == scrTerminal && s != nil {
+		v.WindowTitle = version.Name + " · " + s.conn.Alias
+	}
+	v.BackgroundColor = a.s.T.Bg
+	return v
+}
+
+// header: Logo, Version, Credit, Tabs/Status rechts.
+func (a *App) header(right string) string {
+	left := a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(version.Idea+"  ")
+	if a.toast != "" && time.Now().Before(a.toastUntil) {
+		right = a.s.Header.Foreground(a.s.T.Warn).Render(" " + a.toast + " ")
+	} else if a.rel != nil && right == "" {
+		right = a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v" + a.rel.Version + " verfügbar · F12 ")
+	}
+	gap := a.w - lipgloss.Width(left) - lipgloss.Width(right)
+	if gap < 0 {
+		right = ansi.Truncate(right, max(0, a.w-lipgloss.Width(left)), "…")
+		gap = max(0, a.w-lipgloss.Width(left)-lipgloss.Width(right))
+	}
+	return left + a.s.Header.Render(strings.Repeat(" ", gap)) + right
+}
+
+func (a *App) footer(keys [][2]string) string {
+	var b strings.Builder
+	for _, k := range keys {
+		b.WriteString(a.s.Key.Render(k[0]) + a.s.KeyDesc.Render(k[1]))
+	}
+	out := b.String()
+	if w := lipgloss.Width(out); w < a.w {
+		out += a.s.Footer.Render(strings.Repeat(" ", a.w-w))
+	}
+	return ansi.Truncate(out, a.w, "")
+}
+
+func (a *App) frame(content string, keys [][2]string) string {
+	h := max(1, a.h-2)
+	box := lipgloss.NewStyle().Width(a.w).Height(h).MaxHeight(h).Render(content)
+	return lipgloss.JoinVertical(lipgloss.Left, a.header(""), box, a.footer(keys))
+}
+
+// overlay legt ein Modal mittig über den Inhalt (Compositing mit lipgloss v2).
+func (a *App) overlay(base, box string) string {
+	bw, bh := lipgloss.Width(box), lipgloss.Height(box)
+	x, y := max(0, (a.w-bw)/2), max(0, (a.h-bh)/2)
+	c := lipgloss.NewCompositor(lipgloss.NewLayer(base), lipgloss.NewLayer(box).X(x).Y(y).Z(1))
+	return c.Render()
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return fmt.Sprintf("1 %s", one)
+	}
+	return fmt.Sprintf("%d %s", n, many)
+}
+
+var _ = vault.ErrLocked

@@ -1,0 +1,20 @@
+# Pull Requests: Tests und Cross-Compile für alle Zielplattformen.
+name: ci
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./... && go test ./...
+      - name: Cross-Compile
+        run: |
+          for t in windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64; do
+            CGO_ENABLED=0 GOOS=${t%/*} GOARCH=${t#*/} go build -o /dev/null ./cmd/sshtermy
+          done

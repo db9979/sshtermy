@@ -1,0 +1,76 @@
+# Bei jedem Push auf main: testen, Version hochzählen (MAJOR.MINOR aus VERSION,
+# PATCH = Anzahl Commits), für alle Plattformen bauen, signieren und als
+# GitHub Release veröffentlichen. Die App findet das Release per Auto-Update.
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Tests
+        run: go vet ./... && go test ./...
+
+      - name: Version bestimmen
+        id: v
+        run: |
+          V="$(cat VERSION).$(git rev-list --count HEAD)"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "sshTermy v$V"
+
+      - name: Bauen (windows arm64/386/amd64, darwin arm64/amd64, linux amd64/arm64)
+        env:
+          UPDATE_PUBKEY: ${{ vars.UPDATE_PUBKEY }}
+        run: |
+          PKG=github.com/db9979/sshtermy/internal/version
+          LDF="-s -w -X $PKG.Version=${{ steps.v.outputs.version }} -X $PKG.Commit=${GITHUB_SHA::7} -X $PKG.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X $PKG.UpdatePubKey=$UPDATE_PUBKEY"
+          mkdir -p dist
+          for t in windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64 linux/arm64; do
+            os=${t%/*}; arch=${t#*/}; ext=""; [ "$os" = windows ] && ext=".exe"
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags "$LDF" -o "dist/sshtermy_${os}_${arch}${ext}" ./cmd/sshtermy
+          done
+          cd dist && sha256sum sshtermy_* > checksums.txt && cat checksums.txt
+
+      - name: Signieren (Ed25519)
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        if: env.UPDATE_SIGNING_KEY != ''
+        run: go run ./cmd/sshtermy-sign sign dist/checksums.txt
+
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=${{ steps.v.outputs.version }}
+          PREV=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -n "$PREV" ]; then RANGE="$PREV..HEAD"; else RANGE="HEAD"; fi
+          git log --pretty='- %s' $RANGE | head -30 > notes.md
+          gh release create "v$V" dist/* --title "sshTermy v$V" --notes-file notes.md --latest
+
+      - name: Alte Releases aufräumen (die letzten 10 bleiben)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 100 --json tagName --jq '.[10:][].tagName' | while read -r tag; do
+            gh release delete "$tag" --yes --cleanup-tag || true
+          done
