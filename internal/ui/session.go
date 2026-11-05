@@ -55,6 +55,7 @@ type session struct {
 	chips      []agent.Suggestion
 	chipSeq    int
 	chipArmed  int // Index eines roten Chips nach dem ersten Druck, sonst -1
+	quickArmed int // dasselbe für Schnellbefehle (⇧F1 …)
 	lastFollow time.Time
 	followDue  time.Time
 
