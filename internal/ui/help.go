@@ -26,8 +26,10 @@ const (
 	hcFiles
 	hcSettings
 	hcSearch
+	hcLogs
 	hcBroadcast
 	hcScan
+	hcHost
 )
 
 type helpSection struct {
@@ -43,6 +45,7 @@ var helpSections = []helpSection{
 	{hcNone, "◆", "Überall", "", false, [][2]string{
 		{"Strg+Space", "Befehlspalette"},
 		{"F1", "diese Hilfe"},
+		{"⇧F9", "Tastenzeile erklären"},
 		{"F12", "Über & Update"},
 		{"F12 w", "Was ist neu"},
 		{"Strg+Q", "beenden"},
@@ -52,8 +55,16 @@ var helpSections = []helpSection{
 		{"n", "neue Verbindung"},
 		{"e", "bearbeiten"},
 		{"d", "löschen"},
-		{"/", "suchen"},
+		{"/", "suchen (auch #tag)"},
+		{"o", "neuer Ordner (A / B verschachtelt)"},
+		{"r", "Ordner umbenennen"},
+		{"v", "in Ordner verschieben"},
+		{"Shift+↑", "nach oben schieben (↓ runter)"},
+		{"← / →", "Ordner zu-/aufklappen"},
+		{"- / +", "alle Ordner zu/auf"},
+		{"#", "nach Tag filtern"},
 		{"t", "Tunnel anlegen"},
+		{"q", "Schnellbefehle"},
 		{"m", "Broadcast an mehrere Hosts"},
 		{"f", "Netzwerk-Scan"},
 		{"s", "KI-Einstellungen"},
@@ -61,6 +72,7 @@ var helpSections = []helpSection{
 		{"i", "Verbindungen importieren"},
 		{"a", "Aussehen wechseln"},
 		{"b", "Tastenkürzel anpassen"},
+		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
@@ -71,6 +83,9 @@ var helpSections = []helpSection{
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{
 		{"Tab / →", "Ghost-Text übernehmen"},
 		{"Alt+1…4", "Folgebefehl einfügen"},
+		{"Alt+0", "Fehler: Warum? & Fix"},
+		{"⇧F1…F8", "Schnellbefehl ausführen"},
+		{"F9", "Schnellbefehle (Liste)"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
@@ -78,8 +93,10 @@ var helpSections = []helpSection{
 		{"Strg+T", "Ansicht teilen (2 / 4)"},
 		{"Strg+Pfeil", "Bereich wechseln (geteilt)"},
 		{"Strg+F", "im Verlauf suchen"},
+		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},
 		{"F10", "zum Manager"},
+		{"Abbruch", "verbindet neu (⏎ / Esc)"},
 	}},
 	{hcGoal, "◎", "Ziel-Modus", "F2", true, [][2]string{
 		{"⏎", "Ziel starten / ausführen"},
@@ -106,6 +123,14 @@ var helpSections = []helpSection{
 		{"e", "bearbeiten"},
 		{"d", "löschen"},
 	}},
+	{hcHost, "▣", "Host-Übersicht", "F6", false, [][2]string{
+		{"r / ⏎", "abfragen"},
+		{"b", "Switch-Config sichern"},
+		{"↑ ↓", "Sicherung wählen"},
+		{"d", "Diff zur Vorversion"},
+		{"v", "Sicherung ansehen"},
+		{"x", "Abfrage abbrechen"},
+	}},
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{
 		{"Tab", "Seite wechseln"},
 		{"⏎ / →", "Ordner öffnen"},
@@ -124,8 +149,17 @@ var helpSections = []helpSection{
 		{"Tab", "Fehlerliste / Verlauf"},
 		{"Esc", "schließen"},
 	}},
+	{hcLogs, "☰", "Sitzungsprotokolle", "l", false, [][2]string{
+		{"/", "suchen (auch Ausgabe)"},
+		{"z", "KI-Zusammenfassung"},
+		{"Z", "alle Treffer zusammenfassen"},
+		{"x", "als Markdown exportieren"},
+		{"d", "löschen"},
+		{"a", "Mitschreiben an/aus"},
+		{"⎵ Befehl", "nicht protokollieren"},
+	}},
 	{hcBroadcast, "⇉", "Broadcast", "m", false, [][2]string{
-		{"Space / g / a", "Host / Gruppe / alle"},
+		{"Space / g / a", "Host / Ordner / alle"},
 		{"Tab", "Hosts · Quelle · Befehl"},
 		{"⇧⏎", "weiterer Schritt"},
 		{"Strg+S", "prüfen, dann ⏎"},
@@ -143,14 +177,22 @@ var helpSections = []helpSection{
 	}},
 	{hcPalette, "❯", "Befehlspalette", "Strg+Space", false, [][2]string{
 		{"tippen", "filtern / Ziel / Frage"},
+		{"user@host", "schnell verbinden"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
+		{"↓ „umschreiben“", "Befehl fürs System anpassen"},
 		{"Esc", "schließen"},
+	}},
+	{hcNone, "ⓘ", "Systemprofil", "", false, [][2]string{
+		{"automatisch", "System + Befehlssatz erkennen"},
+		{"e (Manager)", "System, Befehlssatz, KI-Notizen"},
+		{"„% Invalid input“", "Befehl wird gemerkt + gemieden"},
 	}},
 	{hcNone, "◐", "Aussehen & Tasten", "", false, [][2]string{
 		{"a", "Dunkel · Hell · Kontrast"},
 		{"b", "Tastenkürzel belegen"},
 		{"Strg +/−", "Schrift (Terminalfenster)"},
+		{"Palette", "„Startanimation aus“"},
 	}},
 	{hcNone, "⌖", "Maus", "", false, [][2]string{
 		{"Klick", "Tabs, Listen, Felder"},
@@ -184,6 +226,8 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
+	case scrLogs:
+		return hcLogs
 	case scrBroadcast:
 		return hcBroadcast
 	case scrScan:
@@ -203,6 +247,8 @@ func (a *App) helpContext() helpCtx {
 				return hcAsk
 			case panelTunnels:
 				return hcTunnel
+			case panelHost:
+				return hcHost
 			}
 		}
 		return hcTerminal

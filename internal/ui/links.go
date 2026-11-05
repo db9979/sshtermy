@@ -313,8 +313,7 @@ func (a *App) connectTo(s *session, l link, viaJump bool) tea.Cmd {
 	if c, ok := a.storedConn(l); ok && !viaJump {
 		for i, x := range a.sessions {
 			if x.conn.ID == c.ID && x.state != stClosed {
-				a.cur = i
-				a.resize(x)
+				a.focusSession(i)
 				return nil
 			}
 		}

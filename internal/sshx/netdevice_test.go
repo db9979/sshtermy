@@ -219,3 +219,35 @@ func (b *safeBuf) Write(p []byte) (int, error) {
 	return b.buf.Write(p)
 }
 func (b *safeBuf) String() string { b.mu.Lock(); defer b.mu.Unlock(); return b.buf.String() }
+
+// Systemprofil: ProCurve an der Mocana-Kennung erkannt, ohne Exec; ein
+// früher als Netzwerkgerät erkanntes Profil verhindert die Abfrage ebenfalls.
+func TestProfileFromBannerWithoutExec(t *testing.T) {
+	fs := startFakeSwitch(t, "SSH-2.0-Mocana SSH 6.3")
+	cl := dialFake(t, fs, domain.DeviceAuto)
+	if cl.Profile.Dialect != "procurve" || cl.Profile.Family != domain.FamilyNetwork {
+		t.Fatalf("Profil = %+v, erwartet ProCurve", cl.Profile)
+	}
+	expectPrompt(t, cl)
+	if n := fs.execs.Load(); n != 0 {
+		t.Fatalf("%d Exec-Anfragen, erwartet keine", n)
+	}
+}
+
+func TestStoredNetworkProfileSkipsProbe(t *testing.T) {
+	fs := startFakeSwitch(t, "SSH-2.0-OpenSSH_8.9") // z. B. ArubaOS-CX
+	hs, _ := NewHostKeyStore(filepath.Join(t.TempDir(), "known_hosts"))
+	host, port, _ := net.SplitHostPort(fs.addr)
+	p, _ := strconv.Atoi(port)
+	c := domain.Connection{Alias: "cx", Host: host, Port: p, Username: "admin", Auth: domain.AuthPassword, Password: "x",
+		Profile: &domain.SystemProfile{Family: domain.FamilyNetwork, Dialect: "arubaos-cx"}}
+	cl, err := Dial(context.Background(), c, Options{HostKeys: hs, Prompt: func(string, string, string) bool { return true },
+		Timeout: 5 * time.Second, waitScale: 0.05})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cl.Close()
+	if !cl.NetDevice || fs.execs.Load() != 0 {
+		t.Fatalf("NetDevice=%v execs=%d", cl.NetDevice, fs.execs.Load())
+	}
+}

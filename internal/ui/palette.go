@@ -23,13 +23,14 @@ type palGroup int
 const (
 	pgAI palGroup = iota
 	pgSuggest
+	pgQuick
 	pgRunbook
 	pgTunnel
 	pgConnect
 	pgAction
 )
 
-var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN"}
+var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgQuick: "SCHNELLBEFEHLE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN"}
 
 type palItem struct {
 	group  palGroup
@@ -49,7 +50,7 @@ type palette struct {
 func isPaletteKey(k string) bool { return activeKeys.is(actPalette, k) }
 
 func (a *App) openPalette() tea.Cmd {
-	in := newAIInput("Ziel, Frage, Befehl, Tunnel oder Verbindung …")
+	in := newAIInput("Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …")
 	in.MaxHeight = 4
 	a.pal = &palette{in: in, armed: -1}
 	return a.pal.in.Focus()
@@ -61,14 +62,24 @@ func (a *App) paletteItems() []palItem {
 	s := a.current()
 	inTerm := a.scr == scrTerminal && s != nil && s.state == stConnected
 	var items []palItem
+	quick, quickFirst := a.quickItems(q)
+	if quickFirst {
+		items = append(items, quick...) // user@host:port: Verbinden ist gemeint
+	}
 	if q != "" && inTerm {
 		items = append(items,
 			palItem{group: pgAI, icon: "◎", label: "Als Ziel starten: „" + trunc(oneLine(q), 50) + "“", hint: "⏎",
 				run: func() tea.Cmd { return a.startGoal(s, q) }},
 			palItem{group: pgAI, icon: "✦", label: "KI fragen: „" + trunc(oneLine(q), 50) + "“", hint: "Tab",
-				run: func() tea.Cmd { return a.startAsk(s, q) }})
+				run: func() tea.Cmd { return a.startAsk(s, q) }},
+			palItem{group: pgAI, icon: "⇆", label: "Für dieses System umschreiben: „" + trunc(oneLine(q), 40) + "“", hint: "Befehl",
+				run: func() tea.Cmd { return a.startAdapt(s, oneLine(q)) }})
 	}
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
+	if inTerm && s.fail != nil && match("fehler warum fix "+s.fail.Command) {
+		items = append(items, palItem{group: pgAI, icon: "✗", label: "Warum ist „" + trunc(oneLine(s.fail.Command), 40) + "“ fehlgeschlagen? Fix vorschlagen", hint: "Alt+0",
+			run: func() tea.Cmd { return a.explainFailure(s) }})
+	}
 	if inTerm {
 		for _, c := range s.chips {
 			c := c
@@ -84,6 +95,7 @@ func (a *App) paletteItems() []palItem {
 			}
 			items = append(items, it)
 		}
+		items = append(items, a.quickPaletteItems(s, match)...)
 		for _, rb := range a.st.Runbooks(s.conn.ID) {
 			rb := rb
 			if !match(rb.Name + " " + rb.Goal + " " + strings.Join(rb.Steps, " ")) {
@@ -122,22 +134,16 @@ func (a *App) paletteItems() []palItem {
 			}})
 		}
 	}
+	if !quickFirst {
+		items = append(items, quick...)
+	}
 	for _, c := range a.st.Connections() {
 		c := c
 		if !match(c.Alias + " " + c.Host + " " + c.Group) {
 			continue
 		}
 		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: c.Username + "@" + c.Host,
-			run: func() tea.Cmd {
-				for i, x := range a.sessions {
-					if x.conn.ID == c.ID && x.state != stClosed {
-						a.focusSession(i)
-						a.scr = scrTerminal
-						return nil
-					}
-				}
-				return a.connect(c)
-			}})
+			run: func() tea.Cmd { return a.openOrConnect(c) }})
 	}
 	actions := []palItem{
 		{icon: "◎", label: "Ziel-Modus öffnen", hint: a.keys.label(actGoal), run: func() tea.Cmd {
@@ -155,6 +161,12 @@ func (a *App) paletteItems() []palItem {
 			}
 			return nil
 		}},
+		{icon: "↯", label: "Schnellbefehle bearbeiten", hint: "Liste", run: func() tea.Cmd {
+			if inTerm {
+				return a.editQuickFor(s)
+			}
+			return nil
+		}},
 		{icon: "≡", label: "Verbindungs-Manager", hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: "Neue Verbindung", hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
 		{icon: "⇉", label: "Broadcast: Befehl auf mehreren Hosts", hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
@@ -167,7 +179,13 @@ func (a *App) paletteItems() []palItem {
 		{icon: "i", label: "Über sshTermy / Update", hint: a.keys.label(actAbout), run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
 		{icon: "★", label: "Was ist neu (Changelog)", hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
+		{icon: "⟳", label: reconnectLabel(a.autoReconnect()), hint: "Reconnect", run: func() tea.Cmd { return a.toggleAutoReconnect() }},
+		{icon: "☰", label: "Sitzungsprotokolle durchsuchen", hint: "l", run: func() tea.Cmd { return a.openLogs() }},
+		{icon: "●", label: logLabel(a.logsEnabled()), hint: "Protokoll", run: func() tea.Cmd { return a.toggleSessionLog() }},
+		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
+		{icon: "?", label: cheatLabel(a.cheatOn()), hint: a.keys.label(actCheat), run: func() tea.Cmd { return a.toggleCheat() }},
 		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
+		{icon: "✦", label: introLabel(a.introOn()), hint: "Start", run: func() tea.Cmd { return a.toggleIntro() }},
 	}
 	for _, t := range Themes {
 		t := t
@@ -187,7 +205,22 @@ func (a *App) paletteItems() []palItem {
 		}})
 	}
 	if !inTerm {
-		actions = actions[2:]
+		actions = actions[3:]
+	} else {
+		actions = append(actions, palItem{icon: "▤", label: "Host-Übersicht", hint: a.keys.label(actHost), run: func() tea.Cmd {
+			withPanel(s, panelHost)
+			a.resize(s)
+			return a.panelOpened(s)
+		}})
+		if s.client != nil && s.client.NetDevice {
+			actions = append(actions, palItem{icon: "▣", label: "Switch-Config sichern und vergleichen", hint: "b", run: func() tea.Cmd {
+				withPanel(s, panelHost)
+				s.panelFocus = false
+				a.resize(s)
+				s.host.backups = a.st.Backups(s.conn.ID)
+				return a.hostNetCmd(s, false, true)
+			}})
+		}
 	}
 	if a.scr == scrTerminal && s != nil {
 		actions = append(actions,

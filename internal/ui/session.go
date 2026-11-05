@@ -9,6 +9,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/termemu"
 )
@@ -19,6 +20,7 @@ const (
 	stConnecting sessState = iota
 	stConnected
 	stClosed
+	stReconnect // Verbindung abgerissen, sshTermy verbindet gleich neu
 )
 
 type panelKind int
@@ -28,6 +30,7 @@ const (
 	panelGoal
 	panelAsk
 	panelTunnels
+	panelHost
 )
 
 // session ist eine offene SSH-Sitzung (ein Tab).
@@ -42,6 +45,14 @@ type session struct {
 	err     string
 	started time.Time
 
+	connectedAt time.Time    // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
+	quitAt      time.Time    // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
+	rc          reconnState  // Auto-Reconnect
+	mux         muxState     // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
+	secrets     *secretCache // Antworten auf Passwort-Rückfragen, nur im Speicher
+	muxPending  bool         // tmux/screen nach dem Neuverbinden anhängen
+	rootPrompt  bool         // letzter Prompt endete auf „#“
+
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
 
@@ -55,8 +66,14 @@ type session struct {
 	chips      []agent.Suggestion
 	chipSeq    int
 	chipArmed  int // Index eines roten Chips nach dem ersten Druck, sonst -1
+	quickArmed int // dasselbe für Schnellbefehle (⇧F1 …)
 	lastFollow time.Time
 	followDue  time.Time
+
+	// Systemprofil (siehe profile.go)
+	prof    domain.SystemProfile
+	profDue time.Time // nach Ruhe im Terminal mitlesen
+	profCmd string    // zuletzt eingegebener Befehl (Ablehnung prüfen)
 
 	panel      panelKind
 	panelFocus bool
@@ -65,6 +82,14 @@ type session struct {
 	tunSel     int
 	files      filesState
 	search     searchState // Strg+F
+	host       hostState   // F6: Host-Übersicht und Config-Sicherung
+	cap        shellCap    // mitgeschnittene Shell-Ausgabe während einer Abfrage
+
+	// laufender Befehl, letzter Fehlschlag, Sitzungsprotokoll (cmdlog.go)
+	run    *cmdRun
+	fail   *agent.Failure
+	log    *sessionlog.Log
+	logErr bool // Fehler beim Schreiben schon gemeldet
 
 	// Maus im Terminal
 	scroll    int          // Zeilen zurück im Verlauf (0 = live)
@@ -84,6 +109,7 @@ type outWriter struct {
 type outputMsg struct{ sid int }
 
 func (w outWriter) Write(p []byte) (int, error) {
+	w.s.cap.feed(p)
 	n, err := w.s.term.Write(p)
 	if w.s.pending.CompareAndSwap(false, true) {
 		select {
@@ -105,8 +131,10 @@ type connectErrMsg struct {
 	err error
 }
 type shellClosedMsg struct {
-	sid int
-	err error
+	sid     int
+	shell   *sshx.Shell
+	err     error
+	dropped bool // Leitung weggebrochen (nicht exit/logout)
 }
 
 // hostKeyAskMsg / secretAskMsg: der Verbindungsaufbau wartet auf die Antwort.
@@ -124,6 +152,11 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 	hk := a.hostKeys
 	st := a.st
 	cols, rows := a.termSize(s)
+	if s.secrets == nil {
+		s.secrets = &secretCache{}
+	}
+	sc := s.secrets
+	keepTerm := s.term != nil && s.rc.active // Auto-Reconnect: Verlauf bleibt stehen
 	return func() tea.Msg {
 		opts := sshx.Options{
 			HostKeys: hk,
@@ -133,7 +166,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 				ev <- hostKeyAskMsg{host, fp, typ, r}
 				return <-r
 			},
-			AskSecret: func(label string) (string, error) {
+			AskSecret: sc.wrap(func(label string) (string, error) {
 				r := make(chan string, 1)
 				ev <- secretAskMsg{label, r}
 				v := <-r
@@ -141,21 +174,32 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 					return "", context.Canceled
 				}
 				return v, nil
-			},
+			}),
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		c, err := sshx.Dial(ctx, s.conn, opts)
 		if err != nil {
+			if isAuthFailure(err) {
+				sc.forget() // falsches Passwort nicht beim nächsten Versuch wiederholen
+			}
 			return connectErrMsg{s.id, err}
 		}
-		s.term = termemu.New(cols, rows, shellWriter{s})
+		if !keepTerm {
+			s.term = termemu.New(cols, rows, shellWriter{s})
+		}
 		sh, err := c.OpenShell(cols, rows, outWriter{s, ev})
 		if err != nil {
 			c.Close()
 			return connectErrMsg{s.id, err}
 		}
-		go func() { err := <-sh.Done; ev <- shellClosedMsg{s.id, err} }()
+		go func() {
+			err := <-sh.Done
+			// exit/logout endet mit Exit-Status; ohne Status (oder mit Fehler)
+			// prüfen, ob die ganze Leitung weg ist → Auto-Reconnect.
+			dropped := err != nil && c.WaitDropped(1500*time.Millisecond)
+			ev <- shellClosedMsg{s.id, sh, err, dropped}
+		}()
 		return connectedMsg{s.id, c, sh}
 	}
 }
@@ -179,6 +223,7 @@ func (s *session) close() {
 	}
 	s.goal.cancel()
 	s.ask.cancel()
+	s.host.cancel()
 	if s.tunnels != nil {
 		s.tunnels.StopAll()
 	}
@@ -205,8 +250,9 @@ func (a *App) agentContext(s *session, withScreen bool) agent.Context {
 	cfg := a.st.LLM()
 	c := agent.Context{Host: s.conn.Alias, Commands: lastN(s.history, 10)}
 	if s.client != nil {
-		c.OS = s.client.Remote.String()
+		c.OS = s.profileSummary()
 		c.Shell = s.client.Remote.Shell
+		c.Profile = s.prof.Prompt()
 	}
 	if withScreen && cfg.SendScreen && s.term != nil {
 		n := cfg.ContextLines

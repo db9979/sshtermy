@@ -97,6 +97,8 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 		if !s.goal.active {
 			return s.goal.input.Focus()
 		}
+	case panelHost:
+		return a.hostOpened(s)
 	case panelAsk:
 		if !s.ask.inited {
 			s.ask.input = newAIInput("Frage, z. B. Warum startet nginx nicht?")
@@ -243,7 +245,9 @@ func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 		s.panelFocus = false
 		return
 	}
+	a.beginCommand(s, cmd)
 	s.term.SendText(cmd + "\r")
+	a.profileCommand(s, cmd)
 	g.startWait()
 }
 
@@ -253,7 +257,7 @@ func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 	k, isKey := msg.(tea.KeyPressMsg)
 	if isKey && k.String() == "esc" {
 		s.panelFocus = false
-		if s.panel == panelTunnels || (s.panel == panelAsk && !s.ask.busy && s.ask.answer.Len() == 0) {
+		if s.panel == panelTunnels || s.panel == panelHost || (s.panel == panelAsk && !s.ask.busy && s.ask.answer.Len() == 0) {
 			s.panel = panelNone
 			a.resize(s)
 		}
@@ -267,6 +271,10 @@ func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 	case panelTunnels:
 		if isKey {
 			return a.tunnelKey(s, k)
+		}
+	case panelHost:
+		if isKey {
+			return a.hostKey(s, k)
 		}
 	}
 	return nil
@@ -424,7 +432,7 @@ func (a *App) askKey(s *session, msg tea.Msg) tea.Cmd {
 	if isKey && !q.input.Focused() {
 		key := k.String()
 		if len(key) == 1 && key[0] >= '1' && key[0] <= '9' {
-			cmds := extractCommands(q.answer.String())
+			cmds := extractCommands(agent.VisibleAnswer(q.answer.String()))
 			if i := int(key[0] - '1'); i < len(cmds) {
 				s.term.SendText(cmds[i]) // nur einfügen, Enter drückt der Mensch
 				s.panelFocus = false
@@ -501,6 +509,9 @@ func (a *App) panelKeys(s *session) [][2]string {
 			if g.done {
 				return [][2]string{{"Strg+S", "als Runbook merken"}, {"⏎", "neues Ziel"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
 			}
+			if len(a.st.Runbooks(s.conn.ID)) == 0 {
+				return [][2]string{{"⏎", "Ziel starten"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
+			}
 			return [][2]string{{"⏎", "Ziel starten"}, {"↑↓", "Runbook"}, {"Strg+D", "Runbook löschen"}, {"Esc", "Terminal"}, {a.keys.label(actGoal), "schließen"}}
 		}
 		if g.cur != nil && g.cur.Question != "" {
@@ -512,9 +523,32 @@ func (a *App) panelKeys(s *session) [][2]string {
 		return [][2]string{{"⏎", "ausführen"}, {"i", "nur einfügen"}, {"e", "bearbeiten"}, {"s", "überspringen"},
 			{"r", "neu"}, {"x", "Ziel beenden"}, {"Strg+S", "Runbook"}, {"Esc", "Terminal"}}
 	case panelAsk:
-		return [][2]string{{"⏎", "fragen"}, {"1…9", "Befehl einfügen"}, {"n", "neue Frage"}, {"Esc", "Terminal"}}
+		q := &s.ask
+		switch {
+		case q.busy:
+			return [][2]string{{"Esc", "Terminal"}, {a.keys.label(actAsk), "schließen"}}
+		case q.question == "":
+			return [][2]string{{"⏎", "fragen"}, {"Esc", "Terminal"}, {a.keys.label(actAsk), "schließen"}}
+		}
+		k := [][2]string{}
+		if n := len(extractCommands(agent.VisibleAnswer(q.answer.String()))); n > 0 {
+			k = append(k, [2]string{"1…" + fmt.Sprint(min(9, n)), "Befehl einfügen"})
+		}
+		return append(k, [2]string{"n", "neue Frage"}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actAsk), "schließen"})
 	case panelTunnels:
-		return [][2]string{{"⏎", "an/aus"}, {"o", "Browser"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"Esc", "zurück"}}
+		list := a.st.Tunnels(s.conn.ID)
+		if len(list) == 0 {
+			return [][2]string{{"n", "neuer Tunnel"}, {"Esc", "zurück"}}
+		}
+		k := [][2]string{{"⏎", "an/aus"}}
+		if s.tunSel < len(list) && s.tunnels != nil {
+			if at := s.tunnels.Get(list[s.tunSel].ID); at != nil && at.URL() != "" {
+				k = append(k, [2]string{"o", "Browser"})
+			}
+		}
+		return append(k, [2]string{"n", "neu"}, [2]string{"e", "bearbeiten"}, [2]string{"d", "löschen"}, [2]string{"Esc", "zurück"})
+	case panelHost:
+		return a.hostPanelKeys(s)
 	}
 	return nil
 }
@@ -532,6 +566,8 @@ func (a *App) viewPanel(s *session, w, h int) string {
 		a.viewAsk(&b, s, inner)
 	case panelTunnels:
 		a.viewTunnels(&b, s, inner)
+	case panelHost:
+		a.viewHost(&b, s, inner)
 	}
 	style := st.Panel
 	if s.panelFocus {
@@ -667,7 +703,10 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	} else {
 		b.WriteString(st.Muted.Render("Frage") + "\n" + wrap(st.Text.Bold(true).Render(q.question), w) + "\n\n")
 	}
-	ans := q.answer.String()
+	ans := agent.VisibleAnswer(q.answer.String())
+	if ans == "" && q.busy && q.answer.Len() > 0 {
+		b.WriteString(st.Muted.Render("denkt nach …") + "\n")
+	}
 	if ans != "" {
 		// Codeblöcke nummerieren, damit 1…9 sie einfügen kann
 		n := 0

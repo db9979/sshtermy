@@ -1,12 +1,14 @@
 package ui
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // fieldKind: Text, Geheimnis, Zahl, Auswahl oder Schalter.
@@ -18,6 +20,7 @@ const (
 	fNumber
 	fChoice
 	fBool
+	fPick // Auswahl über eine durchsuchbare Liste (picker.go)
 )
 
 type field struct {
@@ -28,6 +31,11 @@ type field struct {
 	opt              int
 	on               bool // fBool
 	hidden           func(f *form) bool
+
+	// fPick: gewählter Wert, Anzeige und Öffnen der Auswahlliste
+	value   string
+	display func(value string) string
+	open    func() tea.Cmd
 }
 
 // form ist ein kleines, tastaturgesteuertes Formular (Tab/↑↓ wechseln,
@@ -77,6 +85,9 @@ func (f *form) choice(key, label string, opts []string, cur string, help string)
 	}
 	return f.add(fl)
 }
+func (f *form) pick(key, label, val string, display func(string) string, open func() tea.Cmd, help string) *field {
+	return f.add(&field{key: key, label: label, help: help, kind: fPick, value: val, display: display, open: open})
+}
 func (f *form) toggle(key, label string, on bool, help string) *field {
 	return f.add(&field{key: key, label: label, help: help, kind: fBool, on: on})
 }
@@ -99,7 +110,8 @@ func (f *form) sel(key string) string {
 	}
 	return fl.options[fl.opt]
 }
-func (f *form) flag(key string) bool { return f.get(key).on }
+func (f *form) flag(key string) bool  { return f.get(key).on }
+func (f *form) val(key string) string { return f.get(key).value }
 
 func (f *form) visible() []int {
 	var out []int
@@ -154,6 +166,12 @@ func (f *form) update(msg tea.Msg) (submit bool, cmd tea.Cmd) {
 			return false, f.move(-1)
 		case "ctrl+s":
 			return true, nil
+		case "enter", "space", "right", "left":
+			if fl.kind == fPick && fl.open != nil {
+				return false, fl.open()
+			}
+		}
+		switch k.String() {
 		case "enter":
 			if f.isLast() {
 				return true, nil
@@ -214,6 +232,17 @@ func (f *form) view(s Styles, width int, z *zones) string {
 				}
 			}
 			val = strings.Join(parts, "")
+			if lipgloss.Width(val) > inW && fl.opt < len(fl.options) {
+				// Zu viele Optionen für eine Zeile: nur die gewählte, ←/→ blättert.
+				val = s.Muted.Render("‹ ") + s.Selected.Render(" "+fl.options[fl.opt]+" ") + s.Muted.Render(" ›") +
+					s.Muted.Render(fmt.Sprintf("  %d/%d", fl.opt+1, len(fl.options)))
+			}
+		case fPick:
+			v := fl.value
+			if fl.display != nil {
+				v = fl.display(fl.value)
+			}
+			val = ansi.Truncate(v, max(10, inW-2), "…") + s.Muted.Render(" ▾")
 		case fBool:
 			if fl.on {
 				val = s.OK.Render("● an")
@@ -235,6 +264,10 @@ func (f *form) view(s Styles, width int, z *zones) string {
 			row = z.click(row, func(_ tea.Mouse, _ bool) tea.Cmd {
 				if fl.kind == fBool {
 					fl.on = !fl.on
+				}
+				if fl.kind == fPick && fl.open != nil {
+					f.setFocus(i)
+					return fl.open()
 				}
 				return f.setFocus(i)
 			})

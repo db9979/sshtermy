@@ -66,3 +66,22 @@ func replace(b []byte, old, new string) []byte {
 	}
 	return out
 }
+
+func TestDeriveKey(t *testing.T) {
+	v, err := Open(filepath.Join(t.TempDir(), "s.vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := v.DeriveKey("x"); err == nil {
+		t.Fatal("gesperrt darf kein Schlüssel kommen")
+	}
+	if err := v.Create([]byte("pw-1234567890"), false); err != nil {
+		t.Fatal(err)
+	}
+	a, _ := v.DeriveKey("sessionlog")
+	b, _ := v.DeriveKey("sessionlog")
+	c, _ := v.DeriveKey("other")
+	if len(a) != 32 || string(a) != string(b) || string(a) == string(c) {
+		t.Fatal("DeriveKey nicht deterministisch oder ohne Domänentrennung")
+	}
+}

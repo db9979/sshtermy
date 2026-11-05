@@ -85,7 +85,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	// Terminalfläche zuerst: Markieren und Weiterleiten dürfen nicht an
 	// Zonen hängen bleiben (z. B. beim Ziehen über den Rand hinaus).
 	s := a.current()
-	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && !s.selecting && !s.fwdHeld {
+	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil && !s.selecting && !s.fwdHeld {
 		// geteilte Ansicht: Klick holt den Bereich nach vorn, das Rad
 		// blättert im Bereich unter der Maus
 		if p := a.paneAt(m.X, m.Y); p != nil && p != s {
@@ -97,7 +97,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 			}
 		}
 	}
-	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil {
+	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil {
 		if s.search.open && s.search.list && !s.selecting && a.inTermArea(s, m.X, m.Y) && !isWheel {
 			// Fehlerliste: Zeilen sind Zonen
 		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open) {
@@ -116,7 +116,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		if a.modal != nil && (a.modal.kind == mHelp || a.modal.kind == mChangelog) {
 			return a.pressKey(wheelKey(up))
 		}
-		if a.modal != nil || a.pal != nil {
+		if a.modal != nil || a.pal != nil || a.pick != nil {
 			return nil
 		}
 		switch a.scr {
@@ -134,6 +134,10 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		a.modal = nil
 		return nil
 	}
+	// Ziehen im Manager: Verbindungen und Ordner umsortieren
+	if a.scr == scrManager && a.modal == nil && a.pal == nil && a.pick == nil && a.mgr.drag != nil && !isClick {
+		return a.mgrDragMouse(msg)
+	}
 	if !isClick || m.Button != tea.MouseLeft {
 		return nil
 	}
@@ -142,6 +146,8 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	}
 	// Klick ins Leere
 	switch {
+	case a.pick != nil:
+		a.pick = nil
 	case a.pal != nil:
 		a.pal = nil
 	case a.modal != nil:
@@ -193,6 +199,10 @@ func keyFromLabel(label string) (tea.KeyPressMsg, bool) {
 		case strings.HasPrefix(l, "Shift+"):
 			mod |= tea.ModShift
 			l = l[len("Shift+"):]
+			continue
+		case strings.HasPrefix(l, "⇧") && len(l) > len("⇧"):
+			mod |= tea.ModShift
+			l = l[len("⇧"):]
 			continue
 		}
 		break
@@ -493,6 +503,10 @@ func (a *App) modalButtons() string {
 		keys = [][2]string{{"Esc", "schließen"}}
 	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", "schließen"}}
+	case mTour:
+		keys = tourButtons(a.modal)
+	case mQuick:
+		keys = [][2]string{{"⏎", "ausführen"}, {"e", "bearbeiten"}, {"Esc", "schließen"}}
 	case mPaste:
 		keys = [][2]string{{"⏎", "einfügen"}}
 		if a.modal.paste.multi {

@@ -36,6 +36,9 @@ const (
 	AuthPassword AuthMethod = "password" // Passwort (verschlüsselt im Store)
 	AuthKeyFile  AuthMethod = "keyfile"  // Private Key, als Pfad oder eingebettet (verschlüsselt)
 	AuthAgent    AuthMethod = "agent"    // ssh-agent / Windows OpenSSH-Agent / Pageant-kompatibel
+	// AuthAuto: wie das ssh-Kommando: erst Agent und Standard-Keys
+	// (~/.ssh/id_*), dann Passwort-Abfrage. Für Schnellverbindungen.
+	AuthAuto AuthMethod = "auto"
 )
 
 // DeviceKind: was am anderen Ende hängt. Netzwerkgeräte (Switches, Router,
@@ -57,8 +60,9 @@ type Connection struct {
 	Port     int        `json:"port"`
 	Username string     `json:"username"`
 	Auth     AuthMethod `json:"auth"`
-	Group    string     `json:"group,omitempty"` // z. B. "Produktion", "Homelab"
+	Group    string     `json:"group,omitempty"` // Ordner, verschachtelt mit „ / “, z. B. "Produktion / Web"
 	Tags     []string   `json:"tags,omitempty"`
+	Order    float64    `json:"order,omitempty"` // Reihenfolge im Ordner (0 = alphabetisch)
 
 	Password      Secret `json:"password,omitempty"`       // AuthPassword
 	KeyPath       string `json:"key_path,omitempty"`       // AuthKeyFile: Datei auf der Platte …
@@ -69,6 +73,14 @@ type Connection struct {
 	TunnelIDs  []string   `json:"tunnel_ids,omitempty"`   // Tunnel, die mit dieser Verbindung starten
 	KeepAlive  int        `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
 	Device     DeviceKind `json:"device,omitempty"`       // Server oder Netzwerkgerät, leer = automatisch
+
+	// Profile: was für ein System dahinter steckt (automatisch erkannt,
+	// vom Nutzer ergänzbar). Geht in jeden KI-Prompt, damit Befehle im
+	// richtigen Dialekt kommen. Liegt wie alles andere verschlüsselt im Store.
+	Profile *SystemProfile `json:"profile,omitempty"`
+
+	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
+	QuickCmds []string `json:"quick_cmds,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
@@ -191,8 +203,13 @@ type Settings struct {
 	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
 	Language     string `json:"language"`                 // "de" | "en"
 	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
+	NoSessionLog bool   `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
 	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
 	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
+	// NoAutoReconnect: abgerissene Sitzungen nicht von selbst neu verbinden.
+	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`
+	TourDone        bool `json:"tour_done,omitempty"`
+	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
@@ -240,6 +257,7 @@ type Data struct {
 	Connections []Connection `json:"connections"`
 	Tunnels     []Tunnel     `json:"tunnels"`
 	Runbooks    []Runbook    `json:"runbooks,omitempty"`
+	Folders     []Folder     `json:"folders,omitempty"`
 	LLM         LLMConfig    `json:"llm"`
 	Settings    Settings     `json:"settings"`
 

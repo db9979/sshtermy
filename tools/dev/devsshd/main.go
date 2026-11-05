@@ -141,6 +141,7 @@ func session(nc ssh.NewChannel) {
 		case "exec":
 			l := binary.BigEndian.Uint32(r.Payload)
 			cmd := exec.Command("bash", "-c", string(r.Payload[4:4+l]))
+			cmd.Stdin = ch // z. B. "sh -s" der Host-Übersicht
 			r.Reply(true, nil)
 			out, _ := cmd.CombinedOutput()
 			ch.Write(out)

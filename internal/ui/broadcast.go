@@ -76,9 +76,19 @@ func (a *App) openBroadcast() tea.Cmd {
 	sort.SliceStable(conns, func(i, j int) bool { return conns[i].Group < conns[j].Group })
 	b := &bcState{conns: conns, picked: map[string]bool{}, books: a.st.Runbooks(""), cmd: newAIInput("Befehl, z. B. uptime · ⇧⏎ = weiterer Schritt")}
 	b.cmd.MaxHeight = 5
-	// Vorauswahl: Gruppe der markierten Verbindung (sonst nur sie selbst).
-	if list := a.filtered(); a.mgr.sel < len(list) {
-		sel := list[a.mgr.sel]
+	// Vorauswahl: Ordner der markierten Verbindung (sonst nur sie selbst);
+	// ist ein Ordner markiert, alles darin samt Unterordnern.
+	if r, ok := a.mgrCur(); ok && r.isFolder() {
+		first := true
+		for i, c := range conns {
+			if domain.InFolder(c.Group, r.node.Path) {
+				b.picked[c.ID] = true
+				if first {
+					b.cur, first = i, false
+				}
+			}
+		}
+	} else if sel, ok := a.selectedConn(); ok {
 		for i, c := range conns {
 			if c.ID == sel.ID {
 				b.cur = i
@@ -237,7 +247,7 @@ func (a *App) updateBroadcast(msg tea.Msg) tea.Cmd {
 func (a *App) bcToConfirm() tea.Cmd {
 	b := a.bc
 	if len(b.chosen()) == 0 {
-		b.err = "Keine Hosts gewählt (Leertaste, g = ganze Gruppe, a = alle)"
+		b.err = "Keine Hosts gewählt (Leertaste, g = ganzer Ordner, a = alle)"
 		return nil
 	}
 	if len(b.stepList()) == 0 {
@@ -456,7 +466,7 @@ func (a *App) broadcastKeys() [][2]string {
 		}
 		return append(k, [2]string{"Esc", "zum Manager"}, [2]string{"F1", "Hilfe"})
 	}
-	return [][2]string{{"Tab", "Hosts/Quelle/Befehl"}, {"Space", "Host wählen"}, {"g", "Gruppe"}, {"a", "alle"},
+	return [][2]string{{"Tab", "Hosts/Quelle/Befehl"}, {"Space", "Host wählen"}, {"g", "Ordner"}, {"a", "alle"},
 		{"Strg+S", "weiter"}, {"Esc", "abbrechen"}, {"F1", "Hilfe"}}
 }
 
@@ -495,7 +505,7 @@ func (a *App) viewBcSetup() string {
 	// Hosts
 	picked := len(b.chosen())
 	o.WriteString(head(bcFocusHosts, "Hosts") + s.Text.Render(fmt.Sprintf("%d von %d gewählt", picked, len(b.conns))) +
-		s.Muted.Render("   Leertaste wählen · g Gruppe · a alle") + "\n")
+		s.Muted.Render("   Leertaste wählen · g Ordner · a alle") + "\n")
 	steps := b.stepList()
 	stepsH := len(steps)
 	if b.src == 0 {
