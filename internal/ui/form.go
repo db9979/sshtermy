@@ -186,7 +186,7 @@ func (f *form) update(msg tea.Msg) (submit bool, cmd tea.Cmd) {
 func (f *form) view(s Styles, width int) string {
 	var b strings.Builder
 	b.WriteString(s.Accent.Render(f.title) + "\n\n")
-	inW := max(20, width-22)
+	inW := max(20, width-26)
 	for _, i := range f.visible() {
 		fl := f.fields[i]
 		focused := i == f.focus
@@ -216,11 +216,11 @@ func (f *form) view(s Styles, width int) string {
 		marker := "  "
 		if focused {
 			marker = s.Accent.Render("▌ ")
-			label = lipgloss.NewStyle().Foreground(s.T.Text).Bold(true).Width(16).Render(fl.label)
+			label = lipgloss.NewStyle().Foreground(s.T.Text).Bold(true).Width(20).Render(fl.label)
 		}
 		b.WriteString(marker + label + val + "\n")
 		if focused && fl.help != "" {
-			b.WriteString("  " + strings.Repeat(" ", 16) + s.Muted.Render(fl.help) + "\n")
+			b.WriteString("  " + strings.Repeat(" ", 20) + s.Muted.Render(fl.help) + "\n")
 		}
 	}
 	if f.err != "" {

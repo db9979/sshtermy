@@ -292,7 +292,7 @@ func (a *App) openSettings() tea.Cmd {
 	f := &form{title: "KI-Copilot (OpenAI-kompatibel: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)"}
 	f.text("base", "Base-URL", c.BaseURL, "z. B. http://dgx-spark:8000/v1 · Ollama: http://localhost:11434/v1")
 	f.secret("key", "API-Key", c.APIKey.Reveal(), "verschlüsselt gespeichert; leer für lokale Server")
-	f.text("model", "Modell", c.Model, "z. B. gpt-4.1-mini, Qwen/Qwen3-Coder-30B, llama3.1")
+	f.text("model", "Modell", c.Model, "Strg+L: Liste vom Endpunkt · Strg+T: Verbindung testen")
 	f.number("tokens", "Max-Tokens", c.MaxTokens, "")
 	f.text("temp", "Temperatur", fmt.Sprintf("%.2f", c.Temperature), "0.0–1.0; für Befehle niedrig (0.1–0.3)")
 	f.number("timeout", "Timeout (s)", c.TimeoutSec, "")
@@ -303,6 +303,7 @@ func (a *App) openSettings() tea.Cmd {
 	f.number("steps", "Ziel: Schritte/min", c.GoalStepsMin, "Ratenlimit im Ziel-Modus")
 	f.toggle("insecure", "http mit API-Key", c.AllowInsecure, "nur wenn du weißt, was du tust")
 	a.form, a.scr = f, scrSettings
+	a.llm = llmUI{}
 	return f.setFocus(0)
 }
 
@@ -314,6 +315,11 @@ func orDefault(s, d string) string {
 }
 
 func (a *App) updateForm(msg tea.Msg) tea.Cmd {
+	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrSettings {
+		if cmd, done := a.settingsKey(k); done {
+			return cmd
+		}
+	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" {
 		a.form = nil
 		a.scr = scrManager
@@ -406,14 +412,7 @@ func (a *App) saveTunnel() error {
 }
 
 func (a *App) saveSettings() error {
-	f := a.form
-	c := a.st.LLM()
-	c.BaseURL, c.APIKey, c.Model = f.str("base"), domain.Secret(f.raw("key")), f.str("model")
-	c.MaxTokens, c.TimeoutSec = f.num("tokens"), f.num("timeout")
-	fmt.Sscanf(f.str("temp"), "%f", &c.Temperature)
-	c.SuggestEnabled, c.SuggestDelayMS = f.flag("suggest"), f.num("delay")
-	c.SendScreen, c.ContextLines, c.GoalStepsMin = f.flag("screen"), f.num("lines"), f.num("steps")
-	c.AllowInsecure = f.flag("insecure")
+	c := a.formLLM()
 	if err := checkLLM(c); err != nil {
 		return err
 	}
@@ -425,7 +424,11 @@ func (a *App) viewForm() string {
 		return ""
 	}
 	w := min(100, a.w-4)
-	return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, a.s.Panel.Width(w).Render(a.form.view(a.s, w-4)))
+	body := a.form.view(a.s, w-4)
+	if a.scr == scrSettings {
+		body += a.viewLLMExtra(w - 4)
+	}
+	return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, a.s.Panel.Width(w).Render(body))
 }
 
 var _ = store.Dir

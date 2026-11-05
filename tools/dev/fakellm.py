@@ -10,6 +10,13 @@ STEPS = [
 
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
+    def do_GET(self):
+        if self.path.rstrip("/").endswith("/models"):
+            out = json.dumps({"object": "list", "data": [{"id": m, "object": "model"} for m in
+                  ["qwen2.5-coder:7b", "qwen3-coder:30b", "llama3.1:8b", "gpt-oss:20b", "deepseek-r1:14b"]]}).encode()
+            self.send_response(200); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(out))); self.end_headers(); self.wfile.write(out)
+        else:
+            self.send_response(404); self.end_headers()
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         sysm = body["messages"][0]["content"]; user = body["messages"][-1]["content"]
@@ -27,6 +34,8 @@ class H(BaseHTTPRequestHandler):
         elif "Ziel" in sysm:
             n = len(re.findall(r"^\d+\. .*\((ausgeführt|vom Menschen übersprungen)\)$", user, re.M))
             text = json.dumps(STEPS[min(n, len(STEPS)-1)])
+        elif sysm.startswith("Antworte nur mit"):
+            text = "OK"
         else:
             text = "Nginx startet nicht, weil Port 80 schon belegt ist (siehe `bind() failed`). Prüfe, wer lauscht:\n\n```sh\nsudo ss -tlnp | grep :80\n```\n\nIst es ein alter Apache, stoppe ihn:\n\n```sh\nsudo systemctl stop apache2\n```\n"
         if body.get("stream"):

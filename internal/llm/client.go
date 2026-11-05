@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -56,22 +57,24 @@ func New(cfg domain.LLMConfig) (*Client, error) {
 	if err := Check(cfg); err != nil {
 		return nil, err
 	}
-	t := cfg.TimeoutSec
-	if t <= 0 {
-		t = 60
-	}
-	return &Client{cfg: cfg, http: &http.Client{Timeout: time.Duration(t) * time.Second}}, nil
+	return &Client{cfg: cfg, http: httpClient(cfg)}, nil
 }
 
 // Check: Base-URL gültig; ein API-Key geht nie unverschlüsselt (http) an
 // einen fremden Host, außer AllowInsecure ist bewusst gesetzt.
 func Check(cfg domain.LLMConfig) error {
+	if cfg.Model == "" {
+		return errors.New("Modellname fehlt")
+	}
+	return CheckEndpoint(cfg)
+}
+
+// CheckEndpoint prüft nur Base-URL und Key-Transport (für die Modell-Liste,
+// bei der noch kein Modell gewählt sein muss).
+func CheckEndpoint(cfg domain.LLMConfig) error {
 	u, err := url.Parse(strings.TrimRight(cfg.BaseURL, "/"))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return errors.New("Base-URL ungültig (http(s)://host[:port]/v1)")
-	}
-	if cfg.Model == "" {
-		return errors.New("Modellname fehlt")
 	}
 	if u.Scheme == "http" && cfg.APIKey.IsSet() && !cfg.AllowInsecure && !isLocal(u.Hostname()) {
 		return errors.New("API-Key würde unverschlüsselt (http) übertragen; https nutzen oder 'unsicher erlauben' setzen")
@@ -87,12 +90,112 @@ func isLocal(h string) bool {
 	return ip != nil && (ip.IsLoopback() || ip.IsPrivate())
 }
 
-func (c *Client) endpoint() string {
-	b := strings.TrimRight(c.cfg.BaseURL, "/")
-	if strings.HasSuffix(b, "/chat/completions") {
-		return b
+func baseURL(cfg domain.LLMConfig) string {
+	return strings.TrimSuffix(strings.TrimRight(cfg.BaseURL, "/"), "/chat/completions")
+}
+
+func (c *Client) endpoint() string { return baseURL(c.cfg) + "/chat/completions" }
+
+func httpClient(cfg domain.LLMConfig) *http.Client {
+	t := cfg.TimeoutSec
+	if t <= 0 {
+		t = 60
 	}
-	return b + "/chat/completions"
+	return &http.Client{Timeout: time.Duration(t) * time.Second}
+}
+
+// Models fragt GET {base}/models ab (OpenAI-Format {"data":[{"id":…}]}; so
+// liefern es auch vLLM, SGLang, LiteLLM, LocalAI, LM Studio und Ollama).
+func Models(ctx context.Context, cfg domain.LLMConfig) ([]string, error) {
+	if err := CheckEndpoint(cfg); err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL(cfg)+"/models", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "sshtermy")
+	if cfg.APIKey.IsSet() {
+		req.Header.Set("Authorization", "Bearer "+cfg.APIKey.Reveal())
+	}
+	resp, err := httpClient(cfg).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxBody))
+	if err != nil {
+		return nil, err
+	}
+	var r struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+		Models []struct { // Ollama /api/tags-Form, falls ein Proxy sie durchreicht
+			Name string `json:"name"`
+		} `json:"models"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return nil, fmt.Errorf("HTTP %d: API-Key fehlt oder ist falsch", resp.StatusCode)
+	}
+	if json.Unmarshal(raw, &r) != nil {
+		return nil, fmt.Errorf("HTTP %d, keine JSON-Antwort von /models", resp.StatusCode)
+	}
+	if r.Error != nil {
+		return nil, fmt.Errorf("%s", r.Error.Message)
+	}
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("HTTP %d von /models", resp.StatusCode)
+	}
+	var out []string
+	seen := map[string]bool{}
+	for _, m := range r.Data {
+		if m.ID != "" && !seen[m.ID] {
+			seen[m.ID] = true
+			out = append(out, m.ID)
+		}
+	}
+	for _, m := range r.Models {
+		if m.Name != "" && !seen[m.Name] {
+			seen[m.Name] = true
+			out = append(out, m.Name)
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+// TestResult beschreibt einen Verbindungstest.
+type TestResult struct {
+	Models    []string
+	ModelsErr error
+	Reply     string
+	Latency   time.Duration
+	ChatErr   error
+}
+
+// Test lädt die Modell-Liste und schickt eine winzige Chat-Anfrage an das
+// eingestellte Modell. Beides wird getrennt gemeldet, weil manche Server
+// /models nicht anbieten, Chat aber funktioniert.
+func Test(ctx context.Context, cfg domain.LLMConfig) TestResult {
+	var r TestResult
+	r.Models, r.ModelsErr = Models(ctx, cfg)
+	if cfg.Model == "" {
+		r.ChatErr = errors.New("kein Modell gewählt")
+		return r
+	}
+	c, err := New(cfg)
+	if err != nil {
+		r.ChatErr = err
+		return r
+	}
+	t0 := time.Now()
+	r.Reply, r.ChatErr = c.Complete(ctx, []Message{{Role: "user", Content: "Antworte nur mit: OK"}}, Opts{MaxTokens: 16, Temperature: 0.01})
+	r.Latency = time.Since(t0)
+	return r
 }
 
 func (c *Client) newRequest(ctx context.Context, body request) (*http.Request, error) {
