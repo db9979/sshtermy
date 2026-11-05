@@ -115,6 +115,6 @@ func algosFor(keyType string) []string {
 
 type dummyKey struct{}
 
-func (dummyKey) Type() string                       { return "sshtermy-dummy" }
-func (dummyKey) Marshal() []byte                    { return []byte("sshtermy-dummy") }
+func (dummyKey) Type() string                        { return "sshtermy-dummy" }
+func (dummyKey) Marshal() []byte                     { return []byte("sshtermy-dummy") }
 func (dummyKey) Verify([]byte, *ssh.Signature) error { return errors.New("dummy") }

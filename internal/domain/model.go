@@ -27,7 +27,7 @@ func (s Secret) GoString() string { return `domain.Secret("••••••")`
 // Reveal gibt den Klartext zurück. Bewusst ein eigener Name, damit jede Stelle,
 // die ein Geheimnis wirklich braucht, im Code leicht zu finden ist.
 func (s Secret) Reveal() string { return string(s) }
-func (s Secret) IsSet() bool     { return s != "" }
+func (s Secret) IsSet() bool    { return s != "" }
 
 // AuthMethod: wie sich sshtermy am Server anmeldet.
 type AuthMethod string
@@ -107,10 +107,10 @@ type Tunnel struct {
 	TargetHost string `json:"target_host,omitempty"` // local: Ziel am Server; remote: Ziel lokal
 	TargetPort int    `json:"target_port,omitempty"`
 
-	WebScheme   string `json:"web_scheme,omitempty"` // "http" | "https" → One-Click Web Service
-	WebPath     string `json:"web_path,omitempty"`   // z. B. "/admin"
-	AutoOpen    bool   `json:"auto_open,omitempty"`  // Browser nach Start öffnen
-	AutoStart   bool   `json:"auto_start,omitempty"` // mit der Verbindung starten
+	WebScheme string `json:"web_scheme,omitempty"` // "http" | "https" → One-Click Web Service
+	WebPath   string `json:"web_path,omitempty"`   // z. B. "/admin"
+	AutoOpen  bool   `json:"auto_open,omitempty"`  // Browser nach Start öffnen
+	AutoStart bool   `json:"auto_start,omitempty"` // mit der Verbindung starten
 }
 
 // Spec gibt die OpenSSH-Schreibweise zurück, z. B. "-L 8080:localhost:80".
@@ -144,10 +144,10 @@ type LLMConfig struct {
 	// Feineinstellungen der Assistenz
 	SuggestEnabled bool `json:"suggest_enabled"` // Ghost-Text beim Tippen
 	SuggestDelayMS int  `json:"suggest_delay_ms"`
-	ContextLines   int  `json:"context_lines"`   // letzte N Zeilen des Terminals
-	SendScreen     bool `json:"send_screen"`     // Bildschirm überhaupt mitschicken
-	GoalStepsMin   int  `json:"goal_steps_min"`  // Ratenlimit Ziel-Modus pro Minute
-	AllowInsecure  bool `json:"allow_insecure"`  // http:// zu Nicht-Localhost erlauben
+	ContextLines   int  `json:"context_lines"`  // letzte N Zeilen des Terminals
+	SendScreen     bool `json:"send_screen"`    // Bildschirm überhaupt mitschicken
+	GoalStepsMin   int  `json:"goal_steps_min"` // Ratenlimit Ziel-Modus pro Minute
+	AllowInsecure  bool `json:"allow_insecure"` // http:// zu Nicht-Localhost erlauben
 }
 
 // DefaultLLM: sinnvolle Standardwerte (lokales Modell, nichts verlässt das Netz).
@@ -162,10 +162,10 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`         // "nacht" | "hell" | "kontrast"
-	UseDPAPI     bool   `json:"use_dpapi"`     // Windows: Store-Schlüssel zusätzlich per DPAPI
+	Theme        string `json:"theme"`          // "nacht" | "hell" | "kontrast"
+	UseDPAPI     bool   `json:"use_dpapi"`      // Windows: Store-Schlüssel zusätzlich per DPAPI
 	LockAfterMin int    `json:"lock_after_min"` // 0 = nie automatisch sperren
-	Language     string `json:"language"`      // "de" | "en"
+	Language     string `json:"language"`       // "de" | "en"
 }
 
 // Data ist alles, was verschlüsselt auf der Platte liegt.

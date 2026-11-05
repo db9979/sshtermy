@@ -23,13 +23,13 @@ const (
 )
 
 type modal struct {
-	kind    modalKind
-	title   string
-	body    string
-	hk      hostKeyAskMsg
-	sec     secretAskMsg
-	in      textinput.Model
-	onYes   func() tea.Cmd
+	kind  modalKind
+	title string
+	body  string
+	hk    hostKeyAskMsg
+	sec   secretAskMsg
+	in    textinput.Model
+	onYes func() tea.Cmd
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
@@ -73,6 +73,8 @@ Terminal     Tab/→ Ghost-Text übernehmen · Alt+1…4 Folgebefehl einfügen
 Ziel-Modus   ⏎ ausführen · i nur einfügen (Dry-Run) · e bearbeiten · s überspringen
              r neu vorschlagen · x Ziel beenden · Esc zurück ins Terminal
 Rote Befehle (löschen, neu starten, Firewall …) brauchen zweimal ⏎.
+Palette      Strg+Leertaste: Ziel, Frage, Vorschläge, Tunnel, Verbindungen, Aktionen
+             ⏎ ausführen · Tab KI fragen · ↑↓ wählen · Esc schließen
 Überall      F1 Hilfe · F12 Über/Update · Strg+Q beenden`)}
 }
 

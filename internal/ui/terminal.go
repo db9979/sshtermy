@@ -12,8 +12,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/agent"
-	"github.com/db9979/sshtermy/internal/llm"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/llm"
 )
 
 const (
@@ -377,6 +377,6 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	if s.panelFocus {
 		return a.panelKeys(s)
 	}
-	return [][2]string{{"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F7/F8", "Tabs"},
+	return [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F7/F8", "Tabs"},
 		{"F10", "Manager"}, {"F1", "Hilfe"}, {"Strg+Q", "beenden"}}
 }

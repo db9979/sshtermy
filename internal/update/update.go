@@ -7,12 +7,12 @@
 //     Asset sshtermy_<os>_<arch>[.exe] und checksums.txt geladen.
 //  3. Sicherheit:
 //     - nur HTTPS zu github.com / objects.githubusercontent.com (Redirects
-//       werden geprüft),
+//     werden geprüft),
 //     - SHA-256 des Downloads muss zu checksums.txt passen,
 //     - checksums.txt muss mit dem eingebauten Ed25519-Schlüssel signiert sein
-//       (checksums.txt.sig), sobald UpdatePubKey gesetzt ist. So kann auch ein
-//       kompromittiertes GitHub-Konto ohne den privaten Signierschlüssel kein
-//       Update unterschieben.
+//     (checksums.txt.sig), sobald UpdatePubKey gesetzt ist. So kann auch ein
+//     kompromittiertes GitHub-Konto ohne den privaten Signierschlüssel kein
+//     Update unterschieben.
 //  4. Austausch: die laufende Datei wird zu .old umbenannt (geht auch unter
 //     Windows bei laufender .exe), die neue an ihren Platz geschrieben; beim
 //     nächsten Start räumt Cleanup() die .old weg. Neustart durch den Nutzer.

@@ -26,11 +26,11 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
-	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/sshx"
+	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/update"
-	"github.com/db9979/sshtermy/internal/version"
 	"github.com/db9979/sshtermy/internal/vault"
+	"github.com/db9979/sshtermy/internal/version"
 )
 
 type screen int
@@ -53,23 +53,24 @@ type App struct {
 	scr      screen
 	events   chan tea.Msg
 
-	unlock unlockState
-	mgr    managerState
-	form   *form
-	formID string // ID des bearbeiteten Datensatzes
-	formBase   domain.Connection
-	formTunnel domain.Tunnel
+	unlock           unlockState
+	mgr              managerState
+	form             *form
+	formID           string // ID des bearbeiteten Datensatzes
+	formBase         domain.Connection
+	formTunnel       domain.Tunnel
 	returnToTerminal bool
 
 	sessions []*session
 	cur      int
 	nextSID  int
 
-	modal *modal
-	toast string
+	modal      *modal
+	pal        *palette
+	toast      string
 	toastUntil time.Time
-	rel   *update.Release
-	lastKey time.Time
+	rel        *update.Release
+	lastKey    time.Time
 }
 
 func New(st *store.Store) (*App, error) {
@@ -212,6 +213,18 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.modal != nil {
 			return a, a.modalKey(k)
 		}
+		if a.pal != nil {
+			return a, a.paletteKey(k)
+		}
+		if isPaletteKey(k.String()) && (a.scr == scrTerminal || a.scr == scrManager) {
+			return a, a.openPalette()
+		}
+	}
+	if pm, ok := msg.(tea.PasteMsg); ok && a.pal != nil && a.modal == nil {
+		var cmd tea.Cmd
+		a.pal.in, cmd = a.pal.in.Update(pm)
+		a.pal.sel, a.pal.armed = 0, -1
+		return a, cmd
 	}
 
 	switch a.scr {
@@ -276,6 +289,9 @@ func (a *App) View() tea.View {
 	}
 	if a.modal != nil {
 		body = a.overlay(body, a.modal.view(a.s, a.w))
+		cur = nil
+	} else if a.pal != nil {
+		body = a.overlay(body, a.viewPalette())
 		cur = nil
 	}
 	v := tea.NewView(body)

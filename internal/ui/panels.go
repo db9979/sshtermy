@@ -281,10 +281,7 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	// 1) noch kein Ziel: Eingabe
 	if !g.active {
 		if key == "enter" && strings.TrimSpace(g.input.Value()) != "" {
-			*g = goalState{input: g.input, edit: g.edit, answer: g.answer, inited: true,
-				goal: strings.TrimSpace(g.input.Value()), active: true}
-			g.input.Blur()
-			return a.requestStep(s)
+			return a.startGoal(s, g.input.Value())
 		}
 		var cmd tea.Cmd
 		g.input, cmd = g.input.Update(msg)
@@ -392,31 +389,7 @@ func (a *App) askKey(s *session, msg tea.Msg) tea.Cmd {
 		return nil
 	}
 	if isKey && k.String() == "enter" && strings.TrimSpace(q.input.Value()) != "" {
-		ag, err := a.agentClient()
-		if err != nil {
-			q.err = err.Error()
-			return nil
-		}
-		q.cancel()
-		q.question = strings.TrimSpace(q.input.Value())
-		q.answer.Reset()
-		q.err, q.busy = "", true
-		q.seq++
-		q.input.Blur()
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-		q.cancelFn = cancel
-		sid, seq, ev := s.id, q.seq, a.events
-		c := a.agentContext(s, true)
-		question := q.question
-		return func() tea.Msg {
-			defer cancel()
-			err := ag.Ask(ctx, question, c, func(d string) {
-				if d != "" {
-					ev <- askDeltaMsg{sid, seq, d}
-				}
-			})
-			return askDoneMsg{sid, seq, err}
-		}
+		return a.startAsk(s, q.input.Value())
 	}
 	var cmd tea.Cmd
 	q.input, cmd = q.input.Update(msg)
@@ -677,4 +650,55 @@ func human(n int64) string {
 		return fmt.Sprintf("%.1f KB", float64(n)/(1<<10))
 	}
 	return fmt.Sprintf("%d B", n)
+}
+
+// startGoal setzt ein neues Ziel und fragt den ersten Schritt an (Panel und Palette).
+func (a *App) startGoal(s *session, text string) tea.Cmd {
+	a.panelOpened(withPanel(s, panelGoal))
+	g := &s.goal
+	g.cancel()
+	*g = goalState{input: g.input, edit: g.edit, answer: g.answer, inited: true,
+		goal: strings.TrimSpace(text), active: true}
+	g.input.SetValue(g.goal)
+	g.input.Blur()
+	a.resize(s)
+	return a.requestStep(s)
+}
+
+// startAsk stellt eine Frage mit Terminal-Kontext (Panel und Palette).
+func (a *App) startAsk(s *session, text string) tea.Cmd {
+	a.panelOpened(withPanel(s, panelAsk))
+	a.resize(s)
+	q := &s.ask
+	ag, err := a.agentClient()
+	if err != nil {
+		q.err = err.Error()
+		return nil
+	}
+	q.cancel()
+	q.question = strings.TrimSpace(text)
+	q.input.SetValue(q.question)
+	q.answer.Reset()
+	q.err, q.busy = "", true
+	q.seq++
+	q.input.Blur()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	q.cancelFn = cancel
+	sid, seq, ev := s.id, q.seq, a.events
+	c := a.agentContext(s, true)
+	question := q.question
+	return func() tea.Msg {
+		defer cancel()
+		err := ag.Ask(ctx, question, c, func(d string) {
+			if d != "" {
+				ev <- askDeltaMsg{sid, seq, d}
+			}
+		})
+		return askDoneMsg{sid, seq, err}
+	}
+}
+
+func withPanel(s *session, k panelKind) *session {
+	s.panel, s.panelFocus = k, true
+	return s
 }

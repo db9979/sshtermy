@@ -4,35 +4,35 @@
 //
 // Schlüsselhierarchie (Envelope Encryption):
 //
-//	Master-Passwort ──Argon2id──▶ KEK_pw ──AES-256-GCM──┐
-//	                                                     ├──▶ DEK (32 Byte, zufällig)
-//	Windows-Anmeldung ──DPAPI (CryptProtectData)─────────┘        │
-//	                                                               ▼
-//	                                   AES-256-GCM(DEK) über den gesamten Store
-//	                                   (Verbindungen, Passwörter, Keys, API-Keys)
+//		Master-Passwort ──Argon2id──▶ KEK_pw ──AES-256-GCM──┐
+//		                                                     ├──▶ DEK (32 Byte, zufällig)
+//		Windows-Anmeldung ──DPAPI (CryptProtectData)─────────┘        │
+//		                                                               ▼
+//		                                   AES-256-GCM(DEK) über den gesamten Store
+//		                                   (Verbindungen, Passwörter, Keys, API-Keys)
 //
-//   - DEK (Data Encryption Key): 256 Bit aus crypto/rand. Er verschlüsselt den
-//     kompletten JSON-Store in einem Stück. Dadurch sind nicht nur Passwörter,
-//     sondern auch Hostnamen, Benutzer und Tunnel-Ziele geschützt (Metadaten).
-//   - AES-256-GCM: authentifizierte Verschlüsselung. Jede Änderung am Chiffrat
-//     oder am Header (KDF-Parameter, Wraps) lässt das Entschlüsseln scheitern,
-//     weil der Header als "Additional Authenticated Data" (AAD) mitgeprüft wird.
-//     Für jedes Speichern wird eine neue 96-Bit-Nonce aus crypto/rand gezogen;
-//     bei zufälligen Nonces ist das bis ~2^32 Speichervorgänge pro DEK sicher.
-//   - Master-Passwort: wird nie gespeichert. Argon2id (RFC 9106, speicherhart,
-//     Standard: t=3, m=64 MiB, p=4) leitet daraus den KEK ab, der den DEK
-//     "einwickelt" (wrap). Falsches Passwort ⇒ GCM-Tag passt nicht ⇒ Fehler,
-//     ohne dass ein Orakel über Teilergebnisse entsteht.
-//   - DPAPI (nur Windows): CryptProtectData bindet den DEK an das Windows-Konto
-//     des Nutzers (Schlüssel aus dem Anmeldegeheimnis, verwaltet von LSASS).
-//     Damit entsperrt sich der Store nach der Windows-Anmeldung ohne Eingabe,
-//     ist aber für andere Konten und auf anderen Rechnern unlesbar. Ein
-//     zusätzlicher Entropy-Wert bindet den Blob an sshtermy, sodass andere
-//     Programme desselben Nutzers ihn nicht "zufällig" per CryptUnprotectData
-//     ohne diesen Wert öffnen können (Defense in Depth, kein Ersatz für ein
-//     Passwort bei Malware im selben Konto).
-//   - Das Master-Passwort bleibt bei aktivem DPAPI als Wiederherstellungs-Weg
-//     bestehen (z. B. Umzug auf einen neuen Rechner oder macOS).
+//	  - DEK (Data Encryption Key): 256 Bit aus crypto/rand. Er verschlüsselt den
+//	    kompletten JSON-Store in einem Stück. Dadurch sind nicht nur Passwörter,
+//	    sondern auch Hostnamen, Benutzer und Tunnel-Ziele geschützt (Metadaten).
+//	  - AES-256-GCM: authentifizierte Verschlüsselung. Jede Änderung am Chiffrat
+//	    oder am Header (KDF-Parameter, Wraps) lässt das Entschlüsseln scheitern,
+//	    weil der Header als "Additional Authenticated Data" (AAD) mitgeprüft wird.
+//	    Für jedes Speichern wird eine neue 96-Bit-Nonce aus crypto/rand gezogen;
+//	    bei zufälligen Nonces ist das bis ~2^32 Speichervorgänge pro DEK sicher.
+//	  - Master-Passwort: wird nie gespeichert. Argon2id (RFC 9106, speicherhart,
+//	    Standard: t=3, m=64 MiB, p=4) leitet daraus den KEK ab, der den DEK
+//	    "einwickelt" (wrap). Falsches Passwort ⇒ GCM-Tag passt nicht ⇒ Fehler,
+//	    ohne dass ein Orakel über Teilergebnisse entsteht.
+//	  - DPAPI (nur Windows): CryptProtectData bindet den DEK an das Windows-Konto
+//	    des Nutzers (Schlüssel aus dem Anmeldegeheimnis, verwaltet von LSASS).
+//	    Damit entsperrt sich der Store nach der Windows-Anmeldung ohne Eingabe,
+//	    ist aber für andere Konten und auf anderen Rechnern unlesbar. Ein
+//	    zusätzlicher Entropy-Wert bindet den Blob an sshtermy, sodass andere
+//	    Programme desselben Nutzers ihn nicht "zufällig" per CryptUnprotectData
+//	    ohne diesen Wert öffnen können (Defense in Depth, kein Ersatz für ein
+//	    Passwort bei Malware im selben Konto).
+//	  - Das Master-Passwort bleibt bei aktivem DPAPI als Wiederherstellungs-Weg
+//	    bestehen (z. B. Umzug auf einen neuen Rechner oder macOS).
 //
 // Was der Vault bewusst NICHT verhindert: Schadsoftware, die im selben
 // Benutzerkonto läuft, während der Store entsperrt ist, kann den Arbeitsspeicher

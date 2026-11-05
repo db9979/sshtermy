@@ -51,11 +51,11 @@ func (r RemoteInfo) String() string {
 
 // Options für Dial.
 type Options struct {
-	HostKeys   *HostKeyStore
-	Prompt     HostKeyPrompt
-	Resolve    Resolver
-	AskSecret  SecretPrompt // fehlende Passwörter/Passphrasen erfragen (optional)
-	Timeout    time.Duration
+	HostKeys  *HostKeyStore
+	Prompt    HostKeyPrompt
+	Resolve   Resolver
+	AskSecret SecretPrompt // fehlende Passwörter/Passphrasen erfragen (optional)
+	Timeout   time.Duration
 }
 
 // Dial baut die Verbindung auf. Bei JumpHostID wird zuerst der Jump-Host

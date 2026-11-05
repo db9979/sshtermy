@@ -15,12 +15,12 @@ import (
 
 // unlockState: Ersteinrichtung oder Entsperren.
 type unlockState struct {
-	setup    bool
-	pw, pw2  textinput.Model
-	focus    int
-	dpapi    bool
-	err      string
-	busy     bool
+	setup   bool
+	pw, pw2 textinput.Model
+	focus   int
+	dpapi   bool
+	err     string
+	busy    bool
 }
 
 func newUnlock(st *store.Store) unlockState {

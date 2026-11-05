@@ -42,7 +42,7 @@ func (a *App) filtered() []domain.Connection {
 }
 
 func (a *App) managerKeys() [][2]string {
-	k := [][2]string{{"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
+	k := [][2]string{{"Strg+Space", "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
 		{"t", "Tunnel"}, {"s", "KI"}, {"F1", "Hilfe"}, {"F12", "Über"}, {"Strg+Q", "beenden"}}
 	if len(a.sessions) > 0 {
 		k = append([][2]string{{"F10", "zum Terminal"}}, k...)
@@ -83,7 +83,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		m.searching = true
 		return m.search.Focus()
 	case "n":
-		return a.openConnForm(domain.Connection{Port: 22, Auth: domain.AuthAgent})
+		return a.openConnForm(newConnDefaults())
 	case "e":
 		if m.sel < len(list) {
 			return a.openConnForm(list[m.sel])
@@ -429,3 +429,5 @@ func (a *App) viewForm() string {
 }
 
 var _ = store.Dir
+
+func newConnDefaults() domain.Connection { return domain.Connection{Port: 22, Auth: domain.AuthAgent} }
