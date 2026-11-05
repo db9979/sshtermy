@@ -193,6 +193,10 @@ type Settings struct {
 	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
 	NoSessionLog bool   `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
 	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
+
+	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
+	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
+	Keys map[string]string `json:"keys,omitempty"`
 }
 
 // SyncBackend: wohin die verschlüsselte Sync-Datei geschrieben wird.
