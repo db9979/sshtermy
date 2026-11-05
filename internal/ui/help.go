@@ -145,6 +145,8 @@ var helpSections = []helpSection{
 		{"Doppelklick", "öffnen / Wort"},
 		{"Ziehen", "markieren + kopieren"},
 		{"Rechtsklick", "einfügen"},
+		{"Rechtsklick Link", "Menü: Verbinden, Ping"},
+		{"Strg+Klick", "URL im Browser"},
 		{"Rad", "im Verlauf blättern"},
 		{"Shift+Ziehen", "markieren in htop/vim"},
 		{"Palette", "„Maus aus“"},

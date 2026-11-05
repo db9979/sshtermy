@@ -80,11 +80,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
 		}
-		if s.term != nil && s.state == stConnected {
-			s.sel, s.scroll = nil, 0
-			s.term.Paste(m.Content)
-		}
-		return nil
+		return a.guardedPaste(s, m.Content)
 	case tea.KeyPressMsg:
 		key := m.String()
 		// Tippen beendet Markierung und Rückblick (Esc nur das)

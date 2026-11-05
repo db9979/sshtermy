@@ -166,6 +166,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "i", label: "Über sshTermy / Update", hint: a.keys.label(actAbout), run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
 		{icon: "★", label: "Was ist neu (Changelog)", hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
+		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
 	}
 	for _, t := range Themes {
 		t := t

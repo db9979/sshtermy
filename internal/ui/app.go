@@ -215,7 +215,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg, tea.MouseWheelMsg:
 		return a, a.mouse(msg.(tea.MouseMsg))
 	case pasteMsg:
-		a.onPaste(m)
+		return a, a.onPaste(m)
+	case pingDoneMsg:
+		a.onPingDone(m)
 		return a, nil
 
 	case updateMsg:
@@ -282,6 +284,15 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) {
 			return a, a.openPalette()
 		}
+	}
+	if pm, ok := msg.(tea.PasteMsg); ok && a.modal != nil {
+		// Einfügen in einen offenen Dialog: nur das Eingabefeld nimmt es an.
+		if a.modal.kind == mSecret {
+			var cmd tea.Cmd
+			a.modal.in, cmd = a.modal.in.Update(pm)
+			return a, cmd
+		}
+		return a, nil
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.pal != nil && a.modal == nil {
 		var cmd tea.Cmd
@@ -379,7 +390,7 @@ func (a *App) View() tea.View {
 	}
 	body = a.z.scan(body, 0, 0)
 	if a.modal != nil {
-		body = a.overlay(body, a.modal.view(a.s, a.w, a.h))
+		body = a.overlay(body, a.modalView())
 		cur = nil
 	} else if a.pal != nil {
 		body = a.overlay(body, a.viewPalette())
@@ -444,6 +455,9 @@ func (a *App) overlay(base, box string) string {
 	}
 	bw, bh := lipgloss.Width(box), lipgloss.Height(box)
 	x, y := max(0, (a.w-bw)/2), max(0, (a.h-bh)/2)
+	if m := a.modal; m != nil && m.anchored {
+		x, y = clamp(m.at[0]+1, 0, max(0, a.w-bw)), clamp(m.at[1]+1, 0, max(0, a.h-bh))
+	}
 	a.z.rects = a.z.rects[:0]
 	box = a.z.scan(box, x, y)
 	c := lipgloss.NewCompositor(lipgloss.NewLayer(base), lipgloss.NewLayer(box).X(x).Y(y).Z(1))
