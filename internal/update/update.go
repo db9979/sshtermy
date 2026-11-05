@@ -15,7 +15,10 @@
 //     Update unterschieben.
 //  4. Austausch: die laufende Datei wird zu .old umbenannt (geht auch unter
 //     Windows bei laufender .exe), die neue an ihren Platz geschrieben; beim
-//     nächsten Start räumt Cleanup() die .old weg. Neustart durch den Nutzer.
+//     nächsten Start räumt Cleanup() die .old weg.
+//  5. Neustart: Restart() startet die neue Datei (Unix: exec im selben
+//     Prozess; Windows: Kindprozess im selben Konsolenfenster, der alte
+//     wartet nur noch und beendet sich mit dessen Exit-Code).
 package update
 
 import (
@@ -222,18 +225,42 @@ func VerifySignature(data, sig []byte, pubHex string) error {
 	return nil
 }
 
-func replaceSelf(bin []byte) error {
+// exePath merkt sich den Pfad der Programmdatei beim Start. Später geht das
+// nicht mehr zuverlässig: unter Linux zeigt os.Executable() nach dem
+// Umbenennen auf die .old-Datei.
+var exePath string
+
+// Executable: Pfad der Programmdatei, wie er beim Start war.
+func Executable() (string, error) {
+	if exePath != "" {
+		return exePath, nil
+	}
 	exe, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	if r, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = r
+	}
+	exePath = exe
+	return exe, nil
+}
+
+func replaceSelf(bin []byte) error {
+	exe, err := Executable()
 	if err != nil {
 		return err
 	}
-	exe, _ = filepath.EvalSymlinks(exe)
 	tmp := exe + ".new"
 	if err := os.WriteFile(tmp, bin, 0o755); err != nil {
 		return fmt.Errorf("update: keine Schreibrechte im Programmordner: %w", err)
 	}
 	old := exe + ".old"
-	_ = os.Remove(old)
+	if err := os.Remove(old); err != nil && !errors.Is(err, os.ErrNotExist) {
+		// Unter Windows läuft die .old evtl. noch (der Elternprozess eines
+		// früheren Neustarts wartet darin). Dann eben ein eigener Name.
+		old = fmt.Sprintf("%s.%d.old", exe, time.Now().UnixNano())
+	}
 	if err := os.Rename(exe, old); err != nil {
 		os.Remove(tmp)
 		return err
@@ -245,9 +272,22 @@ func replaceSelf(bin []byte) error {
 	return nil
 }
 
-// Cleanup entfernt eine .old-Datei vom letzten Update.
+// Cleanup merkt sich den Programmpfad und entfernt .old-Dateien früherer
+// Updates (was noch läuft, bleibt liegen und fällt beim nächsten Mal weg).
 func Cleanup() {
-	if exe, err := os.Executable(); err == nil {
-		_ = os.Remove(exe + ".old")
+	exe, err := Executable()
+	if err != nil {
+		return
+	}
+	dir, base := filepath.Dir(exe), filepath.Base(exe)
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range ents {
+		n := e.Name()
+		if strings.HasPrefix(n, base+".") && strings.HasSuffix(n, ".old") && !e.IsDir() {
+			_ = os.Remove(filepath.Join(dir, n))
+		}
 	}
 }

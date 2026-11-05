@@ -160,7 +160,11 @@ func (a *App) paletteItems() []palItem {
 		{icon: "⇅", label: "Sync zwischen Rechnern einrichten", hint: "y", run: func() tea.Cmd { return a.openSync() }},
 		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		{icon: "i", label: "Über sshTermy / Update", hint: "F12", run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
+		{icon: "★", label: "Was ist neu (Changelog)", hint: "F12 w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
+	}
+	if a.restartPending != "" {
+		actions = append(actions, palItem{icon: "⟳", label: "Neu starten (v" + a.restartPending + " aktivieren)", hint: "Update", run: func() tea.Cmd { return a.askRestart() }})
 	}
 	if a.st.SyncConfig().Enabled() {
 		actions = append(actions, palItem{icon: "⇅", label: "Jetzt synchronisieren", hint: "Sync", run: func() tea.Cmd {

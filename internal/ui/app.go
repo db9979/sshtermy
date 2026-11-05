@@ -72,7 +72,10 @@ type App struct {
 	toast      string
 	toastUntil time.Time
 	rel        *update.Release
-	lastKey    time.Time
+	// restartPending: installierte, noch nicht gestartete Version.
+	restartPending string
+	restart        bool // nach dem Beenden neu starten (siehe Restart)
+	lastKey        time.Time
 
 	sync  syncState
 	wiz   *syncWizard
@@ -211,10 +214,13 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.modal = nil
 		if m.err != nil {
 			a.flash("Update fehlgeschlagen: " + m.err.Error())
-		} else {
-			a.flash("Update installiert. Bitte sshTermy neu starten.")
+			return a, nil
 		}
-		return a, nil
+		if a.rel != nil {
+			a.restartPending = a.rel.Version
+		}
+		a.rel = nil
+		return a, a.askRestart()
 	}
 
 	// Sync zwischen Rechnern
@@ -356,6 +362,8 @@ func (a *App) header(right string) string {
 		right = a.s.Header.Foreground(a.s.T.Warn).Render(" " + a.toast + " ")
 	} else if a.rel != nil && right == "" {
 		right = a.keyZone("F12", a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+" verfügbar · F12 "))
+	} else if a.restartPending != "" && right == "" {
+		right = a.keyZone("F12", a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+" installiert · Neustart F12 "))
 	}
 	gap := a.w - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 0 {
