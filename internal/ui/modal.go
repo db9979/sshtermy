@@ -86,7 +86,7 @@ func (a *App) aboutModal() *modal {
 	} else {
 		b += "c = nach Updates suchen · "
 	}
-	b += "w = was ist neu · k = Kaffee spendieren · Esc = schließen"
+	b += "w = was ist neu · b = Kaffee spendieren · Esc = schließen"
 	return &modal{kind: mAbout, title: "Über " + version.Name, body: b}
 }
 
@@ -187,7 +187,7 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 			}
 		case "w":
 			a.modal = a.changelogModal(nil)
-		case "k":
+		case "b":
 			return a.openURL(version.Coffee)
 		case "esc", "q", "enter":
 			a.modal = nil
@@ -209,6 +209,9 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 			a.modal = nil
 		}
 	case mChangelog:
+		if key == "b" {
+			return a.openURL(version.Coffee)
+		}
 		if m.changelogKey(key, a.h) {
 			a.modal = nil
 		}

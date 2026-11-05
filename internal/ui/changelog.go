@@ -8,6 +8,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/changelog"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/update"
 	"github.com/db9979/sshtermy/internal/version"
 )
@@ -53,6 +54,8 @@ func (a *App) changelogModal(entries []changelog.Entry) *modal {
 	if len(lines) == 0 {
 		lines = []string{s.Muted.Render("Für diesen Build gibt es keinen Changelog.")}
 	}
+	// Nach einem Update (und im Changelog) dezent auf die Kaffee-Seite hinweisen.
+	lines = append(lines, "", s.Muted.Render("☕ Gefällt dir sshTermy? b öffnet ")+s.Accent.Render(version.Coffee))
 	return &modal{kind: mChangelog, title: title, lines: lines}
 }
 
@@ -99,6 +102,9 @@ func (m *modal) changelogKey(key string, h int) (closeIt bool) {
 	return false
 }
 
+// openCoffee öffnet die Buy-Me-a-Coffee-Seite; in Tests austauschbar.
+var openCoffee = func() { _ = sshx.OpenBrowser(version.Coffee) }
+
 // showWhatsNew: nach dem Entsperren einmal je neuer Version die Neuerungen
 // zeigen. Bei der Ersteinrichtung nicht (dann ist alles neu).
 func (a *App) showWhatsNew(firstSetup bool) {
@@ -114,6 +120,8 @@ func (a *App) showWhatsNew(firstSetup bool) {
 	if firstSetup || (last != "" && !update.Newer(cur, last)) {
 		return // frisch eingerichtet oder ältere Version gestartet
 	}
+	// Dominik 2026-11-05: nach jedem Update einmal die Kaffee-Seite im Browser öffnen.
+	openCoffee()
 	all := changelog.All()
 	entries := changelog.Since(all, last, cur, update.Newer)
 	if last == "" && len(entries) > 1 {

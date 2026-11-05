@@ -498,9 +498,9 @@ func (a *App) modalButtons() string {
 		} else {
 			keys = append(keys, [2]string{"c", "nach Updates suchen"})
 		}
-		keys = append(keys, [2]string{"w", "was ist neu"}, [2]string{"Esc", "schließen"})
+		keys = append(keys, [2]string{"w", "was ist neu"}, [2]string{"b", "☕ Kaffee spendieren"}, [2]string{"Esc", "schließen"})
 	case mChangelog:
-		keys = [][2]string{{"Esc", "schließen"}}
+		keys = [][2]string{{"b", "☕ Kaffee spendieren"}, {"Esc", "schließen"}}
 	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", "schließen"}}
 	case mLLM:
