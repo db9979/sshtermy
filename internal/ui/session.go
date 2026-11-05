@@ -223,3 +223,18 @@ func lastN(x []string, n int) []string {
 	}
 	return x
 }
+
+// rememberNetDevice: Der Rückfall hat ein Netzwerkgerät erkannt. Damit der
+// nächste Aufbau gleich ohne Systemabfrage (und ohne Wartezeit) läuft, wird
+// der Gerätetyp in der Verbindung gespeichert.
+func (a *App) rememberNetDevice(s *session) {
+	c, ok := a.st.Connection(s.conn.ID)
+	if !ok || c.Device != domain.DeviceAuto {
+		return
+	}
+	c.Device = domain.DeviceNetwork
+	if saved, err := a.st.UpsertConnection(c); err == nil {
+		s.conn = saved
+		a.flash(c.Alias + " als Netzwerkgerät gemerkt (ohne Systemabfrage)")
+	}
+}
