@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read # PR-Beschreibungen für den Changelog
 
 concurrency:
   group: release
@@ -38,6 +39,13 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "sshTermy v$V"
 
+      - name: Changelog erzeugen („Was ist neu“ in der App + Release-Notizen)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          go run ./tools/changelog -out internal/changelog/CHANGELOG.md -notes notes.md
+          head -20 internal/changelog/CHANGELOG.md
+
       - name: Bauen (windows arm64/386/amd64, darwin arm64/amd64, linux amd64/arm64)
         env:
           UPDATE_PUBKEY: ${{ vars.UPDATE_PUBKEY }}
@@ -62,9 +70,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           V=${{ steps.v.outputs.version }}
-          PREV=$(git describe --tags --abbrev=0 2>/dev/null || true)
-          if [ -n "$PREV" ]; then RANGE="$PREV..HEAD"; else RANGE="HEAD"; fi
-          git log --pretty='- %s' $RANGE | head -30 > notes.md
           gh release create "v$V" dist/* --title "sshTermy v$V" --notes-file notes.md --latest
 
       - name: Alte Releases aufräumen (die letzten 10 bleiben)
