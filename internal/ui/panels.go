@@ -570,11 +570,21 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 				meta := plural(len(rb.Steps), "Schritt", "Schritte")
 				line := "▶ " + trunc(rb.Name, w-lipgloss.Width(meta)-4)
 				gap := max(1, w-lipgloss.Width(line)-lipgloss.Width(meta))
+				row := st.AI.Render("▶ ") + st.Text.Render(line[len("▶ "):]) + strings.Repeat(" ", gap) + st.Muted.Render(meta)
 				if i == g.rbSel {
-					b.WriteString(st.Selected.Width(w).Render(line+strings.Repeat(" ", gap)+meta) + "\n")
-				} else {
-					b.WriteString(st.AI.Render("▶ ") + st.Text.Render(line[len("▶ "):]) + strings.Repeat(" ", gap) + st.Muted.Render(meta) + "\n")
+					row = st.Selected.Width(w).Render(line + strings.Repeat(" ", gap) + meta)
 				}
+				i, rb := i, rb
+				b.WriteString(a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+					s.panelFocus = true
+					g.rbSel = i
+					g.input.SetValue(rb.Goal)
+					g.input.CursorEnd()
+					if double {
+						return a.startRunbook(s, rb)
+					}
+					return g.input.Focus()
+				}) + "\n")
 			}
 		}
 		return
@@ -667,7 +677,16 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 		out := codeBlock.ReplaceAllStringFunc(ans, func(m string) string {
 			sub := codeBlock.FindStringSubmatch(m)
 			n++
-			return st.Key.Render(fmt.Sprintf("%d", n)) + " " + st.Code.Render(strings.TrimSpace(sub[1]))
+			code := strings.TrimSpace(sub[1])
+			txt := st.Key.Render(fmt.Sprintf("%d", n)) + " " + st.Code.Render(code)
+			if c := strings.TrimPrefix(code, "$ "); c != "" && !strings.Contains(c, "\n") {
+				txt = a.z.click(txt, func(tea.Mouse, bool) tea.Cmd {
+					s.term.SendText(c) // nur einfügen, Enter drückt der Mensch
+					s.panelFocus = false
+					return nil
+				})
+			}
+			return txt
 		})
 		b.WriteString(wrap(st.Text.Render(out), w) + "\n")
 	}
@@ -700,11 +719,19 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		if i == s.tunSel {
 			name = st.Selected.Render(name)
 		}
-		b.WriteString(dot + " " + name + "\n")
+		i := i
+		b.WriteString(a.z.click(dot+" "+name, func(_ tea.Mouse, double bool) tea.Cmd {
+			s.panelFocus, s.tunSel = true, i
+			if double {
+				return a.pressKey("⏎")
+			}
+			return nil
+		}) + "\n")
 		b.WriteString("  " + st.Muted.Render(t.Spec()) + "\n")
 		if at != nil {
 			if u := at.URL(); u != "" {
-				b.WriteString("  " + st.Accent.Underline(true).Render(u) + st.Muted.Render("  o öffnen") + "\n")
+				b.WriteString("  " + a.z.click(st.Accent.Underline(true).Render(u)+st.Muted.Render("  o öffnen"),
+					func(tea.Mouse, bool) tea.Cmd { _ = sshx.OpenBrowser(u); return nil }) + "\n")
 			} else {
 				b.WriteString("  " + st.Text.Render("lauscht auf "+at.Addr) + "\n")
 			}

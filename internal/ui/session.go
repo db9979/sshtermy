@@ -64,6 +64,13 @@ type session struct {
 	ask        askState
 	tunSel     int
 	files      filesState
+
+	// Maus im Terminal
+	scroll    int          // Zeilen zurück im Verlauf (0 = live)
+	sbSeen    int          // Scrollback-Länge beim letzten Bild
+	sel       *termemu.Sel // Markierung
+	selecting bool         // linke Taste gedrückt, Markierung wächst
+	fwdHeld   bool         // Taste gedrückt, Ereignisse gehen an den Server
 }
 
 // writer für den PTY-Strom: füttert den Emulator und meldet der Oberfläche,

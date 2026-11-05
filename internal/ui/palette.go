@@ -160,6 +160,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "✦", label: "KI-Einstellungen", hint: "s", run: func() tea.Cmd { return a.openSettings() }},
 		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = helpModal(); return nil }},
 		{icon: "i", label: "Über sshTermy / Update", hint: "F12", run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
+		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
 	}
 	if !inTerm {
 		actions = actions[2:]
@@ -264,6 +265,16 @@ func (a *App) viewPalette() string {
 		if i == p.sel {
 			line = st.Selected.Width(w - 4).Render(it.icon + " " + label + strings.Repeat(" ", gap) + ansiPlain(hint))
 		}
+		i, it := i, it
+		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+			p.sel = i
+			if it.danger != "" && p.armed != i {
+				p.armed = i // rot: erst scharf schalten, zweiter Klick führt aus
+				return nil
+			}
+			a.pal = nil
+			return it.run()
+		})
 		b.WriteString(line + "\n")
 		rows++
 	}
@@ -271,7 +282,16 @@ func (a *App) viewPalette() string {
 		b.WriteString(st.Muted.Render("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.") + "\n")
 	}
 	b.WriteString("\n" + st.Muted.Render(fmt.Sprintf("↑↓ wählen · ⏎ ausführen · Tab KI fragen · Esc schließen · %d Einträge", len(items))))
-	return st.Modal.BorderForeground(st.T.AI).Padding(0, 1).Width(w).Render(b.String())
+	box := st.Modal.BorderForeground(st.T.AI).Padding(0, 1).Width(w).Render(b.String())
+	return a.z.mark(box, zoneAction{block: true, wheel: func(up bool) tea.Cmd {
+		if up {
+			p.sel = max(0, p.sel-1)
+		} else {
+			p.sel = min(len(items)-1, p.sel+1)
+		}
+		p.armed = -1
+		return nil
+	}})
 }
 
 func ansiPlain(s string) string { return lipgloss.NewStyle().Render(ansi.Strip(s)) }

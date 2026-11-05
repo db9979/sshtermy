@@ -142,7 +142,8 @@ func (a *App) viewManager() string {
 	if a.mgr.searching || a.mgr.search.Value() != "" {
 		lb.WriteString(" " + s.Accent.Render("/") + " " + a.mgr.search.View() + "\n\n")
 	} else {
-		lb.WriteString(s.PanelTitle.Foreground(s.T.Accent).Render(" Verbindungen") + s.Muted.Render(fmt.Sprintf("  %d", len(list))) + "\n\n")
+		lb.WriteString(s.PanelTitle.Foreground(s.T.Accent).Render(" Verbindungen") + s.Muted.Render(fmt.Sprintf("  %d", len(list))) +
+			"  " + a.keyZone("/", s.Muted.Render("/ suchen")) + "\n\n")
 	}
 	group := "\x00"
 	for i, c := range list {
@@ -164,6 +165,14 @@ func (a *App) viewManager() string {
 		if i == a.mgr.sel {
 			line = s.Selected.Width(leftW - 1).Render(fmt.Sprintf(" %s %-18s %s", "▶", trunc(c.Alias, 18), trunc(c.Username+"@"+c.Host, leftW-26)))
 		}
+		i, c := i, c
+		line = a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+			a.mgr.sel = i
+			if double {
+				return a.connect(c)
+			}
+			return nil
+		})
 		lb.WriteString(line + "\n")
 	}
 	if len(list) == 0 {
@@ -176,7 +185,8 @@ func (a *App) viewManager() string {
 	var rb strings.Builder
 	if a.mgr.sel < len(list) {
 		c := list[a.mgr.sel]
-		rb.WriteString(s.Accent.Render(" "+c.Alias) + "  " + s.Muted.Render(c.Group) + "\n\n")
+		rb.WriteString(s.Accent.Render(" "+c.Alias) + "  " + s.Muted.Render(c.Group) + "   " +
+			a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render("verbinden")) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render("bearbeiten")) + "\n\n")
 		row := func(k, v string) { rb.WriteString(" " + s.Label.Render(k) + s.Text.Render(v) + "\n") }
 		row("Ziel", fmt.Sprintf("%s@%s", c.Username, c.Addr()))
 		auth := map[domain.AuthMethod]string{domain.AuthPassword: "Passwort (verschlüsselt)", domain.AuthKeyFile: "Keyfile", domain.AuthAgent: "SSH-Agent"}[c.Auth]
@@ -200,7 +210,7 @@ func (a *App) viewManager() string {
 			row("Zuletzt", c.LastUsed.Format("02.01.2006 15:04"))
 		}
 		tuns := a.st.Tunnels(c.ID)
-		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + s.Muted.Render("  t = neuer Tunnel") + "\n")
+		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render("t = neuer Tunnel")) + "\n")
 		if len(tuns) == 0 {
 			rb.WriteString(s.Muted.Render("  keine") + "\n")
 		}
@@ -424,7 +434,7 @@ func (a *App) viewForm() string {
 		return ""
 	}
 	w := min(100, a.w-4)
-	body := a.form.view(a.s, w-4)
+	body := a.form.view(a.s, w-4, &a.z)
 	if a.scr == scrSettings {
 		body += a.viewLLMExtra(w - 4)
 	}

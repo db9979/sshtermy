@@ -81,11 +81,21 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.panelMsg(s, msg)
 		}
 		if s.term != nil && s.state == stConnected {
+			s.sel, s.scroll = nil, 0
 			s.term.Paste(m.Content)
 		}
 		return nil
 	case tea.KeyPressMsg:
 		key := m.String()
+		// Tippen beendet Markierung und Rückblick (Esc nur das)
+		if s.scroll > 0 && key == "esc" && !s.panelFocus && !s.files.open {
+			s.scroll, s.sel = 0, nil
+			return nil
+		}
+		s.sel, s.selecting = nil, false
+		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
+			s.scroll = 0
+		}
 		// globale Tasten der Terminal-Ansicht
 		switch key {
 		case "f1":
@@ -306,11 +316,18 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	for i, x := range a.sessions {
 		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○")}[x.state]
 		label := " " + trunc(x.conn.Alias, 16) + " "
+		tab := st.Tab.Render(dot + label)
 		if i == a.cur {
-			tabs.WriteString(st.TabActive.Render(dot + label))
-		} else {
-			tabs.WriteString(st.Tab.Render(dot + label))
+			tab = st.TabActive.Render(dot + label)
 		}
+		i := i
+		tabs.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
+			if i < len(a.sessions) {
+				a.cur = i
+				a.resize(a.current())
+			}
+			return nil
+		}))
 	}
 	top := a.header(tabs.String())
 
@@ -330,10 +347,15 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	if !cfg.SuggestEnabled {
 		ai = st.Badge.Foreground(st.T.Muted).Render("✦ aus")
 	}
-	tun := st.Badge.Render("⇄ " + plural(nT, "Tunnel", "Tunnel"))
+	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { a.returnToTerminal = true; return a.openSettings() })
+	tun := a.keyZone("F4", st.Badge.Render("⇄ "+plural(nT, "Tunnel", "Tunnel")))
 	goal := ""
 	if s.goal.active {
-		goal = st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv")
+		goal = a.keyZone("F2", st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv"))
+	}
+	if s.scroll > 0 {
+		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf("⇡ Verlauf −%d · Esc", s.scroll)),
+			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
 	right := goal + " " + tun + " " + ai
 	gap := max(1, a.w-lipgloss.Width(info)-lipgloss.Width(right)-1)
@@ -352,12 +374,26 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		msg := st.Danger.Render("✗ " + orDefault(s.err, "getrennt"))
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
 			msg+"\n\n"+st.Muted.Render("⏎ neu verbinden · x Tab schließen · F10 Manager"))
+	case s.scroll > 0 || s.sel != nil:
+		// Rückblick im Verlauf und/oder Markierung
+		if sb := s.term.ScrollbackLen(); s.scroll > 0 && sb > s.sbSeen {
+			s.scroll = min(sb, s.scroll+sb-s.sbSeen) // neue Ausgabe verschiebt die Ansicht nicht
+		}
+		s.scroll = min(s.scroll, s.term.ScrollbackLen())
+		body = s.term.Render(s.scroll, s.sel)
+		if x, y, vis := s.term.Cursor(); vis && !s.panelFocus && s.scroll == 0 {
+			cur = tea.NewCursor(x, y+topRows)
+			cur.Color = st.T.Accent
+		}
 	default:
 		body = s.term.View(a.visibleGhost(s), func(g string) string { return st.Ghost.Render(g) })
 		if x, y, vis := s.term.Cursor(); vis && !s.panelFocus {
 			cur = tea.NewCursor(x, y+topRows)
 			cur.Color = st.T.Accent
 		}
+	}
+	if s.term != nil {
+		s.sbSeen = s.term.ScrollbackLen()
 	}
 	if s.files.open {
 		body, cur = a.viewFiles(s, a.w, rows), nil
@@ -372,7 +408,8 @@ func (a *App) chipBar(s *session) string {
 	st := a.s
 	var b strings.Builder
 	if g := a.visibleGhost(s); g != "" {
-		b.WriteString(st.AI.Render(" ✦ ") + st.Muted.Render("Tab übernimmt: ") + st.Ghost.Render(trunc(g, 60)) + "  ")
+		b.WriteString(a.z.click(st.AI.Render(" ✦ ")+st.Muted.Render("Tab übernimmt: ")+st.Ghost.Render(trunc(g, 60)),
+			func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("Tab") }) + "  ")
 	} else if len(s.chips) > 0 {
 		b.WriteString(st.AI.Render(" ✦ Als Nächstes: "))
 		for i, c := range s.chips {
@@ -380,7 +417,9 @@ func (a *App) chipBar(s *session) string {
 			if len(c.Danger) > 0 {
 				style = st.ChipDanger
 			}
-			b.WriteString(st.Key.Render(fmt.Sprintf("Alt+%d", i+1)) + style.Render(trunc(c.Command, 34)) + " ")
+			key := fmt.Sprintf("alt+%d", i+1)
+			b.WriteString(a.z.click(st.Key.Render(fmt.Sprintf("Alt+%d", i+1))+style.Render(trunc(c.Command, 34)),
+				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey(key) }) + " ")
 		}
 		if len(s.chips) > 0 && s.chips[0].Reason != "" {
 			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))

@@ -290,6 +290,18 @@ func (s *Store) Settings() domain.Settings {
 	return s.data.Settings
 }
 
+// UpdateSettings ändert die Einstellungen und speichert.
+func (s *Store) UpdateSettings(f func(*domain.Settings)) error {
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return vault.ErrLocked
+	}
+	f(&s.data.Settings)
+	s.mu.Unlock()
+	return s.save()
+}
+
 // Runbooks liefert alle Runbooks, die für connID gelten (eigene und globale),
 // zuletzt benutzte zuerst.
 func (s *Store) Runbooks(connID string) []domain.Runbook {

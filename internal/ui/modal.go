@@ -78,7 +78,7 @@ Ziel-Modus   ↑↓ Runbook wählen · Strg+S als Runbook speichern · Strg+D Ru
 Rote Befehle (löschen, neu starten, Firewall …) brauchen zweimal ⏎.
 Palette      Strg+Leertaste: Ziel, Frage, Vorschläge, Tunnel, Verbindungen, Aktionen
              ⏎ ausführen · Tab KI fragen · ↑↓ wählen · Esc schließen
-Überall      F1 Hilfe · F12 Über/Update · Strg+Q beenden`)}
+Überall      F1 Hilfe · F12 Über/Update · Strg+Q beenden`) + "\n" + mouseHelp}
 }
 
 func firstLines(s string, n int) string {

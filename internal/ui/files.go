@@ -383,12 +383,13 @@ func (a *App) viewFiles(s *session, w, h int) string {
 	lw := (w - 1) / 2
 	rw := w - 1 - lw
 	sep := lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("│\n", ph-1) + "│")
-	cols := lipgloss.JoinHorizontal(lipgloss.Top, a.viewPane(f.panes[0], lw, ph, f.side == 0), sep, a.viewPane(f.panes[1], rw, ph, f.side == 1))
+	cols := lipgloss.JoinHorizontal(lipgloss.Top, a.viewPane(f, 0, lw, ph), sep, a.viewPane(f, 1, rw, ph))
 	return cols + "\n" + lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w)) + "\n" + ansiTruncate(status, w)
 }
 
-func (a *App) viewPane(p *pane, w, h int, active bool) string {
+func (a *App) viewPane(f *filesState, side, w, h int) string {
 	st := a.s
+	p, active := f.panes[side], f.side == side
 	var b strings.Builder
 	title := " " + p.fs.Label() + " "
 	ts := st.Tab
@@ -435,12 +436,33 @@ func (a *App) viewPane(p *pane, w, h int, active bool) string {
 		default:
 			line = st.Text.Render(line)
 		}
+		i, e := i, e
+		line = a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+			f.side, p.sel = side, i
+			if double && e.IsDir {
+				p.cd(e.Name, f.hidden)
+			}
+			return nil
+		})
 		b.WriteString(line + "\n")
 	}
 	for ; n < rows; n++ {
 		b.WriteString("\n")
 	}
-	return lipgloss.NewStyle().Width(w).Height(h).MaxHeight(h).Render(strings.TrimSuffix(b.String(), "\n"))
+	box := lipgloss.NewStyle().Width(w).Height(h).MaxHeight(h).Render(strings.TrimSuffix(b.String(), "\n"))
+	return a.z.mark(box, zoneAction{
+		block: true,
+		click: func(tea.Mouse, bool) tea.Cmd { f.side = side; return nil },
+		wheel: func(up bool) tea.Cmd {
+			f.side = side
+			if up {
+				p.sel = max(0, p.sel-3)
+			} else {
+				p.sel = min(len(p.entries)-1, p.sel+3)
+			}
+			return nil
+		},
+	})
 }
 
 func humanBytes(n int64) string {

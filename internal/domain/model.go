@@ -162,10 +162,11 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`          // "nacht" | "hell" | "kontrast"
-	UseDPAPI     bool   `json:"use_dpapi"`      // Windows: Store-Schlüssel zusätzlich per DPAPI
-	LockAfterMin int    `json:"lock_after_min"` // 0 = nie automatisch sperren
-	Language     string `json:"language"`       // "de" | "en"
+	Theme        string `json:"theme"`              // "nacht" | "hell" | "kontrast"
+	UseDPAPI     bool   `json:"use_dpapi"`          // Windows: Store-Schlüssel zusätzlich per DPAPI
+	LockAfterMin int    `json:"lock_after_min"`     // 0 = nie automatisch sperren
+	Language     string `json:"language"`           // "de" | "en"
+	NoMouse      bool   `json:"no_mouse,omitempty"` // Maus nicht einfangen (Terminalfenster markiert selbst)
 }
 
 // Data ist alles, was verschlüsselt auf der Platte liegt.
