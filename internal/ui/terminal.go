@@ -34,7 +34,7 @@ func (a *App) panelWidth(s *session) int {
 }
 
 func (a *App) termSize(s *session) (int, int) {
-	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows)
+	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows-a.cheatRows())
 }
 
 func (a *App) resize(s *session) {
@@ -107,6 +107,8 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		case "f10":
 			a.scr = scrManager
 			return nil
+		case "f9":
+			return a.toggleCheat()
 		case "f7", "f8":
 			if len(a.sessions) > 1 {
 				d := 1
@@ -125,6 +127,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if s.files.open {
 			return a.filesKey(s, m)
+		}
+		if i, ok := quickIndex(key); ok {
+			return a.runQuick(s, i)
 		}
 		switch key {
 		case "f2", "f3", "f4":
@@ -401,7 +406,13 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, a.chipBar(s), a.footer(a.terminalKeys(s))), cur
+	parts := []string{top, bar, body, a.chipBar(s)}
+	if a.cheatRows() > 0 {
+		cl := a.cheatLine()
+		parts = append(parts, cl+strings.Repeat(" ", max(0, a.w-lipgloss.Width(cl))))
+	}
+	parts = append(parts, a.footer(a.terminalKeys(s)))
+	return lipgloss.JoinVertical(lipgloss.Left, parts...), cur
 }
 
 func (a *App) chipBar(s *session) string {
@@ -424,6 +435,8 @@ func (a *App) chipBar(s *session) string {
 		if len(s.chips) > 0 && s.chips[0].Reason != "" {
 			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))
 		}
+	} else {
+		b.WriteString(a.quickBar(s))
 	}
 	out := b.String()
 	if w := lipgloss.Width(out); w < a.w {

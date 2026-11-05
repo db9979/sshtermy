@@ -43,7 +43,7 @@ func (a *App) filtered() []domain.Connection {
 
 func (a *App) managerKeys() [][2]string {
 	k := [][2]string{{"Strg+Space", "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
-		{"t", "Tunnel"}, {"s", "KI"}, {"y", "Sync"}, {"F1", "Hilfe"}, {"F12", "Über"}, {"Strg+Q", "beenden"}}
+		{"t", "Tunnel"}, {"q", "Schnellbefehle"}, {"s", "KI"}, {"y", "Sync"}, {"F1", "Hilfe"}, {"F12", "Über"}, {"Strg+Q", "beenden"}}
 	if len(a.sessions) > 0 {
 		k = append([][2]string{{"F10", "zum Terminal"}}, k...)
 	}
@@ -103,6 +103,12 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		if m.sel < len(list) {
 			return a.openTunnelForm(domain.Tunnel{ConnectionID: list[m.sel].ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
 		}
+	case "q":
+		if m.sel < len(list) {
+			return a.openQuickForm(list[m.sel], "")
+		}
+	case "f9":
+		return a.toggleCheat()
 	case "s":
 		return a.openSettings()
 	case "y":
@@ -125,7 +131,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 
 func (a *App) connect(c domain.Connection) tea.Cmd {
 	a.nextSID++
-	s := &session{id: a.nextSID, conn: c, state: stConnecting, started: time.Now(), chipArmed: -1}
+	s := &session{id: a.nextSID, conn: c, state: stConnecting, started: time.Now(), chipArmed: -1, quickArmed: -1}
 	a.sessions = append(a.sessions, s)
 	a.cur = len(a.sessions) - 1
 	a.scr = scrTerminal
@@ -336,6 +342,9 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 			return cmd
 		}
 	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrQuickForm && a.quickFormKey(k) {
+		return nil
+	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" {
 		a.form = nil
 		a.scr = scrManager
@@ -356,6 +365,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveTunnel()
 	case scrSettings:
 		err = a.saveSettings()
+	case scrQuickForm:
+		err = a.saveQuick()
 	}
 	if err != nil {
 		a.form.err = err.Error()

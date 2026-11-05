@@ -459,6 +459,8 @@ func (a *App) modalButtons() string {
 		keys = [][2]string{{"Esc", "schließen"}}
 	case mHelp:
 		keys = [][2]string{{"Esc", "schließen"}}
+	case mTour:
+		keys = tourButtons(a.modal)
 	default:
 		return ""
 	}
