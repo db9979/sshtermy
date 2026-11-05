@@ -138,7 +138,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 		s.secrets = &secretCache{}
 	}
 	sc := s.secrets
-	keepTerm := s.term != nil // Neuverbindung: Verlauf bleibt stehen
+	keepTerm := s.term != nil && s.rc.active // Auto-Reconnect: Verlauf bleibt stehen
 	return func() tea.Msg {
 		opts := sshx.Options{
 			HostKeys: hk,

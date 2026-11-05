@@ -118,10 +118,10 @@ func (a *App) sessionBar(s *session) string {
 		ai = st.Badge.Foreground(st.T.Muted).Render("✦ aus")
 	}
 	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { a.returnToTerminal = true; return a.openSettings() })
-	tun := a.keyZone("F4", st.Badge.Render("⇄ "+plural(nT, "Tunnel", "Tunnel")))
+	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, "Tunnel", "Tunnel")))
 	goal := ""
 	if s.goal.active {
-		goal = a.keyZone("F2", st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv"))
+		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render("◎ Ziel aktiv"))
 	}
 	if s.scroll > 0 {
 		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf("⇡ Verlauf −%d · Esc", s.scroll)),

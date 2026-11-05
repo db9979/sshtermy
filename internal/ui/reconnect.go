@@ -165,14 +165,31 @@ func (s *session) noteCommand(cmd string) {
 	if isQuitCommand(cmd) {
 		s.quitAt = time.Now()
 	}
-	if s.term != nil {
-		scr := s.term.PlainLines(6)
-		if strings.Contains(scr, "[detached") || strings.Contains(scr, "[exited]") || strings.Contains(scr, "[screen is terminating]") {
-			s.mux = muxState{}
-		}
-	}
+	s.checkMuxGone()
 	if m, ok := parseMux(cmd); ok {
 		s.mux = m
+	}
+}
+
+// muxGone: Meldungen, nach denen keine tmux/screen-Sitzung mehr offen ist
+// (verlassen, beendet oder gar nicht erst gestartet).
+var muxGone = []string{
+	"[detached", "[exited]", "[screen is terminating]", "[lost tty]",
+	"command not found", "Befehl nicht gefunden", "no sessions", "There is no screen to be",
+	"can't find session", "no server running",
+}
+
+// checkMuxGone prüft die letzten Zeilen (vor dem nächsten Befehl und beim Abbruch).
+func (s *session) checkMuxGone() {
+	if s.mux.kind == "" || s.term == nil || s.term.AltScreen() {
+		return
+	}
+	scr := s.term.PlainLines(6)
+	for _, g := range muxGone {
+		if strings.Contains(scr, g) {
+			s.mux = muxState{}
+			return
+		}
 	}
 }
 
@@ -249,6 +266,7 @@ func (a *App) beginReconnect(s *session, cause string) {
 	}
 	if s.term != nil {
 		s.rc.alt = s.term.AltScreen()
+		s.checkMuxGone()
 	}
 	s.suspend()
 	wait := reconnectWaits[s.rc.attempts]
