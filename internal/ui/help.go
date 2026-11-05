@@ -70,7 +70,8 @@ var helpSections = []helpSection{
 		{"F10", "zum Manager"},
 	}},
 	{hcGoal, "◎", "Ziel-Modus", "F2", true, [][2]string{
-		{"⏎", "Befehl ausführen"},
+		{"⏎", "Ziel starten / ausführen"},
+		{"⇧⏎ / Alt+⏎", "neue Zeile im Ziel"},
 		{"i", "nur einfügen (Dry-Run)"},
 		{"e", "bearbeiten"},
 		{"s", "überspringen"},
@@ -82,6 +83,7 @@ var helpSections = []helpSection{
 	}},
 	{hcAsk, "✦", "KI fragen", "F3", true, [][2]string{
 		{"⏎", "Frage senden"},
+		{"⇧⏎ / Alt+⏎", "neue Zeile"},
 		{"1…9", "Befehl einfügen"},
 		{"n", "neue Frage"},
 	}},
