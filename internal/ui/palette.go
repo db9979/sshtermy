@@ -162,6 +162,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "?", label: "Tastenkürzel anzeigen", hint: a.keys.label(actHelp), run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		{icon: "⌨", label: "Tastenkürzel anpassen", hint: a.keys.label(actKeys), run: func() tea.Cmd { return a.openKeys() }},
 		{icon: "i", label: "Über sshTermy / Update", hint: a.keys.label(actAbout), run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
+		{icon: "★", label: "Was ist neu (Changelog)", hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
 	}
 	for _, t := range Themes {
@@ -171,6 +172,9 @@ func (a *App) paletteItems() []palItem {
 			hint = "aktiv"
 		}
 		actions = append(actions, palItem{icon: "◐", label: "Aussehen: " + t.Label, hint: hint, run: func() tea.Cmd { return a.setTheme(t.Name) }})
+	}
+	if a.restartPending != "" {
+		actions = append(actions, palItem{icon: "⟳", label: "Neu starten (v" + a.restartPending + " aktivieren)", hint: "Update", run: func() tea.Cmd { return a.askRestart() }})
 	}
 	if a.st.SyncConfig().Enabled() {
 		actions = append(actions, palItem{icon: "⇅", label: "Jetzt synchronisieren", hint: "Sync", run: func() tea.Cmd {
