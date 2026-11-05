@@ -156,6 +156,8 @@ func (a *App) paletteItems() []palItem {
 		}},
 		{icon: "≡", label: "Verbindungs-Manager", hint: "F10", run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: "Neue Verbindung", hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		{icon: "⇉", label: "Broadcast: Befehl auf mehreren Hosts", hint: "b", run: func() tea.Cmd { return a.openBroadcast() }},
+		{icon: "⌕", label: "Netzwerk-Scan: SSH-Geräte finden", hint: "f", run: func() tea.Cmd { return a.openScan() }},
 		{icon: "✦", label: "KI-Einstellungen", hint: "s", run: func() tea.Cmd { return a.openSettings() }},
 		{icon: "⇅", label: "Sync zwischen Rechnern einrichten", hint: "y", run: func() tea.Cmd { return a.openSync() }},
 		{icon: "?", label: "Tastenkürzel", hint: "F1", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},

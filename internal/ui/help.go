@@ -25,6 +25,8 @@ const (
 	hcPalette
 	hcFiles
 	hcSettings
+	hcBroadcast
+	hcScan
 )
 
 type helpSection struct {
@@ -50,6 +52,8 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{"/", "suchen"},
 		{"t", "Tunnel anlegen"},
+		{"b", "Broadcast an mehrere Hosts"},
+		{"f", "Netzwerk-Scan"},
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
 		{"F10", "zurück zum Terminal"},
@@ -104,6 +108,23 @@ var helpSections = []helpSection{
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
 	}},
+	{hcBroadcast, "⇉", "Broadcast", "b", false, [][2]string{
+		{"Space / g / a", "Host / Gruppe / alle"},
+		{"Tab", "Hosts · Quelle · Befehl"},
+		{"⇧⏎", "weiterer Schritt"},
+		{"Strg+S", "prüfen, dann ⏎"},
+		{"← / →", "Host-Spalte wählen"},
+		{"↑ ↓ Bild↑↓", "Ausgabe blättern"},
+		{"z / c", "groß / kopieren"},
+		{"r / e / x", "nochmal / ändern / Stopp"},
+	}},
+	{hcScan, "⌕", "Netzwerk-Scan", "f", false, [][2]string{
+		{"Strg+S", "Scan starten"},
+		{"Space / a", "Fund / alle wählen"},
+		{"⏎", "als Verbindungen anlegen"},
+		{"x", "Scan stoppen"},
+		{"r", "neu scannen"},
+	}},
 	{hcPalette, "❯", "Befehlspalette", "Strg+Space", false, [][2]string{
 		{"tippen", "filtern / Ziel / Frage"},
 		{"⏎", "ausführen"},
@@ -140,6 +161,10 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
+	case scrBroadcast:
+		return hcBroadcast
+	case scrScan:
+		return hcScan
 	case scrTerminal:
 		if s := a.current(); s != nil && s.files.open {
 			return hcFiles

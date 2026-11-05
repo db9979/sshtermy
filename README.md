@@ -10,6 +10,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Verbindungs-Manager** mit verschlüsseltem Store (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI)
 - **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen
+- **Broadcast** (b im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
+  die Ergebnisse stehen in Spalten nebeneinander. Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
+  Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
+- **Netzwerk-Scan** (f im Manager): ein Subnetz nach SSH-Geräten durchsuchen (nur Port und SSH-Kennung, ohne Anmeldung),
+  Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
@@ -54,6 +59,10 @@ sshtermy --update     # auf die neueste Version aktualisieren
 | Wo | Taste | Wirkung |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync |
+| | b / f | Broadcast an mehrere Hosts / Netzwerk-Scan |
+| Broadcast | Space / g / a, Tab, Strg+S | Host / Gruppe / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
+| | ←→ / ↑↓ / z / c / r / x | Host-Spalte / blättern / groß / Ausgabe kopieren / nochmal / abbrechen |
+| Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
 | Terminal | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
 | | F2 | Ziel-Modus (Agent) |
@@ -106,7 +115,10 @@ internal/
   vault/               Verschlüsselung: AES-256-GCM, Argon2id, DPAPI (Windows)
   store/               Repository über dem Vault: CRUD, Pfade (%APPDATA%\sshtermy)
   sshx/                SSH: Dial (+Jump-Host), Auth (Passwort/Key/Agent), Host-Keys (TOFU),
-                       PTY-Shell, Tunnel-Manager (-L/-R/-D), SOCKS5-Server, Browser öffnen
+                       PTY-Shell, Tunnel-Manager (-L/-R/-D), SOCKS5-Server, Browser öffnen,
+                       Befehle per Exec oder in die Shell getippt (Netzwerkgeräte)
+  broadcast/           Befehl/Runbook parallel auf mehreren Hosts, Gefahrenprüfung
+  netscan/             Subnetz nach SSH durchsuchen, Banner lesen, Gerätetyp erkennen
   llm/                 OpenAI-kompatibler Client (/v1/chat/completions, Streaming per SSE)
   agent/               KI-Logik: Ghost-Text, Folgebefehle, Ziel-Modus, Frage; Prompts,
                        striktes Parsen, Entfernen von Geheimnissen

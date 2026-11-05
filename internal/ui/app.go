@@ -6,6 +6,8 @@
 //	      ─▶ Verbindungs-Manager (Liste, Details, Tunnel, Suche)
 //	           ├─ n/e  Verbindung anlegen/bearbeiten  ─▶ Formular
 //	           ├─ s    KI-Einstellungen (Endpunkt, Modell, Test)
+//	           ├─ b    Broadcast: Befehl/Runbook auf mehreren Hosts, Ergebnisse nebeneinander
+//	           ├─ f    Netzwerk-Scan: Subnetz nach SSH-Geräten durchsuchen, Funde anlegen
 //	           └─ ⏎    Verbinden ─▶ (Host-Key prüfen) ─▶ Terminal (Tab)
 //	                     ├─ Ghost-Text beim Tippen      Tab/→ übernimmt
 //	                     ├─ Folgebefehle nach Enter     Alt+1…4 fügt ein
@@ -43,6 +45,8 @@ const (
 	scrTunnelForm
 	scrTerminal
 	scrSync
+	scrBroadcast
+	scrScan
 )
 
 // App ist das Wurzel-Modell.
@@ -78,6 +82,9 @@ type App struct {
 	wiz   *syncWizard
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
+
+	bc   *bcState   // Broadcast an mehrere Hosts
+	scan *scanState // Netzwerk-Scan
 }
 
 func New(st *store.Store) (*App, error) {
@@ -217,6 +224,14 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 	}
 
+	// Broadcast und Netzwerk-Scan (Fortschritt kommt über a.events)
+	if cmd, ok := a.bcMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.scanMsg(msg); ok {
+		return a, cmd
+	}
+
 	// Sync zwischen Rechnern
 	if cmd, ok := a.syncMsg(msg); ok {
 		return a, cmd
@@ -241,7 +256,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.modal != nil {
 			return a, a.modalKey(k)
 		}
-		if k.String() == "f1" && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm) {
+		if k.String() == "f1" && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrBroadcast || a.scr == scrScan) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -270,6 +285,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateTerminal(msg)
 	case scrSync:
 		return a, a.updateSync(msg)
+	case scrBroadcast:
+		return a, a.updateBroadcast(msg)
+	case scrScan:
+		return a, a.updateScan(msg)
 	}
 	return a, nil
 }
@@ -328,6 +347,10 @@ func (a *App) View() tea.View {
 		body, cur = a.viewTerminal()
 	case scrSync:
 		body = a.frame(a.viewSync(), a.syncKeys())
+	case scrBroadcast:
+		body = a.frame(a.viewBroadcast(), a.broadcastKeys())
+	case scrScan:
+		body = a.frame(a.viewScan(), a.scanKeys())
 	}
 	body = a.z.scan(body, 0, 0)
 	if a.modal != nil {
