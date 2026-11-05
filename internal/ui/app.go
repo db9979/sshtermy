@@ -20,6 +20,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -56,6 +57,7 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	inputLog *os.File // nur mit SSHTERMY_DEBUG=1
 	st       *store.Store
 	hostKeys *sshx.HostKeyStore
 	s        Styles
@@ -111,6 +113,7 @@ func New(st *store.Store) (*App, error) {
 	}
 	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
 	a.unlock = newUnlock(st)
+	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
 	return a, nil
 }
@@ -164,6 +167,7 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	a.logInput(msg)
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.w, a.h = m.Width, m.Height
