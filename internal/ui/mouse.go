@@ -113,6 +113,10 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		}
 		return nil
 	}
+	if isClick && a.modal != nil && (a.modal.kind == mMenu) && m.Button != tea.MouseLeft {
+		a.modal = nil
+		return nil
+	}
 	if !isClick || m.Button != tea.MouseLeft {
 		return nil
 	}
@@ -124,7 +128,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	case a.pal != nil:
 		a.pal = nil
 	case a.modal != nil:
-		if a.modal.kind == mHelp || a.modal.kind == mAbout {
+		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mMenu || a.modal.kind == mInfo {
 			a.modal = nil
 		}
 	case a.scr == scrTerminal && s != nil && s.panel != panelNone && !s.files.open && m.X >= a.w-a.panelWidth(s):
@@ -335,6 +339,12 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 		s.scroll = clamp(s.scroll+d, 0, s.term.ScrollbackLen())
 		return nil
 
+	case isClick && m.Button == tea.MouseLeft && m.Mod.Contains(tea.ModCtrl) && clicks == 1:
+		if cmd, ok := a.termLinkClick(s, m, tx, ty, true); ok {
+			return cmd
+		}
+		fallthrough
+
 	case isClick && m.Button == tea.MouseLeft:
 		p := s.term.ScreenPos(clamp(tx, 0, cols-1), clamp(ty, 0, rows-1), s.scroll)
 		switch {
@@ -373,6 +383,9 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 		if s.sel != nil && !s.sel.Empty() {
 			cmd := a.copySel(s)
 			s.sel = nil
+			return cmd
+		}
+		if cmd, ok := a.termLinkClick(s, m, tx, ty, false); ok {
 			return cmd
 		}
 		return a.pasteClipboard(s)
@@ -420,17 +433,16 @@ func (a *App) pasteClipboard(s *session) tea.Cmd {
 	}
 }
 
-func (a *App) onPaste(m pasteMsg) {
+func (a *App) onPaste(m pasteMsg) tea.Cmd {
 	s := a.byID(m.sid)
 	if s == nil || s.term == nil || s.state != stConnected {
-		return
+		return nil
 	}
 	if m.err != nil || m.text == "" {
 		a.flash("Zwischenablage leer oder nicht lesbar. Einfügen mit Strg+Shift+V im Terminalfenster.")
-		return
+		return nil
 	}
-	s.sel, s.scroll = nil, 0
-	s.term.Paste(m.text)
+	return a.guardedPaste(s, m.text)
 }
 
 // modalButtons: Knöpfe unter dem Dialog (Klick = Taste).
@@ -450,8 +462,14 @@ func (a *App) modalButtons() string {
 			keys = append(keys, [2]string{"c", "nach Updates suchen"})
 		}
 		keys = append(keys, [2]string{"Esc", "schließen"})
-	case mHelp:
+	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", "schließen"}}
+	case mPaste:
+		keys = [][2]string{{"⏎", "einfügen"}}
+		if a.modal.paste.multi {
+			keys = append(keys, [2]string{"o", "ohne letztes ⏎"})
+		}
+		keys = append(keys, [2]string{"Esc", "abbrechen"})
 	default:
 		return ""
 	}
@@ -475,6 +493,7 @@ func mouseLabel(on bool) string {
 // mouseHelp: Abschnitt für die Hilfe (F1).
 const mouseHelp = `Maus         Klick auf Tabs, Listen, Vorschläge, Felder, Fußzeile · Doppelklick öffnet
              Terminal: Ziehen markiert + kopiert · Doppel-/Dreifachklick Wort/Zeile
-             Rechtsklick fügt ein · Rad blättert im Verlauf (Esc zurück)
+             Rechtsklick fügt ein, auf Link/IP/Host öffnet er ein Menü · Strg+Klick öffnet URL
+             Rad blättert im Verlauf (Esc zurück)
              htop, mc, vim, tmux bekommen die Maus · Shift+Ziehen markiert trotzdem
              Palette „Maus aus“: Terminalfenster markiert wieder selbst`
