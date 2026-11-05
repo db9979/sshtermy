@@ -8,6 +8,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/changelog"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/update"
 	"github.com/db9979/sshtermy/internal/version"
@@ -19,11 +20,11 @@ import (
 
 // changelogModal zeigt die übergebenen Einträge; nil = alle.
 func (a *App) changelogModal(entries []changelog.Entry) *modal {
-	title := "Was ist neu in " + version.Name
+	title := i18n.T("Was ist neu in ") + version.Name
 	if entries == nil {
 		entries = changelog.All()
 	} else {
-		title = "Neu in v" + version.Version
+		title = i18n.T("Neu in v") + version.Version
 	}
 	w := min(86, max(30, a.w-8)) // Textbreite im Modal (Rahmen + Abstand)
 	s := a.s
@@ -34,7 +35,7 @@ func (a *App) changelogModal(entries []changelog.Entry) *modal {
 		}
 		head := s.Accent.Render("v" + e.Version)
 		if e.Version == version.Version {
-			head += " " + s.Badge.Render("installiert")
+			head += " " + s.Badge.Render(i18n.T("installiert"))
 		}
 		if e.Date != "" {
 			head += s.Muted.Render("  " + e.Date)
@@ -52,10 +53,10 @@ func (a *App) changelogModal(entries []changelog.Entry) *modal {
 		}
 	}
 	if len(lines) == 0 {
-		lines = []string{s.Muted.Render("Für diesen Build gibt es keinen Changelog.")}
+		lines = []string{s.Muted.Render(i18n.T("Für diesen Build gibt es keinen Changelog."))}
 	}
 	// Nach einem Update (und im Changelog) dezent auf die Kaffee-Seite hinweisen.
-	lines = append(lines, "", s.Muted.Render("☕ Gefällt dir sshTermy? b öffnet ")+s.Accent.Render(version.Coffee))
+	lines = append(lines, "", s.Muted.Render(i18n.T("☕ Gefällt dir sshTermy? b öffnet "))+s.Accent.Render(version.Coffee))
 	return &modal{kind: mChangelog, title: title, lines: lines}
 }
 
@@ -69,9 +70,9 @@ func (m *modal) changelogView(s Styles, w, h int) string {
 	if total := len(lines); total > maxBody {
 		m.scroll = max(0, min(m.scroll, total-maxBody))
 		lines = lines[m.scroll : m.scroll+maxBody]
-		hint = "↑↓ blättern"
+		hint = i18n.T("↑↓ blättern")
 		if m.scroll+maxBody < total {
-			hint = "▾ mehr · " + hint
+			hint = i18n.T("▾ mehr · ") + hint
 		}
 	} else {
 		m.scroll = 0
@@ -148,11 +149,11 @@ func (a *App) openSessions() int {
 func (a *App) askRestart() tea.Cmd {
 	v := a.restartPending
 	if n := a.openSessions(); n > 0 {
-		a.modal = &modal{kind: mConfirm, title: "Update installiert – jetzt neu starten?",
-			body: "v" + v + " ist installiert und wird mit einem Neustart aktiv.\n\n" +
-				"⚠ " + plural(n, "offene SSH-Sitzung wird", "offene SSH-Sitzungen werden") + " dabei getrennt\n" +
-				"  (laufende Befehle, Tunnel und Dateiübertragungen brechen ab).\n\n" +
-				"j = jetzt neu starten · n = später (F12 oder Palette)",
+		a.modal = &modal{kind: mConfirm, title: i18n.T("Update installiert – jetzt neu starten?"),
+			body: "v" + v + i18n.T(" ist installiert und wird mit einem Neustart aktiv.\n\n") +
+				"⚠ " + plural(n, i18n.T("offene SSH-Sitzung wird"), i18n.T("offene SSH-Sitzungen werden")) + i18n.T(" dabei getrennt\n") +
+				i18n.T("  (laufende Befehle, Tunnel und Dateiübertragungen brechen ab).\n\n") +
+				i18n.T("j = jetzt neu starten · n = später (F12 oder Palette)"),
 			onYes: func() tea.Cmd { return a.doRestart() }}
 		return nil
 	}

@@ -2,13 +2,14 @@ package sshx
 
 import (
 	"context"
-	"errors"
 	"strings"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // ErrNetDevice: Exec-Abfragen sind bei Netzwerkgeräten tabu, weil z. B.
 // Aruba/ProCurve dann die ganze Verbindung beenden.
-var ErrNetDevice = errors.New("bei Netzwerkgeräten keine Exec-Abfrage")
+var ErrNetDevice = i18n.NewError("bei Netzwerkgeräten keine Exec-Abfrage")
 
 // RunScript führt ein sh-Skript in einer eigenen Exec-Sitzung aus ("sh -s",
 // Skript über stdin), unsichtbar für das Terminal. Nur für Server.

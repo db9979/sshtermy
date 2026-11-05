@@ -8,6 +8,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Auswahlliste mit Suche (Jump-Host, Ordner, Tag-Filter). Liegt als Overlay
@@ -179,7 +181,7 @@ func (a *App) viewPicker() string {
 		list.WriteString(line + "\n")
 	}
 	if len(vis) == 0 {
-		list.WriteString(s.Muted.Render("  nichts gefunden") + "\n")
+		list.WriteString(s.Muted.Render(i18n.T("  nichts gefunden")) + "\n")
 	}
 	b.WriteString(a.z.mark(list.String(), zoneAction{wheel: func(up bool) tea.Cmd {
 		if up {
@@ -191,9 +193,9 @@ func (a *App) viewPicker() string {
 	}, block: true}))
 	more := ""
 	if len(vis) > rows {
-		more = s.Muted.Render("  " + strconv.Itoa(p.top+1) + "–" + strconv.Itoa(min(len(vis), p.top+rows)) + " von " + strconv.Itoa(len(vis)) + " · ")
+		more = s.Muted.Render("  " + strconv.Itoa(p.top+1) + "–" + strconv.Itoa(min(len(vis), p.top+rows)) + i18n.T(" von ") + strconv.Itoa(len(vis)) + " · ")
 	}
-	help := "⏎ übernehmen · Esc abbrechen · tippen filtert"
+	help := i18n.T("⏎ übernehmen · Esc abbrechen · tippen filtert")
 	if p.help != "" {
 		help = p.help + " · " + help
 	}

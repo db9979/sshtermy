@@ -12,6 +12,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/llm"
 )
 
@@ -123,7 +124,7 @@ func fmtLatency(d time.Duration) string {
 func (h llmHealth) badgeText() string {
 	switch h.level {
 	case lhError:
-		return "Fehler"
+		return i18n.T("Fehler")
 	case lhOK, lhSlow:
 		if h.latency > 0 {
 			return fmtLatency(h.latency)
@@ -136,10 +137,10 @@ func (h llmHealth) badgeText() string {
 func (a *App) llmChip() string {
 	h := a.llmHealth()
 	txt := a.s.Header.Foreground(a.llmColor(h.level)).Render(" "+h.dot(a.lh.probing)) +
-		a.s.Header.Foreground(a.s.T.AI).Render(" KI")
+		a.s.Header.Foreground(a.s.T.AI).Render(" "+i18n.T("KI"))
 	switch {
 	case h.level == lhOff:
-		txt += a.s.Header.Foreground(a.s.T.Muted).Render(" aus")
+		txt += a.s.Header.Foreground(a.s.T.Muted).Render(i18n.T(" aus"))
 	case h.badgeText() != "":
 		txt += a.s.Header.Foreground(a.llmColor(h.level)).Render(" " + h.badgeText())
 	}
@@ -200,7 +201,7 @@ func (a *App) llmProbeCmd() tea.Cmd {
 // ---------------------------------------------------------------- Dialog
 
 func (a *App) openLLMStatus() tea.Cmd {
-	a.modal = &modal{kind: mLLM, title: "KI-Status"}
+	a.modal = &modal{kind: mLLM, title: i18n.T("KI-Status")}
 	return nil
 }
 
@@ -225,60 +226,60 @@ func (a *App) llmStatusView() string {
 	var head string
 	switch {
 	case h.level == lhOff:
-		head = c.Render("○ nicht eingerichtet") + s.Muted.Render(" · Base-URL und Modell fehlen")
+		head = c.Render(i18n.T("○ nicht eingerichtet")) + s.Muted.Render(i18n.T(" · Base-URL und Modell fehlen"))
 	case a.lh.probing && h.level == lhUnknown:
-		head = c.Render("◌ wird geprüft …")
+		head = c.Render(i18n.T("◌ wird geprüft …"))
 	case h.level == lhUnknown:
-		head = c.Render("● noch nicht geprüft")
+		head = c.Render(i18n.T("● noch nicht geprüft"))
 	case h.level == lhOK:
-		head = c.Render("● erreichbar, das Modell antwortet")
+		head = c.Render(i18n.T("● erreichbar, das Modell antwortet"))
 	case h.level == lhSlow:
-		head = c.Render("● erreichbar, aber langsam") + s.Muted.Render(" · über "+fmtLatency(llmSlow)+" für ein Token")
+		head = c.Render(i18n.T("● erreichbar, aber langsam")) + s.Muted.Render(i18n.T(" · über ")+fmtLatency(llmSlow)+i18n.T(" für ein Token"))
 	case h.level == lhError:
-		head = c.Render("● Fehler: das Modell antwortet nicht")
+		head = c.Render(i18n.T("● Fehler: das Modell antwortet nicht"))
 	}
 	if a.lh.probing && h.level != lhUnknown {
-		head += s.AI.Render("  ◌ prüfe …")
+		head += s.AI.Render(i18n.T("  ◌ prüfe …"))
 	}
 	row := func(k, v string) string { return s.Muted.Render(fmt.Sprintf("%-13s", k)) + v + "\n" }
 	var b strings.Builder
 	b.WriteString(head + "\n\n")
-	b.WriteString(row("Endpunkt", s.Text.Render(llm.BaseURL(h.cfg))))
-	b.WriteString(row("Modell", s.Text.Render(h.cfg.Model)))
+	b.WriteString(row(i18n.T("Endpunkt"), s.Text.Render(llm.BaseURL(h.cfg))))
+	b.WriteString(row(i18n.T("Modell"), s.Text.Render(h.cfg.Model)))
 	if h.latency > 0 && h.level != lhError {
-		b.WriteString(row("Reaktion", c.Render(fmtLatency(h.latency))+s.Muted.Render(" (ein Token, ab "+fmtLatency(llmSlow)+" gelb)")))
+		b.WriteString(row(i18n.T("Reaktion"), c.Render(fmtLatency(h.latency))+s.Muted.Render(i18n.T(" (ein Token, ab ")+fmtLatency(llmSlow)+i18n.T(" gelb)"))))
 	}
 	if !h.last.At.IsZero() {
-		what := "Anfrage"
+		what := i18n.T("Anfrage")
 		if h.last.Probe {
-			what = "Prüfung"
+			what = i18n.T("Prüfung")
 		}
 		res := s.OK.Render("ok")
 		if h.last.Err != nil {
-			res = s.Danger.Render("fehlgeschlagen")
+			res = s.Danger.Render(i18n.T("fehlgeschlagen"))
 		}
-		b.WriteString(row("Zuletzt", s.Text.Render(what+" "+ago(h.last.At)+" · ")+res))
+		b.WriteString(row(i18n.T("Zuletzt"), s.Text.Render(what+" "+ago(h.last.At)+" · ")+res))
 	}
 	if h.last.Err != nil {
 		w := min(90, a.w-4) - 6 - 13 // Rahmen, Innenabstand, Spalte links
-		b.WriteString(row("Meldung", s.Danger.Render(trunc(llmErrText(h.last.Err), max(20, w)))))
+		b.WriteString(row(i18n.T("Meldung"), s.Danger.Render(trunc(llmErrText(h.last.Err), max(20, w)))))
 		if hint := llmErrHint(h.last.Err.Error()); hint != "" {
-			b.WriteString("\n" + s.Warn.Render("Was tun: ") + s.Text.Render(hint) + "\n")
+			b.WriteString("\n" + s.Warn.Render(i18n.T("Was tun: ")) + s.Text.Render(hint) + "\n")
 		}
 	}
 	if h.level != lhOff && !a.lh.probing && !a.lh.next.IsZero() {
 		if d := time.Until(a.lh.next); d > 0 {
-			b.WriteString("\n" + s.Muted.Render("Nächste Prüfung in "+fmtWait(d)+", nur falls bis dahin keine echte Anfrage lief.") + "\n")
+			b.WriteString("\n" + s.Muted.Render(i18n.T("Nächste Prüfung in ")+fmtWait(d)+i18n.T(", nur falls bis dahin keine echte Anfrage lief.")) + "\n")
 		}
 	}
-	return s.Modal.Width(min(90, a.w-4)).Render(s.Accent.Render("✦ KI-Status") + "\n\n" + strings.TrimRight(b.String(), "\n"))
+	return s.Modal.Width(min(90, a.w-4)).Render(s.Accent.Render(i18n.T("✦ KI-Status")) + "\n\n" + strings.TrimRight(b.String(), "\n"))
 }
 
 func fmtWait(d time.Duration) string {
 	if d < time.Minute {
 		return fmt.Sprintf("%d s", int(d.Seconds())+1)
 	}
-	return fmt.Sprintf("%d min", int(d.Minutes()+0.5))
+	return fmt.Sprintf(i18n.T("%d min"), int(d.Minutes()+0.5))
 }
 
 // llmErrText: Fehlermeldung ohne das „Post "http://…": “ davor, die URL
@@ -304,27 +305,27 @@ func llmErrHint(e string) string {
 	}
 	switch {
 	case has("connection refused", "verbindung verweigert", "actively refused"):
-		return "Unter dieser Adresse lauscht nichts. Läuft der Server, und stimmt der Port?"
+		return i18n.T("Unter dieser Adresse lauscht nichts. Läuft der Server, und stimmt der Port?")
 	case has("no such host", "server misbehaving", "unbekannter host"):
-		return "Der Rechnername ist nicht auflösbar. Adresse prüfen oder die IP eintragen."
+		return i18n.T("Der Rechnername ist nicht auflösbar. Adresse prüfen oder die IP eintragen.")
 	case has("deadline exceeded", "timeout", "i/o timeout"):
-		return "Keine Antwort innerhalb des Timeouts. Ist der Server überlastet, lädt das Modell noch, oder blockt eine Firewall?"
+		return i18n.T("Keine Antwort innerhalb des Timeouts. Ist der Server überlastet, lädt das Modell noch, oder blockt eine Firewall?")
 	case has("network is unreachable", "no route to host"):
-		return "Das Netz zum Server fehlt. VPN oder WLAN prüfen."
+		return i18n.T("Das Netz zum Server fehlt. VPN oder WLAN prüfen.")
 	case has("401", "403", "api-key", "unauthorized"):
-		return "Der API-Key fehlt oder ist falsch. In den Einstellungen (e) eintragen."
+		return i18n.T("Der API-Key fehlt oder ist falsch. In den Einstellungen (e) eintragen.")
 	case has("model") && has("not found", "does not exist", "unknown", "not exist"):
-		return "Dieses Modell kennt der Server nicht. In den Einstellungen (e) mit Strg+L aus der Liste wählen."
+		return i18n.T("Dieses Modell kennt der Server nicht. In den Einstellungen (e) mit Strg+L aus der Liste wählen.")
 	case has("404"):
-		return "Der Pfad stimmt nicht. Die Base-URL endet meist auf /v1."
+		return i18n.T("Der Pfad stimmt nicht. Die Base-URL endet meist auf /v1.")
 	case has("x509", "certificate", "tls"):
-		return "Das TLS-Zertifikat wird nicht akzeptiert. Adresse (http/https) und Zertifikat prüfen."
+		return i18n.T("Das TLS-Zertifikat wird nicht akzeptiert. Adresse (http/https) und Zertifikat prüfen.")
 	case has("http 5", "502", "503", "500"):
-		return "Der Server meldet einen internen Fehler. Logs des LLM-Servers ansehen."
-	case has("unverschlüsselt", "http://"):
-		return "Der API-Key würde unverschlüsselt gesendet. https verwenden oder in den Einstellungen bewusst erlauben."
-	case has("modellname fehlt", "base-url"):
-		return "Die Einstellungen sind unvollständig. Mit e öffnen."
+		return i18n.T("Der Server meldet einen internen Fehler. Logs des LLM-Servers ansehen.")
+	case has("unverschlüsselt", "unencrypted", "http://"):
+		return i18n.T("Der API-Key würde unverschlüsselt gesendet. https verwenden oder in den Einstellungen bewusst erlauben.")
+	case has("modellname fehlt", "model name missing", "base-url", "base url"):
+		return i18n.T("Die Einstellungen sind unvollständig. Mit e öffnen.")
 	}
 	return ""
 }

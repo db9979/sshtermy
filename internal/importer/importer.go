@@ -17,6 +17,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Source: woher ein Eintrag stammt.
@@ -59,7 +60,7 @@ type Result struct {
 }
 
 // ErrNotFound: die Quelle gibt es auf diesem Rechner nicht.
-var ErrNotFound = errors.New("nicht gefunden")
+var ErrNotFound = i18n.NewError("nicht gefunden")
 
 // Scan durchsucht alle bekannten Orte dieses Rechners.
 func Scan() []Result {
@@ -190,7 +191,7 @@ func localUser() string {
 func fillUser(e *Entry) {
 	if e.Conn.Username == "" {
 		e.Conn.Username = localUser()
-		e.Notes = append(e.Notes, "kein Benutzer angegeben, lokaler Name „"+e.Conn.Username+"“ eingesetzt")
+		e.Notes = append(e.Notes, i18n.T("kein Benutzer angegeben, lokaler Name „")+e.Conn.Username+i18n.T("“ eingesetzt"))
 	}
 }
 
@@ -203,7 +204,7 @@ func keyAuth(e *Entry, path string) {
 	}
 	if strings.HasSuffix(strings.ToLower(path), ".ppk") {
 		e.Conn.Auth = domain.AuthAgent
-		e.Notes = append(e.Notes, "PPK-Key "+filepath.Base(path)+": in Pageant laden oder mit PuTTYgen nach OpenSSH exportieren")
+		e.Notes = append(e.Notes, "PPK-Key "+filepath.Base(path)+i18n.T(": in Pageant laden oder mit PuTTYgen nach OpenSSH exportieren"))
 		return
 	}
 	e.Conn.Auth, e.Conn.KeyPath = domain.AuthKeyFile, path

@@ -9,6 +9,8 @@ package version
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 const (
@@ -35,5 +37,5 @@ func Short() string { return fmt.Sprintf("%s v%s", Name, Version) }
 // Long: für "sshtermy --version" und den Über-Dialog.
 func Long() string {
 	return fmt.Sprintf("%s v%s (%s, %s) %s/%s\n%s\n%s · https://github.com/%s",
-		Name, Version, Commit, Date, runtime.GOOS, runtime.GOARCH, Slogan, Idea, Repo)
+		Name, Version, Commit, Date, runtime.GOOS, runtime.GOARCH, i18n.T(Slogan), i18n.T(Idea), Repo)
 }

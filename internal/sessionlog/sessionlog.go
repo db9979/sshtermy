@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/agent"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/vault"
 )
 
@@ -96,12 +97,12 @@ func Clip(s string) string {
 		h := MaxOutputLines / 4
 		t := MaxOutputLines - h
 		skipped := len(lines) - h - t
-		lines = append(append(lines[:h:h], fmt.Sprintf("… (%d Zeilen ausgelassen) …", skipped)), lines[len(lines)-t:]...)
+		lines = append(append(lines[:h:h], fmt.Sprintf(i18n.T("… (%d Zeilen ausgelassen) …"), skipped)), lines[len(lines)-t:]...)
 	}
 	out := strings.Join(lines, "\n")
 	if len(out) > MaxOutputBytes {
 		cut := len(out) - MaxOutputBytes
-		out = "… (gekürzt) …\n" + strings.ToValidUTF8(out[cut:], "")
+		out = i18n.T("… (gekürzt) …\n") + strings.ToValidUTF8(out[cut:], "")
 	}
 	return out
 }
@@ -116,7 +117,7 @@ type Book struct {
 // Open bereitet den Ordner vor. key: 32 Byte (siehe store.SessionLogKey).
 func Open(dir string, key []byte) (*Book, error) {
 	if len(key) != 32 {
-		return nil, errors.New("sessionlog: Schlüssel muss 32 Byte haben")
+		return nil, errors.New(i18n.T("sessionlog: Schlüssel muss 32 Byte haben"))
 	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
@@ -167,7 +168,7 @@ func (b *Book) path(id string) string { return filepath.Join(b.dir, id+ext) }
 // Save verschlüsselt das Protokoll und schreibt es atomar (Rechte 0600).
 func (b *Book) Save(l *Log) error {
 	if !validID(l.ID) {
-		return errors.New("sessionlog: ungültige ID")
+		return errors.New(i18n.T("sessionlog: ungültige ID"))
 	}
 	plain, err := json.Marshal(l)
 	if err != nil {
@@ -197,7 +198,7 @@ func (b *Book) Save(l *Log) error {
 // Load liest ein Protokoll.
 func (b *Book) Load(id string) (*Log, error) {
 	if !validID(id) {
-		return nil, errors.New("sessionlog: ungültige ID")
+		return nil, errors.New(i18n.T("sessionlog: ungültige ID"))
 	}
 	raw, err := os.ReadFile(b.path(id))
 	if err != nil {
@@ -208,7 +209,7 @@ func (b *Book) Load(id string) (*Log, error) {
 		return nil, err
 	}
 	if f.Format != formatName || f.ID != id {
-		return nil, errors.New("sessionlog: unbekanntes Format")
+		return nil, errors.New(i18n.T("sessionlog: unbekanntes Format"))
 	}
 	b.mu.Lock()
 	key := b.key
@@ -219,7 +220,7 @@ func (b *Book) Load(id string) (*Log, error) {
 	plain, err := vault.OpenGCM(key, f.Nonce, f.Ciphertext, aad(id))
 	b.mu.Unlock()
 	if err != nil {
-		return nil, errors.New("sessionlog: Datei verändert oder anderer Schlüssel")
+		return nil, errors.New(i18n.T("sessionlog: Datei verändert oder anderer Schlüssel"))
 	}
 	defer vault.Wipe(plain)
 	var l Log
@@ -258,7 +259,7 @@ func (b *Book) List() (logs []*Log, unreadable int, err error) {
 // Delete entfernt ein Protokoll.
 func (b *Book) Delete(id string) error {
 	if !validID(id) {
-		return errors.New("sessionlog: ungültige ID")
+		return errors.New(i18n.T("sessionlog: ungültige ID"))
 	}
 	return os.Remove(b.path(id))
 }
@@ -312,27 +313,27 @@ func (l *Log) MatchingEntries(q string) []int {
 // Markdown: das Protokoll als lesbares Dokument.
 func (l *Log) Markdown() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# Sitzung %s – %s\n\n", l.Host, l.Started.Format("02.01.2006 15:04"))
-	fmt.Fprintf(&b, "- **Verbindung:** %s\n", l.Addr)
+	fmt.Fprintf(&b, i18n.T("# Sitzung %s – %s\n\n"), l.Host, l.Started.Format("02.01.2006 15:04"))
+	fmt.Fprintf(&b, i18n.T("- **Verbindung:** %s\n"), l.Addr)
 	if l.System != "" {
-		fmt.Fprintf(&b, "- **System:** %s\n", l.System)
+		fmt.Fprintf(&b, i18n.T("- **System:** %s\n"), l.System)
 	}
-	end := "– (läuft noch oder abgebrochen)"
+	end := i18n.T("– (läuft noch oder abgebrochen)")
 	if !l.Ended.IsZero() {
 		end = l.Ended.Format("02.01.2006 15:04") + " (" + l.Ended.Sub(l.Started).Round(time.Second).String() + ")"
 	}
-	fmt.Fprintf(&b, "- **Beginn:** %s\n- **Ende:** %s\n", l.Started.Format("02.01.2006 15:04:05"), end)
-	fmt.Fprintf(&b, "- **Befehle:** %d, davon fehlgeschlagen: %d\n\n", len(l.Entries), l.Failures())
+	fmt.Fprintf(&b, i18n.T("- **Beginn:** %s\n- **Ende:** %s\n"), l.Started.Format("02.01.2006 15:04:05"), end)
+	fmt.Fprintf(&b, i18n.T("- **Befehle:** %d, davon fehlgeschlagen: %d\n\n"), len(l.Entries), l.Failures())
 	if s := strings.TrimSpace(l.Summary); s != "" {
-		b.WriteString("## Zusammenfassung (KI)\n\n" + s + "\n\n")
+		b.WriteString(i18n.T("## Zusammenfassung (KI)\n\n") + s + "\n\n")
 	}
-	b.WriteString("## Befehle\n\n")
+	b.WriteString(i18n.T("## Befehle\n\n"))
 	for i, e := range l.Entries {
 		mark := ""
 		if e.Failed {
-			mark = " ✗ fehlgeschlagen"
+			mark = i18n.T(" ✗ fehlgeschlagen")
 			if e.Exit != nil {
-				mark += fmt.Sprintf(" (Exit %d)", *e.Exit)
+				mark += fmt.Sprintf(i18n.T(" (Exit %d)"), *e.Exit)
 			}
 		}
 		fmt.Fprintf(&b, "### %d. `%s`%s\n\n", i+1, strings.ReplaceAll(e.Command, "`", "'"), mark)
@@ -345,18 +346,18 @@ func (l *Log) Markdown() string {
 			b.WriteString("```text\n" + strings.ReplaceAll(out, "```", "'''") + "\n```\n\n")
 		}
 	}
-	b.WriteString("---\nErstellt mit sshTermy\n")
+	b.WriteString(i18n.T("---\nErstellt mit sshTermy\n"))
 	return b.String()
 }
 
 // Transcript: kompakte Fassung fürs Sprachmodell (Ausgabe je Befehl gekürzt).
 func (l *Log) Transcript(maxBytes int) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Host: %s (%s), System: %s, Beginn: %s\n", l.Host, l.Addr, l.System, l.Started.Format("02.01.2006 15:04"))
+	fmt.Fprintf(&b, i18n.T("Host: %s (%s), System: %s, Beginn: %s\n"), l.Host, l.Addr, l.System, l.Started.Format("02.01.2006 15:04"))
 	for i, e := range l.Entries {
 		st := ""
 		if e.Failed {
-			st = " [FEHLGESCHLAGEN]"
+			st = i18n.T(" [FEHLGESCHLAGEN]")
 		}
 		fmt.Fprintf(&b, "\n%d. %s $ %s%s\n", i+1, e.At.Format("15:04"), e.Command, st)
 		out := strings.Split(strings.TrimSpace(e.Output), "\n")
@@ -369,7 +370,7 @@ func (l *Log) Transcript(maxBytes int) string {
 	}
 	s := b.String()
 	if len(s) > maxBytes {
-		s = "… (Anfang gekürzt) …\n" + strings.ToValidUTF8(s[len(s)-maxBytes:], "")
+		s = i18n.T("… (Anfang gekürzt) …\n") + strings.ToValidUTF8(s[len(s)-maxBytes:], "")
 	}
 	return s
 }

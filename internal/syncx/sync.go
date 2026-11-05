@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Run gleicht einmal ab:
@@ -78,5 +80,5 @@ func Run(ctx context.Context, b Backend, k *Key, local *Payload, device string) 
 		}
 		return merged, st, nil
 	}
-	return nil, st, errors.New("Sync-Datei wird gerade ständig von einem anderen Rechner geändert; später erneut versuchen")
+	return nil, st, errors.New(i18n.T("Sync-Datei wird gerade ständig von einem anderen Rechner geändert; später erneut versuchen"))
 }

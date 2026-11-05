@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Backend speichert genau eine (bereits verschlüsselte) Datei.
@@ -35,7 +37,7 @@ func sum(b []byte) string { h := sha256.Sum256(b); return "sha256:" + hex.Encode
 // Folder: ein Ordner, den ein Sync-Dienst zwischen Rechnern abgleicht.
 type Folder struct{ Dir string }
 
-func (f Folder) Describe() string { return "Ordner " + f.Dir }
+func (f Folder) Describe() string { return i18n.T("Ordner ") + f.Dir }
 func (f Folder) path() string     { return filepath.Join(f.Dir, FileName) }
 
 func (f Folder) Read(_ context.Context) ([]byte, string, error) {

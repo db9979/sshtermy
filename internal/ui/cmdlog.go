@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/agent"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 )
 
@@ -76,7 +77,7 @@ func (a *App) finishCommand(s *session) {
 		// 130 = Strg+C, 148 = Strg+Z: vom Menschen gewollt, kein Fehler
 		failed = code != 0 && code != 130 && code != 148
 		if failed {
-			f.Reason = fmt.Sprintf("Exit-Code %d", code)
+			f.Reason = fmt.Sprintf(i18n.T("Exit-Code %d"), code)
 			if _, why := agent.LooksFailed(out); why != "" {
 				f.Reason += ", " + why
 			}
@@ -88,7 +89,7 @@ func (a *App) finishCommand(s *session) {
 		s.fail = &f
 		// Ziel-Modus: der Agent erfährt, dass sein Schritt nicht geklappt hat
 		if g := &s.goal; len(g.steps) > 0 && strings.HasPrefix(r.cmd, g.steps[len(g.steps)-1].Command) {
-			g.steps[len(g.steps)-1].ExitHint = orDefault(f.Reason, "Fehlermeldung in der Ausgabe")
+			g.steps[len(g.steps)-1].ExitHint = orDefault(f.Reason, i18n.T("Fehlermeldung in der Ausgabe"))
 		}
 	}
 	dur := 0.0
@@ -156,7 +157,7 @@ func (a *App) saveLog(s *session) {
 	}
 	if err != nil && !s.logErr {
 		s.logErr = true
-		a.flash("Sitzungsprotokoll: " + err.Error())
+		a.flash(i18n.T("Sitzungsprotokoll: ") + err.Error())
 	}
 }
 
@@ -177,7 +178,7 @@ func (a *App) endLog(s *session) {
 func (a *App) explainFailure(s *session) tea.Cmd {
 	f := s.fail
 	if f == nil {
-		a.flash("Kein fehlgeschlagener Befehl")
+		a.flash(i18n.T("Kein fehlgeschlagener Befehl"))
 		return nil
 	}
 	a.panelOpened(withPanel(s, panelAsk))
@@ -189,7 +190,7 @@ func (a *App) explainFailure(s *session) tea.Cmd {
 		return nil
 	}
 	q.cancel()
-	q.question = "Warum ist „" + trunc(f.Command, 80) + "“ fehlgeschlagen? Und wie behebe ich es?"
+	q.question = i18n.T("Warum ist „") + trunc(f.Command, 80) + i18n.T("“ fehlgeschlagen? Und wie behebe ich es?")
 	q.input.SetValue("")
 	q.answer.Reset()
 	q.err, q.busy = "", true

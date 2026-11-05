@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/safety"
 )
 
@@ -124,13 +126,13 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 	}
 	cmds, _ := a.quickCmds(s)
 	if i < 0 || i >= len(cmds) || strings.TrimSpace(cmds[i]) == "" {
-		a.flash(a.quickLabel(i) + " ist nicht belegt · Palette „Schnellbefehle bearbeiten“")
+		a.flash(a.quickLabel(i) + i18n.T(" ist nicht belegt · Palette „Schnellbefehle bearbeiten“"))
 		return nil
 	}
 	cmd := cmds[i]
 	if f := safety.Check(cmd, safety.Kind(a.remoteText(s))); len(f) > 0 && s.quickArmed != i {
 		s.quickArmed = i
-		a.flash("Vorsicht: " + f[0].Reason + ". Nochmal " + a.quickLabel(i) + " zum Ausführen")
+		a.flash(i18n.T("Vorsicht: ") + f[0].Reason + i18n.T(". Nochmal ") + a.quickLabel(i) + i18n.T(" zum Ausführen"))
 		return nil
 	}
 	s.quickArmed = -1
@@ -146,7 +148,7 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 // quickModal: alle Schnellbefehle der Sitzung in F-Tasten-Reihenfolge.
 // ↑↓ wählen, ⏎ oder 1…8 ausführen, e bearbeiten, Esc schließt.
 func (a *App) quickModal(s *session) *modal {
-	return &modal{kind: mQuick, title: "Schnellbefehle", quickSID: s.id, armed: -1}
+	return &modal{kind: mQuick, title: i18n.T("Schnellbefehle"), quickSID: s.id, armed: -1}
 }
 
 func (a *App) quickModalKey(key string) tea.Cmd {
@@ -209,9 +211,9 @@ func (a *App) quickModalView(m *modal) string {
 	cmds, preset := a.quickCmds(s)
 	kind := safety.Kind(a.remoteText(s))
 	cw := min(64, a.w-12)
-	head := st.Accent.Render("↯ Schnellbefehle") + st.Muted.Render("  "+s.conn.Alias)
+	head := st.Accent.Render(i18n.T("↯ Schnellbefehle")) + st.Muted.Render("  "+s.conn.Alias)
 	if preset != "" {
-		head += st.Muted.Render(" · Vorbelegung „" + preset + "“")
+		head += st.Muted.Render(i18n.T(" · Vorbelegung „") + preset + "“")
 	}
 	lines := []string{head, ""}
 	for i := 0; i < maxQuick; i++ {
@@ -221,7 +223,7 @@ func (a *App) quickModalView(m *modal) string {
 		}
 		key := a.quickLabel(i)
 		key += strings.Repeat(" ", max(0, 5-lipgloss.Width(key)))
-		txt := st.Muted.Render("— frei —")
+		txt := st.Muted.Render(i18n.T("— frei —"))
 		if c != "" {
 			txt = st.Text.Render(trunc(c, cw-12))
 			if f := safety.Check(c, kind); len(f) > 0 {
@@ -245,9 +247,9 @@ func (a *App) quickModalView(m *modal) string {
 			return nil
 		}))
 	}
-	hint := "⏎ oder 1…8 ausführen · ↑↓ wählen · e bearbeiten · Esc schließt"
+	hint := i18n.T("⏎ oder 1…8 ausführen · ↑↓ wählen · e bearbeiten · Esc schließt")
 	if m.armed >= 0 {
-		hint = "⚠ gefährlich: nochmal ⏎ zum Ausführen"
+		hint = i18n.T("⚠ gefährlich: nochmal ⏎ zum Ausführen")
 	}
 	lines = append(lines, "", st.Muted.Render(hint))
 	return st.Modal.Render(strings.Join(lines, "\n"))
@@ -278,20 +280,20 @@ func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
 func (a *App) openQuickForm(c domain.Connection, remote string) tea.Cmd {
 	p := quickPresetFor(c, remote)
 	cur := c.QuickCmds
-	help := "eigene Liste"
+	help := i18n.T("eigene Liste")
 	if len(cur) == 0 {
 		cur = p.cmds
-		help = "Vorbelegung „" + p.name + "“"
+		help = i18n.T("Vorbelegung „") + p.name + "“"
 	}
-	f := &form{title: "Schnellbefehle: " + c.Alias + "  (" + help + ")"}
+	f := &form{title: i18n.T("Schnellbefehle: ") + c.Alias + "  (" + help + ")"}
 	for i := 0; i < maxQuick; i++ {
 		v := ""
 		if i < len(cur) {
 			v = cur[i]
 		}
-		h := "wird mit ⏎ ausgeführt; rote Befehle brauchen zwei Drücke · leer = frei"
+		h := i18n.T("wird mit ⏎ ausgeführt; rote Befehle brauchen zwei Drücke · leer = frei")
 		if i == 0 {
-			h = "Strg+R = Vorbelegung „" + p.name + "“ wiederherstellen · Strg+S speichern"
+			h = i18n.T("Strg+R = Vorbelegung „") + p.name + i18n.T("“ wiederherstellen · Strg+S speichern")
 		}
 		f.text(fmt.Sprintf("q%d", i), a.quickLabel(i), v, h)
 	}
@@ -304,7 +306,7 @@ func (a *App) openQuickForm(c domain.Connection, remote string) tea.Cmd {
 func (a *App) saveQuick() error {
 	c, ok := a.st.Connection(a.formID)
 	if !ok {
-		return fmt.Errorf("Verbindung nicht gefunden")
+		return errors.New(i18n.T("Verbindung nicht gefunden"))
 	}
 	var cmds []string
 	for i := 0; i < maxQuick; i++ {

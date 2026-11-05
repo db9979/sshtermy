@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/llm"
 )
 
@@ -69,7 +70,7 @@ func testTimeout(c domain.LLMConfig) time.Duration {
 
 func (a *App) llmTestCmd() tea.Cmd {
 	c := a.formLLM()
-	a.llm.busy, a.llm.status = "teste "+c.BaseURL+" …", ""
+	a.llm.busy, a.llm.status = i18n.T("teste ")+c.BaseURL+" …", ""
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), testTimeout(c))
 		defer cancel()
@@ -79,7 +80,7 @@ func (a *App) llmTestCmd() tea.Cmd {
 
 func (a *App) llmModelsCmd() tea.Cmd {
 	c := a.formLLM()
-	a.llm.busy, a.llm.status = "lade Modelle von "+c.BaseURL+" …", ""
+	a.llm.busy, a.llm.status = i18n.T("lade Modelle von ")+c.BaseURL+" …", ""
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), testTimeout(c))
 		defer cancel()
@@ -111,19 +112,19 @@ func (a *App) llmMsg(msg tea.Msg) (tea.Cmd, bool) {
 		var parts []string
 		if r.ModelsErr == nil {
 			a.llm.models = r.Models
-			parts = append(parts, a.s.OK.Render(fmt.Sprintf("✓ /models: %d Modelle", len(r.Models))))
+			parts = append(parts, a.s.OK.Render(fmt.Sprintf(i18n.T("✓ /models: %d Modelle"), len(r.Models))))
 		} else {
-			parts = append(parts, a.s.Warn.Render("⚠ /models: "+r.ModelsErr.Error()))
+			parts = append(parts, a.s.Warn.Render(i18n.T("⚠ /models: ")+r.ModelsErr.Error()))
 		}
 		model := a.form.str("model")
 		switch {
 		case r.ChatErr != nil:
-			parts = append(parts, a.s.Danger.Render("✗ Chat: "+r.ChatErr.Error()))
+			parts = append(parts, a.s.Danger.Render(i18n.T("✗ Chat: ")+r.ChatErr.Error()))
 		default:
-			parts = append(parts, a.s.OK.Render(fmt.Sprintf("✓ Chat mit %s: %d ms, Antwort „%s“", model, r.Latency.Milliseconds(), trunc(oneLineUI(r.Reply), 30))))
+			parts = append(parts, a.s.OK.Render(fmt.Sprintf(i18n.T("✓ Chat mit %s: %d ms, Antwort „%s“"), model, r.Latency.Milliseconds(), trunc(oneLineUI(r.Reply), 30))))
 		}
 		if r.ModelsErr == nil && model != "" && !contains(r.Models, model) {
-			parts = append(parts, a.s.Warn.Render("⚠ „"+model+"“ steht nicht in der Liste des Endpunkts · Strg+L wählen"))
+			parts = append(parts, a.s.Warn.Render("⚠ „"+model+i18n.T("“ steht nicht in der Liste des Endpunkts · Strg+L wählen")))
 		}
 		a.llm.status = strings.Join(parts, "\n")
 		return nil, true
@@ -133,11 +134,11 @@ func (a *App) llmMsg(msg tea.Msg) (tea.Cmd, bool) {
 			return nil, true
 		}
 		if m.err != nil {
-			a.llm.status = a.s.Danger.Render("✗ Modelle: " + m.err.Error())
+			a.llm.status = a.s.Danger.Render(i18n.T("✗ Modelle: ") + m.err.Error())
 			return nil, true
 		}
 		if len(m.models) == 0 {
-			a.llm.status = a.s.Warn.Render("⚠ Der Endpunkt meldet keine Modelle; Namen bitte von Hand eintragen.")
+			a.llm.status = a.s.Warn.Render(i18n.T("⚠ Der Endpunkt meldet keine Modelle; Namen bitte von Hand eintragen."))
 			return nil, true
 		}
 		a.llm.models, a.llm.status = m.models, ""
@@ -164,7 +165,7 @@ func (a *App) settingsKey(k tea.KeyPressMsg) (tea.Cmd, bool) {
 				fl := a.form.get("model")
 				fl.in.SetValue(vis[p.sel])
 				fl.in.CursorEnd()
-				a.llm.status = a.s.OK.Render("Modell „" + vis[p.sel] + "“ gewählt · Strg+T testen · Strg+S speichern")
+				a.llm.status = a.s.OK.Render(i18n.T("Modell „") + vis[p.sel] + i18n.T("“ gewählt · Strg+T testen · Strg+S speichern"))
 			}
 			a.llm.pick = nil
 		case "backspace":
@@ -204,8 +205,8 @@ func (a *App) viewLLMExtra(w int) string {
 		if p.sel >= len(vis) {
 			p.sel = max(0, len(vis)-1)
 		}
-		b.WriteString("\n" + a.s.Accent.Render(fmt.Sprintf("Modelle des Endpunkts (%d)", len(p.all))) + "  " +
-			a.s.Muted.Render("Filter: ") + a.s.Text.Render(p.filter+"▏") + "\n")
+		b.WriteString("\n" + a.s.Accent.Render(fmt.Sprintf(i18n.T("Modelle des Endpunkts (%d)"), len(p.all))) + "  " +
+			a.s.Muted.Render(i18n.T("Filter: ")) + a.s.Text.Render(p.filter+"▏") + "\n")
 		const rows = 8
 		start := 0
 		if p.sel >= rows {
@@ -229,9 +230,9 @@ func (a *App) viewLLMExtra(w int) string {
 			b.WriteString(line + "\n")
 		}
 		if len(vis) == 0 {
-			b.WriteString(a.s.Muted.Render("  kein Treffer") + "\n")
+			b.WriteString(a.s.Muted.Render(i18n.T("  kein Treffer")) + "\n")
 		}
-		b.WriteString(a.s.Muted.Render("↑↓ wählen · ⏎ übernehmen · tippen filtert · Esc schließen") + "\n")
+		b.WriteString(a.s.Muted.Render(i18n.T("↑↓ wählen · ⏎ übernehmen · tippen filtert · Esc schließen")) + "\n")
 	}
 	return b.String()
 }

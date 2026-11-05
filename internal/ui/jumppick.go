@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Auswahl im Verbindungsformular: Ordner und Jump-Host über eine
@@ -21,7 +22,7 @@ func (a *App) pickFolderField() tea.Cmd {
 	}
 	fl := f.get("group")
 	tree := a.st.Tree()
-	p := newPicker("Ordner wählen", "Ordner suchen oder neuen Namen tippen", folderItems(tree, ""), fl.value, func(it pickItem) tea.Cmd {
+	p := newPicker(i18n.T("Ordner wählen"), i18n.T("Ordner suchen oder neuen Namen tippen"), folderItems(tree, ""), fl.value, func(it pickItem) tea.Cmd {
 		fl.value = it.value
 		return nil
 	})
@@ -45,25 +46,25 @@ func (a *App) jumpGet(self domain.Connection, jump string) func(string) (domain.
 func (a *App) jumpFieldText(self domain.Connection, jump string) string {
 	s := a.s
 	if jump == "" {
-		return s.Muted.Render("— direkt (ohne Jump-Host)")
+		return s.Muted.Render(i18n.T("— direkt (ohne Jump-Host)"))
 	}
 	j, ok := a.st.Connection(jump)
 	if !ok {
-		return s.Danger.Render("⚠ Jump-Host gelöscht")
+		return s.Danger.Render(i18n.T("⚠ Jump-Host gelöscht"))
 	}
 	chain, cycle := domain.JumpChain(jump, a.jumpGet(self, jump))
-	names := []string{"Dieser PC"}
+	names := []string{i18n.T("Dieser PC")}
 	for _, c := range chain {
 		names = append(names, c.Alias)
 	}
 	me := self.Alias
 	if me == "" {
-		me = "diese Verbindung"
+		me = i18n.T("diese Verbindung")
 	}
 	names = append(names, me)
 	out := j.Alias + s.Muted.Render(" · "+j.Username+"@"+j.Host)
 	if cycle {
-		return out + "  " + s.Danger.Render("⚠ Kreis")
+		return out + "  " + s.Danger.Render(i18n.T("⚠ Kreis"))
 	}
 	return out + "  " + s.Muted.Render(strings.Join(names, " → "))
 }
@@ -74,7 +75,7 @@ func (a *App) pickJumpField(self domain.Connection) tea.Cmd {
 		return nil
 	}
 	fl := f.get("jump")
-	items := []pickItem{{value: "", label: "— direkt (ohne Jump-Host)"}}
+	items := []pickItem{{value: "", label: i18n.T("— direkt (ohne Jump-Host)")}}
 	all := a.st.Tree().AllConns()
 	aw := 8
 	for _, c := range all {
@@ -87,7 +88,7 @@ func (a *App) pickJumpField(self domain.Connection) tea.Cmd {
 		it := pickItem{value: c.ID, label: fmt.Sprintf("%-*s", aw, trunc(c.Alias, aw)), search: c.Alias + " " + c.Host + " " + c.Username + " " + c.Group + " " + strings.Join(c.Tags, " ")}
 		folder := c.Group
 		if folder == "" {
-			folder = "oberste Ebene"
+			folder = i18n.T("oberste Ebene")
 		}
 		it.detail = fmt.Sprintf("%s@%s · %s", c.Username, c.Addr(), trunc(folder, 24))
 		var hint []string
@@ -97,28 +98,28 @@ func (a *App) pickJumpField(self domain.Connection) tea.Cmd {
 			for _, x := range chain {
 				ns = append(ns, x.Alias)
 			}
-			hint = append(hint, "über "+trunc(strings.Join(ns, " → "), 24))
+			hint = append(hint, i18n.T("über ")+trunc(strings.Join(ns, " → "), 24))
 		}
 		if a.connected(c.ID) {
-			hint = append(hint, "● verbunden")
+			hint = append(hint, i18n.T("● verbunden"))
 		}
 		if c.Device == domain.DeviceNetwork {
 			hint = append(hint, "Switch")
 		}
 		it.hint = strings.Join(hint, " · ")
 		if self.ID != "" && domain.JumpCreatesCycle(self.ID, c.ID, a.st.Connection) {
-			it.disabled = "geht selbst über „" + orDefault(self.Alias, "diese Verbindung") + "“ (Kreis)"
+			it.disabled = i18n.T("geht selbst über „") + orDefault(self.Alias, i18n.T("diese Verbindung")) + i18n.T("“ (Kreis)")
 		}
 		items = append(items, it)
 	}
-	title := "Jump-Host wählen"
+	title := i18n.T("Jump-Host wählen")
 	if self.Alias != "" {
-		title += " für „" + self.Alias + "“"
+		title += i18n.T(" für „") + self.Alias + "“"
 	}
-	p := newPicker(title, "Name, Host, Ordner oder Tag", items, fl.value, func(it pickItem) tea.Cmd {
+	p := newPicker(title, i18n.T("Name, Host, Ordner oder Tag"), items, fl.value, func(it pickItem) tea.Cmd {
 		fl.value = it.value
 		return nil
 	})
-	p.help = "✓ aktuell · ● verbunden"
+	p.help = i18n.T("✓ aktuell · ● verbunden")
 	return a.openPicker(p)
 }

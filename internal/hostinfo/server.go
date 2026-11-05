@@ -7,10 +7,13 @@
 package hostinfo
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // ServerScript läuft per "sh -s" (Skript über stdin), damit es auch bei fish
@@ -129,7 +132,7 @@ func ParseServer(out string) (Server, error) {
 		s.Uptime = time.Duration(now-boot) * time.Second
 	}
 	if seen == 0 || (s.CPUs == 0 && s.MemTotal == 0 && s.DiskTotal == 0) {
-		return s, fmt.Errorf("keine Kennzahlen (nur Linux/macOS mit sh)")
+		return s, errors.New(i18n.T("keine Kennzahlen (nur Linux/macOS mit sh)"))
 	}
 	return s, nil
 }
@@ -159,10 +162,10 @@ func (s Server) DiskPct() int {
 func (s Server) Summary() string {
 	parts := []string{}
 	if s.HasLoad {
-		parts = append(parts, fmt.Sprintf("Last %.2f", s.Load[0]))
+		parts = append(parts, fmt.Sprintf(i18n.T("Last %.2f"), s.Load[0]))
 	}
 	if s.MemTotal > 0 {
-		parts = append(parts, fmt.Sprintf("RAM %d%%", s.MemPct()))
+		parts = append(parts, fmt.Sprintf(i18n.T("RAM %d%%"), s.MemPct()))
 	}
 	if s.DiskTotal > 0 {
 		parts = append(parts, fmt.Sprintf("/ %d%%", s.DiskPct()))
@@ -197,10 +200,10 @@ func Duration(d time.Duration) string {
 	mins := int(d.Minutes()) % 60
 	switch {
 	case days > 0:
-		return fmt.Sprintf("%d T %d Std", days, hours)
+		return fmt.Sprintf(i18n.T("%d T %d Std"), days, hours)
 	case hours > 0:
-		return fmt.Sprintf("%d Std %d Min", hours, mins)
+		return fmt.Sprintf(i18n.T("%d Std %d Min"), hours, mins)
 	default:
-		return fmt.Sprintf("%d Min", mins)
+		return fmt.Sprintf(i18n.T("%d Min"), mins)
 	}
 }

@@ -3,6 +3,8 @@ package ui
 import (
 	"strings"
 	"unicode/utf8"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Frei belegbare Tastenkürzel. Jede Aktion hat Standardtasten; in den
@@ -193,7 +195,7 @@ func keyLabel(k string) string {
 	}
 	for i, p := range parts {
 		if i < len(parts)-1 {
-			parts[i] = map[string]string{"ctrl": "Strg", "alt": "Alt", "shift": "Shift", "super": "Super", "meta": "Meta"}[p]
+			parts[i] = map[string]string{"ctrl": i18n.T("Strg"), "alt": "Alt", "shift": "Shift", "super": "Super", "meta": "Meta"}[p]
 			if parts[i] == "" {
 				parts[i] = p
 			}
@@ -211,7 +213,7 @@ func keyLabel(k string) string {
 		case p == "backspace":
 			parts[i] = "⌫"
 		case p == "delete":
-			parts[i] = "Entf"
+			parts[i] = i18n.T("Entf")
 		case p == "@":
 			parts[i] = "@"
 		case p == "up" || p == "down" || p == "left" || p == "right":
@@ -231,16 +233,16 @@ func keyLabel(k string) string {
 func reservedKey(k string) string {
 	switch k {
 	case "esc", "enter", "tab", "backspace", "up", "down", "left", "right", "space":
-		return "wird zum Bedienen gebraucht"
+		return i18n.T("wird zum Bedienen gebraucht")
 	case "alt+enter":
-		return "Windows Terminal schaltet damit auf Vollbild"
+		return i18n.T("Windows Terminal schaltet damit auf Vollbild")
 	case "alt+f4":
-		return "schließt unter Windows das Fenster"
+		return i18n.T("schließt unter Windows das Fenster")
 	case "ctrl+c", "ctrl+d", "ctrl+z", "ctrl+v":
-		return "gehört der Shell bzw. dem Einfügen"
+		return i18n.T("gehört der Shell bzw. dem Einfügen")
 	}
 	if utf8.RuneCountInString(k) == 1 {
-		return "einzelne Zeichen braucht die Shell (nur im Manager sinnvoll)"
+		return i18n.T("einzelne Zeichen braucht die Shell (nur im Manager sinnvoll)")
 	}
 	return ""
 }
@@ -267,7 +269,7 @@ func relabelDefault(lbl string, ctx helpCtx) string {
 	switch lbl {
 	case "Alt+1…4":
 		if activeKeys.label(actChip1) == "Alt+1" && activeKeys.label(actChip4) == "Alt+4" {
-			return lbl
+			return i18n.T(lbl)
 		}
 		return activeKeys.label(actChip1) + "…"
 	case "F7 / F8":
@@ -275,7 +277,7 @@ func relabelDefault(lbl string, ctx helpCtx) string {
 	case "⇧⏎ / Strg+J":
 		ks := activeKeys.keys[actNewline]
 		if len(ks) == 2 && ks[0] == "shift+enter" && ks[1] == "ctrl+j" {
-			return lbl // passt in die Spalte
+			return i18n.T(lbl) // passt in die Spalte
 		}
 		if len(ks) == 2 {
 			return keyLabel(ks[0]) + " / " + keyLabel(ks[1])
@@ -286,9 +288,9 @@ func relabelDefault(lbl string, ctx helpCtx) string {
 		if d.area == "Manager" && ctx != hcManager {
 			continue
 		}
-		if len(d.def) > 0 && keyLabel(d.def[0]) == lbl {
+		if len(d.def) > 0 && keyLabel(d.def[0]) == i18n.T(lbl) {
 			return activeKeys.label(d.id)
 		}
 	}
-	return lbl
+	return i18n.T(lbl)
 }

@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Schnellverbinden: In der Palette user@host:port (oder ein ganzes
@@ -162,11 +163,11 @@ func (a *App) quickItems(q string) (items []palItem, strong bool) {
 	if !ok {
 		return nil, false
 	}
-	hint := "Key/Passwort"
+	hint := i18n.T("Key/Passwort")
 	items = append(items,
-		palItem{group: pgConnect, icon: "⚡", label: "Schnell verbinden: " + c.Alias, hint: hint,
+		palItem{group: pgConnect, icon: "⚡", label: i18n.T("Schnell verbinden: ") + c.Alias, hint: hint,
 			run: func() tea.Cmd { return a.openOrConnect(c) }},
-		palItem{group: pgConnect, icon: "+", label: "Als Verbindung speichern: " + c.Alias, hint: "anlegen",
+		palItem{group: pgConnect, icon: "+", label: i18n.T("Als Verbindung speichern: ") + c.Alias, hint: i18n.T("anlegen"),
 			run: func() tea.Cmd {
 				n := newConnDefaults()
 				n.Host, n.Port, n.Username, n.Alias = c.Host, c.Port, c.Username, c.Host

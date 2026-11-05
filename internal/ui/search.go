@@ -10,6 +10,7 @@ import (
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/termemu"
 )
 
@@ -46,7 +47,7 @@ func (a *App) openSearch(s *session) tea.Cmd {
 	}
 	in := textinput.New()
 	in.Prompt = ""
-	in.Placeholder = "Suchbegriff (Großbuchstaben = genau)"
+	in.Placeholder = i18n.T("Suchbegriff (Großbuchstaben = genau)")
 	in.CharLimit = 200
 	s.search = searchState{open: true, in: in, idx: -1}
 	s.panelFocus = false
@@ -181,9 +182,9 @@ func (a *App) stepMatch(s *session, d int) {
 	}
 	sr.idx = ((sr.idx+d)%n + n) % n
 	if d < 0 && sr.idx == n-1 && n > 1 {
-		a.flash("Suche: wieder von unten (neuester Treffer)")
+		a.flash(i18n.T("Suche: wieder von unten (neuester Treffer)"))
 	} else if d > 0 && sr.idx == 0 && n > 1 {
-		a.flash("Suche: wieder von oben (ältester Treffer)")
+		a.flash(i18n.T("Suche: wieder von oben (ältester Treffer)"))
 	}
 	a.revealMatch(s)
 }
@@ -235,14 +236,14 @@ func (a *App) viewErrorList(s *session, w, h int) string {
 	st := a.s
 	sr := &s.search
 	if len(sr.matches) == 0 {
-		msg := "Keine Fehlerzeilen im Verlauf"
+		msg := i18n.T("Keine Fehlerzeilen im Verlauf")
 		if sr.in.Value() != "" {
-			msg = "Keine Fehlerzeilen mit „" + sr.in.Value() + "“"
+			msg = i18n.T("Keine Fehlerzeilen mit „") + sr.in.Value() + "“"
 		}
-		return fitBlock("\n "+st.OK.Render("✓ "+msg)+"\n\n "+st.Muted.Render("Tab zeigt den Verlauf · Strg+E Filter aus · Esc schließen"), w, h)
+		return fitBlock("\n "+st.OK.Render("✓ "+msg)+"\n\n "+st.Muted.Render(i18n.T("Tab zeigt den Verlauf · Strg+E Filter aus · Esc schließen")), w, h)
 	}
-	head := st.Accent.Render(fmt.Sprintf(" ⚠ %s im Verlauf", plural(len(sr.matches), "Fehlerzeile", "Fehlerzeilen"))) +
-		st.Muted.Render("  ↑↓ wählen · ⏎ im Verlauf zeigen · Tab Verlauf")
+	head := st.Accent.Render(fmt.Sprintf(i18n.T(" ⚠ %s im Verlauf"), plural(len(sr.matches), i18n.T("Fehlerzeile"), i18n.T("Fehlerzeilen")))) +
+		st.Muted.Render(i18n.T("  ↑↓ wählen · ⏎ im Verlauf zeigen · Tab Verlauf"))
 	rows := max(1, h-1)
 	start := clamp(sr.idx-rows/2, 0, max(0, len(sr.matches)-rows))
 	numW := len(fmt.Sprint(s.term.Lines()))
@@ -272,11 +273,11 @@ func (a *App) viewErrorList(s *session, w, h int) string {
 func (a *App) searchBar(s *session) string {
 	st := a.s
 	sr := &s.search
-	label := " ⌕ Suche: "
+	label := i18n.T(" ⌕ Suche: ")
 	if sr.errors {
-		label = " ⚠ Fehler: "
+		label = i18n.T(" ⚠ Fehler: ")
 	}
-	count := st.Muted.Render(" keine Treffer ")
+	count := st.Muted.Render(i18n.T(" keine Treffer "))
 	if n := len(sr.matches); n > 0 {
 		count = st.Accent.Render(fmt.Sprintf(" %d/%d ", sr.idx+1, n))
 	} else if sr.in.Value() == "" && !sr.errors {
@@ -284,7 +285,7 @@ func (a *App) searchBar(s *session) string {
 	}
 	right := ""
 	if sr.errors {
-		right = a.s.Warn.Render("nur Fehlerzeilen ")
+		right = a.s.Warn.Render(i18n.T("nur Fehlerzeilen "))
 	}
 	sr.in.SetWidth(max(10, a.w-ansi.StringWidth(label)-ansi.StringWidth(count)-ansi.StringWidth(right)-2))
 	out := st.Accent.Render(label) + sr.in.View() + count

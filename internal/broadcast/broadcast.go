@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/safety"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
@@ -104,7 +105,7 @@ func Run(ctx context.Context, j Job, dial Dialer, update func(i int, r Result)) 
 			case sem <- struct{}{}:
 				defer func() { <-sem }()
 			case <-ctx.Done():
-				r.State, r.Err = Canceled, "abgebrochen"
+				r.State, r.Err = Canceled, i18n.T("abgebrochen")
 				update(i, *r)
 				return
 			}
@@ -171,7 +172,7 @@ func runHost(ctx context.Context, c domain.Connection, steps []string, dial Dial
 		}
 		if out.Exit != 0 {
 			if len(steps) > 1 && i < len(steps)-1 {
-				r.Err = fmt.Sprintf("Schritt %d mit Exit %d abgebrochen", i+1, out.Exit)
+				r.Err = fmt.Sprintf(i18n.T("Schritt %d mit Exit %d abgebrochen"), i+1, out.Exit)
 			}
 			finish(Done, nil)
 			return
@@ -184,9 +185,9 @@ func runHost(ctx context.Context, c domain.Connection, steps []string, dial Dial
 func errText(err error) string {
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
-		return "Zeitlimit überschritten"
+		return i18n.T("Zeitlimit überschritten")
 	case errors.Is(err, context.Canceled):
-		return "abgebrochen"
+		return i18n.T("abgebrochen")
 	}
 	return err.Error()
 }

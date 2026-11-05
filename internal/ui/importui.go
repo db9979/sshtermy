@@ -11,6 +11,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/importer"
 	"github.com/db9979/sshtermy/internal/store"
 )
@@ -36,7 +37,7 @@ type importState struct {
 
 func (a *App) openImport() tea.Cmd {
 	a.imp = importState{path: newInput("", false)}
-	a.imp.path.Placeholder = `Pfad: ~/.ssh/config, putty.reg, MobaXterm.ini, *.mxtsessions`
+	a.imp.path.Placeholder = i18n.T(`Pfad: ~/.ssh/config, putty.reg, MobaXterm.ini, *.mxtsessions`)
 	for _, r := range importer.Scan() {
 		a.addImport(r)
 	}
@@ -60,9 +61,9 @@ func (a *App) addImport(r importer.Result) {
 
 func (a *App) importKeys() [][2]string {
 	if a.imp.asking {
-		return [][2]string{{"⏎", "Datei lesen"}, {"Esc", "abbrechen"}}
+		return [][2]string{{"⏎", i18n.T("Datei lesen")}, {"Esc", i18n.T("abbrechen")}}
 	}
-	return [][2]string{{"⏎", fmt.Sprintf("%d übernehmen", a.importCount())}, {"Space", "an/aus"}, {"a", "alle/keine"}, {"f", "Datei laden"}, {"Esc", "zurück"}}
+	return [][2]string{{"⏎", fmt.Sprintf(i18n.T("%d übernehmen"), a.importCount())}, {"Space", i18n.T("an/aus")}, {"a", i18n.T("alle/keine")}, {"f", i18n.T("Datei laden")}, {"Esc", i18n.T("zurück")}}
 }
 
 func (a *App) importCount() int {
@@ -106,7 +107,7 @@ func (a *App) updateImport(msg tea.Msg) tea.Cmd {
 			before := len(m.items)
 			a.addImport(r)
 			m.err = ""
-			a.flash(fmt.Sprintf("%s: %d Verbindungen gefunden", r.Source.Label(), len(m.items)-before))
+			a.flash(fmt.Sprintf(i18n.T("%s: %d Verbindungen gefunden"), r.Source.Label(), len(m.items)-before))
 		default:
 			var cmd tea.Cmd
 			m.path, cmd = m.path.Update(k)
@@ -140,9 +141,9 @@ func (a *App) updateImport(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		a.scr = scrManager
-		msg := fmt.Sprintf("%s importiert", plural(n, "Verbindung", "Verbindungen"))
+		msg := fmt.Sprintf(i18n.T("%s importiert"), plural(n, i18n.T("Verbindung"), i18n.T("Verbindungen")))
 		if unresolved > 0 {
-			msg += fmt.Sprintf(" · %d Sprung-Host(s) nicht gefunden", unresolved)
+			msg += fmt.Sprintf(i18n.T(" · %d Sprung-Host(s) nicht gefunden"), unresolved)
 		}
 		a.flash(msg)
 	}
@@ -163,7 +164,7 @@ func (a *App) commitImport() (n, unresolved int, err error) {
 		jumps = append(jumps, it.e.Jump)
 	}
 	if len(cs) == 0 {
-		return 0, 0, errors.New("nichts ausgewählt (Space wählt aus)")
+		return 0, 0, errors.New(i18n.T("nichts ausgewählt (Space wählt aus)"))
 	}
 	pool := append(append([]domain.Connection(nil), cs...), a.st.Connections()...)
 	for i, j := range jumps {
@@ -211,12 +212,12 @@ func (a *App) viewImport() string {
 	m := &a.imp
 	w := min(110, a.w-2)
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(" ⇩ Verbindungen importieren") + "\n\n")
+	b.WriteString(s.Accent.Render(i18n.T(" ⇩ Verbindungen importieren")) + "\n\n")
 	for _, r := range m.results {
-		state := s.OK.Render(plural(len(r.Entries), "Verbindung", "Verbindungen"))
+		state := s.OK.Render(plural(len(r.Entries), i18n.T("Verbindung"), i18n.T("Verbindungen")))
 		switch {
 		case errors.Is(r.Err, importer.ErrNotFound):
-			state = s.Muted.Render("nicht gefunden")
+			state = s.Muted.Render(i18n.T("nicht gefunden"))
 		case r.Err != nil:
 			state = s.Danger.Render(r.Err.Error())
 		}
@@ -225,14 +226,14 @@ func (a *App) viewImport() string {
 	b.WriteString("\n")
 	if m.asking {
 		m.path.SetWidth(w - 12)
-		b.WriteString(" " + s.Accent.Render("Datei: ") + m.path.View() + "\n\n")
+		b.WriteString(" " + s.Accent.Render(i18n.T("Datei: ")) + m.path.View() + "\n\n")
 	}
 	if m.err != "" {
 		b.WriteString(" " + s.Danger.Render(m.err) + "\n\n")
 	}
 	if len(m.items) == 0 {
-		b.WriteString(s.Muted.Render(" Nichts gefunden. f = Datei laden (PuTTY-.reg-Export, MobaXterm.ini, .mxtsessions oder ssh_config).\n" +
-			" PuTTY exportieren: reg export HKCU\\Software\\SimonTatham\\PuTTY putty.reg"))
+		b.WriteString(s.Muted.Render(i18n.T(" Nichts gefunden. f = Datei laden (PuTTY-.reg-Export, MobaXterm.ini, .mxtsessions oder ssh_config).\n") +
+			i18n.T(" PuTTY exportieren: reg export HKCU\\Software\\SimonTatham\\PuTTY putty.reg")))
 		return b.String()
 	}
 	// Liste mit Fenster um die Auswahl
@@ -258,11 +259,11 @@ func (a *App) viewImport() string {
 			extra += " · " + c.Group
 		}
 		if it.e.Jump != "" {
-			extra += " · über " + it.e.Jump
+			extra += i18n.T(" · über ") + it.e.Jump
 		}
 		note := ""
 		if it.known {
-			note = "schon vorhanden"
+			note = i18n.T("schon vorhanden")
 		} else if len(it.e.Notes) > 0 {
 			note = it.e.Notes[0]
 		}
@@ -297,6 +298,6 @@ func (a *App) viewImport() string {
 		})
 		b.WriteString(out + "\n")
 	}
-	b.WriteString("\n" + s.Muted.Render(" Passwörter werden nicht übernommen; sshTermy fragt beim ersten Verbinden danach."))
+	b.WriteString("\n" + s.Muted.Render(i18n.T(" Passwörter werden nicht übernommen; sshTermy fragt beim ersten Verbinden danach.")))
 	return b.String()
 }

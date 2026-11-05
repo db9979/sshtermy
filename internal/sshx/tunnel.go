@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // ActiveTunnel ist ein laufendes Forwarding mit Zählern für die Oberfläche.
@@ -110,7 +111,7 @@ func (m *TunnelManager) Start(t domain.Tunnel) (*ActiveTunnel, error) {
 		// dürfen, entscheidet GatewayPorts in der sshd_config des Servers.
 		ln, err = m.c.Listen("tcp", laddr)
 	default:
-		return nil, errors.New("unbekannter Tunnel-Typ")
+		return nil, errors.New(i18n.T("unbekannter Tunnel-Typ"))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", t.Spec(), err)

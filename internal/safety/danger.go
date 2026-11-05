@@ -9,6 +9,8 @@ package safety
 import (
 	"regexp"
 	"strings"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Finding: eine Regel, die zutrifft.
@@ -22,6 +24,8 @@ type rule struct {
 }
 
 func r(p, reason string) rule { return rule{regexp.MustCompile(`(?i)` + p), reason} }
+
+// Die Gründe stehen deutsch in den Regeln und werden bei Check übersetzt.
 
 var unixRules = []rule{
 	r(`\brm\s+(-[A-Za-z-]+\s+)*-[A-Za-z]*[rRf]`, "löscht Dateien"),
@@ -73,7 +77,7 @@ func Check(cmd, kind string) []Finding {
 	var out []Finding
 	for _, ru := range rules {
 		if ru.rx.MatchString(cmd) {
-			out = append(out, Finding{ru.reason})
+			out = append(out, Finding{i18n.T(ru.reason)})
 		}
 	}
 	return out

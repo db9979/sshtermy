@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Vendor: Familie des Netzwerkgeräts, erkannt an "show version".
@@ -96,10 +98,10 @@ func (s Switch) Summary() string {
 		parts = append(parts, s.Firmware)
 	}
 	if s.PortsUp+s.PortsDown > 0 {
-		parts = append(parts, strconv.Itoa(s.PortsUp)+"/"+strconv.Itoa(s.PortsUp+s.PortsDown)+" Ports aktiv")
+		parts = append(parts, strconv.Itoa(s.PortsUp)+"/"+strconv.Itoa(s.PortsUp+s.PortsDown)+i18n.T(" Ports aktiv"))
 	}
 	if len(s.VLANs) > 0 {
-		parts = append(parts, strconv.Itoa(len(s.VLANs))+" VLANs")
+		parts = append(parts, strconv.Itoa(len(s.VLANs))+i18n.T(" VLANs"))
 	}
 	return strings.Join(parts, " · ")
 }

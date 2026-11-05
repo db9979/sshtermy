@@ -8,6 +8,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -50,7 +51,7 @@ type palette struct {
 func isPaletteKey(k string) bool { return activeKeys.is(actPalette, k) }
 
 func (a *App) openPalette() tea.Cmd {
-	in := newAIInput("Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …")
+	in := newAIInput(i18n.T("Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …"))
 	in.MaxHeight = 4
 	a.pal = &palette{in: in, armed: -1}
 	return a.pal.in.Focus()
@@ -68,16 +69,16 @@ func (a *App) paletteItems() []palItem {
 	}
 	if q != "" && inTerm {
 		items = append(items,
-			palItem{group: pgAI, icon: "◎", label: "Als Ziel starten: „" + trunc(oneLine(q), 50) + "“", hint: "⏎",
+			palItem{group: pgAI, icon: "◎", label: i18n.T("Als Ziel starten: „") + trunc(oneLine(q), 50) + "“", hint: "⏎",
 				run: func() tea.Cmd { return a.startGoal(s, q) }},
-			palItem{group: pgAI, icon: "✦", label: "KI fragen: „" + trunc(oneLine(q), 50) + "“", hint: "Tab",
+			palItem{group: pgAI, icon: "✦", label: i18n.T("KI fragen: „") + trunc(oneLine(q), 50) + "“", hint: "Tab",
 				run: func() tea.Cmd { return a.startAsk(s, q) }},
-			palItem{group: pgAI, icon: "⇆", label: "Für dieses System umschreiben: „" + trunc(oneLine(q), 40) + "“", hint: "Befehl",
+			palItem{group: pgAI, icon: "⇆", label: i18n.T("Für dieses System umschreiben: „") + trunc(oneLine(q), 40) + "“", hint: i18n.T("Befehl"),
 				run: func() tea.Cmd { return a.startAdapt(s, oneLine(q)) }})
 	}
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
-	if inTerm && s.fail != nil && match("fehler warum fix "+s.fail.Command) {
-		items = append(items, palItem{group: pgAI, icon: "✗", label: "Warum ist „" + trunc(oneLine(s.fail.Command), 40) + "“ fehlgeschlagen? Fix vorschlagen", hint: "Alt+0",
+	if inTerm && s.fail != nil && match("fehler warum fix error why "+s.fail.Command) {
+		items = append(items, palItem{group: pgAI, icon: "✗", label: i18n.T("Warum ist „") + trunc(oneLine(s.fail.Command), 40) + i18n.T("“ fehlgeschlagen? Fix vorschlagen"), hint: "Alt+0",
 			run: func() tea.Cmd { return a.explainFailure(s) }})
 	}
 	if inTerm {
@@ -86,7 +87,7 @@ func (a *App) paletteItems() []palItem {
 			if !match(c.Command) {
 				continue
 			}
-			it := palItem{group: pgSuggest, icon: "$", label: c.Command, hint: "einfügen",
+			it := palItem{group: pgSuggest, icon: "$", label: c.Command, hint: i18n.T("einfügen"),
 				run: func() tea.Cmd { s.term.SendText(c.Command); s.panelFocus = false; return nil }}
 			if len(c.Danger) > 0 {
 				it.danger = c.Danger[0].Reason
@@ -101,7 +102,7 @@ func (a *App) paletteItems() []palItem {
 			if !match(rb.Name + " " + rb.Goal + " " + strings.Join(rb.Steps, " ")) {
 				continue
 			}
-			items = append(items, palItem{group: pgRunbook, icon: "▶", label: rb.Name, hint: plural(len(rb.Steps), "Schritt", "Schritte"),
+			items = append(items, palItem{group: pgRunbook, icon: "▶", label: rb.Name, hint: plural(len(rb.Steps), i18n.T("Schritt"), i18n.T("Schritte")),
 				run: func() tea.Cmd { return a.startRunbook(s, rb) }})
 		}
 		for _, t := range a.st.Tunnels(s.conn.ID) {
@@ -110,12 +111,12 @@ func (a *App) paletteItems() []palItem {
 				continue
 			}
 			on := s.tunnels != nil && s.tunnels.Get(t.ID) != nil
-			label, hint := "„"+t.Name+"“ starten · "+t.Spec(), "an"
+			label, hint := "„"+t.Name+i18n.T("“ starten · ")+t.Spec(), i18n.T("an")
 			if on {
-				label, hint = "„"+t.Name+"“ stoppen", "aus"
+				label, hint = "„"+t.Name+i18n.T("“ stoppen"), i18n.T("aus")
 				if at := s.tunnels.Get(t.ID); at.URL() != "" {
 					u := at.URL()
-					items = append(items, palItem{group: pgTunnel, icon: "↗", label: "Öffnen: " + u, hint: "Browser",
+					items = append(items, palItem{group: pgTunnel, icon: "↗", label: i18n.T("Öffnen: ") + u, hint: "Browser",
 						run: func() tea.Cmd { _ = sshx.OpenBrowser(u); return nil }})
 				}
 			}
@@ -126,9 +127,9 @@ func (a *App) paletteItems() []palItem {
 				if s.tunnels.Get(t.ID) != nil {
 					s.tunnels.Stop(t.ID)
 				} else if at, err := s.tunnels.Start(t); err != nil {
-					a.flash("Tunnel: " + err.Error())
+					a.flash(i18n.T("Tunnel: ") + err.Error())
 				} else if at.URL() != "" {
-					a.flash("Web-Service bereit: " + at.URL())
+					a.flash(i18n.T("Web-Service bereit: ") + at.URL())
 				}
 				return nil
 			}})
@@ -146,7 +147,7 @@ func (a *App) paletteItems() []palItem {
 			run: func() tea.Cmd { return a.openOrConnect(c) }})
 	}
 	actions := []palItem{
-		{icon: "◎", label: "Ziel-Modus öffnen", hint: a.keys.label(actGoal), run: func() tea.Cmd {
+		{icon: "◎", label: i18n.T("Ziel-Modus öffnen"), hint: a.keys.label(actGoal), run: func() tea.Cmd {
 			if inTerm {
 				withPanel(s, panelGoal)
 				a.resize(s)
@@ -154,66 +155,67 @@ func (a *App) paletteItems() []palItem {
 			}
 			return nil
 		}},
-		{icon: "⇄", label: "Tunnel-Panel", hint: a.keys.label(actTunnels), run: func() tea.Cmd {
+		{icon: "⇄", label: i18n.T("Tunnel-Panel"), hint: a.keys.label(actTunnels), run: func() tea.Cmd {
 			if inTerm {
 				withPanel(s, panelTunnels)
 				a.resize(s)
 			}
 			return nil
 		}},
-		{icon: "↯", label: "Schnellbefehle bearbeiten", hint: "Liste", run: func() tea.Cmd {
+		{icon: "↯", label: i18n.T("Schnellbefehle bearbeiten"), hint: i18n.T("Liste"), run: func() tea.Cmd {
 			if inTerm {
 				return a.editQuickFor(s)
 			}
 			return nil
 		}},
-		{icon: "≡", label: "Verbindungs-Manager", hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
-		{icon: "+", label: "Neue Verbindung", hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
-		{icon: "⇉", label: "Broadcast: Befehl auf mehreren Hosts", hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
-		{icon: "⌕", label: "Netzwerk-Scan: SSH-Geräte finden", hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
-		{icon: "✦", label: "KI-Einstellungen", hint: "s", run: func() tea.Cmd { return a.openSettings() }},
-		{icon: "⇅", label: "Sync zwischen Rechnern einrichten", hint: "y", run: func() tea.Cmd { return a.openSync() }},
-		{icon: "⇩", label: "Verbindungen importieren (ssh-config, PuTTY, MobaXterm)", hint: a.keys.label(actImport), run: func() tea.Cmd { return a.openImport() }},
-		{icon: "?", label: "Tastenkürzel anzeigen", hint: a.keys.label(actHelp), run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
-		{icon: "⌨", label: "Tastenkürzel anpassen", hint: a.keys.label(actKeys), run: func() tea.Cmd { return a.openKeys() }},
-		{icon: "i", label: "Über sshTermy / Update", hint: a.keys.label(actAbout), run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
-		{icon: "★", label: "Was ist neu (Changelog)", hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
-		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
+		{icon: "≡", label: i18n.T("Verbindungs-Manager"), hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
+		{icon: "+", label: i18n.T("Neue Verbindung"), hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		{icon: "⇉", label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
+		{icon: "⌕", label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
+		{icon: "✦", label: i18n.T("KI-Einstellungen"), hint: "s", run: func() tea.Cmd { return a.openSettings() }},
+		{icon: "⇅", label: i18n.T("Sync zwischen Rechnern einrichten"), hint: "y", run: func() tea.Cmd { return a.openSync() }},
+		{icon: "⇩", label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm)"), hint: a.keys.label(actImport), run: func() tea.Cmd { return a.openImport() }},
+		{icon: "?", label: i18n.T("Tastenkürzel anzeigen"), hint: a.keys.label(actHelp), run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
+		{icon: "⌨", label: i18n.T("Tastenkürzel anpassen"), hint: a.keys.label(actKeys), run: func() tea.Cmd { return a.openKeys() }},
+		{icon: "i", label: i18n.T("Über sshTermy / Update"), hint: a.keys.label(actAbout), run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
+		{icon: "★", label: i18n.T("Was ist neu (Changelog)"), hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
+		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: i18n.T("Maus"), run: func() tea.Cmd { return a.toggleMouse() }},
 		{icon: "⟳", label: reconnectLabel(a.autoReconnect()), hint: "Reconnect", run: func() tea.Cmd { return a.toggleAutoReconnect() }},
-		{icon: "☰", label: "Sitzungsprotokolle durchsuchen", hint: "l", run: func() tea.Cmd { return a.openLogs() }},
-		{icon: "●", label: logLabel(a.logsEnabled()), hint: "Protokoll", run: func() tea.Cmd { return a.toggleSessionLog() }},
-		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
+		{icon: "☰", label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: "l", run: func() tea.Cmd { return a.openLogs() }},
+		{icon: "●", label: logLabel(a.logsEnabled()), hint: i18n.T("Protokoll"), run: func() tea.Cmd { return a.toggleSessionLog() }},
+		{icon: "▶", label: i18n.T("Einführungstour"), hint: i18n.T("5 Schritte"), run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
 		{icon: "?", label: cheatLabel(a.cheatOn()), hint: a.keys.label(actCheat), run: func() tea.Cmd { return a.toggleCheat() }},
-		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
+		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: i18n.T("Einfügen"), run: func() tea.Cmd { return a.togglePasteGuard() }},
 		{icon: "✦", label: introLabel(a.introOn()), hint: "Start", run: func() tea.Cmd { return a.toggleIntro() }},
+		{icon: "◇", label: langLabel(), hint: "Language", run: func() tea.Cmd { return a.toggleLang() }},
 	}
 	for _, t := range Themes {
 		t := t
 		hint := ""
 		if ThemeByName(a.st.Settings().Theme).Name == t.Name {
-			hint = "aktiv"
+			hint = i18n.T("aktiv")
 		}
-		actions = append(actions, palItem{icon: "◐", label: "Aussehen: " + t.Label, hint: hint, run: func() tea.Cmd { return a.setTheme(t.Name) }})
+		actions = append(actions, palItem{icon: "◐", label: i18n.T("Aussehen: ") + i18n.T(t.Label), hint: hint, run: func() tea.Cmd { return a.setTheme(t.Name) }})
 	}
 	if a.restartPending != "" {
-		actions = append(actions, palItem{icon: "⟳", label: "Neu starten (v" + a.restartPending + " aktivieren)", hint: "Update", run: func() tea.Cmd { return a.askRestart() }})
+		actions = append(actions, palItem{icon: "⟳", label: i18n.T("Neu starten (v") + a.restartPending + i18n.T(" aktivieren)"), hint: "Update", run: func() tea.Cmd { return a.askRestart() }})
 	}
 	if a.st.SyncConfig().Enabled() {
-		actions = append(actions, palItem{icon: "⇅", label: "Jetzt synchronisieren", hint: "Sync", run: func() tea.Cmd {
-			a.flash("Sync läuft …")
+		actions = append(actions, palItem{icon: "⇅", label: i18n.T("Jetzt synchronisieren"), hint: "Sync", run: func() tea.Cmd {
+			a.flash(i18n.T("Sync läuft …"))
 			return a.runSync()
 		}})
 	}
 	if !inTerm {
 		actions = actions[3:]
 	} else {
-		actions = append(actions, palItem{icon: "▤", label: "Host-Übersicht", hint: a.keys.label(actHost), run: func() tea.Cmd {
+		actions = append(actions, palItem{icon: "▤", label: i18n.T("Host-Übersicht"), hint: a.keys.label(actHost), run: func() tea.Cmd {
 			withPanel(s, panelHost)
 			a.resize(s)
 			return a.panelOpened(s)
 		}})
 		if s.client != nil && s.client.NetDevice {
-			actions = append(actions, palItem{icon: "▣", label: "Switch-Config sichern und vergleichen", hint: "b", run: func() tea.Cmd {
+			actions = append(actions, palItem{icon: "▣", label: i18n.T("Switch-Config sichern und vergleichen"), hint: "b", run: func() tea.Cmd {
 				withPanel(s, panelHost)
 				s.panelFocus = false
 				a.resize(s)
@@ -224,8 +226,8 @@ func (a *App) paletteItems() []palItem {
 	}
 	if a.scr == scrTerminal && s != nil {
 		actions = append(actions,
-			palItem{icon: "⌕", label: "Im Verlauf suchen", hint: "Strg+F", run: func() tea.Cmd { return a.openSearch(s) }},
-			palItem{icon: "⚠", label: "Fehlerzeilen im Verlauf zeigen", hint: "Strg+F Strg+E", run: func() tea.Cmd {
+			palItem{icon: "⌕", label: i18n.T("Im Verlauf suchen"), hint: "Strg+F", run: func() tea.Cmd { return a.openSearch(s) }},
+			palItem{icon: "⚠", label: i18n.T("Fehlerzeilen im Verlauf zeigen"), hint: i18n.T("Strg+F Strg+E"), run: func() tea.Cmd {
 				cmd := a.openSearch(s)
 				s.search.errors, s.search.list = true, true
 				a.refreshSearch(s, true)
@@ -236,18 +238,18 @@ func (a *App) paletteItems() []palItem {
 				continue
 			}
 			m := m
-			label := "Ansicht teilen: " + m.label()
+			label := i18n.T("Ansicht teilen: ") + m.label()
 			if m == splitOff {
-				label = "Ansicht nicht mehr teilen"
+				label = i18n.T("Ansicht nicht mehr teilen")
 			}
 			actions = append(actions, palItem{icon: "▦", label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
 	}
-	actions = append(actions, palItem{icon: "●", label: "KI-Status: Endpunkt erreichbar? jetzt prüfen", hint: "llm",
+	actions = append(actions, palItem{icon: "●", label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), hint: "llm",
 		run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }})
 	for _, x := range actions {
 		x.group = pgAction
-		if match(x.label) {
+		if match(x.label) || (x.hint == "Language" && match("sprache language english deutsch german")) {
 			items = append(items, x)
 		}
 	}
@@ -270,7 +272,7 @@ func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 	case key == "tab":
 		// Tab = „KI fragen“ (zweiter Eintrag, wenn Text da ist)
 		for _, it := range items {
-			if it.group == pgAI && strings.HasPrefix(it.label, "KI fragen") {
+			if it.group == pgAI && strings.HasPrefix(it.label, i18n.T("KI fragen")) {
 				a.pal = nil
 				return it.run()
 			}
@@ -321,7 +323,7 @@ func (a *App) viewPalette() string {
 		it := items[i]
 		if it.group != last {
 			last = it.group
-			b.WriteString(st.Muted.Render(palGroupName[it.group]) + "\n")
+			b.WriteString(st.Muted.Render(i18n.T(palGroupName[it.group])) + "\n")
 		}
 		iconStyle := st.Accent
 		switch it.group {
@@ -336,7 +338,7 @@ func (a *App) viewPalette() string {
 		if it.danger != "" {
 			hint = st.Danger.Render("⚠ " + it.danger)
 			if p.armed == i {
-				hint = st.Danger.Render("nochmal ⏎")
+				hint = st.Danger.Render(i18n.T("nochmal ⏎"))
 			}
 		}
 		label := trunc(it.label, w-8-lipgloss.Width(hint))
@@ -359,9 +361,9 @@ func (a *App) viewPalette() string {
 		rows++
 	}
 	if len(items) == 0 {
-		b.WriteString(st.Muted.Render("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.") + "\n")
+		b.WriteString(st.Muted.Render(i18n.T("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.")) + "\n")
 	}
-	b.WriteString("\n" + st.Muted.Render(fmt.Sprintf("↑↓ wählen · ⏎ ausführen · Tab KI fragen · Esc schließen · %d Einträge", len(items))))
+	b.WriteString("\n" + st.Muted.Render(fmt.Sprintf(i18n.T("↑↓ wählen · ⏎ ausführen · Tab KI fragen · Esc schließen · %d Einträge"), len(items))))
 	box := st.Modal.BorderForeground(st.T.AI).Padding(0, 1).Width(w).Render(b.String())
 	return a.z.mark(box, zoneAction{block: true, wheel: func(up bool) tea.Cmd {
 		if up {

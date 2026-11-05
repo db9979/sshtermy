@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // SecretPrompt fragt ein fehlendes Geheimnis interaktiv ab (z. B. Passphrase).
@@ -22,7 +23,7 @@ func clientConfig(c domain.Connection, o Options) (*ssh.ClientConfig, error) {
 		return nil, err
 	}
 	if o.HostKeys == nil {
-		return nil, errors.New("keine Host-Key-Prüfung konfiguriert") // nie InsecureIgnoreHostKey
+		return nil, errors.New(i18n.T("keine Host-Key-Prüfung konfiguriert")) // nie InsecureIgnoreHostKey
 	}
 	cfg := &ssh.ClientConfig{
 		User:            c.Username,
@@ -54,7 +55,7 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 		pw := c.Password.Reveal()
 		m := []ssh.AuthMethod{ssh.PasswordCallback(func() (string, error) {
 			if pw == "" && o.AskSecret != nil {
-				return o.AskSecret("Passwort für " + c.Username + "@" + c.Host)
+				return o.AskSecret(i18n.T("Passwort für ") + c.Username + "@" + c.Host)
 			}
 			return pw, nil
 		})}
@@ -88,7 +89,7 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 	case domain.AuthAgent:
 		conn, err := dialAgent()
 		if err != nil {
-			return nil, fmt.Errorf("SSH-Agent nicht erreichbar: %w", err)
+			return nil, fmt.Errorf(i18n.T("SSH-Agent nicht erreichbar: %w"), err)
 		}
 		// Der Agent hält die Private Keys; sshtermy sieht sie nie.
 		return []ssh.AuthMethod{ssh.PublicKeysCallback(agent.NewClient(conn).Signers)}, nil
@@ -96,7 +97,7 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 	case domain.AuthAuto:
 		return autoMethods(c, o), nil
 	}
-	return nil, fmt.Errorf("unbekannte Auth-Methode %q", c.Auth)
+	return nil, fmt.Errorf(i18n.T("unbekannte Auth-Methode %q"), c.Auth)
 }
 
 // autoMethods: Agent + unverschlüsselte Standard-Keys, danach Passwort und
@@ -131,14 +132,14 @@ func autoMethods(c domain.Connection, o Options) []ssh.AuthMethod {
 		return m
 	}
 	m = append(m, ssh.PasswordCallback(func() (string, error) {
-		return o.AskSecret("Passwort für " + c.Username + "@" + c.Host)
+		return o.AskSecret(i18n.T("Passwort für ") + c.Username + "@" + c.Host)
 	}))
 	m = append(m, ssh.KeyboardInteractive(func(_, _ string, qs []string, _ []bool) ([]string, error) {
 		ans := make([]string, len(qs))
 		for i, q := range qs {
 			label := strings.TrimSpace(q)
 			if strings.Contains(strings.ToLower(q), "pass") {
-				label = "Passwort für " + c.Username + "@" + c.Host // gleiche Frage wie oben, nur einmal
+				label = i18n.T("Passwort für ") + c.Username + "@" + c.Host // gleiche Frage wie oben, nur einmal
 			}
 			a, err := o.AskSecret(label)
 			if err != nil {
@@ -163,7 +164,7 @@ func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
 		}
 		b, err := os.ReadFile(p)
 		if err != nil {
-			return nil, fmt.Errorf("Keyfile: %w", err)
+			return nil, fmt.Errorf(i18n.T("Keyfile: %w"), err)
 		}
 		pem = b
 	}
@@ -177,7 +178,7 @@ func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
 	if errors.As(err, &missing) {
 		pass := c.KeyPassphrase.Reveal()
 		if pass == "" && o.AskSecret != nil {
-			if pass, err = o.AskSecret("Passphrase für den Key von " + c.Alias); err != nil {
+			if pass, err = o.AskSecret(i18n.T("Passphrase für den Key von ") + c.Alias); err != nil {
 				return nil, err
 			}
 		}

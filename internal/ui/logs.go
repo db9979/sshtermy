@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 )
 
@@ -45,7 +46,7 @@ type logSummaryMsg struct {
 
 func (a *App) openLogs() tea.Cmd {
 	in := newInput("", false)
-	in.Placeholder = "Suchen (Host, Befehl, Ausgabe, Datum)"
+	in.Placeholder = i18n.T("Suchen (Host, Befehl, Ausgabe, Datum)")
 	back := a.scr
 	if back == scrLogs {
 		back = a.logs.back
@@ -146,11 +147,11 @@ func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
 	case "d", "delete":
 		if cur != nil {
 			if a.activeLog(cur.ID) != nil {
-				a.flash("Die Sitzung läuft noch; erst Tab schließen")
+				a.flash(i18n.T("Die Sitzung läuft noch; erst Tab schließen"))
 				return nil
 			}
 			l := cur
-			a.modal = confirmModal("Protokoll löschen", "Protokoll „"+l.Host+"“ vom "+l.Started.Format("02.01.2006 15:04")+" wirklich löschen?", func() tea.Cmd {
+			a.modal = confirmModal(i18n.T("Protokoll löschen"), i18n.T("Protokoll „")+l.Host+i18n.T("“ vom ")+l.Started.Format("02.01.2006 15:04")+i18n.T(" wirklich löschen?"), func() tea.Cmd {
 				if b, err := a.logBook(); err == nil {
 					if err := b.Delete(l.ID); err != nil {
 						a.flash(err.Error())
@@ -191,12 +192,12 @@ func (a *App) toggleSessionLog() tea.Cmd {
 				a.startLog(s)
 			}
 		}
-		a.flash("Sitzungsprotokoll an (neue Befehle werden verschlüsselt mitgeschrieben)")
+		a.flash(i18n.T("Sitzungsprotokoll an (neue Befehle werden verschlüsselt mitgeschrieben)"))
 	} else {
 		for _, s := range a.sessions {
 			a.endLog(s)
 		}
-		a.flash("Sitzungsprotokoll aus")
+		a.flash(i18n.T("Sitzungsprotokoll aus"))
 	}
 	return nil
 }
@@ -219,7 +220,7 @@ func (a *App) summarizeLogs(list []*sessionlog.Log, id string) tea.Cmd {
 		}
 	}
 	if id == "" {
-		a.logs.busy = fmt.Sprintf("%d Sitzungen", len(list))
+		a.logs.busy = fmt.Sprintf(i18n.T("%d Sitzungen"), len(list))
 		a.logs.groupQ = a.logs.search.Value()
 	} else {
 		a.logs.busy = list[0].Host
@@ -240,7 +241,7 @@ func (a *App) logsMsg(msg tea.Msg) (tea.Cmd, bool) {
 	}
 	a.logs.busy = ""
 	if m.err != nil {
-		a.flash("Zusammenfassung: " + m.err.Error())
+		a.flash(i18n.T("Zusammenfassung: ") + m.err.Error())
 		return nil, true
 	}
 	if m.id == "" {
@@ -282,24 +283,24 @@ func (a *App) exportLog(l *sessionlog.Log) {
 	name := fmt.Sprintf("sshtermy-%s-%s.md", strings.Trim(unsafeName.ReplaceAllString(l.Host, "_"), "_"), l.Started.Format("20060102-1504"))
 	p := filepath.Join(exportDir(), name)
 	if err := os.WriteFile(p, []byte(l.Markdown()), 0o600); err != nil {
-		a.flash("Export: " + err.Error())
+		a.flash(i18n.T("Export: ") + err.Error())
 		return
 	}
-	a.flash("Exportiert: " + p)
+	a.flash(i18n.T("Exportiert: ") + p)
 }
 
 // ---------------------------------------------------------------- Ansicht
 
 func (a *App) logsKeys() [][2]string {
 	if a.logs.searching {
-		return [][2]string{{"⏎", "fertig"}, {"Esc", "Suche leeren"}}
+		return [][2]string{{"⏎", i18n.T("fertig")}, {"Esc", i18n.T("Suche leeren")}}
 	}
-	onOff := "aus"
+	onOff := i18n.T("aus")
 	if !a.logsEnabled() {
-		onOff = "an"
+		onOff = i18n.T("an")
 	}
-	return [][2]string{{"↑↓", "wählen"}, {"/", "suchen"}, {"z", "KI-Zusammenfassung"}, {"Z", "alle Treffer zusammenfassen"},
-		{"x", "Markdown-Export"}, {"d", "löschen"}, {"PgDn", "blättern"}, {"a", "Mitschreiben " + onOff}, {"Esc", "zurück"}}
+	return [][2]string{{"↑↓", i18n.T("wählen")}, {"/", i18n.T("suchen")}, {"z", i18n.T("KI-Zusammenfassung")}, {"Z", i18n.T("alle Treffer zusammenfassen")},
+		{"x", i18n.T("Markdown-Export")}, {"d", i18n.T("löschen")}, {"PgDn", i18n.T("blättern")}, {"a", i18n.T("Mitschreiben ") + onOff}, {"Esc", i18n.T("zurück")}}
 }
 
 func (a *App) viewLogs() string {
@@ -314,11 +315,11 @@ func (a *App) viewLogs() string {
 	if m.searching || m.search.Value() != "" {
 		lb.WriteString(" " + s.Accent.Render("/") + " " + m.search.View() + "\n\n")
 	} else {
-		lb.WriteString(s.PanelTitle.Foreground(s.T.Accent).Render(" Sitzungsprotokolle") + s.Muted.Render(fmt.Sprintf("  %d", len(list))) +
-			"  " + a.keyZone("/", s.Muted.Render("/ suchen")) + "\n\n")
+		lb.WriteString(s.PanelTitle.Foreground(s.T.Accent).Render(i18n.T(" Sitzungsprotokolle")) + s.Muted.Render(fmt.Sprintf("  %d", len(list))) +
+			"  " + a.keyZone("/", s.Muted.Render(i18n.T("/ suchen"))) + "\n\n")
 	}
 	if !a.logsEnabled() {
-		lb.WriteString(" " + s.Warn.Render("Mitschreiben ist aus") + s.Muted.Render(" · a = an") + "\n\n")
+		lb.WriteString(" " + s.Warn.Render(i18n.T("Mitschreiben ist aus")) + s.Muted.Render(" · a = an") + "\n\n")
 	}
 	room := max(1, h-4)
 	start := 0
@@ -349,12 +350,12 @@ func (a *App) viewLogs() string {
 	case m.err != "":
 		lb.WriteString(s.Danger.Render(" " + m.err))
 	case len(a.logs.all) == 0:
-		lb.WriteString(s.Muted.Render("  Noch keine Protokolle.\n  Jede SSH-Sitzung wird ab dem\n  ersten Befehl mitgeschrieben."))
+		lb.WriteString(s.Muted.Render(i18n.T("  Noch keine Protokolle.\n  Jede SSH-Sitzung wird ab dem\n  ersten Befehl mitgeschrieben.")))
 	case len(list) == 0:
-		lb.WriteString(s.Muted.Render("  Keine Treffer."))
+		lb.WriteString(s.Muted.Render(i18n.T("  Keine Treffer.")))
 	}
 	if m.unreadable > 0 {
-		lb.WriteString("\n" + s.Muted.Render(fmt.Sprintf("  %d Datei(en) nicht lesbar", m.unreadable)))
+		lb.WriteString("\n" + s.Muted.Render(fmt.Sprintf(i18n.T("  %d Datei(en) nicht lesbar"), m.unreadable)))
 	}
 	left := lipgloss.NewStyle().Width(leftW).Height(h).MaxHeight(h).Render(lb.String())
 	sep := lipgloss.NewStyle().Foreground(s.T.Border).Render(strings.Repeat("│\n", max(0, h-1)) + "│")
@@ -362,38 +363,38 @@ func (a *App) viewLogs() string {
 	var rb strings.Builder
 	w := rightW - 2
 	if m.busy != "" {
-		rb.WriteString(" " + s.AI.Render("✦ KI fasst zusammen: "+m.busy+" …") + "\n\n")
+		rb.WriteString(" " + s.AI.Render(i18n.T("✦ KI fasst zusammen: ")+m.busy+" …") + "\n\n")
 	}
 	switch {
 	case m.group != "":
-		title := fmt.Sprintf("✦ Zusammenfassung über %s", plural(len(list), "Sitzung", "Sitzungen"))
+		title := fmt.Sprintf(i18n.T("✦ Zusammenfassung über %s"), plural(len(list), i18n.T("Sitzung"), i18n.T("Sitzungen")))
 		if m.groupQ != "" {
-			title += " zu „" + m.groupQ + "“"
+			title += i18n.T(" zu „") + m.groupQ + "“"
 		}
-		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(title) + s.Muted.Render("  Esc schließen") + "\n\n")
+		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(title) + s.Muted.Render(i18n.T("  Esc schließen")) + "\n\n")
 		rb.WriteString(indent(wrap(s.Text.Render(m.group), w), " "))
 	case m.sel < len(list):
 		l := list[m.sel]
 		rb.WriteString(" " + s.Accent.Render(l.Host) + "  " + s.Muted.Render(l.Addr) + "   " +
-			a.keyZone("z", s.Key.Render("z")+s.KeyDesc.Render("zusammenfassen")) + " " +
-			a.keyZone("x", s.Key.Render("x")+s.KeyDesc.Render("exportieren")) + "\n")
-		end := "läuft"
+			a.keyZone("z", s.Key.Render("z")+s.KeyDesc.Render(i18n.T("zusammenfassen"))) + " " +
+			a.keyZone("x", s.Key.Render("x")+s.KeyDesc.Render(i18n.T("exportieren"))) + "\n")
+		end := i18n.T("läuft")
 		if a.activeLog(l.ID) == nil {
-			end = "abgebrochen"
+			end = i18n.T("abgebrochen")
 		}
 		if !l.Ended.IsZero() {
 			end = l.Ended.Format("15:04") + " (" + l.Ended.Sub(l.Started).Round(time.Minute).String() + ")"
 		}
-		info := l.Started.Format("02.01.2006 15:04") + " – " + end + " · " + plural(len(l.Entries), "Befehl", "Befehle")
+		info := l.Started.Format("02.01.2006 15:04") + " – " + end + " · " + plural(len(l.Entries), i18n.T("Befehl"), i18n.T("Befehle"))
 		if n := l.Failures(); n > 0 {
-			info += fmt.Sprintf(" · %d fehlgeschlagen", n)
+			info += fmt.Sprintf(i18n.T(" · %d fehlgeschlagen"), n)
 		}
 		if l.System != "" {
 			info += " · " + l.System
 		}
 		rb.WriteString(" " + s.Muted.Render(trunc(info, w)) + "\n\n")
 		if l.Summary != "" {
-			rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render("✦ Zusammenfassung") + "\n")
+			rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(i18n.T("✦ Zusammenfassung")) + "\n")
 			rb.WriteString(indent(wrap(s.Text.Render(l.Summary), w), " ") + "\n\n")
 		}
 		idx := make([]int, len(l.Entries))
@@ -403,7 +404,7 @@ func (a *App) viewLogs() string {
 		if q := m.search.Value(); strings.TrimSpace(q) != "" {
 			if hits := l.MatchingEntries(q); len(hits) > 0 {
 				idx = hits
-				rb.WriteString(" " + s.Muted.Render(fmt.Sprintf("%d von %d Befehlen passen zur Suche", len(hits), len(l.Entries))) + "\n\n")
+				rb.WriteString(" " + s.Muted.Render(fmt.Sprintf(i18n.T("%d von %d Befehlen passen zur Suche"), len(hits), len(l.Entries))) + "\n\n")
 			}
 		}
 		for _, i := range idx {
@@ -418,7 +419,7 @@ func (a *App) viewLogs() string {
 			}
 			out := strings.Split(strings.TrimSpace(e.Output), "\n")
 			if len(out) > 4 {
-				out = append(out[:3:3], fmt.Sprintf("… %d weitere Zeilen", len(out)-3))
+				out = append(out[:3:3], fmt.Sprintf(i18n.T("… %d weitere Zeilen"), len(out)-3))
 			}
 			for _, o := range out {
 				if strings.TrimSpace(o) != "" {
@@ -450,7 +451,7 @@ func indent(s, pre string) string {
 
 func logLabel(on bool) string {
 	if on {
-		return "Sitzungsprotokoll ausschalten"
+		return i18n.T("Sitzungsprotokoll ausschalten")
 	}
-	return "Sitzungsprotokoll einschalten"
+	return i18n.T("Sitzungsprotokoll einschalten")
 }

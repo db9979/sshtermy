@@ -30,6 +30,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
@@ -273,13 +274,13 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case updateMsg:
 		if m.rel != nil {
 			a.rel = m.rel
-			a.flash("Update auf v" + m.rel.Version + " verfügbar (" + a.keys.label(actAbout) + ")")
+			a.flash(i18n.T("Update auf v") + m.rel.Version + i18n.T(" verfügbar (") + a.keys.label(actAbout) + ")")
 		}
 		return a, nil
 	case applyDoneMsg:
 		a.modal = nil
 		if m.err != nil {
-			a.flash("Update fehlgeschlagen: " + m.err.Error())
+			a.flash(i18n.T("Update fehlgeschlagen: ") + m.err.Error())
 			return a, nil
 		}
 		if a.rel != nil {
@@ -447,11 +448,11 @@ func (a *App) View() tea.View {
 	case scrManager:
 		body = a.frame(a.viewManager(), a.managerKeys())
 	case scrConnForm, scrTunnelForm:
-		body = a.frame(a.viewForm(), [][2]string{{"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
-		body = a.frame(a.viewForm(), [][2]string{{"Tab", "weiter"}, {"Strg+R", "Vorbelegung"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrSettings:
-		body = a.frame(a.viewForm(), [][2]string{{"Strg+T", "Endpunkt testen"}, {"Strg+L", "Modell wählen"}, {"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
+		body = a.frame(a.viewForm(), [][2]string{{"Strg+T", i18n.T("Endpunkt testen")}, {"Strg+L", i18n.T("Modell wählen")}, {"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrTerminal:
 		body, cur = a.viewTerminal()
 	case scrSync:
@@ -497,13 +498,13 @@ func (a *App) View() tea.View {
 
 // header: Logo, Version, Credit, Tabs/Status rechts.
 func (a *App) header(right string) string {
-	left := a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(version.Idea+"  ")
+	left := a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
 	if a.toast != "" && time.Now().Before(a.toastUntil) {
 		right = a.s.Header.Foreground(a.s.T.Warn).Render(" " + a.toast + " ")
 	} else if a.rel != nil && right == "" {
-		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+" verfügbar · "+a.keys.label(actAbout)+" "))
+		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
 	} else if a.restartPending != "" && right == "" {
-		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+" installiert · Neustart "+a.keys.label(actAbout)+" "))
+		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+i18n.T(" installiert · Neustart ")+a.keys.label(actAbout)+" "))
 	}
 	if a.scr != scrTerminal && a.scr != scrUnlock {
 		right += a.llmChip() // im Terminal steht der Status in der Sitzungszeile
@@ -519,6 +520,10 @@ func (a *App) header(right string) string {
 func (a *App) footer(keys [][2]string) string {
 	if c := a.cheatLine(); c != "" {
 		return c // F9: Tastenzeile mit Erklärungen für den aktuellen Bereich
+	}
+	keys = append([][2]string(nil), keys...)
+	for i := range keys {
+		keys[i][0] = i18n.Keys(keys[i][0])
 	}
 	var b strings.Builder
 	for _, k := range a.fitFooter(keys) {

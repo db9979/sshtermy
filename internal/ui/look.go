@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Aussehen (Theme) und eigene Tastenkürzel. Beides liegt in den
@@ -15,10 +16,13 @@ import (
 
 // fontHint: Die Schriftgröße gehört dem Terminalfenster, nicht dem Programm
 // darin; ein TUI kann sie nicht ändern.
-const fontHint = "Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)"
+func fontHint() string {
+	return i18n.T("Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)")
+}
 
 // applyLook übernimmt Theme und Tasten aus den Einstellungen.
 func (a *App) applyLook() {
+	a.applyLang()
 	set := a.st.Settings()
 	sig, _ := json.Marshal([]any{set.Theme, set.Keys})
 	if string(sig) == a.lookSig {
@@ -40,7 +44,7 @@ func (a *App) setTheme(name string) tea.Cmd {
 		return nil
 	}
 	a.applyLook()
-	a.flash("Aussehen: " + ThemeByName(name).Label + " · " + fontHint)
+	a.flash(i18n.T("Aussehen: ") + i18n.T(ThemeByName(name).Label) + " · " + fontHint())
 	return nil
 }
 
@@ -79,7 +83,7 @@ func (a *App) setKey(id action, key string) error {
 			return fmt.Errorf("%s %s", keyLabel(key), why)
 		}
 		if d.area == "Manager" && len([]rune(key)) == 1 && strings.Contains(managerLetters, key) {
-			return fmt.Errorf("%s ist im Manager schon belegt", key)
+			return fmt.Errorf(i18n.T("%s ist im Manager schon belegt"), key)
 		}
 	}
 	over := a.keys.overrides()
@@ -102,9 +106,9 @@ func (a *App) setKey(id action, key string) error {
 
 func (a *App) keysKeys() [][2]string {
 	if a.keyEd.capturing {
-		return [][2]string{{"neue Taste", "drücken"}, {"Esc", "abbrechen"}}
+		return [][2]string{{i18n.T("neue Taste"), i18n.T("drücken")}, {"Esc", i18n.T("abbrechen")}}
 	}
-	return [][2]string{{"⏎", "neu belegen"}, {"Entf", "Standard"}, {"r", "alle zurücksetzen"}, {"Esc", "zurück"}}
+	return [][2]string{{"⏎", i18n.T("neu belegen")}, {i18n.T("Entf"), i18n.T("Standard")}, {"r", i18n.T("alle zurücksetzen")}, {"Esc", i18n.T("zurück")}}
 }
 
 func (a *App) updateKeys(msg tea.Msg) tea.Cmd {
@@ -127,7 +131,7 @@ func (a *App) updateKeys(msg tea.Msg) tea.Cmd {
 		}
 		e.err = ""
 		if other, ok := a.keys.conflicts()[id]; ok {
-			e.err = "Achtung: " + keyLabel(key) + " ist auch „" + defOf(other).label + "“"
+			e.err = i18n.T("Achtung: ") + keyLabel(key) + i18n.T(" ist auch „") + i18n.T(defOf(other).label) + "“"
 		}
 		return nil
 	}
@@ -145,7 +149,7 @@ func (a *App) updateKeys(msg tea.Msg) tea.Cmd {
 			e.err = err.Error()
 		}
 	case "r":
-		a.modal = confirmModal("Tastenkürzel", "Alle Tastenkürzel auf Standard zurücksetzen?", func() tea.Cmd {
+		a.modal = confirmModal(i18n.T("Tastenkürzel"), i18n.T("Alle Tastenkürzel auf Standard zurücksetzen?"), func() tea.Cmd {
 			if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Keys = nil }); err != nil {
 				a.flash(err.Error())
 			}
@@ -166,7 +170,7 @@ func (a *App) viewKeys() string {
 	for i, d := range actionDefs {
 		if d.area != area {
 			area = d.area
-			lines = append(lines, s.Muted.Render(" "+strings.ToUpper(area)))
+			lines = append(lines, s.Muted.Render(" "+strings.ToUpper(i18n.T(area))))
 		}
 		cur := a.keys.label(d.id)
 		if len(a.keys.keys[d.id]) > 1 {
@@ -174,16 +178,16 @@ func (a *App) viewKeys() string {
 		}
 		mark := ""
 		if _, ok := a.keys.overrides()[string(d.id)]; ok {
-			mark = s.AI.Render(" ●") + s.Muted.Render(" Standard: "+keyLabel(d.def[0]))
+			mark = s.AI.Render(" ●") + s.Muted.Render(i18n.T(" Standard: ")+keyLabel(d.def[0]))
 		}
 		if o, ok := conf[d.id]; ok {
-			mark += s.Danger.Render(" ⚠ auch „" + defOf(o).label + "“")
+			mark += s.Danger.Render(i18n.T(" ⚠ auch „") + i18n.T(defOf(o).label) + "“")
 		}
 		keyTxt := s.Key.Render(cur)
 		if i == e.sel && e.capturing {
-			keyTxt = s.BadgeAI.Render("Taste drücken …")
+			keyTxt = s.BadgeAI.Render(i18n.T("Taste drücken …"))
 		}
-		line := fmt.Sprintf(" %-28s ", d.label)
+		line := fmt.Sprintf(" %-28s ", i18n.T(d.label))
 		if i == e.sel {
 			line = s.Selected.Render("▶"+line[1:]) + keyTxt + mark
 		} else {
@@ -202,7 +206,7 @@ func (a *App) viewKeys() string {
 		}))
 	}
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(" ⌨ Tastenkürzel anpassen") + s.Muted.Render("   ⏎ oder Doppelklick belegt neu · werden mit dem Sync übernommen") + "\n\n")
+	b.WriteString(s.Accent.Render(i18n.T(" ⌨ Tastenkürzel anpassen")) + s.Muted.Render(i18n.T("   ⏎ oder Doppelklick belegt neu · werden mit dem Sync übernommen")) + "\n\n")
 	rows := max(5, a.h-2-2-4)
 	start := 0
 	if selLine >= rows {
@@ -212,6 +216,6 @@ func (a *App) viewKeys() string {
 	if e.err != "" {
 		b.WriteString(" " + s.Danger.Render(e.err) + "\n")
 	}
-	b.WriteString(s.Muted.Render(" Alt+⏎ ist gesperrt: Windows Terminal schaltet damit auf Vollbild.\n " + fontHint))
+	b.WriteString(s.Muted.Render(i18n.T(" Alt+⏎ ist gesperrt: Windows Terminal schaltet damit auf Vollbild.\n ") + fontHint()))
 	return b.String()
 }

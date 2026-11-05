@@ -10,6 +10,7 @@ import (
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sysprof"
 )
 
@@ -72,7 +73,7 @@ func (a *App) profileTick(s *session) {
 			changed = true
 			if fresh.Dialect != "" && fresh.Dialect != before {
 				if d, ok := domain.DialectByID(fresh.Dialect); ok {
-					a.flash(s.conn.Alias + ": " + d.Name + " erkannt, die KI schlägt passende Befehle vor")
+					a.flash(s.conn.Alias + ": " + d.Name + i18n.T(" erkannt, die KI schlägt passende Befehle vor"))
 				}
 			}
 		}
@@ -81,7 +82,7 @@ func (a *App) profileTick(s *session) {
 		if msg := sysprof.Rejection(sysprof.OutputAfter(screen, cmd)); msg != "" && rejectionFits(s, msg) {
 			if s.prof.AddFailed(sysprof.FailedEntry(cmd, msg)) {
 				changed = true
-				a.flash("„" + trunc(cmd, 40) + "“ abgelehnt – gemerkt, die KI schlägt das hier nicht mehr vor")
+				a.flash("„" + trunc(cmd, 40) + i18n.T("“ abgelehnt – gemerkt, die KI schlägt das hier nicht mehr vor"))
 			}
 		}
 	}
@@ -149,7 +150,7 @@ func (a *App) startAdapt(s *session, cmd string) tea.Cmd {
 	}
 	c := a.agentContext(s, true)
 	sid := s.id
-	a.flash("Schreibe „" + trunc(cmd, 40) + "“ für " + s.conn.Alias + " um …")
+	a.flash(i18n.T("Schreibe „") + trunc(cmd, 40) + i18n.T("“ für ") + s.conn.Alias + i18n.T(" um …"))
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 		defer cancel()
@@ -167,17 +168,17 @@ func (a *App) onAdapt(m adaptMsg) {
 	}
 	switch {
 	case m.err != nil:
-		a.flash("Umschreiben: " + m.err.Error())
+		a.flash(i18n.T("Umschreiben: ") + m.err.Error())
 	case m.sug.Command == "":
-		a.flash("Auf " + s.conn.Alias + " gibt es dafür keine Entsprechung" + reasonSuffix(m.sug.Reason))
+		a.flash(i18n.T("Auf ") + s.conn.Alias + i18n.T(" gibt es dafür keine Entsprechung") + reasonSuffix(m.sug.Reason))
 	case m.sug.Command == strings.TrimSpace(m.from):
-		a.flash("„" + trunc(m.from, 40) + "“ passt schon für " + s.conn.Alias)
+		a.flash("„" + trunc(m.from, 40) + i18n.T("“ passt schon für ") + s.conn.Alias)
 	default:
 		if m.sug.Reason == "" {
-			m.sug.Reason = "für " + s.conn.Alias + " umgeschrieben"
+			m.sug.Reason = i18n.T("für ") + s.conn.Alias + i18n.T(" umgeschrieben")
 		}
 		s.chips, s.chipArmed = []agent.Suggestion{m.sug}, -1
-		a.flash("Umgeschrieben: " + trunc(m.sug.Command, 60) + "  (" + a.keys.label(actChip1) + " fügt ein)")
+		a.flash(i18n.T("Umgeschrieben: ") + trunc(m.sug.Command, 60) + "  (" + a.keys.label(actChip1) + i18n.T(" fügt ein)"))
 	}
 }
 

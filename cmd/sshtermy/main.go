@@ -11,6 +11,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/ui"
 	"github.com/db9979/sshtermy/internal/update"
@@ -18,9 +19,14 @@ import (
 )
 
 func main() {
-	showVersion := flag.Bool("version", false, "Version anzeigen")
-	noIntro := flag.Bool("no-intro", false, "ohne Startanimation starten (dauerhaft: Palette „Startanimation aus“)")
-	doUpdate := flag.Bool("update", false, "auf die neueste Version aus GitHub aktualisieren und beenden")
+	// Sprache vor allem anderen: auch Hilfe zu den Schaltern und der
+	// Entsperr-Bildschirm sollen sie schon haben.
+	dir, _ := store.Dir()
+	i18n.Load(dir)
+
+	showVersion := flag.Bool("version", false, i18n.T("Version anzeigen"))
+	noIntro := flag.Bool("no-intro", false, i18n.T("ohne Startanimation starten (dauerhaft: Palette „Startanimation aus“)"))
+	doUpdate := flag.Bool("update", false, i18n.T("auf die neueste Version aus GitHub aktualisieren und beenden"))
 	flag.Parse()
 
 	if *showVersion {
@@ -36,13 +42,13 @@ func main() {
 		case err != nil:
 			fail(err)
 		case rel == nil:
-			fmt.Println(version.Short(), "ist aktuell.")
+			fmt.Println(version.Short(), i18n.T("ist aktuell."))
 		default:
-			fmt.Println("Aktualisiere auf v" + rel.Version + " …")
+			fmt.Println(i18n.T("Aktualisiere auf v") + rel.Version + " …")
 			if err := update.Apply(ctx, rel); err != nil {
 				fail(err)
 			}
-			fmt.Println("Fertig. Bitte sshTermy neu starten.")
+			fmt.Println(i18n.T("Fertig. Bitte sshTermy neu starten."))
 		}
 		return
 	}
@@ -64,9 +70,9 @@ func main() {
 	if app.Restart() {
 		// Update installiert: Terminal ist wiederhergestellt, Sitzungen sind
 		// zu, Store ist gesperrt. Jetzt die neue Programmdatei starten.
-		fmt.Println("Starte " + version.Name + " neu …")
+		fmt.Println(i18n.T("Starte ") + version.Name + i18n.T(" neu …"))
 		if err := update.Restart(); err != nil {
-			fail(fmt.Errorf("Neustart fehlgeschlagen, bitte von Hand starten: %w", err))
+			fail(fmt.Errorf(i18n.T("Neustart fehlgeschlagen, bitte von Hand starten: %w"), err))
 		}
 	}
 }

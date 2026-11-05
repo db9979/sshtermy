@@ -32,6 +32,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/vault"
 )
 
@@ -46,12 +47,12 @@ const (
 )
 
 var (
-	ErrNotFound    = errors.New("Sync-Datei noch nicht vorhanden")
-	ErrConflict    = errors.New("Sync-Datei wurde gleichzeitig geändert")
-	ErrWrongPass   = errors.New("Sync-Passwort falsch")
-	ErrKeyMismatch = errors.New("die Sync-Datei wurde mit einem anderen Sync-Passwort neu angelegt; bitte im Sync-Assistenten (y) das Sync-Passwort eingeben")
-	ErrNotSyncFile = errors.New("die Datei ist keine sshTermy-Sync-Datei")
-	ErrTooNew      = errors.New("die Sync-Datei stammt von einer neueren sshTermy-Version; bitte zuerst aktualisieren (F12)")
+	ErrNotFound    = i18n.NewError("Sync-Datei noch nicht vorhanden")
+	ErrConflict    = i18n.NewError("Sync-Datei wurde gleichzeitig geändert")
+	ErrWrongPass   = i18n.NewError("Sync-Passwort falsch")
+	ErrKeyMismatch = i18n.NewError("die Sync-Datei wurde mit einem anderen Sync-Passwort neu angelegt; bitte im Sync-Assistenten (y) das Sync-Passwort eingeben")
+	ErrNotSyncFile = i18n.NewError("die Datei ist keine sshTermy-Sync-Datei")
+	ErrTooNew      = i18n.NewError("die Sync-Datei stammt von einer neueren sshTermy-Version; bitte zuerst aktualisieren (F12)")
 )
 
 type wrap struct {
@@ -90,7 +91,7 @@ func keyID(dek []byte) string {
 // NewKey erzeugt einen neuen Sync-Schlüssel und sichert ihn mit dem Passwort.
 func NewKey(pass []byte) (*Key, error) {
 	if len(pass) < minPassLen {
-		return nil, fmt.Errorf("das Sync-Passwort braucht mindestens %d Zeichen", minPassLen)
+		return nil, fmt.Errorf(i18n.T("das Sync-Passwort braucht mindestens %d Zeichen"), minPassLen)
 	}
 	dek := make([]byte, 32)
 	if _, err := rand.Read(dek); err != nil {
@@ -189,7 +190,7 @@ func Decode(k *Key, raw []byte) (*Payload, error) {
 	}
 	plain, err := vault.OpenGCM(k.DEK, f.Nonce, f.Ciphertext, a)
 	if err != nil {
-		return nil, errors.New("Sync-Datei beschädigt oder verändert (Prüfsumme passt nicht)")
+		return nil, errors.New(i18n.T("Sync-Datei beschädigt oder verändert (Prüfsumme passt nicht)"))
 	}
 	defer vault.Wipe(plain)
 	p := &Payload{}
@@ -215,7 +216,7 @@ func ParseKey(s string) (*Key, error) {
 	}
 	k := &Key{}
 	if err := json.Unmarshal(b, k); err != nil || len(k.DEK) != 32 {
-		return nil, errors.New("Sync-Schlüssel im Store unlesbar")
+		return nil, errors.New(i18n.T("Sync-Schlüssel im Store unlesbar"))
 	}
 	return k, nil
 }

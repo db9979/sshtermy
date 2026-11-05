@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -38,7 +39,7 @@ func (h Host) Label() string { return Describe(h.Banner) }
 // Kind: "Netzwerkgerät" oder "Server".
 func (h Host) Kind() string {
 	if h.Network {
-		return "Netzwerkgerät"
+		return i18n.T("Netzwerkgerät")
 	}
 	return "Server"
 }
@@ -55,7 +56,7 @@ func ParseTargets(spec string) ([]netip.Addr, error) {
 			return nil
 		}
 		if len(out) >= MaxHosts {
-			return fmt.Errorf("zu viele Adressen (höchstens %d, z. B. ein /20)", MaxHosts)
+			return fmt.Errorf(i18n.T("zu viele Adressen (höchstens %d, z. B. ein /20)"), MaxHosts)
 		}
 		seen[a] = true
 		out = append(out, a)
@@ -63,19 +64,19 @@ func ParseTargets(spec string) ([]netip.Addr, error) {
 	}
 	parts := strings.FieldsFunc(spec, func(r rune) bool { return r == ',' || r == ' ' || r == ';' || r == '\t' })
 	if len(parts) == 0 {
-		return nil, errors.New("Subnetz fehlt, z. B. 192.168.1.0/24")
+		return nil, errors.New(i18n.T("Subnetz fehlt, z. B. 192.168.1.0/24"))
 	}
 	for _, p := range parts {
 		switch {
 		case strings.Contains(p, "/"):
 			pf, err := netip.ParsePrefix(p)
 			if err != nil {
-				return nil, fmt.Errorf("„%s“ ist kein Subnetz", p)
+				return nil, fmt.Errorf(i18n.T("„%s“ ist kein Subnetz"), p)
 			}
 			pf = pf.Masked()
 			bits := pf.Addr().BitLen() - pf.Bits()
 			if bits > 12 {
-				return nil, fmt.Errorf("„%s“ ist zu groß (höchstens %d Adressen)", p, MaxHosts)
+				return nil, fmt.Errorf(i18n.T("„%s“ ist zu groß (höchstens %d Adressen)"), p, MaxHosts)
 			}
 			n := 1 << bits
 			a := pf.Addr()
@@ -92,21 +93,21 @@ func ParseTargets(spec string) ([]netip.Addr, error) {
 			from, to, _ := strings.Cut(p, "-")
 			a, err := netip.ParseAddr(from)
 			if err != nil {
-				return nil, fmt.Errorf("„%s“: Anfang ist keine Adresse", p)
+				return nil, fmt.Errorf(i18n.T("„%s“: Anfang ist keine Adresse"), p)
 			}
 			var b netip.Addr
 			if n, err := strconv.Atoi(to); err == nil && a.Is4() {
 				if n < 0 || n > 255 {
-					return nil, fmt.Errorf("„%s“: Ende muss 0–255 sein", p)
+					return nil, fmt.Errorf(i18n.T("„%s“: Ende muss 0–255 sein"), p)
 				}
 				x := a.As4()
 				x[3] = byte(n)
 				b = netip.AddrFrom4(x)
 			} else if b, err = netip.ParseAddr(to); err != nil {
-				return nil, fmt.Errorf("„%s“: Ende ist keine Adresse", p)
+				return nil, fmt.Errorf(i18n.T("„%s“: Ende ist keine Adresse"), p)
 			}
 			if b.Less(a) {
-				return nil, fmt.Errorf("„%s“: Ende liegt vor dem Anfang", p)
+				return nil, fmt.Errorf(i18n.T("„%s“: Ende liegt vor dem Anfang"), p)
 			}
 			for x := a; ; x = x.Next() {
 				if err := add(x); err != nil {
@@ -119,7 +120,7 @@ func ParseTargets(spec string) ([]netip.Addr, error) {
 		default:
 			a, err := netip.ParseAddr(p)
 			if err != nil {
-				return nil, fmt.Errorf("„%s“ ist keine IP-Adresse", p)
+				return nil, fmt.Errorf(i18n.T("„%s“ ist keine IP-Adresse"), p)
 			}
 			if err := add(a); err != nil {
 				return nil, err

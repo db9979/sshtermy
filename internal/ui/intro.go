@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/version"
 )
 
@@ -69,22 +70,22 @@ func (a *App) toggleIntro() tea.Cmd {
 		err = os.Remove(p)
 	}
 	if err != nil {
-		a.flash("Einstellung nicht gespeichert: " + err.Error())
+		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if a.introOn() {
-		a.flash("Startanimation an")
+		a.flash(i18n.T("Startanimation an"))
 	} else {
-		a.flash("Startanimation aus")
+		a.flash(i18n.T("Startanimation aus"))
 	}
 	return nil
 }
 
 func introLabel(on bool) string {
 	if on {
-		return "Startanimation aus"
+		return i18n.T("Startanimation aus")
 	}
-	return "Startanimation an"
+	return i18n.T("Startanimation an")
 }
 
 // introMsg: läuft vor allen anderen Nachrichten. ok=false: normal weiter.
@@ -283,17 +284,17 @@ func renderIntro(th Theme, t float64, w, h int, unlocked bool) string {
 	ly := oy + H + 2
 	if t < introLockEnd {
 		spin := []rune("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")[int(t*introFPS/2)%10]
-		g.center(ly, string(spin)+" entschlüssele …", ai)
+		g.center(ly, string(spin)+i18n.T(" entschlüssele …"), ai)
 	} else {
-		done := "✓ bereit"
+		done := i18n.T("✓ bereit")
 		if unlocked {
-			done = "✓ entschlüsselt"
+			done = i18n.T("✓ entschlüsselt")
 		}
 		g.center(ly, done, bg.mix(ok, (t-introLockEnd)/0.2))
 	}
-	g.center(ly+1, typed(version.Slogan+" · v"+version.Version, t-introLockEnd, 0.35), text)
-	g.center(ly+2, version.Idea, bg.mix(muted, (t-introLockEnd-0.25)/0.3))
-	g.center(h-1, "beliebige Taste überspringt", bg.mix(border, t/0.3))
+	g.center(ly+1, typed(i18n.T(version.Slogan)+" · v"+version.Version, t-introLockEnd, 0.35), text)
+	g.center(ly+2, i18n.T(version.Idea), bg.mix(muted, (t-introLockEnd-0.25)/0.3))
+	g.center(h-1, i18n.T("beliebige Taste überspringt"), bg.mix(border, t/0.3))
 	return g.String()
 }
 

@@ -39,6 +39,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/version"
 )
 
@@ -60,7 +61,7 @@ func client() *http.Client {
 		Timeout: 2 * time.Minute,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if req.URL.Scheme != "https" || !allowedHosts[req.URL.Hostname()] || len(via) > 5 {
-				return fmt.Errorf("update: Weiterleitung nach %s abgelehnt", req.URL.Host)
+				return fmt.Errorf(i18n.T("update: Weiterleitung nach %s abgelehnt"), req.URL.Host)
 			}
 			return nil
 		},
@@ -70,7 +71,7 @@ func client() *http.Client {
 func get(ctx context.Context, u string, limit int64) ([]byte, error) {
 	pu, err := url.Parse(u)
 	if err != nil || pu.Scheme != "https" || !allowedHosts[pu.Hostname()] {
-		return nil, fmt.Errorf("update: URL nicht erlaubt: %s", u)
+		return nil, fmt.Errorf(i18n.T("update: URL nicht erlaubt: %s"), u)
 	}
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	req.Header.Set("User-Agent", version.Short())
@@ -81,7 +82,7 @@ func get(ctx context.Context, u string, limit int64) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("update: HTTP %d", resp.StatusCode)
+		return nil, fmt.Errorf(i18n.T("update: HTTP %d"), resp.StatusCode)
 	}
 	return io.ReadAll(io.LimitReader(resp.Body, limit))
 }
@@ -169,7 +170,7 @@ func Apply(ctx context.Context, rel *Release) error {
 	binURL, ok1 := rel.assets[name]
 	sumURL, ok2 := rel.assets["checksums.txt"]
 	if !ok1 || !ok2 {
-		return fmt.Errorf("update: Release enthält %s oder checksums.txt nicht", name)
+		return fmt.Errorf(i18n.T("update: Release enthält %s oder checksums.txt nicht"), name)
 	}
 	sums, err := get(ctx, sumURL, 64<<10)
 	if err != nil {
@@ -178,7 +179,7 @@ func Apply(ctx context.Context, rel *Release) error {
 	if version.UpdatePubKey != "" {
 		sigURL, ok := rel.assets["checksums.txt.sig"]
 		if !ok {
-			return errors.New("update: Signatur fehlt")
+			return errors.New(i18n.T("update: Signatur fehlt"))
 		}
 		sig, err := get(ctx, sigURL, 1024)
 		if err != nil {
@@ -196,7 +197,7 @@ func Apply(ctx context.Context, rel *Release) error {
 		}
 	}
 	if want == "" {
-		return errors.New("update: keine Prüfsumme für " + name)
+		return errors.New(i18n.T("update: keine Prüfsumme für ") + name)
 	}
 	bin, err := get(ctx, binURL, 200<<20)
 	if err != nil {
@@ -204,7 +205,7 @@ func Apply(ctx context.Context, rel *Release) error {
 	}
 	got := sha256.Sum256(bin)
 	if hex.EncodeToString(got[:]) != want {
-		return errors.New("update: Prüfsumme stimmt nicht, Download verworfen")
+		return errors.New(i18n.T("update: Prüfsumme stimmt nicht, Download verworfen"))
 	}
 	return replaceSelf(bin)
 }
@@ -213,14 +214,14 @@ func Apply(ctx context.Context, rel *Release) error {
 func VerifySignature(data, sig []byte, pubHex string) error {
 	pub, err := hex.DecodeString(strings.TrimSpace(pubHex))
 	if err != nil || len(pub) != ed25519.PublicKeySize {
-		return errors.New("update: eingebauter Schlüssel ungültig")
+		return errors.New(i18n.T("update: eingebauter Schlüssel ungültig"))
 	}
 	s := sig
 	if d, err := hex.DecodeString(strings.TrimSpace(string(sig))); err == nil {
 		s = d
 	}
 	if !ed25519.Verify(pub, data, s) {
-		return errors.New("update: Signatur ungültig, Update abgelehnt")
+		return errors.New(i18n.T("update: Signatur ungültig, Update abgelehnt"))
 	}
 	return nil
 }
@@ -253,7 +254,7 @@ func replaceSelf(bin []byte) error {
 	}
 	tmp := exe + ".new"
 	if err := os.WriteFile(tmp, bin, 0o755); err != nil {
-		return fmt.Errorf("update: keine Schreibrechte im Programmordner: %w", err)
+		return fmt.Errorf(i18n.T("update: keine Schreibrechte im Programmordner: %w"), err)
 	}
 	old := exe + ".old"
 	if err := os.Remove(old); err != nil && !errors.Is(err, os.ErrNotExist) {

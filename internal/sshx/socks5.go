@@ -7,6 +7,8 @@ import (
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // serveSOCKS5 ist ein minimaler SOCKS5-Server nach RFC 1928 für -D:
@@ -21,7 +23,7 @@ func serveSOCKS5(c net.Conn, dial func(string) (net.Conn, error), relay func(net
 		return err
 	}
 	if hdr[0] != 5 {
-		return errors.New("socks: keine Version 5")
+		return errors.New(i18n.T("socks: keine Version 5"))
 	}
 	methods := make([]byte, hdr[1])
 	if _, err := io.ReadFull(c, methods); err != nil {
@@ -33,7 +35,7 @@ func serveSOCKS5(c net.Conn, dial func(string) (net.Conn, error), relay func(net
 	}
 	if !ok {
 		c.Write([]byte{5, 0xff})
-		return errors.New("socks: kein unterstütztes Auth-Verfahren")
+		return errors.New(i18n.T("socks: kein unterstütztes Auth-Verfahren"))
 	}
 	c.Write([]byte{5, 0})
 
@@ -43,7 +45,7 @@ func serveSOCKS5(c net.Conn, dial func(string) (net.Conn, error), relay func(net
 	}
 	if req[1] != 1 { // nur CONNECT
 		reply(c, 7)
-		return errors.New("socks: nur CONNECT")
+		return errors.New(i18n.T("socks: nur CONNECT"))
 	}
 	var host string
 	switch req[3] {
@@ -71,7 +73,7 @@ func serveSOCKS5(c net.Conn, dial func(string) (net.Conn, error), relay func(net
 		host = net.IP(b).String()
 	default:
 		reply(c, 8)
-		return errors.New("socks: Adresstyp")
+		return errors.New(i18n.T("socks: Adresstyp"))
 	}
 	pb := make([]byte, 2)
 	if _, err := io.ReadFull(c, pb); err != nil {

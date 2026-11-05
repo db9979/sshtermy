@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Ordner, Tags und Reihenfolge im Verbindungs-Manager
@@ -196,11 +197,11 @@ func (a *App) toggleFolder(path string, collapsed bool) {
 
 func (a *App) newFolderDialog() tea.Cmd {
 	parent := a.mgrContext()
-	body := "Name des neuen Ordners. Mit „ / “ verschachteln, z. B. „Kunde A / Switches“."
+	body := i18n.T("Name des neuen Ordners. Mit „ / “ verschachteln, z. B. „Kunde A / Switches“.")
 	if parent != "" {
-		body += "\nLiegt in: " + parent
+		body += i18n.T("\nLiegt in: ") + parent
 	}
-	a.modal = inputModal("Neuer Ordner", body, "", func(name string) tea.Cmd {
+	a.modal = inputModal(i18n.T("Neuer Ordner"), body, "", func(name string) tea.Cmd {
 		if name == "" {
 			return nil
 		}
@@ -211,7 +212,7 @@ func (a *App) newFolderDialog() tea.Cmd {
 		}
 		a.expandTo(p)
 		a.mgr.want = "f:" + p
-		a.flash("Ordner „" + p + "“ angelegt")
+		a.flash(i18n.T("Ordner „") + p + i18n.T("“ angelegt"))
 		return nil
 	})
 	return a.modal.in.Focus()
@@ -229,7 +230,7 @@ func (a *App) expandTo(path string) {
 }
 
 func (a *App) renameFolderDialog(path string) tea.Cmd {
-	a.modal = inputModal("Ordner umbenennen", "Neuer Name. Der ganze Pfad lässt sich ändern, so wandert der Ordner samt Inhalt woanders hin.", path, func(neu string) tea.Cmd {
+	a.modal = inputModal(i18n.T("Ordner umbenennen"), i18n.T("Neuer Name. Der ganze Pfad lässt sich ändern, so wandert der Ordner samt Inhalt woanders hin."), path, func(neu string) tea.Cmd {
 		neu = domain.NormPath(neu)
 		if neu == "" || neu == path {
 			return nil
@@ -239,7 +240,7 @@ func (a *App) renameFolderDialog(path string) tea.Cmd {
 			return nil
 		}
 		a.mgr.want = "f:" + neu
-		a.flash("Ordner heißt jetzt „" + neu + "“")
+		a.flash(i18n.T("Ordner heißt jetzt „") + neu + "“")
 		return nil
 	})
 	return a.modal.in.Focus()
@@ -248,15 +249,15 @@ func (a *App) renameFolderDialog(path string) tea.Cmd {
 func (a *App) deleteFolderDialog(n *domain.TreeNode) {
 	path := n.Path
 	parent := domain.PathParent(path)
-	where := "die oberste Ebene"
+	where := i18n.T("die oberste Ebene")
 	if parent != "" {
 		where = "„" + parent + "“"
 	}
-	body := "Ordner „" + path + "“ auflösen?"
+	body := i18n.T("Ordner „") + path + i18n.T("“ auflösen?")
 	if n.Total > 0 || len(n.Folders) > 0 {
-		body += fmt.Sprintf("\nDer Inhalt (%s) rückt in %s. Es wird keine Verbindung gelöscht.", plural(n.Total, "Verbindung", "Verbindungen"), where)
+		body += fmt.Sprintf(i18n.T("\nDer Inhalt (%s) rückt in %s. Es wird keine Verbindung gelöscht."), plural(n.Total, i18n.T("Verbindung"), i18n.T("Verbindungen")), where)
 	}
-	a.modal = confirmModal("Ordner auflösen", body, func() tea.Cmd {
+	a.modal = confirmModal(i18n.T("Ordner auflösen"), body, func() tea.Cmd {
 		if err := a.st.DeleteFolder(path); err != nil {
 			a.flash(err.Error())
 		}
@@ -266,16 +267,16 @@ func (a *App) deleteFolderDialog(n *domain.TreeNode) {
 
 // folderItems: Ordner für die Auswahlliste; skip sperrt einen Teilbaum.
 func folderItems(tree *domain.TreeNode, skip string) []pickItem {
-	items := []pickItem{{value: "", label: "— oberste Ebene", hint: plural(len(tree.Conns), "Verbindung", "Verbindungen")}}
+	items := []pickItem{{value: "", label: i18n.T("— oberste Ebene"), hint: plural(len(tree.Conns), i18n.T("Verbindung"), i18n.T("Verbindungen"))}}
 	var walk func(n *domain.TreeNode, depth int)
 	walk = func(n *domain.TreeNode, depth int) {
 		for _, f := range n.Folders {
-			it := pickItem{value: f.Path, label: "▸ " + f.Name, indent: depth, hint: plural(f.Total, "Verbindung", "Verbindungen"), search: f.Path}
+			it := pickItem{value: f.Path, label: "▸ " + f.Name, indent: depth, hint: plural(f.Total, i18n.T("Verbindung"), i18n.T("Verbindungen")), search: f.Path}
 			if depth > 0 {
 				it.detail = domain.PathParent(f.Path)
 			}
 			if skip != "" && domain.InFolder(f.Path, skip) {
-				it.disabled = "liegt im verschobenen Ordner"
+				it.disabled = i18n.T("liegt im verschobenen Ordner")
 			}
 			items = append(items, it)
 			walk(f, depth+1)
@@ -292,7 +293,7 @@ func newFolderExtra(tree *domain.TreeNode) func(q string) *pickItem {
 		if p == "" || tree.Find(p) != nil {
 			return nil
 		}
-		return &pickItem{value: p, label: "+ Neuer Ordner „" + p + "“", hint: "⏎ anlegen"}
+		return &pickItem{value: p, label: i18n.T("+ Neuer Ordner „") + p + "“", hint: i18n.T("⏎ anlegen")}
 	}
 }
 
@@ -302,7 +303,7 @@ func (a *App) moveToDialog(r mgrRow) tea.Cmd {
 	if r.isFolder() {
 		skip = r.node.Path
 	}
-	p := newPicker("„"+r.name()+"“ verschieben nach …", "Ordner suchen oder neuen Namen tippen", folderItems(tree, skip), domain.PathParent(r.path()), func(it pickItem) tea.Cmd {
+	p := newPicker("„"+r.name()+i18n.T("“ verschieben nach …"), i18n.T("Ordner suchen oder neuen Namen tippen"), folderItems(tree, skip), domain.PathParent(r.path()), func(it pickItem) tea.Cmd {
 		a.moveRowTo(r, it.value)
 		return nil
 	})
@@ -329,11 +330,11 @@ func (a *App) moveRowTo(r mgrRow, target string) {
 		return
 	}
 	a.expandTo(target) // Ziel aufklappen, damit man es sieht
-	where := "oberste Ebene"
+	where := i18n.T("oberste Ebene")
 	if target != "" {
 		where = "„" + target + "“"
 	}
-	a.flash("„" + r.name() + "“ liegt jetzt in " + where)
+	a.flash("„" + r.name() + i18n.T("“ liegt jetzt in ") + where)
 }
 
 // moveStep: Eintrag unter seinen Geschwistern um d verschieben.
@@ -402,15 +403,15 @@ func (a *App) tagDialog() tea.Cmd {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	items := []pickItem{{value: "", label: "— alle Verbindungen (kein Filter)"}}
+	items := []pickItem{{value: "", label: i18n.T("— alle Verbindungen (kein Filter)")}}
 	for _, k := range keys {
-		items = append(items, pickItem{value: name[k], label: "#" + name[k], hint: plural(count[k], "Verbindung", "Verbindungen")})
+		items = append(items, pickItem{value: name[k], label: "#" + name[k], hint: plural(count[k], i18n.T("Verbindung"), i18n.T("Verbindungen"))})
 	}
 	if len(keys) == 0 {
-		a.flash("Noch keine Tags. Tags vergibst du beim Bearbeiten (e), durch Komma getrennt.")
+		a.flash(i18n.T("Noch keine Tags. Tags vergibst du beim Bearbeiten (e), durch Komma getrennt."))
 		return nil
 	}
-	p := newPicker("Nach Tag filtern", "Tag suchen", items, a.mgr.tag, func(it pickItem) tea.Cmd {
+	p := newPicker(i18n.T("Nach Tag filtern"), i18n.T("Tag suchen"), items, a.mgr.tag, func(it pickItem) tea.Cmd {
 		a.mgr.tag = it.value
 		a.mgr.sel, a.mgr.top = 0, 0
 		return nil
@@ -443,9 +444,9 @@ func (a *App) dropPlan(rows []mgrRow, from, to int) (desc string, do func()) {
 				paths = append(paths, f.Path)
 			}
 			paths, after := placeRel(paths, src.node.Path, dst.node.Path)
-			rel := "vor"
+			rel := i18n.T("vor")
 			if after {
-				rel = "nach"
+				rel = i18n.T("nach")
 			}
 			return rel + " „" + dst.node.Name + "“", func() {
 				a.mgr.want = src.key()
@@ -458,18 +459,18 @@ func (a *App) dropPlan(rows []mgrRow, from, to int) (desc string, do func()) {
 			target = dst.conn.Group
 		}
 		if domain.InFolder(target, src.node.Path) {
-			return "geht nicht: Ziel liegt im Ordner selbst", nil
+			return i18n.T("geht nicht: Ziel liegt im Ordner selbst"), nil
 		}
 		if target == domain.PathParent(src.node.Path) {
 			return "", nil
 		}
-		return "in „" + orDefault(target, "oberste Ebene") + "“", func() { a.moveRowTo(src, target) }
+		return i18n.T("in „") + orDefault(target, i18n.T("oberste Ebene")) + "“", func() { a.moveRowTo(src, target) }
 	}
 	if dst.isFolder() {
 		if dst.node.Path == src.conn.Group {
 			return "", nil
 		}
-		return "in „" + dst.node.Path + "“", func() { a.moveRowTo(src, dst.node.Path) }
+		return i18n.T("in „") + dst.node.Path + "“", func() { a.moveRowTo(src, dst.node.Path) }
 	}
 	// Verbindung auf Verbindung: davor bzw. danach einsortieren
 	group := dst.conn.Group
@@ -485,13 +486,13 @@ func (a *App) dropPlan(rows []mgrRow, from, to int) (desc string, do func()) {
 	} else {
 		ids = insertBefore(ids, src.conn.ID, dst.conn.ID)
 	}
-	rel := "vor"
+	rel := i18n.T("vor")
 	if after {
-		rel = "nach"
+		rel = i18n.T("nach")
 	}
 	where := ""
 	if group != src.conn.Group {
-		where = " in „" + orDefault(group, "oberste Ebene") + "“"
+		where = i18n.T(" in „") + orDefault(group, i18n.T("oberste Ebene")) + "“"
 	}
 	return rel + " „" + dst.conn.Alias + "“" + where, func() {
 		a.mgr.want = src.key()
@@ -592,13 +593,13 @@ func (a *App) viewFolderDetails(n *domain.TreeNode, w int) string {
 	row := func(k, v string) {
 		b.WriteString(" " + label.Render(k) + s.Text.Render(ansi.Truncate(v, textW, "…")) + "\n")
 	}
-	row("Pfad", n.Path)
-	row("Inhalt", plural(n.Total, "Verbindung", "Verbindungen"))
+	row(i18n.T("Pfad"), n.Path)
+	row(i18n.T("Inhalt"), plural(n.Total, i18n.T("Verbindung"), i18n.T("Verbindungen")))
 	if len(n.Folders) > 0 {
-		row("Unterordner", fmt.Sprintf("%d", len(n.Folders)))
+		row(i18n.T("Unterordner"), fmt.Sprintf("%d", len(n.Folders)))
 	}
 	if c := a.connectedIn(n.Path); c > 0 {
-		row("Verbunden", plural(c, "Sitzung", "Sitzungen"))
+		row(i18n.T("Verbunden"), plural(c, i18n.T("Sitzung"), i18n.T("Sitzungen")))
 	}
 	tags := map[string]int{}
 	var walk func(t *domain.TreeNode)
@@ -622,11 +623,11 @@ func (a *App) viewFolderDetails(n *domain.TreeNode, w int) string {
 		row("Tags", strings.Join(ts, " "))
 	}
 	km := a.keys
-	b.WriteString("\n " + s.PanelTitle.Render("Ordner") + "\n")
+	b.WriteString("\n " + s.PanelTitle.Render(i18n.T("Ordner")) + "\n")
 	keys := [][2]string{
-		{"⏎", "auf-/zuklappen"}, {"n", "neue Verbindung hier"}, {km.label(actFolderNew), "Unterordner anlegen"},
-		{km.label(actRename), "umbenennen"}, {km.label(actMoveTo), "verschieben"}, {km.label(actMoveUp) + " " + keyLabel("shift+down"), "Reihenfolge"},
-		{"d", "auflösen, Inhalt bleibt"}, {km.label(actFoldAll) + " " + km.label(actUnfoldAll), "alle zu / auf"},
+		{"⏎", i18n.T("auf-/zuklappen")}, {"n", i18n.T("neue Verbindung hier")}, {km.label(actFolderNew), i18n.T("Unterordner anlegen")},
+		{km.label(actRename), i18n.T("umbenennen")}, {km.label(actMoveTo), i18n.T("verschieben")}, {km.label(actMoveUp) + " " + keyLabel("shift+down"), i18n.T("Reihenfolge")},
+		{"d", i18n.T("auflösen, Inhalt bleibt")}, {km.label(actFoldAll) + " " + km.label(actUnfoldAll), i18n.T("alle zu / auf")},
 	}
 	for i := range keys {
 		keys[i][0] = strings.ReplaceAll(keys[i][0], "Shift+", "⇧")
@@ -642,7 +643,7 @@ func (a *App) viewFolderDetails(n *domain.TreeNode, w int) string {
 		}
 		b.WriteString(line + "\n")
 	}
-	hint := "Mit der Maus: eine Zeile ziehen und auf einem Ordner oder zwischen zwei Verbindungen loslassen."
+	hint := i18n.T("Mit der Maus: eine Zeile ziehen und auf einem Ordner oder zwischen zwei Verbindungen loslassen.")
 	b.WriteString("\n" + lipgloss.NewStyle().Foreground(s.T.Muted).PaddingLeft(2).Width(max(20, w-1)).Render(hint) + "\n")
 	return b.String()
 }
@@ -665,7 +666,7 @@ func (a *App) jumpChainText(c domain.Connection) string {
 	}
 	chain, cycle := domain.JumpChain(c.ID, get)
 	if len(chain) > 0 && chain[0].JumpHostID != "" && !cycle {
-		return "Jump-Host fehlt (gelöscht?)"
+		return i18n.T("Jump-Host fehlt (gelöscht?)")
 	}
 	names := make([]string, len(chain))
 	for i, x := range chain {
@@ -673,7 +674,7 @@ func (a *App) jumpChainText(c domain.Connection) string {
 	}
 	out := strings.Join(names, " → ")
 	if cycle {
-		out = "⚠ Kreis: " + out + " → …"
+		out = i18n.T("⚠ Kreis: ") + out + " → …"
 	}
 	return out
 }

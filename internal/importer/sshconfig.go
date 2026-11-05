@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // OpenSSH-Konfiguration: Host-Blöcke mit konkreten Namen werden zu
@@ -116,14 +117,14 @@ func resolveSSH(alias string, blocks []*sshBlock) Entry {
 		first := strings.TrimSpace(strings.Split(j, ",")[0])
 		e.Jump = first
 		if strings.Contains(j, ",") {
-			e.Notes = append(e.Notes, "ProxyJump mit mehreren Stationen: nur „"+first+"“ übernommen")
+			e.Notes = append(e.Notes, i18n.T("ProxyJump mit mehreren Stationen: nur „")+first+i18n.T("“ übernommen"))
 		}
 	} else if pc := opt["proxycommand"]; pc != "" && strings.ToLower(pc) != "none" {
-		e.Notes = append(e.Notes, "ProxyCommand wird nicht unterstützt (nur ProxyJump)")
+		e.Notes = append(e.Notes, i18n.T("ProxyCommand wird nicht unterstützt (nur ProxyJump)"))
 	}
 	for _, k := range []string{"localforward", "remoteforward", "dynamicforward"} {
 		if opt[k] != "" {
-			e.Notes = append(e.Notes, "Port-Weiterleitungen bitte als Tunnel (t) anlegen")
+			e.Notes = append(e.Notes, i18n.T("Port-Weiterleitungen bitte als Tunnel (t) anlegen"))
 			break
 		}
 	}

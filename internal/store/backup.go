@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Gesicherte Konfigurationen von Netzwerkgeräten (show running-config). Sie
@@ -31,7 +33,7 @@ const backupTime = "20060102T150405Z"
 func (s *Store) backupDir(connID string) (string, error) {
 	id := filepath.Base(connID)
 	if id != connID || id == "" || id == "." || id == ".." || strings.ContainsAny(id, `/\`) {
-		return "", errors.New("ungültige Verbindung")
+		return "", errors.New(i18n.T("ungültige Verbindung"))
 	}
 	return filepath.Join(s.Dir, "backups", id), nil
 }
@@ -93,7 +95,7 @@ func (s *Store) LoadBackup(connID, id string) (string, error) {
 		return "", err
 	}
 	if filepath.Base(id) != id {
-		return "", errors.New("ungültige Sicherung")
+		return "", errors.New(i18n.T("ungültige Sicherung"))
 	}
 	blob, err := os.ReadFile(filepath.Join(dir, id+".cfg.enc"))
 	if err != nil {
@@ -101,7 +103,7 @@ func (s *Store) LoadBackup(connID, id string) (string, error) {
 	}
 	plain, err := s.V.OpenBlob(blob, backupAAD(connID, id))
 	if err != nil {
-		return "", errors.New("Sicherung lässt sich nicht entschlüsseln")
+		return "", errors.New(i18n.T("Sicherung lässt sich nicht entschlüsseln"))
 	}
 	return string(plain), nil
 }
