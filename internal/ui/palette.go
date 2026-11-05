@@ -243,6 +243,8 @@ func (a *App) paletteItems() []palItem {
 			actions = append(actions, palItem{icon: "▦", label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
 	}
+	actions = append(actions, palItem{icon: "●", label: "KI-Status: Endpunkt erreichbar? jetzt prüfen", hint: "llm",
+		run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }})
 	for _, x := range actions {
 		x.group = pgAction
 		if match(x.label) {

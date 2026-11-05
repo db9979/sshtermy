@@ -264,6 +264,13 @@ func (c *Client) Complete(ctx context.Context, msgs []Message, o Opts) (string, 
 
 // CompleteResult wie Complete, aber mit finish_reason und Reasoning.
 func (c *Client) CompleteResult(ctx context.Context, msgs []Message, o Opts) (Result, error) {
+	t0 := time.Now()
+	r, err := c.completeResult(ctx, msgs, o)
+	c.observe(t0, err, false)
+	return r, err
+}
+
+func (c *Client) completeResult(ctx context.Context, msgs []Message, o Opts) (Result, error) {
 	mt, temp := c.cfg.MaxTokens, c.cfg.Temperature
 	if o.MaxTokens > 0 {
 		mt = o.MaxTokens
@@ -330,14 +337,19 @@ func (c *Client) Stream(ctx context.Context, msgs []Message, o Opts, onDelta fun
 	req.Header.Set("Accept", "text/event-stream")
 	cl := *c.http
 	cl.Timeout = 0 // Streams dürfen länger dauern; Abbruch über ctx
+	t0 := time.Now()
 	resp, err := cl.Do(req)
 	if err != nil {
+		c.observe(t0, err, true)
 		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("LLM: HTTP %d", resp.StatusCode)
+		err := fmt.Errorf("LLM: HTTP %d", resp.StatusCode)
+		c.observe(t0, err, true)
+		return err
 	}
+	c.observe(t0, nil, true) // Kopfzeilen da: der Server antwortet
 	sc := bufio.NewScanner(io.LimitReader(resp.Body, maxBody))
 	sc.Buffer(make([]byte, 64*1024), 1<<20)
 	for sc.Scan() {

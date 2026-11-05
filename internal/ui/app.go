@@ -84,6 +84,7 @@ type App struct {
 	modal      *modal
 	pal        *palette
 	llm        llmUI
+	lh         llmHealthState // KI-Status (llmhealth.go)
 	toast      string
 	toastUntil time.Time
 	rel        *update.Release
@@ -195,7 +196,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case tickMsg:
-		return a, tea.Batch(tick(), a.onTick())
+		return a, tea.Batch(tick(), a.onTick(), a.llmTick())
+	case llmProbeMsg:
+		a.lh.probing = false
+		return a, nil
 
 	case outputMsg:
 		if s := a.byID(m.sid); s != nil {
@@ -500,6 +504,9 @@ func (a *App) header(right string) string {
 		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+" verfügbar · "+a.keys.label(actAbout)+" "))
 	} else if a.restartPending != "" && right == "" {
 		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+" installiert · Neustart "+a.keys.label(actAbout)+" "))
+	}
+	if a.scr != scrTerminal && a.scr != scrUnlock {
+		right += a.llmChip() // im Terminal steht der Status in der Sitzungszeile
 	}
 	gap := a.w - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 0 {
