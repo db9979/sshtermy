@@ -164,6 +164,8 @@ func (a *App) paletteItems() []palItem {
 		}},
 		{icon: "≡", label: "Verbindungs-Manager", hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: "Neue Verbindung", hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		{icon: "⇉", label: "Broadcast: Befehl auf mehreren Hosts", hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
+		{icon: "⌕", label: "Netzwerk-Scan: SSH-Geräte finden", hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
 		{icon: "✦", label: "KI-Einstellungen", hint: "s", run: func() tea.Cmd { return a.openSettings() }},
 		{icon: "⇅", label: "Sync zwischen Rechnern einrichten", hint: "y", run: func() tea.Cmd { return a.openSync() }},
 		{icon: "⇩", label: "Verbindungen importieren (ssh-config, PuTTY, MobaXterm)", hint: a.keys.label(actImport), run: func() tea.Cmd { return a.openImport() }},
@@ -174,6 +176,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: "Maus", run: func() tea.Cmd { return a.toggleMouse() }},
 		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
 		{icon: "?", label: cheatLabel(a.cheatOn()), hint: "F9", run: func() tea.Cmd { return a.toggleCheat() }},
+		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
 	}
 	for _, t := range Themes {
 		t := t

@@ -6,6 +6,8 @@
 //	      ─▶ Verbindungs-Manager (Liste, Details, Tunnel, Suche)
 //	           ├─ n/e  Verbindung anlegen/bearbeiten  ─▶ Formular
 //	           ├─ s    KI-Einstellungen (Endpunkt, Modell, Test)
+//	           ├─ m    Broadcast: Befehl/Runbook auf mehreren Hosts, Ergebnisse nebeneinander
+//	           ├─ f    Netzwerk-Scan: Subnetz nach SSH-Geräten durchsuchen, Funde anlegen
 //	           └─ ⏎    Verbinden ─▶ (Host-Key prüfen) ─▶ Terminal (Tab)
 //	                     ├─ Ghost-Text beim Tippen      Tab/→ übernimmt
 //	                     ├─ Folgebefehle nach Enter     Alt+1…4 fügt ein
@@ -46,6 +48,8 @@ const (
 	scrQuickForm
 	scrImport
 	scrKeys
+	scrBroadcast
+	scrScan
 )
 
 // App ist das Wurzel-Modell.
@@ -90,6 +94,9 @@ type App struct {
 
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
+
+	bc   *bcState   // Broadcast an mehrere Hosts
+	scan *scanState // Netzwerk-Scan
 }
 
 func New(st *store.Store) (*App, error) {
@@ -210,7 +217,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg, tea.MouseWheelMsg:
 		return a, a.mouse(msg.(tea.MouseMsg))
 	case pasteMsg:
-		a.onPaste(m)
+		return a, a.onPaste(m)
+	case pingDoneMsg:
+		a.onPingDone(m)
 		return a, nil
 
 	case updateMsg:
@@ -230,6 +239,14 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		a.rel = nil
 		return a, a.askRestart()
+	}
+
+	// Broadcast und Netzwerk-Scan (Fortschritt kommt über a.events)
+	if cmd, ok := a.bcMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.scanMsg(msg); ok {
+		return a, cmd
 	}
 
 	// Sync zwischen Rechnern
@@ -259,7 +276,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.modal != nil {
 			return a, a.modalKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrQuickForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -269,6 +286,15 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) {
 			return a, a.openPalette()
 		}
+	}
+	if pm, ok := msg.(tea.PasteMsg); ok && a.modal != nil {
+		// Einfügen in einen offenen Dialog: nur das Eingabefeld nimmt es an.
+		if a.modal.kind == mSecret {
+			var cmd tea.Cmd
+			a.modal.in, cmd = a.modal.in.Update(pm)
+			return a, cmd
+		}
+		return a, nil
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.pal != nil && a.modal == nil {
 		var cmd tea.Cmd
@@ -292,6 +318,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateImport(msg)
 	case scrKeys:
 		return a, a.updateKeys(msg)
+	case scrBroadcast:
+		return a, a.updateBroadcast(msg)
+	case scrScan:
+		return a, a.updateScan(msg)
 	}
 	return a, nil
 }
@@ -357,10 +387,14 @@ func (a *App) View() tea.View {
 		body = a.frame(a.viewImport(), a.importKeys())
 	case scrKeys:
 		body = a.frame(a.viewKeys(), a.keysKeys())
+	case scrBroadcast:
+		body = a.frame(a.viewBroadcast(), a.broadcastKeys())
+	case scrScan:
+		body = a.frame(a.viewScan(), a.scanKeys())
 	}
 	body = a.z.scan(body, 0, 0)
 	if a.modal != nil {
-		body = a.overlay(body, a.modal.view(a.s, a.w, a.h))
+		body = a.overlay(body, a.modalView())
 		cur = nil
 	} else if a.pal != nil {
 		body = a.overlay(body, a.viewPalette())
@@ -436,6 +470,9 @@ func (a *App) overlay(base, box string) string {
 	}
 	bw, bh := lipgloss.Width(box), lipgloss.Height(box)
 	x, y := max(0, (a.w-bw)/2), max(0, (a.h-bh)/2)
+	if m := a.modal; m != nil && m.anchored {
+		x, y = clamp(m.at[0]+1, 0, max(0, a.w-bw)), clamp(m.at[1]+1, 0, max(0, a.h-bh))
+	}
 	a.z.rects = a.z.rects[:0]
 	box = a.z.scan(box, x, y)
 	c := lipgloss.NewCompositor(lipgloss.NewLayer(base), lipgloss.NewLayer(box).X(x).Y(y).Z(1))

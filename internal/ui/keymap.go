@@ -36,6 +36,8 @@ const (
 	actNextLook  action = "theme"
 	actCheat     action = "cheat"
 	actQuickEdit action = "quick_edit"
+	actBroadcast action = "broadcast"
+	actScan      action = "scan"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -78,6 +80,8 @@ var actionDefs = []actionDef{
 	{actNextLook, "Aussehen wechseln", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},
 	{actQuickEdit, "Schnellbefehle bearbeiten", "Manager", []string{"q"}},
+	{actBroadcast, "Broadcast an mehrere Hosts", "Manager", []string{"m"}},
+	{actScan, "Netzwerk-Scan", "Manager", []string{"f"}},
 }
 
 func defOf(id action) actionDef {
