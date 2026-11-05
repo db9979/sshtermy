@@ -65,10 +65,14 @@ type Options struct {
 	AskSecret SecretPrompt // fehlende Passwörter/Passphrasen erfragen (optional)
 	Timeout   time.Duration
 
-	forceNet  bool    // intern: zweiter Versuch nach abgebrochener Systemabfrage
-	legacy    bool    // intern: alte Algorithmen (nur wenn der Server nichts anderes kann)
-	waitScale float64 // intern: Wartezeiten zwischen Versuchen skalieren (Tests)
+	forceNet  bool     // intern: zweiter Versuch nach abgebrochener Systemabfrage
+	legacy    bool     // intern: alte Algorithmen (nur wenn der Server nichts anderes kann)
+	waitScale float64  // intern: Wartezeiten zwischen Versuchen skalieren (Tests)
+	hops      []string // intern: bisherige Stationen der Jump-Kette (Schleifenschutz)
 }
+
+// maxJumpHops: mehr Stationen ergeben praktisch nie Sinn, schützt vor Schleifen.
+const maxJumpHops = 8
 
 // Dial baut die Verbindung auf. Bei JumpHostID wird zuerst der Jump-Host
 // verbunden und die Zielverbindung durch ihn getunnelt (wie ssh -J).
@@ -179,11 +183,17 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		if !ok {
 			return nil, errors.New("Jump-Host nicht gefunden")
 		}
-		if jc.JumpHostID == c.ID {
-			return nil, errors.New("Jump-Host-Schleife")
+		hops := append(append([]string(nil), o.hops...), c.ID)
+		for _, h := range hops {
+			if h == jc.ID {
+				return nil, errors.New("Jump-Host-Schleife: " + jc.Alias + " kommt in der Kette zweimal vor")
+			}
+		}
+		if len(hops) >= maxJumpHops {
+			return nil, fmt.Errorf("Jump-Host-Kette zu lang (mehr als %d Stationen)", maxJumpHops)
 		}
 		jo := o
-		jo.forceNet, jo.legacy = false, false
+		jo.forceNet, jo.legacy, jo.hops = false, false, hops
 		jump, err = Dial(ctx, jc, jo)
 		if err != nil {
 			return nil, fmt.Errorf("Jump-Host %s: %w", jc.Alias, err)

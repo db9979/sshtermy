@@ -24,6 +24,7 @@ type zoneAction struct {
 	click func(m tea.Mouse, double bool) tea.Cmd // nil = nicht klickbar
 	wheel func(up bool) tea.Cmd                  // nil = Rad geht weiter nach außen
 	block bool                                   // rechteckiger Block (Box), sonst Fließtext
+	row   int                                    // Manager: Zeile+1 als Ziel beim Ziehen (0 = keins)
 }
 
 type zoneRect struct {
@@ -140,4 +141,15 @@ func (z *zones) at(x, y int, wheel bool) *zoneAction {
 		}
 	}
 	return best
+}
+
+// rowAt: Zeile (row-1) unter x/y für das Ziehen im Manager, sonst -1.
+func (z *zones) rowAt(x, y int) int {
+	for _, r := range z.rects {
+		if y >= r.y0 && y <= r.y1 && z.acts[r.id].row > 0 { // nur die Zeile zählt
+			_ = x
+			return z.acts[r.id].row - 1
+		}
+	}
+	return -1
 }

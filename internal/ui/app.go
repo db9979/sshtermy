@@ -95,6 +95,8 @@ type App struct {
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
 
+	pick *picker // Auswahlliste mit Suche (Jump-Host, Ordner, Tag)
+
 	bc   *bcState   // Broadcast an mehrere Hosts
 	scan *scanState // Netzwerk-Scan
 }
@@ -276,6 +278,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.modal != nil {
 			return a, a.modalKey(k)
 		}
+		if a.pick != nil {
+			return a, a.pickerKey(k)
+		}
 		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm) {
 			a.modal = a.helpModal()
 			return a, nil
@@ -289,12 +294,18 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.modal != nil {
 		// Einfügen in einen offenen Dialog: nur das Eingabefeld nimmt es an.
-		if a.modal.kind == mSecret {
+		if a.modal.kind == mSecret || a.modal.kind == mInput {
 			var cmd tea.Cmd
 			a.modal.in, cmd = a.modal.in.Update(pm)
 			return a, cmd
 		}
 		return a, nil
+	}
+	if pm, ok := msg.(tea.PasteMsg); ok && a.pick != nil {
+		var cmd tea.Cmd
+		a.pick.in, cmd = a.pick.in.Update(pm)
+		a.pick.sel, a.pick.top = 0, 0
+		return a, cmd
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.pal != nil && a.modal == nil {
 		var cmd tea.Cmd
@@ -395,6 +406,9 @@ func (a *App) View() tea.View {
 	body = a.z.scan(body, 0, 0)
 	if a.modal != nil {
 		body = a.overlay(body, a.modalView())
+		cur = nil
+	} else if a.pick != nil {
+		body = a.overlay(body, a.viewPicker())
 		cur = nil
 	} else if a.pal != nil {
 		body = a.overlay(body, a.viewPalette())

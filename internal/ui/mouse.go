@@ -85,7 +85,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	// Terminalfläche zuerst: Markieren und Weiterleiten dürfen nicht an
 	// Zonen hängen bleiben (z. B. beim Ziehen über den Rand hinaus).
 	s := a.current()
-	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil {
+	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil {
 		if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open) {
 			return a.termMouse(s, msg, clicks)
 		}
@@ -102,7 +102,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		if a.modal != nil && (a.modal.kind == mHelp || a.modal.kind == mChangelog) {
 			return a.pressKey(wheelKey(up))
 		}
-		if a.modal != nil || a.pal != nil {
+		if a.modal != nil || a.pal != nil || a.pick != nil {
 			return nil
 		}
 		switch a.scr {
@@ -120,6 +120,10 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		a.modal = nil
 		return nil
 	}
+	// Ziehen im Manager: Verbindungen und Ordner umsortieren
+	if a.scr == scrManager && a.modal == nil && a.pal == nil && a.pick == nil && a.mgr.drag != nil && !isClick {
+		return a.mgrDragMouse(msg)
+	}
 	if !isClick || m.Button != tea.MouseLeft {
 		return nil
 	}
@@ -128,6 +132,8 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	}
 	// Klick ins Leere
 	switch {
+	case a.pick != nil:
+		a.pick = nil
 	case a.pal != nil:
 		a.pal = nil
 	case a.modal != nil:

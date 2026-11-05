@@ -29,6 +29,7 @@ type Payload struct {
 	Connections []domain.Connection  `json:"connections"`
 	Tunnels     []domain.Tunnel      `json:"tunnels"`
 	Runbooks    []domain.Runbook     `json:"runbooks,omitempty"`
+	Folders     []domain.Folder      `json:"folders,omitempty"` // Ordner: Reihenfolge, zugeklappt, leere Ordner
 	LLM         domain.LLMConfig     `json:"llm"`
 	LLMAt       time.Time            `json:"llm_at"`
 	Settings    SharedSettings       `json:"settings"`
@@ -45,6 +46,7 @@ func FromData(d *domain.Data, knownHosts []string) *Payload {
 		Connections: append([]domain.Connection(nil), d.Connections...),
 		Tunnels:     append([]domain.Tunnel(nil), d.Tunnels...),
 		Runbooks:    append([]domain.Runbook(nil), d.Runbooks...),
+		Folders:     append([]domain.Folder(nil), d.Folders...),
 		LLM:         d.LLM, LLMAt: d.LLMUpdatedAt,
 		Settings:   SharedSettings{d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language, copyKeys(d.Settings.Keys)},
 		SettingsAt: d.SettingsUpdatedAt,
@@ -63,6 +65,7 @@ func (p *Payload) ApplyTo(d *domain.Data) {
 	d.Connections = append([]domain.Connection(nil), p.Connections...)
 	d.Tunnels = append([]domain.Tunnel(nil), p.Tunnels...)
 	d.Runbooks = append([]domain.Runbook(nil), p.Runbooks...)
+	d.Folders = append([]domain.Folder(nil), p.Folders...)
 	d.LLM, d.LLMUpdatedAt = p.LLM, p.LLMAt
 	d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language = p.Settings.Theme, p.Settings.LockAfterMin, p.Settings.Language
 	d.Settings.Keys = copyKeys(p.Settings.Keys)
@@ -138,6 +141,22 @@ func Merge(a, b *Payload, now time.Time) *Payload {
 			return win
 		})
 	sort.SliceStable(out.Runbooks, func(i, j int) bool { return out.Runbooks[i].ID < out.Runbooks[j].ID })
+
+	// Ordner: pro ID wie Verbindungen; legen zwei Rechner denselben Pfad
+	// unabhängig an, bleibt nur der neuere Eintrag (gleiches Ergebnis überall).
+	folders := mergeByID(a.Folders, b.Folders, out.Deleted,
+		func(f domain.Folder) string { return f.ID },
+		func(f domain.Folder) time.Time { return f.Rev() }, nil)
+	byPath := map[string]domain.Folder{}
+	for _, f := range folders {
+		if o, ok := byPath[f.Path]; !ok || newer(f, f.Rev(), o, o.Rev()) {
+			byPath[f.Path] = f
+		}
+	}
+	for _, f := range byPath {
+		out.Folders = append(out.Folders, f)
+	}
+	sort.SliceStable(out.Folders, func(i, j int) bool { return out.Folders[i].ID < out.Folders[j].ID })
 
 	out.LLM, out.LLMAt = pick(a.LLM, a.LLMAt, b.LLM, b.LLMAt)
 	out.Settings, out.SettingsAt = pick(a.Settings, a.SettingsAt, b.Settings, b.SettingsAt)
@@ -228,6 +247,9 @@ func diff(local, merged *Payload) (added, changed, gone int) {
 	for _, r := range local.Runbooks {
 		l[r.ID], _ = json.Marshal(r)
 	}
+	for _, f := range local.Folders {
+		l[f.ID], _ = json.Marshal(f)
+	}
 	m := map[string]bool{}
 	check := func(id string, v any) {
 		m[id] = true
@@ -246,6 +268,9 @@ func diff(local, merged *Payload) (added, changed, gone int) {
 	}
 	for _, r := range merged.Runbooks {
 		check(r.ID, r)
+	}
+	for _, f := range merged.Folders {
+		check(f.ID, f)
 	}
 	for id := range l {
 		if !m[id] {

@@ -144,7 +144,7 @@ func newID() string {
 	return hex.EncodeToString(b)
 }
 
-// Connections: sortiert nach Gruppe, dann Alias.
+// Connections: sortiert nach Ordner, dann Reihenfolge im Ordner, dann Alias.
 func (s *Store) Connections() []domain.Connection {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -156,8 +156,17 @@ func (s *Store) Connections() []domain.Connection {
 		if out[i].Group != out[j].Group {
 			return out[i].Group < out[j].Group
 		}
-		return strings.ToLower(out[i].Alias) < strings.ToLower(out[j].Alias)
+		return false
 	})
+	// innerhalb eines Ordners wie im Baum
+	for i := 0; i < len(out); {
+		j := i
+		for j < len(out) && out[j].Group == out[i].Group {
+			j++
+		}
+		domain.SortConns(out[i:j])
+		i = j
+	}
 	return out
 }
 
@@ -197,14 +206,19 @@ func (s *Store) UpsertConnection(c domain.Connection) (domain.Connection, error)
 	if err := Validate(c); err != nil {
 		return c, err
 	}
+	c.Group = domain.NormPath(c.Group)
 	s.mu.Lock()
 	c.UpdatedAt = time.Now().UTC()
 	if c.ID == "" {
 		c.ID, c.CreatedAt = newID(), time.Now()
+		c.Order = s.nextOrder(c.Group)
 		s.data.Connections = append(s.data.Connections, c)
 	} else {
 		for i := range s.data.Connections {
 			if s.data.Connections[i].ID == c.ID {
+				if s.data.Connections[i].Group != c.Group { // anderer Ordner: hinten anstellen
+					c.Order = s.nextOrder(c.Group)
+				}
 				s.data.Connections[i] = c
 			}
 		}
@@ -233,6 +247,8 @@ func (s *Store) AddConnections(cs []domain.Connection) ([]domain.Connection, err
 		if c.ID == "" {
 			c.ID = newID()
 		}
+		c.Group = domain.NormPath(c.Group)
+		c.Order = s.nextOrder(c.Group)
 		c.CreatedAt, c.UpdatedAt = now, now
 		s.data.Connections = append(s.data.Connections, c)
 		out[i] = c
@@ -391,6 +407,7 @@ func (s *Store) Snapshot() (*domain.Data, uint64, error) {
 	d.Connections = append([]domain.Connection(nil), s.data.Connections...)
 	d.Tunnels = append([]domain.Tunnel(nil), s.data.Tunnels...)
 	d.Runbooks = append([]domain.Runbook(nil), s.data.Runbooks...)
+	d.Folders = append([]domain.Folder(nil), s.data.Folders...)
 	d.Deleted = map[string]time.Time{}
 	for k, v := range s.data.Deleted {
 		d.Deleted[k] = v

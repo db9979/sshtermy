@@ -36,6 +36,16 @@ const (
 	actNextLook  action = "theme"
 	actCheat     action = "cheat"
 	actQuickEdit action = "quick_edit"
+
+	// Ordner im Manager
+	actFolderNew action = "folder_new"
+	actRename    action = "rename"
+	actMoveTo    action = "move_to"
+	actMoveUp    action = "move_up"
+	actMoveDown  action = "move_down"
+	actTagFilter action = "tag_filter"
+	actFoldAll   action = "fold_all"
+	actUnfoldAll action = "unfold_all"
 	actBroadcast action = "broadcast"
 	actScan      action = "scan"
 )
@@ -80,6 +90,14 @@ var actionDefs = []actionDef{
 	{actNextLook, "Aussehen wechseln", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},
 	{actQuickEdit, "Schnellbefehle bearbeiten", "Manager", []string{"q"}},
+	{actFolderNew, "Neuer Ordner", "Manager", []string{"o"}},
+	{actRename, "Ordner umbenennen", "Manager", []string{"r"}},
+	{actMoveTo, "In Ordner verschieben", "Manager", []string{"v"}},
+	{actMoveUp, "Nach oben schieben", "Manager", []string{"shift+up", "alt+up"}},
+	{actMoveDown, "Nach unten schieben", "Manager", []string{"shift+down", "alt+down"}},
+	{actTagFilter, "Nach Tag filtern", "Manager", []string{"#"}},
+	{actFoldAll, "Alle Ordner zuklappen", "Manager", []string{"-"}},
+	{actUnfoldAll, "Alle Ordner aufklappen", "Manager", []string{"+"}},
 	{actBroadcast, "Broadcast an mehrere Hosts", "Manager", []string{"m"}},
 	{actScan, "Netzwerk-Scan", "Manager", []string{"f"}},
 }
@@ -188,6 +206,8 @@ func keyLabel(k string) string {
 			parts[i] = "Entf"
 		case p == "@":
 			parts[i] = "@"
+		case p == "up" || p == "down" || p == "left" || p == "right":
+			parts[i] = map[string]string{"up": "↑", "down": "↓", "left": "←", "right": "→"}[p]
 		case len(p) >= 2 && p[0] == 'f' && p[1] >= '0' && p[1] <= '9':
 			parts[i] = strings.ToUpper(p)
 		case utf8.RuneCountInString(p) == 1 && i > 0:

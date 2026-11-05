@@ -85,7 +85,7 @@ func (a *App) openScan() tea.Cmd {
 	f.text("user", "Benutzer", user, "für die neuen Verbindungen")
 	f.choice("auth", "Anmeldung", []string{"agent", "keyfile", "password"}, auth, "agent = ssh-agent (empfohlen) · Passwort fragt beim Verbinden")
 	f.text("keypath", "Keyfile", keypath, "z. B. ~/.ssh/id_ed25519").hidden = func(f *form) bool { return f.sel("auth") != "keyfile" }
-	f.text("group", "Gruppe", group, "Gruppe der neuen Verbindungen (für Broadcast praktisch)")
+	f.text("group", "Ordner", group, "Ordner der neuen Verbindungen, „A / B“ verschachtelt (leer = oberste Ebene)")
 	sc.f = f
 	a.scan = sc
 	a.scr = scrScan
@@ -264,7 +264,11 @@ func (a *App) scanCreate() tea.Cmd {
 	if n > 0 {
 		a.scr = scrManager
 		a.mgr.search.SetValue("")
-		a.mgr.sel = 0
+		a.mgr.tag = ""
+		if g := domain.NormPath(f.str("group")); g != "" {
+			a.expandTo(g)
+			a.mgr.want = "f:" + g
+		}
 	}
 	return nil
 }
@@ -392,7 +396,7 @@ func (a *App) viewScan() string {
 			o.WriteString(s.Muted.Render("  Keine SSH-Geräte gefunden. Subnetz oder Port prüfen (r).") + "\n")
 		}
 	} else {
-		o.WriteString(s.Muted.Render(fmt.Sprintf("  %d gewählt · Gruppe „%s“ · Benutzer %s", picked, orDefault(sc.f.str("group"), "Allgemein"), sc.f.str("user"))) + "\n")
+		o.WriteString(s.Muted.Render(fmt.Sprintf("  %d gewählt · Ordner „%s“ · Benutzer %s", picked, orDefault(domain.NormPath(sc.f.str("group")), "oberste Ebene"), sc.f.str("user"))) + "\n")
 	}
 	rows := max(3, a.h-2-12)
 	start := 0

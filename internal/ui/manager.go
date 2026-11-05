@@ -15,35 +15,27 @@ import (
 
 type managerState struct {
 	sel       int
+	top       int // erste sichtbare Zeile (Blättern bei vielen Servern)
+	listH     int // sichtbare Zeilen der Liste (letztes Bild)
 	search    textinput.Model
 	searching bool
+	tag       string // aktiver Tag-Filter ("" = keiner)
+	want      string // nach einer Änderung diese Zeile wieder auswählen (mgrRow.key)
+	drag      *mgrDrag
+	rows      []mgrRow // Zeilen des letzten Aufrufs von mgrRows
+	tree      *domain.TreeNode
 }
 
 func newManager() managerState {
 	in := newInput("", false)
-	in.Placeholder = "Suchen (Alias, Host, Gruppe, Tag)"
+	in.Placeholder = "Suchen (Name, Host, Ordner, #tag)"
 	return managerState{search: in}
-}
-
-func (a *App) filtered() []domain.Connection {
-	all := a.st.Connections()
-	q := strings.ToLower(strings.TrimSpace(a.mgr.search.Value()))
-	if q == "" {
-		return all
-	}
-	var out []domain.Connection
-	for _, c := range all {
-		hay := strings.ToLower(c.Alias + " " + c.Host + " " + c.Group + " " + c.Username + " " + strings.Join(c.Tags, " "))
-		if strings.Contains(hay, q) {
-			out = append(out, c)
-		}
-	}
-	return out
 }
 
 func (a *App) managerKeys() [][2]string {
 	km := a.keys
 	k := [][2]string{{km.label(actPalette), "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
+		{km.label(actFolderNew), "Ordner"}, {km.label(actMoveTo), "verschieben"}, {km.label(actMoveUp) + "/" + keyLabel("down"), "sortieren"}, {km.label(actTagFilter), "Tags"},
 		{"t", "Tunnel"}, {km.label(actBroadcast), "Broadcast"}, {km.label(actScan), "Scan"}, {km.label(actImport), "Import"}, {km.label(actQuickEdit), "Schnellbefehle"}, {"s", "KI"}, {"y", "Sync"},
 		{km.label(actHelp), "Hilfe"}, {km.label(actAbout), "Über"}, {km.label(actQuit), "beenden"}}
 	if len(a.sessions) > 0 {
@@ -58,7 +50,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		return nil
 	}
 	m := &a.mgr
-	list := a.filtered()
+	rows := a.mgrRows()
 	if m.searching {
 		switch k.String() {
 		case "esc":
@@ -68,20 +60,30 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		case "enter":
 			m.searching = false
 			m.search.Blur()
+		case "up", "down", "pgup", "pgdown":
+			m.searching = false
+			m.search.Blur()
+			return a.updateManager(k)
 		default:
 			var cmd tea.Cmd
 			m.search, cmd = m.search.Update(k)
-			m.sel = 0
+			m.sel, m.top = 0, 0
 			return cmd
 		}
 		return nil
 	}
-	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit) {
+	var cur mgrRow
+	have := m.sel < len(rows)
+	if have {
+		cur = rows[m.sel]
+	}
+	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit,
+		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll) {
 	case actCheat:
 		return a.toggleCheat()
 	case actQuickEdit:
-		if m.sel < len(list) {
-			return a.openQuickForm(list[m.sel], "")
+		if have && !cur.isFolder() {
+			return a.openQuickForm(cur.conn, "")
 		}
 		return nil
 	case actManager:
@@ -105,24 +107,118 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		return a.openBroadcast()
 	case actScan:
 		return a.openScan()
+	case actFolderNew:
+		return a.newFolderDialog()
+	case actRename:
+		if have && cur.isFolder() {
+			return a.renameFolderDialog(cur.node.Path)
+		}
+		if have {
+			return a.openConnForm(cur.conn)
+		}
+		return nil
+	case actMoveTo:
+		if have {
+			return a.moveToDialog(cur)
+		}
+		return nil
+	case actMoveUp, actMoveDown:
+		if have {
+			d := 1
+			if a.keys.is(actMoveUp, k.String()) {
+				d = -1
+			}
+			a.moveStep(cur, d)
+		}
+		return nil
+	case actTagFilter:
+		return a.tagDialog()
+	case actFoldAll, actUnfoldAll:
+		collapse := a.keys.is(actFoldAll, k.String())
+		if err := a.st.SetCollapsed(collapse); err != nil {
+			a.flash(err.Error())
+		}
+		if have && collapse {
+			// Auswahl auf den obersten Ordner der aktuellen Zeile
+			if parts := domain.PathParts(cur.path()); len(parts) > 0 {
+				m.want = "f:" + parts[0]
+			}
+		} else if have {
+			m.want = cur.key()
+		}
+		return nil
 	}
+	page := max(1, m.listH-1)
 	switch k.String() {
 	case "up", "k":
 		m.sel = max(0, m.sel-1)
 	case "down", "j":
-		m.sel = min(len(list)-1, m.sel+1)
+		m.sel = min(len(rows)-1, m.sel+1)
+	case "pgup":
+		m.sel = max(0, m.sel-page)
+	case "pgdown":
+		m.sel = min(len(rows)-1, m.sel+page)
+	case "home":
+		m.sel = 0
+	case "end":
+		m.sel = max(0, len(rows)-1)
+	case "left":
+		if !have {
+			return nil
+		}
+		if cur.isFolder() && !cur.node.Collapsed && !a.mgrFiltering() {
+			a.toggleFolder(cur.node.Path, true)
+			return nil
+		}
+		// zum übergeordneten Ordner springen
+		parent := cur.conn.Group
+		if cur.isFolder() {
+			parent = domain.PathParent(cur.node.Path)
+		}
+		if parent != "" {
+			m.want = "f:" + parent
+		}
+	case "right":
+		if have && cur.isFolder() {
+			if cur.node.Collapsed {
+				a.toggleFolder(cur.node.Path, false)
+			} else if m.sel+1 < len(rows) && rows[m.sel+1].depth > cur.depth {
+				m.sel++
+			}
+		}
+	case "space":
+		if have && cur.isFolder() {
+			a.toggleFolder(cur.node.Path, !cur.node.Collapsed)
+		}
+	case "esc":
+		if m.tag != "" || m.search.Value() != "" {
+			m.tag = ""
+			m.search.SetValue("")
+			if have {
+				m.want = cur.key()
+			}
+		}
 	case "/":
 		m.searching = true
 		return m.search.Focus()
 	case "n":
-		return a.openConnForm(newConnDefaults())
+		c := newConnDefaults()
+		c.Group = a.mgrContext()
+		return a.openConnForm(c)
 	case "e":
-		if m.sel < len(list) {
-			return a.openConnForm(list[m.sel])
+		if have && cur.isFolder() {
+			return a.renameFolderDialog(cur.node.Path)
+		}
+		if have {
+			return a.openConnForm(cur.conn)
 		}
 	case "d":
-		if m.sel < len(list) {
-			c := list[m.sel]
+		if have && cur.isFolder() {
+			a.deleteFolderDialog(cur.node)
+			return nil
+		}
+		if have {
+			c := cur.conn
 			a.modal = confirmModal("Verbindung löschen", "„"+c.Alias+"“ und ihre Tunnel wirklich löschen?", func() tea.Cmd {
 				if err := a.st.DeleteConnection(c.ID); err != nil {
 					a.flash(err.Error())
@@ -132,16 +228,20 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			})
 		}
 	case "t":
-		if m.sel < len(list) {
-			return a.openTunnelForm(domain.Tunnel{ConnectionID: list[m.sel].ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
+		if have && !cur.isFolder() {
+			return a.openTunnelForm(domain.Tunnel{ConnectionID: cur.conn.ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
 		}
 	case "s":
 		return a.openSettings()
 	case "y":
 		return a.openSync()
 	case "enter":
-		if m.sel < len(list) {
-			return a.connect(list[m.sel])
+		if have && cur.isFolder() {
+			a.toggleFolder(cur.node.Path, !cur.node.Collapsed)
+			return nil
+		}
+		if have {
+			return a.connect(cur.conn)
 		}
 	}
 	return nil
@@ -156,61 +256,168 @@ func (a *App) connect(c domain.Connection) tea.Cmd {
 	return a.connectCmd(s)
 }
 
+func (a *App) connected(id string) bool {
+	for _, ss := range a.sessions {
+		if ss.conn.ID == id && ss.state == stConnected {
+			return true
+		}
+	}
+	return false
+}
+
+// connectedIn: verbundene Sitzungen in einem Ordner (samt Unterordnern).
+func (a *App) connectedIn(path string) int {
+	n := 0
+	seen := map[string]bool{}
+	for _, ss := range a.sessions {
+		if ss.state == stConnected && !seen[ss.conn.ID] && domain.InFolder(ss.conn.Group, path) {
+			seen[ss.conn.ID] = true
+			n++
+		}
+	}
+	return n
+}
+
 func (a *App) viewManager() string {
 	s := a.s
-	list := a.filtered()
+	m := &a.mgr
+	rows := a.mgrRows()
 	h := a.h - 2
-	leftW := min(46, max(30, a.w/3))
+	leftW := min(52, max(32, a.w/3))
 	rightW := a.w - leftW - 1
 
-	// linke Spalte: Liste, nach Gruppe
+	// linke Spalte: Baum aus Ordnern und Verbindungen
 	var lb strings.Builder
-	if a.mgr.searching || a.mgr.search.Value() != "" {
-		lb.WriteString(" " + s.Accent.Render("/") + " " + a.mgr.search.View() + "\n\n")
-	} else {
-		lb.WriteString(s.PanelTitle.Foreground(s.T.Accent).Render(" Verbindungen") + s.Muted.Render(fmt.Sprintf("  %d", len(list))) +
-			"  " + a.keyZone("/", s.Muted.Render("/ suchen")) + "\n\n")
+	total := 0
+	if m.tree != nil {
+		total = m.tree.Total
 	}
-	group := "\x00"
-	for i, c := range list {
-		if c.Group != group {
-			group = c.Group
-			g := group
-			if g == "" {
-				g = "Allgemein"
+	switch {
+	case m.drag != nil && m.drag.moved:
+		desc, _ := a.dropPlan(rows, m.drag.from, m.drag.over)
+		if desc == "" {
+			desc = "hier nicht ablegen"
+		}
+		name := ""
+		if m.drag.from < len(rows) {
+			name = rows[m.drag.from].name()
+		}
+		lb.WriteString(" " + s.Warn.Render("⇅ „"+trunc(name, 16)+"“ "+trunc(desc, leftW-24)) + "\n")
+	case m.searching || m.search.Value() != "":
+		m.search.SetWidth(leftW - 6)
+		lb.WriteString(" " + s.Accent.Render("/") + " " + m.search.View() + "\n")
+	default:
+		lb.WriteString(s.PanelTitle.Foreground(s.T.Accent).Render(" Verbindungen") + s.Muted.Render(fmt.Sprintf("  %d", total)) +
+			"  " + a.keyZone("/", s.Muted.Render("/ suchen")) + "  " + a.keyZone(a.keys.label(actTagFilter), s.Muted.Render(a.keys.label(actTagFilter)+" Tags")) + "\n")
+	}
+	// zweite Zeile: aktiver Filter bzw. Position
+	info := ""
+	if m.tag != "" {
+		info = a.z.click(s.Accent.Render(" #"+m.tag+" ✕"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
+	}
+	if a.mgrFiltering() {
+		n := 0
+		for _, r := range rows {
+			if !r.isFolder() {
+				n++
 			}
-			lb.WriteString(s.Muted.Render(" "+strings.ToUpper(g)) + "\n")
 		}
-		dot := s.Muted.Render("○")
-		for _, ss := range a.sessions {
-			if ss.conn.ID == c.ID && ss.state == stConnected {
-				dot = s.OK.Render("●")
+		info += s.Muted.Render(fmt.Sprintf("  %d Treffer · Esc zeigt alle", n))
+	}
+	listH := max(1, h-2)
+	m.listH = listH
+	if m.sel < m.top {
+		m.top = m.sel
+	}
+	if m.sel >= m.top+listH {
+		m.top = m.sel - listH + 1
+	}
+	m.top = clamp(m.top, 0, max(0, len(rows)-listH))
+	if len(rows) > listH {
+		info += s.Muted.Render(fmt.Sprintf("  %d–%d von %d", m.top+1, min(len(rows), m.top+listH), len(rows)))
+	}
+	lb.WriteString(info + "\n")
+
+	for i := m.top; i < len(rows) && i < m.top+listH; i++ {
+		r := rows[i]
+		indent := strings.Repeat("  ", min(r.depth, 6))
+		var plain, styled string
+		if r.isFolder() {
+			n := r.node
+			arrow := "▾"
+			if n.Collapsed && !a.mgrFiltering() {
+				arrow = "▸"
 			}
+			cnt := fmt.Sprintf("%d", n.Total)
+			if c := a.connectedIn(n.Path); c > 0 {
+				cnt = fmt.Sprintf("●%d · %d", c, n.Total)
+			}
+			nw := max(6, leftW-4-len(indent)-len([]rune(cnt)))
+			name := trunc(n.Name, nw)
+			plain = fmt.Sprintf(" %s%s %s", indent, arrow, name)
+			pad := strings.Repeat(" ", max(1, leftW-2-len([]rune(plain))-len([]rune(cnt))))
+			styled = " " + indent + s.Accent.Render(arrow) + " " + s.PanelTitle.Render(name) + pad + s.Muted.Render(cnt)
+			plain += pad + cnt
+		} else {
+			c := r.conn
+			dot := s.Muted.Render("○")
+			pdot := "○"
+			if a.connected(c.ID) {
+				dot, pdot = s.OK.Render("●"), "●"
+			}
+			aw := max(8, 18-2*min(r.depth, 5))
+			hw := max(4, leftW-6-len(indent)-aw)
+			alias := fmt.Sprintf("%-*s", aw, trunc(c.Alias, aw))
+			target := trunc(c.Username+"@"+c.Host, hw)
+			plain = fmt.Sprintf(" %s%s %s %s", indent, pdot, alias, target)
+			styled = " " + indent + dot + " " + alias + " " + s.Muted.Render(target)
 		}
-		line := fmt.Sprintf(" %s %-18s %s", dot, trunc(c.Alias, 18), s.Muted.Render(trunc(c.Username+"@"+c.Host, leftW-26)))
-		if i == a.mgr.sel {
-			line = s.Selected.Width(leftW - 1).Render(fmt.Sprintf(" %s %-18s %s", "▶", trunc(c.Alias, 18), trunc(c.Username+"@"+c.Host, leftW-26)))
+		line := styled
+		switch {
+		case i == m.sel:
+			line = s.Selected.Width(leftW - 1).Render(plain)
+		case m.drag != nil && m.drag.moved && i == m.drag.over:
+			line = lipgloss.NewStyle().Foreground(s.T.Warn).Underline(true).Width(leftW - 1).Render(plain)
 		}
-		i, c := i, c
-		line = a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
-			a.mgr.sel = i
-			if double {
-				return a.connect(c)
+		i, r := i, r
+		line = a.z.mark(line, zoneAction{row: i + 1, click: func(_ tea.Mouse, double bool) tea.Cmd {
+			m.sel = i
+			m.drag = &mgrDrag{from: i, over: i, dbl: double}
+			if double && !r.isFolder() {
+				m.drag = nil
+				return a.connect(r.conn)
 			}
 			return nil
-		})
+		}})
 		lb.WriteString(line + "\n")
 	}
-	if len(list) == 0 {
-		lb.WriteString(s.Muted.Render("  Noch keine Verbindung.\n  n = neue Verbindung anlegen"))
+	if len(rows) == 0 {
+		switch {
+		case a.mgrFiltering():
+			lb.WriteString(s.Muted.Render("  Nichts gefunden.\n  Esc = Filter aufheben"))
+		default:
+			lb.WriteString(s.Muted.Render("  Noch keine Verbindung.\n  n = neue Verbindung anlegen\n  o = Ordner anlegen"))
+		}
 	}
+	listBox := a.z.mark(lb.String(), zoneAction{block: true, wheel: func(up bool) tea.Cmd {
+		if up {
+			m.sel = max(0, m.sel-1)
+		} else {
+			m.sel = min(len(rows)-1, m.sel+1)
+		}
+		return nil
+	}})
+	lb.Reset()
+	lb.WriteString(listBox)
 	left := lipgloss.NewStyle().Width(leftW).Height(h).Render(lb.String())
 	sep := lipgloss.NewStyle().Foreground(s.T.Border).Render(strings.Repeat("│\n", max(0, h-1)) + "│")
 
 	// rechte Spalte: Details
 	var rb strings.Builder
-	if a.mgr.sel < len(list) {
-		c := list[a.mgr.sel]
+	if m.sel < len(rows) && rows[m.sel].isFolder() {
+		rb.WriteString(a.viewFolderDetails(rows[m.sel].node))
+	} else if m.sel < len(rows) {
+		c := rows[m.sel].conn
 		rb.WriteString(s.Accent.Render(" "+c.Alias) + "  " + s.Muted.Render(c.Group) + "   " +
 			a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render("verbinden")) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render("bearbeiten")) + "\n\n")
 		row := func(k, v string) { rb.WriteString(" " + s.Label.Render(k) + s.Text.Render(v) + "\n") }
@@ -225,9 +432,7 @@ func (a *App) viewManager() string {
 		}
 		row("Anmeldung", auth)
 		if c.JumpHostID != "" {
-			if j, ok := a.st.Connection(c.JumpHostID); ok {
-				row("Jump-Host", j.Alias)
-			}
+			row("Jump-Host", a.jumpChainText(c))
 		}
 		if len(c.Tags) > 0 {
 			row("Tags", strings.Join(c.Tags, ", "))
@@ -255,7 +460,7 @@ func (a *App) viewManager() string {
 		rb.WriteString("\n " + s.PanelTitle.Render("KI-Copilot") + "\n")
 		rb.WriteString("  " + s.Muted.Render(cfg.Model+" @ "+cfg.BaseURL) + "\n")
 	}
-	if len(list) > 0 || a.st.SyncConfig().Enabled() {
+	if len(rows) > 0 || a.st.SyncConfig().Enabled() {
 		rb.WriteString("\n " + s.PanelTitle.Render("Sync") + "\n  " + a.syncStatus() + "\n")
 	}
 	right := lipgloss.NewStyle().Width(rightW).Height(h).Render(rb.String())
@@ -289,19 +494,16 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.secret("password", "Passwort", c.Password.Reveal(), "wird mit AES-256-GCM verschlüsselt gespeichert").hidden = isAuth("password")
 	f.text("keypath", "Keyfile", c.KeyPath, "z. B. ~/.ssh/id_ed25519 (leer lassen bei eingebettetem Key)").hidden = isAuth("keyfile")
 	f.secret("keypass", "Passphrase", c.KeyPassphrase.Reveal(), "optional; leer = beim Verbinden fragen").hidden = isAuth("keyfile")
-	f.text("group", "Gruppe", c.Group, "z. B. Produktion, Homelab")
-	f.text("tags", "Tags", strings.Join(c.Tags, ", "), "durch Komma getrennt")
-	jumps := []string{"—"}
-	cur := "—"
-	for _, o := range a.st.Connections() {
-		if o.ID != c.ID {
-			jumps = append(jumps, o.Alias)
-			if o.ID == c.JumpHostID {
-				cur = o.Alias
-			}
+	f.pick("group", "Ordner", domain.NormPath(c.Group), func(v string) string {
+		if v == "" {
+			return a.s.Muted.Render("— oberste Ebene")
 		}
-	}
-	f.choice("jump", "Jump-Host", jumps, cur, "wie ssh -J")
+		return "▸ " + v
+	}, func() tea.Cmd { return a.pickFolderField() }, "Auswahl mit Suche; neuen Namen tippen legt einen Ordner an („A / B“ verschachtelt)")
+	f.text("tags", "Tags", strings.Join(c.Tags, ", "), "durch Komma getrennt, z. B. prod, linux · im Manager filtern mit #")
+	self := c
+	f.pick("jump", "Jump-Host", c.JumpHostID, func(v string) string { return a.jumpFieldText(self, v) },
+		func() tea.Cmd { return a.pickJumpField(self) }, "wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")
 	f.choice("device", "Gerätetyp", deviceLabels, deviceLabel(c.Device), "Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage")
 	a.form, a.formID, a.scr = f, c.ID, scrConnForm
 	a.formBase = c
@@ -415,7 +617,7 @@ func (a *App) saveConn() error {
 		c.KeyPath, c.KeyPassphrase = f.str("keypath"), domain.Secret(f.raw("keypass"))
 		c.KeyPEM = a.formBase.KeyPEM
 	}
-	c.Group = f.str("group")
+	c.Group = f.val("group")
 	c.Tags = nil
 	for _, t := range strings.Split(f.str("tags"), ",") {
 		if t = strings.TrimSpace(t); t != "" {
@@ -423,13 +625,20 @@ func (a *App) saveConn() error {
 		}
 	}
 	c.Device = deviceFromLabel(f.sel("device"))
-	c.JumpHostID = ""
-	for _, o := range a.st.Connections() {
-		if o.Alias == f.sel("jump") && o.ID != c.ID {
-			c.JumpHostID = o.ID
+	c.JumpHostID = f.val("jump")
+	if c.JumpHostID != "" {
+		if _, ok := a.st.Connection(c.JumpHostID); !ok {
+			return fmt.Errorf("Jump-Host gibt es nicht mehr")
+		}
+		if c.ID != "" && domain.JumpCreatesCycle(c.ID, c.JumpHostID, a.st.Connection) {
+			return fmt.Errorf("Jump-Host würde einen Kreis bilden")
 		}
 	}
-	_, err := a.st.UpsertConnection(c)
+	saved, err := a.st.UpsertConnection(c)
+	if err == nil {
+		a.mgr.want = "c:" + saved.ID
+		a.expandTo(saved.Group)
+	}
 	return err
 }
 
