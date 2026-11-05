@@ -68,7 +68,7 @@ func NewStyles(t Theme) Styles {
 	s.BadgeAI = lipgloss.NewStyle().Background(t.AI).Foreground(t.Bg).Bold(true).Padding(0, 1)
 	s.Modal = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(t.Accent).Padding(1, 2)
 	s.Input = lipgloss.NewStyle().Foreground(t.Text)
-	s.Label = lipgloss.NewStyle().Foreground(t.Muted).Width(16)
+	s.Label = lipgloss.NewStyle().Foreground(t.Muted).Width(20)
 	s.Tab = lipgloss.NewStyle().Background(t.Surface).Foreground(t.Muted).Padding(0, 1)
 	s.TabActive = lipgloss.NewStyle().Background(t.Bg).Foreground(t.Text).Bold(true).Padding(0, 1)
 	s.Code = lipgloss.NewStyle().Foreground(t.OK)

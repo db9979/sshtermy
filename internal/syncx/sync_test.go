@@ -59,6 +59,11 @@ func TestMergeDropsOrphanTunnelsAndUnionsHostKeys(t *testing.T) {
 	if len(m.Tunnels) != 1 || m.Tunnels[0].ID != "t1" {
 		t.Fatalf("Tunnel: %+v", m.Tunnels)
 	}
+	rb := Merge(&Payload{Runbooks: []domain.Runbook{{ID: "r", Goal: "alt", CreatedAt: t0, Uses: 5}}},
+		&Payload{Runbooks: []domain.Runbook{{ID: "r", Goal: "neu", CreatedAt: t0, UpdatedAt: t0.Add(time.Minute), Uses: 1}}}, t0)
+	if len(rb.Runbooks) != 1 || rb.Runbooks[0].Goal != "neu" || rb.Runbooks[0].Uses != 5 {
+		t.Fatalf("Runbooks: %+v", rb.Runbooks)
+	}
 	if len(m.KnownHosts) != 2 {
 		t.Fatalf("known_hosts: %v", m.KnownHosts)
 	}

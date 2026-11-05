@@ -27,6 +27,7 @@ type Payload struct {
 	Format      int                  `json:"format"`
 	Connections []domain.Connection  `json:"connections"`
 	Tunnels     []domain.Tunnel      `json:"tunnels"`
+	Runbooks    []domain.Runbook     `json:"runbooks,omitempty"`
 	LLM         domain.LLMConfig     `json:"llm"`
 	LLMAt       time.Time            `json:"llm_at"`
 	Settings    SharedSettings       `json:"settings"`
@@ -42,6 +43,7 @@ func FromData(d *domain.Data, knownHosts []string) *Payload {
 		Format:      payloadFormat,
 		Connections: append([]domain.Connection(nil), d.Connections...),
 		Tunnels:     append([]domain.Tunnel(nil), d.Tunnels...),
+		Runbooks:    append([]domain.Runbook(nil), d.Runbooks...),
 		LLM:         d.LLM, LLMAt: d.LLMUpdatedAt,
 		Settings:   SharedSettings{d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language},
 		SettingsAt: d.SettingsUpdatedAt,
@@ -59,6 +61,7 @@ func FromData(d *domain.Data, knownHosts []string) *Payload {
 func (p *Payload) ApplyTo(d *domain.Data) {
 	d.Connections = append([]domain.Connection(nil), p.Connections...)
 	d.Tunnels = append([]domain.Tunnel(nil), p.Tunnels...)
+	d.Runbooks = append([]domain.Runbook(nil), p.Runbooks...)
 	d.LLM, d.LLMUpdatedAt = p.LLM, p.LLMAt
 	d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language = p.Settings.Theme, p.Settings.LockAfterMin, p.Settings.Language
 	d.SettingsUpdatedAt = p.SettingsAt
@@ -121,6 +124,18 @@ func Merge(a, b *Payload, now time.Time) *Payload {
 		}
 	}
 	sort.SliceStable(out.Tunnels, func(i, j int) bool { return out.Tunnels[i].ID < out.Tunnels[j].ID })
+
+	out.Runbooks = mergeByID(a.Runbooks, b.Runbooks, out.Deleted,
+		func(r domain.Runbook) string { return r.ID },
+		func(r domain.Runbook) time.Time { return r.Rev() },
+		func(win, lose domain.Runbook) domain.Runbook {
+			if lose.LastUsed.After(win.LastUsed) {
+				win.LastUsed = lose.LastUsed
+			}
+			win.Uses = max(win.Uses, lose.Uses)
+			return win
+		})
+	sort.SliceStable(out.Runbooks, func(i, j int) bool { return out.Runbooks[i].ID < out.Runbooks[j].ID })
 
 	out.LLM, out.LLMAt = pick(a.LLM, a.LLMAt, b.LLM, b.LLMAt)
 	out.Settings, out.SettingsAt = pick(a.Settings, a.SettingsAt, b.Settings, b.SettingsAt)
@@ -208,6 +223,9 @@ func diff(local, merged *Payload) (added, changed, gone int) {
 	for _, t := range local.Tunnels {
 		l[t.ID], _ = json.Marshal(t)
 	}
+	for _, r := range local.Runbooks {
+		l[r.ID], _ = json.Marshal(r)
+	}
 	m := map[string]bool{}
 	check := func(id string, v any) {
 		m[id] = true
@@ -223,6 +241,9 @@ func diff(local, merged *Payload) (added, changed, gone int) {
 	}
 	for _, t := range merged.Tunnels {
 		check(t.ID, t)
+	}
+	for _, r := range merged.Runbooks {
+		check(r.ID, r)
 	}
 	for id := range l {
 		if !m[id] {

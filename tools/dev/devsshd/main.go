@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/binary"
+	"github.com/pkg/sftp"
 	"io"
 	"log"
 	"net"
@@ -81,7 +82,16 @@ func direct(nc ssh.NewChannel) {
 	ch.Close()
 }
 
-func itoa(p uint32) string { return string([]byte(func() []byte { b := []byte{}; for p > 0 { b = append([]byte{byte('0' + p%10)}, b...); p /= 10 }; return b }())) }
+func itoa(p uint32) string {
+	return string([]byte(func() []byte {
+		b := []byte{}
+		for p > 0 {
+			b = append([]byte{byte('0' + p%10)}, b...)
+			p /= 10
+		}
+		return b
+	}()))
+}
 
 func session(nc ssh.NewChannel) {
 	ch, reqs, _ := nc.Accept()
@@ -106,7 +116,28 @@ func session(nc ssh.NewChannel) {
 			f, _ = pty.StartWithSize(cmd, &pty.Winsize{Cols: uint16(cols), Rows: uint16(rows)})
 			r.Reply(true, nil)
 			go io.Copy(f, ch)
-			go func() { io.Copy(ch, f); cmd.Wait(); ch.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); ch.Close() }()
+			go func() {
+				io.Copy(ch, f)
+				cmd.Wait()
+				ch.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+				ch.Close()
+			}()
+		case "subsystem":
+			l := binary.BigEndian.Uint32(r.Payload)
+			if string(r.Payload[4:4+l]) != "sftp" {
+				r.Reply(false, nil)
+				continue
+			}
+			r.Reply(true, nil)
+			go func() {
+				srv, err := sftp.NewServer(ch, sftp.WithServerWorkingDirectory("/tmp/sftp-home"))
+				if err == nil {
+					srv.Serve()
+					srv.Close()
+				}
+				ch.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+				ch.Close()
+			}()
 		case "exec":
 			l := binary.BigEndian.Uint32(r.Payload)
 			cmd := exec.Command("bash", "-c", string(r.Payload[4:4+l]))

@@ -69,9 +69,12 @@ func helpModal() *modal {
 	return &modal{kind: mHelp, title: "Tastenkürzel", body: strings.TrimSpace(`
 Manager      ⏎ verbinden · n neu · e bearbeiten · d löschen · / suchen · s KI-Einstellungen
              y Sync zwischen Rechnern (Ordner/Cloud oder NAS per WebDAV)
+KI-Einst.    Strg+T Endpunkt testen · Strg+L Modell aus der Liste wählen
+Dateien (F5) Tab Seite · c kopieren (hoch/runter) · n Ordner · d löschen · . versteckte
 Terminal     Tab/→ Ghost-Text übernehmen · Alt+1…4 Folgebefehl einfügen
-             F2 Ziel-Modus (Agent) · F3 KI fragen · F4 Tunnel · F7/F8 Tabs · F10 Manager
-Ziel-Modus   ⏎ ausführen · i nur einfügen (Dry-Run) · e bearbeiten · s überspringen
+             F2 Ziel-Modus (Agent) · F3 KI fragen · F4 Tunnel · F5 Dateien · F7/F8 Tabs · F10 Manager
+Ziel-Modus   ↑↓ Runbook wählen · Strg+S als Runbook speichern · Strg+D Runbook löschen
+             ⏎ ausführen · i nur einfügen (Dry-Run) · e bearbeiten · s überspringen
              r neu vorschlagen · x Ziel beenden · Esc zurück ins Terminal
 Rote Befehle (löschen, neu starten, Firewall …) brauchen zweimal ⏎.
 Palette      Strg+Leertaste: Ziel, Frage, Vorschläge, Tunnel, Verbindungen, Aktionen

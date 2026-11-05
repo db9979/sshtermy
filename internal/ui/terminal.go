@@ -69,6 +69,14 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 	}
 	switch m := msg.(type) {
 	case tea.PasteMsg:
+		if s.files.open {
+			if s.files.mkdir != nil {
+				var cmd tea.Cmd
+				*s.files.mkdir, cmd = s.files.mkdir.Update(msg)
+				return cmd
+			}
+			return nil
+		}
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
 		}
@@ -99,6 +107,16 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				a.resize(a.current())
 			}
 			return nil
+		case "f5":
+			if s.state == stConnected {
+				return a.toggleFiles(s)
+			}
+			return nil
+		}
+		if s.files.open {
+			return a.filesKey(s, m)
+		}
+		switch key {
 		case "f2", "f3", "f4":
 			kind := map[string]panelKind{"f2": panelGoal, "f3": panelAsk, "f4": panelTunnels}[key]
 			if s.panel == kind && s.panelFocus {
@@ -341,7 +359,9 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 			cur.Color = st.T.Accent
 		}
 	}
-	if s.panel != panelNone {
+	if s.files.open {
+		body, cur = a.viewFiles(s, a.w, rows), nil
+	} else if s.panel != panelNone {
 		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
 	}
 
@@ -374,9 +394,12 @@ func (a *App) chipBar(s *session) string {
 }
 
 func (a *App) terminalKeys(s *session) [][2]string {
+	if s.files.open {
+		return a.filesKeys(s)
+	}
 	if s.panelFocus {
 		return a.panelKeys(s)
 	}
-	return [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F7/F8", "Tabs"},
+	return [][2]string{{"Strg+Space", "Palette"}, {"F2", "Ziel/Agent"}, {"F3", "KI fragen"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F7/F8", "Tabs"},
 		{"F10", "Manager"}, {"F1", "Hilfe"}, {"Strg+Q", "beenden"}}
 }

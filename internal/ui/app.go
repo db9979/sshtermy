@@ -68,6 +68,7 @@ type App struct {
 
 	modal      *modal
 	pal        *palette
+	llm        llmUI
 	toast      string
 	toastUntil time.Time
 	rel        *update.Release
@@ -214,6 +215,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.sessionMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.llmMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.filesMsg(msg); ok {
+		return a, cmd
+	}
 
 	if k, ok := msg.(tea.KeyPressMsg); ok {
 		a.lastKey = time.Now()
@@ -297,8 +304,10 @@ func (a *App) View() tea.View {
 		body = a.viewUnlock()
 	case scrManager:
 		body = a.frame(a.viewManager(), a.managerKeys())
-	case scrConnForm, scrSettings, scrTunnelForm:
+	case scrConnForm, scrTunnelForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
+	case scrSettings:
+		body = a.frame(a.viewForm(), [][2]string{{"Strg+T", "Endpunkt testen"}, {"Strg+L", "Modell wählen"}, {"Tab", "weiter"}, {"←/→", "wählen"}, {"Strg+S", "speichern"}, {"Esc", "abbrechen"}})
 	case scrTerminal:
 		body, cur = a.viewTerminal()
 	case scrSync:

@@ -24,12 +24,13 @@ type palGroup int
 const (
 	pgAI palGroup = iota
 	pgSuggest
+	pgRunbook
 	pgTunnel
 	pgConnect
 	pgAction
 )
 
-var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN"}
+var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN"}
 
 type palItem struct {
 	group  palGroup
@@ -83,6 +84,14 @@ func (a *App) paletteItems() []palItem {
 				it.hint = "sudo"
 			}
 			items = append(items, it)
+		}
+		for _, rb := range a.st.Runbooks(s.conn.ID) {
+			rb := rb
+			if !match(rb.Name + " " + rb.Goal + " " + strings.Join(rb.Steps, " ")) {
+				continue
+			}
+			items = append(items, palItem{group: pgRunbook, icon: "▶", label: rb.Name, hint: plural(len(rb.Steps), "Schritt", "Schritte"),
+				run: func() tea.Cmd { return a.startRunbook(s, rb) }})
 		}
 		for _, t := range a.st.Tunnels(s.conn.ID) {
 			t := t
@@ -246,6 +255,8 @@ func (a *App) viewPalette() string {
 			iconStyle = st.AI
 		case pgSuggest:
 			iconStyle = st.OK
+		case pgRunbook:
+			iconStyle = st.AI
 		}
 		hint := st.Muted.Render(it.hint)
 		if it.danger != "" {

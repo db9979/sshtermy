@@ -220,6 +220,7 @@ type Data struct {
 	Version     int          `json:"version"`
 	Connections []Connection `json:"connections"`
 	Tunnels     []Tunnel     `json:"tunnels"`
+	Runbooks    []Runbook    `json:"runbooks,omitempty"`
 	LLM         LLMConfig    `json:"llm"`
 	Settings    Settings     `json:"settings"`
 
@@ -233,4 +234,29 @@ type Data struct {
 // NewData: leerer Store mit Standardwerten.
 func NewData() *Data {
 	return &Data{Version: 1, LLM: DefaultLLM(), Settings: Settings{Theme: "nacht", UseDPAPI: true, Language: "de"}}
+}
+
+// Runbook ist ein gespeichertes Ziel zum Wiederverwenden. Steps sind die
+// Befehle, die beim Speichern ausgeführt worden waren: Sie gehen dem Agenten
+// als Vorlage mit, er passt sie an die aktuelle Lage an. Ausgeführt wird
+// trotzdem jeder Schritt erst nach Bestätigung.
+type Runbook struct {
+	ID           string    `json:"id"`
+	Name         string    `json:"name"`
+	Goal         string    `json:"goal"`
+	Steps        []string  `json:"steps,omitempty"`
+	ConnectionID string    `json:"connection_id,omitempty"` // leer = für alle Verbindungen
+	OS           string    `json:"os,omitempty"`            // System beim Speichern, nur als Hinweis
+	CreatedAt    time.Time `json:"created_at"`
+	LastUsed     time.Time `json:"last_used,omitempty"`
+	Uses         int       `json:"uses,omitempty"`
+	UpdatedAt    time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync)
+}
+
+// Rev: Zeitstempel für den Sync (alte Einträge zählen mit dem Anlagedatum).
+func (r Runbook) Rev() time.Time {
+	if r.UpdatedAt.IsZero() {
+		return r.CreatedAt
+	}
+	return r.UpdatedAt
 }

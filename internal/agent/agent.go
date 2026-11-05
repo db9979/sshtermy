@@ -191,9 +191,15 @@ type DoneStep struct {
 
 var ErrUnreadable = errors.New("Antwort des Modells nicht lesbar")
 
-func (a *Agent) NextStep(ctx context.Context, goal string, hist []DoneStep, answers []string, c Context) (Step, error) {
+func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist []DoneStep, answers []string, c Context) (Step, error) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Ziel: %s\n", Redact(goal))
+	if len(recipe) > 0 {
+		b.WriteString("Vorlage aus einem gespeicherten Runbook (so hat es früher geklappt; an die aktuelle Lage anpassen, Erledigtes weglassen):\n")
+		for i, r := range recipe {
+			fmt.Fprintf(&b, "  %d) %s\n", i+1, strings.Join(strings.Fields(Redact(r)), " "))
+		}
+	}
 	if len(hist) > 0 {
 		b.WriteString("Bisherige Schritte:\n")
 		for i, h := range hist {
