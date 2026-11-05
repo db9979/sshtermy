@@ -250,7 +250,7 @@ func (a *App) viewErrorList(s *session, w, h int) string {
 	for i := start; i < len(sr.matches) && len(lines) < h; i++ {
 		m := sr.matches[i]
 		num := fmt.Sprintf(" %*d │ ", numW, m.Line+1)
-		text := ansi.Truncate(s.term.LineText(m.Line), max(1, w-len([]rune(num))-1), "…")
+		text := ansi.Truncate(s.term.PlainLine(m.Line), max(1, w-len([]rune(num))-1), "…")
 		line := st.Muted.Render(num) + st.Danger.UnsetBold().Render(text)
 		if i == sr.idx {
 			line = st.Selected.Render(padRight(num+text, w))

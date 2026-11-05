@@ -10,6 +10,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Verbindungs-Manager** mit verschlüsseltem Store (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI)
 - **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen
+- **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
+  die Ergebnisse stehen in Spalten nebeneinander. Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
+  Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
+- **Netzwerk-Scan** (f im Manager): ein Subnetz nach SSH-Geräten durchsuchen (nur Port und SSH-Kennung, ohne Anmeldung),
+  Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
@@ -21,6 +26,9 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort per 1…9 einfügen
 - **Sync zwischen Rechnern**: Verbindungen, Tunnel, Runbooks und Einstellungen Ende-zu-Ende verschlüsselt über einen Cloud-Ordner
   (OneDrive, Dropbox, iCloud, Syncthing) oder direkt über dein NAS (Synology, QNAP, Nextcloud, jeder WebDAV-Server)
+- **Import** bestehender Verbindungen aus `~/.ssh/config`, PuTTY (Registry oder `.reg`-Export) und MobaXterm
+  (`MobaXterm.ini`, `.mxtsessions`), mit Jump-Hosts und Ordnern, ein Tastendruck (i im Manager)
+- **Themes** Dunkel, Hell und Hochkontrast (a im Manager) und **frei belegbare Tastenkürzel** (b im Manager)
 - **Versionierung und Auto-Update** aus GitHub Releases (signiert)
 
 Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt aus dem Fernzugang-Assistenten von
@@ -54,6 +62,11 @@ sshtermy --update     # auf die neueste Version aktualisieren
 | Wo | Taste | Wirkung |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync |
+| | i / a / b | Verbindungen importieren / Aussehen wechseln / Tastenkürzel anpassen |
+| | m / f | Broadcast an mehrere Hosts / Netzwerk-Scan |
+| Broadcast | Space / g / a, Tab, Strg+S | Host / Gruppe / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
+| | ←→ / ↑↓ / z / c / r / x | Host-Spalte / blättern / groß / Ausgabe kopieren / nochmal / abbrechen |
+| Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
 | Terminal | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
 | | F2 | Ziel-Modus (Agent) |
@@ -62,15 +75,31 @@ sshtermy --update     # auf die neueste Version aktualisieren
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), n Ordner, d löschen, . versteckte |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
+| | Strg+Klick / Rechtsklick | URL im Browser öffnen / Menü zu Link, IP oder Host: verbinden (direkt oder über den Server), Ping vom Server oder von hier, kopieren |
+| | Einfügen | mehrzeilig erst Vorschau (⏎ einfügen, o ohne letztes Enter, Esc abbrechen); Palette „Einfügeschutz aus“ |
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
 | | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |
-| KI-Eingaben | ⇧⏎ / Alt+⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |
+| KI-Eingaben | ⇧⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |
 | KI-Einstellungen | Strg+T / Strg+L | Endpunkt testen / Modell aus der Liste des Endpunkts wählen |
 | Überall | Strg+Leertaste | Befehlspalette: ⏎ als Ziel starten, Tab KI fragen, ↑↓ Vorschlag/Tunnel/Verbindung wählen |
 | | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden |
 
 Warum F-Tasten statt `Strg+A`? `Strg+A` ist in bash/zsh „Zeilenanfang“ und das Präfix von GNU screen. sshTermy
 belegt nur Tasten, die Shells und Vollbildprogramme praktisch nie brauchen.
+
+**Tasten anpassen** (b im Manager oder Palette → „Tastenkürzel anpassen“): Aktion wählen, ⏎, neue Taste drücken.
+Entf setzt eine Aktion zurück, r alle. Doppelte Belegungen werden rot markiert. Alt+⏎ ist gesperrt, weil
+Windows Terminal damit auf Vollbild schaltet. Die Belegung wandert mit dem Sync auf deine anderen Rechner.
+
+**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast (oder Palette → „Aussehen“). Die Schriftgröße
+gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − unter macOS.
+
+**Import** (i im Manager): sshTermy sucht selbst nach `~/.ssh/config` (mit `Include`, `Host *`-Vorgaben und
+`ProxyJump`), den PuTTY-Sitzungen in der Registry und `%APPDATA%\MobaXterm\MobaXterm.ini`. Neue Ziele sind
+vorausgewählt, schon vorhandene abgewählt; ⏎ übernimmt. Mit f lädst du eine Datei von woanders, z. B. einen
+PuTTY-Export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), eine portable `MobaXterm.ini` oder eine
+`.mxtsessions`-Datei. Passwörter werden nicht übernommen, sshTermy fragt beim ersten Verbinden. PuTTY-Keys
+(`.ppk`) bitte in Pageant laden oder mit PuTTYgen nach OpenSSH exportieren.
 
 ## Screens
 
@@ -106,7 +135,10 @@ internal/
   vault/               Verschlüsselung: AES-256-GCM, Argon2id, DPAPI (Windows)
   store/               Repository über dem Vault: CRUD, Pfade (%APPDATA%\sshtermy)
   sshx/                SSH: Dial (+Jump-Host), Auth (Passwort/Key/Agent), Host-Keys (TOFU),
-                       PTY-Shell, Tunnel-Manager (-L/-R/-D), SOCKS5-Server, Browser öffnen
+                       PTY-Shell, Tunnel-Manager (-L/-R/-D), SOCKS5-Server, Browser öffnen,
+                       Befehle per Exec oder in die Shell getippt (Netzwerkgeräte)
+  broadcast/           Befehl/Runbook parallel auf mehreren Hosts, Gefahrenprüfung
+  netscan/             Subnetz nach SSH durchsuchen, Banner lesen, Gerätetyp erkennen
   llm/                 OpenAI-kompatibler Client (/v1/chat/completions, Streaming per SSE)
   agent/               KI-Logik: Ghost-Text, Folgebefehle, Ziel-Modus, Frage; Prompts,
                        striktes Parsen, Entfernen von Geheimnissen
@@ -190,6 +222,8 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   `curl | sh`, Neustart, Firewall leeren, Benutzer ändern, `git reset --hard`, Pakete entfernen, Docker prune,
   SSH-Dienst stoppen; für Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)` u. a.
   Rote Befehle brauchen zwei Bestätigungen; bearbeitete Befehle werden neu geprüft. `sudo` wird markiert.
+- **Einfügeschutz:** Dieselben Regeln prüfen jede eingefügte Zeile. Ein Treffer zeigt die Vorschau mit der
+  roten Zeile und braucht zwei Bestätigungen, auch wenn die Mehrzeilen-Vorschau abgeschaltet ist.
 - **Prompt Injection:** alles aus dem Terminal steht als Material in einem Block `<<< … >>>`, dessen Marker im
   Inhalt entschärft werden; der System-Prompt sagt, dass Material nie eine Anweisung ist.
 - **Striktes Parsen:** nur das erwartete JSON, keine Steuerzeichen (ESC-Sequenzen aus dem Modell kommen nie auf
@@ -238,11 +272,8 @@ SSHTERMY_HOME=/tmp/sth go run ./cmd/sshtermy
 
 ## Nächste Schritte (Vorschläge)
 
-1. Mehrere Themes (Hell, Hoher Kontrast) und Schriftgrößen-Hinweis für Windows Terminal.
-2. SFTP-Panel (Dateien hoch/runter) über dieselbe Verbindung.
-3. Windows-Ressourcen (Icon, Versionsinfo) und Code-Signing der `.exe`, macOS Notarisierung.
-4. Snippets/Runbooks: Ziele speichern und wiederverwenden.
-5. macOS-Schlüsselbund als zweiter Entsperr-Weg (wie DPAPI unter Windows).
+1. Windows-Ressourcen (Icon, Versionsinfo) und Code-Signing der `.exe`, macOS Notarisierung.
+2. macOS-Schlüsselbund als zweiter Entsperr-Weg (wie DPAPI unter Windows).
 
 ## Sync zwischen Rechnern
 

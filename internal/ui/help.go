@@ -26,6 +26,8 @@ const (
 	hcFiles
 	hcSettings
 	hcSearch
+	hcBroadcast
+	hcScan
 )
 
 type helpSection struct {
@@ -42,6 +44,7 @@ var helpSections = []helpSection{
 		{"Strg+Space", "Befehlspalette"},
 		{"F1", "diese Hilfe"},
 		{"F12", "Über & Update"},
+		{"F12 w", "Was ist neu"},
 		{"Strg+Q", "beenden"},
 	}},
 	{hcManager, "≡", "Verbindungs-Manager", "F10", false, [][2]string{
@@ -51,8 +54,13 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{"/", "suchen"},
 		{"t", "Tunnel anlegen"},
+		{"m", "Broadcast an mehrere Hosts"},
+		{"f", "Netzwerk-Scan"},
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
+		{"i", "Verbindungen importieren"},
+		{"a", "Aussehen wechseln"},
+		{"b", "Tastenkürzel anpassen"},
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
@@ -75,7 +83,7 @@ var helpSections = []helpSection{
 	}},
 	{hcGoal, "◎", "Ziel-Modus", "F2", true, [][2]string{
 		{"⏎", "Ziel starten / ausführen"},
-		{"⇧⏎ / Alt+⏎", "neue Zeile im Ziel"},
+		{"⇧⏎ / Strg+J", "neue Zeile im Ziel"},
 		{"i", "nur einfügen (Dry-Run)"},
 		{"e", "bearbeiten"},
 		{"s", "überspringen"},
@@ -87,7 +95,7 @@ var helpSections = []helpSection{
 	}},
 	{hcAsk, "✦", "KI fragen", "F3", true, [][2]string{
 		{"⏎", "Frage senden"},
-		{"⇧⏎ / Alt+⏎", "neue Zeile"},
+		{"⇧⏎ / Strg+J", "neue Zeile"},
 		{"1…9", "Befehl einfügen"},
 		{"n", "neue Frage"},
 	}},
@@ -116,17 +124,41 @@ var helpSections = []helpSection{
 		{"Tab", "Fehlerliste / Verlauf"},
 		{"Esc", "schließen"},
 	}},
+	{hcBroadcast, "⇉", "Broadcast", "m", false, [][2]string{
+		{"Space / g / a", "Host / Gruppe / alle"},
+		{"Tab", "Hosts · Quelle · Befehl"},
+		{"⇧⏎", "weiterer Schritt"},
+		{"Strg+S", "prüfen, dann ⏎"},
+		{"← / →", "Host-Spalte wählen"},
+		{"↑ ↓ Bild↑↓", "Ausgabe blättern"},
+		{"z / c", "groß / kopieren"},
+		{"r / e / x", "nochmal / ändern / Stopp"},
+	}},
+	{hcScan, "⌕", "Netzwerk-Scan", "f", false, [][2]string{
+		{"Strg+S", "Scan starten"},
+		{"Space / a", "Fund / alle wählen"},
+		{"⏎", "als Verbindungen anlegen"},
+		{"x", "Scan stoppen"},
+		{"r", "neu scannen"},
+	}},
 	{hcPalette, "❯", "Befehlspalette", "Strg+Space", false, [][2]string{
 		{"tippen", "filtern / Ziel / Frage"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
 		{"Esc", "schließen"},
 	}},
+	{hcNone, "◐", "Aussehen & Tasten", "", false, [][2]string{
+		{"a", "Dunkel · Hell · Kontrast"},
+		{"b", "Tastenkürzel belegen"},
+		{"Strg +/−", "Schrift (Terminalfenster)"},
+	}},
 	{hcNone, "⌖", "Maus", "", false, [][2]string{
 		{"Klick", "Tabs, Listen, Felder"},
 		{"Doppelklick", "öffnen / Wort"},
 		{"Ziehen", "markieren + kopieren"},
 		{"Rechtsklick", "einfügen"},
+		{"Rechtsklick Link", "Menü: Verbinden, Ping"},
+		{"Strg+Klick", "URL im Browser"},
 		{"Rad", "im Verlauf blättern"},
 		{"Shift+Ziehen", "markieren in htop/vim"},
 		{"Palette", "„Maus aus“"},
@@ -152,6 +184,10 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
+	case scrBroadcast:
+		return hcBroadcast
+	case scrScan:
+		return hcScan
 	case scrTerminal:
 		if s := a.current(); s != nil && s.files.open {
 			return hcFiles
@@ -181,14 +217,14 @@ func (s Styles) helpSection(sec helpSection, ctx helpCtx) []string {
 	}
 	title := head.Render(sec.icon + " " + sec.title)
 	if sec.key != "" {
-		title += " " + s.Muted.Render(sec.key)
+		title += " " + s.Muted.Render(relabelDefault(sec.key, sec.ctx))
 	}
 	if sec.ctx != hcNone && sec.ctx == ctx {
 		title += " " + s.Badge.Render("hier")
 	}
 	lines := []string{title}
 	for _, r := range sec.rows {
-		k := s.Key.Render(r[0])
+		k := s.Key.Render(relabelDefault(r[0], sec.ctx))
 		k += strings.Repeat(" ", max(0, helpKeyW-lipgloss.Width(k)))
 		lines = append(lines, k+s.Text.Render(ansi.Truncate(r[1], helpColW-helpKeyW, "…")))
 	}

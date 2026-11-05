@@ -2,6 +2,7 @@ package termemu
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -75,5 +76,19 @@ func TestSelectionText(t *testing.T) {
 	}
 	if n := len(strings.Split(v, "\n")); n != 3 {
 		t.Fatalf("Render: %d Zeilen", n)
+	}
+}
+
+func TestLineText(t *testing.T) {
+	tm := New(30, 3, io.Discard)
+	defer tm.Close()
+	tm.Write([]byte("äß 日本 http://x.de"))
+	text, cols := tm.LineText(0)
+	if !strings.HasPrefix(text, "äß 日本 http://x.de") || len(cols) != 31 {
+		t.Fatalf("LineText = %q (%d)", text, len(cols))
+	}
+	// Spalte 0 „ä“, 3 „日“, 4 zweite Hälfte von „日“, 8 „h“
+	if cols[0] != 0 || cols[3] != 5 || cols[4] != 5 || text[cols[8]] != 'h' {
+		t.Fatalf("Spalten: %v", cols[:10])
 	}
 }

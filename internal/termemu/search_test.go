@@ -23,7 +23,7 @@ func TestSearchScrollbackAndScreen(t *testing.T) {
 	if last.Col != 6 || last.Len != 5 {
 		t.Fatalf("column mapping wrong: %+v", last)
 	}
-	if got := tm.LineText(last.Line); got != "Grüße error" {
+	if got := tm.PlainLine(last.Line); got != "Grüße error" {
 		t.Fatalf("LineText = %q", got)
 	}
 	if m := tm.Search("Error", false); len(m) != 1 {
@@ -41,8 +41,8 @@ func TestErrorFilter(t *testing.T) {
 	if len(m) != 2 {
 		t.Fatalf("want 2 error lines, got %d: %v", len(m), m)
 	}
-	if !strings.HasPrefix(tm.LineText(m[0].Line), "E: Unable") {
-		t.Fatalf("first error line = %q", tm.LineText(m[0].Line))
+	if !strings.HasPrefix(tm.PlainLine(m[0].Line), "E: Unable") {
+		t.Fatalf("first error line = %q", tm.PlainLine(m[0].Line))
 	}
 	if m := tm.Search("denied", true); len(m) != 1 {
 		t.Fatalf("query inside error lines: %v", m)

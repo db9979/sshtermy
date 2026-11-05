@@ -45,6 +45,7 @@ func newInput(val string, secret bool) textinput.Model {
 	ti.SetValue(val)
 	ti.CharLimit = 4096
 	ti.SetWidth(40)
+	ti.SetStyles(inputStyles(activeTheme))
 	if secret {
 		ti.EchoMode = textinput.EchoPassword
 		ti.EchoCharacter = '•'

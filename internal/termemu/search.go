@@ -49,9 +49,9 @@ func (t *Term) lineText(sb, w, l int) (string, []int) {
 	return b.String(), cols
 }
 
-// LineText: Klartext einer Zeile des Gesamtpuffers ohne nachlaufende
+// PlainLine: Klartext einer Zeile des Gesamtpuffers ohne nachlaufende
 // Leerzeichen.
-func (t *Term) LineText(l int) string {
+func (t *Term) PlainLine(l int) string {
 	w, _ := t.Size()
 	s, _ := t.lineText(t.ScrollbackLen(), w, l)
 	return strings.TrimRight(s, " ")
