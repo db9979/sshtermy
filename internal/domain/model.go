@@ -38,6 +38,17 @@ const (
 	AuthAgent    AuthMethod = "agent"    // ssh-agent / Windows OpenSSH-Agent / Pageant-kompatibel
 )
 
+// DeviceKind: was am anderen Ende hängt. Netzwerkgeräte (Switches, Router,
+// Firewalls) vertragen oft nur einen einzigen Kanal und keine Exec-Befehle;
+// sshtermy verzichtet dort auf die unsichtbare Systemabfrage.
+type DeviceKind string
+
+const (
+	DeviceAuto    DeviceKind = ""        // am Server-Banner erkennen, im Zweifel ausprobieren
+	DeviceServer  DeviceKind = "server"  // Linux/macOS/Windows mit normaler Shell
+	DeviceNetwork DeviceKind = "network" // Switch/Router (Aruba, Cisco, MikroTik …)
+)
+
 // Connection ist ein gespeichertes SSH-Ziel.
 type Connection struct {
 	ID       string     `json:"id"`
@@ -54,9 +65,10 @@ type Connection struct {
 	KeyPEM        Secret `json:"key_pem,omitempty"`        // … oder eingebettet im Store
 	KeyPassphrase Secret `json:"key_passphrase,omitempty"` // optional für verschlüsselte Keys
 
-	JumpHostID string   `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
-	TunnelIDs  []string `json:"tunnel_ids,omitempty"`   // Tunnel, die mit dieser Verbindung starten
-	KeepAlive  int      `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
+	JumpHostID string     `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
+	TunnelIDs  []string   `json:"tunnel_ids,omitempty"`   // Tunnel, die mit dieser Verbindung starten
+	KeepAlive  int        `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
+	Device     DeviceKind `json:"device,omitempty"`       // Server oder Netzwerkgerät, leer = automatisch
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)

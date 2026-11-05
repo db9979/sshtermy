@@ -25,13 +25,20 @@ func (c *Client) OpenShell(cols, rows int, out io.Writer) (*Shell, error) {
 	if err != nil {
 		return nil, err
 	}
+	term := "xterm-256color"
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          1,
 		ssh.TTY_OP_ISPEED: 115200,
 		ssh.TTY_OP_OSPEED: 115200,
 		ssh.IUTF8:         1,
 	}
-	if err := s.RequestPty("xterm-256color", rows, cols, modes); err != nil {
+	if c.NetDevice {
+		// Switch-CLIs kennen oft nur vt100/xterm und verschlucken sich an
+		// unbekannten Terminal-Modes; schlicht anfordern.
+		term = "xterm"
+		modes = ssh.TerminalModes{}
+	}
+	if err := s.RequestPty(term, rows, cols, modes); err != nil {
 		s.Close()
 		return nil, err
 	}
@@ -41,7 +48,9 @@ func (c *Client) OpenShell(cols, rows int, out io.Writer) (*Shell, error) {
 		return nil, err
 	}
 	s.Stdout, s.Stderr = out, out
-	_ = s.Setenv("COLORTERM", "truecolor") // viele Server verwerfen das (AcceptEnv), harmlos
+	if !c.NetDevice {
+		_ = s.Setenv("COLORTERM", "truecolor") // viele Server verwerfen das (AcceptEnv), harmlos
+	}
 	if err := s.Shell(); err != nil {
 		s.Close()
 		return nil, err
