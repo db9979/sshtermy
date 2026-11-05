@@ -186,6 +186,10 @@ func keyFromLabel(label string) (tea.KeyPressMsg, bool) {
 			mod |= tea.ModShift
 			l = l[len("Shift+"):]
 			continue
+		case strings.HasPrefix(l, "⇧") && len(l) > len("⇧"):
+			mod |= tea.ModShift
+			l = l[len("⇧"):]
+			continue
 		}
 		break
 	}
@@ -479,6 +483,8 @@ func (a *App) modalButtons() string {
 		keys = [][2]string{{"Esc", "schließen"}}
 	case mTour:
 		keys = tourButtons(a.modal)
+	case mQuick:
+		keys = [][2]string{{"⏎", "ausführen"}, {"e", "bearbeiten"}, {"Esc", "schließen"}}
 	case mPaste:
 		keys = [][2]string{{"⏎", "einfügen"}}
 		if a.modal.paste.multi {

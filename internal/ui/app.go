@@ -205,6 +205,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.client.Learned {
 				a.rememberNetDevice(s)
 			}
+			a.profileConnected(s)
 			for _, t := range a.st.Tunnels(s.conn.ID) {
 				if t.AutoStart {
 					if _, err := s.tunnels.Start(t); err != nil {
@@ -220,6 +221,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.resize(s)
 			return a, tea.Batch(cmd, a.hostOnConnect(s))
 		}
+		return a, nil
+	case adaptMsg:
+		a.onAdapt(m)
 		return a, nil
 	case muxProbeMsg:
 		a.onMuxProbe(m)
@@ -404,6 +408,7 @@ func (a *App) onTick() tea.Cmd {
 		if c := a.goalTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
+		a.profileTick(s)
 		if c := a.reconnectTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
@@ -486,9 +491,12 @@ func (a *App) header(right string) string {
 }
 
 func (a *App) footer(keys [][2]string) string {
+	if c := a.cheatLine(); c != "" {
+		return c // F9: Tastenzeile mit Erklärungen für den aktuellen Bereich
+	}
 	var b strings.Builder
 	for _, k := range keys {
-		b.WriteString(a.keyChip(k[0], k[1]))
+		b.WriteString(a.keyChip(strings.ReplaceAll(k[0], "Shift+", "⇧"), k[1])) // kürzer: ⇧F9
 	}
 	out := b.String()
 	if w := lipgloss.Width(out); w < a.w {
@@ -498,20 +506,9 @@ func (a *App) footer(keys [][2]string) string {
 }
 
 func (a *App) frame(content string, keys [][2]string) string {
-	cheat := ""
-	if a.scr == scrManager {
-		cheat = a.cheatLine()
-	}
 	h := max(1, a.h-2)
-	if cheat != "" {
-		h = max(1, h-1)
-	}
 	box := lipgloss.NewStyle().Width(a.w).Height(h).MaxHeight(h).Render(content)
-	parts := []string{a.header(""), box}
-	if cheat != "" {
-		parts = append(parts, cheat)
-	}
-	return lipgloss.JoinVertical(lipgloss.Left, append(parts, a.footer(keys))...)
+	return lipgloss.JoinVertical(lipgloss.Left, a.header(""), box, a.footer(keys))
 }
 
 // overlay legt ein Modal mittig über den Inhalt (Compositing mit lipgloss v2).

@@ -27,21 +27,24 @@ const (
 	mMenu  // Kontextmenü, z. B. zu Links (links.go)
 	mInfo  // Ergebnis anzeigen (Ping)
 	mInput // eine Zeile Text (Ordnername)
+	mQuick // Schnellbefehle (quick.go)
 	mText  // blätterbarer Text (Config-Diff, Konfiguration)
 )
 
 type modal struct {
-	kind   modalKind
-	title  string
-	body   string
-	hk     hostKeyAskMsg
-	sec    secretAskMsg
-	in     textinput.Model
-	onYes  func() tea.Cmd
-	onText func(string) tea.Cmd // nur Texteingabe
-	ctx    helpCtx              // nur Hilfe: aktueller Bereich
-	scroll int                  // Hilfe/Changelog/Text: Scroll-Position
-	lines  []string             // Changelog/Text: fertig gestaltete Zeilen
+	kind     modalKind
+	title    string
+	body     string
+	hk       hostKeyAskMsg
+	sec      secretAskMsg
+	in       textinput.Model
+	onYes    func() tea.Cmd
+	onText   func(string) tea.Cmd // nur Texteingabe
+	ctx      helpCtx              // nur Hilfe: aktueller Bereich
+	scroll   int                  // Hilfe/Changelog/Text: Scroll-Position; Schnellbefehle: Auswahl
+	quickSID int                  // nur Schnellbefehle: Sitzung
+	armed    int                  // nur Schnellbefehle: roter Befehl nach dem ersten ⏎
+	lines    []string             // Changelog/Text: fertig gestaltete Zeilen
 
 	paste    *pasteCheck // nur Einfügeschutz
 	items    []menuItem  // nur Menü
@@ -205,6 +208,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		}
 	case mTour:
 		return a.tourKey(key)
+	case mQuick:
+		return a.quickModalKey(key)
 	case mText:
 		if m.textKey(key) {
 			a.modal = nil
@@ -247,6 +252,8 @@ func (a *App) modalView() string {
 		return a.pasteView(a.modal)
 	case mMenu:
 		return a.menuView(a.modal)
+	case mQuick:
+		return a.quickModalView(a.modal)
 	}
 	return a.modal.view(a.s, a.w, a.h)
 }

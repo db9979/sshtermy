@@ -139,7 +139,7 @@ func (a *App) startLog(s *session) {
 	}
 	l := sessionlog.New(s.conn.ID, s.conn.Alias, s.conn.Username+"@"+s.conn.Addr())
 	if s.client != nil {
-		l.System = s.client.Remote.String()
+		l.System = s.profileSummary()
 	}
 	s.log = l
 }

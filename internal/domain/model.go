@@ -74,6 +74,11 @@ type Connection struct {
 	KeepAlive  int        `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
 	Device     DeviceKind `json:"device,omitempty"`       // Server oder Netzwerkgerät, leer = automatisch
 
+	// Profile: was für ein System dahinter steckt (automatisch erkannt,
+	// vom Nutzer ergänzbar). Geht in jeden KI-Prompt, damit Befehle im
+	// richtigen Dialekt kommen. Liegt wie alles andere verschlüsselt im Store.
+	Profile *SystemProfile `json:"profile,omitempty"`
+
 	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
 	QuickCmds []string `json:"quick_cmds,omitempty"`
 
@@ -204,7 +209,7 @@ type Settings struct {
 	// NoAutoReconnect: abgerissene Sitzungen nicht von selbst neu verbinden.
 	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`
 	TourDone        bool `json:"tour_done,omitempty"`
-	HideCheat       bool `json:"hide_cheat,omitempty"`
+	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.

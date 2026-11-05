@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -231,6 +232,11 @@ func (f *form) view(s Styles, width int, z *zones) string {
 				}
 			}
 			val = strings.Join(parts, "")
+			if lipgloss.Width(val) > inW && fl.opt < len(fl.options) {
+				// Zu viele Optionen für eine Zeile: nur die gewählte, ←/→ blättert.
+				val = s.Muted.Render("‹ ") + s.Selected.Render(" "+fl.options[fl.opt]+" ") + s.Muted.Render(" ›") +
+					s.Muted.Render(fmt.Sprintf("  %d/%d", fl.opt+1, len(fl.options)))
+			}
 		case fPick:
 			v := fl.value
 			if fl.display != nil {

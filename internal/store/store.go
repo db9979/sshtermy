@@ -227,6 +227,28 @@ func (s *Store) UpsertConnection(c domain.Connection) (domain.Connection, error)
 	return c, s.save()
 }
 
+// SetProfile speichert nur das Systemprofil einer Verbindung (die übrigen
+// Felder bleiben, wie sie im Store stehen, auch wenn sie inzwischen jemand
+// bearbeitet hat).
+func (s *Store) SetProfile(id string, p domain.SystemProfile) error {
+	s.mu.Lock()
+	found := false
+	for i := range s.data.Connections {
+		if s.data.Connections[i].ID == id {
+			cp := p
+			cp.Failed = append([]string(nil), p.Failed...)
+			s.data.Connections[i].Profile = &cp
+			s.data.Connections[i].UpdatedAt = time.Now().UTC()
+			found = true
+		}
+	}
+	s.mu.Unlock()
+	if !found {
+		return nil
+	}
+	return s.save()
+}
+
 // AddConnections legt mehrere Verbindungen auf einmal an (Import) und
 // speichert nur einmal. Vorbelegte IDs bleiben erhalten (damit Jump-Hosts
 // innerhalb des Imports aufeinander zeigen können).

@@ -77,7 +77,7 @@ func (a *App) sessionBar(s *session) string {
 	}
 	info := s.conn.Username + "@" + s.conn.Addr()
 	if s.client != nil {
-		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.client.Remote.String()
+		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.profileSummary()
 	}
 
 	// rechts: Leitung

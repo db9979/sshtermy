@@ -44,7 +44,7 @@ var helpSections = []helpSection{
 	{hcNone, "◆", "Überall", "", false, [][2]string{
 		{"Strg+Space", "Befehlspalette"},
 		{"F1", "diese Hilfe"},
-		{"F9", "Spickzettel an/aus"},
+		{"⇧F9", "Tastenzeile erklären"},
 		{"F12", "Über & Update"},
 		{"F12 w", "Was ist neu"},
 		{"Strg+Q", "beenden"},
@@ -84,6 +84,7 @@ var helpSections = []helpSection{
 		{"Alt+1…4", "Folgebefehl einfügen"},
 		{"Alt+0", "Fehler: Warum? & Fix"},
 		{"⇧F1…F8", "Schnellbefehl ausführen"},
+		{"F9", "Schnellbefehle (Liste)"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
@@ -167,7 +168,13 @@ var helpSections = []helpSection{
 		{"user@host", "schnell verbinden"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
+		{"↓ „umschreiben“", "Befehl fürs System anpassen"},
 		{"Esc", "schließen"},
+	}},
+	{hcNone, "ⓘ", "Systemprofil", "", false, [][2]string{
+		{"automatisch", "System + Befehlssatz erkennen"},
+		{"e (Manager)", "System, Befehlssatz, KI-Notizen"},
+		{"„% Invalid input“", "Befehl wird gemerkt + gemieden"},
 	}},
 	{hcNone, "◐", "Aussehen & Tasten", "", false, [][2]string{
 		{"a", "Dunkel · Hell · Kontrast"},

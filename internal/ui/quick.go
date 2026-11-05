@@ -2,10 +2,12 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/safety"
@@ -94,7 +96,7 @@ func (a *App) quickCmds(s *session) (cmds []string, preset string) {
 
 func (a *App) remoteText(s *session) string {
 	if s.client != nil {
-		return s.client.Remote.String()
+		return s.profileSummary() + " " + s.client.Remote.String()
 	}
 	return ""
 }
@@ -139,33 +141,116 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 	return nil
 }
 
-// quickBar: Knöpfe für die Vorschlagszeile.
-func (a *App) quickBar(s *session) string {
-	if s.state != stConnected {
+// ---------------------------------------------------------------- Liste (F9)
+
+// quickModal: alle Schnellbefehle der Sitzung in F-Tasten-Reihenfolge.
+// ↑↓ wählen, ⏎ oder 1…8 ausführen, e bearbeiten, Esc schließt.
+func (a *App) quickModal(s *session) *modal {
+	return &modal{kind: mQuick, title: "Schnellbefehle", quickSID: s.id, armed: -1}
+}
+
+func (a *App) quickModalKey(key string) tea.Cmd {
+	m := a.modal
+	s := a.byID(m.quickSID)
+	if s == nil {
+		a.modal = nil
+		return nil
+	}
+	run := func(i int) tea.Cmd {
+		cmds, _ := a.quickCmds(s)
+		if i >= len(cmds) || strings.TrimSpace(cmds[i]) == "" {
+			return nil
+		}
+		m.scroll = i
+		if len(safety.Check(cmds[i], safety.Kind(a.remoteText(s)))) > 0 && m.armed != i {
+			m.armed = i // erster Druck: nur warnen, Liste bleibt offen
+			s.quickArmed = -1
+			return a.runQuick(s, i)
+		}
+		s.quickArmed = i // zweiter Druck bzw. ungefährlich: ausführen
+		a.modal = nil
+		s.panelFocus = false
+		return a.runQuick(s, i)
+	}
+	switch key {
+	case "up", "k":
+		m.scroll = (m.scroll + maxQuick - 1) % maxQuick
+		m.armed = -1
+	case "down", "j", "tab":
+		m.scroll = (m.scroll + 1) % maxQuick
+		m.armed = -1
+	case "enter":
+		return run(m.scroll)
+	case "e":
+		a.modal = nil
+		return a.editQuickFor(s)
+	case "esc", "q":
+		a.modal = nil
+	default:
+		if len(key) == 1 && key[0] >= '1' && key[0] <= '8' {
+			return run(int(key[0] - '1'))
+		}
+		if i, ok := a.quickIndex(key); ok {
+			return run(i)
+		}
+		if a.keys.is(actQuickMenu, key) {
+			a.modal = nil
+		}
+	}
+	return nil
+}
+
+func (a *App) quickModalView(m *modal) string {
+	st := a.s
+	s := a.byID(m.quickSID)
+	if s == nil {
 		return ""
 	}
-	st := a.s
-	cmds, _ := a.quickCmds(s)
-	var b strings.Builder
-	b.WriteString(st.Muted.Render(" ↯ "))
-	used := 3
-	for i, c := range cmds {
-		if strings.TrimSpace(c) == "" {
-			continue
-		}
-		style := st.Chip
-		if len(safety.Check(c, safety.Kind(a.remoteText(s)))) > 0 {
-			style = st.ChipDanger
-		}
-		chip := st.Key.Render(a.quickLabel(i)) + style.Render(trunc(c, 22))
-		if used+lipgloss.Width(chip)+1 > a.w {
-			continue // passt nicht mehr, kürzere dahinter evtl. schon
-		}
-		used += lipgloss.Width(chip) + 1
-		i := i
-		b.WriteString(a.z.click(chip, func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.runQuick(s, i) }) + " ")
+	cmds, preset := a.quickCmds(s)
+	kind := safety.Kind(a.remoteText(s))
+	cw := min(64, a.w-12)
+	head := st.Accent.Render("↯ Schnellbefehle") + st.Muted.Render("  "+s.conn.Alias)
+	if preset != "" {
+		head += st.Muted.Render(" · Vorbelegung „" + preset + "“")
 	}
-	return b.String()
+	lines := []string{head, ""}
+	for i := 0; i < maxQuick; i++ {
+		c := ""
+		if i < len(cmds) {
+			c = strings.TrimSpace(cmds[i])
+		}
+		key := a.quickLabel(i)
+		key += strings.Repeat(" ", max(0, 5-lipgloss.Width(key)))
+		txt := st.Muted.Render("— frei —")
+		if c != "" {
+			txt = st.Text.Render(trunc(c, cw-12))
+			if f := safety.Check(c, kind); len(f) > 0 {
+				txt = st.Danger.Render(trunc(c, cw-14) + " ⚠")
+			}
+		}
+		row := " " + st.Accent.Render(key) + "  " + txt
+		row += strings.Repeat(" ", max(0, cw-lipgloss.Width(row)))
+		if i == m.scroll {
+			row = st.Selected.Render(ansi.Strip(row))
+			if i == m.armed {
+				row = st.ChipDanger.Render(ansi.Strip(row))
+			}
+		}
+		i := i
+		lines = append(lines, a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+			if m.scroll == i || double {
+				return a.quickModalKey("enter")
+			}
+			m.scroll, m.armed = i, -1
+			return nil
+		}))
+	}
+	hint := "⏎ oder 1…8 ausführen · ↑↓ wählen · e bearbeiten · Esc schließt"
+	if m.armed >= 0 {
+		hint = "⚠ gefährlich: nochmal ⏎ zum Ausführen"
+	}
+	lines = append(lines, "", st.Muted.Render(hint))
+	return st.Modal.Render(strings.Join(lines, "\n"))
 }
 
 func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
@@ -271,4 +356,34 @@ func (a *App) editQuickFor(s *session) tea.Cmd {
 	}
 	a.returnToTerminal = true
 	return a.openQuickForm(c, a.remoteText(s))
+}
+
+// sortFKeys: F-Tasten der Fußzeile nach Nummer ordnen (F1, F2 … F12, dann ⇧F).
+func sortFKeys(keys [][2]string) [][2]string {
+	num := func(label string) int {
+		var n int
+		l := strings.TrimPrefix(label, "Shift+")
+		if _, err := fmt.Sscanf(l, "F%d", &n); err == nil && strings.HasPrefix(l, "F") {
+			if l != label {
+				n += 100 // ⇧F-Tasten nach den normalen
+			}
+			return n
+		}
+		return 1000
+	}
+	// Nur die F-Tasten untereinander tauschen; andere (Palette, Strg+Q)
+	// bleiben an ihrem Platz.
+	var idx []int
+	var fk [][2]string
+	for i, k := range keys {
+		if num(k[0]) < 1000 {
+			idx, fk = append(idx, i), append(fk, k)
+		}
+	}
+	sort.SliceStable(fk, func(i, j int) bool { return num(fk[i][0]) < num(fk[j][0]) })
+	out := append([][2]string(nil), keys...)
+	for n, i := range idx {
+		out[i] = fk[n]
+	}
+	return out
 }

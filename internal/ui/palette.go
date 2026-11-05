@@ -71,7 +71,9 @@ func (a *App) paletteItems() []palItem {
 			palItem{group: pgAI, icon: "◎", label: "Als Ziel starten: „" + trunc(oneLine(q), 50) + "“", hint: "⏎",
 				run: func() tea.Cmd { return a.startGoal(s, q) }},
 			palItem{group: pgAI, icon: "✦", label: "KI fragen: „" + trunc(oneLine(q), 50) + "“", hint: "Tab",
-				run: func() tea.Cmd { return a.startAsk(s, q) }})
+				run: func() tea.Cmd { return a.startAsk(s, q) }},
+			palItem{group: pgAI, icon: "⇆", label: "Für dieses System umschreiben: „" + trunc(oneLine(q), 40) + "“", hint: "Befehl",
+				run: func() tea.Cmd { return a.startAdapt(s, oneLine(q)) }})
 	}
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
 	if inTerm && s.fail != nil && match("fehler warum fix "+s.fail.Command) {
@@ -181,7 +183,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "☰", label: "Sitzungsprotokolle durchsuchen", hint: "l", run: func() tea.Cmd { return a.openLogs() }},
 		{icon: "●", label: logLabel(a.logsEnabled()), hint: "Protokoll", run: func() tea.Cmd { return a.toggleSessionLog() }},
 		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
-		{icon: "?", label: cheatLabel(a.cheatOn()), hint: "F9", run: func() tea.Cmd { return a.toggleCheat() }},
+		{icon: "?", label: cheatLabel(a.cheatOn()), hint: a.keys.label(actCheat), run: func() tea.Cmd { return a.toggleCheat() }},
 		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
 	}
 	for _, t := range Themes {
