@@ -34,9 +34,27 @@ func TestAIInputNewlineKeys(t *testing.T) {
 		t.Fatalf("⏎ darf keine Zeile einfügen: %q", in.Value())
 	}
 	in, _ = in.Update(tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModShift})
+	in, _ = in.Update(tea.KeyPressMsg{Code: 'j', Mod: tea.ModCtrl})
+	if in.Value() != "a\n\n" {
+		t.Fatalf("Shift+⏎ / Strg+J sollte Zeilen einfügen: %q", in.Value())
+	}
+	// Alt+⏎ gehört Windows Terminal (Vollbild) und ist nicht mehr belegt.
 	in, _ = in.Update(tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt})
 	if in.Value() != "a\n\n" {
-		t.Fatalf("Shift/Alt+⏎ sollte Zeilen einfügen: %q", in.Value())
+		t.Fatalf("Alt+⏎ darf keine Zeile einfügen: %q", in.Value())
+	}
+}
+
+func TestAIInputNewlineRebind(t *testing.T) {
+	old := activeKeys
+	defer func() { activeKeys = old }()
+	activeKeys = newKeymap(map[string]string{"newline": "ctrl+n"})
+	in := newAIInput("")
+	in.Focus()
+	in.SetValue("a")
+	in, _ = in.Update(tea.KeyPressMsg{Code: 'n', Mod: tea.ModCtrl})
+	if in.Value() != "a\n" {
+		t.Fatalf("eigene Taste für neue Zeile: %q", in.Value())
 	}
 }
 

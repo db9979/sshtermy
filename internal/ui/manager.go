@@ -42,10 +42,12 @@ func (a *App) filtered() []domain.Connection {
 }
 
 func (a *App) managerKeys() [][2]string {
-	k := [][2]string{{"Strg+Space", "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
-		{"t", "Tunnel"}, {"q", "Schnellbefehle"}, {"s", "KI"}, {"y", "Sync"}, {"F1", "Hilfe"}, {"F12", "Über"}, {"Strg+Q", "beenden"}}
+	km := a.keys
+	k := [][2]string{{km.label(actPalette), "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
+		{"t", "Tunnel"}, {km.label(actImport), "Import"}, {km.label(actQuickEdit), "Schnellbefehle"}, {"s", "KI"}, {"y", "Sync"},
+		{km.label(actHelp), "Hilfe"}, {km.label(actAbout), "Über"}, {km.label(actQuit), "beenden"}}
 	if len(a.sessions) > 0 {
-		k = append([][2]string{{"F10", "zum Terminal"}}, k...)
+		k = append([][2]string{{km.label(actManager), "zum Terminal"}}, k...)
 	}
 	return k
 }
@@ -73,6 +75,32 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			return cmd
 		}
 		return nil
+	}
+	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actCheat, actQuickEdit) {
+	case actCheat:
+		return a.toggleCheat()
+	case actQuickEdit:
+		if m.sel < len(list) {
+			return a.openQuickForm(list[m.sel], "")
+		}
+		return nil
+	case actManager:
+		if len(a.sessions) > 0 {
+			a.scr = scrTerminal
+		}
+		return nil
+	case actHelp:
+		a.modal = a.helpModal()
+		return nil
+	case actAbout:
+		a.modal = a.aboutModal()
+		return nil
+	case actImport:
+		return a.openImport()
+	case actNextLook:
+		return a.cycleTheme()
+	case actKeys:
+		return a.openKeys()
 	}
 	switch k.String() {
 	case "up", "k":
@@ -103,12 +131,6 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		if m.sel < len(list) {
 			return a.openTunnelForm(domain.Tunnel{ConnectionID: list[m.sel].ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
 		}
-	case "q":
-		if m.sel < len(list) {
-			return a.openQuickForm(list[m.sel], "")
-		}
-	case "f9":
-		return a.toggleCheat()
 	case "s":
 		return a.openSettings()
 	case "y":
@@ -117,14 +139,6 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		if m.sel < len(list) {
 			return a.connect(list[m.sel])
 		}
-	case "f10":
-		if len(a.sessions) > 0 {
-			a.scr = scrTerminal
-		}
-	case "f1":
-		a.modal = a.helpModal()
-	case "f12":
-		a.modal = a.aboutModal()
 	}
 	return nil
 }

@@ -15,7 +15,7 @@ const aiInputMaxRows = 8
 
 // aiInput ist das Eingabefeld für Ziele, Fragen und die Palette: Der Text
 // bricht automatisch um und das Feld wächst mit, statt horizontal zu
-// scrollen. ⏎ wertet der Aufrufer aus (senden), Shift+⏎ / Alt+⏎ / Strg+J
+// scrollen. ⏎ wertet der Aufrufer aus (senden), Shift+⏎ / Strg+J (frei belegbar)
 // fügt eine neue Zeile ein.
 type aiInput struct {
 	textarea.Model
@@ -33,9 +33,16 @@ func newAIInput(placeholder string) aiInput {
 	ta.MaxHeight = aiInputMaxRows
 	ta.MaxContentHeight = 400
 	ta.EndOfBufferCharacter = ' '
-	ta.KeyMap.InsertNewline = key.NewBinding(key.WithKeys("shift+enter", "alt+enter", "ctrl+j"))
+	// Kein Alt+⏎: das schaltet Windows Terminal auf Vollbild.
+	ta.KeyMap.InsertNewline = key.NewBinding(key.WithKeys(activeKeys.keys[actNewline]...))
 
-	sty := textarea.DefaultDarkStyles()
+	t := activeTheme
+	sty := textarea.DefaultStyles(t.Dark)
+	sty.Focused.Text = lipgloss.NewStyle().Foreground(t.Text)
+	sty.Blurred.Text = lipgloss.NewStyle().Foreground(t.Muted)
+	sty.Focused.Placeholder = lipgloss.NewStyle().Foreground(t.Muted)
+	sty.Blurred.Placeholder = sty.Focused.Placeholder
+	sty.Cursor.Color = t.Accent
 	plain := lipgloss.NewStyle()
 	sty.Focused.CursorLine = plain
 	sty.Focused.EndOfBuffer = plain

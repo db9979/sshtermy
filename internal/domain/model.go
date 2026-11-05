@@ -197,6 +197,10 @@ type Settings struct {
 	LastVersion  string `json:"last_version,omitempty"` // zuletzt gestartete Version (für „Was ist neu“)
 	TourDone     bool   `json:"tour_done,omitempty"`    // Einführungstour gesehen
 	HideCheat    bool   `json:"hide_cheat,omitempty"`   // Spickzettel unten ausgeblendet (F9)
+
+	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
+	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
+	Keys map[string]string `json:"keys,omitempty"`
 }
 
 // SyncBackend: wohin die verschlüsselte Sync-Datei geschrieben wird.

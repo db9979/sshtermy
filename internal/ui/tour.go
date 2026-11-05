@@ -126,7 +126,7 @@ func (a *App) toggleCheat() tea.Cmd {
 		a.resize(s)
 	}
 	if on {
-		a.flash("Spickzettel aus · F9 blendet ihn wieder ein")
+		a.flash("Spickzettel aus · " + a.keys.label(actCheat) + " blendet ihn wieder ein")
 	}
 	return nil
 }
@@ -190,7 +190,8 @@ func (a *App) cheatLine() string {
 		}
 		out += a.keyZone(t[0], st.Accent.Render(t[0])) + " " + st.Text.Render(t[1])
 	}
-	hide := a.keyZone("F9", st.Muted.Render("F9 ausblenden "))
+	k := a.keys.label(actCheat)
+	hide := a.keyZone(k, st.Muted.Render(k+" ausblenden "))
 	gap := a.w - lipgloss.Width(out) - lipgloss.Width(hide)
 	if gap < 1 {
 		return ansi.Truncate(out, a.w, "")

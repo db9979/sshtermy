@@ -10,6 +10,11 @@ import (
 )
 
 func TestQuickIndex(t *testing.T) {
+	a := &App{keys: newKeymap(nil)}
+	quickIndex := a.quickIndex
+	if l := a.quickLabel(0); l != "⇧F1" {
+		t.Errorf("Anzeige %q, erwartet ⇧F1", l)
+	}
 	cases := map[string]int{"shift+f1": 0, "shift+f8": 7, "f13": 0, "f20": 7}
 	for k, want := range cases {
 		if i, ok := quickIndex(k); !ok || i != want {

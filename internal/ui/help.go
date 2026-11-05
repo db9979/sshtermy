@@ -55,6 +55,9 @@ var helpSections = []helpSection{
 		{"q", "Schnellbefehle"},
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
+		{"i", "Verbindungen importieren"},
+		{"a", "Aussehen wechseln"},
+		{"b", "Tastenkürzel anpassen"},
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
@@ -75,7 +78,7 @@ var helpSections = []helpSection{
 	}},
 	{hcGoal, "◎", "Ziel-Modus", "F2", true, [][2]string{
 		{"⏎", "Ziel starten / ausführen"},
-		{"⇧⏎ / Alt+⏎", "neue Zeile im Ziel"},
+		{"⇧⏎ / Strg+J", "neue Zeile im Ziel"},
 		{"i", "nur einfügen (Dry-Run)"},
 		{"e", "bearbeiten"},
 		{"s", "überspringen"},
@@ -87,7 +90,7 @@ var helpSections = []helpSection{
 	}},
 	{hcAsk, "✦", "KI fragen", "F3", true, [][2]string{
 		{"⏎", "Frage senden"},
-		{"⇧⏎ / Alt+⏎", "neue Zeile"},
+		{"⇧⏎ / Strg+J", "neue Zeile"},
 		{"1…9", "Befehl einfügen"},
 		{"n", "neue Frage"},
 	}},
@@ -113,6 +116,11 @@ var helpSections = []helpSection{
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
 		{"Esc", "schließen"},
+	}},
+	{hcNone, "◐", "Aussehen & Tasten", "", false, [][2]string{
+		{"a", "Dunkel · Hell · Kontrast"},
+		{"b", "Tastenkürzel belegen"},
+		{"Strg +/−", "Schrift (Terminalfenster)"},
 	}},
 	{hcNone, "⌖", "Maus", "", false, [][2]string{
 		{"Klick", "Tabs, Listen, Felder"},
@@ -170,14 +178,14 @@ func (s Styles) helpSection(sec helpSection, ctx helpCtx) []string {
 	}
 	title := head.Render(sec.icon + " " + sec.title)
 	if sec.key != "" {
-		title += " " + s.Muted.Render(sec.key)
+		title += " " + s.Muted.Render(relabelDefault(sec.key, sec.ctx))
 	}
 	if sec.ctx != hcNone && sec.ctx == ctx {
 		title += " " + s.Badge.Render("hier")
 	}
 	lines := []string{title}
 	for _, r := range sec.rows {
-		k := s.Key.Render(r[0])
+		k := s.Key.Render(relabelDefault(r[0], sec.ctx))
 		k += strings.Repeat(" ", max(0, helpKeyW-lipgloss.Width(k)))
 		lines = append(lines, k+s.Text.Render(ansi.Truncate(r[1], helpColW-helpKeyW, "…")))
 	}

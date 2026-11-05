@@ -99,16 +99,19 @@ func (a *App) remoteText(s *session) string {
 	return ""
 }
 
-// quickIndex: ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
-func quickIndex(key string) (int, bool) {
-	var n int
-	if _, err := fmt.Sscanf(key, "shift+f%d", &n); err == nil && n >= 1 && n <= maxQuick && key == fmt.Sprintf("shift+f%d", n) {
-		return n - 1, true
-	}
-	if _, err := fmt.Sscanf(key, "f%d", &n); err == nil && n >= 13 && n < 13+maxQuick && key == fmt.Sprintf("f%d", n) {
-		return n - 13, true
+// quickIndex: liegt auf der Taste ein Schnellbefehl (Standard ⇧F1 … ⇧F8)?
+func (a *App) quickIndex(key string) (int, bool) {
+	for i, id := range actQuick {
+		if a.keys.is(id, key) {
+			return i, true
+		}
 	}
 	return 0, false
+}
+
+// quickLabel: angezeigte Taste von Schnellbefehl i, z. B. „⇧F1“.
+func (a *App) quickLabel(i int) string {
+	return strings.Replace(a.keys.label(actQuick[i]), "Shift+", "⇧", 1)
 }
 
 // runQuick führt Schnellbefehl i aus (mit ⏎). Rote Befehle erst beim
@@ -119,13 +122,13 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 	}
 	cmds, _ := a.quickCmds(s)
 	if i < 0 || i >= len(cmds) || strings.TrimSpace(cmds[i]) == "" {
-		a.flash(fmt.Sprintf("⇧F%d ist nicht belegt · Palette „Schnellbefehle bearbeiten“", i+1))
+		a.flash(a.quickLabel(i) + " ist nicht belegt · Palette „Schnellbefehle bearbeiten“")
 		return nil
 	}
 	cmd := cmds[i]
 	if f := safety.Check(cmd, safety.Kind(a.remoteText(s))); len(f) > 0 && s.quickArmed != i {
 		s.quickArmed = i
-		a.flash(fmt.Sprintf("Vorsicht: %s. Nochmal ⇧F%d zum Ausführen", f[0].Reason, i+1))
+		a.flash("Vorsicht: " + f[0].Reason + ". Nochmal " + a.quickLabel(i) + " zum Ausführen")
 		return nil
 	}
 	s.quickArmed = -1
@@ -154,7 +157,7 @@ func (a *App) quickBar(s *session) string {
 		if len(safety.Check(c, safety.Kind(a.remoteText(s)))) > 0 {
 			style = st.ChipDanger
 		}
-		chip := st.Key.Render(fmt.Sprintf("⇧F%d", i+1)) + style.Render(trunc(c, 22))
+		chip := st.Key.Render(a.quickLabel(i)) + style.Render(trunc(c, 22))
 		if used+lipgloss.Width(chip)+1 > a.w {
 			continue // passt nicht mehr, kürzere dahinter evtl. schon
 		}
@@ -173,7 +176,7 @@ func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
 			continue
 		}
 		i, c := i, c
-		it := palItem{group: pgQuick, icon: "↯", label: c, hint: fmt.Sprintf("⇧F%d", i+1),
+		it := palItem{group: pgQuick, icon: "↯", label: c, hint: a.quickLabel(i),
 			run: func() tea.Cmd { s.panelFocus = false; return a.runQuick(s, i) }}
 		if f := safety.Check(c, safety.Kind(a.remoteText(s))); len(f) > 0 {
 			it.danger = f[0].Reason
@@ -205,7 +208,7 @@ func (a *App) openQuickForm(c domain.Connection, remote string) tea.Cmd {
 		if i == 0 {
 			h = "Strg+R = Vorbelegung „" + p.name + "“ wiederherstellen · Strg+S speichern"
 		}
-		f.text(fmt.Sprintf("q%d", i), fmt.Sprintf("⇧F%d", i+1), v, h)
+		f.text(fmt.Sprintf("q%d", i), a.quickLabel(i), v, h)
 	}
 	a.form, a.formID, a.scr = f, c.ID, scrQuickForm
 	a.formBase = c
