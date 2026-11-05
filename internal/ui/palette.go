@@ -185,6 +185,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
 		{icon: "?", label: cheatLabel(a.cheatOn()), hint: a.keys.label(actCheat), run: func() tea.Cmd { return a.toggleCheat() }},
 		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
+		{icon: "✦", label: introLabel(a.introOn()), hint: "Start", run: func() tea.Cmd { return a.toggleIntro() }},
 	}
 	for _, t := range Themes {
 		t := t

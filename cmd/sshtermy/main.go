@@ -19,6 +19,7 @@ import (
 
 func main() {
 	showVersion := flag.Bool("version", false, "Version anzeigen")
+	noIntro := flag.Bool("no-intro", false, "ohne Startanimation starten (dauerhaft: Palette „Startanimation aus“)")
 	doUpdate := flag.Bool("update", false, "auf die neueste Version aus GitHub aktualisieren und beenden")
 	flag.Parse()
 
@@ -53,6 +54,9 @@ func main() {
 	app, err := ui.New(st)
 	if err != nil {
 		fail(err)
+	}
+	if *noIntro {
+		app.SkipIntro()
 	}
 	if _, err := tea.NewProgram(app).Run(); err != nil {
 		fail(err)

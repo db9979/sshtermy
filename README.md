@@ -71,6 +71,7 @@ Empfohlen unter Windows: **Windows Terminal** (Truecolor, F-Tasten, Unicode). ma
 sshtermy              # starten
 sshtermy --version    # Version, Commit, Build-Datum
 sshtermy --update     # auf die neueste Version aktualisieren
+sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimation aus“)
 ```
 
 ## Bedienung
