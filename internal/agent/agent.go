@@ -207,6 +207,8 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 			st := "ausgeführt"
 			if h.Skipped {
 				st = "vom Menschen übersprungen"
+			} else if h.ExitHint != "" {
+				st = "ausgeführt, fehlgeschlagen: " + h.ExitHint
 			}
 			fmt.Fprintf(&b, "%d. %s (%s)\n", i+1, h.Command, st)
 		}

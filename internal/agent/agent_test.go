@@ -95,3 +95,11 @@ func contains(s, sub string) bool {
 	}
 	return false
 }
+
+func TestRedactPasswordFlags(t *testing.T) {
+	for _, s := range []string{"mysql -u root --password=geheim123", "sshpass -p geheim123 ssh x", "openssl --pass geheim123"} {
+		if strings.Contains(Redact(s), "geheim123") {
+			t.Errorf("nicht entfernt: %q → %q", s, Redact(s))
+		}
+	}
+}

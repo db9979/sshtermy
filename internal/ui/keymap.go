@@ -23,6 +23,7 @@ const (
 	actAsk       action = "ask"
 	actTunnels   action = "tunnels"
 	actFiles     action = "files"
+	actHost      action = "host"
 	actPrevTab   action = "prev_tab"
 	actNextTab   action = "next_tab"
 	actManager   action = "manager"
@@ -71,6 +72,7 @@ var actionDefs = []actionDef{
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
+	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},
 	{actChip1, "Folgebefehl 1 einfügen", "Terminal", []string{"alt+1"}},

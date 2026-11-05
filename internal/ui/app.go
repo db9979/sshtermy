@@ -14,12 +14,14 @@
 //	                     ├─ F2 Ziel-Modus (Agent)       ⏎ ausführen · i einfügen · s überspringen
 //	                     ├─ F3 Frage an die KI          1…9 Befehl aus der Antwort einfügen
 //	                     ├─ F4 Tunnel                   ⏎ an/aus · o im Browser öffnen
+//	                     ├─ F6 Host-Übersicht           r/⏎ abfragen · b Switch-Config sichern · d Diff
 //	                     └─ F10 zurück zum Manager (Sitzungen laufen weiter), F7/F8 Tabs
 package ui
 
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -28,6 +30,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/update"
@@ -45,6 +48,7 @@ const (
 	scrTunnelForm
 	scrTerminal
 	scrSync
+	scrLogs
 	scrQuickForm
 	scrImport
 	scrKeys
@@ -54,6 +58,7 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	inputLog *os.File // nur mit SSHTERMY_DEBUG=1
 	st       *store.Store
 	hostKeys *sshx.HostKeyStore
 	s        Styles
@@ -85,6 +90,9 @@ type App struct {
 	restart        bool // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
 
+	book *sessionlog.Book // Sitzungsprotokolle (Schlüssel nur bei entsperrtem Store)
+	logs logsState
+
 	sync    syncState
 	wiz     *syncWizard
 	imp     importState // Import aus ssh-config, PuTTY, MobaXterm
@@ -108,6 +116,7 @@ func New(st *store.Store) (*App, error) {
 	}
 	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
 	a.unlock = newUnlock(st)
+	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
 	return a, nil
 }
@@ -161,6 +170,7 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	a.logInput(msg)
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.w, a.h = m.Width, m.Height
@@ -189,6 +199,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
 			s.client, s.shell, s.state = m.client, m.shell, stConnected
+			s.connectedAt = time.Now()
 			s.tunnels = sshx.NewTunnelManager(m.client)
 			a.st.Touch(s.conn.ID)
 			if m.client.Learned {
@@ -201,18 +212,30 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			}
+			a.startLog(s)
+			var cmd tea.Cmd
+			if s.rc.active {
+				cmd = a.onReconnected(s)
+			}
 			a.resize(s)
+			return a, tea.Batch(cmd, a.hostOnConnect(s))
 		}
+		return a, nil
+	case muxProbeMsg:
+		a.onMuxProbe(m)
 		return a, nil
 	case connectErrMsg:
 		if s := a.byID(m.sid); s != nil {
-			s.state, s.err = stClosed, m.err.Error()
+			if s.rc.active {
+				a.onReconnectErr(s, m.err)
+			} else {
+				s.state, s.err = stClosed, m.err.Error()
+			}
 		}
 		return a, nil
 	case shellClosedMsg:
 		if s := a.byID(m.sid); s != nil {
-			s.close()
-			s.err = "Sitzung beendet"
+			a.onShellClosed(s, m)
 		}
 		return a, a.listen()
 
@@ -263,7 +286,13 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.llmMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.logsMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.filesMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.hostMsg(msg); ok {
 		return a, cmd
 	}
 
@@ -288,7 +317,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pal != nil {
 			return a, a.paletteKey(k)
 		}
-		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) {
+		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs) {
 			return a, a.openPalette()
 		}
 	}
@@ -325,6 +354,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateTerminal(msg)
 	case scrSync:
 		return a, a.updateSync(msg)
+	case scrLogs:
+		return a, a.updateLogs(msg)
 	case scrImport:
 		return a, a.updateImport(msg)
 	case scrKeys:
@@ -339,8 +370,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a *App) quit() tea.Cmd {
 	for _, s := range a.sessions {
+		a.endLog(s)
 		s.close()
 	}
+	a.closeBook()
 	a.st.Lock()
 	return tea.Quit
 }
@@ -351,6 +384,7 @@ func (a *App) onTick() tea.Cmd {
 	// Auto-Sperre nur ohne offene Sitzungen (sonst würden Shells hängen bleiben).
 	if set := a.st.Settings(); set.LockAfterMin > 0 && a.scr != scrUnlock && len(a.sessions) == 0 &&
 		time.Since(a.lastKey) > time.Duration(set.LockAfterMin)*time.Minute {
+		a.closeBook()
 		a.st.Lock()
 		a.unlock = newUnlock(a.st)
 		a.scr = scrUnlock
@@ -363,10 +397,14 @@ func (a *App) onTick() tea.Cmd {
 		if s.term != nil && s.term.TakeBell() {
 			cmds = append(cmds, func() tea.Msg { return nil })
 		}
+		a.commandTick(s)
 		if c := a.followTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
 		if c := a.goalTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
+		if c := a.reconnectTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
 	}
@@ -394,6 +432,8 @@ func (a *App) View() tea.View {
 		body, cur = a.viewTerminal()
 	case scrSync:
 		body = a.frame(a.viewSync(), a.syncKeys())
+	case scrLogs:
+		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrImport:
 		body = a.frame(a.viewImport(), a.importKeys())
 	case scrKeys:

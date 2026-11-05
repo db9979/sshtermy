@@ -25,8 +25,10 @@ const (
 	hcPalette
 	hcFiles
 	hcSettings
+	hcLogs
 	hcBroadcast
 	hcScan
+	hcHost
 )
 
 type helpSection struct {
@@ -69,6 +71,7 @@ var helpSections = []helpSection{
 		{"i", "Verbindungen importieren"},
 		{"a", "Aussehen wechseln"},
 		{"b", "Tastenkürzel anpassen"},
+		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
@@ -79,13 +82,16 @@ var helpSections = []helpSection{
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{
 		{"Tab / →", "Ghost-Text übernehmen"},
 		{"Alt+1…4", "Folgebefehl einfügen"},
+		{"Alt+0", "Fehler: Warum? & Fix"},
 		{"⇧F1…F8", "Schnellbefehl ausführen"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
+		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},
 		{"F10", "zum Manager"},
+		{"Abbruch", "verbindet neu (⏎ / Esc)"},
 	}},
 	{hcGoal, "◎", "Ziel-Modus", "F2", true, [][2]string{
 		{"⏎", "Ziel starten / ausführen"},
@@ -112,6 +118,14 @@ var helpSections = []helpSection{
 		{"e", "bearbeiten"},
 		{"d", "löschen"},
 	}},
+	{hcHost, "▣", "Host-Übersicht", "F6", false, [][2]string{
+		{"r / ⏎", "abfragen"},
+		{"b", "Switch-Config sichern"},
+		{"↑ ↓", "Sicherung wählen"},
+		{"d", "Diff zur Vorversion"},
+		{"v", "Sicherung ansehen"},
+		{"x", "Abfrage abbrechen"},
+	}},
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{
 		{"Tab", "Seite wechseln"},
 		{"⏎ / →", "Ordner öffnen"},
@@ -121,6 +135,15 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
+	}},
+	{hcLogs, "☰", "Sitzungsprotokolle", "l", false, [][2]string{
+		{"/", "suchen (auch Ausgabe)"},
+		{"z", "KI-Zusammenfassung"},
+		{"Z", "alle Treffer zusammenfassen"},
+		{"x", "als Markdown exportieren"},
+		{"d", "löschen"},
+		{"a", "Mitschreiben an/aus"},
+		{"⎵ Befehl", "nicht protokollieren"},
 	}},
 	{hcBroadcast, "⇉", "Broadcast", "m", false, [][2]string{
 		{"Space / g / a", "Host / Ordner / alle"},
@@ -141,6 +164,7 @@ var helpSections = []helpSection{
 	}},
 	{hcPalette, "❯", "Befehlspalette", "Strg+Space", false, [][2]string{
 		{"tippen", "filtern / Ziel / Frage"},
+		{"user@host", "schnell verbinden"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
 		{"Esc", "schließen"},
@@ -182,6 +206,8 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
+	case scrLogs:
+		return hcLogs
 	case scrBroadcast:
 		return hcBroadcast
 	case scrScan:
@@ -198,6 +224,8 @@ func (a *App) helpContext() helpCtx {
 				return hcAsk
 			case panelTunnels:
 				return hcTunnel
+			case panelHost:
+				return hcHost
 			}
 		}
 		return hcTerminal
