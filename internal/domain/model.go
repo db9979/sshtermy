@@ -203,7 +203,7 @@ type Settings struct {
 	// NoAutoReconnect: abgerissene Sitzungen nicht von selbst neu verbinden.
 	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`
 	TourDone        bool `json:"tour_done,omitempty"`
-	HideCheat       bool `json:"hide_cheat,omitempty"`
+	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.

@@ -181,7 +181,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "☰", label: "Sitzungsprotokolle durchsuchen", hint: "l", run: func() tea.Cmd { return a.openLogs() }},
 		{icon: "●", label: logLabel(a.logsEnabled()), hint: "Protokoll", run: func() tea.Cmd { return a.toggleSessionLog() }},
 		{icon: "▶", label: "Einführungstour", hint: "5 Schritte", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
-		{icon: "?", label: cheatLabel(a.cheatOn()), hint: "F9", run: func() tea.Cmd { return a.toggleCheat() }},
+		{icon: "?", label: cheatLabel(a.cheatOn()), hint: a.keys.label(actCheat), run: func() tea.Cmd { return a.toggleCheat() }},
 		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: "Einfügen", run: func() tea.Cmd { return a.togglePasteGuard() }},
 	}
 	for _, t := range Themes {

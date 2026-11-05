@@ -34,9 +34,9 @@ var tourSteps = []tourStep{
 	{"◎", "Ziel-Modus", "Beschreibe ein Ziel („Docker aufräumen“), die KI schlägt Schritt für Schritt genau einen Befehl vor. " +
 		"Rote Befehle sind gefährlich und brauchen eine zweite Bestätigung.",
 		[][2]string{{"F2", "Ziel-Modus"}, {"⏎", "Schritt ausführen"}, {"i", "nur einfügen"}, {"x", "Ziel beenden"}}},
-	{"↯", "Schnellbefehle und mehr", "Häufige Befehle liegen auf ⇧F1 bis ⇧F8, je nach Gerät vorbelegt (z. B. „show vlans“ bei Aruba). " +
-		"Unten steht immer ein Spickzettel für den Bereich, in dem du gerade bist.",
-		[][2]string{{"⇧F1…F8", "Schnellbefehl"}, {"F4", "Tunnel"}, {"F5", "Dateien"}, {"F9", "Spickzettel an/aus"}, {"F1", "alle Tasten"}}},
+	{"↯", "Schnellbefehle und mehr", "Häufige Befehle liegen auf ⇧F1 bis ⇧F8, je nach Gerät vorbelegt (z. B. „show vlans“ bei Aruba). F9 zeigt die Liste. " +
+		"Mit ⇧F9 erklärt die Tastenzeile unten, was die Tasten im aktuellen Bereich bewirken.",
+		[][2]string{{"⇧F1…F8", "Schnellbefehl"}, {"F9", "Schnellbefehle (Liste)"}, {"F4", "Tunnel"}, {"⇧F9", "Tasten erklären"}, {"F1", "alle Tasten"}}},
 }
 
 func (a *App) tourModal() *modal { return &modal{kind: mTour, title: "Einführung"} }
@@ -117,17 +117,11 @@ func tourButtons(m *modal) [][2]string {
 
 // ---------------------------------------------------------------- Spickzettel
 
-func (a *App) cheatOn() bool { return !a.st.Settings().HideCheat }
+func (a *App) cheatOn() bool { return a.st.Settings().ExplainKeys }
 
 func (a *App) toggleCheat() tea.Cmd {
-	on := a.cheatOn()
-	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.HideCheat = on })
-	for _, s := range a.sessions {
-		a.resize(s)
-	}
-	if on {
-		a.flash("Spickzettel aus · " + a.keys.label(actCheat) + " blendet ihn wieder ein")
-	}
+	on := !a.cheatOn()
+	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.ExplainKeys = on })
 	return nil
 }
 
@@ -170,12 +164,13 @@ func (a *App) cheatTips() [][2]string {
 	case len(s.chips) > 0:
 		return [][2]string{{"Alt+1…4", "fügt den Vorschlag ein (ohne ⏎)"}, {"rot", "= gefährlich, zweimal drücken"}}
 	}
-	return [][2]string{{"⇧F1…F8", "Schnellbefehle"}, {"F2", "Ziel an die KI"}, {"F3", "Frage an die KI"}, {"Strg+Space", "findet alles"}}
+	return [][2]string{{"F9", "Schnellbefehle"}, {"F2", "Ziel an die KI"}, {"F3", "Frage an die KI"}, {"Strg+Space", "findet alles"}}
 }
 
-// cheatLine: der Spickzettel (leer, wenn ausgeblendet oder nichts passt).
+// cheatLine: Tastenzeile mit Erklärungen (leer, wenn aus oder nichts passt;
+// dann zeigt die Fußzeile die normalen Tasten).
 func (a *App) cheatLine() string {
-	if !a.cheatOn() {
+	if !a.cheatOn() || a.modal != nil || a.pal != nil || (a.scr != scrManager && a.scr != scrTerminal) {
 		return ""
 	}
 	tips := a.cheatTips()
@@ -183,34 +178,26 @@ func (a *App) cheatLine() string {
 		return ""
 	}
 	st := a.s
-	out := st.AI.Render(" ? ") + st.Muted.Render("Spickzettel  ")
+	bg := st.Footer
+	out := bg.Render(" ")
 	for i, t := range tips {
 		if i > 0 {
-			out += st.Muted.Render(" · ")
+			out += bg.Render(" · ")
 		}
-		out += a.keyZone(t[0], st.Accent.Render(t[0])) + " " + st.Text.Render(t[1])
+		out += a.keyZone(t[0], st.Key.Render(t[0])) + bg.Foreground(st.T.Text).Render(" "+t[1])
 	}
-	k := a.keys.label(actCheat)
-	hide := a.keyZone(k, st.Muted.Render(k+" ausblenden "))
-	gap := a.w - lipgloss.Width(out) - lipgloss.Width(hide)
+	k := strings.ReplaceAll(a.keys.label(actCheat), "Shift+", "⇧")
+	back := a.keyZone(k, st.Key.Render(k)+st.KeyDesc.Render(" Tasten"))
+	gap := a.w - lipgloss.Width(out) - lipgloss.Width(back)
 	if gap < 1 {
 		return ansi.Truncate(out, a.w, "")
 	}
-	return out + strings.Repeat(" ", gap) + hide
-}
-
-// cheatRows: Höhe des Spickzettels im Terminal (0 oder 1; dort gibt es
-// immer einen Tipp, damit die Terminalgröße beim Tippen nicht springt).
-func (a *App) cheatRows() int {
-	if a.cheatOn() {
-		return 1
-	}
-	return 0
+	return out + bg.Render(strings.Repeat(" ", gap)) + back
 }
 
 func cheatLabel(on bool) string {
 	if on {
-		return "Spickzettel ausblenden"
+		return "Tastenzeile: nur Tasten"
 	}
-	return "Spickzettel einblenden"
+	return "Tastenzeile: Tasten erklären"
 }

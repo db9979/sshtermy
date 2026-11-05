@@ -33,7 +33,7 @@ func (a *App) panelWidth(s *session) int {
 }
 
 func (a *App) termSize(s *session) (int, int) {
-	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows-a.cheatRows())
+	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows)
 }
 
 func (a *App) resize(s *session) {
@@ -92,7 +92,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll = 0
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu) {
 		case actHelp:
 			a.modal = a.helpModal()
 			return nil
@@ -104,6 +104,11 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return nil
 		case actCheat:
 			return a.toggleCheat()
+		case actQuickMenu:
+			if s.state == stConnected {
+				a.modal = a.quickModal(s)
+			}
+			return nil
 		case actPrevTab, actNextTab:
 			if len(a.sessions) > 1 {
 				d := 1
@@ -399,13 +404,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
 	}
 
-	parts := []string{top, bar, body, a.chipBar(s)}
-	if a.cheatRows() > 0 {
-		cl := a.cheatLine()
-		parts = append(parts, cl+strings.Repeat(" ", max(0, a.w-lipgloss.Width(cl))))
-	}
-	parts = append(parts, a.footer(a.terminalKeys(s)))
-	return lipgloss.JoinVertical(lipgloss.Left, parts...), cur
+	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, a.chipBar(s), a.footer(a.terminalKeys(s))), cur
 }
 
 func (a *App) chipBar(s *session) string {
@@ -446,8 +445,6 @@ func (a *App) chipList(s *session, b *strings.Builder) {
 		if len(s.chips) > 0 && s.chips[0].Reason != "" {
 			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))
 		}
-	} else {
-		b.WriteString(a.quickBar(s))
 	}
 }
 
@@ -459,9 +456,14 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		return a.panelKeys(s)
 	}
 	k := a.keys
-	keys := [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel/Agent"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
-		{k.label(actFiles), "Dateien"}, {k.label(actHost), "Host"}, {k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"},
-		{k.label(actManager), "Manager"}, {k.label(actHelp), "Hilfe"}, {k.label(actQuit), "beenden"}}
+	keys := [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
+		{k.label(actFiles), "Dateien"}, {k.label(actHost), "Host"}}
+	if len(a.sessions) > 1 {
+		keys = append(keys, [2]string{k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"})
+	}
+	keys = append(keys, [2]string{k.label(actQuickMenu), "Schnellbefehle"}, [2]string{k.label(actManager), "Manager"},
+		[2]string{k.label(actHelp), "Hilfe"}, [2]string{k.label(actCheat), "erklären"}, [2]string{k.label(actQuit), "beenden"})
+	keys = sortFKeys(keys)
 	if s.fail != nil {
 		keys = append([][2]string{{"Alt+0", "Warum? & Fix"}}, keys...)
 	}
