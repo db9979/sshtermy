@@ -77,7 +77,8 @@ type applyDoneMsg struct{ err error }
 func (a *App) aboutModal() *modal {
 	b := version.Long() + "\n\n" +
 		"Sicherheit: AES-256-GCM, Argon2id, DPAPI (Windows), Host-Key-Prüfung (TOFU),\n" +
-		"KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.\n\n"
+		"KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.\n\n" +
+		"☕ Gefällt dir sshTermy? Spendier einen Kaffee: " + version.Coffee + "\n\n"
 	if a.rel != nil {
 		b += "⬆ Neue Version v" + a.rel.Version + " verfügbar.\n" + firstLines(a.rel.Notes, 6) + "\n\nu = jetzt aktualisieren · "
 	} else if a.restartPending != "" {
@@ -85,7 +86,7 @@ func (a *App) aboutModal() *modal {
 	} else {
 		b += "c = nach Updates suchen · "
 	}
-	b += "w = was ist neu · Esc = schließen"
+	b += "w = was ist neu · b = Kaffee spendieren · Esc = schließen"
 	return &modal{kind: mAbout, title: "Über " + version.Name, body: b}
 }
 
@@ -186,6 +187,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 			}
 		case "w":
 			a.modal = a.changelogModal(nil)
+		case "b":
+			return a.openURL(version.Coffee)
 		case "esc", "q", "enter":
 			a.modal = nil
 		}
@@ -206,6 +209,9 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 			a.modal = nil
 		}
 	case mChangelog:
+		if key == "b" {
+			return a.openURL(version.Coffee)
+		}
 		if m.changelogKey(key, a.h) {
 			a.modal = nil
 		}

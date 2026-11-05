@@ -16,6 +16,8 @@ const (
 	Idea   = "Idee: Dominik Bornhäußer"
 	Repo   = "db9979/sshtermy"
 	Slogan = "SSH-Terminal mit KI-Copilot"
+	// Coffee: Buy-Me-a-Coffee-Seite von Dominik (dieselbe wie bei speech-on-dgx-spark).
+	Coffee = "https://buymeacoffee.com/zquu1xu570"
 )
 
 var (
