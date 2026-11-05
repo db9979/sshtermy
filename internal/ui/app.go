@@ -526,15 +526,18 @@ func (a *App) footer(keys [][2]string) string {
 	return ansi.Truncate(out, a.w, "")
 }
 
-// fitFooter passt die Tastenzeile an schmale Fenster an: Zuerst fallen
-// Beschreibungen weg (von hinten), dann ganze Tasten von hinten. „F1 Hilfe“
-// bleibt bis zuletzt sichtbar, dort steht alles.
+// fitFooter passt die Tastenzeile an schmale Fenster an. Eine Taste ohne
+// Beschriftung sagt niemandem etwas, deshalb fallen zuerst ganze Tasten von
+// hinten weg (die wichtigsten stehen vorn), solange noch einige mit Text
+// übrig bleiben. Erst danach verlieren die restlichen ihre Beschreibung.
+// „F1 Hilfe“ und die Erklär-Taste bleiben bis zuletzt sichtbar, dort steht alles.
 func (a *App) fitFooter(keys [][2]string) [][2]string {
 	out := make([][2]string, len(keys))
-	help := a.keys.label(actHelp)
+	help, explain := a.keys.label(actHelp), strings.ReplaceAll(a.keys.label(actCheat), "Shift+", "⇧")
 	for i, k := range keys {
 		out[i] = [2]string{strings.ReplaceAll(k[0], "Shift+", "⇧"), k[1]} // kürzer: ⇧F9
 	}
+	keep := func(k [2]string) bool { return k[0] == help || k[0] == explain }
 	width := func(ks [][2]string) int {
 		w := 0
 		for _, k := range ks {
@@ -545,19 +548,26 @@ func (a *App) fitFooter(keys [][2]string) [][2]string {
 		}
 		return w
 	}
-	// 1. Beschreibungen von hinten weglassen (nicht die der Hilfe)
+	const minKeys = 4 // so viele beschriftete Tasten bleiben mindestens
+	// 1. ganze Tasten von hinten weglassen, Beschriftungen bleiben
+	for i := len(out) - 1; i >= 0 && width(out) > a.w && len(out) > minKeys; i-- {
+		if !keep(out[i]) {
+			out = append(out[:i], out[i+1:]...)
+		}
+	}
+	// 2. Beschreibungen von hinten weglassen (nicht die der Hilfe)
 	for i := len(out) - 1; i >= 0 && width(out) > a.w; i-- {
 		if out[i][0] != help {
 			out[i][1] = ""
 		}
 	}
-	// 2. ganze Tasten von hinten weglassen, nie die Hilfe
+	// 3. weitere Tasten von hinten weglassen, nie die Hilfe
 	for i := len(out) - 1; i >= 0 && width(out) > a.w; i-- {
 		if out[i][0] != help {
 			out = append(out[:i], out[i+1:]...)
 		}
 	}
-	// 3. zur Not auch „Hilfe“ nur als Taste
+	// 4. zur Not auch „Hilfe“ nur als Taste
 	for i := range out {
 		if width(out) > a.w && out[i][0] == help {
 			out[i][1] = ""

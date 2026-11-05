@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/store"
@@ -309,8 +310,15 @@ func (a *App) viewManager() string {
 		m.search.SetWidth(leftW - 6)
 		lb.WriteString(" " + s.Accent.Render("/") + " " + m.search.View() + "\n")
 	default:
-		lb.WriteString(s.PanelTitle.Foreground(s.T.Accent).Render(" Verbindungen") + s.Muted.Render(fmt.Sprintf("  %d", total)) +
-			"  " + a.keyZone("/", s.Muted.Render("/ suchen")) + "  " + a.keyZone(a.keys.label(actTagFilter), s.Muted.Render(a.keys.label(actTagFilter)+" Tags")) + "\n")
+		title := s.PanelTitle.Foreground(s.T.Accent).Render(" Verbindungen") + s.Muted.Render(fmt.Sprintf("  %d", total))
+		// Hinweise nur, solange sie in die Zeile passen
+		for _, h := range [][2]string{{"/", "/ suchen"}, {a.keys.label(actTagFilter), a.keys.label(actTagFilter) + " Tags"}} {
+			if lipgloss.Width(title)+2+lipgloss.Width(h[1]) > leftW-1 {
+				break
+			}
+			title += "  " + a.keyZone(h[0], s.Muted.Render(h[1]))
+		}
+		lb.WriteString(title + "\n")
 	}
 	// zweite Zeile: aktiver Filter bzw. Position
 	info := ""
@@ -367,7 +375,7 @@ func (a *App) viewManager() string {
 			if a.connected(c.ID) {
 				dot, pdot = s.OK.Render("●"), "●"
 			}
-			aw := max(8, 18-2*min(r.depth, 5))
+			aw := max(8, min(18-2*min(r.depth, 5), (leftW-6-len(indent))*11/20))
 			hw := max(4, leftW-6-len(indent)-aw)
 			alias := fmt.Sprintf("%-*s", aw, trunc(c.Alias, aw))
 			target := trunc(c.Username+"@"+c.Host, hw)
@@ -411,18 +419,28 @@ func (a *App) viewManager() string {
 	}})
 	lb.Reset()
 	lb.WriteString(listBox)
-	left := lipgloss.NewStyle().Width(leftW).Height(h).Render(lb.String())
+	left := lipgloss.NewStyle().Width(leftW).Height(h).Render(clipLines(lb.String(), leftW))
 	sep := lipgloss.NewStyle().Foreground(s.T.Border).Render(strings.Repeat("│\n", max(0, h-1)) + "│")
 
 	// rechte Spalte: Details
 	var rb strings.Builder
 	if m.sel < len(rows) && rows[m.sel].isFolder() {
-		rb.WriteString(a.viewFolderDetails(rows[m.sel].node))
+		rb.WriteString(a.viewFolderDetails(rows[m.sel].node, rightW))
 	} else if m.sel < len(rows) {
 		c := rows[m.sel].conn
-		rb.WriteString(s.Accent.Render(" "+c.Alias) + "  " + s.Muted.Render(c.Group) + "   " +
-			a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render("verbinden")) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render("bearbeiten")) + "\n\n")
-		row := func(k, v string) { rb.WriteString(" " + s.Label.Render(k) + s.Text.Render(v) + "\n") }
+		head := s.Accent.Render(" " + trunc(c.Alias, max(8, rightW-4)))
+		if g := c.Group; g != "" && lipgloss.Width(head)+2+len([]rune(g)) < rightW-1 {
+			head += "  " + s.Muted.Render(g)
+		}
+		if acts := a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render("verbinden")) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render("bearbeiten")); lipgloss.Width(head)+3+lipgloss.Width(acts) < rightW {
+			head += "   " + acts
+		}
+		rb.WriteString(head + "\n\n")
+		label := detailLabel(s, rightW)
+		textW := max(10, rightW-2-label.GetWidth())
+		row := func(k, v string) {
+			rb.WriteString(" " + label.Render(k) + s.Text.Render(ansi.Truncate(v, textW, "…")) + "\n")
+		}
 		row("Ziel", fmt.Sprintf("%s@%s", c.Username, c.Addr()))
 		auth := map[domain.AuthMethod]string{domain.AuthPassword: "Passwort (verschlüsselt)", domain.AuthKeyFile: "Keyfile", domain.AuthAgent: "SSH-Agent"}[c.Auth]
 		if c.Auth == domain.AuthKeyFile {
@@ -475,12 +493,12 @@ func (a *App) viewManager() string {
 		}
 		cfg := a.st.LLM()
 		rb.WriteString("\n " + s.PanelTitle.Render("KI-Copilot") + "\n")
-		rb.WriteString("  " + s.Muted.Render(cfg.Model+" @ "+cfg.BaseURL) + "\n")
+		rb.WriteString("  " + s.Muted.Render(trunc(cfg.Model+" @ "+cfg.BaseURL, max(10, rightW-3))) + "\n")
 	}
 	if len(rows) > 0 || a.st.SyncConfig().Enabled() {
 		rb.WriteString("\n " + s.PanelTitle.Render("Sync") + "\n  " + a.syncStatus() + "\n")
 	}
-	right := lipgloss.NewStyle().Width(rightW).Height(h).Render(rb.String())
+	right := lipgloss.NewStyle().Width(rightW).Height(h).Render(clipLines(rb.String(), rightW))
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, sep, right)
 }
 
@@ -803,4 +821,16 @@ func profileFromForm(f *form, base *domain.SystemProfile) *domain.SystemProfile 
 		return nil
 	}
 	return &p
+}
+
+// clipLines kürzt jede Zeile auf w Zellen, statt sie umbrechen zu lassen
+// (ein Umbruch würde die Spalten im schmalen Fenster durcheinanderbringen).
+func clipLines(s string, w int) string {
+	lines := strings.Split(s, "\n")
+	for i, l := range lines {
+		if lipgloss.Width(l) > w {
+			lines[i] = ansi.Truncate(l, w, "…")
+		}
+	}
+	return strings.Join(lines, "\n")
 }
