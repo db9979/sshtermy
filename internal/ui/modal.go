@@ -21,7 +21,10 @@ const (
 	mHelp
 	mBusy
 	mChangelog
-	mText // blätterbarer Text (Config-Diff, Konfiguration)
+	mPaste // Einfügeschutz (pasteguard.go)
+	mMenu  // Kontextmenü, z. B. zu Links (links.go)
+	mInfo  // Ergebnis anzeigen (Ping)
+	mText  // blätterbarer Text (Config-Diff, Konfiguration)
 )
 
 type modal struct {
@@ -35,6 +38,12 @@ type modal struct {
 	ctx    helpCtx  // nur Hilfe: aktueller Bereich
 	scroll int      // Hilfe/Changelog/Text: Scroll-Position
 	lines  []string // Changelog/Text: fertig gestaltete Zeilen
+
+	paste    *pasteCheck // nur Einfügeschutz
+	items    []menuItem  // nur Menü
+	sel      int         // nur Menü: Auswahl
+	at       [2]int      // nur Menü: Bildschirmposition (Mauszeiger)
+	anchored bool        // am Mauszeiger statt mittig
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
@@ -137,6 +146,14 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		case "esc", "q", "enter":
 			a.modal = nil
 		}
+	case mPaste:
+		return a.pasteKey(key)
+	case mMenu:
+		return a.menuKey(key)
+	case mInfo:
+		if key == "esc" || key == "enter" || key == "q" {
+			a.modal = nil
+		}
 	case mHelp:
 		if m.helpKey(key) {
 			a.modal = nil
@@ -172,4 +189,15 @@ func (m *modal) view(s Styles, w, h int) string {
 		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render("⏎ senden · Esc abbrechen (wird nicht gespeichert)")
 	}
 	return s.Modal.Width(min(90, w-4)).Render(title + "\n\n" + body)
+}
+
+// modalView: Dialoge, die das App-Objekt brauchen (Zonen, Breite), sonst view.
+func (a *App) modalView() string {
+	switch a.modal.kind {
+	case mPaste:
+		return a.pasteView(a.modal)
+	case mMenu:
+		return a.menuView(a.modal)
+	}
+	return a.modal.view(a.s, a.w, a.h)
 }

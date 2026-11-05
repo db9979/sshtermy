@@ -15,26 +15,28 @@ import (
 type action string
 
 const (
-	actPalette  action = "palette"
-	actHelp     action = "help"
-	actAbout    action = "about"
-	actQuit     action = "quit"
-	actGoal     action = "goal"
-	actAsk      action = "ask"
-	actTunnels  action = "tunnels"
-	actFiles    action = "files"
-	actHost     action = "host"
-	actPrevTab  action = "prev_tab"
-	actNextTab  action = "next_tab"
-	actManager  action = "manager"
-	actChip1    action = "chip1"
-	actChip2    action = "chip2"
-	actChip3    action = "chip3"
-	actChip4    action = "chip4"
-	actNewline  action = "newline"
-	actImport   action = "import"
-	actKeys     action = "keys"
-	actNextLook action = "theme"
+	actPalette   action = "palette"
+	actHelp      action = "help"
+	actAbout     action = "about"
+	actQuit      action = "quit"
+	actGoal      action = "goal"
+	actAsk       action = "ask"
+	actTunnels   action = "tunnels"
+	actFiles     action = "files"
+	actHost      action = "host"
+	actPrevTab   action = "prev_tab"
+	actNextTab   action = "next_tab"
+	actManager   action = "manager"
+	actChip1     action = "chip1"
+	actChip2     action = "chip2"
+	actChip3     action = "chip3"
+	actChip4     action = "chip4"
+	actNewline   action = "newline"
+	actImport    action = "import"
+	actKeys      action = "keys"
+	actNextLook  action = "theme"
+	actBroadcast action = "broadcast"
+	actScan      action = "scan"
 )
 
 type actionDef struct {
@@ -65,6 +67,8 @@ var actionDefs = []actionDef{
 	{actImport, "Verbindungen importieren", "Manager", []string{"i"}},
 	{actNextLook, "Aussehen wechseln", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},
+	{actBroadcast, "Broadcast an mehrere Hosts", "Manager", []string{"m"}},
+	{actScan, "Netzwerk-Scan", "Manager", []string{"f"}},
 }
 
 func defOf(id action) actionDef {

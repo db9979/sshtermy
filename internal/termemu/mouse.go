@@ -217,3 +217,32 @@ func (t *Term) LineAt(p Pos) Sel {
 	w, _ := t.Size()
 	return Sel{Pos{p.Line, 0}, Pos{p.Line, w - 1}}
 }
+
+// LineText liefert eine Zeile des Gesamtpuffers als Text und zu jeder Spalte
+// den Byte-Versatz im Text (cols[x], len(cols) = Breite+1). Die zweite Hälfte
+// eines breiten Zeichens zeigt auf dessen Anfang. So lassen sich Muster
+// (Links, IPs) per Regex suchen und auf Mausspalten zurückrechnen.
+func (t *Term) LineText(line int) (text string, cols []int) {
+	w, _ := t.Size()
+	sb := t.ScrollbackLen()
+	var b strings.Builder
+	cols = make([]int, w+1)
+	last := 0
+	for x := 0; x < w; x++ {
+		c := t.cellAt(sb, Pos{line, x})
+		switch {
+		case c == nil, c.Content == "" && !c.IsZero():
+			cols[x] = b.Len()
+			b.WriteByte(' ')
+		case c.IsZero():
+			cols[x] = last // zweite Hälfte eines breiten Zeichens
+			continue
+		default:
+			cols[x] = b.Len()
+			b.WriteString(c.Content)
+		}
+		last = cols[x]
+	}
+	cols[w] = b.Len()
+	return b.String(), cols
+}

@@ -44,7 +44,7 @@ func (a *App) filtered() []domain.Connection {
 func (a *App) managerKeys() [][2]string {
 	km := a.keys
 	k := [][2]string{{km.label(actPalette), "Palette"}, {"⏎", "verbinden"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"/", "suchen"},
-		{"t", "Tunnel"}, {km.label(actImport), "Import"}, {"s", "KI"}, {"y", "Sync"},
+		{"t", "Tunnel"}, {km.label(actBroadcast), "Broadcast"}, {km.label(actScan), "Scan"}, {km.label(actImport), "Import"}, {"s", "KI"}, {"y", "Sync"},
 		{km.label(actHelp), "Hilfe"}, {km.label(actAbout), "Über"}, {km.label(actQuit), "beenden"}}
 	if len(a.sessions) > 0 {
 		k = append([][2]string{{km.label(actManager), "zum Terminal"}}, k...)
@@ -76,7 +76,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		}
 		return nil
 	}
-	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys) {
+	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan) {
 	case actManager:
 		if len(a.sessions) > 0 {
 			a.scr = scrTerminal
@@ -94,6 +94,10 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		return a.cycleTheme()
 	case actKeys:
 		return a.openKeys()
+	case actBroadcast:
+		return a.openBroadcast()
+	case actScan:
+		return a.openScan()
 	}
 	switch k.String() {
 	case "up", "k":

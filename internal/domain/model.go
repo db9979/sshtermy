@@ -186,12 +186,13 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`                  // "nacht" | "hell" | "kontrast"
-	UseDPAPI     bool   `json:"use_dpapi"`              // Windows: Store-Schlüssel zusätzlich per DPAPI
-	LockAfterMin int    `json:"lock_after_min"`         // 0 = nie automatisch sperren
-	Language     string `json:"language"`               // "de" | "en"
-	NoMouse      bool   `json:"no_mouse,omitempty"`     // Maus nicht einfangen (Terminalfenster markiert selbst)
-	LastVersion  string `json:"last_version,omitempty"` // zuletzt gestartete Version (für „Was ist neu“)
+	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast"
+	UseDPAPI     bool   `json:"use_dpapi"`                // Windows: Store-Schlüssel zusätzlich per DPAPI
+	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
+	Language     string `json:"language"`                 // "de" | "en"
+	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
+	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
+	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
