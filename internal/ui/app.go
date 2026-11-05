@@ -14,12 +14,14 @@
 //	                     ├─ F2 Ziel-Modus (Agent)       ⏎ ausführen · i einfügen · s überspringen
 //	                     ├─ F3 Frage an die KI          1…9 Befehl aus der Antwort einfügen
 //	                     ├─ F4 Tunnel                   ⏎ an/aus · o im Browser öffnen
+//	                     ├─ F6 Host-Übersicht           r/⏎ abfragen · b Switch-Config sichern · d Diff
 //	                     └─ F10 zurück zum Manager (Sitzungen laufen weiter), F7/F8 Tabs
 package ui
 
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -56,6 +58,7 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	inputLog *os.File // nur mit SSHTERMY_DEBUG=1
 	st       *store.Store
 	hostKeys *sshx.HostKeyStore
 	s        Styles
@@ -111,6 +114,7 @@ func New(st *store.Store) (*App, error) {
 	}
 	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
 	a.unlock = newUnlock(st)
+	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
 	return a, nil
 }
@@ -164,6 +168,7 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	a.logInput(msg)
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.w, a.h = m.Width, m.Height
@@ -211,7 +216,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = a.onReconnected(s)
 			}
 			a.resize(s)
-			return a, cmd
+			return a, tea.Batch(cmd, a.hostOnConnect(s))
 		}
 		return a, nil
 	case muxProbeMsg:
@@ -283,6 +288,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, cmd
 	}
 	if cmd, ok := a.filesMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.hostMsg(msg); ok {
 		return a, cmd
 	}
 

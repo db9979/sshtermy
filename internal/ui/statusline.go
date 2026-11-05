@@ -127,6 +127,9 @@ func (a *App) sessionBar(s *session) string {
 		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf("⇡ Verlauf −%d · Esc", s.scroll)),
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
+	if hb := a.hostBadge(s); hb != "" {
+		tun = hb + " " + tun
+	}
 	right := strings.Join(line, "") + " " + goal + " " + tun + " " + ai
 	if lw := lipgloss.Width(left.String()); a.w-lw-lipgloss.Width(right) < 24 && len(line) > 0 {
 		right = goal + " " + tun + " " + ai // schmales Fenster: Leitung weglassen

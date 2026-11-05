@@ -126,9 +126,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if i, ok := a.quickIndex(key); ok {
 			return a.runQuick(s, i)
 		}
-		switch id := a.keys.which(key, actGoal, actAsk, actTunnels); id {
-		case actGoal, actAsk, actTunnels:
-			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels}[id]
+		switch id := a.keys.which(key, actGoal, actAsk, actTunnels, actHost); id {
+		case actGoal, actAsk, actTunnels, actHost:
+			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels, actHost: panelHost}[id]
 			if s.panel == kind && s.panelFocus {
 				s.panel, s.panelFocus = panelNone, false
 			} else {
@@ -460,7 +460,7 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	}
 	k := a.keys
 	keys := [][2]string{{k.label(actPalette), "Palette"}, {k.label(actGoal), "Ziel/Agent"}, {k.label(actAsk), "KI fragen"}, {k.label(actTunnels), "Tunnel"},
-		{k.label(actFiles), "Dateien"}, {k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"},
+		{k.label(actFiles), "Dateien"}, {k.label(actHost), "Host"}, {k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"},
 		{k.label(actManager), "Manager"}, {k.label(actHelp), "Hilfe"}, {k.label(actQuit), "beenden"}}
 	if s.fail != nil {
 		keys = append([][2]string{{"Alt+0", "Warum? & Fix"}}, keys...)

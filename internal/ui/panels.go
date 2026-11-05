@@ -97,6 +97,8 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 		if !s.goal.active {
 			return s.goal.input.Focus()
 		}
+	case panelHost:
+		return a.hostOpened(s)
 	case panelAsk:
 		if !s.ask.inited {
 			s.ask.input = newAIInput("Frage, z. B. Warum startet nginx nicht?")
@@ -254,7 +256,7 @@ func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 	k, isKey := msg.(tea.KeyPressMsg)
 	if isKey && k.String() == "esc" {
 		s.panelFocus = false
-		if s.panel == panelTunnels || (s.panel == panelAsk && !s.ask.busy && s.ask.answer.Len() == 0) {
+		if s.panel == panelTunnels || s.panel == panelHost || (s.panel == panelAsk && !s.ask.busy && s.ask.answer.Len() == 0) {
 			s.panel = panelNone
 			a.resize(s)
 		}
@@ -268,6 +270,10 @@ func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 	case panelTunnels:
 		if isKey {
 			return a.tunnelKey(s, k)
+		}
+	case panelHost:
+		if isKey {
+			return a.hostKey(s, k)
 		}
 	}
 	return nil
@@ -516,6 +522,8 @@ func (a *App) panelKeys(s *session) [][2]string {
 		return [][2]string{{"⏎", "fragen"}, {"1…9", "Befehl einfügen"}, {"n", "neue Frage"}, {"Esc", "Terminal"}}
 	case panelTunnels:
 		return [][2]string{{"⏎", "an/aus"}, {"o", "Browser"}, {"n", "neu"}, {"e", "bearbeiten"}, {"d", "löschen"}, {"Esc", "zurück"}}
+	case panelHost:
+		return a.hostPanelKeys(s)
 	}
 	return nil
 }
@@ -533,6 +541,8 @@ func (a *App) viewPanel(s *session, w, h int) string {
 		a.viewAsk(&b, s, inner)
 	case panelTunnels:
 		a.viewTunnels(&b, s, inner)
+	case panelHost:
+		a.viewHost(&b, s, inner)
 	}
 	style := st.Panel
 	if s.panelFocus {
