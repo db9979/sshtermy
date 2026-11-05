@@ -61,6 +61,8 @@ func (a *App) updateUnlock(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		a.scr = scrManager
+		a.lookSig = ""
+		a.applyLook()
 		a.mgr = newManager()
 		a.showWhatsNew(u.setup)
 		return tea.Batch(checkUpdate(), a.runSync())

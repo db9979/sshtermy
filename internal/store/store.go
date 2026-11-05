@@ -4,8 +4,10 @@
 package store
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -211,6 +213,37 @@ func (s *Store) UpsertConnection(c domain.Connection) (domain.Connection, error)
 	return c, s.save()
 }
 
+// AddConnections legt mehrere Verbindungen auf einmal an (Import) und
+// speichert nur einmal. Vorbelegte IDs bleiben erhalten (damit Jump-Hosts
+// innerhalb des Imports aufeinander zeigen können).
+func (s *Store) AddConnections(cs []domain.Connection) ([]domain.Connection, error) {
+	for _, c := range cs {
+		if err := Validate(c); err != nil {
+			return nil, errors.New(c.Alias + ": " + err.Error())
+		}
+	}
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return nil, vault.ErrLocked
+	}
+	now := time.Now().UTC()
+	out := make([]domain.Connection, len(cs))
+	for i, c := range cs {
+		if c.ID == "" {
+			c.ID = newID()
+		}
+		c.CreatedAt, c.UpdatedAt = now, now
+		s.data.Connections = append(s.data.Connections, c)
+		out[i] = c
+	}
+	s.mu.Unlock()
+	return out, s.save()
+}
+
+// NewID: neue, zufällige ID für einen Datensatz.
+func NewID() string { return newID() }
+
 // DeleteConnection entfernt auch die Tunnel dieser Verbindung.
 func (s *Store) DeleteConnection(id string) error {
 	s.mu.Lock()
@@ -387,7 +420,11 @@ func (s *Store) UpdateSettings(f func(*domain.Settings)) error {
 		s.mu.Unlock()
 		return vault.ErrLocked
 	}
+	before, _ := json.Marshal(s.data.Settings)
 	f(&s.data.Settings)
+	if after, _ := json.Marshal(s.data.Settings); !bytes.Equal(before, after) {
+		s.data.SettingsUpdatedAt = time.Now().UTC() // Sync: neuere Einstellungen gewinnen
+	}
 	s.mu.Unlock()
 	return s.save()
 }
