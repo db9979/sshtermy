@@ -197,6 +197,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
 			s.client, s.shell, s.state = m.client, m.shell, stConnected
+			s.connectedAt = time.Now()
 			s.tunnels = sshx.NewTunnelManager(m.client)
 			a.st.Touch(s.conn.ID)
 			if m.client.Learned {
@@ -211,23 +212,32 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			a.startLog(s)
+			var cmd tea.Cmd
+			if s.rc.active {
+				cmd = a.onReconnected(s)
+			}
 			a.resize(s)
-			return a, a.hostOnConnect(s)
+			return a, tea.Batch(cmd, a.hostOnConnect(s))
 		}
 		return a, nil
 	case adaptMsg:
 		a.onAdapt(m)
 		return a, nil
+	case muxProbeMsg:
+		a.onMuxProbe(m)
+		return a, nil
 	case connectErrMsg:
 		if s := a.byID(m.sid); s != nil {
-			s.state, s.err = stClosed, m.err.Error()
+			if s.rc.active {
+				a.onReconnectErr(s, m.err)
+			} else {
+				s.state, s.err = stClosed, m.err.Error()
+			}
 		}
 		return a, nil
 	case shellClosedMsg:
 		if s := a.byID(m.sid); s != nil {
-			a.endLog(s)
-			s.close()
-			s.err = "Sitzung beendet"
+			a.onShellClosed(s, m)
 		}
 		return a, a.listen()
 
@@ -388,6 +398,9 @@ func (a *App) onTick() tea.Cmd {
 			cmds = append(cmds, c)
 		}
 		a.profileTick(s)
+		if c := a.reconnectTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
 	}
 	return tea.Batch(cmds...)
 }

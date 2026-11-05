@@ -88,8 +88,8 @@ func FromProbe(out string) domain.SystemProfile {
 
 // ProbeCommand: läuft unsichtbar in einer eigenen Exec-Sitzung (nur Server).
 // Bewusst über sh, damit auch fish/zsh/csh als Login-Shell nichts ändern.
-// Zeilen: System, Kernel, Shell, Paketmanager, Prozess 1.
-const ProbeCommand = `sh -c '(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") || (sw_vers -productName 2>/dev/null | tr "\n" " "; sw_vers -productVersion 2>/dev/null) || echo; uname -srm 2>/dev/null || echo; echo "$SHELL"; pm=; for x in apt-get dnf yum zypper pacman apk pkg brew; do if command -v $x >/dev/null 2>&1; then pm=$x; break; fi; done; echo "$pm"; cat /proc/1/comm 2>/dev/null || ps -p 1 -o comm= 2>/dev/null || echo'`
+// Zeilen: System, Kernel, Shell, Paketmanager, Prozess 1, Locale.
+const ProbeCommand = `sh -c '(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") || (sw_vers -productName 2>/dev/null | tr "\n" " "; sw_vers -productVersion 2>/dev/null) || echo; uname -srm 2>/dev/null || echo; echo "$SHELL"; pm=; for x in apt-get dnf yum zypper pacman apk pkg brew; do if command -v $x >/dev/null 2>&1; then pm=$x; break; fi; done; echo "$pm"; cat /proc/1/comm 2>/dev/null || ps -p 1 -o comm= 2>/dev/null || echo; echo "${LC_ALL:-${LC_CTYPE:-$LANG}}"'`
 
 func initName(s string) string {
 	s = strings.TrimSpace(s)

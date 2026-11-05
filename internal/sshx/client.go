@@ -12,6 +12,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -39,6 +40,12 @@ type Client struct {
 	// starb nach der Systemabfrage). Die UI merkt sich das in der Verbindung.
 	Learned bool
 	cancel  context.CancelFunc
+
+	// Zustand der Leitung (Statuszeile, Auto-Reconnect)
+	latency  atomic.Int64  // letzte Rundreise in ns, 0 = noch keine
+	answered atomic.Bool   // Gegenstelle beantwortet Keepalives
+	byUs     atomic.Bool   // Close() aufgerufen
+	dead     chan struct{} // geschlossen, sobald die Verbindung weg ist
 }
 
 // RemoteInfo: was wir über das Zielsystem wissen (Kontext fürs LLM).
@@ -46,6 +53,32 @@ type RemoteInfo struct {
 	OS     string // z. B. "Ubuntu 24.04.1 LTS"
 	Kernel string // uname -srm
 	Shell  string // $SHELL
+	Locale string // LC_ALL/LC_CTYPE/LANG, z. B. "de_DE.UTF-8"
+}
+
+// Encoding: Zeichensatz aus der Locale ("UTF-8", "ISO-8859-1" …), leer wenn unbekannt.
+func (r RemoteInfo) Encoding() string {
+	l := r.Locale
+	if l == "" {
+		return ""
+	}
+	if i := strings.IndexByte(l, '.'); i >= 0 {
+		l = l[i+1:]
+		if j := strings.IndexByte(l, '@'); j >= 0 {
+			l = l[:j]
+		}
+	} else if l == "C" || l == "POSIX" {
+		return "ASCII"
+	}
+	switch strings.ToLower(strings.ReplaceAll(l, "-", "")) {
+	case "utf8":
+		return "UTF-8"
+	case "iso88591":
+		return "ISO-8859-1"
+	case "iso885915":
+		return "ISO-8859-15"
+	}
+	return l
 }
 
 func (r RemoteInfo) String() string {
@@ -242,7 +275,8 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 	_ = raw.SetDeadline(time.Time{})
 
 	kctx, cancel := context.WithCancel(context.Background())
-	cl := &Client{Client: ssh.NewClient(sc, chans, reqs), Conn: c, jump: jump, cancel: cancel}
+	cl := &Client{Client: ssh.NewClient(sc, chans, reqs), Conn: c, jump: jump, cancel: cancel, dead: make(chan struct{})}
+	go func() { _ = cl.Client.Wait(); close(cl.dead) }()
 	banner := string(sc.ServerVersion())
 	switch {
 	case o.forceNet || c.Device == domain.DeviceNetwork:
@@ -263,12 +297,12 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 			cl.Remote.OS = cl.Profile.OS
 		}
 	} else {
-		pr := cl.probe()
+		pr, locale := cl.probe()
 		if pr.OS != "" || pr.Version != "" {
 			pr.Banner = cl.Profile.Banner
 			cl.Profile = pr
 		}
-		cl.Remote = RemoteInfo{OS: cl.Profile.OS, Kernel: pr.Version, Shell: pr.Shell}
+		cl.Remote = RemoteInfo{OS: cl.Profile.OS, Kernel: pr.Version, Shell: pr.Shell, Locale: locale}
 		if cl.Remote.OS == "" && cl.Remote.Kernel == "" {
 			cl.Remote.OS = "Windows (OpenSSH) oder unbekannt"
 		}
@@ -343,6 +377,7 @@ func rememberSecrets(ask SecretPrompt) SecretPrompt {
 
 // Close schließt Ziel und Jump-Host.
 func (c *Client) Close() error {
+	c.byUs.Store(true)
 	c.cancel()
 	err := c.Client.Close()
 	if c.jump != nil {
@@ -351,18 +386,81 @@ func (c *Client) Close() error {
 	return err
 }
 
-func (c *Client) keepAlive(ctx context.Context, sec int) {
-	if sec <= 0 {
-		sec = 30
+// Latency: Dauer der letzten Keepalive-Rundreise (0 = noch nicht gemessen
+// oder die Gegenstelle antwortet nicht auf Keepalives).
+func (c *Client) Latency() time.Duration { return time.Duration(c.latency.Load()) }
+
+// Dropped: Die Verbindung ist weg, ohne dass sshTermy sie geschlossen hat
+// (Netz weg, VPN getrennt, Server neu gestartet, Keepalive ohne Antwort).
+func (c *Client) Dropped() bool {
+	select {
+	case <-c.dead:
+		return !c.byUs.Load()
+	default:
+		return false
 	}
-	t := time.NewTicker(time.Duration(sec) * time.Second)
+}
+
+// WaitDropped wartet höchstens d darauf, dass die Verbindung wegbricht. Die
+// Shell meldet ihr Ende oft einen Moment bevor die Leitung als tot gilt.
+func (c *Client) WaitDropped(d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-c.dead:
+	case <-t.C:
+	}
+	return c.Dropped()
+}
+
+// keepAlive hält die Verbindung offen, misst die Latenz und erkennt eine
+// tote Leitung. Ohne Netz würde TCP sonst minutenlang still hängen. Als tot
+// gilt die Verbindung nur, wenn die Gegenstelle schon einmal geantwortet hat
+// (manche Switches beantworten Keepalives nie, die würden sonst getrennt).
+func (c *Client) keepAlive(ctx context.Context, sec int) {
+	every := time.Duration(sec) * time.Second
+	if sec <= 0 {
+		every = 30 * time.Second
+	}
+	ping := min(every, 10*time.Second)      // Latenz in der Statuszeile aktuell halten
+	deadAfter := max(every, 30*time.Second) // so lange ohne Antwort = Leitung tot
+	c.keepAliveLoop(ctx, ping, deadAfter)
+}
+
+func (c *Client) keepAliveLoop(ctx context.Context, ping, deadAfter time.Duration) {
+	res := make(chan error, 1)
+	inflight := false
+	var sent time.Time
+	send := func() {
+		inflight, sent = true, time.Now()
+		go func() {
+			_, _, err := c.SendRequest("keepalive@openssh.com", true, nil)
+			res <- err
+		}()
+	}
+	send()
+	t := time.NewTicker(ping)
 	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-c.dead:
+			return
+		case err := <-res:
+			inflight = false
+			if err != nil {
+				return // Leitung schon zu, Wait() meldet das
+			}
+			c.latency.Store(int64(time.Since(sent)))
+			c.answered.Store(true)
 		case <-t.C:
-			if _, _, err := c.SendRequest("keepalive@openssh.com", true, nil); err != nil {
+			if !inflight {
+				send()
+				continue
+			}
+			if c.answered.Load() && time.Since(sent) >= deadAfter {
+				_ = c.Client.Close() // nicht byUs: zählt als Abbruch → Auto-Reconnect
 				return
 			}
 		}
@@ -371,18 +469,48 @@ func (c *Client) keepAlive(ctx context.Context, sec int) {
 
 // probe fragt System, Kernel, Shell, Paketmanager und Init-System ab, in
 // einer eigenen Exec-Sitzung, also unsichtbar für das Terminal des Nutzers.
-func (c *Client) probe() domain.SystemProfile {
+func (c *Client) probe() (domain.SystemProfile, string) {
 	s, err := c.NewSession()
 	if err != nil {
-		return domain.SystemProfile{}
+		return domain.SystemProfile{}, ""
 	}
 	defer s.Close()
 	done := make(chan []byte, 1)
 	go func() { out, _ := s.Output(sysprof.ProbeCommand); done <- out }()
 	select {
 	case out := <-done:
-		return sysprof.FromProbe(string(out))
+		lines := strings.Split(strings.ReplaceAll(string(out), "\r", ""), "\n")
+		locale := ""
+		if len(lines) > 5 {
+			locale = strings.TrimSpace(lines[5])
+		}
+		return sysprof.FromProbe(string(out)), locale
 	case <-time.After(4 * time.Second):
-		return domain.SystemProfile{}
+		return domain.SystemProfile{}, ""
+	}
+}
+
+// Output führt einen Befehl in einer eigenen Exec-Sitzung aus (unsichtbar
+// fürs Terminal). Nicht für Netzwerkgeräte: dort beendet Exec die Verbindung.
+func (c *Client) Output(cmd string, d time.Duration) (string, error) {
+	if c.NetDevice {
+		return "", errors.New("keine Exec-Befehle auf Netzwerkgeräten")
+	}
+	s, err := c.NewSession()
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+	type res struct {
+		out []byte
+		err error
+	}
+	done := make(chan res, 1)
+	go func() { out, err := s.Output(cmd); done <- res{out, err} }()
+	select {
+	case r := <-done:
+		return string(r.out), r.err
+	case <-time.After(d):
+		return "", errors.New("Zeitüberschreitung")
 	}
 }
