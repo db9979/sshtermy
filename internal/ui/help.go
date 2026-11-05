@@ -42,6 +42,7 @@ var helpSections = []helpSection{
 	{hcNone, "◆", "Überall", "", false, [][2]string{
 		{"Strg+Space", "Befehlspalette"},
 		{"F1", "diese Hilfe"},
+		{"F9", "Spickzettel an/aus"},
 		{"F12", "Über & Update"},
 		{"F12 w", "Was ist neu"},
 		{"Strg+Q", "beenden"},
@@ -53,6 +54,7 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{"/", "suchen"},
 		{"t", "Tunnel anlegen"},
+		{"q", "Schnellbefehle"},
 		{"m", "Broadcast an mehrere Hosts"},
 		{"f", "Netzwerk-Scan"},
 		{"s", "KI-Einstellungen"},
@@ -70,6 +72,7 @@ var helpSections = []helpSection{
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{
 		{"Tab / →", "Ghost-Text übernehmen"},
 		{"Alt+1…4", "Folgebefehl einfügen"},
+		{"⇧F1…F8", "Schnellbefehl ausführen"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},

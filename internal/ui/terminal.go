@@ -33,7 +33,7 @@ func (a *App) panelWidth(s *session) int {
 }
 
 func (a *App) termSize(s *session) (int, int) {
-	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows)
+	return max(20, a.w-a.panelWidth(s)), max(5, a.h-topRows-bottomRows-a.cheatRows())
 }
 
 func (a *App) resize(s *session) {
@@ -92,7 +92,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll = 0
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat) {
 		case actHelp:
 			a.modal = a.helpModal()
 			return nil
@@ -102,6 +102,8 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		case actManager:
 			a.scr = scrManager
 			return nil
+		case actCheat:
+			return a.toggleCheat()
 		case actPrevTab, actNextTab:
 			if len(a.sessions) > 1 {
 				d := 1
@@ -120,6 +122,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if s.files.open {
 			return a.filesKey(s, m)
+		}
+		if i, ok := a.quickIndex(key); ok {
+			return a.runQuick(s, i)
 		}
 		switch id := a.keys.which(key, actGoal, actAsk, actTunnels); id {
 		case actGoal, actAsk, actTunnels:
@@ -385,7 +390,13 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, a.chipBar(s), a.footer(a.terminalKeys(s))), cur
+	parts := []string{top, bar, body, a.chipBar(s)}
+	if a.cheatRows() > 0 {
+		cl := a.cheatLine()
+		parts = append(parts, cl+strings.Repeat(" ", max(0, a.w-lipgloss.Width(cl))))
+	}
+	parts = append(parts, a.footer(a.terminalKeys(s)))
+	return lipgloss.JoinVertical(lipgloss.Left, parts...), cur
 }
 
 func (a *App) chipBar(s *session) string {
@@ -409,6 +420,8 @@ func (a *App) chipBar(s *session) string {
 		if len(s.chips) > 0 && s.chips[0].Reason != "" {
 			b.WriteString(st.Muted.Render(trunc(s.chips[0].Reason, 40)))
 		}
+	} else {
+		b.WriteString(a.quickBar(s))
 	}
 	out := b.String()
 	if w := lipgloss.Width(out); w < a.w {
