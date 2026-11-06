@@ -166,6 +166,9 @@ func parse(v string) ([3]int, bool) {
 
 // Apply lädt, prüft und tauscht die laufende Datei aus.
 func Apply(ctx context.Context, rel *Release) error {
+	if cmd := Managed(); cmd != "" {
+		return ManagedError{cmd}
+	}
 	name := AssetName()
 	binURL, ok1 := rel.assets[name]
 	sumURL, ok2 := rel.assets["checksums.txt"]

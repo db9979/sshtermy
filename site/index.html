@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sshTermy – SSH terminal with an AI copilot</title>
+<meta name="description" content="sshTermy is an SSH terminal (TUI) with an AI copilot for Windows, macOS and Linux: connection manager, goal mode, ghost text, SFTP, tunnels, broadcast. Idea: Dominik Bornhäußer.">
+<link rel="alternate" hreflang="de" href="de/">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14' fill='%23bb9af7'>◆</text></svg>">
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="logo" href="./"><span>◆</span> sshTermy</a>
+    <nav>
+      <a href="#install">Install</a>
+      <a href="#tour">Tour</a>
+      <a href="#features">Features</a>
+      <a href="#ai">AI setup</a>
+      <a href="#keys">Keys</a>
+      <a href="#updates">Updates</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/db9979/sshtermy">GitHub</a>
+    </nav>
+    <div class="lang"><b>EN</b> · <a href="de/">DE</a></div>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <h1>SSH terminal with an <span class="accent">AI copilot</span></h1>
+  <p class="lead">One small file for Windows, macOS and Linux. Connection manager, real terminal, SFTP and tunnels, plus an AI that suggests commands, works towards a goal step by step and explains errors. Every command needs your confirmation.</p>
+  <p class="credit">Idea: Dominik Bornhäußer</p>
+  <div class="buttons">
+    <a class="btn primary" href="#install">Install</a>
+    <a class="btn" href="https://github.com/db9979/sshtermy/releases/latest">Download</a>
+    <a class="btn coffee" href="https://buymeacoffee.com/zquu1xu570">☕ Buy me a coffee</a>
+  </div>
+  <figure>
+    <img src="gifs/goal-en.gif" width="962" height="594" alt="Goal mode: the AI sets up nginx step by step, each command is confirmed with Enter">
+    <figcaption>Goal mode (F2): describe a goal, the AI suggests exactly one command at a time, you confirm.</figcaption>
+  </figure>
+</section>
+
+<section id="install">
+  <h2>Install</h2>
+  <p>Pick your system. Every way installs the same release from GitHub.</p>
+  <div class="os">
+    <div class="card">
+      <h3>Windows <span class="tag">ARM64 · x64 · x86</span></h3>
+      <p>With winget (Windows 11 and 10):</p>
+      <div class="cmd"><pre>winget install db9979.sshTermy</pre></div>
+      <p><small>Available as soon as the package is approved in the winget catalog.</small></p>
+      <p>Or download the <code>.exe</code> for your processor from the <a href="https://github.com/db9979/sshtermy/releases/latest">releases</a> and start it in <a href="https://aka.ms/terminal">Windows Terminal</a>.</p>
+    </div>
+    <div class="card">
+      <h3>macOS <span class="tag">Apple Silicon · Intel</span></h3>
+      <p>With Homebrew:</p>
+      <div class="cmd"><pre>brew tap db9979/sshtermy https://github.com/db9979/sshtermy
+brew install sshtermy</pre></div>
+      <p>Or with one line, which also creates <code>~/Applications/sshTermy.app</code>:</p>
+      <div class="cmd"><pre>curl -fsSL https://raw.githubusercontent.com/db9979/sshtermy/main/install.sh | sh</pre></div>
+    </div>
+    <div class="card">
+      <h3>Linux <span class="tag">amd64 · arm64</span></h3>
+      <p>Debian, Ubuntu, Raspberry Pi OS 64-bit (apt):</p>
+      <div class="cmd"><pre>echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
+sudo apt update && sudo apt install sshtermy</pre></div>
+      <p>Homebrew and the one-line installer above work on Linux too.</p>
+    </div>
+  </div>
+  <p>Then type <code>sshtermy</code>. On first start you choose a master password for your encrypted store.</p>
+</section>
+
+<section id="tour">
+  <h2>Tour</h2>
+  <div class="demo">
+    <div class="text">
+      <h3>Unlock, pick a host, go</h3>
+      <p>Your connections, passwords and keys live in an encrypted store (AES-256-GCM, Argon2id, plus DPAPI on Windows). The manager shows folders, tags and details; Enter connects. The status line shows load, RAM and disk of the server right away.</p>
+    </div>
+    <figure><img src="gifs/start-en.gif" width="962" height="594" alt="Start animation, unlock with the master password, connect to web-01" loading="lazy"></figure>
+  </div>
+  <div class="demo">
+    <div class="text">
+      <h3>Ghost text and errors explained</h3>
+      <p>While you type, the AI completes the line in grey; Tab accepts. After every command it offers follow-ups (Alt+1…4). When a command fails, Alt+0 asks the AI why, with the output as context, and 1…9 inserts a suggested fix.</p>
+    </div>
+    <figure><img src="gifs/ghost-en.gif" width="962" height="594" alt="Ghost text completes systemctl status nginx, the command fails, Alt+0 explains why and inserts the fix" loading="lazy"></figure>
+  </div>
+  <div class="demo">
+    <div class="text">
+      <h3>One palette for everything</h3>
+      <p><kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the command palette: actions, tunnels, connections and runbooks. Plain text becomes a goal (Enter) or a question to the AI (Tab).</p>
+    </div>
+    <figure><img src="gifs/palette-en.gif" width="962" height="594" alt="Command palette filters actions, then a question goes to the AI with terminal context" loading="lazy"></figure>
+  </div>
+</section>
+
+<section id="features">
+  <h2>Features</h2>
+  <div class="features">
+    <div class="card"><h3>Connection manager</h3><p>Folders, tags, jump hosts, import from <code>~/.ssh/config</code>, PuTTY and MobaXterm.</p></div>
+    <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback, tabs, split view, search.</p></div>
+    <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen.</p></div>
+    <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right.</p></div>
+    <div class="card"><h3>Host overview (F6)</h3><p>CPU, load, RAM, disk and updates for servers; firmware, ports and VLANs for Aruba and Cisco switches, with config backup and diff.</p></div>
+    <div class="card"><h3>Tunnels</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) and web services with one click.</p></div>
+    <div class="card"><h3>Broadcast</h3><p>One command or runbook on a whole group in parallel, results side by side.</p></div>
+    <div class="card"><h3>Network scan</h3><p>Find SSH devices in a subnet and create them as connections.</p></div>
+    <div class="card"><h3>Danger rules</h3><p>Fixed rules mark risky commands red; they need Enter twice, also when pasted.</p></div>
+    <div class="card"><h3>Session log</h3><p>Encrypted, searchable, with AI summary and Markdown export.</p></div>
+    <div class="card"><h3>Sync</h3><p>End-to-end encrypted via OneDrive, Dropbox, iCloud, Syncthing or WebDAV (Synology, Nextcloud).</p></div>
+    <div class="card"><h3>System profile</h3><p>Knows Linux distributions, macOS, Windows and network OS dialects, so the AI suggests matching commands.</p></div>
+  </div>
+  <div class="shots">
+    <figure><img src="bilder/02-manager.png" alt="Connection manager" loading="lazy"><figcaption>Connection manager</figcaption></figure>
+    <figure><img src="bilder/14-host-switch.png" alt="Host overview of a switch" loading="lazy"><figcaption>Host overview of a switch (F6)</figcaption></figure>
+    <figure><img src="bilder/12-dateien.png" alt="Files via SFTP" loading="lazy"><figcaption>Files via SFTP (F5)</figcaption></figure>
+    <figure><img src="bilder/04-gefahr.png" alt="Dangerous command needs confirmation" loading="lazy"><figcaption>Danger rules</figcaption></figure>
+  </div>
+  <p><small>The screenshots show the German interface; the English one looks the same.</small></p>
+</section>
+
+<section id="ai">
+  <h2>AI setup</h2>
+  <p>sshTermy talks to any OpenAI-compatible endpoint (<code>/v1/chat/completions</code>): Ollama, vLLM, SGLang, LiteLLM, LocalAI or OpenAI itself. A local model keeps your terminal content on your own hardware.</p>
+  <ol>
+    <li>In the manager press <kbd>s</kbd> (AI settings).</li>
+    <li>Enter the URL, e.g. <code>http://localhost:11434/v1</code> for Ollama, and an API key if the endpoint needs one (stored encrypted).</li>
+    <li><kbd>Ctrl</kbd>+<kbd>T</kbd> tests the endpoint, <kbd>Ctrl</kbd>+<kbd>L</kbd> lists the models to pick from.</li>
+  </ol>
+  <p>The dot in the top right shows whether the AI is reachable (green, yellow when slow, red on error). The AI has no tools of its own: it only suggests, you decide what runs. Passwords and secrets are removed from the context before it is sent.</p>
+</section>
+
+<section id="keys">
+  <h2>Keys</h2>
+  <table>
+    <tr><th>Key</th><th>Effect</th></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>Command palette</td></tr>
+    <tr><td><kbd>Tab</kbd> / <kbd>→</kbd></td><td>Accept ghost text</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd></td><td>Insert follow-up command</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>After a failure: cause and fix</td></tr>
+    <tr><td><kbd>F2</kbd></td><td>Goal mode (agent)</td></tr>
+    <tr><td><kbd>F3</kbd></td><td>Ask AI with terminal context</td></tr>
+    <tr><td><kbd>F4</kbd> / <kbd>F5</kbd> / <kbd>F6</kbd></td><td>Tunnels / files (SFTP) / host overview</td></tr>
+    <tr><td><kbd>F9</kbd>, <kbd>⇧</kbd>+<kbd>F1</kbd>…<kbd>F8</kbd></td><td>Quick commands</td></tr>
+    <tr><td><kbd>F10</kbd></td><td>Back to the manager (sessions keep running)</td></tr>
+    <tr><td><kbd>F1</kbd> / <kbd>F12</kbd> / <kbd>Ctrl</kbd>+<kbd>Q</kbd></td><td>Help / about and update / quit</td></tr>
+  </table>
+  <p>All shortcuts can be changed: <kbd>b</kbd> in the manager. The full list is in the <a href="https://github.com/db9979/sshtermy#usage">README</a> and in the app (<kbd>F1</kbd>).</p>
+</section>
+
+<section id="updates">
+  <h2>Updates</h2>
+  <p>A direct download or the one-line installer updates itself: sshTermy checks GitHub once a day, verifies the checksum and swaps the file (<kbd>F12</kbd> → <kbd>u</kbd>, or <code>sshtermy --update</code>).</p>
+  <p>Installed with a package manager, the package manager updates it:</p>
+  <table>
+    <tr><td>Homebrew</td><td><code>brew upgrade sshtermy</code></td></tr>
+    <tr><td>apt</td><td><code>sudo apt update && sudo apt upgrade</code></td></tr>
+    <tr><td>winget</td><td><code>winget upgrade db9979.sshTermy</code> (the built-in update works as well)</td></tr>
+  </table>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <details><summary>Windows says “Windows protected your PC”</summary><p>The <code>.exe</code> is not code-signed yet, so SmartScreen warns on the first start. Click “More info” → “Run anyway”. Installing with winget usually avoids the warning.</p></details>
+  <details><summary>macOS says the app “cannot be opened”</summary><p>Files downloaded with the browser get a quarantine mark. Use Homebrew or the one-line installer, or remove the mark: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
+  <details><summary>Where is my data?</summary><p>Windows: <code>%APPDATA%\sshtermy</code>, macOS: <code>~/Library/Application Support/sshtermy</code>, Linux: <code>~/.config/sshtermy</code>. The environment variable <code>SSHTERMY_HOME</code> moves it, e.g. onto a USB stick.</p></details>
+  <details><summary>Which terminal should I use?</summary><p>Windows Terminal on Windows, Terminal or iTerm2 on macOS, any modern terminal on Linux. Function keys and truecolor should work.</p></details>
+  <details><summary>Can I switch to German?</summary><p>Yes: <kbd>F12</kbd> → <kbd>l</kbd> or palette → “Language”. On first start sshTermy follows the system language.</p></details>
+</section>
+</main>
+
+<footer>
+  <div class="bar">
+    <span><b>sshTermy</b> · Idea: Dominik Bornhäußer</span>
+    <a href="https://github.com/db9979/sshtermy">GitHub</a>
+    <a href="https://github.com/db9979/sshtermy/releases">Releases</a>
+    <a href="https://buymeacoffee.com/zquu1xu570">☕ Buy me a coffee</a>
+    <a href="de/">Deutsch</a>
+  </div>
+</footer>
+<script src="site.js"></script>
+</body>
+</html>

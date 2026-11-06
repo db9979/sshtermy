@@ -1,0 +1,2 @@
+#!/bin/sh
+printf '               total        used        free      shared  buff/cache   available\nMem:           119Gi        14Gi        92Gi       1.1Gi        13Gi       104Gi\nSwap:          8.0Gi          0B       8.0Gi\n'

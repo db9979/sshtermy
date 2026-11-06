@@ -62,7 +62,21 @@ Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt 
 
 ## Installation
 
-Lade die passende Datei aus den [Releases](https://github.com/db9979/sshtermy/releases/latest):
+📖 Anleitung mit Animationen: **https://db9979.github.io/sshtermy/de/**
+
+**Paketquellen** (die kümmern sich auch um Updates):
+
+```
+winget install db9979.sshTermy                                   # Windows (sobald im winget-Katalog freigegeben)
+brew tap db9979/sshtermy https://github.com/db9979/sshtermy      # macOS und Linux
+brew install sshtermy
+echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
+sudo apt update && sudo apt install sshtermy                     # Debian, Ubuntu (amd64, arm64)
+```
+
+Über Homebrew oder apt installiert, tauscht sshTermy sich nicht selbst aus, sondern zeigt den Update-Befehl.
+
+Oder lade die passende Datei aus den [Releases](https://github.com/db9979/sshtermy/releases/latest):
 
 | System | Datei |
 |---|---|

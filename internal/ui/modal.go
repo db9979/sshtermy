@@ -81,7 +81,12 @@ func (a *App) aboutModal() *modal {
 		i18n.T("KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.\n\n") +
 		i18n.T("☕ Gefällt dir sshTermy? Spendier einen Kaffee: ") + version.Coffee + "\n\n"
 	if a.rel != nil {
-		b += i18n.T("⬆ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6) + i18n.T("\n\nu = jetzt aktualisieren · ")
+		b += i18n.T("⬆ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6) + "\n\n"
+		if cmd := update.Managed(); cmd != "" {
+			b += i18n.T("Aktualisieren mit: ") + cmd + "\n\n"
+		} else {
+			b += i18n.T("u = jetzt aktualisieren · ")
+		}
 	} else if a.restartPending != "" {
 		b += "v" + a.restartPending + i18n.T(" ist installiert.\n\nr = jetzt neu starten · ")
 	} else {
@@ -173,7 +178,7 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	case mAbout:
 		switch key {
 		case "u":
-			if a.rel != nil {
+			if a.rel != nil && update.Managed() == "" {
 				rel := a.rel
 				a.modal = &modal{kind: mBusy, title: "Update", body: i18n.T("Lade v") + rel.Version + i18n.T(", prüfe Signatur und Prüfsumme …")}
 				return func() tea.Msg { return applyDoneMsg{update.Apply(context.Background(), rel)} }
