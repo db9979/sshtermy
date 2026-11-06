@@ -515,6 +515,8 @@ func (a *App) modalButtons() string {
 		keys = tourButtons(a.modal)
 	case mQuick:
 		keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
+	case mDanger:
+		keys = [][2]string{{yesKey(), i18n.T("trotzdem ausführen")}, {"Esc", i18n.T("abbrechen")}}
 	case mPaste:
 		keys = [][2]string{{"⏎", i18n.T("einfügen")}}
 		if a.modal.paste.multi {

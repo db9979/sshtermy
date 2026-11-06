@@ -46,7 +46,11 @@ type Context struct {
 	Profile  string   // domain.SystemProfile.Prompt(): Art, Befehlssatz, Notizen, Abgelehntes
 	Commands []string // eigene letzte Befehle, neuester zuletzt
 	Screen   string   // letzte N Zeilen des Terminals (bereits Klartext)
+	Net      bool     // Netzwerkgerät: Gefahrenregeln für Switches/Router
 }
+
+// kind: Regelgruppe der festen Gefahrenregeln für dieses System.
+func (c Context) kind() string { return safety.KindFor(c.OS, c.Net) }
 
 const (
 	maxCmd    = 300
@@ -165,13 +169,13 @@ func (a *Agent) FollowUps(ctx context.Context, c Context) ([]Suggestion, error) 
 			return nil, nil // eine kaputte Zeile verwirft alles (strikt)
 		}
 		reason, _ := oneLine(x.Grund, maxReason)
-		res = append(res, annotate(cmd, reason, c.OS))
+		res = append(res, annotate(cmd, reason, c.kind()))
 	}
 	return res, nil
 }
 
-func annotate(cmd, reason, osText string) Suggestion {
-	return Suggestion{Command: cmd, Reason: reason, Danger: safety.Check(cmd, safety.Kind(osText)), Elevated: safety.Elevated(cmd)}
+func annotate(cmd, reason, kind string) Suggestion {
+	return Suggestion{Command: cmd, Reason: reason, Danger: safety.Check(cmd, kind), Elevated: safety.Elevated(cmd)}
 }
 
 // ---------------------------------------------------------------- 3. Ziel-Modus
@@ -235,7 +239,7 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 	if err != nil {
 		return Step{}, err
 	}
-	st, err := ParseStep(res.Content, c.OS)
+	st, err := parseStep(res.Content, c.kind())
 	if err == nil {
 		return st, nil
 	}
@@ -249,7 +253,7 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 		llm.Message{Role: "user", Content: retryHint})
 	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.1, NoThink: true})
 	if err2 == nil {
-		if st, err := ParseStep(res2.Content, c.OS); err == nil {
+		if st, err := parseStep(res2.Content, c.kind()); err == nil {
 			return st, nil
 		}
 		res = res2
@@ -303,7 +307,9 @@ func tail(s string, n int) string {
 // ParseStep parst das JSON-Objekt des Ziel-Modus. Unbekannte Schlüssel werden
 // ignoriert (nur bekannte Felder werden je verwendet); der Befehl selbst wird
 // strikt geprüft (eine Zeile, keine Steuerzeichen) ⇒ sonst ErrUnreadable.
-func ParseStep(out, osText string) (Step, error) {
+func ParseStep(out, osText string) (Step, error) { return parseStep(out, safety.Kind(osText)) }
+
+func parseStep(out, kind string) (Step, error) {
 	var v map[string]json.RawMessage
 	if !strictJSON(out, &v) {
 		return Step{}, ErrUnreadable
@@ -340,7 +346,7 @@ func ParseStep(out, osText string) (Step, error) {
 			}
 		}
 	}
-	return Step{Suggestion: annotate(cmd, reason, osText), Plan: plan}, nil
+	return Step{Suggestion: annotate(cmd, reason, kind), Plan: plan}, nil
 }
 
 // ---------------------------------------------------------------- Befehl anpassen
@@ -377,7 +383,7 @@ func (a *Agent) Adapt(ctx context.Context, cmd string, c Context) (Suggestion, e
 	if line == "" {
 		return Suggestion{Reason: reason}, nil
 	}
-	return annotate(line, reason, c.OS), nil
+	return annotate(line, reason, c.kind()), nil
 }
 
 // ---------------------------------------------------------------- Frage-Modus
@@ -466,4 +472,4 @@ func oneLine(s string, n int) (string, bool) {
 
 // ParseStepCommand bewertet einen vom Menschen bearbeiteten Befehl neu
 // (die Gefahrenregeln gelten auch für eigene Änderungen).
-func ParseStepCommand(cmd, osText string) Suggestion { return annotate(cmd, "", osText) }
+func ParseStepCommand(cmd, kind string) Suggestion { return annotate(cmd, "", kind) }

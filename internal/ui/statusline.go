@@ -73,8 +73,15 @@ func (a *App) sessionBar(s *session) string {
 	if prod {
 		left.WriteString(lipgloss.NewStyle().Background(st.T.Bg).Foreground(st.T.Danger).Bold(true).Padding(0, 1).Render(i18n.T("PRODUKTIV")))
 	}
+	if col := a.accentOf(s.conn); col != nil && !prod {
+		// Akzentfarbe (accent.go): Umgebung als Schild, sonst ein Farbblock
+		left.WriteString(lipgloss.NewStyle().Background(col).Foreground(st.T.Bg).Bold(true).Padding(0, 1).Render(envLabel(envKind(s.conn))))
+	}
 	if s.state == stConnected && s.rootNow() {
 		left.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("⚠ root")))
+	}
+	if s.recording() {
+		left.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
 	}
 	info := s.conn.Username + "@" + s.conn.Addr()
 	if s.client != nil {
