@@ -664,6 +664,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	self := c
 	f.pick("jump", i18n.T("Jump-Host"), c.JumpHostID, func(v string) string { return a.jumpFieldText(self, v) },
 		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
+	a.addRelayField(f, c)
 	f.choice("device", i18n.T("Gerätetyp"), deviceLabels, deviceLabel(c.Device), i18n.T("Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage"))
 	var pr domain.SystemProfile
 	if c.Profile != nil {
@@ -752,12 +753,14 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	}
 	var err error
 	var next tea.Cmd
-	wasKey := a.scr == scrKeyForm || a.scr == scrSSHKeyForm
+	wasKey := a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm
 	switch a.scr {
 	case scrKeyForm:
 		next, err = a.saveKeyFix()
 	case scrSSHKeyForm:
 		next, err = a.startSSHKey()
+	case scrRelayForm:
+		next, err = a.startRelayPair()
 	case scrConnForm:
 		err = a.saveConn()
 	case scrTunnelForm:
@@ -831,6 +834,7 @@ func (a *App) saveConn() error {
 	if c.Protocol.Raw() {
 		c.JumpHostID, c.KeyPEM = "", ""
 	}
+	a.applyRelayField(f, &c)
 	if c.JumpHostID != "" {
 		if _, ok := a.st.Connection(c.JumpHostID); !ok {
 			return errors.New(i18n.T("Jump-Host gibt es nicht mehr"))

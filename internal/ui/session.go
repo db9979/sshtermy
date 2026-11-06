@@ -172,6 +172,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 		opts := sshx.Options{
 			HostKeys: hk,
 			Resolve:  st.Connection,
+			Relay:    a.relayDialer(),
 			Prompt: func(host, fp, typ string) bool {
 				r := make(chan bool, 1)
 				ev <- hostKeyAskMsg{host, fp, typ, r}

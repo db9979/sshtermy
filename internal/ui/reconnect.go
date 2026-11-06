@@ -525,7 +525,7 @@ func (a *App) reconnectView(s *session) string {
 	r := s.rc
 	where := s.conn.Alias
 	if !strings.Contains(where, s.conn.Host) {
-		where += " (" + s.conn.Addr() + ")"
+		where += " (" + s.conn.ShowAddr() + ")"
 	}
 	head := st.Warn.Render("⟳ " + r.cause + ": " + where)
 	var line string

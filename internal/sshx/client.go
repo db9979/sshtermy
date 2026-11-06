@@ -95,11 +95,21 @@ func (r RemoteInfo) String() string {
 	return strings.Join(parts, " · ")
 }
 
+// RelayDialer öffnet einen Kanal über einen Vermittler zum sshd des Systems
+// (Connection.RelayID/RelaySystem). hostKey ist der vom Anker gemeldete
+// Host-Key im authorized_keys-Format ("" = unbekannt, dann wie sonst fragen).
+type RelayDialer func(ctx context.Context, c domain.Connection) (conn net.Conn, hostKey string, err error)
+
+// ErrRelayHostKey: der Server zeigt einen anderen Host-Key, als sein Anker
+// dem Vermittler gemeldet hat.
+var ErrRelayHostKey = i18n.NewError("ACHTUNG: Host-Key passt nicht zu dem, den der Anker beim Vermittler gemeldet hat. Verbindung abgebrochen")
+
 // Options für Dial.
 type Options struct {
 	HostKeys  *HostKeyStore
 	Prompt    HostKeyPrompt
 	Resolve   Resolver
+	Relay     RelayDialer  // für Verbindungen über einen Vermittler (optional)
 	AskSecret SecretPrompt // fehlende Passwörter/Passphrasen erfragen (optional)
 	Timeout   time.Duration
 
@@ -235,12 +245,50 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 			return ask(label)
 		}
 	}
+	var (
+		relayKey ssh.PublicKey
+		err      error
+	)
+	relayMismatch := false
+	if c.ViaRelay() {
+		if o.Relay == nil {
+			return nil, errors.New(i18n.T("Vermittler auf diesem Rechner nicht gekoppelt"))
+		}
+		var hk string
+		raw, hk, err = o.Relay(ctx, c)
+		if err != nil {
+			return nil, err
+		}
+		if hk != "" {
+			if relayKey, _, _, _, err = ssh.ParseAuthorizedKey([]byte(hk)); err != nil {
+				raw.Close()
+				return nil, errors.New(i18n.T("Vermittler meldet einen ungültigen Host-Key"))
+			}
+		}
+		// Unbekannter Host: der Schlüssel, den der Anker gemeldet hat, gilt
+		// ohne Rückfrage; ein anderer wird abgelehnt (nie „trotzdem“).
+		if relayKey != nil {
+			want := ssh.FingerprintSHA256(relayKey)
+			o.Prompt = func(host, fp, typ string) bool {
+				if fp == want {
+					return true
+				}
+				relayMismatch = true
+				return false
+			}
+		}
+	}
 	cfg, err := clientConfig(c, o)
 	if err != nil {
+		if raw != nil {
+			raw.Close()
+		}
 		return nil, err
 	}
 
-	if c.JumpHostID != "" {
+	if c.ViaRelay() {
+		// raw kommt schon vom Vermittler
+	} else if c.JumpHostID != "" {
 		if o.Resolve == nil {
 			return nil, errors.New(i18n.T("Jump-Host kann nicht aufgelöst werden"))
 		}
@@ -280,6 +328,9 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		raw.Close()
 		if jump != nil {
 			jump.Close()
+		}
+		if relayMismatch {
+			return nil, ErrRelayHostKey
 		}
 		return nil, err
 	}

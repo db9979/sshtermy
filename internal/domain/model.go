@@ -76,10 +76,15 @@ type Connection struct {
 	// fragt sshTermy beim Verbinden und legt die Antwort dort ab.
 	Keychain bool `json:"keychain,omitempty"`
 
-	JumpHostID string     `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
-	TunnelIDs  []string   `json:"tunnel_ids,omitempty"`   // Tunnel, die mit dieser Verbindung starten
-	KeepAlive  int        `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
-	Device     DeviceKind `json:"device,omitempty"`       // Server oder Netzwerkgerät, leer = automatisch
+	JumpHostID string `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
+	// RelayID/RelaySystem: über einen Vermittler (eigener sshtermy
+	// vermittler oder Speech on DGX Spark) zum sshd eines Systems, das selbst
+	// die Verbindung zum Vermittler hält (Anker). Host ist dann nur Anzeige.
+	RelayID     string     `json:"relay_id,omitempty"`
+	RelaySystem string     `json:"relay_system,omitempty"`
+	TunnelIDs   []string   `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
+	KeepAlive   int        `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
+	Device      DeviceKind `json:"device,omitempty"`      // Server oder Netzwerkgerät, leer = automatisch
 
 	// Profile: was für ein System dahinter steckt (automatisch erkannt,
 	// vom Nutzer ergänzbar). Geht in jeden KI-Prompt, damit Befehle im
@@ -156,7 +161,7 @@ func (c Connection) DefaultPort() int {
 // Target: Anzeige des Ziels, z. B. „admin@10.0.0.1:22“ oder bei seriellen
 // Verbindungen „COM3 · 9600 8N1“.
 func (c Connection) Target() string {
-	a := c.Addr()
+	a := c.ShowAddr()
 	if c.Protocol != ProtoSerial && c.Username != "" {
 		a = c.Username + "@" + a
 	}
@@ -169,6 +174,10 @@ func (c Connection) Target() string {
 // Addr liefert host:port (IPv6 korrekt geklammert), bei seriellen
 // Verbindungen Schnittstelle und Geschwindigkeit.
 func (c Connection) Addr() string {
+	if c.ViaRelay() {
+		// Name, unter dem known_hosts den Host-Key merkt (kein echter Host)
+		return c.RelaySystem + "." + c.RelayID + ".vermittler:22"
+	}
 	if c.Protocol == ProtoSerial {
 		port := c.SerialPort
 		if port == "" {
@@ -184,6 +193,20 @@ func (c Connection) Addr() string {
 		return fmt.Sprintf("[%s]:%d", c.Host, p)
 	}
 	return fmt.Sprintf("%s:%d", c.Host, p)
+}
+
+// ShowAddr: Adresse für die Anzeige. Über einen Vermittler der Name des
+// Systems mit „⇌“ statt des internen Namens für known_hosts.
+func (c Connection) ShowAddr() string {
+	if c.ViaRelay() {
+		return c.Host + " ⇌"
+	}
+	return c.Addr()
+}
+
+// ViaRelay: Verbindung läuft über einen Vermittler.
+func (c Connection) ViaRelay() bool {
+	return c.RelayID != "" && c.RelaySystem != "" && !c.Protocol.Raw()
 }
 
 func containsColon(s string) bool {
@@ -348,11 +371,27 @@ type Data struct {
 	Deleted           map[string]time.Time `json:"deleted,omitempty"` // ID → Löschzeit (Grabsteine)
 	Sync              SyncConfig           `json:"sync,omitempty"`
 
+	// Relays: gekoppelte Vermittler. Rein lokal wie Sync: jeder Rechner
+	// koppelt sich selbst (eigener Geräteschlüssel), nie in der Sync-Datei.
+	Relays []Relay `json:"relays,omitempty"`
+
 	// LocalKeys: Schlüsseldatei pro Verbindung (ID → Pfad), nur für diesen
 	// Rechner. Rein lokal wie Sync, geht nie in die Sync-Datei. Hat Vorrang
 	// vor Connection.KeyPath, wenn der Key hier woanders liegt als auf dem
 	// Rechner, der die Verbindung angelegt hat.
 	LocalKeys map[string]string `json:"local_keys,omitempty"`
+}
+
+// Relay ist ein gekoppelter Vermittler.
+type Relay struct {
+	ID     string    `json:"id"`
+	Name   string    `json:"name"`         // Anzeigename (vom Vermittler, änderbar)
+	Kind   string    `json:"kind"`         // "sshtermy" | "spark"
+	Base   string    `json:"base"`         // https://host[:port][/pfad]
+	FP     string    `json:"fp,omitempty"` // Pin des Zertifikats (SHA-256 hex), leer = System-CAs
+	Key    Secret    `json:"key"`          // Geräteschlüssel aus der Kopplung
+	Device string    `json:"device"`       // Name dieses Rechners beim Vermittler
+	Since  time.Time `json:"since"`
 }
 
 // NewData: leerer Store mit Standardwerten.

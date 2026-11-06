@@ -90,7 +90,7 @@ func (a *App) pickJumpField(self domain.Connection) tea.Cmd {
 		if folder == "" {
 			folder = i18n.T("oberste Ebene")
 		}
-		it.detail = fmt.Sprintf("%s@%s · %s", c.Username, c.Addr(), trunc(folder, 24))
+		it.detail = fmt.Sprintf("%s@%s · %s", c.Username, c.ShowAddr(), trunc(folder, 24))
 		var hint []string
 		if c.JumpHostID != "" {
 			chain, _ := domain.JumpChain(c.JumpHostID, a.st.Connection)

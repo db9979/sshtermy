@@ -11,6 +11,7 @@ require (
 	github.com/charmbracelet/ultraviolet v0.0.0-20261008173134-6b8d4baf91b4
 	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/charmbracelet/x/vt v0.1.0
+	github.com/coder/websocket v1.8.15
 	github.com/pkg/sftp v1.13.12
 	go.bug.st/serial v1.8.0
 	golang.org/x/crypto v0.58.0
