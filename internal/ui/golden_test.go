@@ -232,6 +232,9 @@ func (g *gold) screen() string {
 // check prüft die Fenstergröße und vergleicht mit der Golden-Datei.
 func (g *gold) check(name string) {
 	g.t.Helper()
+	for i := range g.a.toasts {
+		g.a.toasts[i].born = time.Time{} // Toasts fertig hereingeglitten, sonst hinge das Bild an der Uhr
+	}
 	v := g.a.View()
 	if w, h := lipgloss.Width(v.Content), lipgloss.Height(v.Content); w > g.a.w || h != g.a.h {
 		g.t.Errorf("%s: Bild ist %dx%d, Fenster %dx%d", name, w, h, g.a.w, g.a.h)

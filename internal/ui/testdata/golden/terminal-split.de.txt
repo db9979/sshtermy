@@ -1,8 +1,8 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                      Ansicht: zwei nebeneinander
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                           ▌● web-01   ▌● web-02
  PRODUKTIV  deploy@10.0.0.12:22                                                                                ⇄ 0 Tunnel   ● ✦ qwen3-coder
-▌● web-01  deploy@10.0.0.11                                           │ ● web-02  deploy@10.0.0.12                      Strg+Pfeil wechselt
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                   │Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64
-                                                                      │
+▌● web-01  deploy@10.0.0.11                                           │ ● web-02  deploy@10.0.0.12        ╭───────────────────────────────╮
+Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                   │Linux web-02 6.8.0-45-generic #45-U│ ℹ Ansicht: zwei nebeneinander │
+                                                                      │                                   ╰───────────────────────────────╯
 deploy@web-01:~$ systemctl status nginx --no-pager | head -3          │deploy@web-02:~$ systemctl status nginx --no-pager | head -3
 ● nginx.service - A high performance web server and a reverse proxy se│● nginx.service - A high performance web server and a reverse proxy s
      Loaded: loaded (/lib/systemd/system/nginx.service; enabled)      │     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)

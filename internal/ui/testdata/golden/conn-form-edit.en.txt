@@ -9,6 +9,7 @@
   │                                                                                              │
   │ ▌ Alias               web-01                                                                 │
   │                       Display name, e.g. „DGX Spark“                                         │
+  │   Connect via          SSH  Telnet  Serial (console cable)                                   │
   │   Host                10.0.0.11                                                              │
   │   Port                                                                                       │
   │   User                deploy                                                                 │
@@ -23,7 +24,6 @@
   │   AI notes                                                                                   │
   │                                                                                              │
   ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 

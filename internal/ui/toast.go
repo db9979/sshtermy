@@ -206,6 +206,13 @@ func (a *App) withToasts(base string) string {
 		if age := now.Sub(t.born); age < toastIn { // von rechts hereingleiten
 			x += int(float64(bw) * (1 - float64(age)/float64(toastIn)) / 2)
 		}
+		if x+bw > a.w { // beim Hereingleiten rechts abschneiden, sonst wird das Bild breiter als das Fenster
+			ls := strings.Split(box, "\n")
+			for j := range ls {
+				ls[j] = ansi.Truncate(ls[j], a.w-x, "")
+			}
+			box = strings.Join(ls, "\n")
+		}
 		box = a.z.scan(box, x, y)
 		layers = append(layers, lipgloss.NewLayer(box).X(x).Y(y).Z(2+i))
 		y += bh

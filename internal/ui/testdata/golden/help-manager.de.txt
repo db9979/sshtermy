@@ -2,31 +2,31 @@
  V│                                                                                                                 │
   │  ? Tastenkürzel  ·  sshTermy vdev                                                                               │
  ▾│                                                                                                                 │
-  │  ◆ Überall                            ◎ Ziel-Modus F2                      ⇉ Broadcast m                        │
- ▾│   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   Space / g / a Host / Ordner / alle  │
-  │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       Tab         Hosts · Quelle · Befe…  │
-▌ │   ⇧F9         Tastenzeile erklären     i           nur einfügen (Dry-Run)   ⇧⏎          weiterer Schritt        │
-▌ │   F12         Über & Update            e           bearbeiten               Strg+S      prüfen, dann ⏎          │
-▌ │   F12 w       Was ist neu              s           überspringen             ← / →       Host-Spalte wählen      │
- ○│   F12 l       Sprache: Deutsch/Engl…   r           neu vorschlagen          ↑ ↓ Bild↑↓  Ausgabe blättern        │
- ○│   Strg+Q      beenden                  x           Ziel beenden             z / c       groß / kopieren         │
-  │                                        ↑ ↓         Runbook wählen           r / e / x   nochmal / ändern / St…  │
-  │  ≡ Verbindungs-Manager F10  hier       Strg+S      als Runbook speichern    {{name}}    Variable, wird abgefr…  │
-  │   ⏎           verbinden                Strg+D      Runbook löschen          {{host}}    je Host eingesetzt      │
-  │   n           neue Verbindung                                               Strg+R      als Runbook speichern   │
-  │   e           bearbeiten              ✦ KI fragen F3                        e / Strg+D  ändern / löschen        │
-  │   d           löschen                  ⏎           Frage senden             k / a       KI prüft / übernehmen   │
-  │   /           suchen (auch #tag)       ⇧⏎ / Strg+J neue Zeile                                                   │
-  │   o           neuer Ordner (A / B v…   1…9         Befehl einfügen         ⌕ Netzwerk-Scan f                    │
-  │   r           Ordner umbenennen        n           neue Frage               Strg+S      Scan starten            │
-  │   v           in Ordner verschieben                                         Space / a   Fund / alle wählen      │
-  │   Shift+↑     nach oben schieben (↓…  ⇄ Tunnel F4                           ⏎           als Verbindungen anle…  │
-  │   ← / →       Ordner zu-/aufklappen    ⏎ / Klick   starten / stoppen        x           Scan stoppen            │
-  │   - / +       alle Ordner zu/auf       a           mit Verbindung starten   r           neu scannen             │
-  │   #           nach Tag filtern         o           im Browser öffnen                                            │
-  │   t           Tunnel anlegen           n           neuer Tunnel            ❯ Befehlspalette Strg+Space          │
-  │   q           Schnellbefehle           e           bearbeiten               tippen      filtern / Ziel / Frage  │
-  │   m           Broadcast an mehrere …   d           löschen                  user@host   schnell verbinden       │
+  │  ◆ Überall                            ◎ Ziel-Modus F2                      ☰ Sitzungsprotokolle l              │
+ ▾│   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   /           suchen (auch Ausgabe)   │
+  │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       z           KI-Zusammenfassung      │
+▌ │   ⇧F9         Tastenzeile erklären     i           nur einfügen (Dry-Run)   Z           alle Treffer zusammen…  │
+▌ │   F12         Über & Update            e           bearbeiten               x           Export: md · txt · ca…  │
+▌ │   F12 w       Was ist neu              s           überspringen             d           löschen                 │
+ ○│   F12 l       Sprache: Deutsch/Engl…   r           neu vorschlagen          a           Mitschreiben an/aus     │
+ ○│   Strg+Q      beenden                  x           Ziel beenden             ⎵ Befehl    nicht protokollieren    │
+  │                                        ↑ ↓         Runbook wählen                                               │
+  │  ≡ Verbindungs-Manager F10  hier       Strg+S      als Runbook speichern   ⇉ Broadcast m                        │
+  │   ⏎           verbinden                Strg+D      Runbook löschen          Space / g / a Host / Ordner / alle  │
+  │   n           neue Verbindung                                               Tab         Hosts · Quelle · Befe…  │
+  │   e           bearbeiten              ✦ KI fragen F3                        ⇧⏎          weiterer Schritt        │
+  │   d           löschen                  ⏎           Frage senden             Strg+S      prüfen, dann ⏎          │
+  │   /           suchen (auch #tag)       ⇧⏎ / Strg+J neue Zeile               ← / →       Host-Spalte wählen      │
+  │   o           neuer Ordner (A / B v…   1…9         Befehl einfügen          ↑ ↓ Bild↑↓  Ausgabe blättern        │
+  │   r           Ordner umbenennen        ↑ ↓         Befehlskarte wählen      z / c       groß / kopieren         │
+  │   v           in Ordner verschieben    a           Befehl ausführen (rot…   r / e / x   nochmal / ändern / St…  │
+  │   Shift+↑     nach oben schieben (↓…   c           Befehl kopieren          {{name}}    Variable, wird abgefr…  │
+  │   ← / →       Ordner zu-/aufklappen    z           Erklärung ein-/auskla…   {{host}}    je Host eingesetzt      │
+  │   - / +       alle Ordner zu/auf       n           neue Frage               Strg+R      als Runbook speichern   │
+  │   #           nach Tag filtern                                              e / Strg+D  ändern / löschen        │
+  │   t           Tunnel anlegen          ⇄ Tunnel F4                           k / a       KI prüft / übernehmen   │
+  │   q           Schnellbefehle           ⏎ / Klick   starten / stoppen                                            │
+  │   m           Broadcast an mehrere …   a           mit Verbindung starten  ⌕ Netzwerk-Scan f                    │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                ▾ mehr · ↑↓ blättern · beliebige Taste schließt  │

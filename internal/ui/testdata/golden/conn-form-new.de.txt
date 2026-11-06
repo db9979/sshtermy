@@ -9,6 +9,7 @@
   │                                                                                              │
   │ ▌ Alias                                                                                      │
   │                       Anzeigename, z. B. „DGX Spark“                                         │
+  │   Verbindung über      SSH  Telnet  Seriell (Konsolenkabel)                                  │
   │   Host                                                                                       │
   │   Port                22                                                                     │
   │   Benutzer                                                                                   │
@@ -23,7 +24,6 @@
   │   KI-Notizen                                                                                 │
   │                                                                                              │
   ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-
 
 
 
