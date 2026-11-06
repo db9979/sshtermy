@@ -335,6 +335,9 @@ func (a *App) connectTo(s *session, l link, viaJump bool) tea.Cmd {
 	}
 	if src.Auth == domain.AuthAgent || src.Auth == domain.AuthKeyFile {
 		c.Auth, c.KeyPath, c.KeyPEM, c.KeyPassphrase = src.Auth, src.KeyPath, src.KeyPEM, src.KeyPassphrase
+		if src.Keychain && !c.KeyPassphrase.IsSet() {
+			c.KeyPassphrase = domain.Secret(sshx.KeychainSecret(src.ID, sshx.SecretPassphrase))
+		}
 	}
 	if viaJump {
 		c.JumpHostID = src.ID

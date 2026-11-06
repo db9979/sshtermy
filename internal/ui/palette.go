@@ -170,6 +170,13 @@ func (a *App) paletteItems() []palItem {
 		}},
 		{icon: "≡", label: i18n.T("Verbindungs-Manager"), hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: i18n.T("Neue Verbindung"), hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		{icon: "⚿", label: i18n.T("SSH-Schlüssel erzeugen / auf den Server übertragen"), hint: a.keys.label(actSSHKey), run: func() tea.Cmd {
+			if c, ok := a.sshKeyTarget(); ok {
+				return a.openSSHKeyForm(c)
+			}
+			a.flash(i18n.T("Erst eine Verbindung im Manager wählen oder verbinden"))
+			return nil
+		}},
 		{icon: "⇉", label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
 		{icon: "⌕", label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
 		{icon: "✦", label: i18n.T("KI-Einstellungen"), hint: "s", run: func() tea.Cmd { return a.openSettings() }},

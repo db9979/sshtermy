@@ -40,6 +40,7 @@ const (
 	actCheat     action = "cheat"
 	actQuickEdit action = "quick_edit"
 	actQuickMenu action = "quick_menu"
+	actSSHKey    action = "ssh_key"
 
 	// Ordner im Manager
 	actFolderNew action = "folder_new"
@@ -100,6 +101,7 @@ var actionDefs = []actionDef{
 	{actNextLook, "Aussehen wechseln", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},
 	{actQuickEdit, "Schnellbefehle bearbeiten", "Manager", []string{"q"}},
+	{actSSHKey, "SSH-Schlüssel erzeugen / übertragen", "Manager", []string{"c"}},
 	{actFolderNew, "Neuer Ordner", "Manager", []string{"o"}},
 	{actRename, "Ordner umbenennen", "Manager", []string{"r"}},
 	{actMoveTo, "In Ordner verschieben", "Manager", []string{"v"}},

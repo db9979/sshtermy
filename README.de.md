@@ -287,6 +287,12 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   Host-Key bricht die Verbindung ab, ohne „trotzdem verbinden“ (möglicher Man-in-the-Middle).
 - Agent-Auth bevorzugt: Private Keys bleiben im Agent. Eingebettete Keys liegen nur verschlüsselt im Store.
 - Tunnel binden standardmäßig auf `127.0.0.1`. SOCKS5 löst Namen auf dem Server auf (keine lokalen DNS-Leaks).
+- **SSH-Schlüssel (`c` im Manager):** erzeugt ed25519- oder RSA-4096-Keys (wie `ssh-keygen`, wahlweise mit
+  Passphrase, als Datei in `~/.ssh` oder eingebettet), trägt sie wie `ssh-copy-id` in `~/.ssh/authorized_keys`
+  ein und stellt die Verbindung erst nach einer geglückten Probe-Anmeldung mit dem Key um.
+- **Schlüsselbund:** Passwort oder Key-Passphrase können statt im Store im macOS-Schlüsselbund, in der
+  Windows-Anmeldeinformationsverwaltung oder im Secret Service (Linux, `secret-tool`) liegen. Jeder Rechner
+  hat seinen eigenen Eintrag; fehlt er nach dem Sync, fragt sshTermy einmal und merkt sich die Antwort dort.
 
 ### KI
 

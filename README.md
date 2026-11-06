@@ -290,6 +290,12 @@ Windows login ──DPAPI CryptProtectData────────────�
   host key aborts the connection, without „connect anyway“ (possible man-in-the-middle).
 - Agent auth preferred: private keys stay in the agent. Embedded keys are only stored encrypted in the store.
 - Tunnels bind to `127.0.0.1` by default. SOCKS5 resolves names on the server (no local DNS leaks).
+- **SSH keys (`c` in the manager):** generates ed25519 or RSA-4096 keys (like `ssh-keygen`, optionally with a
+  passphrase, as a file in `~/.ssh` or embedded), adds them to `~/.ssh/authorized_keys` like `ssh-copy-id` and
+  switches the connection only after a successful test login with the key.
+- **Keychain:** a password or key passphrase can live in the macOS Keychain, Windows Credential Manager or the
+  Secret Service (Linux, `secret-tool`) instead of the store. Each computer has its own entry; if it is missing
+  after a sync, sshTermy asks once and saves the answer there.
 
 ### AI
 

@@ -66,6 +66,7 @@ var helpSections = []helpSection{
 		{"- / +", "alle Ordner zu/auf"},
 		{"#", "nach Tag filtern"},
 		{"t", "Tunnel anlegen"},
+		{"c", "SSH-Schlüssel erzeugen / übertragen"},
 		{"q", "Schnellbefehle"},
 		{"m", "Broadcast an mehrere Hosts"},
 		{"f", "Netzwerk-Scan"},

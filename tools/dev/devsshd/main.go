@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/binary"
+	"errors"
 	"github.com/pkg/sftp"
 	"io"
 	"log"
@@ -18,7 +19,23 @@ import (
 func main() {
 	_, priv, _ := ed25519.GenerateKey(rand.Reader)
 	signer, _ := ssh.NewSignerFromKey(priv)
-	cfg := &ssh.ServerConfig{PasswordCallback: func(c ssh.ConnMetadata, p []byte) (*ssh.Permissions, error) { return nil, nil }}
+	cfg := &ssh.ServerConfig{PasswordCallback: func(c ssh.ConnMetadata, p []byte) (*ssh.Permissions, error) { return nil, nil },
+		// Keys aus $HOME/.ssh/authorized_keys (zum Testen von „SSH-Key übertragen“)
+		PublicKeyCallback: func(_ ssh.ConnMetadata, k ssh.PublicKey) (*ssh.Permissions, error) {
+			home, _ := os.UserHomeDir()
+			b, _ := os.ReadFile(home + "/.ssh/authorized_keys")
+			for len(b) > 0 {
+				pk, _, _, rest, err := ssh.ParseAuthorizedKey(b)
+				if err != nil {
+					break
+				}
+				if string(pk.Marshal()) == string(k.Marshal()) {
+					return nil, nil
+				}
+				b = rest
+			}
+			return nil, errors.New("unknown key")
+		}}
 	cfg.AddHostKey(signer)
 	ln, err := net.Listen("tcp", "127.0.0.1:2222")
 	if err != nil {
