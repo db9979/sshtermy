@@ -205,6 +205,7 @@ type Settings struct {
 	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
 	NoSessionLog bool   `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
 	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
+	DangerAll    bool   `json:"danger_all,omitempty"`     // Gefahren-Check beim Tippen auf allen Hosts, nicht nur Produktiv
 	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
 	// NoAutoReconnect: abgerissene Sitzungen nicht von selbst neu verbinden.
 	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`

@@ -24,6 +24,16 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
   the results are shown side by side in columns. The danger rules apply here too: red needs ⏎ twice.
   Servers get every step via exec (with exit code), network devices get the commands typed into their shell („-- MORE --“ is paged automatically).
+- **Runbooks with variables:** `{{vlan}}` or `{{vlan=20}}` in a step is asked before the run, `{{host}}`, `{{alias}}`,
+  `{{user}}`, `{{port}}` are filled in per host. In the broadcast `e` loads a runbook for editing, `Ctrl+R` saves,
+  `Ctrl+D` deletes. Before the run `k` lets the AI check the steps against each host's system profile and suggest
+  equivalents (`a` applies them). Whether something is dangerous is still decided by the fixed rules.
+- **Danger check:** on production hosts (folder, tag or alias with „prod“, tag „live“) sshTermy asks before risky
+  commands run (`rm -rf`, `reboot`, on switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …). Only `y` runs
+  them, Esc leaves the line in place. Palette „Danger check on all hosts“ extends it to every host.
+- **Export recordings:** palette „Start recording“ records the tab as an asciinema file (`.cast`, with colours and
+  vim/htop), playable with `asciinema play`. Session logs (`l`, then `x`) export as Markdown, text or a rebuilt
+  recording; „Export terminal history as text“ saves the scrollback. Everything goes to your Downloads folder.
 - **Network scan** (f in the manager): search a subnet for SSH devices (only port and SSH banner, no login),
   recognize switches and routers by their banner and create the hits as connections with one key press.
 - **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL

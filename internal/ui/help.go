@@ -155,7 +155,7 @@ var helpSections = []helpSection{
 		{"/", "suchen (auch Ausgabe)"},
 		{"z", "KI-Zusammenfassung"},
 		{"Z", "alle Treffer zusammenfassen"},
-		{"x", "als Markdown exportieren"},
+		{"x", "Export: md · txt · cast"},
 		{"d", "löschen"},
 		{"a", "Mitschreiben an/aus"},
 		{"⎵ Befehl", "nicht protokollieren"},
@@ -169,6 +169,11 @@ var helpSections = []helpSection{
 		{"↑ ↓ Bild↑↓", "Ausgabe blättern"},
 		{"z / c", "groß / kopieren"},
 		{"r / e / x", "nochmal / ändern / Stopp"},
+		{"{{name}}", "Variable, wird abgefragt"},
+		{"{{host}}", "je Host eingesetzt"},
+		{"Strg+R", "als Runbook speichern"},
+		{"e / Strg+D", "ändern / löschen"},
+		{"k / a", "KI prüft / übernehmen"},
 	}},
 	{hcScan, "⌕", "Netzwerk-Scan", "f", false, [][2]string{
 		{"Strg+S", "Scan starten"},
@@ -189,6 +194,12 @@ var helpSections = []helpSection{
 		{"automatisch", "System + Befehlssatz erkennen"},
 		{"e (Manager)", "System, Befehlssatz, KI-Notizen"},
 		{"„% Invalid input“", "Befehl wird gemerkt + gemieden"},
+	}},
+	{hcNone, "⚠", "Gefahren & Aufnahme", "", false, [][2]string{
+		{"Produktiv", "riskanter Befehl: j"},
+		{"Palette", "„Gefahren-Check“"},
+		{"Palette", "„Aufnahme starten“"},
+		{"Palette", "„Verlauf als Text“"},
 	}},
 	{hcNone, "◐", "Aussehen & Tasten", "", false, [][2]string{
 		{"a", "Dunkel · Hell · Kontrast"},
