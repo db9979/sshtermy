@@ -103,3 +103,26 @@ func TestRedactPasswordFlags(t *testing.T) {
 		}
 	}
 }
+
+// Rückfragen sind oft länger als ein Grund und kommen manchmal abgeschnitten
+// an; früher endete das in „Antwort des Modells nicht lesbar“.
+func TestParseStepQuestion(t *testing.T) {
+	long := "Der Befehl wurde abgelehnt, weil Priorität 1 bereits für 172.31.5.10 vergeben ist. " +
+		"Soll ich 172.31.5.10 entfernen und 172.31.1.18 mit Priorität 1 eintragen, oder 172.31.1.18 mit Priorität 3 ergänzen?"
+	s, err := ParseStep(`{"frage": "`+long+`", "optionen": ["Ja, ersetzen", "Nein, Priorität 3", ""]}`, "ArubaOS")
+	if err != nil || s.Question != long || len(s.Options) != 2 || s.Options[0] != "Ja, ersetzen" {
+		t.Fatalf("lange Frage: %+v %v", s, err)
+	}
+	if s, err := ParseStep("{\"frage\": \"Zeile 1\\nZeile 2?\"}", ""); err != nil || s.Question != "Zeile 1 Zeile 2?" || s.Options != nil {
+		t.Fatalf("mehrzeilige Frage: %+v %v", s, err)
+	}
+	// abgeschnitten (Token-Limit)
+	s, err = ParseStep(`{"frage": "Der Befehl wurde abgelehnt, weil Priorität 1 bereits vergeben ist. Soll ich 172.31.5.10 entfernen und 172.31`, "")
+	if err != nil || !strings.HasPrefix(s.Question, "Der Befehl wurde abgelehnt") || !strings.HasSuffix(s.Question, "…") {
+		t.Fatalf("abgeschnittene Frage: %+v %v", s, err)
+	}
+	// ein abgeschnittener Befehl wird nie gerettet
+	if _, err := ParseStep(`{"befehl": "no sntp server 172.31`, ""); err == nil {
+		t.Fatal("abgeschnittener Befehl akzeptiert")
+	}
+}

@@ -890,6 +890,8 @@ var en = map[string]string{
 	"anlegen":                     "create",
 	"ansehen":                     "view",
 	"antworten":                   "answer",
+	"Vorschlag":                   "suggestion",
+	"Antwort anklicken, mit ↑↓ wählen oder frei schreiben":         "Click an answer, pick with ↑↓ or type your own",
 	"auf die neueste Version aus GitHub aktualisieren und beenden": "update to the newest version from GitHub and exit",
 	"auf-/zuklappen":                        "expand/collapse",
 	"aufklappen":                            "expand",
