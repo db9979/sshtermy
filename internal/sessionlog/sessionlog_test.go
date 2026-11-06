@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/db9979/sshtermy/internal/recording"
 )
 
 func key(b byte) []byte { return bytes.Repeat([]byte{b}, 32) }
@@ -101,5 +104,38 @@ func TestClip(t *testing.T) {
 	}
 	if !strings.Contains(out, "ausgelassen") {
 		t.Fatal("kein Hinweis auf Kürzung")
+	}
+}
+
+func TestTextAndCast(t *testing.T) {
+	start := time.Date(2026, 11, 6, 8, 0, 0, 0, time.Local)
+	l := New("c1", "web1", "admin@web1.lan:22")
+	l.Started = start
+	l.Add(Entry{At: start.Add(time.Minute), Command: "uptime", Output: " 08:01 up 3 days\n", Duration: 0.2})
+	code := 1
+	l.Add(Entry{At: start.Add(90 * time.Minute), Command: "cat /nope", Output: "cat: /nope: No such file", Failed: true, Exit: &code})
+	txt := l.Text()
+	for _, want := range []string{"admin@web1.lan$ uptime", "08:01 up 3 days", "admin@web1.lan$ cat /nope", "Exit 1"} {
+		if !strings.Contains(txt, want) {
+			t.Errorf("Text ohne %q:\n%s", want, txt)
+		}
+	}
+	h, ev, err := recording.Parse(l.Cast(2 * time.Second))
+	if err != nil || h.Width != 80 || !strings.HasPrefix(h.Title, "web1") {
+		t.Fatalf("%v %+v", err, h)
+	}
+	var out strings.Builder
+	last := 0.0
+	for _, e := range ev {
+		if e.Kind == "o" {
+			out.WriteString(e.Data)
+		}
+		last = e.Time
+	}
+	if !strings.Contains(out.String(), "08:01 up 3 days\r\n") || !strings.Contains(out.String(), "cat /nope\r\n") {
+		t.Errorf("Ausgabe: %q", out.String())
+	}
+	if last > 15 { // 90 Minuten Pause werden gekürzt
+		t.Errorf("Aufnahme zu lang: %.1f s", last)
 	}
 }

@@ -14,7 +14,8 @@
 //     bewusst nicht protokolliert.
 //   - Vor dem Speichern entfernt Redact offensichtliche Geheimnisse (Tokens,
 //     password=…, private Schlüssel) aus Befehl und Ausgabe.
-//   - Markdown-Export schreibt Klartext, aber nur auf ausdrücklichen Wunsch.
+//   - Export (Markdown, Text, asciinema-Aufnahme) schreibt Klartext, aber nur
+//     auf ausdrücklichen Wunsch.
 package sessionlog
 
 import (
@@ -29,9 +30,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/recording"
 	"github.com/db9979/sshtermy/internal/vault"
 )
 
@@ -348,6 +351,91 @@ func (l *Log) Markdown() string {
 	}
 	b.WriteString(i18n.T("---\nErstellt mit sshTermy\n"))
 	return b.String()
+}
+
+// Text: das Protokoll als schlichter Text, so wie es im Terminal aussah
+// (Prompt, Befehl, Ausgabe), für Tickets, Mails und Dokus.
+func (l *Log) Text() string {
+	var b strings.Builder
+	fmt.Fprintf(&b, i18n.T("Sitzung %s (%s) vom %s\n"), l.Host, l.Addr, l.Started.Format("02.01.2006 15:04"))
+	if l.System != "" {
+		fmt.Fprintf(&b, i18n.T("System: %s\n"), l.System)
+	}
+	if s := strings.TrimSpace(l.Summary); s != "" {
+		b.WriteString("\n" + s + "\n")
+	}
+	pr := l.prompt()
+	for _, e := range l.Entries {
+		mark := ""
+		if e.Failed {
+			mark = i18n.T("   # fehlgeschlagen")
+			if e.Exit != nil {
+				mark += fmt.Sprintf(" (Exit %d)", *e.Exit)
+			}
+		}
+		fmt.Fprintf(&b, "\n[%s] %s%s%s\n", e.At.Format("15:04:05"), pr, e.Command, mark)
+		if out := strings.TrimRight(e.Output, "\n "); out != "" {
+			b.WriteString(out + "\n")
+		}
+	}
+	return b.String()
+}
+
+// prompt: nachgebauter Prompt „user@host$ “ für Text und Aufnahme.
+func (l *Log) prompt() string {
+	who := l.Addr
+	if i := strings.LastIndex(who, ":"); i > 0 && !strings.Contains(who[i:], "]") {
+		who = who[:i] // Port weglassen
+	}
+	if who == "" {
+		who = l.Host
+	}
+	return who + "$ "
+}
+
+// Cast baut aus dem Protokoll eine abspielbare Aufnahme (asciicast v2):
+// Befehle erscheinen wie getippt, danach ihre Ausgabe. Pausen zwischen den
+// Befehlen werden auf höchstens idle gekürzt (wie „asciinema rec -i“).
+// Farben und Vollbildprogramme kennt das Protokoll nicht; dafür gibt es die
+// Live-Aufnahme im Terminal.
+func (l *Log) Cast(idle time.Duration) []byte {
+	if idle <= 0 {
+		idle = 2 * time.Second
+	}
+	width := 80
+	for _, e := range l.Entries {
+		for _, line := range strings.Split(e.Output, "\n") {
+			width = max(width, min(200, utf8.RuneCountInString(line)))
+		}
+	}
+	b := recording.NewBuilder(width, 30, l.Host+" · "+l.Started.Format("02.01.2006 15:04"), l.Started)
+	pr := "\x1b[32m" + l.prompt() + "\x1b[0m"
+	last := l.Started
+	b.Out(pr)
+	for i, e := range l.Entries {
+		gap := e.At.Sub(last)
+		if i == 0 {
+			gap = min(gap, time.Second)
+		}
+		b.Wait(min(max(gap, 300*time.Millisecond), idle))
+		b.Marker(e.Command)
+		b.Type(e.Command, 35*time.Millisecond)
+		b.Wait(250 * time.Millisecond)
+		b.Out("\r\n")
+		if out := strings.TrimRight(e.Output, "\n "); out != "" {
+			b.Wait(200 * time.Millisecond)
+			b.Out(strings.ReplaceAll(strings.ReplaceAll(out, "\r\n", "\n"), "\n", "\r\n") + "\r\n")
+		}
+		if e.Failed {
+			b.Out("\x1b[31m" + i18n.T("✗ fehlgeschlagen") + "\x1b[0m\r\n")
+		}
+		dur := time.Duration(e.Duration * float64(time.Second))
+		last = e.At.Add(dur)
+		b.Wait(min(dur, idle))
+		b.Out(pr)
+	}
+	b.Wait(time.Second)
+	return b.Cast()
 }
 
 // Transcript: kompakte Fassung fürs Sprachmodell (Ausgabe je Befehl gekürzt).
