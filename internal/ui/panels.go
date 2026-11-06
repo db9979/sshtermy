@@ -13,6 +13,7 @@ import (
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/runbook"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -370,7 +371,7 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 				st.Command = cmd
 				st.Reason = i18n.T("von dir bearbeitet")
 				*g.cur = st
-				fresh := agent.ParseStepCommand(cmd, s.client.Remote.String())
+				fresh := agent.ParseStepCommand(cmd, a.safetyKind(s))
 				g.cur.Danger, g.cur.Elevated = fresh.Danger, fresh.Elevated
 			}
 			g.editing = false
@@ -462,16 +463,12 @@ func (a *App) tunnelKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	case "down", "j":
 		s.tunSel = min(len(list)-1, s.tunSel+1)
 	case "enter", "space":
-		if s.tunSel < len(list) && s.tunnels != nil {
-			t := list[s.tunSel]
-			if s.tunnels.Get(t.ID) != nil {
-				s.tunnels.Stop(t.ID)
-				a.flash(i18n.T("Tunnel gestoppt: ") + t.Name)
-			} else if at, err := s.tunnels.Start(t); err != nil {
-				a.flash(i18n.T("Tunnel: ") + err.Error())
-			} else if at.URL() != "" {
-				a.flash(i18n.T("Web-Service bereit: ") + at.URL())
-			}
+		if s.tunSel < len(list) {
+			a.toggleTunnel(s, list[s.tunSel])
+		}
+	case "a":
+		if s.tunSel < len(list) {
+			a.toggleTunnelAuto(list[s.tunSel])
 		}
 	case "o":
 		if s.tunSel < len(list) && s.tunnels != nil {
@@ -500,6 +497,39 @@ func (a *App) tunnelKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// toggleTunnel schaltet einen gespeicherten Tunnel an oder aus. Er läuft über
+// die SSH-Verbindung der Sitzung, also auch über deren Jump-Host-Kette.
+func (a *App) toggleTunnel(s *session, t domain.Tunnel) {
+	if s.tunnels == nil {
+		a.flash(i18n.T("Tunnel brauchen eine bestehende Verbindung"))
+		return
+	}
+	if s.tunnels.Get(t.ID) != nil {
+		s.tunnels.Stop(t.ID)
+		a.flash(i18n.T("Tunnel gestoppt: ") + t.Name)
+	} else if at, err := s.tunnels.Start(t); err != nil {
+		a.flash(i18n.T("Tunnel: ") + err.Error())
+	} else if at.URL() != "" {
+		a.flash(i18n.T("Web-Service bereit: ") + at.URL())
+	} else {
+		a.flash(i18n.T("Tunnel läuft: ") + t.Name + " · " + at.Addr)
+	}
+}
+
+// toggleTunnelAuto: Tunnel mit der Verbindung automatisch starten, oder nicht.
+func (a *App) toggleTunnelAuto(t domain.Tunnel) {
+	t.AutoStart = !t.AutoStart
+	if _, err := a.st.UpsertTunnel(t); err != nil {
+		a.flash(i18n.T("Tunnel: ") + err.Error())
+		return
+	}
+	if t.AutoStart {
+		a.flash(i18n.T("Startet ab jetzt mit der Verbindung: ") + t.Name)
+	} else {
+		a.flash(i18n.T("Startet nicht mehr automatisch: ") + t.Name)
+	}
 }
 
 func (a *App) panelKeys(s *session) [][2]string {
@@ -541,7 +571,7 @@ func (a *App) panelKeys(s *session) [][2]string {
 		if len(list) == 0 {
 			return [][2]string{{"n", i18n.T("neuer Tunnel")}, {"Esc", i18n.T("zurück")}}
 		}
-		k := [][2]string{{"⏎", i18n.T("an/aus")}}
+		k := [][2]string{{"⏎", i18n.T("an/aus")}, {"a", i18n.T("automatisch")}}
 		if s.tunSel < len(list) && s.tunnels != nil {
 			if at := s.tunnels.Get(list[s.tunSel].ID); at != nil && at.URL() != "" {
 				k = append(k, [2]string{"o", "Browser"})
@@ -743,28 +773,44 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		b.WriteString(st.Muted.Render(i18n.T("Noch keine Tunnel für diese Verbindung.\nn = neuer Tunnel (z. B. -L 3000:localhost:3000)")))
 		return
 	}
+	via := ""
+	if s.conn.JumpHostID != "" {
+		if j, ok := a.st.Connection(s.conn.JumpHostID); ok {
+			via = i18n.T(" · über ") + j.Alias
+		}
+	}
 	for i, t := range list {
 		var at *sshx.ActiveTunnel
 		if s.tunnels != nil {
 			at = s.tunnels.Get(t.ID)
 		}
-		dot := st.Muted.Render("○")
+		// Schalter: ein Klick schaltet an/aus
+		sw := st.Muted.Render("○ " + i18n.T("aus"))
 		if at != nil {
-			dot = st.OK.Render("●")
+			sw = st.OK.Render("● " + i18n.T("an") + " ")
 		}
-		name := trunc(t.Name, w-4)
+		i, t := i, t
+		sw = a.z.click(sw, func(tea.Mouse, bool) tea.Cmd {
+			s.panelFocus, s.tunSel = true, i
+			a.toggleTunnel(s, t)
+			return nil
+		})
+		auto := ""
+		if t.AutoStart {
+			auto = st.Muted.Render(" ⟳")
+		}
+		name := trunc(t.Name, max(4, w-8-lipgloss.Width(auto)))
 		if i == s.tunSel {
 			name = st.Selected.Render(name)
 		}
-		i := i
-		b.WriteString(a.z.click(dot+" "+name, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(sw + " " + a.z.click(name+auto, func(_ tea.Mouse, double bool) tea.Cmd {
 			s.panelFocus, s.tunSel = true, i
 			if double {
-				return a.pressKey("⏎")
+				a.toggleTunnel(s, t)
 			}
 			return nil
 		}) + "\n")
-		b.WriteString("  " + st.Muted.Render(t.Spec()) + "\n")
+		b.WriteString("  " + st.Muted.Render(trunc(t.Spec()+via, w-2)) + "\n")
 		if at != nil {
 			if u := at.URL(); u != "" {
 				b.WriteString("  " + a.z.click(st.Accent.Underline(true).Render(u)+st.Muted.Render(i18n.T("  o öffnen")),
@@ -780,6 +826,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		}
 		b.WriteString("\n")
 	}
+	b.WriteString(st.Muted.Render(i18n.T("Klick auf an/aus schaltet um.\n⟳ = startet mit der Verbindung (a).")))
 }
 
 func human(n int64) string {
@@ -799,9 +846,57 @@ func (a *App) startGoal(s *session, text string) tea.Cmd { return a.startGoalWit
 
 // startRunbook startet ein gespeichertes Ziel; die damals ausgeführten
 // Befehle gehen dem Agenten als Vorlage mit.
+//
+// Variablen ({{name}}) fragt sshTermy vorher einzeln ab, {{host}} usw.
+// kommen aus der Verbindung. Ein ausgefülltes Runbook überschreibt beim
+// Speichern (Strg+S) nicht die Vorlage.
 func (a *App) startRunbook(s *session, rb domain.Runbook) tea.Cmd {
-	a.st.UseRunbook(rb.ID)
-	return a.startGoalWith(s, rb.Goal, &rb)
+	tmpl := append([]string{rb.Goal}, rb.Steps...)
+	vars := runbook.Vars(tmpl)
+	if len(vars) == 0 && !runbook.HasBuiltins(tmpl) {
+		a.st.UseRunbook(rb.ID)
+		return a.startGoalWith(s, rb.Goal, &rb)
+	}
+	if a.rbVals == nil {
+		a.rbVals = map[string]map[string]string{}
+	}
+	vals := a.rbVals[rb.ID]
+	if vals == nil {
+		vals = map[string]string{}
+		a.rbVals[rb.ID] = vals
+	}
+	var ask func(i int) tea.Cmd
+	ask = func(i int) tea.Cmd {
+		if i == len(vars) {
+			all := runbook.Fill(tmpl, vals, s.conn)
+			filled := rb
+			filled.Goal, filled.Steps = all[0], all[1:]
+			a.st.UseRunbook(rb.ID)
+			cmd := a.startGoalWith(s, filled.Goal, &filled)
+			s.goal.runbookID = ""
+			return cmd
+		}
+		v := vars[i]
+		prev := vals[v.Name]
+		if prev == "" {
+			prev = v.Default
+		}
+		body := fmt.Sprintf(i18n.T("Wert für {{%s}} (%d von %d)"), v.Name, i+1, len(vars))
+		a.modal = inputModal("▶ "+trunc(rb.Name, 40), body, prev, func(x string) tea.Cmd {
+			if x == "" {
+				x = v.Default
+			}
+			if x == "" {
+				a.flash(i18n.T("Wert fehlt: ") + v.Name)
+				return ask(i)
+			}
+			vals[v.Name] = x
+			return ask(i + 1)
+		})
+		a.modal.in.Placeholder = v.Name
+		return nil
+	}
+	return ask(0)
 }
 
 func (a *App) startGoalWith(s *session, text string, rb *domain.Runbook) tea.Cmd {

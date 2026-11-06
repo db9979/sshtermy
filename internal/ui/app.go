@@ -91,6 +91,7 @@ type App struct {
 	pal        *palette
 	llm        llmUI
 	lh         llmHealthState // KI-Status (llmhealth.go)
+	reach      reachState     // Online-Punkt im Manager (reach.go)
 	toast      string
 	toastUntil time.Time
 	rel        *update.Release
@@ -115,8 +116,9 @@ type App struct {
 
 	pick *picker // Auswahlliste mit Suche (Jump-Host, Ordner, Tag)
 
-	bc   *bcState   // Broadcast an mehrere Hosts
-	scan *scanState // Netzwerk-Scan
+	bc     *bcState                     // Broadcast an mehrere Hosts
+	rbVals map[string]map[string]string // zuletzt eingegebene Runbook-Variablen (nur im Speicher)
+	scan   *scanState                   // Netzwerk-Scan
 
 	intro *introState // Startanimation, nil = aus oder vorbei
 }
@@ -203,9 +205,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case tickMsg:
-		return a, tea.Batch(tick(), a.onTick(), a.llmTick())
+		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick())
 	case llmProbeMsg:
 		a.lh.probing = false
+		return a, nil
+	case reachMsg:
+		a.onReach(m)
 		return a, nil
 
 	case outputMsg:
@@ -409,6 +414,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) quit() tea.Cmd {
 	for _, s := range a.sessions {
 		a.endLog(s)
+		a.stopRecording(s)
 		s.close()
 	}
 	a.closeBook()

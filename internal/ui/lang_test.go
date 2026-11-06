@@ -58,6 +58,7 @@ func TestTablesTranslated(t *testing.T) {
 		texts = append(texts, g)
 	}
 	texts = append(texts, deviceLabels...)
+	texts = append(texts, accentLabels()...)
 	texts = append(texts, dialectAuto, modeFolder, modeOff, version.Idea, version.Slogan)
 	for _, d := range domain.Dialects {
 		texts = append(texts, d.Name)

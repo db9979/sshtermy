@@ -58,6 +58,18 @@ var windowsRules = []rule{
 	r(`\bvssadmin\s+delete\s+shadows\b|\bwbadmin\s+delete\b`, "löscht Sicherungen"),
 }
 
+// networkRules: Switches, Router, Firewalls (ArubaOS, Cisco, Comware, Junos,
+// FortiOS, RouterOS). Die Regeln hängen am Zeilenanfang, damit etwa
+// „show reload“ oder „no shutdown“ nicht anschlagen.
+var networkRules = []rule{
+	r(`^\s*(do\s+)?(reload|reboot|boot(\s+system)?)\b|^\s*(execute|exec)\s+(reboot|shutdown)\b|^\s*request\s+system\s+(reboot|halt|power-off)\b|^\s*/?system\s+(reboot|shutdown)\b`, "startet das Gerät neu"),
+	r(`^\s*(do\s+)?(write\s+erase|erase\b|delete\b|format\b)|^\s*reset\s+saved-configuration\b|^\s*execute\s+(factoryreset|formatlogdisk)\b|^\s*request\s+system\s+zeroize\b|^\s*/?system\s+reset-configuration\b|\bfactory[- ]?reset\b|\bzeroize\b`, "löscht Konfiguration oder Speicher des Geräts"),
+	r(`^\s*(do\s+)?copy\s+(tftp|scp|sftp|ftp|https?|usb|flash|xmodem)\S*(\s+\S+)?\s+(startup-config|running-config)\b`, "überschreibt die Gerätekonfiguration"),
+	r(`^\s*shut(down)?\s*$|^\s*(interface\s+\S+\s+)?disable\s*$`, "schaltet eine Schnittstelle ab"),
+	r(`^\s*no\s+(vlan|interface|router|ip\s+route|spanning-tree|aaa|username|ip\s+address|ip\s+ssh|crypto)\b`, "entfernt Konfiguration (VLAN, Routing, Zugang)"),
+	r(`^\s*clear\s+(config|crypto|counters\s+all|arp|ip\s+bgp\s+\*)`, "setzt Gerätezustand zurück"),
+}
+
 // Kind leitet die Regelgruppe aus dem Remote-OS-Text ab.
 func Kind(osText string) string {
 	if strings.Contains(strings.ToLower(osText), "windows") {
@@ -71,8 +83,11 @@ func Kind(osText string) string {
 // Befehl mit sudo wird in der Oberfläche zusätzlich markiert (Elevated).
 func Check(cmd, kind string) []Finding {
 	rules := unixRules
-	if kind == "windows" {
+	switch kind {
+	case "windows":
 		rules = windowsRules
+	case Network:
+		rules = networkRules
 	}
 	var out []Finding
 	for _, ru := range rules {
@@ -82,6 +97,21 @@ func Check(cmd, kind string) []Finding {
 	}
 	return out
 }
+
+// Network ist die Regelgruppe für Switches und Router.
+const Network = "network"
+
+// KindFor wie Kind, kennt aber Netzwerkgeräte (Switch, Router, Firewall).
+func KindFor(osText string, netDevice bool) string {
+	if netDevice {
+		return Network
+	}
+	return Kind(osText)
+}
+
+// Kinds: alle Regelgruppen (für Stellen, an denen das Zielsystem noch
+// nicht feststeht, z. B. ein Runbook vor dem Verbinden).
+var Kinds = []string{"unix", "windows", Network}
 
 // Elevated: läuft der Befehl mit erhöhten Rechten?
 func Elevated(cmd string) bool {

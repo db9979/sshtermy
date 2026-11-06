@@ -142,7 +142,7 @@ func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
 		}
 	case "x":
 		if cur != nil {
-			a.exportLog(cur)
+			a.modal = a.exportMenu(cur)
 		}
 	case "d", "delete":
 		if cur != nil {
@@ -279,16 +279,6 @@ func exportDir() string {
 	return home
 }
 
-func (a *App) exportLog(l *sessionlog.Log) {
-	name := fmt.Sprintf("sshtermy-%s-%s.md", strings.Trim(unsafeName.ReplaceAllString(l.Host, "_"), "_"), l.Started.Format("20060102-1504"))
-	p := filepath.Join(exportDir(), name)
-	if err := os.WriteFile(p, []byte(l.Markdown()), 0o600); err != nil {
-		a.flash(i18n.T("Export: ") + err.Error())
-		return
-	}
-	a.flash(i18n.T("Exportiert: ") + p)
-}
-
 // ---------------------------------------------------------------- Ansicht
 
 func (a *App) logsKeys() [][2]string {
@@ -300,7 +290,7 @@ func (a *App) logsKeys() [][2]string {
 		onOff = i18n.T("an")
 	}
 	return [][2]string{{"↑↓", i18n.T("wählen")}, {"/", i18n.T("suchen")}, {"z", i18n.T("KI-Zusammenfassung")}, {"Z", i18n.T("alle Treffer zusammenfassen")},
-		{"x", i18n.T("Markdown-Export")}, {"d", i18n.T("löschen")}, {"PgDn", i18n.T("blättern")}, {"a", i18n.T("Mitschreiben ") + onOff}, {"Esc", i18n.T("zurück")}}
+		{"x", i18n.T("exportieren")}, {"d", i18n.T("löschen")}, {"PgDn", i18n.T("blättern")}, {"a", i18n.T("Mitschreiben ") + onOff}, {"Esc", i18n.T("zurück")}}
 }
 
 func (a *App) viewLogs() string {
@@ -352,7 +342,7 @@ func (a *App) viewLogs() string {
 	case len(a.logs.all) == 0:
 		lb.WriteString(s.Muted.Render(i18n.T("  Noch keine Protokolle.\n  Jede SSH-Sitzung wird ab dem\n  ersten Befehl mitgeschrieben.")))
 	case len(list) == 0:
-		lb.WriteString(s.Muted.Render(i18n.T("  Keine Treffer.")))
+		lb.WriteString(s.Muted.Render(i18n.T("  Keine Treffer.\n  Andere Wörter probieren oder\n  Esc leert die Suche.")))
 	}
 	if m.unreadable > 0 {
 		lb.WriteString("\n" + s.Muted.Render(fmt.Sprintf(i18n.T("  %d Datei(en) nicht lesbar"), m.unreadable)))
