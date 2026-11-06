@@ -69,6 +69,13 @@ type Connection struct {
 	KeyPEM        Secret `json:"key_pem,omitempty"`        // … oder eingebettet im Store
 	KeyPassphrase Secret `json:"key_passphrase,omitempty"` // optional für verschlüsselte Keys
 
+	// Keychain: Passwort bzw. Key-Passphrase liegen nicht im Store, sondern
+	// im Schlüsselbund des Betriebssystems (macOS-Schlüsselbund, Windows-
+	// Anmeldeinformationsverwaltung). Jeder Rechner hat seinen eigenen
+	// Eintrag; der Sync überträgt nur diesen Schalter. Fehlt der Eintrag,
+	// fragt sshTermy beim Verbinden und legt die Antwort dort ab.
+	Keychain bool `json:"keychain,omitempty"`
+
 	JumpHostID string     `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
 	TunnelIDs  []string   `json:"tunnel_ids,omitempty"`   // Tunnel, die mit dieser Verbindung starten
 	KeepAlive  int        `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)

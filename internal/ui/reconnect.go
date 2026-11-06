@@ -505,6 +505,14 @@ func (c *secretCache) wrap(ask sshx.SecretPrompt) sshx.SecretPrompt {
 	}
 }
 
+// get: Antwort auf eine bestimmte Rückfrage (für den Schlüsselbund).
+func (c *secretCache) get(label string) (string, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	v, ok := c.seen[label]
+	return v, ok
+}
+
 func (c *secretCache) forget() {
 	c.mu.Lock()
 	c.seen = nil

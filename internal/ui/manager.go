@@ -13,6 +13,8 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/keychain"
+	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 )
 
@@ -63,7 +65,8 @@ func (a *App) managerKeys() [][2]string {
 			[2]string{km.label(actMoveTo), i18n.T("verschieben")})
 	case have:
 		k = append(k, [2]string{"⏎", i18n.T("verbinden")}, [2]string{"n", i18n.T("neu")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")},
-			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), i18n.T("Schnellbefehle")})
+			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), i18n.T("Schnellbefehle")},
+			[2]string{km.label(actSSHKey), i18n.T("SSH-Key")})
 	default:
 		k = append(k, [2]string{"n", i18n.T("neue Verbindung")}, [2]string{km.label(actImport), "Import"}, [2]string{km.label(actScan), "Scan"})
 	}
@@ -130,13 +133,18 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	if have {
 		cur = rows[m.sel]
 	}
-	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit,
+	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
 		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll) {
 	case actCheat:
 		return a.toggleCheat()
 	case actQuickEdit:
 		if have && !cur.isFolder() {
 			return a.openQuickForm(cur.conn, "")
+		}
+		return nil
+	case actSSHKey:
+		if have && !cur.isFolder() {
+			return a.openSSHKeyForm(cur.conn)
 		}
 		return nil
 	case actManager:
@@ -275,6 +283,8 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			a.modal = confirmModal(i18n.T("Verbindung löschen"), "„"+c.Alias+i18n.T("“ und ihre Tunnel wirklich löschen?"), func() tea.Cmd {
 				if err := a.st.DeleteConnection(c.ID); err != nil {
 					a.flash(err.Error())
+				} else if c.Keychain {
+					sshx.ForgetKeychain(c.ID)
 				}
 				m.sel = max(0, m.sel-1)
 				return nil
@@ -502,6 +512,11 @@ func (a *App) viewManager() string {
 				auth += " " + c.KeyPath
 			}
 		}
+		if c.Keychain && c.Auth == domain.AuthPassword {
+			auth = i18n.T("Passwort") + " · " + i18n.T(keychainName())
+		} else if c.Keychain && c.Auth == domain.AuthKeyFile {
+			auth += " · " + i18n.T("Passphrase") + " " + i18n.T(keychainName())
+		}
 		row(i18n.T("Anmeldung"), auth)
 		if c.JumpHostID != "" {
 			row(i18n.T("Jump-Host"), a.jumpChainText(c))
@@ -578,9 +593,20 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.text("user", i18n.T("Benutzer"), c.Username, "")
 	f.choice("auth", i18n.T("Anmeldung"), []string{"agent", "keyfile", "password"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen)"))
 	isAuth := func(v string) func(*form) bool { return func(f *form) bool { return f.sel("auth") != v } }
-	f.secret("password", i18n.T("Passwort"), c.Password.Reveal(), i18n.T("wird mit AES-256-GCM verschlüsselt gespeichert")).hidden = isAuth("password")
+	pw, pp := c.Password.Reveal(), c.KeyPassphrase.Reveal()
+	a.formKC = [2]string{}
+	if c.Keychain && c.ID != "" {
+		a.formKC = [2]string{sshx.KeychainSecret(c.ID, sshx.SecretPassword), sshx.KeychainSecret(c.ID, sshx.SecretPassphrase)}
+		pw, pp = a.formKC[0], a.formKC[1]
+	}
+	f.secret("password", i18n.T("Passwort"), pw, i18n.T("wird mit AES-256-GCM verschlüsselt gespeichert")).hidden = isAuth("password")
 	f.text("keypath", "Keyfile", c.KeyPath, i18n.T("z. B. ~/.ssh/id_ed25519 (leer lassen bei eingebettetem Key)")).hidden = isAuth("keyfile")
-	f.secret("keypass", "Passphrase", c.KeyPassphrase.Reveal(), i18n.T("optional; leer = beim Verbinden fragen")).hidden = isAuth("keyfile")
+	f.secret("keypass", "Passphrase", pp, i18n.T("optional; leer = beim Verbinden fragen")).hidden = isAuth("keyfile")
+	if keychain.Available() {
+		f.toggle("keychain", i18n.T("Im Schlüsselbund"), c.Keychain, keychainHelp()).hidden = func(f *form) bool {
+			return f.sel("auth") != "password" && f.sel("auth") != "keyfile"
+		}
+	}
 	f.pick("group", i18n.T("Ordner"), domain.NormPath(c.Group), func(v string) string {
 		if v == "" {
 			return a.s.Muted.Render(i18n.T("— oberste Ebene"))
@@ -676,10 +702,12 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	}
 	var err error
 	var next tea.Cmd
-	wasKey := a.scr == scrKeyForm
+	wasKey := a.scr == scrKeyForm || a.scr == scrSSHKeyForm
 	switch a.scr {
 	case scrKeyForm:
 		next, err = a.saveKeyFix()
+	case scrSSHKeyForm:
+		next, err = a.startSSHKey()
 	case scrConnForm:
 		err = a.saveConn()
 	case scrTunnelForm:
@@ -738,7 +766,11 @@ func (a *App) saveConn() error {
 			return errors.New(i18n.T("Jump-Host würde einen Kreis bilden"))
 		}
 	}
+	secret := a.connFormKeychain(&c)
 	saved, err := a.st.UpsertConnection(c)
+	if err == nil {
+		err = a.saveConnKeychain(saved, secret)
+	}
 	if err == nil {
 		a.mgr.want = "c:" + saved.ID
 		a.expandTo(saved.Group)
