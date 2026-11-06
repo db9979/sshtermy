@@ -57,7 +57,7 @@ func (a *App) stopRecording(s *session) {
 	}
 	p := exportPath(s.conn.Alias, s.recStart, ".cast")
 	if err := os.WriteFile(p, r.Cast(), 0o600); err != nil {
-		a.flash(i18n.T("Aufnahme nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Aufnahme nicht gespeichert: ") + err.Error())
 		return
 	}
 	msg := fmt.Sprintf(i18n.T("Aufnahme gespeichert (%s): %s · abspielen mit „asciinema play“"), bcDur(r.Duration().Round(time.Second)), p)
@@ -100,7 +100,7 @@ func (a *App) exportScrollback(s *session) tea.Cmd {
 	text := strings.TrimRight(strings.Join(lines, "\n"), "\n") + "\n"
 	p := exportPath(s.conn.Alias, time.Now(), ".txt")
 	if err := os.WriteFile(p, []byte(text), 0o600); err != nil {
-		a.flash(i18n.T("Export: ") + err.Error())
+		a.flashErr(i18n.T("Export: ") + err.Error())
 		return nil
 	}
 	a.flash(i18n.T("Verlauf exportiert: ") + p)
@@ -112,7 +112,7 @@ func (a *App) exportMenu(l *sessionlog.Log) *modal {
 	write := func(ext string, data []byte) tea.Cmd {
 		p := exportPath(l.Host, l.Started, ext)
 		if err := os.WriteFile(p, data, 0o600); err != nil {
-			a.flash(i18n.T("Export: ") + err.Error())
+			a.flashErr(i18n.T("Export: ") + err.Error())
 		} else {
 			a.flash(i18n.T("Exportiert: ") + p)
 		}

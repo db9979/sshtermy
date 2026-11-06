@@ -127,7 +127,7 @@ func (a *App) paletteItems() []palItem {
 				if s.tunnels.Get(t.ID) != nil {
 					s.tunnels.Stop(t.ID)
 				} else if at, err := s.tunnels.Start(t); err != nil {
-					a.flash(i18n.T("Tunnel: ") + err.Error())
+					a.flashErr(i18n.T("Tunnel: ") + err.Error())
 				} else if at.URL() != "" {
 					a.flash(i18n.T("Web-Service bereit: ") + at.URL())
 				}
@@ -143,7 +143,7 @@ func (a *App) paletteItems() []palItem {
 		if !match(c.Alias + " " + c.Host + " " + c.Group) {
 			continue
 		}
-		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: c.Username + "@" + c.Host,
+		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: shortTarget(c),
 			run: func() tea.Cmd { return a.openOrConnect(c) }})
 	}
 	actions := []palItem{
@@ -219,10 +219,13 @@ func (a *App) paletteItems() []palItem {
 			a.resize(s)
 			return a.panelOpened(s)
 		}})
+		if s.isSerial() && s.state == stConnected {
+			actions = append(actions, palItem{icon: "⌁", label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
+		}
 		actions = append(actions,
 			palItem{icon: "●", label: recordLabel(s.recording()), hint: "asciinema", run: func() tea.Cmd { return a.toggleRecording(s) }},
 			palItem{icon: "⇩", label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }})
-		if s.client != nil && s.client.NetDevice {
+		if s.netDev() {
 			actions = append(actions, palItem{icon: "▣", label: i18n.T("Switch-Config sichern und vergleichen"), hint: "b", run: func() tea.Cmd {
 				withPanel(s, panelHost)
 				s.panelFocus = false

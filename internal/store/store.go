@@ -264,10 +264,13 @@ func Validate(c domain.Connection) error {
 	switch {
 	case strings.TrimSpace(c.Alias) == "":
 		return errors.New(i18n.T("Alias fehlt"))
-	case strings.TrimSpace(c.Host) == "":
+	case strings.TrimSpace(c.Host) == "" && c.Protocol != domain.ProtoSerial:
 		return errors.New(i18n.T("Host fehlt"))
 	case c.Port < 0 || c.Port > 65535:
 		return errors.New(i18n.T("Port ungültig"))
+	case c.Protocol == domain.ProtoSerial && (c.Baud < 0 || c.Baud > 4000000):
+		return errors.New(i18n.T("Baudrate ungültig"))
+	case c.Protocol.Raw(): // Telnet/Konsole: Anmeldung optional, am Gerät
 	case strings.TrimSpace(c.Username) == "":
 		return errors.New(i18n.T("Benutzer fehlt"))
 	case c.Auth == domain.AuthKeyFile && c.KeyPath == "" && !c.KeyPEM.IsSet():
