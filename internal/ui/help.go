@@ -383,7 +383,14 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	// Höhe begrenzen: Fensterrand (2), Rahmen und Abstand (4), Warnung und
 	// Hinweis mit Leerzeile davor, Tastenzeile mit Leerzeile davor.
 	bodyLines := strings.Split(body, "\n")
+	foot := "\n\n" + warn + "\n" + note
 	maxBody := max(3, h-2-4-(1+lipgloss.Height(warn)+lipgloss.Height(note))-2)
+	if maxBody < 10 {
+		// wenige Zeilen (z. B. uConsole mit großer Schrift): Warnung und
+		// Hinweis blättern mit, damit mehr Platz für die Tasten bleibt
+		bodyLines = append(bodyLines, strings.Split(foot[1:], "\n")...)
+		foot, maxBody = "", max(3, h-2-4-2)
+	}
 	keys := [][2]string{{"Esc", i18n.T("schließen")}}
 	info := ""
 	if total := len(bodyLines); total > maxBody {
@@ -397,7 +404,7 @@ func (m *modal) helpView(s Styles, w, h int) string {
 		m.scroll = 0
 	}
 	return s.dialog(dialog{icon: "?", title: i18n.T("Tastenkürzel"), sub: version.Short(),
-		body: strings.Join(bodyLines, "\n") + "\n\n" + warn + "\n" + note, info: info, keys: keys, width: cw, maxW: 200}, w)
+		body: strings.Join(bodyLines, "\n") + foot, info: info, keys: keys, width: cw, maxW: 200}, w)
 }
 
 func (m *modal) helpKey(key string) (closeIt bool) {

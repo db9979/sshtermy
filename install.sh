@@ -25,6 +25,8 @@ esac
 case "$(uname -m)" in
 arm64 | aarch64) arch=arm64 ;;
 x86_64 | amd64) arch=amd64 ;;
+armv7* | armv8l | armhf) arch=arm ;; # 32-Bit-System, z. B. Raspberry Pi OS armhf
+riscv64) arch=riscv64 ;;
 *) die "Prozessor $(uname -m) wird nicht unterstützt" ;;
 esac
 # Rosetta: ein x86-Terminal auf Apple Silicon meldet x86_64.

@@ -5,7 +5,7 @@ set -eu
 t="$(mktemp -d)"
 trap 'rm -rf "$t"' EXIT INT TERM
 mkdir -p "$t/dist"
-for n in windows_arm64.exe windows_386.exe windows_amd64.exe darwin_arm64 darwin_amd64 linux_amd64 linux_arm64; do
+for n in windows_arm64.exe windows_386.exe windows_amd64.exe darwin_arm64 darwin_amd64 linux_amd64 linux_arm64 linux_arm linux_riscv64; do
 	printf '#!/bin/sh\necho "sshTermy v1.0.0"\n' >"$t/dist/sshtermy_$n"
 done
 (cd "$t/dist" && sha256sum sshtermy_* >checksums.txt)
@@ -13,6 +13,7 @@ done
 packaging/deb.sh 1.0.0 amd64 "$t/dist/sshtermy_linux_amd64" "$t/apt" >/dev/null
 dpkg-deb -f "$t/apt/sshtermy_1.0.0_amd64.deb" Package Version Architecture
 packaging/apt-repo.sh "$t/apt"
+packaging/deb.sh 1.0.0 armhf "$t/dist/sshtermy_linux_arm" "$t/apt" >/dev/null
 grep -q "^Filename: ./sshtermy_1.0.0_amd64.deb" "$t/apt/Packages"
 
 packaging/formula.sh 1.0.0 "$t/dist/checksums.txt" >"$t/sshtermy.rb"
