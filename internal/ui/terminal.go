@@ -77,15 +77,17 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.searchPaste(s, m)
 		}
 		if s.files.open {
-			if s.files.mkdir != nil {
-				var cmd tea.Cmd
-				*s.files.mkdir, cmd = s.files.mkdir.Update(msg)
-				return cmd
-			}
-			return nil
+			return a.filesPaste(s, m)
 		}
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
+		}
+		// Dateien aus dem Explorer/Finder ins Fenster gezogen: hochladen?
+		if s.client != nil && s.state == stConnected && s.term != nil && !s.term.AltScreen() {
+			if paths := droppedPaths(m.Content); paths != nil {
+				a.dropMenu(s, m.Content, paths)
+				return nil
+			}
 		}
 		return a.guardedPaste(s, m.Content)
 	case tea.KeyPressMsg:

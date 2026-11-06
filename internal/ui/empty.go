@@ -45,7 +45,7 @@ func (a *App) mgrEmpty(w int) string {
 		i18n.T("Hier stehen gleich deine Server, Switches und Firewalls, mit Farbe und Online-Punkt."),
 		[]emptyStep{
 			{"n", i18n.T("neue Verbindung anlegen")},
-			{a.keys.label(actImport), i18n.T("importieren (PuTTY, MobaXterm, ssh_config)")},
+			{a.keys.label(actImport), i18n.T("importieren (PuTTY, MobaXterm …)")},
 			{a.keys.label(actScan), i18n.T("im Netz nach SSH-Geräten suchen")},
 			{a.keys.label(actFolderNew), i18n.T("Ordner anlegen")},
 		}, w)
@@ -64,7 +64,9 @@ func (a *App) mgrNoMatch(w int) string {
 	if a.mgr.tag != "" {
 		steps = append(steps, emptyStep{a.keys.label(actTagFilter), i18n.T("anderen Tag wählen")})
 	}
-	steps = append(steps, emptyStep{"n", i18n.T("neue Verbindung anlegen")})
+	if !a.mgr.searching { // beim Tippen in der Suche wäre „n“ ein Buchstabe
+		steps = append(steps, emptyStep{"n", i18n.T("neue Verbindung anlegen")})
+	}
 	return a.emptyState("⌕", title, i18n.T("Gesucht wird in Alias, Host, Benutzer, Ordner und Tags."), steps, w)
 }
 
