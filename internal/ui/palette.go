@@ -413,6 +413,18 @@ func (a *App) palRun(it palItem) tea.Cmd {
 	return cmd
 }
 
+// palAskItem: Eintrag „KI fragen“, den Tab auslöst. Den gibt es nur mit
+// Text in einer verbundenen Sitzung; sonst hat Tab keine Wirkung und wird
+// auch nicht angezeigt.
+func palAskItem(items []palItem) (palItem, bool) {
+	for _, it := range items {
+		if it.group == pgAI && strings.HasPrefix(it.label, i18n.T("KI fragen")) {
+			return it, true
+		}
+	}
+	return palItem{}, false
+}
+
 func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 	p := a.pal
 	items := a.paletteItems()
@@ -433,12 +445,9 @@ func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 		p.sel, p.armed = min(len(items)-1, p.sel+1), -1
 		return nil
 	case key == "tab":
-		// Tab = „KI fragen“ (zweiter Eintrag, wenn Text da ist)
-		for _, it := range items {
-			if it.group == pgAI && strings.HasPrefix(it.label, i18n.T("KI fragen")) {
-				a.pal = nil
-				return it.run()
-			}
+		if it, ok := palAskItem(items); ok {
+			a.pal = nil
+			return it.run()
 		}
 		return nil
 	case key == "enter":
@@ -548,7 +557,11 @@ func (a *App) viewPalette() string {
 	if len(items) == 0 {
 		b.WriteString(st.Muted.Render(i18n.T("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.")) + "\n")
 	}
-	keys := [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("ausführen")}, {"Tab", i18n.T("KI fragen")}, {"Esc", i18n.T("schließen")}}
+	keys := [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("ausführen")}}
+	if _, ok := palAskItem(items); ok {
+		keys = append(keys, [2]string{"Tab", i18n.T("KI fragen")})
+	}
+	keys = append(keys, [2]string{"Esc", i18n.T("schließen")})
 	title := i18n.T("Befehlspalette")
 	if p.menu != "" {
 		keys = [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("ausführen / umschalten")}, {"Esc", i18n.T("zurück")}}

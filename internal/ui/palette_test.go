@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/store"
 )
@@ -27,6 +28,8 @@ func newPaletteTestApp(t *testing.T) *App {
 	a.openPalette()
 	return a
 }
+
+func ansiStrip(s string) string { return ansi.Strip(s) }
 
 func hasLabel(items []palItem, prefix string) (palItem, bool) {
 	for _, it := range items {
@@ -53,6 +56,11 @@ func TestPaletteSubmenus(t *testing.T) {
 	}
 	if _, ok := hasLabel(top, "Hilfe & Info ›"); !ok {
 		t.Fatalf("Hilfe & Info fehlt: %v", labels(top))
+	}
+
+	// Im Manager ohne Sitzung gibt es kein „KI fragen“: kein Tab-Hinweis.
+	if strings.Contains(ansiStrip(a.viewPalette()), "Tab") {
+		t.Error("Tab „KI fragen“ ohne Wirkung darf nicht angezeigt werden")
 	}
 
 	// Untermenü öffnen: Palette bleibt offen, Schalter zeigen ihren Zustand.
