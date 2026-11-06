@@ -136,7 +136,7 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 		return nil
 	}
 	s.quickArmed = -1
-	a.toast = ""
+	a.clearToasts()
 	s.sel, s.scroll, s.ghost, s.chips = nil, 0, "", nil
 	s.term.SendText(cmd + "\r")
 	s.history = append(s.history, cmd)

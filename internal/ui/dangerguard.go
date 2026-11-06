@@ -35,7 +35,7 @@ type dangerAsk struct {
 
 // netDevice: Switch/Router (Verbindung, Systemprofil oder Erkennung beim Aufbau).
 func (s *session) netDevice() bool {
-	return (s.client != nil && s.client.NetDevice) || s.prof.Family == domain.FamilyNetwork || s.conn.Device == domain.DeviceNetwork
+	return s.netDev() || s.prof.Family == domain.FamilyNetwork || s.conn.Device == domain.DeviceNetwork
 }
 
 // safetyKind: Regelgruppe für die Sitzung (unix, windows, network).
@@ -51,7 +51,7 @@ func (a *App) dangerGuardOn(c domain.Connection) bool { return isProduction(c) |
 func (a *App) toggleDangerAll() tea.Cmd {
 	on := !a.dangerAll()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.DangerAll = on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {

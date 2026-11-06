@@ -121,11 +121,11 @@ type hostNetMsg struct {
 // hostOnConnect: nach dem Verbinden. Server werden sofort abgefragt,
 // bei Netzwerkgeräten nur die vorhandenen Sicherungen gelistet.
 func (a *App) hostOnConnect(s *session) tea.Cmd {
-	if s.client == nil {
+	if s.netDev() {
+		s.host.backups = a.st.Backups(s.conn.ID)
 		return nil
 	}
-	if s.client.NetDevice {
-		s.host.backups = a.st.Backups(s.conn.ID)
+	if s.client == nil {
 		return nil
 	}
 	return a.hostServerCmd(s, true)
@@ -375,11 +375,11 @@ func localTime(t time.Time) string {
 // ---------------------------------------------------------------- Tasten
 
 func (a *App) hostOpened(s *session) tea.Cmd {
-	if s.client == nil {
+	if s.netDev() {
+		s.host.backups = a.st.Backups(s.conn.ID)
 		return nil
 	}
-	if s.client.NetDevice {
-		s.host.backups = a.st.Backups(s.conn.ID)
+	if s.client == nil {
 		return nil
 	}
 	if s.host.srv == nil && !s.host.busy {
@@ -390,7 +390,7 @@ func (a *App) hostOpened(s *session) tea.Cmd {
 
 func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	h := &s.host
-	net := s.client != nil && s.client.NetDevice
+	net := s.netDev()
 	switch k.String() {
 	case "x":
 		if h.busy {
@@ -478,7 +478,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 	if s.host.busy {
 		return [][2]string{{"x", i18n.T("abbrechen")}, {"Esc", "Terminal"}, {"F6", i18n.T("schließen")}}
 	}
-	if s.client != nil && s.client.NetDevice {
+	if s.netDev() {
 		k := [][2]string{{"⏎", i18n.T("abfragen")}, {"b", i18n.T("Config sichern")}}
 		if len(s.host.backups) > 1 {
 			k = append(k, [2]string{"d", "Diff"})
@@ -505,7 +505,7 @@ func (a *App) hostBadge(s *session) string {
 		txt = "▤ " + h.srv.Summary()
 	case h.sw != nil:
 		txt = "▤ " + h.sw.Summary()
-	case s.client != nil && s.client.NetDevice:
+	case s.netDev():
 		txt = i18n.T("▤ F6 Übersicht")
 	default:
 		return ""
@@ -524,7 +524,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 	row := func(k, v string) {
 		b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", k)) + st.Text.Render(trunc(v, w-10)) + "\n")
 	}
-	net := s.client != nil && s.client.NetDevice
+	net := s.netDev()
 
 	if h.busy {
 		b.WriteString(st.Warn.Render("◌ "+h.step) + "\n")

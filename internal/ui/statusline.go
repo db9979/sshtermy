@@ -42,7 +42,7 @@ func (s *session) rootNow() bool {
 	if s.conn.Username == "root" {
 		return true
 	}
-	if s.term == nil || (s.client != nil && s.client.NetDevice) {
+	if s.term == nil || (s.netDev()) {
 		return false
 	}
 	if s.term.AtIdlePrompt() {
@@ -83,9 +83,11 @@ func (a *App) sessionBar(s *session) string {
 	if s.recording() {
 		left.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
 	}
-	info := s.conn.Username + "@" + s.conn.Addr()
+	info := s.conn.Target()
 	if s.client != nil {
 		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.profileSummary()
+	} else if s.state == stConnected && s.conn.Protocol.Raw() {
+		info = s.conn.Target() + "  ·  " + s.profileSummary()
 	}
 
 	// rechts: Leitung
@@ -114,6 +116,10 @@ func (a *App) sessionBar(s *session) string {
 			}
 			line = append(line, st.Badge.Foreground(c).Render(enc))
 		}
+	}
+
+	if s.state == stConnected && s.client == nil && s.conn.Protocol.Raw() {
+		line = append(line, st.Badge.Foreground(st.T.Text).Render("⏱ "+fmtDuration(time.Since(s.connectedAt))), a.protoBadge(s))
 	}
 
 	nT := 0
