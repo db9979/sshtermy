@@ -88,11 +88,7 @@ func (a *App) guardedPaste(s *session, text string) tea.Cmd {
 		s.term.Paste(text)
 		return nil
 	}
-	kind := "unix"
-	if s.client != nil {
-		kind = safety.Kind(s.client.Remote.String())
-	}
-	pc := checkPaste(text, kind)
+	pc := checkPaste(text, a.safetyKind(s))
 	pc.sid = s.id
 	if pc.dangerous == 0 && (!pc.multi || !a.pasteGuardEnabled()) {
 		s.sel, s.scroll = nil, 0

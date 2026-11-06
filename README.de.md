@@ -18,15 +18,25 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Auto-Reconnect**: reißt die Leitung ab (WLAN, VPN, Standby), verbindet sshTermy die Sitzung von selbst neu, startet laufende Tunnel wieder und hängt tmux/screen wieder an (abschaltbar über die Palette)
 - **Schnellverbinden**: `user@host:port` oder `ssh -p 2222 user@host` in die Palette tippen, ohne die Verbindung anzulegen (Agent/Standard-Keys, sonst Passwort)
 - **Statuszeile pro Sitzung**: Verbindungsdauer, Latenz, Zeichensatz, Warnung bei root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) bekommen eine rote Zeile
-- **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen
+- **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen, mit der Maus auf die andere Seite ziehen, mehrere mit der Leertaste markieren. Dateien aus Explorer/Finder ins Fenster ziehen lädt sie hoch, auch direkt im Terminal
 - **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, Platte, Laufzeit und offene Updates. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
 - **Config-Sicherung für Switches**: `b` sichert `show running-config` verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
   die Ergebnisse stehen in Spalten nebeneinander. Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
   Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
+- **Runbooks mit Variablen:** `{{vlan}}` oder `{{vlan=20}}` in einem Schritt wird vor dem Start abgefragt, `{{host}}`,
+  `{{alias}}`, `{{user}}`, `{{port}}` setzt sshTermy pro Host ein. Im Broadcast lädt `e` ein Runbook zum Bearbeiten,
+  `Strg+R` speichert, `Strg+D` löscht. Vor dem Start prüft die KI mit `k` gegen das Systemprofil jedes Hosts, ob die
+  Schritte dort laufen, und schlägt Entsprechungen vor (`a` übernimmt sie). Gefährlich oder nicht entscheiden weiter die festen Regeln.
+- **Gefahren-Check:** Auf Produktiv-Hosts (Ordner, Tag oder Alias mit „prod“, Tag „live“) fragt sshTermy bei riskanten
+  Befehlen vor dem Enter nach (`rm -rf`, `reboot`, auf Switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …).
+  Ausführen nur mit `j`, Esc lässt die Zeile stehen. Palette „Gefahren-Check auf allen Hosts“ weitet das auf alle aus.
+- **Aufzeichnung exportieren:** Palette „Aufnahme starten“ nimmt den Tab als asciinema-Datei (`.cast`, mit Farben und
+  vim/htop) auf, abspielbar mit `asciinema play`. Protokolle (`l`, dann `x`) gehen als Markdown, Text oder nachgebaute
+  Aufnahme raus; „Terminal-Verlauf als Text exportieren“ speichert den Verlauf. Alles landet im Download-Ordner.
 - **Netzwerk-Scan** (f im Manager): ein Subnetz nach SSH-Geräten durchsuchen (nur Port und SSH-Kennung, ohne Anmeldung),
   Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
-- **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL
+- **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL; pro Verbindung gespeichert, ein Klick schaltet an/aus, auf Wunsch startet ein Tunnel mit der Verbindung; läuft auch über Jump-Hosts
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
   - **Ghost-Text** beim Tippen (Tab übernimmt)
@@ -112,8 +122,8 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
 | | F2 | Ziel-Modus (Agent) |
 | | F3 | KI fragen |
-| | F4 | Tunnel an/aus, Web-Service im Browser öffnen |
-| | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), n Ordner, d löschen, . versteckte |
+| | F4 | Tunnel an/aus (⏎ oder Klick), a mit Verbindung starten, Web-Service im Browser öffnen |
+| | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), Leertaste/a markieren, Ziehen kopiert, n Ordner, d löschen, . versteckte |
 | | F6 | Host-Übersicht: r/⏎ abfragen, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |

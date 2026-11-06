@@ -50,6 +50,7 @@ func (a *App) resize(s *session) {
 		return
 	}
 	s.term.Resize(c, r)
+	s.resizeRecording(c, r)
 	if s.shell != nil {
 		_ = s.shell.Resize(c, r)
 	}
@@ -77,15 +78,17 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.searchPaste(s, m)
 		}
 		if s.files.open {
-			if s.files.mkdir != nil {
-				var cmd tea.Cmd
-				*s.files.mkdir, cmd = s.files.mkdir.Update(msg)
-				return cmd
-			}
-			return nil
+			return a.filesPaste(s, m)
 		}
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
+		}
+		// Dateien aus dem Explorer/Finder ins Fenster gezogen: hochladen?
+		if s.client != nil && s.state == stConnected && s.term != nil && !s.term.AltScreen() {
+			if paths := droppedPaths(m.Content); paths != nil {
+				a.dropMenu(s, m.Content, paths)
+				return nil
+			}
 		}
 		return a.guardedPaste(s, m.Content)
 	case tea.KeyPressMsg:
@@ -200,6 +203,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 
 func (a *App) closeTab(s *session) {
 	a.endLog(s)
+	a.stopRecording(s)
 	s.close()
 	for i, x := range a.sessions {
 		if x == s {
@@ -255,6 +259,9 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	}
 	if key == "ctrl+c" && s.run != nil {
 		s.run.interrupted = true
+	}
+	if key == "enter" && a.dangerCheck(s, k) {
+		return nil // Gefahren-Check: erst bestätigen (dangerguard.go)
 	}
 	if key == "enter" {
 		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
@@ -374,10 +381,19 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	for i, x := range a.sessions {
 		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
 		label := " " + trunc(x.conn.Alias, 16) + " "
-		tab := st.Tab.Render(dot + label)
+		ts := st.Tab
 		if i == a.cur {
-			tab = st.TabActive.Render(dot + label)
+			ts = st.TabActive
 		}
+		// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
+		stripe := ""
+		if col := a.accentOf(x.conn); col != nil {
+			stripe = glyph("▌", col, ts.GetBackground())
+			if i == a.cur {
+				label = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(true).Render(trunc(x.conn.Alias, 16)) + " "
+			}
+		}
+		tab := ts.Render(stripe + dot + label)
 		i := i
 		tabs.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
 			a.focusSession(i)

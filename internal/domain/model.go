@@ -79,6 +79,11 @@ type Connection struct {
 	// richtigen Dialekt kommen. Liegt wie alles andere verschlüsselt im Store.
 	Profile *SystemProfile `json:"profile,omitempty"`
 
+	// Color: Akzentfarbe in Tab, Statuszeile und Liste ("red", "green" …).
+	// Leer = automatisch aus Ordner/Tags/Alias (prod → rot, test → grün,
+	// labor → blau), "none" = keine Farbe.
+	Color string `json:"color,omitempty"`
+
 	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
 	QuickCmds []string `json:"quick_cmds,omitempty"`
 
@@ -205,11 +210,14 @@ type Settings struct {
 	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
 	NoSessionLog bool   `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
 	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
+	DangerAll    bool   `json:"danger_all,omitempty"`     // Gefahren-Check beim Tippen auf allen Hosts, nicht nur Produktiv
 	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
 	// NoAutoReconnect: abgerissene Sitzungen nicht von selbst neu verbinden.
 	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`
 	TourDone        bool `json:"tour_done,omitempty"`
 	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
+	// NoReachCheck: im Manager nicht prüfen, ob die Hosts erreichbar sind.
+	NoReachCheck bool `json:"no_reach_check,omitempty"`
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
