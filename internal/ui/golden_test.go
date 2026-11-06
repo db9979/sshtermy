@@ -35,6 +35,7 @@ import (
 	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/netscan"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/termemu"
 )
@@ -68,6 +69,11 @@ func newGold(t *testing.T, lang string, w, h int, seed bool) *gold {
 	t.Setenv("SSHTERMY_HOME", dir)
 	t.Setenv("HOME", goldenHome) // fester Pfad, steht z. B. im Import-Bildschirm
 	t.Setenv("SSHTERMY_DEBUG", "")
+	t.Setenv("USER", "golden") // Vorbelegung im Netzwerk-Scan
+	t.Setenv("USERNAME", "golden")
+	subnets := netscan.LocalSubnets // eigene Netzwerkkarten, je Rechner anders
+	netscan.LocalSubnets = func() []string { return []string{"192.168.1.0/24", "10.8.0.0/24"} }
+	t.Cleanup(func() { netscan.LocalSubnets = subnets })
 	prev := i18n.Lang()
 	i18n.Set(lang)
 	t.Cleanup(func() { i18n.Set(prev) })

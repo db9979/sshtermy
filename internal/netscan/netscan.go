@@ -131,8 +131,11 @@ func ParseTargets(spec string) ([]netip.Addr, error) {
 }
 
 // LocalSubnets: IPv4-Netze der eigenen Netzwerkkarten (ohne Loopback und
-// Link-Local), größere Netze auf das eigene /24 verkleinert.
-func LocalSubnets() []string {
+// Link-Local), größere Netze auf das eigene /24 verkleinert. Variable, damit
+// die Bildschirm-Tests feste Netze einsetzen können.
+var LocalSubnets = localSubnets
+
+func localSubnets() []string {
 	ifs, err := net.Interfaces()
 	if err != nil {
 		return nil

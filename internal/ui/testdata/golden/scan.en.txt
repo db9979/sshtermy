@@ -4,20 +4,20 @@
 
 
 
-
   ╭──────────────────────────────────────────────────────────────────────────────────────────────╮
   │ Network scan: find SSH devices                                                               │
   │                                                                                              │
-  │ ▌ Subnet              192.0.2.0/24                                                           │
+  │ ▌ Subnet              192.168.1.0/24                                                         │
   │                       e.g. 192.168.1.0/24 · 10.0.0.10-50 · several separated by commas (at   │
   │ most 4096 addresses)                                                                         │
   │   Port                22                                                                     │
-  │   User                                                                                       │
+  │   User                golden                                                                 │
   │   Login                agent  keyfile  password                                              │
   │   Folder              Network scan                                                           │
   │                                                                                              │
   │ Only the open SSH port and the SSH banner are checked (no login).                            │
   │ Switches and routers (Aruba, Cisco, MikroTik …) are recognized by their banner.              │
+  │ Own networks: 192.168.1.0/24, 10.8.0.0/24                                                    │
   │                                                                                              │
   │ Ctrl+S or ⏎ in the last field starts the scan                                                │
   ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
