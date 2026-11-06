@@ -60,8 +60,8 @@ const (
 	scrKeyForm    // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
 	scrSSHKeyForm // SSH-Schlüssel erzeugen / übertragen (sshkey.go)
 	scrRelayForm  // Vermittler koppeln (relay.go)
-	scrTeam     // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
-	scrTeamForm // Team-Freigabe: Passwort, Datei, Optionen
+	scrTeam       // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
+	scrTeamForm   // Team-Freigabe: Passwort, Datei, Optionen
 )
 
 // App ist das Wurzel-Modell.
@@ -109,11 +109,12 @@ type App struct {
 
 	sync    syncState
 	wiz     *syncWizard
-	imp     importState // Import aus ssh-config, PuTTY, MobaXterm
-	team    teamState   // Team-Freigabe (team.go)
-	keyEd   keyEditor   // Tastenkürzel anpassen
-	keys    keymap      // aktuelle Tastenbelegung
-	lookSig string      // Theme+Tasten, zuletzt übernommen
+	imp     importState   // Import aus ssh-config, PuTTY, MobaXterm
+	team    teamState     // Team-Freigabe (team.go)
+	tl      teamLinkState // Team-Ordner: veröffentlichen/abonnieren (teamlink.go)
+	keyEd   keyEditor     // Tastenkürzel anpassen
+	keys    keymap        // aktuelle Tastenbelegung
+	lookSig string        // Theme+Tasten, zuletzt übernommen
 
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
@@ -253,6 +254,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case sshKeyDoneMsg:
 		return a, a.sshKeyDone(m)
 	case relayMsg:
+		return a, m.apply(a)
+	case teamLinkMsg:
 		return a, m.apply(a)
 
 	case connectedMsg:
@@ -485,6 +488,9 @@ func (a *App) onTick() tea.Cmd {
 		return nil
 	}
 	if c := a.syncTick(); c != nil {
+		cmds = append(cmds, c)
+	}
+	if c := a.teamLinkTick(); c != nil {
 		cmds = append(cmds, c)
 	}
 	for _, s := range a.sessions {

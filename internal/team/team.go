@@ -225,6 +225,7 @@ type Stats struct {
 	Runbooks         int
 	QuickCmds        int // Verbindungen mit eigenen Schnellbefehlen
 	NeedUser, NeedPw int // ohne Benutzername / mit Passwort-Anmeldung (fragt beim Verbinden)
+	Removed          int // Team-Ordner: beim Absender entfernt, hier gelöscht
 }
 
 // Known: welche Verbindungen des Pakets es hier schon gibt (gleiche ID, also

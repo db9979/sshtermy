@@ -1,6 +1,11 @@
 package team
 
 import (
+	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -100,5 +105,125 @@ func TestApplyKeepsOwnCredentials(t *testing.T) {
 	st = Apply(d2, p, map[string]bool{"jump": true}, "", "", time.Now())
 	if st.Added != 1 || st.Tunnels != 0 || st.Runbooks != 1 {
 		t.Fatalf("Auswahl: %+v", st)
+	}
+}
+
+func TestLinkPublishPull(t *testing.T) {
+	now := time.Date(2026, 11, 6, 12, 0, 0, 0, time.UTC)
+	src := domain.NewData()
+	src.Connections = []domain.Connection{
+		{ID: "a", Alias: "web", Host: "10.0.0.1", Group: "Kunden / ACME", Password: "geheim", Auth: domain.AuthPassword},
+		{ID: "b", Alias: "db", Host: "10.0.0.2", Group: "Kunden / ACME / DB"},
+		{ID: "c", Alias: "privat", Host: "10.0.0.3", Group: "Privat"},
+	}
+	pub := domain.TeamLink{Role: domain.TeamPublish, Folder: "Kunden / ACME", TeamPass: "team-pass-123"}
+	p, sum1 := BuildLink(src, pub, now)
+	if len(p.Connections) != 2 {
+		t.Fatalf("Ordner: %d Verbindungen", len(p.Connections))
+	}
+	if p.Connections[0].Group != "ACME" || p.Connections[1].Group != "ACME / DB" {
+		t.Fatalf("Ordner relativ: %q %q", p.Connections[0].Group, p.Connections[1].Group)
+	}
+	if _, again := BuildLink(src, pub, now.Add(time.Hour)); again != sum1 {
+		t.Fatal("Prüfsumme hängt an der Uhrzeit")
+	}
+	dir := t.TempDir()
+	loc := filepath.Join(dir, "acme.sshteam")
+	raw, err := Seal(p, []byte(pub.TeamPass))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteLoc(context.Background(), loc, raw); err != nil {
+		t.Fatal(err)
+	}
+
+	dst := domain.NewData()
+	sub := domain.TeamLink{Role: domain.TeamSubscribe, Path: loc, Into: "Team", DefaultUser: "kollege"}
+	got, err := ReadLoc(context.Background(), loc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pk, err := Open(got, []byte("team-pass-123"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, have := Pull(dst, pk, sub, now)
+	if st.Added != 2 || len(have) != 2 || dst.Connections[0].Group != "Team / ACME" || dst.Connections[0].Username != "kollege" {
+		t.Fatalf("erste Übernahme: %+v %v %+v", st, have, dst.Connections)
+	}
+	sub.Have = have
+
+	// Absender löscht db, benennt web um, legt neue an
+	src.Connections = []domain.Connection{
+		{ID: "a", Alias: "web-neu", Host: "10.0.0.1", Group: "Kunden / ACME"},
+		{ID: "d", Alias: "mail", Host: "10.0.0.4", Group: "Kunden / ACME"},
+	}
+	p2, sum2 := BuildLink(src, pub, now)
+	if sum2 == sum1 {
+		t.Fatal("Änderung nicht erkannt")
+	}
+	st, have = Pull(dst, p2, sub, now)
+	if st.Added != 1 || st.Updated != 1 || st.Removed != 1 || len(have) != 2 {
+		t.Fatalf("zweite Übernahme: %+v %v", st, have)
+	}
+	if _, ok := dst.Deleted["b"]; !ok {
+		t.Fatal("kein Grabstein für die entfernte Verbindung")
+	}
+	for _, c := range dst.Connections {
+		if c.ID == "a" && (c.Alias != "web-neu" || c.Username != "kollege") {
+			t.Fatalf("Aktualisierung: %+v", c)
+		}
+	}
+
+	// Abgewählte Verbindung bleibt draußen und wird nicht gelöscht
+	sub.Have, sub.Skip = have, []string{"d"}
+	dst.Connections = append(dst.Connections, domain.Connection{ID: "x", Alias: "eigene"})
+	st, _ = Pull(dst, p2, sub, now)
+	if st.Removed != 0 || st.Updated != 1 {
+		t.Fatalf("mit Skip: %+v", st)
+	}
+	if len(dst.Connections) != 3 {
+		t.Fatalf("eigene Verbindung angefasst: %+v", dst.Connections)
+	}
+	if _, err := ReadLoc(context.Background(), filepath.Join(dir, "fehlt.sshteam")); err != ErrNotFound {
+		t.Fatalf("fehlende Datei: %v", err)
+	}
+}
+
+func TestLocHTTP(t *testing.T) {
+	var stored []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if u, p, ok := r.BasicAuth(); !ok || u != "nas" || p != "pw" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		switch r.Method {
+		case http.MethodPut:
+			stored, _ = io.ReadAll(r.Body)
+			w.WriteHeader(http.StatusCreated)
+		case http.MethodGet:
+			if stored == nil {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			w.Write(stored)
+		}
+	}))
+	defer srv.Close()
+	loc := strings.Replace(srv.URL, "http://", "http://nas:pw@", 1) + "/team/acme.sshteam"
+	if ShowLoc(loc) != strings.Replace(srv.URL, "http://", "http://nas@", 1)+"/team/acme.sshteam" {
+		t.Fatalf("Passwort sichtbar: %s", ShowLoc(loc))
+	}
+	if _, err := ReadLoc(context.Background(), loc); err != ErrNotFound {
+		t.Fatalf("leer: %v", err)
+	}
+	if err := WriteLoc(context.Background(), loc, []byte("x")); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := ReadLoc(context.Background(), loc); err != nil || string(b) != "x" {
+		t.Fatalf("lesen: %q %v", b, err)
+	}
+	if _, err := ReadLoc(context.Background(), srv.URL+"/team/acme.sshteam"); err == nil {
+		t.Fatal("ohne Anmeldung gelesen")
 	}
 }

@@ -216,6 +216,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "⌕", label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
 		{icon: "⇪", label: i18n.T("Mit dem Team teilen (verschlüsselt, ohne Passwörter)"), hint: "Team", run: func() tea.Cmd { a.scr = scrManager; return a.openTeamShare() }},
 		{icon: "⇩", label: i18n.T("Team-Paket übernehmen"), hint: "Team", run: func() tea.Cmd { return a.openTeamTake() }},
+		{icon: "⇄", label: i18n.T("Team-Ordner (veröffentlicht / abonniert)"), hint: "Team", run: func() tea.Cmd { return a.openTeamLinks() }},
 		{icon: "☰", label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: "l", run: func() tea.Cmd { return a.openLogs() }},
 	}
 	if a.restartPending != "" {

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -48,6 +49,10 @@ type teamState struct {
 	ids   []string // Teilen: gewählte Verbindungen
 
 	folder, user string // Übernehmen: Zielordner und Benutzer für Einträge ohne
+
+	srcFolder string // Teilen: aus diesem Ordner geöffnet (Team-Ordner nimmt dann den ganzen Ordner)
+	pass, sum string // Übernehmen: für das Abo
+	abo       bool   // Übernehmen: abonnieren
 }
 
 // ---------------------------------------------------------------- Teilen
@@ -61,6 +66,7 @@ func (a *App) openTeamShare() tea.Cmd {
 		switch {
 		case cur.node != nil:
 			on = domain.InFolder(c.Group, ctx) // Ordner gewählt: sein Inhalt
+			a.team.srcFolder = ctx
 		case cur.conn.ID != "":
 			on = c.ID == cur.conn.ID
 		}
@@ -100,7 +106,8 @@ func (a *App) openTeamShareForm() tea.Cmd {
 	f.toggle("quick", i18n.T("Schnellbefehle"), true, i18n.T("eigene Schnellbefehle (⇧F1 …) der Verbindungen"))
 	f.toggle("runbooks", "Runbooks", true, i18n.T("Runbooks dieser Verbindungen und allgemeine"))
 	f.toggle("tunnels", "Tunnel", true, i18n.T("Port-Weiterleitungen der Verbindungen"))
-	f.text("path", i18n.T("Datei"), defaultTeamFile(), i18n.T("z. B. in einen gemeinsamen Ordner (Teams, OneDrive, NAS)"))
+	f.text("path", i18n.T("Datei"), defaultTeamFile(), i18n.T("z. B. in einen gemeinsamen Ordner (Teams, OneDrive, NAS) oder https://…/x.sshteam (WebDAV)"))
+	f.toggle("abo", i18n.T("Aktuell halten"), false, i18n.T("Team-Ordner: sshTermy schreibt die Datei bei jeder Änderung neu"))
 	a.form, a.scr = f, scrTeamForm
 	return f.setFocus(1)
 }
@@ -128,22 +135,53 @@ func (a *App) saveTeamShare() error {
 	if !strings.HasSuffix(strings.ToLower(path), team.Ext) {
 		path += team.Ext
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if !team.IsURL(path) {
+		if abs, err := filepath.Abs(path); err == nil {
+			path = abs
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := team.WriteLoc(ctx, path, raw); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, raw, 0o600); err != nil {
-		return err
+	abo := f.flag("abo")
+	if abo {
+		folder, ids := a.team.srcFolder, a.team.ids
+		if folder != "" && sameIDs(team.LinkIDs(d, domain.TeamLink{Folder: folder}), ids) {
+			ids = nil // ganzer Ordner: neue Verbindungen darin gehen automatisch mit
+		} else {
+			folder = ""
+		}
+		l := domain.TeamLink{Folder: folder, IDs: ids, From: f.str("from"), Users: o.Users, QuickCmds: o.QuickCmds, Runbooks: o.Runbooks, Tunnels: o.Tunnels}
+		_, sum := team.BuildLink(d, l, time.Now())
+		if folder != "" { // Paket so schreiben, wie es der Team-Ordner später auch tut (Ordner relativ)
+			p2, _ := team.BuildLink(d, l, time.Now())
+			if raw2, err := team.Seal(p2, []byte(pass)); err == nil {
+				_ = team.WriteLoc(ctx, path, raw2)
+			}
+		}
+		if err := a.addPublishLink(path, pass, l.From, folder, ids, o, sum); err != nil {
+			return err
+		}
 	}
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf(i18n.T("%s · %d Runbooks · %d Tunnel\n"), plural(len(p.Connections), i18n.T("Verbindung"), i18n.T("Verbindungen")), len(p.Runbooks), len(p.Tunnels)))
 	if len(jumps) > 0 {
 		b.WriteString(fmt.Sprintf(i18n.T("Dazu %d Jump-Host(s), ohne die die Verbindungen nicht gingen.\n"), len(jumps)))
 	}
-	b.WriteString(i18n.T("Passwörter und Keys sind nicht enthalten.\n\nDatei: ") + path + "\n")
+	b.WriteString(i18n.T("Passwörter und Keys sind nicht enthalten.\n\nDatei: ") + team.ShowLoc(path) + "\n")
+	if abo {
+		b.WriteString(i18n.T("Automatisch aktuell: Änderungen an diesen Verbindungen schreibt sshTermy in die Datei (Strg+Leertaste → „Team-Ordner“).\n"))
+	}
 	if generated {
 		b.WriteString(i18n.T("\nTeam-Passwort (bitte notieren): ") + pass + "\n")
 	}
-	b.WriteString(i18n.T("\nSchick die Datei und sag das Passwort auf einem anderen Weg (Anruf, Chat).\nDer Kollege übernimmt sie mit Strg+Leertaste → „Team-Paket übernehmen“."))
+	if abo {
+		b.WriteString(i18n.T("\nSag den Kollegen den Ort der Datei und das Passwort (getrennt).\nSie übernehmen sie mit Strg+Leertaste → „Team-Paket übernehmen“ und „Abonnieren“."))
+	} else {
+		b.WriteString(i18n.T("\nSchick die Datei und sag das Passwort auf einem anderen Weg (Anruf, Chat).\nDer Kollege übernimmt sie mit Strg+Leertaste → „Team-Paket übernehmen“."))
+	}
 	a.form = nil
 	a.scr = scrManager
 	a.modal = &modal{kind: mInfo, title: i18n.T("✓ Team-Paket erstellt"), body: b.String()}
@@ -179,10 +217,11 @@ func newestTeamFile() string {
 func (a *App) openTeamTake() tea.Cmd {
 	a.team = teamState{mode: teamTake}
 	f := &form{title: i18n.T("Team-Paket übernehmen")}
-	f.text("path", i18n.T("Datei"), newestTeamFile(), i18n.T("Pfad zur .sshteam-Datei (Einfügen mit Strg+V)"))
+	f.text("path", i18n.T("Datei"), newestTeamFile(), i18n.T("Pfad zur .sshteam-Datei oder https://…/x.sshteam (Einfügen mit Strg+V)"))
 	f.secret("pass", i18n.T("Team-Passwort"), "", i18n.T("bekommst du vom Absender getrennt von der Datei"))
 	f.text("folder", i18n.T("In Ordner"), "Team", i18n.T("wird den Ordnern des Absenders vorangestellt; leer = wie beim Absender"))
 	f.text("user", i18n.T("Benutzer"), localUser(), i18n.T("für Verbindungen ohne Benutzernamen"))
+	f.toggle("abo", i18n.T("Abonnieren"), true, i18n.T("Datei alle 5 min neu lesen und Änderungen des Teams automatisch übernehmen"))
 	a.form, a.scr = f, scrTeamForm
 	if f.str("path") != "" {
 		return f.setFocus(1)
@@ -196,7 +235,14 @@ func (a *App) openTeamFile() error {
 	if path == "" {
 		return errors.New(i18n.T("Datei fehlt"))
 	}
-	raw, err := os.ReadFile(path)
+	if !team.IsURL(path) {
+		if abs, err := filepath.Abs(path); err == nil {
+			path = abs
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	raw, err := team.ReadLoc(ctx, path)
 	if err != nil {
 		return err
 	}
@@ -215,6 +261,7 @@ func (a *App) openTeamFile() error {
 	t := &a.team
 	t.pkg, t.path, t.items, t.sel, t.err = p, path, nil, 0, ""
 	t.folder, t.user = domain.NormPath(f.str("folder")), strings.TrimSpace(f.str("user"))
+	t.pass, t.sum, t.abo = f.raw("pass"), team.Sum(raw), f.flag("abo")
 	for _, c := range p.Connections {
 		t.items = append(t.items, teamItem{c: c, on: true, known: known[c.ID]})
 	}
@@ -247,6 +294,21 @@ func (a *App) commitTeamTake() {
 		return
 	}
 	msg := fmt.Sprintf(i18n.T("Team-Paket übernommen: %d neu, %d aktualisiert"), st.Added, st.Updated)
+	if t.abo {
+		var have, skip []string
+		for _, it := range t.items {
+			if it.on {
+				have = append(have, it.c.ID)
+			} else {
+				skip = append(skip, it.c.ID)
+			}
+		}
+		if err := a.addSubscribeLink(t.path, t.pass, t.folder, t.user, have, skip, t.sum); err != nil {
+			t.err = err.Error()
+			return
+		}
+		msg += i18n.T(" · abonniert")
+	}
 	if st.Runbooks > 0 {
 		msg += fmt.Sprintf(i18n.T(" · %d Runbooks"), st.Runbooks)
 	}
@@ -448,4 +510,20 @@ func (a *App) viewTeam() string {
 		b.WriteString("\n" + s.Muted.Render(i18n.T(" Eigene Passwörter, Keys und Benutzernamen bleiben bei schon vorhandenen Verbindungen erhalten.")))
 	}
 	return b.String()
+}
+
+func sameIDs(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	m := map[string]bool{}
+	for _, x := range a {
+		m[x] = true
+	}
+	for _, x := range b {
+		if !m[x] {
+			return false
+		}
+	}
+	return true
 }

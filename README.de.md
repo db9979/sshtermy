@@ -493,6 +493,18 @@ Der Kollege nimmt Strg+Leertaste → „Team-Paket übernehmen“: Datei, Passwo
 Vorschau zeigt neue und aktualisierte Einträge. Wer dasselbe Paket später erneut übernimmt, bekommt die Änderungen;
 eigene Passwörter, Keys und Benutzernamen bleiben erhalten.
 
+### Team-Ordner: automatisch aktuell
+
+Leg die Datei beim Teilen in einen Ordner, den alle erreichen (Netzlaufwerk, OneDrive- oder Teams-Ordner) oder gib
+eine https-/WebDAV-Adresse an (`https://benutzer:passwort@nas:5006/team/acme.sshteam`), und schalte „Aktuell halten“
+ein. Dann schreibt sshTermy die Datei neu, sobald sich an den Verbindungen etwas ändert (Prüfung jede Minute). Wer aus
+einem Ordner im Manager geteilt hat, teilt den ganzen Ordner: Neue Verbindungen darin gehen automatisch mit.
+
+Kollegen lassen beim Übernehmen „Abonnieren“ an. sshTermy liest die Datei dann alle 5 Minuten und übernimmt
+Änderungen: neue Verbindungen kommen dazu, geänderte werden aktualisiert, beim Absender gelöschte verschwinden auch
+hier. Eigene Passwörter, Keys und Benutzernamen bleiben. Strg+Leertaste → „Team-Ordner“ zeigt den Stand, gleicht
+sofort ab oder beendet ein Abo (die Verbindungen bleiben dann). Team-Ordner sind rein lokal und gehen nicht in den Sync.
+
 ## Lizenz
 
 sshTermy steht unter der [MIT-Lizenz](LICENSE): Du darfst es benutzen, kopieren, ändern und weitergeben, auch

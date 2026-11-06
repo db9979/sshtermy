@@ -494,6 +494,18 @@ The colleague uses Ctrl+Space → „Import team package“: file, password, tar
 preview shows new and updated entries. Importing the same package again updates the entries but keeps the
 colleague's own passwords, keys and user names.
 
+### Team folders: kept up to date
+
+When sharing, put the file into a folder everyone can reach (network drive, OneDrive or Teams folder) or enter an
+https/WebDAV address (`https://user:password@nas:5006/team/acme.sshteam`) and turn on “Keep up to date”. sshTermy
+then rewrites the file whenever the connections change (checked every minute). If you shared from a folder in the
+manager, the whole folder is shared: new connections in it are included automatically.
+
+Colleagues leave “Subscribe” on when importing. sshTermy then re-reads the file every 5 minutes and applies changes:
+new connections are added, changed ones updated, and ones the sender deleted disappear here too. Their own
+passwords, keys and user names stay. Ctrl+Space → “Team folders” shows the status, checks right away or ends a
+subscription (the connections stay). Team folders are local only and not part of the sync.
+
 ## License
 
 sshTermy is released under the [MIT License](LICENSE): you may use, copy, change and pass it on, also commercially,

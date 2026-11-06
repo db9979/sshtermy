@@ -517,6 +517,46 @@ type Data struct {
 	// vor Connection.KeyPath, wenn der Key hier woanders liegt als auf dem
 	// Rechner, der die Verbindung angelegt hat.
 	LocalKeys map[string]string `json:"local_keys,omitempty"`
+
+	// TeamLinks: Team-Ordner (veröffentlichen bzw. abonnieren). Rein lokal:
+	// Pfade sind je Rechner anders, das Team-Passwort bleibt auf dem Gerät.
+	TeamLinks []TeamLink `json:"team_links,omitempty"`
+}
+
+// Rollen eines Team-Ordners.
+const (
+	TeamPublish   = "pub" // dieser Rechner schreibt das Team-Paket bei Änderungen neu
+	TeamSubscribe = "sub" // dieser Rechner liest es regelmäßig und übernimmt Änderungen
+)
+
+// TeamLink ist ein Team-Paket in einem gemeinsamen Ordner (Netzlaufwerk,
+// OneDrive, Teams) oder unter einer https-/WebDAV-Adresse.
+type TeamLink struct {
+	ID       string `json:"id"`
+	Role     string `json:"role"` // TeamPublish | TeamSubscribe
+	Name     string `json:"name"`
+	Path     string `json:"path"` // Datei oder https://[user:pw@]host/…/x.sshteam
+	TeamPass Secret `json:"team_pass"`
+
+	// Veröffentlichen: was ins Paket geht. Folder = ganzer Ordner (auch
+	// später dazugekommene Verbindungen), IDs = einzeln gewählte.
+	Folder    string   `json:"folder,omitempty"`
+	IDs       []string `json:"ids,omitempty"`
+	From      string   `json:"from,omitempty"`
+	Users     bool     `json:"users,omitempty"`
+	QuickCmds bool     `json:"quick,omitempty"`
+	Runbooks  bool     `json:"runbooks,omitempty"`
+	Tunnels   bool     `json:"tunnels,omitempty"`
+
+	// Abonnieren: wohin und was schon da ist.
+	Into        string   `json:"into,omitempty"` // Zielordner, z. B. „Team“
+	DefaultUser string   `json:"user,omitempty"` // für Verbindungen ohne Benutzernamen
+	Have        []string `json:"have,omitempty"` // IDs, die zuletzt aus dem Paket kamen
+	Skip        []string `json:"skip,omitempty"` // in der Vorschau abgewählt: nie übernehmen
+
+	LastSum string    `json:"last_sum,omitempty"` // Stand des zuletzt geschriebenen/gelesenen Pakets
+	LastRun time.Time `json:"last_run,omitempty"` // letzte Änderung (geschrieben/übernommen)
+	LastErr string    `json:"last_err,omitempty"`
 }
 
 // Relay ist ein gekoppelter Vermittler.
