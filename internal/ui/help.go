@@ -95,6 +95,7 @@ var helpSections = []helpSection{
 		{"F5", "Dateien (SFTP)"},
 		{"Strg+T", "Ansicht teilen (2 / 4)"},
 		{"Strg+Pfeil", "Bereich wechseln (geteilt)"},
+		{"⇧F10", "Tab in eigenes Fenster (Sitzung bleibt offen)"},
 		{"Strg+F", "im Verlauf suchen"},
 		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},

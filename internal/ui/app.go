@@ -276,6 +276,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			a.startLog(s)
+			if s.detached() {
+				s.detachNotice(i18n.T("Wieder verbunden."))
+			}
 			var cmd tea.Cmd
 			if s.rc.active {
 				cmd = a.onReconnected(s)
@@ -306,7 +309,19 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case shellClosedMsg:
 		if s := a.byID(m.sid); s != nil {
 			a.onShellClosed(s, m)
+			if s.state == stReconnect {
+				s.detachNotice(i18n.T("Verbindung abgerissen, verbinde neu …"))
+			}
 		}
+		return a, a.listen()
+	case detachConnMsg:
+		a.onDetachConn(m)
+		return a, a.listen()
+	case detachResizeMsg:
+		a.onDetachResize(m)
+		return a, a.listen()
+	case detachEndMsg:
+		a.onDetachEnd(m)
 		return a, a.listen()
 
 	case tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg, tea.MouseWheelMsg:

@@ -43,6 +43,7 @@ type goalState struct {
 	recipe              []string // Vorlage aus einem Runbook
 	runbookID           string
 	rbSel               int // gewähltes Runbook in der Liste (-1 = keins)
+	optSel              int // gewählter Antwortvorschlag zur Rückfrage (-1 = keiner)
 }
 
 func (g *goalState) cancel() {
@@ -148,7 +149,7 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			g.done, g.active, g.doneReason, g.cur = true, false, m.step.Reason, nil
 		case m.step.Question != "":
 			st := m.step
-			g.cur = &st
+			g.cur, g.optSel = &st, -1
 			g.answer.SetValue("")
 			return g.answer.Focus(), true
 		default:
@@ -177,6 +178,20 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 }
 
 // ---------------------------------------------------------------- Ziel-Modus
+
+// answerQuestion gibt die Antwort auf die Rückfrage ans Modell und holt den
+// nächsten Schritt.
+func (a *App) answerQuestion(s *session, ans string) tea.Cmd {
+	g := &s.goal
+	ans = strings.TrimSpace(ans)
+	if g.cur == nil || g.cur.Question == "" || ans == "" {
+		return nil
+	}
+	g.answers = append(g.answers, g.cur.Question+" → "+ans)
+	g.answer.SetValue("")
+	g.answer.Blur()
+	return a.requestStep(s)
+}
 
 func (a *App) requestStep(s *session) tea.Cmd {
 	g := &s.goal
@@ -351,9 +366,21 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	// 2) Rückfrage des Modells beantworten
 	if g.cur != nil && g.cur.Question != "" {
 		if key == "enter" && strings.TrimSpace(g.answer.Value()) != "" {
-			g.answers = append(g.answers, g.cur.Question+" → "+strings.TrimSpace(g.answer.Value()))
-			g.answer.Blur()
-			return a.requestStep(s)
+			return a.answerQuestion(s, g.answer.Value())
+		}
+		if opts := g.cur.Options; len(opts) > 0 && (key == "up" || key == "down") {
+			if key == "down" {
+				g.optSel = min(len(opts)-1, g.optSel+1)
+			} else {
+				g.optSel = max(-1, g.optSel-1)
+			}
+			if g.optSel >= 0 {
+				g.answer.SetValue(opts[g.optSel])
+				g.answer.CursorEnd()
+			} else {
+				g.answer.SetValue("")
+			}
+			return nil
 		}
 		if key == "x" && g.answer.Value() == "" {
 			g.active = false
@@ -529,6 +556,9 @@ func (a *App) panelKeys(s *session) [][2]string {
 			return [][2]string{{"⏎", i18n.T("Ziel starten")}, {"↑↓", "Runbook"}, {"Strg+D", i18n.T("Runbook löschen")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
 		}
 		if g.cur != nil && g.cur.Question != "" {
+			if len(g.cur.Options) > 0 {
+				return [][2]string{{"⏎", i18n.T("antworten")}, {"↑↓", i18n.T("Vorschlag")}, {"Esc", "Terminal"}}
+			}
 			return [][2]string{{"⏎", i18n.T("antworten")}, {"Esc", "Terminal"}}
 		}
 		if g.editing {
@@ -683,6 +713,20 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		b.WriteString(wrap(st.Danger.Render("✗ "+g.err), w))
 	case g.cur != nil && g.cur.Question != "":
 		b.WriteString(st.AI.Render(i18n.T("✦ Rückfrage")) + "\n" + wrap(st.Text.Render(g.cur.Question), w) + "\n\n")
+		for i, o := range g.cur.Options {
+			mark, style := "○ ", st.Text
+			if i == g.optSel {
+				mark, style = "● ", st.Accent
+			}
+			line := st.Muted.Render(mark) + style.Render(trunc(o, w-3))
+			b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+				s.panelFocus = true
+				return a.answerQuestion(s, o)
+			}) + "\n")
+		}
+		if len(g.cur.Options) > 0 {
+			b.WriteString(st.Muted.Render(i18n.T("Antwort anklicken, mit ↑↓ wählen oder frei schreiben")) + "\n\n")
+		}
 		g.answer.SetWidth(w - 2)
 		b.WriteString(promptBlock(st.Accent.Render("› "), g.answer.View()))
 	case g.cur != nil:

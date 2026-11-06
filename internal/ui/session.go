@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/agent"
+	"github.com/db9979/sshtermy/internal/detach"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
@@ -56,6 +57,9 @@ type session struct {
 	dangerOK    string                   // Gefahren-Check: diese Eingabe wurde bestätigt (dangerguard.go)
 	rec         atomic.Pointer[recorder] // laufende Aufnahme (record.go)
 	recStart    time.Time
+
+	detach *detachState                // Tab läuft in eigenem Fenster (detach.go)
+	detOut atomic.Pointer[detach.Conn] // dorthin geht die Ausgabe mit
 
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
@@ -118,6 +122,9 @@ func (w outWriter) Write(p []byte) (int, error) {
 		r.Output(p)
 	}
 	n, err := w.s.term.Write(p)
+	if c := w.s.detOut.Load(); c != nil {
+		_, _ = c.Write(p)
+	}
 	if w.s.pending.CompareAndSwap(false, true) {
 		select {
 		case w.ev <- outputMsg{w.s.id}:
@@ -230,6 +237,7 @@ func (w shellWriter) Write(p []byte) (int, error) {
 }
 
 func (s *session) close() {
+	s.endDetach(i18n.T("Sitzung in sshTermy beendet."))
 	if s.ghostCancel != nil {
 		s.ghostCancel()
 	}

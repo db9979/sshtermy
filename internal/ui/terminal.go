@@ -103,6 +103,14 @@ func (a *App) panelRail(s *session, h int) string {
 
 // termSize: Spalten und Zeilen des Terminals (Bereich minus Seitenpanel).
 func (a *App) termSize(s *session) (int, int) {
+	if d := s.detach; d != nil && d.conn != nil {
+		return d.cols, d.rows // eigenes Fenster bestimmt die Größe (detach.go)
+	}
+	return a.paneSize(s)
+}
+
+// paneSize: Platz für das Terminal hier im Fenster.
+func (a *App) paneSize(s *session) (int, int) {
 	r := a.termRect(s)
 	return max(20, r.w-a.panelWidth(s)), max(3, r.h)
 }
@@ -140,6 +148,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 	}
 	switch m := msg.(type) {
 	case tea.PasteMsg:
+		if s.detached() && !s.panelFocus {
+			return nil // Einfügen geht im eigenen Fenster
+		}
 		if s.search.open && !s.panelFocus && !s.files.open {
 			return a.searchPaste(s, m)
 		}
@@ -192,7 +203,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		case actCheat:
 			return a.toggleCheat()
 		case actQuickMenu:
-			if s.state == stConnected {
+			if s.state == stConnected && !s.detached() {
 				a.modal = a.quickModal(s)
 			}
 			return nil
@@ -213,6 +224,12 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if s.files.open {
 			return a.filesKey(s, m)
+		}
+		if s.detached() && !s.panelFocus {
+			return a.detachedKey(s, key)
+		}
+		if a.keys.is(actDetach, key) && s.state == stConnected {
+			return a.toggleDetach(s)
 		}
 		if a.keys.is(actSplit, key) {
 			a.cycleSplit()
@@ -469,7 +486,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 // Nur die aktive Sitzung bekommt Cursor und Ghost-Text.
 func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	st := a.s
-	cols, rows := a.termSize(s)
+	cols, rows := a.paneSize(s)
 	tr := a.termRect(s)
 	if s.search.open {
 		a.refreshSearch(s, false)
@@ -477,6 +494,8 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	var body string
 	var cur *tea.Cursor
 	switch {
+	case s.detached():
+		body = a.detachedView(s, cols, rows)
 	case s.state == stConnecting:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
 			st.AI.Render(i18n.T("⠿ Verbinde mit ")+s.conn.Alias+" ("+s.conn.ShowAddr()+") …"))
@@ -603,6 +622,8 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	switch {
 	case s.state == stClosed:
 		keys = append(keys, [2]string{"⏎", i18n.T("neu verbinden")}, [2]string{"x", i18n.T("Tab schließen")})
+	case s.detached():
+		keys = append(keys, [2]string{"⏎", i18n.T("zurückholen")})
 	case s.state == stConnected:
 		if s.scroll > 0 {
 			keys = append(keys, [2]string{"Esc", i18n.T("zurück zur Eingabe")})
@@ -620,9 +641,10 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	}
 	keys = append(keys, [2]string{k.label(actManager), "Manager"},
 		[2]string{k.label(actHelp), i18n.T("Hilfe")}, [2]string{k.label(actCheat), i18n.T("erklären")})
-	if s.state == stConnected {
+	if s.state == stConnected && !s.detached() {
 		// weniger wichtig: fällt in schmalen Fenstern vor den F-Tasten weg
-		keys = append(keys, [2]string{k.label(actSearch), i18n.T("Suche")}, [2]string{k.label(actSplit), i18n.T("Teilen")})
+		keys = append(keys, [2]string{k.label(actSearch), i18n.T("Suche")}, [2]string{k.label(actSplit), i18n.T("Teilen")},
+			[2]string{k.label(actDetach), i18n.T("Fenster")})
 	}
 	keys = append(keys, [2]string{k.label(actQuit), i18n.T("beenden")})
 	// Anzeige-Reihenfolge (Palette, F1 … F12, ⇧F, Rest) macht footer().
@@ -696,6 +718,9 @@ func (a *App) tabStrip() string {
 	for i := from; i < to; i++ {
 		x := a.sessions[i]
 		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
+		if x.detached() {
+			dot = st.AI.Render("↗") // läuft in eigenem Fenster
+		}
 		ts := st.Tab
 		if i == a.cur {
 			ts = st.TabActive

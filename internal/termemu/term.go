@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
@@ -25,7 +26,9 @@ type Term struct {
 	bell  bool
 	mouse map[ansi.DECMode]bool // vom Programm angeforderte Maus-Modi
 
-	sb *scrollback // Verlauf, kompakt statt im Emulator (scrollback.go)
+	sb    *scrollback // Verlauf, kompakt statt im Emulator (scrollback.go)
+	host  io.Writer
+	muted atomic.Bool // Antworten auf Abfragen verwerfen (MuteReplies)
 
 	// Shell-Integration (OSC 133 / OSC 633): Exit-Code des letzten Befehls
 	exitSeq  int
@@ -35,7 +38,7 @@ type Term struct {
 // New erzeugt das Terminal. toHost bekommt alle Bytes, die zum Server sollen
 // (kodierte Tasten, Paste, Antworten auf Abfragen).
 func New(cols, rows int, toHost io.Writer) *Term {
-	t := &Term{emu: vt.NewSafeEmulator(cols, rows), sb: newScrollback(ScrollbackLines)}
+	t := &Term{emu: vt.NewSafeEmulator(cols, rows), host: toHost, sb: newScrollback(ScrollbackLines)}
 	// Zeilen, die oben hinauslaufen, landen direkt im kompakten Verlauf
 	// (läuft innerhalb von Write, push kopiert die Zellen).
 	t.emu.SetScrollbackHook(t.sb.push)
@@ -69,9 +72,28 @@ func New(cols, rows int, toHost io.Writer) *Term {
 			return true // A/B/C (Prompt-Marker) still schlucken
 		})
 	}
-	go func() { _, _ = io.Copy(toHost, t.emu) }()
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			n, err := t.emu.Read(buf)
+			if n > 0 && !t.muted.Load() {
+				if _, werr := toHost.Write(buf[:n]); werr != nil {
+					return
+				}
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
 	return t
 }
+
+// MuteReplies: Ein anderes, echtes Terminal hängt am selben Strom (Tab in
+// eigenem Fenster) und beantwortet Abfragen (DA, CPR …) selbst. Dann darf
+// der Emulator nicht auch antworten. SendText und Paste gehen in der Zeit
+// direkt an den Server.
+func (t *Term) MuteReplies(on bool) { t.muted.Store(on) }
 
 // parseCommandDone liest "133;D;1" (auch ohne Präfix oder ohne Code = 0).
 func parseCommandDone(s string) (int, bool) {
@@ -126,10 +148,22 @@ func (t *Term) Size() (int, int) { return t.emu.Width(), t.emu.Height() }
 func (t *Term) SendKey(k uv.KeyPressEvent) { t.emu.SendKey(k) }
 
 // SendText schickt Text unverändert (z. B. einen bestätigten Befehl).
-func (t *Term) SendText(s string) { t.emu.SendText(s) }
+func (t *Term) SendText(s string) {
+	if t.muted.Load() {
+		_, _ = io.WriteString(t.host, s)
+		return
+	}
+	t.emu.SendText(s)
+}
 
 // Paste nutzt Bracketed Paste, wenn die Shell es eingeschaltet hat.
-func (t *Term) Paste(s string) { t.emu.Paste(s) }
+func (t *Term) Paste(s string) {
+	if t.muted.Load() {
+		_, _ = io.WriteString(t.host, s)
+		return
+	}
+	t.emu.Paste(s)
+}
 
 func (t *Term) Title() string { t.mu.Lock(); defer t.mu.Unlock(); return t.title }
 

@@ -55,6 +55,7 @@ const (
 	actScan      action = "scan"
 	actSplit     action = "split"
 	actSearch    action = "search"
+	actDetach    action = "detach"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -92,6 +93,7 @@ var actionDefs = []actionDef{
 	{actQuick[7], "Schnellbefehl 8", "Terminal", []string{"shift+f8", "f20"}},
 	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
 	{actSplit, "Ansicht teilen (2 / 4)", "Terminal", []string{"ctrl+t"}},
+	{actDetach, "Tab in eigenes Fenster / zurückholen", "Terminal", []string{"shift+f10", "f22"}},
 	{actChip1, "Folgebefehl 1 einfügen", "Terminal", []string{"alt+1"}},
 	{actChip2, "Folgebefehl 2 einfügen", "Terminal", []string{"alt+2"}},
 	{actChip3, "Folgebefehl 3 einfügen", "Terminal", []string{"alt+3"}},
