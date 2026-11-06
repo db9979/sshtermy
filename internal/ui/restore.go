@@ -45,6 +45,7 @@ func adhocCopy(c domain.Connection) *domain.Connection {
 		Alias: c.Alias, Host: c.Host, Port: c.Port, Username: c.Username, Auth: c.Auth,
 		KeyPath: c.KeyPath, JumpHostID: c.JumpHostID, RelayID: c.RelayID, RelaySystem: c.RelaySystem,
 		Device: c.Device, Protocol: c.Protocol, SerialPort: c.SerialPort, Baud: c.Baud, Frame: c.Frame,
+		Persist: c.Persist, PersistName: c.PersistName, PersistView: c.PersistView,
 	}
 }
 
@@ -123,7 +124,8 @@ func (a *App) restoreTabs() tea.Cmd {
 			continue
 		}
 		cmd := a.connect(c)
-		if s := a.current(); s != nil && (t.Mux == "tmux" || t.Mux == "screen") && !c.Protocol.Raw() {
+		// Feste Sitzung: hängt sich nach dem Verbinden selbst an (geteilt, ohne -d)
+		if s := a.current(); s != nil && (t.Mux == "tmux" || t.Mux == "screen") && !c.Protocol.Raw() && c.Persist == "" {
 			s.mux, s.muxPending = muxState{kind: t.Mux, name: t.MuxName}, true
 		}
 		cmds = append(cmds, cmd)

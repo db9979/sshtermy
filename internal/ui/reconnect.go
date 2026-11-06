@@ -52,9 +52,22 @@ type reconnState struct {
 type muxState struct {
 	kind string // "tmux" | "screen" | ""
 	name string // Sitzungsname, leer = zuletzt benutzte
+	// Feste Sitzung (persist.go): geteilt anhängen, ohne andere Zuschauer
+	// abzuhängen; view = schreibgeschützt; create = screen-Sitzung anlegen.
+	shared, view, create bool
 }
 
 func (m muxState) attachCmd() string {
+	switch {
+	case m.kind == "tmux" && m.view:
+		return "tmux attach -r -t " + shellQuote(m.name)
+	case m.kind == "tmux" && m.shared:
+		return "tmux new -A -s " + shellQuote(m.name)
+	case m.kind == "screen" && m.shared && m.create:
+		return "screen -S " + shellQuote(m.name)
+	case m.kind == "screen" && m.shared:
+		return "screen -x " + shellQuote(m.name)
+	}
 	switch m.kind {
 	case "tmux":
 		if m.name != "" {
@@ -71,10 +84,14 @@ func (m muxState) attachCmd() string {
 }
 
 func (m muxState) label() string {
+	l := m.kind + i18n.T("-Sitzung")
 	if m.name != "" {
-		return m.kind + i18n.T("-Sitzung „") + m.name + "“"
+		l = m.kind + i18n.T("-Sitzung „") + m.name + "“"
 	}
-	return m.kind + i18n.T("-Sitzung")
+	if m.view {
+		l += i18n.T(" (nur zuschauen)")
+	}
+	return l
 }
 
 func shellQuote(s string) string {
@@ -438,6 +455,7 @@ func (a *App) resumeMux(s *session) tea.Cmd {
 	}
 	s.muxPending = false
 	s.term.SendText(s.mux.attachCmd() + "\r")
+	s.mux.create = false // beim Neuverbinden gibt es sie schon
 	return nil
 }
 

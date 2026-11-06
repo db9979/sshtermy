@@ -269,6 +269,7 @@ func (a *App) paletteItems() []palItem {
 			}
 			actions = append(actions, palItem{icon: "▦", label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
+		actions = append(actions, a.persistPalette(s)...)
 		if s.detached() {
 			actions = append(actions, palItem{icon: "↙", label: i18n.T("Tab aus eigenem Fenster zurückholen"), hint: a.keys.label(actDetach),
 				run: func() tea.Cmd { return a.toggleDetach(s) }})
