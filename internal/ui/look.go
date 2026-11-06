@@ -20,6 +20,12 @@ func fontHint() string {
 	return i18n.T("Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)")
 }
 
+// setStyles: Farben des Themes, Knöpfe in Dialogen werden klickbar.
+func (a *App) setStyles(t Theme) {
+	a.s = NewStyles(t)
+	a.s.zoneKey = a.keyZone
+}
+
 // applyLook übernimmt Theme und Tasten aus den Einstellungen.
 func (a *App) applyLook() {
 	a.applyLang()
@@ -31,7 +37,7 @@ func (a *App) applyLook() {
 	a.lookSig = string(sig)
 	t := ThemeByName(set.Theme)
 	activeTheme = t
-	a.s = NewStyles(t)
+	a.setStyles(t)
 	a.keys = newKeymap(set.Keys)
 	activeKeys = a.keys
 	// Felder, die schon existieren, bekommen die neuen Farben.
@@ -48,7 +54,7 @@ func (a *App) setTheme(name string) tea.Cmd {
 	return nil
 }
 
-// cycleTheme: Dunkel → Hell → Hochkontrast → Dunkel.
+// cycleTheme: Dunkel → Hell → Hochkontrast → Hochkontrast hell → Dunkel.
 func (a *App) cycleTheme() tea.Cmd {
 	cur := ThemeByName(a.st.Settings().Theme).Name
 	for i, t := range Themes {

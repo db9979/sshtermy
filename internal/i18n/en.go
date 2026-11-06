@@ -1387,6 +1387,17 @@ var en = map[string]string{
 	"gespeichert: ":                             "saved: ",
 	"“ auf diesem Rechner":                      "” on this computer",
 	"eigener Pfad":                              "other path",
+
+	// Einheitliche Dialoge (dialog.go)
+	" ist installiert.": " is installed.",
+	"%d Einträge":       "%d entries",
+	"Feld":              "field",
+	"Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).": "Compare the fingerprint with the server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).",
+	"Wird nicht gespeichert.": "Not saved.",
+	"tippen filtert":          "type to filter",
+	"▾ mehr":                  "▾ more",
+	"Hochkontrast hell":       "High contrast light",
+	"Dunkel · Hell · Kontrast · Kontrast hell": "Dark · Light · Contrast · Contrast light",
 	// Farben, Gerätesymbole, Online-Punkt, leere Zustände
 	"  Keine Treffer.\n  Andere Wörter probieren oder\n  Esc leert die Suche.":          "  No matches.\n  Try other words or\n  press Esc to clear the search.",
 	"  nichts gefunden · Esc zurück, Rücktaste ändert die Suche":                        "  nothing found · Esc goes back, Backspace edits the search",
@@ -1446,7 +1457,6 @@ var en = map[string]string{
 	" c oder Ziehen kopiert auf die andere Seite (Leertaste markiert mehrere). Dateien aus dem Explorer/Finder hier ablegen lädt hoch": " c or dragging copies to the other side (Space marks several). Drop files from Explorer/Finder here to upload",
 	" gibt es in ":             " already exists in ",
 	"%d Dateien":               "%d files",
-	"%d Einträge":              "%d entries",
 	"%d Einträge (%s …)":       "%d entries (%s …)",
 	"Abgelegt: ":               "Dropped: ",
 	"Auf den Server hochladen": "Upload to the server",
@@ -1466,4 +1476,6 @@ var en = map[string]string{
 	"auf die andere Seite kopieren":              "copy to the other side",
 	"Ablegen":                                    "Drop",
 	"Dateien aus Explorer/Finder hochladen":      "upload files from Explorer/Finder",
+	"trotzdem ausführen":                         "run anyway",
+	"abbrechen (Zeile bleibt stehen)":            "cancel (line stays at the prompt)",
 }

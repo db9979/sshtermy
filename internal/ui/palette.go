@@ -371,8 +371,9 @@ func (a *App) viewPalette() string {
 	if len(items) == 0 {
 		b.WriteString(st.Muted.Render(i18n.T("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.")) + "\n")
 	}
-	b.WriteString("\n" + st.Muted.Render(fmt.Sprintf(i18n.T("↑↓ wählen · ⏎ ausführen · Tab KI fragen · Esc schließen · %d Einträge"), len(items))))
-	box := st.Modal.BorderForeground(st.T.AI).Padding(0, 1).Width(w).Render(b.String())
+	keys := [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("ausführen")}, {"Tab", i18n.T("KI fragen")}, {"Esc", i18n.T("schließen")}}
+	box := st.dialog(dialog{icon: "✦", title: i18n.T("Befehlspalette"), sub: fmt.Sprintf(i18n.T("%d Einträge"), len(items)), tone: st.T.AI,
+		body: b.String(), keys: keys, width: w - 4, compact: true}, a.w)
 	return a.z.mark(box, zoneAction{block: true, wheel: func(up bool) tea.Cmd {
 		if up {
 			p.sel = max(0, p.sel-1)

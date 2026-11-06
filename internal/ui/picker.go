@@ -147,7 +147,6 @@ func (a *App) viewPicker() string {
 	p.top = clamp(p.top, 0, max(0, len(vis)-rows))
 
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(p.title) + "\n\n")
 	p.in.SetWidth(w - 8)
 	b.WriteString(s.Accent.Render("/ ") + p.in.View() + "\n\n")
 	var list strings.Builder
@@ -193,14 +192,13 @@ func (a *App) viewPicker() string {
 	}, block: true}))
 	more := ""
 	if len(vis) > rows {
-		more = s.Muted.Render("  " + strconv.Itoa(p.top+1) + "–" + strconv.Itoa(min(len(vis), p.top+rows)) + i18n.T(" von ") + strconv.Itoa(len(vis)) + " · ")
+		more = strconv.Itoa(p.top+1) + "–" + strconv.Itoa(min(len(vis), p.top+rows)) + i18n.T(" von ") + strconv.Itoa(len(vis))
 	}
-	help := i18n.T("⏎ übernehmen · Esc abbrechen · tippen filtert")
+	keys := [][2]string{{"⏎", i18n.T("übernehmen")}, {"Esc", i18n.T("abbrechen")}, {"", i18n.T("tippen filtert")}}
 	if p.help != "" {
-		help = p.help + " · " + help
+		keys = append(keys, [2]string{"", p.help})
 	}
-	b.WriteString("\n" + more + s.Muted.Render(help))
-	return s.Modal.Width(w).Render(b.String())
+	return s.dialog(dialog{title: p.title, sub: more, body: strings.TrimRight(b.String(), "\n"), keys: keys, width: w - 6, maxW: 100}, a.w)
 }
 
 // ---------------------------------------------------------------- Texteingabe

@@ -91,8 +91,7 @@ func (m *modal) tourView(s Styles, w int) string {
 		}
 		dots.WriteString(" ")
 	}
-	head := s.Accent.Render(step.icon+" "+i18n.T(step.title)) + "  " + dots.String() +
-		s.Muted.Render(" "+strconv.Itoa(m.scroll+1)+"/"+strconv.Itoa(len(tourSteps)))
+	sub := strconv.Itoa(m.scroll+1) + "/" + strconv.Itoa(len(tourSteps))
 	body := lipgloss.NewStyle().Width(cw).Render(s.Text.Render(i18n.T(step.text)))
 	var keys []string
 	for _, k := range step.keys {
@@ -100,7 +99,8 @@ func (m *modal) tourView(s Styles, w int) string {
 		kk += strings.Repeat(" ", max(0, 14-lipgloss.Width(kk)))
 		keys = append(keys, kk+s.Text.Render(i18n.T(k[1])))
 	}
-	return s.Modal.Render(head + "\n\n" + body + "\n\n" + strings.Join(keys, "\n"))
+	return s.dialog(dialog{icon: step.icon, title: i18n.T(step.title), sub: sub, keys: m.hints,
+		body: dots.String() + "\n\n" + body + "\n\n" + strings.Join(keys, "\n")}, w)
 }
 
 func tourButtons(m *modal) [][2]string {
