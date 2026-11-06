@@ -90,8 +90,19 @@ func TestSplitTermSize(t *testing.T) {
 		t.Fatalf("right pane x = %d", x)
 	}
 	a.sessions[0].panel = panelGoal
-	if pw := a.panelWidth(a.sessions[0]); pw != 30 {
+	// schmaler Bereich: Panel klappt zur Leiste ein, mit Fokus über dem Terminal auf
+	if pw := a.panelWidth(a.sessions[0]); pw != panelRailW {
 		t.Fatalf("panel width in pane = %d", pw)
+	}
+	if c, _ := a.termSize(a.sessions[0]); c != 60-panelRailW {
+		t.Fatalf("term width with collapsed panel = %d", c)
+	}
+	a.sessions[0].panelFocus = true
+	if pw := a.panelShown(a.sessions[0]); pw != 44 {
+		t.Fatalf("expanded panel = %d", pw)
+	}
+	if c, _ := a.termSize(a.sessions[0]); c != 60-panelRailW {
+		t.Fatal("focus must not resize the terminal")
 	}
 }
 

@@ -668,8 +668,8 @@ func textModal(title string, lines []string) *modal {
 }
 
 func (m *modal) textView(s Styles, w, h int) string {
-	width := max(40, w-8)
-	maxBody := max(3, h-2-4-3)
+	width := dialog{maxW: 200}.innerMax(w)
+	maxBody := max(3, h-2-dialogChrome)
 	total := len(m.lines)
 	m.scroll = max(0, min(m.scroll, total-maxBody))
 	end := min(total, m.scroll+maxBody)
@@ -677,12 +677,13 @@ func (m *modal) textView(s Styles, w, h int) string {
 	for _, l := range m.lines[m.scroll:end] {
 		body = append(body, trunc(l, width))
 	}
-	hint := i18n.T("Esc schließen")
+	keys := [][2]string{{"Esc", i18n.T("schließen")}}
+	info := ""
 	if total > maxBody {
-		hint = fmt.Sprintf(i18n.T("Zeile %d–%d von %d · ↑↓ PgUp/PgDn Pos1/Ende · "), m.scroll+1, end, total) + hint
+		info = fmt.Sprintf(i18n.T("Zeile %d–%d von %d"), m.scroll+1, end, total)
+		keys = append([][2]string{{"↑↓", i18n.T("blättern")}, {"Bild↑", ""}, {"Bild↓", ""}, {"Pos1", ""}, {"Ende", ""}}, keys...)
 	}
-	out := s.Accent.Render(m.title) + "\n\n" + strings.Join(body, "\n") + "\n\n" + s.Muted.Render(hint)
-	return s.Modal.Width(min(w-4, width+6)).Render(out)
+	return s.dialog(dialog{title: m.title, body: strings.Join(body, "\n"), info: info, keys: keys, width: width, maxW: 200}, w)
 }
 
 func (m *modal) textKey(key string) (closeIt bool) {

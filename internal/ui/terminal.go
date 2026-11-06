@@ -29,10 +29,76 @@ func (a *App) panelWidth(s *session) int {
 		return 0
 	}
 	w := a.termRect(s).w
+	if w < panelNarrow {
+		return panelRailW
+	}
 	if w >= 110 {
 		return 48
 	}
 	return w / 2
+}
+
+// Schmale Fenster: Unter panelNarrow Spalten wäre neben dem Panel kaum noch
+// Terminal übrig. Dann klappt das Panel zu einer schmalen Leiste am rechten
+// Rand ein. Hat es den Fokus (Taste, Klick auf die Leiste), klappt es über
+// dem Terminal auf; Esc klappt es wieder ein. Die Terminalgröße bleibt dabei
+// gleich, damit der Server nicht bei jedem Fokuswechsel neu umbricht.
+const (
+	panelNarrow = 100
+	panelRailW  = 3
+)
+
+func (a *App) panelCollapsed(s *session) bool {
+	return s != nil && s.panel != panelNone && a.termRect(s).w < panelNarrow
+}
+
+// panelShown: Breite, die das Panel gerade auf dem Bildschirm belegt.
+func (a *App) panelShown(s *session) int {
+	if !a.panelCollapsed(s) || !s.panelFocus {
+		return a.panelWidth(s)
+	}
+	w := a.termRect(s).w
+	return max(panelRailW, min(w-8, max(44, w*2/3)))
+}
+
+// panelRail: eingeklappte Leiste mit Symbol und Taste des Panels.
+func (a *App) panelRail(s *session, h int) string {
+	st := a.s
+	icon, act := "◎", actGoal
+	switch s.panel {
+	case panelAsk:
+		icon, act = "✦", actAsk
+	case panelTunnels:
+		icon, act = "⇄", actTunnels
+	case panelHost:
+		icon, act = "▤", actHost
+	}
+	// Zustand: KI arbeitet (◌) oder ein Vorschlag wartet auf dich (●)
+	state := ""
+	switch {
+	case (s.panel == panelGoal && s.goal.busy) || (s.panel == panelAsk && s.ask.busy):
+		state = st.AI.Render("◌")
+	case s.panel == panelGoal && s.goal.cur != nil:
+		state = st.Warn.Render("●")
+	}
+	cells := []string{st.PanelTitle.Render(icon), state}
+	for _, r := range i18n.Keys(a.keys.label(act)) {
+		cells = append(cells, st.Accent.Render(string(r)))
+	}
+	cells = append(cells, "", st.Muted.Render("◂"))
+	side := lipgloss.NewStyle().Foreground(st.T.Border).Render("│")
+	lines := make([]string, h)
+	for i := range lines {
+		c := " "
+		if i < len(cells) && cells[i] != "" {
+			c = cells[i]
+		}
+		lines[i] = side + ansi.Truncate(c, 1, "") + " "
+	}
+	return a.z.mark(strings.Join(lines, "\n"), zoneAction{block: true, click: func(tea.Mouse, bool) tea.Cmd {
+		s.panelFocus = true
+		return nil
+	}})
 }
 
 // termSize: Spalten und Zeilen des Terminals (Bereich minus Seitenpanel).
@@ -368,23 +434,7 @@ func (a *App) followTick(s *session) tea.Cmd {
 
 func (a *App) viewTerminal() (string, *tea.Cursor) {
 	s := a.current()
-	st := a.s
-	// Tabs rechts in der Kopfzeile
-	var tabs strings.Builder
-	for i, x := range a.sessions {
-		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
-		label := " " + trunc(x.conn.Alias, 16) + " "
-		tab := st.Tab.Render(dot + label)
-		if i == a.cur {
-			tab = st.TabActive.Render(dot + label)
-		}
-		i := i
-		tabs.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
-			a.focusSession(i)
-			return nil
-		}))
-	}
-	top := a.header(tabs.String())
+	top := a.header(a.tabStrip())
 
 	// Sitzungszeile (statusline.go)
 	bar := a.sessionBar(s)
@@ -458,6 +508,19 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	}
 	if s.files.open {
 		body, cur = a.viewFiles(s, tr.w, rows), nil
+	} else if a.panelCollapsed(s) {
+		if s.panelFocus {
+			pw := a.panelShown(s)
+			vis := cols + panelRailW - pw
+			lines := strings.Split(body, "\n")
+			for i, l := range lines {
+				l = ansi.Truncate(l, vis, "")
+				lines[i] = l + strings.Repeat(" ", max(0, vis-lipgloss.Width(l)))
+			}
+			body, cur = lipgloss.JoinHorizontal(lipgloss.Top, strings.Join(lines, "\n"), a.viewPanel(s, pw, rows)), nil
+		} else {
+			body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.panelRail(s, rows))
+		}
 	} else if s.panel != panelNone {
 		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
 	}
@@ -550,4 +613,78 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		keys = append([][2]string{{"Alt+0", i18n.T("Warum? & Fix")}}, keys...)
 	}
 	return keys
+}
+
+// tabStrip: Sitzungs-Tabs für die Kopfzeile. Wird es eng, kürzen sich erst
+// die Namen (16 → 4 Zeichen), dann bleibt nur Punkt und Nummer; reicht auch
+// das nicht, zeigt die Leiste einen Ausschnitt um den aktiven Tab mit ‹ ›.
+func (a *App) tabStrip() string {
+	st := a.s
+	n := len(a.sessions)
+	if n == 0 {
+		return ""
+	}
+	room := a.w - lipgloss.Width(a.headerLeft()) - 1
+	label := func(i, l int) string {
+		x := a.sessions[i]
+		if l == 0 {
+			return " " + strconv.Itoa(i+1)
+		}
+		return " " + trunc(x.conn.Alias, l)
+	}
+	tabW := func(i, l int) int { return 1 + lipgloss.Width(label(i, l)) + 3 } // Punkt, Text, Leerraum, Innenabstand
+	fit := 0
+	for _, l := range []int{16, 12, 8, 4, 0} {
+		fit = l
+		total := 0
+		for i := 0; i < n; i++ {
+			total += tabW(i, l)
+		}
+		if total <= room {
+			break
+		}
+	}
+	// Ausschnitt um den aktiven Tab
+	from, to := 0, n
+	total := func() int {
+		t := 0
+		for i := from; i < to; i++ {
+			t += tabW(i, fit)
+		}
+		if from > 0 {
+			t += 2
+		}
+		if to < n {
+			t += 2
+		}
+		return t
+	}
+	for total() > room && to-from > 1 {
+		if a.cur-from > to-1-a.cur {
+			from++
+		} else {
+			to--
+		}
+	}
+	var b strings.Builder
+	if from > 0 {
+		b.WriteString(st.Header.Foreground(st.T.Muted).Render("‹ "))
+	}
+	for i := from; i < to; i++ {
+		x := a.sessions[i]
+		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
+		tab := st.Tab.Render(dot + label(i, fit) + " ")
+		if i == a.cur {
+			tab = st.TabActive.Render(dot + label(i, fit) + " ")
+		}
+		i := i
+		b.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
+			a.focusSession(i)
+			return nil
+		}))
+	}
+	if to < n {
+		b.WriteString(st.Header.Foreground(st.T.Muted).Render(" ›"))
+	}
+	return b.String()
 }

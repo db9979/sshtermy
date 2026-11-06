@@ -1387,4 +1387,15 @@ var en = map[string]string{
 	"gespeichert: ":                             "saved: ",
 	"“ auf diesem Rechner":                      "” on this computer",
 	"eigener Pfad":                              "other path",
+
+	// Einheitliche Dialoge (dialog.go)
+	" ist installiert.": " is installed.",
+	"%d Einträge":       "%d entries",
+	"Feld":              "field",
+	"Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).": "Compare the fingerprint with the server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).",
+	"Wird nicht gespeichert.": "Not saved.",
+	"tippen filtert":          "type to filter",
+	"▾ mehr":                  "▾ more",
+	"Hochkontrast hell":       "High contrast light",
+	"Dunkel · Hell · Kontrast · Kontrast hell": "Dark · Light · Contrast · Contrast light",
 }

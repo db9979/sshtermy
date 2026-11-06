@@ -211,11 +211,11 @@ func (a *App) quickModalView(m *modal) string {
 	cmds, preset := a.quickCmds(s)
 	kind := safety.Kind(a.remoteText(s))
 	cw := min(64, a.w-12)
-	head := st.Accent.Render(i18n.T("↯ Schnellbefehle")) + st.Muted.Render("  "+s.conn.Alias)
+	sub := s.conn.Alias
 	if preset != "" {
-		head += st.Muted.Render(i18n.T(" · Vorbelegung „") + preset + "“")
+		sub += i18n.T(" · Vorbelegung „") + preset + "“"
 	}
-	lines := []string{head, ""}
+	var lines []string
 	for i := 0; i < maxQuick; i++ {
 		c := ""
 		if i < len(cmds) {
@@ -247,12 +247,11 @@ func (a *App) quickModalView(m *modal) string {
 			return nil
 		}))
 	}
-	hint := i18n.T("⏎ oder 1…8 ausführen · ↑↓ wählen · e bearbeiten · Esc schließt")
+	keys := [][2]string{{"⏎", i18n.T("ausführen")}, {"1…8", ""}, {"↑↓", i18n.T("wählen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
 	if m.armed >= 0 {
-		hint = i18n.T("⚠ gefährlich: nochmal ⏎ zum Ausführen")
+		lines = append(lines, "", st.Danger.Render(i18n.T("⚠ gefährlich: nochmal ⏎ zum Ausführen")))
 	}
-	lines = append(lines, "", st.Muted.Render(hint))
-	return st.Modal.Render(strings.Join(lines, "\n"))
+	return st.dialog(dialog{icon: "↯", title: i18n.T("Schnellbefehle"), sub: sub, body: strings.Join(lines, "\n"), keys: keys}, a.w)
 }
 
 func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {

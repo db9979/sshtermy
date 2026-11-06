@@ -302,13 +302,14 @@ func (a *App) button(key, label string) string {
 func (a *App) inTermArea(s *session, x, y int) bool {
 	cols, rows := a.termSize(s)
 	r := a.termRect(s)
+	cols = min(cols, r.w-a.panelShown(s)) // aufgeklapptes Panel verdeckt einen Teil
 	return x >= r.x && x < r.x+cols && y >= r.y && y < r.y+rows
 }
 
 // inPanel: liegt (x, y) im Seitenpanel der Sitzung?
 func (a *App) inPanel(s *session, x, y int) bool {
 	r := a.termRect(s)
-	return r.has(x, y) && x >= r.x+r.w-a.panelWidth(s)
+	return r.has(x, y) && x >= r.x+r.w-a.panelShown(s)
 }
 
 func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
@@ -482,8 +483,8 @@ func (a *App) onPaste(m pasteMsg) tea.Cmd {
 	return a.guardedPaste(s, m.text)
 }
 
-// modalButtons: Knöpfe unter dem Dialog (Klick = Taste).
-func (a *App) modalButtons() string {
+// modalKeys: Tastenhinweise unten im Dialog (Klick = Taste).
+func (a *App) modalKeys() [][2]string {
 	var keys [][2]string
 	switch a.modal.kind {
 	case mHostKey:
@@ -492,6 +493,8 @@ func (a *App) modalButtons() string {
 		keys = [][2]string{{yesKey(), i18n.T("ja")}, {"n", i18n.T("nein")}}
 	case mSecret:
 		keys = [][2]string{{"⏎", i18n.T("senden")}, {"Esc", i18n.T("abbrechen")}}
+	case mInput:
+		keys = [][2]string{{"⏎", i18n.T("übernehmen")}, {"Esc", i18n.T("abbrechen")}}
 	case mAbout:
 		if a.rel != nil {
 			keys = append(keys, [2]string{"u", i18n.T("aktualisieren")})
@@ -500,7 +503,7 @@ func (a *App) modalButtons() string {
 		} else {
 			keys = append(keys, [2]string{"c", i18n.T("nach Updates suchen")})
 		}
-		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("☕ Kaffee spendieren")}, [2]string{"l", "Language"}, [2]string{"Esc", i18n.T("schließen")})
+		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("☕ Kaffee spendieren")}, [2]string{"l", langTarget()}, [2]string{"Esc", i18n.T("schließen")})
 	case mChangelog:
 		keys = [][2]string{{"b", i18n.T("☕ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
 	case mHelp, mInfo:
@@ -517,17 +520,8 @@ func (a *App) modalButtons() string {
 			keys = append(keys, [2]string{"o", i18n.T("ohne letztes ⏎")})
 		}
 		keys = append(keys, [2]string{"Esc", i18n.T("abbrechen")})
-	default:
-		return ""
 	}
-	var b strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			b.WriteString("  ")
-		}
-		b.WriteString(a.button(k[0], k[1]))
-	}
-	return b.String()
+	return keys
 }
 
 func mouseLabel(on bool) string {
