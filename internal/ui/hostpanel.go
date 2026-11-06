@@ -44,7 +44,7 @@ type hostState struct {
 	pagingOff bool // "no page" o. Ä. in dieser Sitzung schon gesendet
 	backups   []store.Backup
 	sel       int
-	note      string // Ergebnis der letzten Sicherung
+	note      string           // Ergebnis der letzten Sicherung
 	alerts    []hostinfo.Alert // Kennzahlen über der Warnschwelle
 	lastTry   time.Time        // letzte Server-Abfrage (auch fehlgeschlagene)
 }

@@ -62,13 +62,6 @@ func (a *App) toggleDangerAll() tea.Cmd {
 	return nil
 }
 
-func dangerAllLabel(on bool) string {
-	if on {
-		return i18n.T("Gefahren-Check nur auf Produktiv-Hosts")
-	}
-	return i18n.T("Gefahren-Check auf allen Hosts (riskante Befehle nachfragen)")
-}
-
 // dangerCheck: Enter am Prompt. true = zurückgehalten, Dialog ist offen.
 func (a *App) dangerCheck(s *session, k tea.KeyPressMsg) bool {
 	if s.term == nil || s.term.AltScreen() || !a.dangerGuardOn(s.conn) {

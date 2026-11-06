@@ -45,14 +45,6 @@ func (a *App) toggleLang() tea.Cmd {
 	return a.setLang(i18n.EN)
 }
 
-// langLabel: Eintrag für Palette und Über-Dialog, in beiden Sprachen lesbar.
-func langLabel() string {
-	if i18n.English() {
-		return "Language: English → Deutsch"
-	}
-	return "Sprache: Deutsch → English"
-}
-
 // yesKey: Taste für „ja“ in Dialogen (j und y gehen immer, angezeigt wird
 // die der Sprache).
 func yesKey() string {

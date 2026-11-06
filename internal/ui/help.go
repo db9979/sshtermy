@@ -199,6 +199,8 @@ var helpSections = []helpSection{
 		{"user@host", "schnell verbinden"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
+		{"⚙ Einstellungen ›", "Schalter, Aussehen, Sprache"},
+		{"Esc / ← (Untermenü)", "zurück"},
 		{"↓ „umschreiben“", "Befehl fürs System anpassen"},
 		{"Esc", "schließen"},
 	}},

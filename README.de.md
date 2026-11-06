@@ -208,6 +208,7 @@ Telnet ist unverschlüsselt, nur in vertrauenswürdigen Netzen verwenden.
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
 **Befehlspalette (Strg+Leertaste):** ein Feld für alles, Text wird zum Ziel oder zur Frage, darunter Vorschläge, Tunnel, Verbindungen und Aktionen.
+Schalter, Aussehen, Sprache und Einrichtung liegen im Untermenü **⚙ Einstellungen ›** (rechts steht „an“/„aus“, die Palette bleibt beim Umschalten offen), Tastenkürzel, Tour, Neuigkeiten und Update unter **? Hilfe & Info ›**. Wer tippt, findet auch die Punkte aus den Untermenüs direkt; Esc oder ← führt zurück.
 
 ![Befehlspalette](docs/bilder/09-palette.png)
 
