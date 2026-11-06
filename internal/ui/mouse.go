@@ -43,7 +43,7 @@ func (a *App) mouseEnabled() bool { return !a.st.Settings().NoMouse }
 func (a *App) toggleMouse() tea.Cmd {
 	on := !a.mouseEnabled()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoMouse = !on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {

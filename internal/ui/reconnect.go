@@ -202,7 +202,7 @@ func (a *App) autoReconnect() bool { return !a.st.Settings().NoAutoReconnect }
 func (a *App) toggleAutoReconnect() tea.Cmd {
 	on := !a.autoReconnect()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoAutoReconnect = !on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {
@@ -258,8 +258,8 @@ func (a *App) beginReconnect(s *session, cause string) {
 		return
 	}
 	s.rc.active, s.rc.dialing, s.rc.cause, s.rc.lastErr = true, false, cause, ""
-	if s.client != nil {
-		s.rc.netDev = s.client.NetDevice
+	if s.client != nil || s.conn.Protocol.Raw() {
+		s.rc.netDev = s.netDev()
 	}
 	if s.tunnels != nil {
 		s.rc.tunnels = s.rc.tunnels[:0]
@@ -369,17 +369,17 @@ func (a *App) onReconnected(s *session) tea.Cmd {
 			continue // AutoStart-Tunnel startet connectedMsg schon
 		}
 		if _, err := s.tunnels.Start(t); err != nil {
-			a.flash("Tunnel " + t.Name + ": " + err.Error())
+			a.flashErr("Tunnel " + t.Name + ": " + err.Error())
 		}
 	}
 	msg := fmt.Sprintf(i18n.T("%s wieder verbunden (%s getrennt)"), s.conn.Alias, down)
 	var probe tea.Cmd
-	if s.mux.kind == "" && s.rc.alt && !s.client.NetDevice {
+	if s.mux.kind == "" && s.rc.alt && s.client != nil && !s.client.NetDevice {
 		// Vollbild lief, aber kein tmux-Aufruf gesehen (z. B. tmux startet aus
 		// .bashrc): fragen, ob genau eine tmux-Sitzung noch angehängt ist.
 		probe = probeMux(s.id, s.client)
 	}
-	if s.mux.kind != "" && !s.client.NetDevice {
+	if s.mux.kind != "" && !s.netDev() {
 		s.rc.active, s.rc.dialing = false, false
 		s.rc.tunnels = nil
 		s.muxPending = true

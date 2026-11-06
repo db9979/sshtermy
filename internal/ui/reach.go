@@ -142,6 +142,9 @@ func (a *App) reachText(c domain.Connection) string {
 	if c.JumpHostID != "" {
 		return s.Muted.Render(i18n.T("○ über Jump-Host, nicht direkt geprüft"))
 	}
+	if c.Protocol == domain.ProtoSerial {
+		return s.Muted.Render(i18n.T("○ serielle Konsole, Kabel wird beim Verbinden gesucht"))
+	}
 	if !a.reachEnabled() {
 		return s.Muted.Render(i18n.T("○ Prüfung aus (Befehlspalette)"))
 	}
@@ -174,7 +177,7 @@ func fmtAgo(d time.Duration) string {
 func (a *App) toggleReach() tea.Cmd {
 	on := !a.reachEnabled()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoReachCheck = !on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	a.reach.next = time.Time{}

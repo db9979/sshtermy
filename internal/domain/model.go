@@ -94,6 +94,14 @@ type Connection struct {
 	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
 	QuickCmds []string `json:"quick_cmds,omitempty"`
 
+	// Protocol: SSH (leer), Telnet oder serielle Konsole (USB-Konsolenkabel).
+	// Bei Telnet und seriell meldet sshTermy sich selbst an, wenn Benutzer
+	// und Passwort hinterlegt sind (Auth/Keyfile/Jump-Host gelten nur für SSH).
+	Protocol   Protocol `json:"protocol,omitempty"`
+	SerialPort string   `json:"serial_port,omitempty"` // COM3, /dev/ttyUSB0 … leer = automatisch (einziges USB-Kabel)
+	Baud       int      `json:"baud,omitempty"`        // 0 = 9600
+	Frame      string   `json:"frame,omitempty"`       // Datenbits, Parität, Stoppbits, leer = "8N1"
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	LastUsed  time.Time `json:"last_used,omitempty"`
@@ -108,11 +116,69 @@ func (c Connection) Rev() time.Time {
 	return c.UpdatedAt
 }
 
-// Addr liefert host:port (IPv6 korrekt geklammert).
+// Protocol: wie sshTermy die Gegenstelle erreicht.
+type Protocol string
+
+const (
+	ProtoSSH    Protocol = ""       // Standard
+	ProtoTelnet Protocol = "telnet" // unverschlüsselt, für ältere Switches
+	ProtoSerial Protocol = "serial" // serielle Konsole (USB-Konsolenkabel)
+)
+
+// Raw: kein SSH, also keine Exec-Abfragen, kein SFTP und keine Tunnel.
+func (p Protocol) Raw() bool { return p == ProtoTelnet || p == ProtoSerial }
+
+// DefaultBaud: übliche Geschwindigkeit von Switch-Konsolen (Aruba, Cisco, HPE).
+const DefaultBaud = 9600
+
+// SerialBaud und SerialFrame liefern die Einstellung samt Standardwert.
+func (c Connection) SerialBaud() int {
+	if c.Baud <= 0 {
+		return DefaultBaud
+	}
+	return c.Baud
+}
+func (c Connection) SerialFrame() string {
+	if c.Frame == "" {
+		return "8N1"
+	}
+	return c.Frame
+}
+
+// DefaultPort: 22 für SSH, 23 für Telnet.
+func (c Connection) DefaultPort() int {
+	if c.Protocol == ProtoTelnet {
+		return 23
+	}
+	return 22
+}
+
+// Target: Anzeige des Ziels, z. B. „admin@10.0.0.1:22“ oder bei seriellen
+// Verbindungen „COM3 · 9600 8N1“.
+func (c Connection) Target() string {
+	a := c.Addr()
+	if c.Protocol != ProtoSerial && c.Username != "" {
+		a = c.Username + "@" + a
+	}
+	if c.Protocol == ProtoTelnet {
+		a = "telnet://" + a
+	}
+	return a
+}
+
+// Addr liefert host:port (IPv6 korrekt geklammert), bei seriellen
+// Verbindungen Schnittstelle und Geschwindigkeit.
 func (c Connection) Addr() string {
+	if c.Protocol == ProtoSerial {
+		port := c.SerialPort
+		if port == "" {
+			port = "USB"
+		}
+		return fmt.Sprintf("%s · %d %s", port, c.SerialBaud(), c.SerialFrame())
+	}
 	p := c.Port
 	if p == 0 {
-		p = 22
+		p = c.DefaultPort()
 	}
 	if len(c.Host) > 0 && c.Host[0] != '[' && containsColon(c.Host) {
 		return fmt.Sprintf("[%s]:%d", c.Host, p)
