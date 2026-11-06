@@ -135,6 +135,10 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		a.modal = nil
 		return nil
 	}
+	// Ziehen im Dateibrowser: Einträge auf die andere Seite kopieren
+	if a.scr == scrTerminal && s != nil && s.files.open && s.files.drag != nil && a.modal == nil && a.pal == nil && a.pick == nil && !isClick {
+		return a.filesDragMouse(s, msg)
+	}
 	// Ziehen im Manager: Verbindungen und Ordner umsortieren
 	if a.scr == scrManager && a.modal == nil && a.pal == nil && a.pick == nil && a.mgr.drag != nil && !isClick {
 		return a.mgrDragMouse(msg)
