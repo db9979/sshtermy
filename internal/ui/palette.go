@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -29,17 +30,21 @@ const (
 	pgTunnel
 	pgConnect
 	pgAction
+	pgConns // gespeicherte Verbindungen (palconn.go)
 )
 
-var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgQuick: "SCHNELLBEFEHLE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN"}
+var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgQuick: "SCHNELLBEFEHLE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN", pgConns: "VERBINDUNGEN"}
 
 type palItem struct {
-	group  palGroup
-	icon   string
-	label  string
-	hint   string
-	danger string
-	run    func() tea.Cmd
+	group     palGroup
+	icon      string
+	iconColor color.Color // nil = Farbe der Gruppe
+	label     string
+	sub       string // gedimmt hinter dem Namen (Ordner)
+	hint      string
+	danger    string
+	more      bool // „weitere im Manager“: gedimmt
+	run       func() tea.Cmd
 }
 
 type palette struct {
@@ -138,14 +143,7 @@ func (a *App) paletteItems() []palItem {
 	if !quickFirst {
 		items = append(items, quick...)
 	}
-	for _, c := range a.st.Connections() {
-		c := c
-		if !match(c.Alias + " " + c.Host + " " + c.Group) {
-			continue
-		}
-		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: shortTarget(c),
-			run: func() tea.Cmd { return a.openOrConnect(c) }})
-	}
+	items = append(items, a.palConnItems(q)...)
 	actions := []palItem{
 		{icon: "◎", label: i18n.T("Ziel-Modus öffnen"), hint: a.keys.label(actGoal), run: func() tea.Cmd {
 			if inTerm {
@@ -340,7 +338,11 @@ func (a *App) viewPalette() string {
 		it := items[i]
 		if it.group != last {
 			last = it.group
-			b.WriteString(st.Muted.Render(i18n.T(palGroupName[it.group])) + "\n")
+			head := i18n.T(palGroupName[it.group])
+			if it.group == pgConns {
+				head = a.palConnHeader(p.in.Value())
+			}
+			b.WriteString(st.Muted.Render(head) + "\n")
 		}
 		iconStyle := st.Accent
 		switch it.group {
@@ -351,6 +353,12 @@ func (a *App) viewPalette() string {
 		case pgRunbook:
 			iconStyle = st.AI
 		}
+		if it.group == pgConns && it.more {
+			iconStyle = st.Muted
+		}
+		if it.iconColor != nil {
+			iconStyle = lipgloss.NewStyle().Foreground(it.iconColor)
+		}
 		hint := st.Muted.Render(it.hint)
 		if it.danger != "" {
 			hint = st.Danger.Render("⚠ " + it.danger)
@@ -359,10 +367,18 @@ func (a *App) viewPalette() string {
 			}
 		}
 		label := trunc(it.label, w-8-lipgloss.Width(hint))
-		gap := max(1, w-6-lipgloss.Width(label)-lipgloss.Width(hint))
-		line := iconStyle.Render(it.icon) + " " + st.Text.Render(label) + strings.Repeat(" ", gap) + hint
+		sub := ""
+		if room := w - 11 - lipgloss.Width(label) - lipgloss.Width(hint); it.sub != "" && room >= 6 {
+			sub = "  " + trunc(it.sub, room)
+		}
+		gap := max(1, w-6-lipgloss.Width(label)-lipgloss.Width(sub)-lipgloss.Width(hint))
+		labelStyle := st.Text
+		if it.more {
+			labelStyle = st.Muted
+		}
+		line := iconStyle.Render(it.icon) + " " + labelStyle.Render(label) + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
 		if i == p.sel {
-			line = st.Selected.Width(w - 4).Render(it.icon + " " + label + strings.Repeat(" ", gap) + ansiPlain(hint))
+			line = st.Selected.Width(w - 4).Render(it.icon + " " + label + sub + strings.Repeat(" ", gap) + ansiPlain(hint))
 		}
 		i, it := i, it
 		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
