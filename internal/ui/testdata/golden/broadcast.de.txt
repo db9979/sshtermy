@@ -21,6 +21,7 @@
      │                                                                                                            │
      │   Quelle               eigener Befehl                                                                      │
      │ ▌ Befehl              Befehl, z. B. uptime · ⇧⏎ = weiterer Schritt                                         │
+     │                       Tipp: {{name}} wird vor dem Start abgefragt, {{host}} pro Host eingesetzt            │
      │                                                                                                            │
      ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -28,5 +29,4 @@
 
 
 
-
- Tab Hosts/Quelle/Befehl  Space Host wählen  g Ordner  a alle  Strg+S weiter  Esc abbrechen  F1 Hilfe
+ Tab Hosts/Quelle/Befehl  Space Host wählen  g Ordner  a alle  Strg+R als Runbook  Strg+S weiter  F1 Hilfe

@@ -27,4 +27,4 @@
                                  │
                                  │
                                  │
- ↑↓ select  / search  z AI summary  Z summarize all matches  x Markdown export  d delete
+ ↑↓ select  / search  z AI summary  Z summarize all matches  x export  d delete  PgDn scroll

@@ -27,4 +27,4 @@
                                  │
                                  │
                                  │
- ↑↓ wählen  / suchen  z KI-Zusammenfassung  Z alle Treffer zusammenfassen  x Markdown-Export
+ ↑↓ wählen  / suchen  z KI-Zusammenfassung  Z alle Treffer zusammenfassen  x exportieren  d löschen

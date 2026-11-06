@@ -21,6 +21,7 @@
      │                                                                                                            │
      │   Source               own command                                                                         │
      │ ▌ Command             Command, e.g. uptime · ⇧⏎ = next step                                                │
+     │                       Tip: {{name}} is asked before the run, {{host}} filled in per host                   │
      │                                                                                                            │
      ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -28,5 +29,4 @@
 
 
 
-
- Tab hosts/source/command  Space select host  g Folder  a all  Ctrl+S next  Esc cancel  F1 Help
+ Tab hosts/source/command  Space select host  g Folder  a all  Ctrl+R as runbook  Ctrl+S next  Esc cancel  F1 Help

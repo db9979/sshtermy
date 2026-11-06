@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
@@ -16,6 +17,7 @@ import (
 	"github.com/db9979/sshtermy/internal/broadcast"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/runbook"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -29,6 +31,7 @@ type bcPhase int
 
 const (
 	bcSetup bcPhase = iota
+	bcVars          // Variablen ausfüllen (broadcast_rb.go)
 	bcConfirm
 	bcRun
 )
@@ -51,9 +54,20 @@ type bcState struct {
 	armed  bool // Gefahr: erster ⏎ gedrückt
 	err    string
 
+	// Runbooks (broadcast_rb.go)
+	editID, editName string            // Befehlsfeld kommt aus diesem Runbook
+	vals             map[string]string // Werte der Variablen
+	vars             []runbook.Var
+	varIn            []textinput.Model
+	varCur           int
+	review           map[string]*hostReview // KI-Prüfung pro Verbindung
+	reviewSeq        int
+	useAdapted       bool // Vorschläge der KI ausführen
+
 	// Lauf
 	targets []domain.Connection
-	steps   []string
+	steps   []string   // Vorlage (für die Kopfzeile)
+	per     [][]string // tatsächliche Schritte je Host
 	results []broadcast.Result
 	cancel  context.CancelFunc
 	seq     int
@@ -102,6 +116,9 @@ func (a *App) openBroadcast() tea.Cmd {
 	if a.bc != nil && a.bc.seq > 0 { // letzte Eingabe behalten
 		b.cmd.SetValue(a.bc.cmd.Value())
 		b.seq = a.bc.seq
+	}
+	if a.bc != nil { // Variablenwerte und Bearbeitung behalten
+		b.vals, b.editID, b.editName = a.bc.vals, a.bc.editID, a.bc.editName
 	}
 	a.bc = b
 	a.scr = scrBroadcast
@@ -167,11 +184,18 @@ func (a *App) updateBroadcast(msg tea.Msg) tea.Cmd {
 		b.cmd, cmd = b.cmd.Update(pm)
 		return cmd
 	}
+	if pm, ok := msg.(tea.PasteMsg); ok && b.phase == bcVars && b.varCur < len(b.varIn) {
+		var cmd tea.Cmd
+		b.varIn[b.varCur], cmd = b.varIn[b.varCur].Update(pm)
+		return cmd
+	}
 	k, ok := msg.(tea.KeyPressMsg)
 	if !ok {
 		return nil
 	}
 	switch b.phase {
+	case bcVars:
+		return a.bcVarsKey(k)
 	case bcConfirm:
 		return a.bcConfirmKey(k)
 	case bcRun:
@@ -195,6 +219,8 @@ func (a *App) updateBroadcast(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		return a.bcToConfirm()
+	case "ctrl+r":
+		return a.bcSaveBook()
 	case "f1":
 		a.modal = a.helpModal()
 		return nil
@@ -235,6 +261,10 @@ func (a *App) updateBroadcast(msg tea.Msg) tea.Cmd {
 			b.src = (b.src + n - 1) % n
 		case "right", "down", "space":
 			b.src = (b.src + 1) % n
+		case "e":
+			return a.bcEditBook()
+		case "ctrl+d", "delete":
+			return a.bcDeleteBook()
 		}
 	case bcFocusCmd:
 		var cmd tea.Cmd
@@ -257,6 +287,9 @@ func (a *App) bcToConfirm() tea.Cmd {
 	}
 	b.err, b.armed, b.phase = "", false, bcConfirm
 	b.cmd.Blur()
+	if len(b.varsOf()) > 0 {
+		return a.bcToVars()
+	}
 	return nil
 }
 
@@ -264,11 +297,23 @@ func (a *App) bcConfirmKey(k tea.KeyPressMsg) tea.Cmd {
 	b := a.bc
 	switch k.String() {
 	case "enter", "j", "y":
-		if len(broadcast.Dangers(b.stepList())) > 0 && !b.armed {
+		hosts := b.chosen()
+		per := b.perHost(hosts)
+		if len(allDangers(per)) > 0 && !b.armed {
 			b.armed = true // rot: zweiter Druck nötig
 			return nil
 		}
-		return a.bcStart(b.chosen(), b.stepList())
+		return a.bcStart(hosts, b.stepList(), per)
+	case "k":
+		return a.bcReview()
+	case "a":
+		if b.review != nil {
+			b.useAdapted, b.armed = !b.useAdapted, false
+		}
+	case "v":
+		if len(b.varsOf()) > 0 {
+			return a.bcToVars()
+		}
 	case "esc", "n", "e":
 		b.phase = bcSetup
 		return b.setFocus(b.focus)
@@ -276,7 +321,7 @@ func (a *App) bcConfirmKey(k tea.KeyPressMsg) tea.Cmd {
 	return nil
 }
 
-func (a *App) bcStart(targets []domain.Connection, steps []string) tea.Cmd {
+func (a *App) bcStart(targets []domain.Connection, steps []string, per [][]string) tea.Cmd {
 	b := a.bc
 	if b.cancel != nil {
 		b.cancel()
@@ -285,7 +330,7 @@ func (a *App) bcStart(targets []domain.Connection, steps []string) tea.Cmd {
 	seq := b.seq
 	ctx, cancel := context.WithCancel(context.Background())
 	b.cancel, b.running, b.started = cancel, true, time.Now()
-	b.targets, b.steps = targets, steps
+	b.targets, b.steps, b.per = targets, steps, per
 	b.results = make([]broadcast.Result, len(targets))
 	for i, c := range targets {
 		b.results[i] = broadcast.Result{ConnID: c.ID, Alias: c.Alias, Exit: -1}
@@ -296,7 +341,7 @@ func (a *App) bcStart(targets []domain.Connection, steps []string) tea.Cmd {
 	}
 	ev := a.events
 	dial := a.bcDialer()
-	job := broadcast.Job{Conns: targets, Steps: steps}
+	job := broadcast.Job{Conns: targets, Steps: steps, PerHost: per}
 	go func() {
 		broadcast.Run(ctx, job, dial, func(i int, r broadcast.Result) { ev <- bcUpdateMsg{seq, i, r} })
 		ev <- bcDoneMsg{seq}
@@ -371,6 +416,9 @@ func (a *App) bcMsg(msg tea.Msg) (tea.Cmd, bool) {
 			}
 		}
 		return a.listen(), true
+	case bcReviewMsg:
+		a.bcReviewDone(m)
+		return nil, true
 	case bcDoneMsg:
 		if b := a.bc; b != nil && m.seq == b.seq {
 			b.running = false
@@ -456,8 +504,17 @@ func (a *App) broadcastKeys() [][2]string {
 		return nil
 	}
 	switch b.phase {
+	case bcVars:
+		return [][2]string{{"⏎", i18n.T("nächstes Feld")}, {"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("zurück")}}
 	case bcConfirm:
-		return [][2]string{{"⏎", i18n.T("ausführen")}, {"Esc", i18n.T("zurück")}}
+		k := [][2]string{{"⏎", i18n.T("ausführen")}, {"k", i18n.T("KI prüft gegen Systemprofil")}}
+		if b.review != nil {
+			k = append(k, [2]string{"a", i18n.T("KI-Vorschläge an/aus")})
+		}
+		if len(b.varsOf()) > 0 {
+			k = append(k, [2]string{"v", i18n.T("Variablen")})
+		}
+		return append(k, [2]string{"Esc", i18n.T("zurück")})
 	case bcRun:
 		k := [][2]string{{"←/→", "Host"}, {"↑/↓", i18n.T("blättern")}, {"z", i18n.T("groß")}, {"c", i18n.T("kopieren")}}
 		if b.running {
@@ -467,8 +524,12 @@ func (a *App) broadcastKeys() [][2]string {
 		}
 		return append(k, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{"F1", i18n.T("Hilfe")})
 	}
+	if b.focus == bcFocusSource && b.src > 0 {
+		return [][2]string{{"←/→", "Runbook"}, {"e", i18n.T("bearbeiten")}, {"Strg+D", i18n.T("löschen")},
+			{"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
+	}
 	return [][2]string{{"Tab", i18n.T("Hosts/Quelle/Befehl")}, {"Space", i18n.T("Host wählen")}, {"g", i18n.T("Ordner")}, {"a", i18n.T("alle")},
-		{"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
+		{"Strg+R", i18n.T("als Runbook")}, {"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -479,6 +540,8 @@ func (a *App) viewBroadcast() string {
 		return ""
 	}
 	switch b.phase {
+	case bcVars:
+		return a.viewBcVars()
 	case bcConfirm:
 		return a.viewBcConfirm()
 	case bcRun:
@@ -574,6 +637,9 @@ func (a *App) viewBcSetup() string {
 	if b.src == 0 {
 		b.cmd.SetWidth(w - 26)
 		o.WriteString(promptBlock(head(bcFocusCmd, i18n.T("Befehl")), b.cmd.View()) + "\n")
+		if b.editName != "" {
+			o.WriteString("  " + strings.Repeat(" ", 20) + s.Muted.Render(i18n.T("bearbeitet „")+trunc(b.editName, w-50)+i18n.T("“ · Strg+R speichert")) + "\n")
+		}
 	} else {
 		rb := b.books[b.src-1]
 		o.WriteString("  " + s.Label.Render("Runbook") + s.Muted.Render(trunc(rb.Goal, w-26)) + "\n")
@@ -583,6 +649,15 @@ func (a *App) viewBcSetup() string {
 		if len(rb.Steps) == 0 {
 			o.WriteString("  " + strings.Repeat(" ", 20) + s.Warn.Render(i18n.T("Runbook hat keine gespeicherten Schritte")) + "\n")
 		}
+	}
+	if vs := runbook.Vars(steps); len(vs) > 0 {
+		var names []string
+		for _, v := range vs {
+			names = append(names, "{{"+v.Name+"}}")
+		}
+		o.WriteString("  " + strings.Repeat(" ", 20) + s.AI.Render(i18n.T("Variablen: ")+trunc(strings.Join(names, " "), w-40)) + s.Muted.Render(i18n.T(" · werden vor dem Start abgefragt")) + "\n")
+	} else if b.src == 0 && len(steps) == 0 {
+		o.WriteString("  " + strings.Repeat(" ", 20) + s.Muted.Render(i18n.T("Tipp: {{name}} wird vor dem Start abgefragt, {{host}} pro Host eingesetzt")) + "\n")
 	}
 	for _, d := range broadcast.Dangers(steps) {
 		o.WriteString("  " + strings.Repeat(" ", 20) + s.Danger.Render("⚠ "+strings.Join(d.Reasons, ", ")) + "\n")
@@ -597,8 +672,12 @@ func (a *App) viewBcConfirm() string {
 	b, s := a.bc, a.s
 	w := min(100, a.w-4)
 	hosts := b.chosen()
+	per := b.perHost(hosts)
 	steps := b.stepList()
-	dangers := broadcast.Dangers(steps)
+	if len(hosts) > 0 {
+		steps = runbook.Fill(steps, b.vals, hosts[0]) // Vorschau mit den Werten des ersten Hosts
+	}
+	dangers := allDangers(per)
 	var o strings.Builder
 	o.WriteString(s.Accent.Render(fmt.Sprintf(i18n.T("⇉ Auf %s ausführen?"), plural(len(hosts), "Host", "Hosts"))) + "\n\n")
 	var names []string
@@ -617,7 +696,19 @@ func (a *App) viewBcConfirm() string {
 		}
 		o.WriteString(pre + s.Code.Render(trunc(st, w-10)) + "\n")
 	}
-	if broadcast.Elevated(steps) {
+	if len(hosts) > 1 && runbook.HasBuiltins(b.stepList()) {
+		o.WriteString(s.Muted.Render(fmt.Sprintf(i18n.T("(Vorschau für %s; {{host}} usw. wird je Host eingesetzt)"), hosts[0].Alias)) + "\n")
+	}
+	if rl := a.reviewLines(hosts, w-6); len(rl) > 0 {
+		o.WriteString("\n" + s.AI.Bold(true).Render(i18n.T("KI-Prüfung gegen das Systemprofil")) + "\n" + strings.Join(rl, "\n") + "\n")
+	} else {
+		o.WriteString("\n" + s.Muted.Render(i18n.T("k = KI prüft, ob die Schritte zum Systemprofil jedes Hosts passen")) + "\n")
+	}
+	elevated := false
+	for _, p := range per {
+		elevated = elevated || broadcast.Elevated(p)
+	}
+	if elevated {
 		o.WriteString("\n" + s.Warn.Render(i18n.T("⚠ läuft mit erhöhten Rechten (sudo)")) + "\n")
 	}
 	if nets > 0 {
@@ -628,7 +719,7 @@ func (a *App) viewBcConfirm() string {
 		var d strings.Builder
 		d.WriteString(s.Danger.Render(i18n.T("GEFAHR")) + "\n")
 		for _, x := range dangers {
-			d.WriteString(s.Danger.Render(fmt.Sprintf(i18n.T("Schritt %d: %s"), x.Step, strings.Join(x.Reasons, ", "))) + "\n")
+			d.WriteString(s.Danger.Render(fmt.Sprintf(i18n.T("Schritt %d: %s"), x.Step, strings.Join(x.Reasons, ", "))) + s.Muted.Render("  "+trunc(x.Command, max(10, w-40))) + "\n")
 		}
 		d.WriteString(s.Text.Render(fmt.Sprintf(i18n.T("Das betrifft %s gleichzeitig."), plural(len(hosts), "Host", "Hosts"))))
 		o.WriteString("\n" + s.DangerBox.Width(w-6).Render(d.String()) + "\n")
@@ -733,7 +824,11 @@ func (a *App) viewBcRun() string {
 	for c := 0; c < cols && b.first+c < n; c++ {
 		i := b.first + c
 		r := b.results[i]
-		icon, txt, st := a.bcStatus(r, len(b.steps))
+		nsteps := len(b.steps)
+		if i < len(b.per) && len(b.per[i]) > 0 {
+			nsteps = len(b.per[i])
+		}
+		icon, txt, st := a.bcStatus(r, nsteps)
 		title := st.Render(icon) + " " + s.Text.Bold(true).Render(trunc(r.Alias, colW-4))
 		if i == b.sel {
 			title = s.Selected.Width(colW).Render(ansi.Strip(title))

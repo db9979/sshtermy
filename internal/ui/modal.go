@@ -25,14 +25,15 @@ const (
 	mBusy
 	mChangelog
 	mTour
-	mPaste // Einfügeschutz (pasteguard.go)
-	mMenu  // Kontextmenü, z. B. zu Links (links.go)
-	mInfo  // Ergebnis anzeigen (Ping)
-	mInput // eine Zeile Text (Ordnername)
-	mQuick // Schnellbefehle (quick.go)
-	mText  // blätterbarer Text (Config-Diff, Konfiguration)
-	mLLM   // KI-Status (llmhealth.go)
-	mCrash // Absturzbericht der letzten Sitzung (crash.go)
+	mPaste  // Einfügeschutz (pasteguard.go)
+	mMenu   // Kontextmenü, z. B. zu Links (links.go)
+	mInfo   // Ergebnis anzeigen (Ping)
+	mInput  // eine Zeile Text (Ordnername)
+	mQuick  // Schnellbefehle (quick.go)
+	mText   // blätterbarer Text (Config-Diff, Konfiguration)
+	mLLM    // KI-Status (llmhealth.go)
+	mDanger // Gefahren-Check beim Tippen (dangerguard.go)
+	mCrash  // Absturzbericht der letzten Sitzung (crash.go)
 )
 
 type modal struct {
@@ -51,6 +52,7 @@ type modal struct {
 	lines    []string             // Changelog/Text: fertig gestaltete Zeilen
 
 	paste    *pasteCheck // nur Einfügeschutz
+	danger   *dangerAsk  // nur Gefahren-Check
 	items    []menuItem  // nur Menü
 	sel      int         // nur Menü: Auswahl
 	at       [2]int      // nur Menü: Bildschirmposition (Mauszeiger)
@@ -205,6 +207,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.inputKey(k)
 	case mPaste:
 		return a.pasteKey(key)
+	case mDanger:
+		return a.dangerKey(k)
 	case mMenu:
 		return a.menuKey(key)
 	case mLLM:
@@ -270,6 +274,8 @@ func (a *App) modalView() string {
 	switch a.modal.kind {
 	case mPaste:
 		return a.pasteView(a.modal)
+	case mDanger:
+		return a.dangerView(a.modal)
 	case mMenu:
 		return a.menuView(a.modal)
 	case mQuick:

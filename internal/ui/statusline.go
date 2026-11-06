@@ -80,6 +80,9 @@ func (a *App) sessionBar(s *session) string {
 	if s.state == stConnected && s.rootNow() {
 		left.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("⚠ root")))
 	}
+	if s.recording() {
+		left.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
+	}
 	info := s.conn.Username + "@" + s.conn.Addr()
 	if s.client != nil {
 		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.profileSummary()
