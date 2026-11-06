@@ -485,7 +485,8 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	case s.state == stClosed:
 		msg := st.Danger.Render("✗ " + orDefault(s.err, i18n.T("getrennt")))
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			msg+"\n\n"+st.Muted.Render(i18n.T("⏎ neu verbinden · x Tab schließen · ")+a.keys.label(actManager)+" Manager"))
+			msg+"\n\n"+a.hints(st.Muted, [2]string{"⏎", i18n.T("neu verbinden")}, [2]string{"x", i18n.T("Tab schließen")},
+				[2]string{a.keys.label(actManager), i18n.T("Manager")}))
 	case s.search.open && s.search.list:
 		body = a.viewErrorList(s, cols, rows)
 	case s.scroll > 0 || s.sel != nil || s.search.open:

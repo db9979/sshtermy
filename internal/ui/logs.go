@@ -361,7 +361,7 @@ func (a *App) viewLogs() string {
 		if m.groupQ != "" {
 			title += i18n.T(" zu „") + m.groupQ + "“"
 		}
-		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(title) + s.Muted.Render(i18n.T("  Esc schließen")) + "\n\n")
+		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(title) + s.Muted.Render("  ") + a.hints(s.Muted, [2]string{"Esc", i18n.T("schließen")}) + "\n\n")
 		rb.WriteString(indent(wrap(s.Text.Render(m.group), w), " "))
 	case m.sel < len(list):
 		l := list[m.sel]

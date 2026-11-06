@@ -545,6 +545,6 @@ func (a *App) reconnectView(s *session) string {
 	if n := len(r.tunnels); n > 0 {
 		out += "\n" + st.Muted.Render(plural(n, i18n.T("Tunnel startet"), i18n.T("Tunnel starten"))+i18n.T(" wieder."))
 	}
-	return out + "\n\n" + a.keyZone("⏎", st.Muted.Render(i18n.T("⏎ jetzt versuchen"))) + st.Muted.Render(" · ") +
-		a.keyZone("Esc", st.Muted.Render(i18n.T("Esc abbrechen"))) + st.Muted.Render(i18n.T(" · x Tab schließen · F10 Manager"))
+	return out + "\n\n" + a.hints(st.Muted, [2]string{"⏎", i18n.T("jetzt versuchen")}, [2]string{"Esc", i18n.T("abbrechen")},
+		[2]string{"x", i18n.T("Tab schließen")}, [2]string{a.keys.label(actManager), i18n.T("Manager")})
 }

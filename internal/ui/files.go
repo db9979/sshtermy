@@ -576,7 +576,7 @@ func (a *App) viewFiles(s *session, w, h int) string {
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.AI.Render(i18n.T("⠿ öffne SFTP-Kanal …")))
 	case f.err != "":
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center,
-			st.Danger.Render("✗ "+f.err)+"\n\n"+st.Muted.Render(i18n.T("Esc zurück zum Terminal")))
+			st.Danger.Render("✗ "+f.err)+"\n\n"+a.hints(st.Muted, [2]string{"Esc", i18n.T("zurück zum Terminal")}))
 	case f.panes[0] == nil:
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.Muted.Render(i18n.T("keine Verbindung")))
 	}

@@ -68,7 +68,6 @@ var enOps = map[string]string{
 	"{{host}}, {{alias}}, {{user}} und {{port}} setzt sshTermy pro Host ein.": "sshTermy fills in {{host}}, {{alias}}, {{user}} and {{port}} per host.",
 	"“ · Strg+R speichert":                           "” · Ctrl+R saves",
 	"⇉ Variablen ausfüllen":                          "⇉ Fill in variables",
-	"⏎ nächstes Feld · Strg+S weiter · Esc zurück":   "⏎ next field · Ctrl+S continue · Esc back",
 	"⏎ reicht hier nicht: %s drücken zum Ausführen.": "⏎ is not enough here: press %s to run it.",
 	"● Aufnahme läuft. Stoppen über die Palette („Aufnahme stoppen“) oder Tab schließen.": "● Recording. Stop it from the palette (“Stop recording”) or close the tab.",
 	"● REC":                    "● REC",

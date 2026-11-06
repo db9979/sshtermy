@@ -721,7 +721,8 @@ func (a *App) viewBcConfirm() string {
 	if nets > 0 {
 		o.WriteString(s.Muted.Render(i18n.T("Netzwerkgeräte bekommen die Befehle in die Shell getippt (ohne Exit-Code).")) + "\n")
 	}
-	hint := s.Muted.Render(i18n.T("⏎ ausführen · Esc zurück"))
+	back := s.Muted.Render(" · ") + a.hints(s.Muted, [2]string{"Esc", i18n.T("zurück")})
+	hint := a.hints(s.Muted, [2]string{"⏎", i18n.T("ausführen")}) + back
 	if len(dangers) > 0 {
 		var d strings.Builder
 		d.WriteString(s.Danger.Render(i18n.T("GEFAHR")) + "\n")
@@ -730,9 +731,9 @@ func (a *App) viewBcConfirm() string {
 		}
 		d.WriteString(s.Text.Render(fmt.Sprintf(i18n.T("Das betrifft %s gleichzeitig."), plural(len(hosts), "Host", "Hosts"))))
 		o.WriteString("\n" + s.DangerBox.Width(w-6).Render(d.String()) + "\n")
-		hint = s.Danger.Render(i18n.T("⏎ zweimal drücken zum Ausführen")) + s.Muted.Render(i18n.T(" · Esc zurück"))
+		hint = a.keyZone("⏎", s.Danger.Render(i18n.T("⏎ zweimal drücken zum Ausführen"))) + back
 		if b.armed {
-			hint = s.Danger.Render(i18n.T("nochmal ⏎ = wirklich ausführen")) + s.Muted.Render(i18n.T(" · Esc zurück"))
+			hint = a.keyZone("⏎", s.Danger.Render(i18n.T("nochmal ⏎ = wirklich ausführen"))) + back
 		}
 	}
 	o.WriteString("\n" + hint)

@@ -190,7 +190,7 @@ func (a *App) viewBcVars() string {
 	if b.err != "" {
 		o.WriteString("\n" + s.Danger.Render("✗ "+b.err) + "\n")
 	}
-	o.WriteString("\n" + s.Muted.Render(i18n.T("⏎ nächstes Feld · Strg+S weiter · Esc zurück")))
+	o.WriteString("\n" + a.hints(s.Muted, [2]string{"⏎", i18n.T("nächstes Feld")}, [2]string{"Strg+S", i18n.T("weiter")}, [2]string{"Esc", i18n.T("zurück")}))
 	return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, s.Panel.Width(w).Render(o.String()))
 }
 

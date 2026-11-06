@@ -232,7 +232,7 @@ func (a *App) viewLLMExtra(w int) string {
 		if len(vis) == 0 {
 			b.WriteString(a.s.Muted.Render(i18n.T("  kein Treffer")) + "\n")
 		}
-		b.WriteString(a.s.Muted.Render(i18n.T("↑↓ wählen · ⏎ übernehmen · tippen filtert · Esc schließen")) + "\n")
+		b.WriteString(a.hints(a.s.Muted, [2]string{"↑↓", i18n.T("wählen")}, [2]string{"⏎", i18n.T("übernehmen")}, [2]string{"", i18n.T("tippen filtert")}, [2]string{"Esc", i18n.T("schließen")}) + "\n")
 	}
 	return b.String()
 }
