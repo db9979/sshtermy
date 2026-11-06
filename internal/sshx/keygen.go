@@ -109,13 +109,13 @@ func GenerateKey(t KeyType, comment string, passphrase []byte) (*NewKey, error) 
 
 // LoadKey liest einen vorhandenen privaten Schlüssel (für die Übertragung).
 func LoadKey(pemBytes, passphrase []byte) (*NewKey, error) {
-	s, err := ssh.ParsePrivateKey(pemBytes)
+	s, err := parseKey(pemBytes, nil)
 	var missing *ssh.PassphraseMissingError
 	if errors.As(err, &missing) {
 		if len(passphrase) == 0 {
 			return nil, errors.New(i18n.T("Der Key ist verschlüsselt: Passphrase angeben"))
 		}
-		s, err = ssh.ParsePrivateKeyWithPassphrase(pemBytes, passphrase)
+		s, err = parseKey(pemBytes, passphrase)
 	}
 	if err != nil {
 		return nil, errors.New(i18n.T("Key lässt sich nicht lesen (falsche Passphrase?)"))

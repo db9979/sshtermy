@@ -176,8 +176,8 @@ belongs to the terminal window: Ctrl + plus/minus in Windows Terminal, ⌘ + / �
 `ProxyJump`), the PuTTY sessions in the registry and `%APPDATA%\MobaXterm\MobaXterm.ini` by itself. New targets are
 preselected, existing ones deselected; ⏎ imports. With f you load a file from somewhere else, e.g. a
 PuTTY export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), a portable `MobaXterm.ini` or an
-`.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. Please load PuTTY keys
-(`.ppk`) into Pageant or export them to OpenSSH with PuTTYgen.
+`.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. sshTermy reads PuTTY keys
+(`.ppk`, version 2 and 3, with or without passphrase) directly, no Pageant needed.
 
 **Telnet and serial console:** in the connection form, „Connect via“ switches between SSH, Telnet and
 „Serial (console cable)“, e.g. for an Aruba switch on a USB console cable. Port „automatic“ uses the only USB
