@@ -90,7 +90,7 @@ func (a *App) guardedPaste(s *session, text string) tea.Cmd {
 	}
 	a.modal = &modal{kind: mPaste, title: i18n.T("Einfügen prüfen"), paste: &pc}
 	if pc.dangerous > 0 {
-		a.modal.title = i18n.T("⚠ Gefährlicher Befehl beim Einfügen")
+		a.modal.title = i18n.T("▲ Gefährlicher Befehl beim Einfügen")
 	}
 	return nil
 }
@@ -130,9 +130,9 @@ func (a *App) pasteView(m *modal) string {
 	pc := m.paste
 	inner := dialogInner(a.w)
 	var b strings.Builder
-	d := dialog{icon: "⎘", title: m.title, width: inner, keys: a.modalKeys()}
+	d := dialog{icon: "□", title: m.title, width: inner, keys: a.modalKeys()}
 	if pc.dangerous > 0 {
-		d.icon, d.tone = "⚠", st.T.Danger
+		d.icon, d.tone = "▲", st.T.Danger
 	}
 	n := len(pc.lines)
 	info := plural(n, i18n.T("Zeile"), i18n.T("Zeilen")) + " · " + plural(utf8.RuneCountInString(pc.text), i18n.T("Zeichen"), i18n.T("Zeichen"))
@@ -166,7 +166,7 @@ func (a *App) pasteView(m *modal) string {
 		txt := strings.ReplaceAll(l.text, "\t", "  ")
 		if len(l.danger) > 0 {
 			b.WriteString(num + st.Danger.Render(trunc(txt, inner-numW-3)) + "\n")
-			b.WriteString(st.Muted.Render(strings.Repeat(" ", numW)+" │ ") + st.Danger.Render("⚠ "+l.danger[0].Reason) + "\n")
+			b.WriteString(st.Muted.Render(strings.Repeat(" ", numW)+" │ ") + st.Danger.Render("▲ "+l.danger[0].Reason) + "\n")
 		} else {
 			b.WriteString(num + st.Text.Render(trunc(txt, inner-numW-3)) + "\n")
 		}

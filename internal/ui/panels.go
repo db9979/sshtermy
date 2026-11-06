@@ -710,7 +710,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	for _, d := range g.steps {
 		mark := st.OK.Render("✓ ")
 		if d.Skipped {
-			mark = st.Muted.Render("↷ ")
+			mark = st.Muted.Render("» ")
 		}
 		b.WriteString(mark + st.Muted.Render(trunc(d.Command, w-3)) + "\n")
 	}
@@ -734,11 +734,11 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 			g.active = false
 		}
 	case g.busy:
-		b.WriteString(st.AI.Render(i18n.T("✦ denkt über den nächsten Schritt nach …")))
+		b.WriteString(st.AI.Render(i18n.T("◆ denkt über den nächsten Schritt nach …")))
 	case g.err != "":
-		b.WriteString(wrap(st.Danger.Render("✗ "+g.err), w))
+		b.WriteString(wrap(st.Danger.Render("× "+g.err), w))
 	case g.cur != nil && g.cur.Question != "":
-		b.WriteString(st.AI.Render(i18n.T("✦ Rückfrage")) + "\n" + wrap(st.Text.Render(g.cur.Question), w) + "\n\n")
+		b.WriteString(st.AI.Render(i18n.T("◆ Rückfrage")) + "\n" + wrap(st.Text.Render(g.cur.Question), w) + "\n\n")
 		for i, o := range g.cur.Options {
 			mark, style := "○ ", st.Text
 			if i == g.optSel {
@@ -757,10 +757,10 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		b.WriteString(promptBlock(st.Accent.Render("› "), g.answer.View()))
 	case g.cur != nil:
 		c := g.cur
-		head := st.AI.Render(i18n.T("✦ Nächster Schritt"))
+		head := st.AI.Render(i18n.T("◆ Nächster Schritt"))
 		box := st.Panel
 		if len(c.Danger) > 0 {
-			head = st.Danger.Render(i18n.T("⚠ Vorsicht: ") + c.Danger[0].Reason)
+			head = st.Danger.Render(i18n.T("▲ Vorsicht: ") + c.Danger[0].Reason)
 			box = st.DangerBox
 		}
 		cmdLine := c.Command
@@ -776,7 +776,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 			b.WriteString(wrap(st.Muted.Render(c.Reason), w) + "\n")
 		}
 		if c.Elevated {
-			b.WriteString(st.Warn.Render(i18n.T("⬆ läuft mit erhöhten Rechten (sudo)")) + "\n")
+			b.WriteString(st.Warn.Render(i18n.T("↑ läuft mit erhöhten Rechten (sudo)")) + "\n")
 		}
 		if g.armed {
 			b.WriteString("\n" + st.Danger.Render(i18n.T("Nochmal ⏎ zum Ausführen. Esc/s zum Abbrechen.")) + "\n")
@@ -787,7 +787,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	st := a.s
 	q := &s.ask
-	b.WriteString(st.PanelTitle.Render(i18n.T("✦ KI fragen")) + st.Muted.Render(i18n.T("  mit Terminal-Kontext")) + "\n\n")
+	b.WriteString(st.PanelTitle.Render(i18n.T("◆ KI fragen")) + st.Muted.Render(i18n.T("  mit Terminal-Kontext")) + "\n\n")
 	q.input.SetWidth(w - 2)
 	if q.input.Focused() || q.question == "" {
 		b.WriteString(promptBlock(st.Accent.Render("› "), q.input.View()) + "\n\n")
@@ -805,13 +805,13 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 		b.WriteString(st.AI.Render("▍"))
 	}
 	if q.err != "" {
-		b.WriteString("\n" + wrap(st.Danger.Render("✗ "+q.err), w))
+		b.WriteString("\n" + wrap(st.Danger.Render("× "+q.err), w))
 	}
 }
 
 func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 	st := a.s
-	b.WriteString(st.PanelTitle.Foreground(st.T.Accent).Render(i18n.T("⇄ Tunnel & Web-Services")) + "\n\n")
+	b.WriteString(st.PanelTitle.Foreground(st.T.Accent).Render(i18n.T("↔ Tunnel & Web-Services")) + "\n\n")
 	list := a.st.Tunnels(s.conn.ID)
 	if len(list) == 0 {
 		b.WriteString(st.Muted.Render(i18n.T("Noch keine Tunnel für diese Verbindung.\nn = neuer Tunnel (z. B. -L 3000:localhost:3000)")))
@@ -841,7 +841,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		})
 		auto := ""
 		if t.AutoStart {
-			auto = st.Muted.Render(" ⟳")
+			auto = st.Muted.Render(" ◌")
 		}
 		name := trunc(t.Name, max(4, w-8-lipgloss.Width(auto)))
 		if i == s.tunSel {
@@ -870,7 +870,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		}
 		b.WriteString("\n")
 	}
-	b.WriteString(st.Muted.Render(i18n.T("Klick auf an/aus schaltet um.\n⟳ = startet mit der Verbindung (a).")))
+	b.WriteString(st.Muted.Render(i18n.T("Klick auf an/aus schaltet um.\n◌ = startet mit der Verbindung (a).")))
 }
 
 func human(n int64) string {

@@ -30,12 +30,13 @@ func (a *App) setStyles(t Theme) {
 func (a *App) applyLook() {
 	a.applyLang()
 	set := a.st.Settings()
-	sig, _ := json.Marshal([]any{set.Theme, set.Keys})
+	sig, _ := json.Marshal([]any{set.Theme, set.Keys, set.Colors, set.Icons})
 	if string(sig) == a.lookSig {
 		return
 	}
 	a.lookSig = string(sig)
-	t := ThemeByName(set.Theme)
+	t := themeOf(set)
+	iconSet = set.Icons
 	activeTheme = t
 	a.setStyles(t)
 	a.keys = newKeymap(set.Keys)
@@ -187,7 +188,7 @@ func (a *App) viewKeys() string {
 			mark = s.AI.Render(" ●") + s.Muted.Render(i18n.T(" Standard: ")+keyLabel(d.def[0]))
 		}
 		if o, ok := conf[d.id]; ok {
-			mark += s.Danger.Render(i18n.T(" ⚠ auch „") + i18n.T(defOf(o).label) + "“")
+			mark += s.Danger.Render(i18n.T(" ▲ auch „") + i18n.T(defOf(o).label) + "“")
 		}
 		keyTxt := s.Key.Render(cur)
 		if i == e.sel && e.capturing {
@@ -212,7 +213,7 @@ func (a *App) viewKeys() string {
 		}))
 	}
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(i18n.T(" ⌨ Tastenkürzel anpassen")) + s.Muted.Render(i18n.T("   ⏎ oder Doppelklick belegt neu · werden mit dem Sync übernommen")) + "\n\n")
+	b.WriteString(s.Accent.Render(i18n.T(" ▪ Tastenkürzel anpassen")) + s.Muted.Render(i18n.T("   ⏎ oder Doppelklick belegt neu · werden mit dem Sync übernommen")) + "\n\n")
 	rows := max(5, a.h-2-2-4)
 	start := 0
 	if selLine >= rows {

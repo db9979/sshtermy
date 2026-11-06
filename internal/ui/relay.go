@@ -226,7 +226,7 @@ func (a *App) relayPicker(current string, onPick func(pickItem) tea.Cmd) *picker
 		rl, _ := a.relays.get(r.ID)
 		head := pickItem{value: "relay:" + r.ID, label: "▾ " + r.Name, detail: relayKindLabel(r.Kind)}
 		if rl.err != nil {
-			head.disabled = "✗ " + trunc(rl.err.Error(), 60)
+			head.disabled = "× " + trunc(rl.err.Error(), 60)
 		} else {
 			on := 0
 			for _, s := range rl.l.Systems {
@@ -356,7 +356,7 @@ func (a *App) relayFieldText(v string) string {
 	rid, sid := splitRelayValue(v)
 	r, ok := a.st.Relay(rid)
 	if !ok {
-		return s.Danger.Render(i18n.T("⚠ Vermittler hier nicht gekoppelt"))
+		return s.Danger.Render(i18n.T("▲ Vermittler hier nicht gekoppelt"))
 	}
 	name := sid
 	state := ""
@@ -448,7 +448,7 @@ func (a *App) testRelay(r domain.Relay) tea.Cmd {
 				"",
 			}
 			if err != nil {
-				lines = append(lines, "✗ "+err.Error())
+				lines = append(lines, "× "+err.Error())
 			} else {
 				on := 0
 				for _, s := range l.Systems {

@@ -50,7 +50,7 @@ func (a *App) jumpFieldText(self domain.Connection, jump string) string {
 	}
 	j, ok := a.st.Connection(jump)
 	if !ok {
-		return s.Danger.Render(i18n.T("⚠ Jump-Host gelöscht"))
+		return s.Danger.Render(i18n.T("▲ Jump-Host gelöscht"))
 	}
 	chain, cycle := domain.JumpChain(jump, a.jumpGet(self, jump))
 	names := []string{i18n.T("Dieser PC")}
@@ -64,7 +64,7 @@ func (a *App) jumpFieldText(self domain.Connection, jump string) string {
 	names = append(names, me)
 	out := j.Alias + s.Muted.Render(" · "+j.Username+"@"+j.Host)
 	if cycle {
-		return out + "  " + s.Danger.Render(i18n.T("⚠ Kreis"))
+		return out + "  " + s.Danger.Render(i18n.T("▲ Kreis"))
 	}
 	return out + "  " + s.Muted.Render(strings.Join(names, " → "))
 }

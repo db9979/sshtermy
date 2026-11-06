@@ -323,7 +323,7 @@ func (a *App) viewLogs() string {
 		l := list[i]
 		fails := ""
 		if n := l.Failures(); n > 0 {
-			fails = s.Danger.Render(fmt.Sprintf(" ✗%d", n))
+			fails = s.Danger.Render(fmt.Sprintf(" ×%d", n))
 		}
 		live := " "
 		if a.activeLog(l.ID) != nil {
@@ -356,11 +356,11 @@ func (a *App) viewLogs() string {
 	var rb strings.Builder
 	w := rightW - 2
 	if m.busy != "" {
-		rb.WriteString(" " + s.AI.Render(i18n.T("✦ KI fasst zusammen: ")+m.busy+" …") + "\n\n")
+		rb.WriteString(" " + s.AI.Render(i18n.T("◆ KI fasst zusammen: ")+m.busy+" …") + "\n\n")
 	}
 	switch {
 	case m.group != "":
-		title := fmt.Sprintf(i18n.T("✦ Zusammenfassung über %s"), plural(len(list), i18n.T("Sitzung"), i18n.T("Sitzungen")))
+		title := fmt.Sprintf(i18n.T("◆ Zusammenfassung über %s"), plural(len(list), i18n.T("Sitzung"), i18n.T("Sitzungen")))
 		if m.groupQ != "" {
 			title += i18n.T(" zu „") + m.groupQ + "“"
 		}
@@ -390,7 +390,7 @@ func (a *App) viewLogs() string {
 		}
 		rb.WriteString(" " + s.Muted.Render(trunc(info, w)) + "\n\n")
 		if l.Summary != "" {
-			rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(i18n.T("✦ Zusammenfassung")) + "\n")
+			rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(i18n.T("◆ Zusammenfassung")) + "\n")
 			rb.WriteString(indent(wrap(s.Text.Render(l.Summary), w), " ") + "\n\n")
 		}
 		idx := make([]int, len(l.Entries))
@@ -407,7 +407,7 @@ func (a *App) viewLogs() string {
 			e := l.Entries[i]
 			mark := s.Accent.Render("$")
 			if e.Failed {
-				mark = s.Danger.Render("✗")
+				mark = s.Danger.Render("×")
 			}
 			rb.WriteString(" " + s.Muted.Render(e.At.Format("15:04:05")) + " " + mark + " " + s.Text.Bold(true).Render(trunc(e.Command, w-12)) + "\n")
 			if e.Failed && e.Reason != "" {

@@ -17,10 +17,11 @@ const tombstoneTTL = 180 * 24 * time.Hour
 // SharedSettings: der Teil der Einstellungen, der zwischen Rechnern gleich
 // sein soll. UseDPAPI ist bewusst nicht dabei (gehört zum jeweiligen Rechner).
 type SharedSettings struct {
-	Theme        string            `json:"theme"`
-	LockAfterMin int               `json:"lock_after_min"`
-	Language     string            `json:"language"`
-	Keys         map[string]string `json:"keys,omitempty"` // eigene Tastenkürzel
+	Theme        string               `json:"theme"`
+	LockAfterMin int                  `json:"lock_after_min"`
+	Language     string               `json:"language"`
+	Keys         map[string]string    `json:"keys,omitempty"`   // eigene Tastenkürzel
+	Colors       *domain.CustomColors `json:"colors,omitempty"` // eigene Farben
 }
 
 // Payload ist der entschlüsselte Inhalt der Sync-Datei.
@@ -48,7 +49,7 @@ func FromData(d *domain.Data, knownHosts []string) *Payload {
 		Runbooks:    append([]domain.Runbook(nil), d.Runbooks...),
 		Folders:     append([]domain.Folder(nil), d.Folders...),
 		LLM:         d.LLM, LLMAt: d.LLMUpdatedAt,
-		Settings:   SharedSettings{d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language, copyKeys(d.Settings.Keys)},
+		Settings:   SharedSettings{d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language, copyKeys(d.Settings.Keys), copyColors(d.Settings.Colors)},
 		SettingsAt: d.SettingsUpdatedAt,
 		Deleted:    map[string]time.Time{},
 		KnownHosts: append([]string(nil), knownHosts...),
@@ -69,6 +70,10 @@ func (p *Payload) ApplyTo(d *domain.Data) {
 	d.LLM, d.LLMUpdatedAt = p.LLM, p.LLMAt
 	d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language = p.Settings.Theme, p.Settings.LockAfterMin, p.Settings.Language
 	d.Settings.Keys = copyKeys(p.Settings.Keys)
+	// Ältere Versionen kennen keine eigenen Farben: dann die lokalen behalten.
+	if p.Settings.Colors != nil || p.Settings.Theme != "eigene" {
+		d.Settings.Colors = copyColors(p.Settings.Colors)
+	}
 	d.SettingsUpdatedAt = p.SettingsAt
 	d.Deleted = map[string]time.Time{}
 	for k, v := range p.Deleted {
@@ -298,4 +303,12 @@ func copyKeys(m map[string]string) map[string]string {
 		out[k] = v
 	}
 	return out
+}
+
+func copyColors(c *domain.CustomColors) *domain.CustomColors {
+	if c == nil {
+		return nil
+	}
+	x := *c
+	return &x
 }

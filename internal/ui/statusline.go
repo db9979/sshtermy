@@ -78,7 +78,7 @@ func (a *App) sessionBar(s *session) string {
 		left.WriteString(lipgloss.NewStyle().Background(col).Foreground(st.T.Bg).Bold(true).Padding(0, 1).Render(envLabel(envKind(s.conn))))
 	}
 	if s.state == stConnected && s.rootNow() {
-		left.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("⚠ root")))
+		left.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("▲ root")))
 	}
 	if s.recording() {
 		left.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
@@ -93,7 +93,7 @@ func (a *App) sessionBar(s *session) string {
 	// rechts: Leitung
 	var line []string
 	if s.state == stConnected && s.client != nil {
-		line = append(line, st.Badge.Foreground(st.T.Text).Render("⏱ "+fmtDuration(time.Since(s.connectedAt))))
+		line = append(line, st.Badge.Foreground(st.T.Text).Render("◷ "+fmtDuration(time.Since(s.connectedAt))))
 		if l := s.client.Latency(); l > 0 {
 			c := st.T.OK
 			switch {
@@ -103,9 +103,9 @@ func (a *App) sessionBar(s *session) string {
 				c = st.T.Warn
 			}
 			ms := l.Milliseconds()
-			txt := fmt.Sprintf("↯ %d ms", ms)
+			txt := fmt.Sprintf("∆ %d ms", ms)
 			if ms == 0 {
-				txt = "↯ <1 ms"
+				txt = "∆ <1 ms"
 			}
 			line = append(line, st.Badge.Foreground(c).Render(txt))
 		}
@@ -119,7 +119,7 @@ func (a *App) sessionBar(s *session) string {
 	}
 
 	if s.state == stConnected && s.client == nil && s.conn.Protocol.Raw() {
-		line = append(line, st.Badge.Foreground(st.T.Text).Render("⏱ "+fmtDuration(time.Since(s.connectedAt))), a.protoBadge(s))
+		line = append(line, st.Badge.Foreground(st.T.Text).Render("◷ "+fmtDuration(time.Since(s.connectedAt))), a.protoBadge(s))
 	}
 
 	nT := 0
@@ -131,24 +131,24 @@ func (a *App) sessionBar(s *session) string {
 	h := a.llmHealth()
 	// KI-Anzeige in drei Breiten: Modell + Antwortzeit, nur Antwortzeit, nur Punkt
 	aiBadge := func(full, short bool) string {
-		txt := "✦ " + trunc(h.model(), 22)
+		txt := "◆ " + trunc(h.model(), 22)
 		if !full {
-			txt = "✦"
+			txt = "◆"
 		}
 		if t := h.badgeText(); t != "" && (full || short) {
 			txt += " · " + t
 		}
 		ai := st.BadgeAI.Render(txt)
 		if !cfg.SuggestEnabled {
-			ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("✦ Ghost aus"))
+			ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("◆ Ghost aus"))
 			if !full {
-				ai = st.Badge.Foreground(st.T.Muted).Render("✦")
+				ai = st.Badge.Foreground(st.T.Muted).Render("◆")
 			}
 		}
 		ai = st.Badge.Foreground(a.llmColor(h.level)).PaddingRight(0).Render(h.dot(a.lh.probing)) + ai
 		return a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
 	}
-	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, i18n.Pick("Tunnel", "tunnel"), i18n.Pick("Tunnel", "tunnels"))))
+	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("↔ "+plural(nT, i18n.Pick("Tunnel", "tunnel"), i18n.Pick("Tunnel", "tunnels"))))
 	goal := ""
 	if s.goal.active {
 		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render(i18n.T("◎ Ziel aktiv")))

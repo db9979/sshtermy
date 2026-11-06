@@ -116,7 +116,7 @@ var enRelay = map[string]string{
 	"„%s“ ist gerade nicht mit dem Vermittler „%s“ verbunden (Anker läuft nicht?)": "“%s” is not connected to relay “%s” right now (anchor not running?)",
 	"○ offline":                                     "○ offline",
 	"● online":                                      "● online",
-	"⚠ Vermittler hier nicht gekoppelt":             "⚠ relay not paired here",
+	"▲ Vermittler hier nicht gekoppelt":             "▲ relay not paired here",
 	"✓ %d Systeme, davon %d online":                 "✓ %d systems, %d of them online",
 	"✓ erreichbar, Zertifikat und Schlüssel gültig": "✓ reachable, certificate and key valid",
 }

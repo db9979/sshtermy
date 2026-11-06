@@ -260,13 +260,13 @@ func (a *App) persistPalette(s *session) []palItem {
 	}
 	m := s.mux
 	return []palItem{
-		{icon: "◫", label: i18n.T("Feste Sitzung in zweitem Tab zuschauen"), hint: "tmux -r", run: func() tea.Cmd {
+		{icon: ic("watch"), label: i18n.T("Feste Sitzung in zweitem Tab zuschauen"), hint: "tmux -r", run: func() tea.Cmd {
 			c := s.conn
 			c.Persist, c.PersistName, c.PersistView = "tmux", m.name, true
 			c.Alias += i18n.T(" · zuschauen")
 			return a.connect(c)
 		}},
-		{icon: "⧉", label: i18n.T("Befehl zum Mitschauen kopieren"), hint: i18n.T("für andere Rechner"), run: func() tea.Cmd {
+		{icon: ic("copy"), label: i18n.T("Befehl zum Mitschauen kopieren"), hint: i18n.T("für andere Rechner"), run: func() tea.Cmd {
 			cmd := watchCommand(s.conn, m.name)
 			go func() { _ = clipboard.WriteAll(cmd) }()
 			a.flashOK(i18n.T("Kopiert: ") + cmd)

@@ -242,7 +242,7 @@ func (a *App) syncStatus() string {
 	case a.sync.running:
 		return s.AI.Render(i18n.T("⠿ gleicht ab …")) + s.Muted.Render(" · "+where)
 	case cfg.LastError != "":
-		return s.Danger.Render("✗ "+trunc(cfg.LastError, 60)) + s.Muted.Render(" · y")
+		return s.Danger.Render("× "+trunc(cfg.LastError, 60)) + s.Muted.Render(" · y")
 	case !cfg.LastSync.IsZero():
 		return s.OK.Render("✓ "+ago(cfg.LastSync)) + s.Muted.Render(" · "+where)
 	}
@@ -688,7 +688,7 @@ func (a *App) viewSync() string {
 	s := a.s
 	width := min(110, a.w-4)
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(i18n.T("⇅ Sync zwischen Rechnern")) + "\n")
+	b.WriteString(s.Accent.Render(i18n.T("↕ Sync zwischen Rechnern")) + "\n")
 	b.WriteString(s.Muted.Render(i18n.T("Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n")+
 		i18n.T("gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro Rechner.")) + "\n")
 	b.WriteString(w.f.view(s, width-4, &a.z))
@@ -714,9 +714,9 @@ func (a *App) viewSync() string {
 		icon, style := "✓", s.OK
 		switch st.State {
 		case syncx.StepWarn:
-			icon, style = "⚠", s.Warn
+			icon, style = "▲", s.Warn
 		case syncx.StepFail:
-			icon, style = "✗", s.Danger
+			icon, style = "×", s.Danger
 		}
 		b.WriteString(" " + style.Render(icon) + " " + s.Text.Render(lipgloss.NewStyle().Width(20).Render(i18n.T(st.Title))) + s.Muted.Render(trunc(st.Detail, width-30)) + "\n")
 		if st.Hint != "" && (st.State != syncx.StepOK || st.Title == "Erster Abgleich" || (st.Title == "Sync-Datei" && !w.keepKey())) {

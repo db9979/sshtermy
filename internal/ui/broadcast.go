@@ -561,7 +561,7 @@ func (a *App) viewBcSetup() string {
 	b, s := a.bc, a.s
 	w := min(110, a.w-4)
 	var o strings.Builder
-	o.WriteString(s.Accent.Render(i18n.T("⇉ Broadcast")) + s.Muted.Render(i18n.T("  ein Befehl oder Runbook parallel auf mehreren Hosts")) + "\n\n")
+	o.WriteString(s.Accent.Render(i18n.T("» Broadcast")) + s.Muted.Render(i18n.T("  ein Befehl oder Runbook parallel auf mehreren Hosts")) + "\n\n")
 
 	head := func(focus int, title string) string {
 		m := "  "
@@ -667,10 +667,10 @@ func (a *App) viewBcSetup() string {
 		o.WriteString("  " + strings.Repeat(" ", 20) + s.Muted.Render(i18n.T("Tipp: {{name}} wird vor dem Start abgefragt, {{host}} pro Host eingesetzt")) + "\n")
 	}
 	for _, d := range broadcast.Dangers(steps) {
-		o.WriteString("  " + strings.Repeat(" ", 20) + s.Danger.Render("⚠ "+strings.Join(d.Reasons, ", ")) + "\n")
+		o.WriteString("  " + strings.Repeat(" ", 20) + s.Danger.Render("▲ "+strings.Join(d.Reasons, ", ")) + "\n")
 	}
 	if b.err != "" {
-		o.WriteString("\n" + s.Danger.Render("✗ "+b.err) + "\n")
+		o.WriteString("\n" + s.Danger.Render("× "+b.err) + "\n")
 	}
 	return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, s.Panel.Width(w).Render(o.String()))
 }
@@ -686,7 +686,7 @@ func (a *App) viewBcConfirm() string {
 	}
 	dangers := allDangers(per)
 	var o strings.Builder
-	o.WriteString(s.Accent.Render(fmt.Sprintf(i18n.T("⇉ Auf %s ausführen?"), plural(len(hosts), "Host", "Hosts"))) + "\n\n")
+	o.WriteString(s.Accent.Render(fmt.Sprintf(i18n.T("» Auf %s ausführen?"), plural(len(hosts), "Host", "Hosts"))) + "\n\n")
 	var names []string
 	nets := 0
 	for _, c := range hosts {
@@ -716,7 +716,7 @@ func (a *App) viewBcConfirm() string {
 		elevated = elevated || broadcast.Elevated(p)
 	}
 	if elevated {
-		o.WriteString("\n" + s.Warn.Render(i18n.T("⚠ läuft mit erhöhten Rechten (sudo)")) + "\n")
+		o.WriteString("\n" + s.Warn.Render(i18n.T("▲ läuft mit erhöhten Rechten (sudo)")) + "\n")
 	}
 	if nets > 0 {
 		o.WriteString(s.Muted.Render(i18n.T("Netzwerkgeräte bekommen die Befehle in die Shell getippt (ohne Exit-Code).")) + "\n")
@@ -763,7 +763,7 @@ func (a *App) bcStatus(r broadcast.Result, steps int) (icon string, text string,
 	case broadcast.Canceled:
 		return "■", i18n.T("abgebrochen") + dur, s.Muted
 	case broadcast.Failed:
-		return "✗", r.Err + dur, s.Danger
+		return "×", r.Err + dur, s.Danger
 	}
 	if r.Net {
 		return "✓", i18n.T("fertig (Netzwerkgerät)") + dur, s.OK
@@ -773,7 +773,7 @@ func (a *App) bcStatus(r broadcast.Result, steps int) (icon string, text string,
 		if r.Err != "" {
 			t = r.Err
 		}
-		return "✗", t + dur, s.Danger
+		return "×", t + dur, s.Danger
 	}
 	return "✓", i18n.T("Exit 0") + dur, s.OK
 }
@@ -787,11 +787,11 @@ func (a *App) viewBcRun() string {
 	if b.src > 0 && b.src <= len(b.books) {
 		cmdText = "▶ " + b.books[b.src-1].Name
 	}
-	sum := s.OK.Render(fmt.Sprintf("%d ✓", ok)) + "  " + s.Danger.Render(fmt.Sprintf("%d ✗", failed))
+	sum := s.OK.Render(fmt.Sprintf("%d ✓", ok)) + "  " + s.Danger.Render(fmt.Sprintf("%d ×", failed))
 	if running > 0 {
 		sum += "  " + s.AI.Render(fmt.Sprintf(i18n.T("%d …"), running))
 	}
-	top := " " + s.Accent.Render("⇉ ") + s.Code.Render(trunc(cmdText, max(10, a.w-30))) + "   " + sum
+	top := " " + s.Accent.Render("» ") + s.Code.Render(trunc(cmdText, max(10, a.w-30))) + "   " + sum
 	lines := []string{top, ""}
 
 	cols := max(1, min(n, a.w/32))

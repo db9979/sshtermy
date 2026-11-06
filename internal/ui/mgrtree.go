@@ -680,7 +680,7 @@ func (a *App) jumpChainText(c domain.Connection) string {
 	}
 	out := strings.Join(names, " → ")
 	if cycle {
-		out = i18n.T("⚠ Kreis: ") + out + " → …"
+		out = i18n.T("▲ Kreis: ") + out + " → …"
 	}
 	return out
 }

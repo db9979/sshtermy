@@ -78,7 +78,7 @@ var helpSections = []helpSection{
 		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
 	}},
-	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
+	{hcSettings, "◈", "KI-Einstellungen", "s", true, [][2]string{
 		{"←/→", "Anbieter: Spark, Ollama, OpenAI, Claude"},
 		{"Strg+T", "Endpunkt testen"},
 		{"Strg+L", "Modell wählen"},
@@ -117,7 +117,7 @@ var helpSections = []helpSection{
 		{"Strg+S", "als Runbook speichern"},
 		{"Strg+D", "Runbook löschen"},
 	}},
-	{hcAsk, "✦", "KI fragen", "F3", true, [][2]string{
+	{hcAsk, "◆", "KI fragen", "F3", true, [][2]string{
 		{"⏎", "Frage senden"},
 		{"⇧⏎ / Strg+J", "neue Zeile"},
 		{"1…9", "Befehl einfügen"},
@@ -127,7 +127,7 @@ var helpSections = []helpSection{
 		{"z", "Erklärung ein-/ausklappen"},
 		{"n", "neue Frage"},
 	}},
-	{hcTunnel, "⇄", "Tunnel", "F4", false, [][2]string{
+	{hcTunnel, "↔", "Tunnel", "F4", false, [][2]string{
 		{"⏎ / Klick", "starten / stoppen"},
 		{"a", "mit Verbindung starten"},
 		{"o", "im Browser öffnen"},
@@ -147,7 +147,7 @@ var helpSections = []helpSection{
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{
 		{"Tab", "Seite wechseln"},
 		{"⏎ / →", "Ordner öffnen"},
-		{"← / ⌫", "eine Ebene hoch"},
+		{"← / Bksp", "eine Ebene hoch"},
 		{"c / F6", "kopieren (hoch/runter)"},
 		{"Space / a", "markieren / alle"},
 		{"Ziehen", "auf die andere Seite kopieren"},
@@ -157,7 +157,7 @@ var helpSections = []helpSection{
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
 	}},
-	{hcSearch, "⌕", "Suche im Verlauf", "Strg+F", false, [][2]string{
+	{hcSearch, "/", "Suche im Verlauf", "Strg+F", false, [][2]string{
 		{"tippen", "suchen (Groß = genau)"},
 		{"⏎ / ↑", "nächster (älter)"},
 		{"⇧⏎ / ↓", "zurück (neuer)"},
@@ -165,16 +165,16 @@ var helpSections = []helpSection{
 		{"Tab", "Fehlerliste / Verlauf"},
 		{"Esc", "schließen"},
 	}},
-	{hcLogs, "☰", "Sitzungsprotokolle", "l", false, [][2]string{
+	{hcLogs, "≡", "Sitzungsprotokolle", "l", false, [][2]string{
 		{"/", "suchen (auch Ausgabe)"},
 		{"z", "KI-Zusammenfassung"},
 		{"Z", "alle Treffer zusammenfassen"},
 		{"x", "Export: md · txt · cast"},
 		{"d", "löschen"},
 		{"a", "Mitschreiben an/aus"},
-		{"⎵ Befehl", "nicht protokollieren"},
+		{"␣ Befehl", "nicht protokollieren"},
 	}},
-	{hcBroadcast, "⇉", "Broadcast", "m", false, [][2]string{
+	{hcBroadcast, "»", "Broadcast", "m", false, [][2]string{
 		{"Space / g / a", "Host / Ordner / alle"},
 		{"Tab", "Hosts · Quelle · Befehl"},
 		{"⇧⏎", "weiterer Schritt"},
@@ -189,7 +189,7 @@ var helpSections = []helpSection{
 		{"e / Strg+D", "ändern / löschen"},
 		{"k / a", "KI prüft / übernehmen"},
 	}},
-	{hcScan, "⌕", "Netzwerk-Scan", "f", false, [][2]string{
+	{hcScan, "/", "Netzwerk-Scan", "f", false, [][2]string{
 		{"Strg+S", "Scan starten"},
 		{"Space / a", "Fund / alle wählen"},
 		{"⏎", "als Verbindungen anlegen"},
@@ -201,18 +201,18 @@ var helpSections = []helpSection{
 		{"user@host", "schnell verbinden"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
-		{"⚙ Einstellungen ›", "Schalter, Aussehen, Sprache"},
+		{"◈ Einstellungen ›", "Schalter, Aussehen, Sprache"},
 		{"Esc / ← (Untermenü)", "zurück"},
 		{"↓ „umschreiben“", "Befehl fürs System anpassen"},
 		{"Esc", "schließen"},
 	}},
-	{hcNone, "ⓘ", "Systemprofil", "", false, [][2]string{
+	{hcNone, "i", "Systemprofil", "", false, [][2]string{
 		{"automatisch", "System + Befehlssatz erkennen"},
 		{"e (Manager)", "System, Befehlssatz, KI-Notizen"},
 		{"„% Invalid input“", "Befehl wird gemerkt + gemieden"},
 		{"KI-Befehl korrigiert", "Korrektur wird gemerkt"},
 	}},
-	{hcNone, "⚠", "Gefahren & Aufnahme", "", false, [][2]string{
+	{hcNone, "▲", "Gefahren & Aufnahme", "", false, [][2]string{
 		{"Produktiv", "riskanter Befehl: j"},
 		{"Palette", "„Gefahren-Check“"},
 		{"Palette", "„Aufnahme starten“"},
@@ -224,7 +224,7 @@ var helpSections = []helpSection{
 		{"Strg +/−", "Schrift (Terminalfenster)"},
 		{"Palette", "„Startanimation aus“"},
 	}},
-	{hcNone, "⌖", "Maus", "", false, [][2]string{
+	{hcNone, "◦", "Maus", "", false, [][2]string{
 		{"Klick", "Tabs, Listen, Felder"},
 		{"Doppelklick", "öffnen / Wort"},
 		{"Ziehen", "markieren + kopieren"},

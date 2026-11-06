@@ -28,8 +28,8 @@ func TestDialogFitsAndIsRectangular(t *testing.T) {
 				t.Errorf("w=%d: Zeile %d ist %d statt %d breit: %q", w, i, lipgloss.Width(l), want, ansi.Strip(l))
 			}
 		}
-		if !strings.Contains(ansi.Strip(lines[0]), "?") || !strings.Contains(ansi.Strip(lines[0]), "✕") {
-			t.Errorf("w=%d: Titel oder ✕ fehlt im Rahmen: %q", w, ansi.Strip(lines[0]))
+		if !strings.Contains(ansi.Strip(lines[0]), "?") || !strings.Contains(ansi.Strip(lines[0]), "×") {
+			t.Errorf("w=%d: Titel oder × fehlt im Rahmen: %q", w, ansi.Strip(lines[0]))
 		}
 	}
 }

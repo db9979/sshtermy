@@ -60,6 +60,7 @@ const (
 	scrKeyForm    // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
 	scrSSHKeyForm // SSH-Schlüssel erzeugen / übertragen (sshkey.go)
 	scrRelayForm  // Vermittler koppeln (relay.go)
+	scrColors     // Farben anpassen (colors.go)
 	scrTeam       // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
 	scrTeamForm   // Team-Freigabe: Passwort, Datei, Optionen
 )
@@ -113,6 +114,7 @@ type App struct {
 	team    teamState     // Team-Freigabe (team.go)
 	tl      teamLinkState // Team-Ordner: veröffentlichen/abonnieren (teamlink.go)
 	keyEd   keyEditor     // Tastenkürzel anpassen
+	colEd   colorEditor   // Farben anpassen
 	keys    keymap        // aktuelle Tastenbelegung
 	lookSig string        // Theme+Tasten, zuletzt übernommen
 
@@ -392,6 +394,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if k, ok := msg.(tea.KeyPressMsg); ok {
 		a.lastKey = time.Now()
+		if a.scr == scrColors && a.colEd.editing && a.modal == nil {
+			return a, a.updateColors(k) // Hex-Eingabe: Buchstaben gehören dem Feld
+		}
 		if a.scr == scrKeys && a.keyEd.capturing && a.modal == nil {
 			return a, a.updateKeys(k) // neue Taste: nichts anderes darf sie abfangen
 		}
@@ -458,6 +463,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateTeamForm(msg)
 	case scrKeys:
 		return a, a.updateKeys(msg)
+	case scrColors:
+		return a, a.updateColors(msg)
 	case scrBroadcast:
 		return a, a.updateBroadcast(msg)
 	case scrScan:
@@ -548,6 +555,8 @@ func (a *App) View() tea.View {
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Space", i18n.T("an/aus")}, {"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("zurück")}})
 	case scrKeys:
 		body = a.frame(a.viewKeys(), a.keysKeys())
+	case scrColors:
+		body = a.frame(a.viewColors(), a.colorsKeys())
 	case scrBroadcast:
 		body = a.frame(a.viewBroadcast(), a.broadcastKeys())
 	case scrScan:
@@ -593,17 +602,17 @@ func (a *App) View() tea.View {
 // Version weg (steht im Über-Dialog), der Credit bleibt immer sichtbar.
 func (a *App) headerLeft() string {
 	if a.w < 90 {
-		return a.s.Logo.Render("◆ "+version.Name) + a.s.Credit.Render(" "+i18n.T(version.Idea)+" ")
+		return a.s.Logo.Render(">_ "+version.Name) + a.s.Credit.Render(" "+i18n.T(version.Idea)+" ")
 	}
-	return a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
+	return a.s.Logo.Render(">_ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
 }
 
 func (a *App) header(right string) string {
 	left := a.headerLeft()
 	if a.rel != nil && right == "" {
-		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
+		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ↑ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
 	} else if a.restartPending != "" && right == "" {
-		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+i18n.T(" installiert · Neustart ")+a.keys.label(actAbout)+" "))
+		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ◌ v"+a.restartPending+i18n.T(" installiert · Neustart ")+a.keys.label(actAbout)+" "))
 	}
 	if a.scr != scrTerminal && a.scr != scrUnlock {
 		right += a.llmChip() // im Terminal steht der Status in der Sitzungszeile

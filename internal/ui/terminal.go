@@ -67,9 +67,9 @@ func (a *App) panelRail(s *session, h int) string {
 	icon, act := "◎", actGoal
 	switch s.panel {
 	case panelAsk:
-		icon, act = "✦", actAsk
+		icon, act = "◆", actAsk
 	case panelTunnels:
-		icon, act = "⇄", actTunnels
+		icon, act = "↔", actTunnels
 	case panelHost:
 		icon, act = "▤", actHost
 	}
@@ -508,7 +508,7 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	case s.state == stReconnect:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.reconnectView(s))
 	case s.state == stClosed:
-		msg := st.Danger.Render("✗ " + orDefault(s.err, i18n.T("getrennt")))
+		msg := st.Danger.Render("× " + orDefault(s.err, i18n.T("getrennt")))
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
 			msg+"\n\n"+a.hints(st.Muted, [2]string{"⏎", i18n.T("neu verbinden")}, [2]string{"x", i18n.T("Tab schließen")},
 				[2]string{a.keys.label(actManager), i18n.T("Manager")}))
@@ -569,12 +569,12 @@ func (a *App) chipBar(s *session) string {
 	st := a.s
 	var b strings.Builder
 	if g := a.visibleGhost(s); g != "" {
-		b.WriteString(a.z.click(st.AI.Render(" ✦ ")+st.Muted.Render(i18n.T("Tab übernimmt: "))+st.Ghost.Render(trunc(g, 60)),
+		b.WriteString(a.z.click(st.AI.Render(" ◆ ")+st.Muted.Render(i18n.T("Tab übernimmt: "))+st.Ghost.Render(trunc(g, 60)),
 			func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("Tab") }) + "  ")
 	} else {
 		if f := s.fail; f != nil {
 			why := orDefault(f.Reason, i18n.T("fehlgeschlagen"))
-			b.WriteString(a.z.click(st.Danger.Render(" ✗ "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(i18n.T(" Warum? & Fix ")),
+			b.WriteString(a.z.click(st.Danger.Render(" × "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(i18n.T(" Warum? & Fix ")),
 				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("alt+0") }) + " ")
 		}
 		a.chipList(s, &b)
@@ -589,7 +589,7 @@ func (a *App) chipBar(s *session) string {
 func (a *App) chipList(s *session, b *strings.Builder) {
 	st := a.s
 	if len(s.chips) > 0 {
-		b.WriteString(st.AI.Render(i18n.T(" ✦ Als Nächstes: ")))
+		b.WriteString(st.AI.Render(i18n.T(" ◆ Als Nächstes: ")))
 		for i, c := range s.chips {
 			style := st.Chip
 			if len(c.Danger) > 0 {
@@ -723,9 +723,9 @@ func (a *App) tabStrip() string {
 	}
 	for i := from; i < to; i++ {
 		x := a.sessions[i]
-		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
+		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("◌")}[x.state]
 		if x.detached() {
-			dot = st.AI.Render("↗") // läuft in eigenem Fenster
+			dot = st.AI.Render("↑") // läuft in eigenem Fenster
 		}
 		ts := st.Tab
 		if i == a.cur {

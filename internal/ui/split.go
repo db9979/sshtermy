@@ -387,7 +387,7 @@ func (a *App) paneTitle(s *session, w int, focused bool) string {
 	left := " " + dot + " " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string
 	if s.search.open {
-		marks = append(marks, i18n.T("⌕ Suche"))
+		marks = append(marks, i18n.T("/ Suche"))
 	}
 	if s.goal.active {
 		marks = append(marks, i18n.T("◎ Ziel"))

@@ -369,7 +369,7 @@ func (a *App) viewScan() string {
 	}
 
 	var o strings.Builder
-	o.WriteString(s.Accent.Render(i18n.T("⌕ Netzwerk-Scan ")) + s.Text.Render(trunc(sc.spec, 40)) + s.Muted.Render(fmt.Sprintf(i18n.T("  Port %d"), sc.f.num("port"))) + "\n")
+	o.WriteString(s.Accent.Render(i18n.T("/ Netzwerk-Scan ")) + s.Text.Render(trunc(sc.spec, 40)) + s.Muted.Render(fmt.Sprintf(i18n.T("  Port %d"), sc.f.num("port"))) + "\n")
 	// Fortschrittsbalken
 	barW := max(10, w-40)
 	frac := 0.0

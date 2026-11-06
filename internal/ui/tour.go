@@ -29,13 +29,13 @@ var tourSteps = []tourStep{
 	{"❯", "Eine Taste für alles", "Die Befehlspalette findet Verbindungen, Tunnel, Runbooks, Schnellbefehle und Aktionen. " +
 		"Was du tippst, kann auch direkt als Ziel oder Frage an die KI gehen.",
 		[][2]string{{"Strg+Space", "Befehlspalette"}, {"Tab", "in der Palette: KI fragen"}}},
-	{"✦", "Die KI tippt mit", "Beim Tippen erscheint grauer Text als Vorschlag. Nach einem Befehl schlägt die KI " +
+	{"◆", "Die KI tippt mit", "Beim Tippen erscheint grauer Text als Vorschlag. Nach einem Befehl schlägt die KI " +
 		"bis zu vier nächste Befehle vor. Eingefügt wird nur, ausgeführt erst mit deinem ⏎.",
 		[][2]string{{"Tab / →", "grauen Vorschlag übernehmen"}, {"Alt+1…4", "Folgebefehl einfügen"}, {"F3", "KI eine Frage stellen"}}},
 	{"◎", "Ziel-Modus", "Beschreibe ein Ziel („Docker aufräumen“), die KI schlägt Schritt für Schritt genau einen Befehl vor. " +
 		"Rote Befehle sind gefährlich und brauchen eine zweite Bestätigung.",
 		[][2]string{{"F2", "Ziel-Modus"}, {"⏎", "Schritt ausführen"}, {"i", "nur einfügen"}, {"x", "Ziel beenden"}}},
-	{"↯", "Schnellbefehle und mehr", "Häufige Befehle liegen auf ⇧F1 bis ⇧F8, je nach Gerät vorbelegt (z. B. „show vlans“ bei Aruba). F9 zeigt die Liste. " +
+	{"►", "Schnellbefehle und mehr", "Häufige Befehle liegen auf ⇧F1 bis ⇧F8, je nach Gerät vorbelegt (z. B. „show vlans“ bei Aruba). F9 zeigt die Liste. " +
 		"Mit ⇧F9 erklärt die Tastenzeile unten, was die Tasten im aktuellen Bereich bewirken.",
 		[][2]string{{"⇧F1…F8", "Schnellbefehl"}, {"F9", "Schnellbefehle (Liste)"}, {"F4", "Tunnel"}, {"⇧F9", "Tasten erklären"}, {"F1", "alle Tasten"}}},
 }

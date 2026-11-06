@@ -538,7 +538,7 @@ func (a *App) reconnectView(s *session) string {
 	if !strings.Contains(where, s.conn.Host) {
 		where += " (" + s.conn.ShowAddr() + ")"
 	}
-	head := st.Warn.Render("⟳ " + r.cause + ": " + where)
+	head := st.Warn.Render("◌ " + r.cause + ": " + where)
 	var line string
 	if r.dialing {
 		line = st.AI.Render(fmt.Sprintf(i18n.T("Verbinde neu … (Versuch %d von %d)"), r.attempts, len(reconnectWaits)))

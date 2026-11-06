@@ -337,7 +337,7 @@ func (a *App) llmStatusView() string {
 			b.WriteString("\n" + s.Muted.Render(i18n.T("Nächste Prüfung in ")+fmtWait(d)+i18n.T(", nur falls bis dahin keine echte Anfrage lief.")) + "\n")
 		}
 	}
-	return s.dialog(dialog{icon: "✦", title: i18n.T("KI-Status"), tone: s.T.AI, body: b.String(), keys: a.modalKeys(), width: dialogInner(a.w)}, a.w)
+	return s.dialog(dialog{icon: "◆", title: i18n.T("KI-Status"), tone: s.T.AI, body: b.String(), keys: a.modalKeys(), width: dialogInner(a.w)}, a.w)
 }
 
 func fmtWait(d time.Duration) string {

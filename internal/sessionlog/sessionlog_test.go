@@ -86,7 +86,7 @@ func TestSearchAndMarkdown(t *testing.T) {
 		t.Fatalf("MatchingEntries %v", got)
 	}
 	md := l.Markdown()
-	for _, want := range []string{"# Sitzung switch-01", "### 2. `conf t` ✗ fehlgeschlagen", "```text\nVLAN 10 Büro\n```"} {
+	for _, want := range []string{"# Sitzung switch-01", "### 2. `conf t` × fehlgeschlagen", "```text\nVLAN 10 Büro\n```"} {
 		if !strings.Contains(md, want) {
 			t.Fatalf("Markdown ohne %q:\n%s", want, md)
 		}
