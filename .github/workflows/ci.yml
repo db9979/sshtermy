@@ -13,6 +13,13 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go vet ./... && go test ./...
+      # Bildschirm-Tests: abweichende Bilder zum Ansehen hochladen
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: golden-actual
+          path: internal/ui/testdata/golden-actual/
+          if-no-files-found: ignore
       - name: Cross-Compile
         run: |
           for t in windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64; do

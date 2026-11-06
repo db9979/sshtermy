@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+ connections  6  / search        │ ▾ Netzwerk
+                                 │
+ ▾ Netzwerk                   1  │ Path         Netzwerk
+   ○ ▦ switch-core  manager@19…  │ Content      1 connection
+ ▾ Produktion                 3  │
+   ▾ Web                      2  │ Folder
+▌    ○ · web-01      deploy@10…  │  ⏎      expand/collapse
+▌    ○ · web-02      deploy@10…  │  n      new connection here
+▌  ○ · db-01        postgres@1…  │  o      add subfolder
+ ○ · nas           admin@nas.l…  │  r      rename
+ ○ · spark  ╭──────────────────────────────────────────────────────────────────────────╮
+            │ ✦ tunnel                                                                 │
+            │ ──────────────────────────────────────────────────────────────────────── │
+            │ Nothing found. In the terminal, text becomes a goal or a question.       │
+            │                                                                          │
+            │ ↑↓ select · ⏎ run · Tab ask AI · Esc close · 0 entries                   │r between
+            ╰──────────────────────────────────────────────────────────────────────────╯
+                                 │
+                                 │ Sync
+                                 │  not set up · y = wizard
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+ Ctrl+Space Palette  ⏎ collapse  n new here  e rename  d delete  v move  F1 Help  ⇧F9 explain

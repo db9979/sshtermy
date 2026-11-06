@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                           ● switch-core
+ ⚠ root  manager@192.168.1.2:22                                        ⇄ 0 Tunnel   ● ✦ qwen3-coder
+switch-core#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Strg+Space Palette  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  Strg+F Suche  ⇧F9 erklären

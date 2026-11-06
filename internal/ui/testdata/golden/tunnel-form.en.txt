@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+
+
+
+
+
+
+
+  ╭──────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ Tunnel / port forwarding                                                                     │
+  │                                                                                              │
+  │ ▌ Name                                                                                       │
+  │                       e.g. „Grafana“                                                         │
+  │   Type                 local  remote  dynamic                                                │
+  │   Bind address        127.0.0.1                                                              │
+  │   Port                                                                                       │
+  │   Target host         127.0.0.1                                                              │
+  │   Target port                                                                                │
+  │   Web service          —  http  https                                                        │
+  │   Autostart           ○ off                                                                  │
+  │                                                                                              │
+  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+ Tab next  ←/→ select  Ctrl+S save  Esc cancel

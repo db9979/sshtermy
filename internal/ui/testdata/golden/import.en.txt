@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+ ⇩ Import connections
+
+ ~/.ssh/config       not found  /home/golden/.ssh/config
+ PuTTY               not found  HKCU\Software\SimonTatham\PuTTY\Sessions
+ MobaXterm           not found  /home/golden/Documents/MobaXterm/MobaXterm.ini
+
+ Nothing found. f = load file (PuTTY .reg export, MobaXterm.ini, .mxtsessions or ssh_config).
+ Export PuTTY: reg export HKCU\Software\SimonTatham\PuTTY putty.reg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ⏎ import 0  Space on/off  a all/none  f load file  Esc back

@@ -4,3 +4,4 @@
 *.old
 *.new
 .DS_Store
+/internal/ui/testdata/golden-actual/

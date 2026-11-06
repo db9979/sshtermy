@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+ connections  6  / search        │ ▾ Netzwerk
+                                 │
+ ▾ Netzwerk                   1  │ Path         Netzwerk
+   ○ ▦ switch-core  manager@19…  │ Content      1 connection
+ ▾ Produktion                 3  │
+   ▾ Web                      2  │ Folder
+▌    ○ · web-01      deploy@10…  │  ⏎      expand/collapse
+▌    ○ · web-02╭────────────────────────────────────────────────────────────────────╮
+▌  ○ · db-01   │                                                                    │
+ ○ · nas       │  ◆ Welcome to sshTermy  ● ○ ○ ○ ○  1/5                             │
+ ○ · spark     │                                                                    │
+               │  Here in the connection manager you add your servers and           │
+               │  switches. Passwords and keys are stored encrypted on your         │
+               │  computer.                                                         │
+               │                                                                    │
+               │   n            new connection                                      │r or between
+               │   ⏎            connect                                             │
+               │   F10          between manager and terminal                        │
+               │                                                                    │
+               ╰────────────────────────────────────────────────────────────────────╯
+                                         → next    Esc skip
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+ Ctrl+Space Palette  ⏎ collapse  n new here  e rename  d delete  v move  F1 Help  ⇧F9 explain

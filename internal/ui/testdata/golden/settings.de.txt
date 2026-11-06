@@ -1,0 +1,36 @@
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                               ● KI
+
+
+
+
+
+
+
+
+     ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+     │ KI-Copilot (OpenAI-kompatibel: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)                   │
+     │                                                                                                  │
+     │ ▌ Base-URL            http://spark.lan:8000/v1                                                   │
+     │                       z. B. http://dgx-spark:8000/v1 · Ollama: http://localhost:11434/v1         │
+     │   API-Key                                                                                        │
+     │   Modell              qwen3-coder                                                                │
+     │   Max-Tokens          400                                                                        │
+     │   Temperatur          0.20                                                                       │
+     │   Timeout (s)         60                                                                         │
+     │   Ghost-Text          ● an                                                                       │
+     │   Verzögerung ms      450                                                                        │
+     │   Bildschirm senden   ● an                                                                       │
+     │   Kontext-Zeilen      80                                                                         │
+     │   Ziel: Schritte/min  6                                                                          │
+     │   http mit API-Key    ○ aus                                                                      │
+     │                                                                                                  │
+     ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+
+ Strg+T Endpunkt testen  Strg+L Modell wählen  Tab weiter  ←/→ wählen  Strg+S speichern  Esc abbrechen

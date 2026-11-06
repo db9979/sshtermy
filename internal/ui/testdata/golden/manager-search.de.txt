@@ -1,0 +1,32 @@
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                         ● KI
+ / web                                  │ ▾ Produktion
+  2 Treffer · Esc zeigt alle            │
+ ▾ Produktion                        3  │ Pfad                Produktion
+   ▾ Web                             2  │ Inhalt              3 Verbindungen
+▌    ○ · web-01         deploy@10.0.0…  │ Unterordner         1
+▌    ○ · web-02         deploy@10.0.0…  │ Tags                #db #nginx #prod
+                                        │
+                                        │ Ordner
+                                        │  ⏎      auf-/zuklappen
+                                        │  n      neue Verbindung hier
+                                        │  o      Unterordner anlegen
+                                        │  r      umbenennen
+                                        │  v      verschieben
+                                        │  ⇧↑ ⇧↓  Reihenfolge
+                                        │  d      auflösen, Inhalt bleibt
+                                        │  - +    alle zu / auf
+                                        │
+                                        │  Mit der Maus: eine Zeile ziehen und auf einem Ordner oder zwischen zwei
+                                        │  Verbindungen loslassen.
+                                        │
+                                        │ Sync
+                                        │  nicht eingerichtet · y = Assistent
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ ⏎ fertig  ↑↓ zur Liste  Esc Suche löschen  F1 Hilfe

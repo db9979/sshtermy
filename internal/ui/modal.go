@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/update"
 	"github.com/db9979/sshtermy/internal/version"
@@ -31,6 +32,7 @@ const (
 	mQuick // Schnellbefehle (quick.go)
 	mText  // blätterbarer Text (Config-Diff, Konfiguration)
 	mLLM   // KI-Status (llmhealth.go)
+	mCrash // Absturzbericht der letzten Sitzung (crash.go)
 )
 
 type modal struct {
@@ -53,6 +55,8 @@ type modal struct {
 	sel      int         // nur Menü: Auswahl
 	at       [2]int      // nur Menü: Bildschirmposition (Mauszeiger)
 	anchored bool        // am Mauszeiger statt mittig
+
+	crash *crash.Report // nur Absturzbericht
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
@@ -205,6 +209,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.menuKey(key)
 	case mLLM:
 		return a.llmStatusKey(key)
+	case mCrash:
+		return a.crashKey(key)
 	case mInfo:
 		if key == "esc" || key == "enter" || key == "q" {
 			a.modal = nil
@@ -246,7 +252,7 @@ func (m *modal) view(s Styles, w, h int) string {
 		return m.textView(s, w, h)
 	}
 	title := s.Accent.Render(m.title)
-	if m.kind == mHostKey {
+	if m.kind == mHostKey || m.kind == mCrash {
 		title = s.Warn.Render("⚠ " + m.title)
 	}
 	body := s.Text.Render(m.body)

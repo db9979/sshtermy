@@ -1,0 +1,32 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                                         ● AI
+
+
+
+
+
+     ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+     │ ⇉ Broadcast  one command or runbook in parallel on several hosts                                           │
+     │                                                                                                            │
+     │   Hosts               1 of 6 selected   Space selects · g folder · a all                                   │
+     │     GENERAL                                                                                                │
+     │     [ ] nas                  admin@nas.local                                                               │
+     │     [ ] spark                dominik@spark.lan                                                             │
+     │     NETZWERK                                                                                               │
+     │     [x] switch-core          manager@192.168.1.2 · network device                                          │
+     │     PRODUKTION                                                                                             │
+     │     [ ] db-01                postgres@10.0.1.5                                                             │
+     │     PRODUKTION / WEB                                                                                       │
+     │     [ ] web-01               deploy@10.0.0.11                                                              │
+     │     [ ] web-02               deploy@10.0.0.12                                                              │
+     │                                                                                                            │
+     │   Source               own command                                                                         │
+     │ ▌ Command             Command, e.g. uptime · ⇧⏎ = next step                                                │
+     │                                                                                                            │
+     ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+ Tab hosts/source/command  Space select host  g Folder  a all  Ctrl+S next  Esc cancel  F1 Help

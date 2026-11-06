@@ -1,0 +1,32 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                                         ● AI
+ connections  6  / search  # Tags       │ web-01  Produktion / Web    ⏎ connect   e edit
+                                        │
+ ▾ Netzwerk                          1  │ Goal                deploy@10.0.0.11:22
+   ○ ▦ switch-core      manager@192.1…  │ Status              ◌ checking …
+ ▾ Produktion                        3  │ Color               ▌ PRODUCTION
+   ▾ Web                             2  │ Login               SSH agent
+▌    ○ · web-01         deploy@10.0.0…  │ Tags                prod, nginx
+▌    ○ · web-02         deploy@10.0.0…  │ System              detected on the first connect
+▌  ○ · db-01            postgres@10.0…  │
+ ○ · nas               admin@nas.local  │ Tunnel  t = new tunnel
+ ○ · spark             dominik@spark.…  │  🌐 Grafana              -L 3000:localhost:3000
+                                        │
+                                        │ AI copilot
+                                        │  qwen3-coder @ http://spark.lan:8000/v1
+                                        │
+                                        │ Sync
+                                        │  not set up · y = wizard
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ Ctrl+Space Palette  ⏎ connect  n new  e edit  d delete  v move  t Tunnel  q Quick commands  F1 Help  ⇧F9 explain

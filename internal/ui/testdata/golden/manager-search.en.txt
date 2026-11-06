@@ -1,0 +1,32 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                                         ● AI
+ / web                                  │ ▾ Produktion
+  2 matches · Esc shows all             │
+ ▾ Produktion                        3  │ Path                Produktion
+   ▾ Web                             2  │ Content             3 connections
+▌    ○ · web-01         deploy@10.0.0…  │ Subfolders          1
+▌    ○ · web-02         deploy@10.0.0…  │ Tags                #db #nginx #prod
+                                        │
+                                        │ Folder
+                                        │  ⏎      expand/collapse
+                                        │  n      new connection here
+                                        │  o      add subfolder
+                                        │  r      rename
+                                        │  v      move
+                                        │  ⇧↑ ⇧↓  order
+                                        │  d      dissolve, content stays
+                                        │  - +    collapse / expand all
+                                        │
+                                        │  With the mouse: drag a row and drop it on a folder or between two
+                                        │  connections.
+                                        │
+                                        │ Sync
+                                        │  not set up · y = wizard
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ ⏎ done  ↑↓ to list  Esc clear search  F1 Help

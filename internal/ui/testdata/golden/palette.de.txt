@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                     ● KI
+ Verbindungen  6  / suchen       │ ▾ Netzwerk
+            ╭──────────────────────────────────────────────────────────────────────────╮
+ ▾ Netzwerk │ ✦ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
+   ○ ▦ switc│ ──────────────────────────────────────────────────────────────────────── │
+ ▾ Produktio│ VERBINDEN                                                                │
+   ▾ Web    │ ▸ nas                                                    admin@nas.local │
+▌    ○ · web│ ▸ spark                                                dominik@spark.lan │
+▌    ○ · web│ ▸ switch-core                                        manager@192.168.1.2 │
+▌  ○ · db-01│ ▸ db-01                                                postgres@10.0.1.5 │
+ ○ · nas    │ ▸ web-01                                                deploy@10.0.0.11 │
+ ○ · spark  │ ▸ web-02                                                deploy@10.0.0.12 │
+            │ AKTIONEN                                                                 │
+            │ ≡ Verbindungs-Manager                                                F10 │
+            │ + Neue Verbindung                                                      n │
+            │ ⇉ Broadcast: Befehl auf mehreren Hosts                                 m │
+            │ ⌕ Netzwerk-Scan: SSH-Geräte finden                                     f │ oder
+            │ ✦ KI-Einstellungen                                                     s │
+            │ ⇅ Sync zwischen Rechnern einrichten                                    y │
+            │ ⇩ Verbindungen importieren (ssh-config, PuTTY, MobaXterm)              i │
+            │ ? Tastenkürzel anzeigen                                               F1 │
+            │ ⌨ Tastenkürzel anpassen                                                b │
+            │ i Über sshTermy / Update                                             F12 │
+            │ ★ Was ist neu (Changelog)                                          F12 w │
+            │ ↖ Maus aus (Terminalfenster markiert selbst)                        Maus │
+            │                                                                          │
+            │ ↑↓ wählen · ⏎ ausführen · Tab KI fragen · Esc schließen · 31 Einträge    │
+            ╰──────────────────────────────────────────────────────────────────────────╯
+                                 │
+ Strg+Space Palette  ⏎ zuklappen  n neu hier  e umbenennen  d löschen  F1 Hilfe  ⇧F9 erklären

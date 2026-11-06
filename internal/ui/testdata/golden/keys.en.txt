@@ -1,0 +1,34 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                               ● AI
+ ⌨ Customize shortcuts   ⏎ or double-click rebinds · synced to other computers
+
+ EVERYWHERE
+▶Command palette               Ctrl+Space / Ctrl+@
+ Help                          F1
+ About & update                F12
+ Quit                          Ctrl+Q
+ Manager ↔ terminal            F10
+ Explain key bar on/off        Shift+F9 / F21
+ TERMINAL
+ Goal mode (agent)             F2
+ Ask AI                        F3
+ Tunnel                        F4
+ Files (SFTP)                  F5
+ Search history                Ctrl+F
+ Split view (2 / 4)            Ctrl+T
+ Host overview                 F6
+ previous tab                  F7
+ next tab                      F8
+ Insert follow-up command 1    Alt+1
+ Insert follow-up command 2    Alt+2
+ Insert follow-up command 3    Alt+3
+ Insert follow-up command 4    Alt+4
+ Quick commands (list)         F9
+ Quick command 1               Shift+F1 / F13
+ Quick command 2               Shift+F2 / F14
+ Quick command 3               Shift+F3 / F15
+ Quick command 4               Shift+F4 / F16
+
+ Alt+⏎ is blocked: Windows Terminal uses it for full screen.
+ Font size: Ctrl + plus/minus in the terminal window (macOS: ⌘ + / −)
+
+ ⏎ rebind  Del Default  r reset all  Esc back

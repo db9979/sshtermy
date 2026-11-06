@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                ▌○ db-01
+ PRODUCTION  postgres@10.0.1.5:2222                                   ⇄ 0 tunnels   ● ✦ qwen3-coder
+
+
+
+
+
+
+
+
+
+
+
+                       ✗ dial tcp 10.0.1.5:2222: connect: connection refused
+
+                              ⏎ reconnect · x close tab · F10 Manager
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Ctrl+Space Palette  ⏎ reconnect  x close tab  F1 Help  F10 Manager  ⇧F9 explain  Ctrl+Q quit

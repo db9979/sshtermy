@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                     ● KI
+ Verbindungen  6  / suchen       │ ▾ Netzwerk
+                                 │
+ ▾ Netzwerk                   1  │ Pfad         Netzwerk
+   ○ ▦ switch-core  manager@19…  │ Inhalt       1 Verbindung
+ ▾ Produktion                 3  │
+     ╭────────────────────────────────────────────────────────────────────────────────────────╮
+▌    │                                                                                        │
+▌    │  Über sshTermy                                                                         │
+▌    │                                                                                        │
+     │  sshTermy vdev (none, unknown) linux/amd64                                             │
+     │  SSH-Terminal mit KI-Copilot                                                           │
+     │  Idee: Dominik Bornhäußer · https://github.com/db9979/sshtermy                         │
+     │                                                                                        │
+     │  Sicherheit: AES-256-GCM, Argon2id, DPAPI (Windows), Host-Key-Prüfung (TOFU),          │
+     │  KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.                            │
+     │                                                                                        │
+     │  ☕ Gefällt dir sshTermy? Spendier einen Kaffee: https://buymeacoffee.com/zquu1xu570   │
+     │                                                                                        │
+     │  c = nach Updates suchen · w = was ist neu · b = Kaffee spendieren · Esc = schließen   │
+     │  l = Sprache: Deutsch → English                                                        │
+     │                                                                                        │
+     ╰────────────────────────────────────────────────────────────────────────────────────────╯
+  c nach Updates suchen    w was ist neu    b ☕ Kaffee spendieren    l Language    Esc schließen
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+ Strg+Space Palette  ⏎ zuklappen  n neu hier  e umbenennen  d löschen  F1 Hilfe  ⇧F9 erklären

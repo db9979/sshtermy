@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+ connections  6  / search        │ ▾ Netzwerk
+            ╭──────────────────────────────────────────────────────────────────────────╮
+ ▾ Netzwerk │ ✦ Goal, question, command, tunnel, connection or user@host:port …        │
+   ○ ▦ switc│ ──────────────────────────────────────────────────────────────────────── │
+ ▾ Produktio│ CONNECT                                                                  │
+   ▾ Web    │ ▸ nas                                                    admin@nas.local │
+▌    ○ · web│ ▸ spark                                                dominik@spark.lan │
+▌    ○ · web│ ▸ switch-core                                        manager@192.168.1.2 │
+▌  ○ · db-01│ ▸ db-01                                                postgres@10.0.1.5 │
+ ○ · nas    │ ▸ web-01                                                deploy@10.0.0.11 │
+ ○ · spark  │ ▸ web-02                                                deploy@10.0.0.12 │
+            │ ACTIONS                                                                  │
+            │ ≡ Connection manager                                                 F10 │
+            │ + New connection                                                       n │
+            │ ⇉ Broadcast: command on several hosts                                  m │
+            │ ⌕ Network scan: find SSH devices                                       f │r between
+            │ ✦ AI settings                                                          s │
+            │ ⇅ Set up sync between computers                                        y │
+            │ ⇩ Import connections (ssh-config, PuTTY, MobaXterm)                    i │
+            │ ? Show keyboard shortcuts                                             F1 │
+            │ ⌨ Customize shortcuts                                                  b │
+            │ i About sshTermy / update                                            F12 │
+            │ ★ What's new (changelog)                                           F12 w │
+            │ ↖ Mouse off (terminal window selects itself)                       Mouse │
+            │                                                                          │
+            │ ↑↓ select · ⏎ run · Tab ask AI · Esc close · 31 entries                  │
+            ╰──────────────────────────────────────────────────────────────────────────╯
+                                 │
+ Ctrl+Space Palette  ⏎ collapse  n new here  e rename  d delete  v move  F1 Help  ⇧F9 explain

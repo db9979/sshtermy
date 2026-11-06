@@ -1,0 +1,24 @@
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                 ● KI
+ Verbindungen  6  / suchen      │ ▾ Netzwerk
+                                │
+ ▾ Netzwerk                  1  │ Pfad         Netzwerk
+   ○ ▦ switch-core  manager@1…  │ Inhalt       1 Verbindung
+ ▾ Produktion                3  │
+   ▾ Web                     2  │ Ordner
+▌    ○ · web-01      deploy@1…  │  ⏎      auf-/zuklappen
+▌    ○ · web-02      deploy@1…  │  n      neue Verbindung hier
+▌  ○ · db-01        postgres@…  │  o      Unterordner anlegen
+ ○ · nas           admin@nas.…  │  r      umbenennen
+ ○ · spark         dominik@sp…  │  v      verschieben
+                                │  ⇧↑ ⇧↓  Reihenfolge
+                                │  d      auflösen, Inhalt bleibt
+                                │  - +    alle zu / auf
+                                │
+                                │  Mit der Maus: eine Zeile ziehen und auf
+                                │  einem Ordner oder zwischen zwei Verbindungen
+                                │  loslassen.
+                                │
+                                │ Sync
+                                │  nicht eingerichtet · y = Assistent
+                                │
+ Strg+Space Palette  ⏎ zuklappen  n neu hier  F1 Hilfe  ⇧F9 erklären

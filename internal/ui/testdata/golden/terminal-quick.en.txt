@@ -1,0 +1,30 @@
+ ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                               ▌● web-01
+ PRODUCTION  deploy@10.0.0.11:22                                      ⇄ 0 tunnels   ● ✦ qwen3-coder
+Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64
+
+deploy@web-01:~$ systemctl status nginx --no-pager | head -3
+● nginx.service - A high performance web server and a reverse proxy server
+     Loaded: lo╭────────────────────────────────────────────────────────────────────╮
+     Active: ac│                                                                    │
+deploy@web-01:~│  ↯ Quick commands  web-01 · defaults „Linux-Server“                │
+               │                                                                    │
+               │   ⇧F1    df -h                                                     │
+               │   ⇧F2    free -h                                                   │
+               │   ⇧F3    uptime                                                    │
+               │   ⇧F4    ip -br a                                                  │
+               │   ⇧F5    systemctl --failed                                        │
+               │   ⇧F6    journalctl -p err -b -n 50 --no-pager                     │
+               │   ⇧F7    docker ps                                                 │
+               │   ⇧F8    top -bn1 | head -20                                       │
+               │                                                                    │
+               │  ⏎ or 1…8 run · ↑↓ select · e edit · Esc closes                    │
+               │                                                                    │
+               ╰────────────────────────────────────────────────────────────────────╯
+                                    ⏎ run    e edit    Esc close
+
+
+
+
+
+
+ Ctrl+Space Palette  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  Ctrl+F Search  ⇧F9 explain

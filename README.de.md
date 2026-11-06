@@ -303,6 +303,18 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   für die KI Tokens, `password=…`, `--password …` und private Schlüssel. Mitschreiben lässt sich über die Palette oder `a` in den
   Protokollen ganz abschalten. Der Markdown-Export (in `Downloads`) ist Klartext und passiert nur auf Wunsch.
 
+### Absturzbericht
+
+- Stürzt sshTermy ab, legt es im Konfigurationsordner unter `crash/` einen Bericht als Text ab: Version, System und
+  die Stelle im Programm (Stack). **Vor dem Speichern** werden alle Passwörter, Keys, Passphrasen und API-Keys aus
+  dem Store wörtlich entfernt, dazu Hosts, Aliase, IP-Adressen, der Home-Ordner und typische Muster
+  (`password=…`, `Bearer …`, Private Keys).
+- Ein Absturz in der Oberfläche wird abgefangen: Das Terminal wird wiederhergestellt und sshTermy fragt, ob der
+  Bericht als GitHub-Issue gemeldet werden soll. Bei einem harten Absturz (Prozess endet sofort) entsteht der
+  Bericht nach dem nächsten Entsperren und erscheint in einem Dialog (`g` = als Issue melden, `o` = Bericht öffnen).
+- Nichts wird automatisch verschickt. Das Issue öffnet sich im Browser mit dem Bericht; du siehst alles vor dem
+  Absenden. Die letzten 10 Berichte bleiben liegen. Ausprobieren: `sshtermy -crash-test ui` (oder `cmd`, `fatal`).
+
 ### Auto-Update
 
 - Prüft `releases/latest` von `db9979/sshtermy`, nur HTTPS zu github.com, Weiterleitungen geprüft.
@@ -330,7 +342,15 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 make test         # go vet + Tests
 make build        # bin/sshtermy
 make dist         # alle Plattformen nach dist/ + checksums.txt
+make golden       # Bildschirm-Tests nach einer gewollten Änderung neu schreiben
 ```
+
+**Bildschirm-Tests:** `internal/ui/golden_test.go` zeichnet jede Ansicht (Manager, Formulare, Dialoge, Terminal mit
+Panels, geteilte Ansicht …) in fester Größe auf Deutsch und Englisch als Text ohne Farben und vergleicht sie mit
+`internal/ui/testdata/golden/*.txt`. Außerdem muss jedes Bild das Fenster genau füllen. Nach einer gewollten
+Änderung `make golden` ausführen und den Diff der `.txt`-Dateien ansehen, bevor du committest. Bei einem
+Merge-Konflikt in diesen Dateien nach dem Merge einfach `make golden` neu laufen lassen. Schlägt die CI fehl, steht
+im Artefakt `golden-actual` des Laufs, wie die Bildschirme jetzt aussehen. Neue Ansicht: eine Zeile in `goldenCases`.
 
 **Texte in der Oberfläche** stehen deutsch im Code und laufen durch `i18n.T("…")` (Formate: `i18n.F`, feste
 Fehler: `i18n.NewError`). Jeder neue Text braucht einen Eintrag in `internal/i18n/en.go`; `go test ./internal/i18n`
