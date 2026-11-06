@@ -17,6 +17,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
+	"github.com/db9979/sshtermy/internal/syncx"
 )
 
 // Sitzungsprotokolle (Manager: l, Palette): Liste aller mitgeschriebenen
@@ -155,6 +156,8 @@ func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
 				if b, err := a.logBook(); err == nil {
 					if err := b.Delete(l.ID); err != nil {
 						a.flashErr(err.Error())
+					} else if a.st.SyncConfig().Archive {
+						_ = a.st.ForgetArchived(syncx.ArchiveTombstone(syncx.KindLog, l.ID))
 					}
 				}
 				a.reloadLogs()
@@ -381,6 +384,9 @@ func (a *App) viewLogs() string {
 		}
 		if l.System != "" {
 			info += " · " + l.System
+		}
+		if l.Device != "" {
+			info += i18n.T(" · von ") + l.Device
 		}
 		rb.WriteString(" " + s.Muted.Render(trunc(info, w)) + "\n\n")
 		if l.Summary != "" {

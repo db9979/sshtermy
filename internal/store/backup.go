@@ -19,7 +19,8 @@ import (
 //
 //	<Dir>/backups/<Verbindungs-ID>/<UTC-Zeit>_<Zeilen>.cfg.enc
 //
-// Sie werden nicht synchronisiert (Zeitreihe gehört zum Rechner, der sichert).
+// Mit dem zuschaltbaren Sync-Archiv (syncx/archive.go) kommen sie zusätzlich
+// verschlüsselt auf die anderen Rechner (ImportBackup).
 
 // Backup beschreibt einen gesicherten Stand.
 type Backup struct {
@@ -61,6 +62,62 @@ func (s *Store) SaveBackup(connID, cfg string) (Backup, error) {
 		return Backup{}, err
 	}
 	return b, os.Rename(p+".tmp", p)
+}
+
+// ImportBackup legt einen Stand von einem anderen Rechner ab (gleiche ID wie
+// dort). Gibt es ihn schon, bleibt er unverändert (added = false).
+func (s *Store) ImportBackup(connID, id, cfg string) (added bool, err error) {
+	dir, err := s.backupDir(connID)
+	if err != nil {
+		return false, err
+	}
+	ts, _, ok := strings.Cut(id, "_")
+	if _, perr := time.Parse(backupTime, ts); !ok || perr != nil || filepath.Base(id) != id {
+		return false, errors.New(i18n.T("ungültige Sicherung"))
+	}
+	p := filepath.Join(dir, id+".cfg.enc")
+	if _, err := os.Stat(p); err == nil {
+		return false, nil
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return false, err
+	}
+	blob, err := s.V.SealBlob([]byte(cfg), backupAAD(connID, id))
+	if err != nil {
+		return false, err
+	}
+	if err := os.WriteFile(p+".tmp", blob, 0o600); err != nil {
+		return false, err
+	}
+	return true, os.Rename(p+".tmp", p)
+}
+
+// DeleteBackup entfernt einen Stand (fehlt er schon, ist das kein Fehler).
+func (s *Store) DeleteBackup(connID, id string) error {
+	dir, err := s.backupDir(connID)
+	if err != nil {
+		return err
+	}
+	if filepath.Base(id) != id || id == "" || id == "." || id == ".." {
+		return errors.New(i18n.T("ungültige Sicherung"))
+	}
+	err = os.Remove(filepath.Join(dir, id+".cfg.enc"))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
+}
+
+// BackupConns: Verbindungs-IDs, für die es Sicherungen gibt.
+func (s *Store) BackupConns() []string {
+	ents, _ := os.ReadDir(filepath.Join(s.Dir, "backups"))
+	var out []string
+	for _, e := range ents {
+		if e.IsDir() {
+			out = append(out, e.Name())
+		}
+	}
+	return out
 }
 
 // Backups: alle Stände einer Verbindung, neuester zuerst.

@@ -351,7 +351,7 @@ Windows login ──DPAPI CryptProtectData────────────�
   `PROMPT_COMMAND='printf "\033]133;D;%s\007" $?'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`.
   Without shell integration sshTermy estimates from typical error messages in the last lines (`command not found`,
   `No such file`, `Permission denied`, `E: …`, `% Invalid input` on switches and more). This is only an offer, never a block.
-- **Logs** are stored only locally in `logs/` in the config folder (never synced), one file per session,
+- **Logs** are stored in `logs/` in the config folder (synced only with the archive switched on, see below), one file per session,
   AES-256-GCM with a key derived from the store key (HMAC-SHA256); the AAD binds format and file ID.
   Without an unlocked store no log is readable.
 - **Not logged:** password inputs (they are not a command at the prompt and are not displayed) and commands with
@@ -460,6 +460,13 @@ wins per entry, deleted entries are remembered as tombstones (180 days), and „
 does not count as a change. This way changes on two computers are not lost as long as they affect different entries.
 Syncing happens at start, a few seconds after every change and every 5 minutes; manually via the palette
 („Sync now“). Computer-specific things like DPAPI and the sync settings themselves are not synced.
+
+**Archive (optional):** With the „Archive“ switch in the sync wizard (y), the config backups of your switches (F6)
+and the session logs also travel to your other computers. They are stored in the subfolder `sshtermy-archiv/` next to
+the sync file, one encrypted file per backup or log (key derived from the sync key; the file name only shows kind and
+day, no host names). Every file is written only once, so there are no conflicts. „Keep“ (30, 90 or 365 days) sets how
+long entries stay in the archive; local copies are kept. A deleted log also disappears on the other computers. Running
+sessions go into the archive after they end; the log view shows which computer a log came from.
 
 To try it without a NAS: `go run ./tools/dev/devdav` (http on port 5005) or `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
 (self-signed), user `dominik`, password `nas-pw`.

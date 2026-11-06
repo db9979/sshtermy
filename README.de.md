@@ -348,7 +348,7 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   `PROMPT_COMMAND='printf "\033]133;D;%s\007" $?'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`.
   Ohne Shell-Integration schätzt sshTermy anhand typischer Fehlermeldungen in den letzten Zeilen (`command not found`,
   `No such file`, `Permission denied`, `E: …`, `% Invalid input` bei Switches u. a.). Das ist nur ein Angebot, nie eine Sperre.
-- **Protokolle** liegen nur lokal in `logs/` im Konfigurationsordner (nie im Sync), eine Datei je Sitzung,
+- **Protokolle** liegen in `logs/` im Konfigurationsordner (im Sync nur mit eingeschaltetem Archiv, siehe unten), eine Datei je Sitzung,
   AES-256-GCM mit einem aus dem Store-Schlüssel abgeleiteten Schlüssel (HMAC-SHA256); die AAD bindet Format und Datei-ID.
   Ohne entsperrten Store ist kein Protokoll lesbar.
 - **Nicht protokolliert:** Passwort-Eingaben (sie sind kein Befehl am Prompt und werden nicht angezeigt) und Befehle mit
@@ -457,6 +457,14 @@ pro Eintrag die neuere Änderung, gelöschte Einträge werden als Grabstein geme
 zählt nicht als Änderung. So gehen Änderungen auf zwei Rechnern nicht verloren, solange sie verschiedene Einträge
 betreffen. Abgeglichen wird beim Start, wenige Sekunden nach jeder Änderung und alle 5 Minuten; manuell über die Palette
 („Jetzt synchronisieren“). Nicht synchronisiert werden rechnerspezifische Dinge wie DPAPI und die Sync-Einstellungen selbst.
+
+**Archiv (zuschaltbar):** Mit dem Schalter „Archiv“ im Sync-Assistenten (y) wandern auch die Config-Sicherungen der
+Switches (F6) und die Sitzungsprotokolle auf die anderen Rechner. Sie liegen im Unterordner `sshtermy-archiv/` neben der
+Sync-Datei, eine verschlüsselte Datei je Sicherung bzw. Protokoll (Schlüssel aus dem Sync-Schlüssel abgeleitet; der
+Dateiname verrät nur Art und Tag, keine Hostnamen). Jede Datei wird nur einmal geschrieben, deshalb gibt es keine
+Konflikte. „Aufbewahren“ (30, 90 oder 365 Tage) legt fest, wie lange Einträge im Archiv bleiben; lokale Kopien bleiben
+erhalten. Ein gelöschtes Protokoll verschwindet auch auf den anderen Rechnern. Laufende Sitzungen kommen erst nach dem
+Ende ins Archiv; in der Protokollansicht steht, von welchem Rechner ein Protokoll stammt.
 
 Zum Ausprobieren ohne NAS: `go run ./tools/dev/devdav` (http auf Port 5005) oder `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
 (selbstsigniert), Benutzer `dominik`, Passwort `nas-pw`.
