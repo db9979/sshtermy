@@ -95,7 +95,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 			if isClick {
 				a.focusSession(a.indexOf(p))
 				s = p
-			} else if isWheel && a.inTermArea(p, m.X, m.Y) && !p.files.open {
+			} else if isWheel && a.inTermArea(p, m.X, m.Y) && !p.files.open && !p.detached() {
 				return a.termMouse(p, msg, 0)
 			}
 		}
@@ -103,7 +103,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil {
 		if s.search.open && s.search.list && !s.selecting && a.inTermArea(s, m.X, m.Y) && !isWheel {
 			// Fehlerliste: Zeilen sind Zonen
-		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open && s.state == stConnected) {
+		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open && s.state == stConnected && !s.detached()) {
 			// ohne laufende Sitzung (Verbinden, Reconnect, beendet) zeigt die
 			// Fläche anklickbare Hinweise, die Klicks gehen an die Zonen
 			return a.termMouse(s, msg, clicks)
@@ -359,7 +359,7 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 	cols, rows := a.termSize(s)
 	r := a.termRect(s)
 	tx, ty := m.X-r.x, m.Y-r.y
-	if s.term == nil || s.state != stConnected {
+	if s.term == nil || s.state != stConnected || s.detached() {
 		return nil
 	}
 	_, isClick := msg.(tea.MouseClickMsg)
@@ -515,7 +515,7 @@ func (a *App) pasteClipboard(s *session) tea.Cmd {
 
 func (a *App) onPaste(m pasteMsg) tea.Cmd {
 	s := a.byID(m.sid)
-	if s == nil || s.term == nil || s.state != stConnected {
+	if s == nil || s.term == nil || s.state != stConnected || s.detached() {
 		return nil
 	}
 	if m.err != nil || m.text == "" {
