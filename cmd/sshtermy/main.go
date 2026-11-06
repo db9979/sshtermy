@@ -31,6 +31,12 @@ func main() {
 			os.Exit(runRelay(os.Args[2:]))
 		case "anker", "anchor":
 			os.Exit(runAnchor(os.Args[2:]))
+		case "attach":
+			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach
+			if len(os.Args) != 3 {
+				fail(fmt.Errorf("attach <ordner>"))
+			}
+			os.Exit(ui.Attach(os.Args[2]))
 		}
 	}
 

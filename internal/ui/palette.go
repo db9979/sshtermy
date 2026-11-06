@@ -259,6 +259,13 @@ func (a *App) paletteItems() []palItem {
 			}
 			actions = append(actions, palItem{icon: "▦", label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
+		if s.detached() {
+			actions = append(actions, palItem{icon: "↙", label: i18n.T("Tab aus eigenem Fenster zurückholen"), hint: a.keys.label(actDetach),
+				run: func() tea.Cmd { return a.toggleDetach(s) }})
+		} else if s.state == stConnected {
+			actions = append(actions, palItem{icon: "↗", label: i18n.T("Tab in eigenes Fenster abtrennen"), hint: a.keys.label(actDetach),
+				run: func() tea.Cmd { return a.toggleDetach(s) }})
+		}
 	}
 	actions = append(actions, palItem{icon: "●", label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), hint: "llm",
 		run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }})

@@ -141,6 +141,7 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
 | | ⇧F9 | Tastenzeile erklärt die Tasten des Bereichs |
+| | ⇧F10 | Tab in ein eigenes Terminalfenster abtrennen (Windows Terminal/Konsole, Terminal.app/iTerm2, Linux-Terminals, tmux); die Sitzung bleibt offen, Fenster schließen oder ⏎ holt sie zurück. Eigenes Terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
 | | Strg+F / Strg+T | im Verlauf suchen / Ansicht teilen (2 / 4) |
 | | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
