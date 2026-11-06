@@ -1,7 +1,8 @@
 // Package sessionlog schreibt SSH-Sitzungen als Protokoll mit: Befehle, ihre
 // Ausgabe (Klartext aus dem Terminal), Zeitpunkt und ob sie fehlgeschlagen
-// sind. Die Protokolle liegen nur lokal (nie im Sync) und verschlüsselt, eine
-// Datei je Sitzung.
+// sind. Die Protokolle liegen verschlüsselt auf dem Rechner, eine Datei je
+// Sitzung. Mit dem Sync-Archiv (syncx/archive.go, zuschaltbar) kommen sie
+// zusätzlich verschlüsselt auf die anderen Rechner.
 //
 // # Sicherheit
 //
@@ -70,6 +71,7 @@ type Log struct {
 	Ended   time.Time `json:"ended,omitempty"`
 	Entries []Entry   `json:"entries"`
 	Summary string    `json:"summary,omitempty"` // KI-Zusammenfassung
+	Device  string    `json:"device,omitempty"`  // Rechner, von dem das Protokoll per Sync kam
 }
 
 // Failures zählt fehlgeschlagene Befehle.
@@ -257,6 +259,15 @@ func (b *Book) List() (logs []*Log, unreadable int, err error) {
 	}
 	sort.Slice(logs, func(i, j int) bool { return logs[i].Started.After(logs[j].Started) })
 	return logs, unreadable, nil
+}
+
+// Has: gibt es das Protokoll auf diesem Rechner schon?
+func (b *Book) Has(id string) bool {
+	if !validID(id) {
+		return false
+	}
+	_, err := os.Stat(b.path(id))
+	return err == nil
 }
 
 // Delete entfernt ein Protokoll.

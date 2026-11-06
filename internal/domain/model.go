@@ -387,11 +387,15 @@ type SyncConfig struct {
 	Remote   string `json:"remote,omitempty"`   // Ordner am Server, z. B. /home/sshtermy
 	CertPin  string `json:"cert_pin,omitempty"` // SHA-256 des vertrauten (selbstsignierten) Zertifikats
 
-	Key       Secret    `json:"key,omitempty"` // Sync-Schlüssel (Base64), nicht das Passwort
-	HostKeys  bool      `json:"host_keys"`     // known_hosts mit abgleichen
-	Auto      bool      `json:"auto"`          // beim Start, nach Änderungen und alle 5 Minuten
-	LastSync  time.Time `json:"last_sync,omitempty"`
-	LastError string    `json:"last_error,omitempty"`
+	Key      Secret `json:"key,omitempty"` // Sync-Schlüssel (Base64), nicht das Passwort
+	HostKeys bool   `json:"host_keys"`     // known_hosts mit abgleichen
+	Auto     bool   `json:"auto"`          // beim Start, nach Änderungen und alle 5 Minuten
+	// Archiv: Config-Sicherungen und Sitzungsprotokolle mit abgleichen
+	// (eigener Unterordner neben der Sync-Datei, siehe syncx/archive.go).
+	Archive     bool      `json:"archive,omitempty"`
+	ArchiveDays int       `json:"archive_days,omitempty"` // Aufbewahrung im Archiv, 0 = 90 Tage
+	LastSync    time.Time `json:"last_sync,omitempty"`
+	LastError   string    `json:"last_error,omitempty"`
 }
 
 // Enabled: ist Sync eingerichtet?

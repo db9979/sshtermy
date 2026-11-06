@@ -562,6 +562,20 @@ func (s *Store) SetSyncConfig(c domain.SyncConfig) error {
 	return s.persist()
 }
 
+// ForgetArchived merkt sich, dass ein Archiv-Eintrag (Sicherung, Protokoll)
+// hier gelöscht wurde, damit er auch im Sync-Archiv und auf den anderen
+// Rechnern verschwindet. key: syncx.ArchiveTombstone(...).
+func (s *Store) ForgetArchived(key string) error {
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return vault.ErrLocked
+	}
+	s.tombstone(key)
+	s.mu.Unlock()
+	return s.persist()
+}
+
 // Snapshot liefert eine Kopie der Daten und den Änderungszähler.
 func (s *Store) Snapshot() (*domain.Data, uint64, error) {
 	s.mu.RLock()
@@ -690,7 +704,8 @@ func (s *Store) UseRunbook(id string) {
 	_ = s.save()
 }
 
-// LogDir: Ordner der verschlüsselten Sitzungsprotokolle (nur lokal, nie im Sync).
+// LogDir: Ordner der verschlüsselten Sitzungsprotokolle (im Sync nur über das
+// zuschaltbare Archiv, siehe syncx/archive.go).
 func (s *Store) LogDir() string { return filepath.Join(s.Dir, "logs") }
 
 // SessionLogKey: eigener Schlüssel für die Sitzungsprotokolle, abgeleitet aus
