@@ -14,8 +14,8 @@
        │  Report: /home/golden/.config/sshtermy/crash/sshtermy-crash-20261106-071500.txt    │
        │                                                                                    │
        │  The report contains the version, system and the place in the program. Passwords,  │
-       │  Keys, Hosts und IP-Adressen sind entfernt. Beim Melden zeigt der Browser          │ween
-       │  alles vor dem Absenden.                                                           │
+       │  keys, hosts and IP addresses are removed. When reporting, your browser shows      │ween
+       │  everything before it is sent.                                                     │
        │                                                                                    │
        │   g report as issue    o open report    Esc close                                  │
        │                                                                                    │
