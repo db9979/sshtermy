@@ -372,7 +372,7 @@ func (a *App) viewManager() string {
 		if m.drag.from < len(rows) {
 			name = rows[m.drag.from].name()
 		}
-		lb.WriteString(" " + s.Warn.Render("⇅ „"+trunc(name, 16)+"“ "+trunc(desc, leftW-24)) + "\n")
+		lb.WriteString(" " + s.Warn.Render("↕ „"+trunc(name, 16)+"“ "+trunc(desc, leftW-24)) + "\n")
 	case m.searching || m.search.Value() != "":
 		m.search.SetWidth(leftW - 6)
 		lb.WriteString(" " + s.Accent.Render("/") + " " + m.search.View() + "\n")
@@ -390,7 +390,7 @@ func (a *App) viewManager() string {
 	// zweite Zeile: aktiver Filter bzw. Position
 	info := ""
 	if m.tag != "" {
-		info = a.z.click(s.Accent.Render(" #"+m.tag+" ✕"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
+		info = a.z.click(s.Accent.Render(" #"+m.tag+" ×"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
 	}
 	if a.mgrFiltering() {
 		n := 0
@@ -583,9 +583,9 @@ func (a *App) viewManager() string {
 			rb.WriteString(s.Muted.Render(i18n.T("  noch keine · z. B. Weboberfläche oder Datenbank sicher auf diesen Rechner holen")) + "\n")
 		}
 		for _, t := range tuns {
-			icon := "⇄"
+			icon := "↔"
 			if t.IsWebService() {
-				icon = "🌐"
+				icon = "@"
 			}
 			auto := ""
 			if t.AutoStart {

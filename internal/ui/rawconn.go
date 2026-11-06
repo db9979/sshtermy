@@ -163,20 +163,20 @@ func (a *App) protoBadge(s *session) string {
 			name = "USB"
 		}
 		name = strings.TrimPrefix(name, "/dev/")
-		return st.Badge.Foreground(st.T.Accent).Render("⌁ " + name + " " + strconv.Itoa(s.conn.SerialBaud()))
+		return st.Badge.Foreground(st.T.Accent).Render("≈ " + name + " " + strconv.Itoa(s.conn.SerialBaud()))
 	}
 	return ""
 }
 
 // shortTarget: kurze Zielangabe für Listen („admin@10.0.0.1“, „telnet
-// sw-core“, „⌁ COM3“).
+// sw-core“, „≈ COM3“).
 func shortTarget(c domain.Connection) string {
 	t := c.Host
 	if c.Username != "" {
 		t = c.Username + "@" + c.Host
 	}
 	if c.ViaRelay() {
-		return "⇌ " + t
+		return "↔ " + t
 	}
 	switch c.Protocol {
 	case domain.ProtoTelnet:
@@ -186,7 +186,7 @@ func shortTarget(c domain.Connection) string {
 		if p == "" {
 			p = "USB"
 		}
-		return "⌁ " + p
+		return "≈ " + p
 	}
 	return t
 }
@@ -377,9 +377,9 @@ func (a *App) quickRawItems(c domain.Connection) []palItem {
 		hint = i18n.T("Konsolenkabel")
 	}
 	return []palItem{
-		{group: pgConnect, icon: "⚡", label: i18n.T("Schnell verbinden: ") + c.Alias, hint: hint,
+		{group: pgConnect, icon: ic("connect"), label: i18n.T("Schnell verbinden: ") + c.Alias, hint: hint,
 			run: func() tea.Cmd { return a.openOrConnect(c) }},
-		{group: pgConnect, icon: "+", label: i18n.T("Als Verbindung speichern: ") + c.Alias, hint: i18n.T("anlegen"),
+		{group: pgConnect, icon: ic("new"), label: i18n.T("Als Verbindung speichern: ") + c.Alias, hint: i18n.T("anlegen"),
 			run: func() tea.Cmd {
 				n := c
 				n.ID = ""

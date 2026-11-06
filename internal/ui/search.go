@@ -242,7 +242,7 @@ func (a *App) viewErrorList(s *session, w, h int) string {
 		}
 		return fitBlock("\n "+st.OK.Render("✓ "+msg)+"\n\n "+a.hints(st.Muted, [2]string{"Tab", i18n.T("zeigt den Verlauf")}, [2]string{"Strg+E", i18n.T("Filter aus")}, [2]string{"Esc", i18n.T("schließen")}), w, h)
 	}
-	head := st.Accent.Render(fmt.Sprintf(i18n.T(" ⚠ %s im Verlauf"), plural(len(sr.matches), i18n.T("Fehlerzeile"), i18n.T("Fehlerzeilen")))) +
+	head := st.Accent.Render(fmt.Sprintf(i18n.T(" ▲ %s im Verlauf"), plural(len(sr.matches), i18n.T("Fehlerzeile"), i18n.T("Fehlerzeilen")))) +
 		st.Muted.Render("  ") + a.hints(st.Muted, [2]string{"↑↓", i18n.T("wählen")}, [2]string{"⏎", i18n.T("im Verlauf zeigen")}, [2]string{"Tab", i18n.T("Verlauf")})
 	rows := max(1, h-1)
 	start := clamp(sr.idx-rows/2, 0, max(0, len(sr.matches)-rows))
@@ -273,9 +273,9 @@ func (a *App) viewErrorList(s *session, w, h int) string {
 func (a *App) searchBar(s *session) string {
 	st := a.s
 	sr := &s.search
-	label := i18n.T(" ⌕ Suche: ")
+	label := i18n.T(" / Suche: ")
 	if sr.errors {
-		label = i18n.T(" ⚠ Fehler: ")
+		label = i18n.T(" ▲ Fehler: ")
 	}
 	count := st.Muted.Render(i18n.T(" keine Treffer "))
 	if n := len(sr.matches); n > 0 {

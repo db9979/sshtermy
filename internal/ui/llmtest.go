@@ -81,7 +81,7 @@ func testTimeout(c domain.LLMConfig) time.Duration {
 func (a *App) llmTestCmd() tea.Cmd {
 	c, ok := a.focusedLLM()
 	if !ok {
-		a.llm.status = a.s.Warn.Render(i18n.T("⚠ Erst einen Anbieter wählen (←/→)."))
+		a.llm.status = a.s.Warn.Render(i18n.T("▲ Erst einen Anbieter wählen (←/→)."))
 		return nil
 	}
 	a.llm.busy, a.llm.status = i18n.T("teste ")+c.BaseURL+" …", ""
@@ -95,7 +95,7 @@ func (a *App) llmTestCmd() tea.Cmd {
 func (a *App) llmModelsCmd() tea.Cmd {
 	c, ok := a.focusedLLM()
 	if !ok {
-		a.llm.status = a.s.Warn.Render(i18n.T("⚠ Erst einen Anbieter wählen (←/→)."))
+		a.llm.status = a.s.Warn.Render(i18n.T("▲ Erst einen Anbieter wählen (←/→)."))
 		return nil
 	}
 	a.llm.modelsFor = a.modelKey()
@@ -133,17 +133,17 @@ func (a *App) llmMsg(msg tea.Msg) (tea.Cmd, bool) {
 			a.llm.models, a.llm.modelsFor = r.Models, a.modelKey()
 			parts = append(parts, a.s.OK.Render(fmt.Sprintf(i18n.T("✓ /models: %d Modelle"), len(r.Models))))
 		} else {
-			parts = append(parts, a.s.Warn.Render(i18n.T("⚠ /models: ")+r.ModelsErr.Error()))
+			parts = append(parts, a.s.Warn.Render(i18n.T("▲ /models: ")+r.ModelsErr.Error()))
 		}
 		model := a.form.str(a.modelKey())
 		switch {
 		case r.ChatErr != nil:
-			parts = append(parts, a.s.Danger.Render(i18n.T("✗ Chat: ")+r.ChatErr.Error()))
+			parts = append(parts, a.s.Danger.Render(i18n.T("× Chat: ")+r.ChatErr.Error()))
 		default:
 			parts = append(parts, a.s.OK.Render(fmt.Sprintf(i18n.T("✓ Chat mit %s: %d ms, Antwort „%s“"), model, r.Latency.Milliseconds(), trunc(oneLineUI(r.Reply), 30))))
 		}
 		if r.ModelsErr == nil && model != "" && !contains(r.Models, model) {
-			parts = append(parts, a.s.Warn.Render("⚠ „"+model+i18n.T("“ steht nicht in der Liste des Endpunkts · Strg+L wählen")))
+			parts = append(parts, a.s.Warn.Render("▲ „"+model+i18n.T("“ steht nicht in der Liste des Endpunkts · Strg+L wählen")))
 		}
 		a.llm.status = strings.Join(parts, "\n")
 		return nil, true
@@ -153,11 +153,11 @@ func (a *App) llmMsg(msg tea.Msg) (tea.Cmd, bool) {
 			return nil, true
 		}
 		if m.err != nil {
-			a.llm.status = a.s.Danger.Render(i18n.T("✗ Modelle: ") + m.err.Error())
+			a.llm.status = a.s.Danger.Render(i18n.T("× Modelle: ") + m.err.Error())
 			return nil, true
 		}
 		if len(m.models) == 0 {
-			a.llm.status = a.s.Warn.Render(i18n.T("⚠ Der Endpunkt meldet keine Modelle; Namen bitte von Hand eintragen."))
+			a.llm.status = a.s.Warn.Render(i18n.T("▲ Der Endpunkt meldet keine Modelle; Namen bitte von Hand eintragen."))
 			return nil, true
 		}
 		a.llm.models, a.llm.status = m.models, ""
@@ -214,7 +214,7 @@ func (a *App) settingsKey(k tea.KeyPressMsg) (tea.Cmd, bool) {
 func (a *App) viewLLMExtra(w int) string {
 	var b strings.Builder
 	if a.llm.busy != "" {
-		b.WriteString("\n" + a.s.AI.Render("✦ "+a.llm.busy) + "\n")
+		b.WriteString("\n" + a.s.AI.Render("◆ "+a.llm.busy) + "\n")
 	}
 	if a.llm.status != "" {
 		b.WriteString("\n" + a.llm.status + "\n")

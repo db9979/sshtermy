@@ -164,7 +164,7 @@ func (a *App) viewPicker() string {
 		}
 		if it.disabled != "" {
 			left = mark + s.Muted.Render(name+"  "+it.detail)
-			hint = "⊘ " + trunc(it.disabled, 34)
+			hint = "ø " + trunc(it.disabled, 34)
 		}
 		room := w - 6 - lipgloss.Width(hint) - 1
 		left = ansi.Truncate(left, max(10, room), "…")

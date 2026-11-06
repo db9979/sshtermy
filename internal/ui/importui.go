@@ -212,7 +212,7 @@ func (a *App) viewImport() string {
 	m := &a.imp
 	w := min(110, a.w-2)
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(i18n.T(" ⇩ Verbindungen importieren")) + "\n\n")
+	b.WriteString(s.Accent.Render(i18n.T(" ↓ Verbindungen importieren")) + "\n\n")
 	for _, r := range m.results {
 		state := s.OK.Render(plural(len(r.Entries), i18n.T("Verbindung"), i18n.T("Verbindungen")))
 		switch {
@@ -273,7 +273,7 @@ func (a *App) viewImport() string {
 		if i == m.sel {
 			full := line
 			if note != "" {
-				full = trunc(line+"  ⚑ "+note, w-2)
+				full = trunc(line+"  ! "+note, w-2)
 			}
 			out = s.Selected.Width(w - 1).Render(full)
 		} else {
@@ -287,7 +287,7 @@ func (a *App) viewImport() string {
 				if it.known {
 					ns = s.Muted
 				}
-				out += ns.Render("  ⚑ " + trunc(note, w-6-lipgloss.Width(line)))
+				out += ns.Render("  ! " + trunc(note, w-6-lipgloss.Width(line)))
 			}
 		}
 		i := i

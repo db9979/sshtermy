@@ -33,7 +33,7 @@ type dialog struct {
 	width       int         // feste Innenbreite; 0 = nach Inhalt
 	maxW        int         // größte Außenbreite; 0 = 90
 	compact     bool        // Menüs und Listen: kein Leerraum oben und unten
-	noClose     bool        // kein ✕ oben rechts
+	noClose     bool        // kein × oben rechts
 }
 
 const dialogMaxW = 90
@@ -135,7 +135,7 @@ func (s Styles) dialog(d dialog, w int) string {
 	}
 	closeW := 0
 	if !d.noClose {
-		closeW = 4 // " ✕ ─"
+		closeW = 4 // " × ─"
 	}
 
 	inner := d.width
@@ -154,21 +154,21 @@ func (s Styles) dialog(d dialog, w int) string {
 	full := inner + 2*px // Breite zwischen den Rahmenstrichen
 
 	var out strings.Builder
-	// Kopf: ╭─ ✦ Titel  sub ─────────── ✕ ─╮
+	// Kopf: ┌─ ◆ Titel  sub ─────────── × ─┐
 	room := full - 3 - closeW
 	if lipgloss.Width(titleR) > room {
 		titleR = ansi.Truncate(titleR, max(1, room), "…")
 	}
 	fill := max(0, full-3-lipgloss.Width(titleR)-closeW)
-	out.WriteString(bc.Render("╭─ ") + titleR + bc.Render(" "+strings.Repeat("─", fill)))
+	out.WriteString(bc.Render("┌─ ") + titleR + bc.Render(" "+strings.Repeat("─", fill)))
 	if !d.noClose {
-		x := s.Muted.Render("✕")
+		x := s.Muted.Render("×")
 		if s.zoneKey != nil {
 			x = s.zoneKey("Esc", x)
 		}
 		out.WriteString(" " + x + bc.Render(" ─"))
 	}
-	out.WriteString(bc.Render("╮") + "\n")
+	out.WriteString(bc.Render("┐") + "\n")
 
 	side := bc.Render("│")
 	padL, padR := strings.Repeat(" ", px), strings.Repeat(" ", px)
@@ -197,7 +197,7 @@ func (s Styles) dialog(d dialog, w int) string {
 	for i := 0; i < py; i++ {
 		row("")
 	}
-	out.WriteString(bc.Render("╰" + strings.Repeat("─", full) + "╯"))
+	out.WriteString(bc.Render("└" + strings.Repeat("─", full) + "┘"))
 	return out.String()
 }
 

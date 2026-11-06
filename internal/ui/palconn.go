@@ -179,7 +179,7 @@ func (a *App) palConnItems(q string) []palItem {
 			label = fmt.Sprintf(i18n.T("%d weitere Treffer im Manager zeigen"), rest)
 			hint = i18n.T("genauer tippen")
 		}
-		items = append(items, palItem{group: pgConns, icon: "≡", label: label, hint: hint, more: true,
+		items = append(items, palItem{group: pgConns, icon: ic("more"), label: label, hint: hint, more: true,
 			run: func() tea.Cmd {
 				a.scr = scrManager
 				a.mgr.search.SetValue(strings.TrimSpace(q))

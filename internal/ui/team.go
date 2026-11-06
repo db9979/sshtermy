@@ -419,7 +419,7 @@ func (a *App) viewTeam() string {
 	w := min(110, a.w-2)
 	var b strings.Builder
 	if t.mode == teamShare {
-		b.WriteString(s.Accent.Render(i18n.T(" ⇪ Mit dem Team teilen")) + s.Muted.Render(i18n.T(" · Verbindungen wählen")) + "\n\n")
+		b.WriteString(s.Accent.Render(i18n.T(" ↑ Mit dem Team teilen")) + s.Muted.Render(i18n.T(" · Verbindungen wählen")) + "\n\n")
 		b.WriteString(s.Muted.Render(i18n.T(" Passwörter, Keys und eigene Einstellungen bleiben bei dir. Jump-Hosts kommen automatisch mit.")) + "\n\n")
 	} else {
 		p := t.pkg
@@ -427,7 +427,7 @@ func (a *App) viewTeam() string {
 		if from == "" {
 			from = "?"
 		}
-		b.WriteString(s.Accent.Render(i18n.T(" ⇩ Team-Paket übernehmen")) + s.Muted.Render(fmt.Sprintf(i18n.T(" · von %s, %s"), from, p.Created.Local().Format("02.01.2006 15:04"))) + "\n\n")
+		b.WriteString(s.Accent.Render(i18n.T(" ↓ Team-Paket übernehmen")) + s.Muted.Render(fmt.Sprintf(i18n.T(" · von %s, %s"), from, p.Created.Local().Format("02.01.2006 15:04"))) + "\n\n")
 		var extra []string
 		if n := len(p.Runbooks); n > 0 {
 			extra = append(extra, fmt.Sprintf(i18n.T("%d Runbooks"), n))
@@ -446,7 +446,7 @@ func (a *App) viewTeam() string {
 		}
 		if len(extra) > 0 {
 			b.WriteString(" " + s.Text.Render(i18n.T("Außerdem: ")+strings.Join(extra, " · ")) + "\n")
-			b.WriteString(" " + s.Warn.Render(i18n.T("⚑ Befehle aus fremden Runbooks und Schnellbefehlen vor dem Ausführen lesen; sshTermy fragt trotzdem bei jedem Schritt.")) + "\n")
+			b.WriteString(" " + s.Warn.Render(i18n.T("! Befehle aus fremden Runbooks und Schnellbefehlen vor dem Ausführen lesen; sshTermy fragt trotzdem bei jedem Schritt.")) + "\n")
 		}
 		b.WriteString("\n")
 	}

@@ -37,7 +37,7 @@ func TestSessionBarNarrow(t *testing.T) {
 		if lipgloss.Width(bar) > w {
 			t.Errorf("w=%d: Kopfzeile %d breit", w, lipgloss.Width(bar))
 		}
-		if !strings.Contains(bar, "✦") {
+		if !strings.Contains(bar, "◆") {
 			t.Errorf("w=%d: KI-Anzeige fehlt: %q", w, bar)
 		}
 		if strings.Contains(bar, model[:3]) && !strings.Contains(bar, trunc(model, 22)) {

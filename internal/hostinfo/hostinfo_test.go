@@ -23,7 +23,7 @@ func TestParseServer(t *testing.T) {
 	if got := Duration(s.Uptime); got != "12 T 5 Std" {
 		t.Fatalf("uptime %q", got)
 	}
-	if !strings.Contains(s.Summary(), "⬆5") {
+	if !strings.Contains(s.Summary(), "↑5") {
 		t.Fatalf("summary %q", s.Summary())
 	}
 }

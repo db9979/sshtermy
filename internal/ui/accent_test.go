@@ -63,7 +63,7 @@ func TestDeviceClass(t *testing.T) {
 			t.Errorf("%+v: %q, erwartet %q", c.c.Profile, got, c.want)
 		}
 	}
-	for d := range devIcons {
+	for d := range devTags {
 		if devName(d) == "" {
 			t.Errorf("kein Name für %q", d)
 		}

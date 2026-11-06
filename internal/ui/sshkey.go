@@ -338,7 +338,7 @@ func (a *App) sshKeyDone(m sshKeyDoneMsg) tea.Cmd {
 		}
 	}
 	if m.err != nil {
-		lines = append(lines, a.s.Danger.Render("✗ ")+m.step+": "+m.err.Error())
+		lines = append(lines, a.s.Danger.Render("× ")+m.step+": "+m.err.Error())
 		if m.wrote {
 			lines = append(lines, a.s.Muted.Render(i18n.T("Die Schlüsseldatei bleibt liegen; nochmal mit „vorhandenen nehmen“ versuchen.")))
 		} else if j.embed && j.gen {

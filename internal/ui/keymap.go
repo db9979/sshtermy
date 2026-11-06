@@ -215,7 +215,7 @@ func keyLabel(k string) string {
 		case p == "tab":
 			parts[i] = "Tab"
 		case p == "backspace":
-			parts[i] = "⌫"
+			parts[i] = "Bksp"
 		case p == "delete":
 			parts[i] = i18n.T("Entf")
 		case p == "@":

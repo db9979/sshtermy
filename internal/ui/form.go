@@ -280,7 +280,7 @@ func (f *form) view(s Styles, width int, z *zones) string {
 		}
 	}
 	if f.err != "" {
-		b.WriteString("\n" + s.Danger.Render("✗ "+f.err) + "\n")
+		b.WriteString("\n" + s.Danger.Render("× "+f.err) + "\n")
 	}
 	return b.String()
 }

@@ -283,7 +283,7 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 	if len(danger) > 0 {
 		border = st.T.Danger
 	}
-	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(border).Padding(0, 1).Width(w)
+	box := lipgloss.NewStyle().Border(frameBorder).BorderForeground(border).Padding(0, 1).Width(w)
 	if len(danger) > 0 && sel {
 		box = box.Border(lipgloss.ThickBorder())
 	}
@@ -301,7 +301,7 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 	}
 	head := num + label
 	if len(danger) > 0 {
-		head += "  " + st.Danger.Render("⚠ "+trunc(danger[0].Reason, max(8, inner-20)))
+		head += "  " + st.Danger.Render("▲ "+trunc(danger[0].Reason, max(8, inner-20)))
 	}
 
 	// Code mit Syntaxfarben, lange Zeilen umbrechen

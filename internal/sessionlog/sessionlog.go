@@ -345,7 +345,7 @@ func (l *Log) Markdown() string {
 	for i, e := range l.Entries {
 		mark := ""
 		if e.Failed {
-			mark = i18n.T(" ✗ fehlgeschlagen")
+			mark = i18n.T(" × fehlgeschlagen")
 			if e.Exit != nil {
 				mark += fmt.Sprintf(i18n.T(" (Exit %d)"), *e.Exit)
 			}
@@ -438,7 +438,7 @@ func (l *Log) Cast(idle time.Duration) []byte {
 			b.Out(strings.ReplaceAll(strings.ReplaceAll(out, "\r\n", "\n"), "\n", "\r\n") + "\r\n")
 		}
 		if e.Failed {
-			b.Out("\x1b[31m" + i18n.T("✗ fehlgeschlagen") + "\x1b[0m\r\n")
+			b.Out("\x1b[31m" + i18n.T("× fehlgeschlagen") + "\x1b[0m\r\n")
 		}
 		dur := time.Duration(e.Duration * float64(time.Second))
 		last = e.At.Add(dur)

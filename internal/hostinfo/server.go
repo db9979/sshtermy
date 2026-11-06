@@ -231,7 +231,7 @@ func (s Server) Summary() string {
 		parts = append(parts, "up "+Duration(s.Uptime))
 	}
 	if s.Updates > 0 {
-		parts = append(parts, fmt.Sprintf("⬆%d", s.Updates))
+		parts = append(parts, fmt.Sprintf("↑%d", s.Updates))
 	}
 	return strings.Join(parts, " · ")
 }

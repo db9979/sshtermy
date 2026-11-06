@@ -583,7 +583,7 @@ func (a *App) hostBadge(s *session) string {
 	style := st.Badge
 	if len(h.alerts) > 0 && !h.busy {
 		style = style.Foreground(st.T.Warn)
-		txt = "⚠" + strings.TrimPrefix(txt, "▤")
+		txt = "▲" + strings.TrimPrefix(txt, "▤")
 	}
 	return a.keyZone(a.keys.label(actHost), style.Render(trunc(txt, 46)))
 }
@@ -654,7 +654,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "Updates")) + st.Warn.Render(v) + st.Muted.Render(" · "+srv.UpdateTool) + "\n")
 		}
 		if srv.RebootNeeded {
-			b.WriteString(st.Warn.Render(i18n.T("⟳ Neustart erforderlich")) + "\n")
+			b.WriteString(st.Warn.Render(i18n.T("◌ Neustart erforderlich")) + "\n")
 		}
 		a.viewAlerts(b, s, w)
 		b.WriteString("\n" + st.Muted.Render(i18n.T("Stand ")+srv.At.Format("15:04:05")+i18n.T(" · r aktualisieren")) + "\n")
@@ -738,7 +738,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 // viewAlerts: Warnzeilen über der Schwelle.
 func (a *App) viewAlerts(b *strings.Builder, s *session, w int) {
 	for _, al := range s.host.alerts {
-		b.WriteString(a.s.Warn.Render(wrap("⚠ "+al.Text(), w)) + "\n")
+		b.WriteString(a.s.Warn.Render(wrap("▲ "+al.Text(), w)) + "\n")
 	}
 }
 

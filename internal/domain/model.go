@@ -218,10 +218,10 @@ func (c Connection) Addr() string {
 }
 
 // ShowAddr: Adresse für die Anzeige. Über einen Vermittler der Name des
-// Systems mit „⇌“ statt des internen Namens für known_hosts.
+// Systems mit „↔“ statt des internen Namens für known_hosts.
 func (c Connection) ShowAddr() string {
 	if c.ViaRelay() {
-		return c.Host + " ⇌"
+		return c.Host + " ↔"
 	}
 	return c.Addr()
 }
@@ -412,7 +412,7 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast" | "kontrasthell"
+	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast" | "kontrasthell" | "matrix" | "bernstein" | "neon" | "eigene"
 	UseDPAPI     bool   `json:"use_dpapi"`                // Windows: Store-Schlüssel zusätzlich per DPAPI
 	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
 	Language     string `json:"language"`                 // "de" | "en"
@@ -431,9 +431,30 @@ type Settings struct {
 	// automatisch nachgefragt werden.
 	Monitor MonitorConfig `json:"monitor,omitempty"`
 
+	// Colors: eigene Farben (Theme "eigene"), wird mit dem Sync übertragen.
+	Colors *CustomColors `json:"colors,omitempty"`
+	// Icons: Symbolstil der Menüs. "" = Text-Tags wie [+] (läuft mit jeder
+	// Schrift), "nerd" = Nerd-Font-Symbole. Gehört zum Rechner (Schrift), kein Sync.
+	Icons string `json:"icons,omitempty"`
+
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`
+}
+
+// CustomColors: eigene Farben als "#rrggbb". Base ist das Theme, von dem
+// sie ausgehen; leere Felder nehmen dessen Farbe.
+type CustomColors struct {
+	Base   string `json:"base,omitempty"`
+	Bg     string `json:"bg,omitempty"`
+	Text   string `json:"text,omitempty"`
+	Muted  string `json:"muted,omitempty"`
+	Border string `json:"border,omitempty"`
+	Accent string `json:"accent,omitempty"`
+	AI     string `json:"ai,omitempty"`
+	OK     string `json:"ok,omitempty"`
+	Warn   string `json:"warn,omitempty"`
+	Danger string `json:"danger,omitempty"`
 }
 
 // MonitorConfig: Warnschwellen für CPU, RAM und Platte in Prozent (0 =

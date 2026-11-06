@@ -62,7 +62,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   (OneDrive, Dropbox, iCloud, Syncthing) oder direkt über dein NAS (Synology, QNAP, Nextcloud, jeder WebDAV-Server)
 - **Import** bestehender Verbindungen aus `~/.ssh/config`, PuTTY (Registry oder `.reg`-Export) und MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), mit Jump-Hosts und Ordnern, ein Tastendruck (i im Manager)
-- **Themes** Dunkel, Hell und Hochkontrast (a im Manager) und **frei belegbare Tastenkürzel** (b im Manager)
+- **Themes** Dunkel, Hell, Hochkontrast, Matrix, Bernstein und Neon (a im Manager), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
 - **Deutsch und Englisch**: Sprache in der Palette („Sprache“/„Language“) oder im Über-Dialog (F12 → `l`) umschalten;
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Versionierung und Auto-Update** aus GitHub Releases (signiert)
@@ -178,8 +178,17 @@ unverschlüsselt in der Datei `language` im Konfigurationsordner, damit schon de
 Ohne diese Datei entscheidet die Systemsprache (`LANG`/`LC_ALL`, unter Windows die Anzeigesprache): Deutsch bei
 einem deutschen System, sonst Englisch. Die Hinweise an die KI bleiben deutsch; bei Englisch antwortet sie englisch.
 
-**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast (oder Palette → „Aussehen“). Die Schriftgröße
-gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − unter macOS.
+**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast → Matrix (grün) → Bernstein (Retro) → Neon (oder
+Palette → Einstellungen › „Aussehen“). **Farben anpassen** im selben Untermenü: Vorlage wählen, dann jede Farbe mit
+←/→ (Farbton), +/− (Helligkeit) oder als Hex-Wert ändern; die Oberfläche zeigt die Änderung sofort, ein Kontrast-Check
+warnt vor schlecht lesbaren Farben, Strg+S speichert (geht mit dem Sync mit).
+
+**Symbole:** Menüs zeigen Text-Tags wie `[+]` `[k]` `[/]`, im Manager stehen Prompt-Zeichen für das System (`$` Linux,
+`%` macOS, `>` Windows, `#` Switch). Sie bestehen nur aus Zeichen, die jede Terminalschrift hat, darum sieht nichts
+verrutscht aus. Wer eine Nerd Font nutzt (z. B. „Cascadia Mono NF“), schaltet unter Einstellungen ›
+„Nerd-Font-Symbole“ echte Bildsymbole ein; der Schalter gilt pro Rechner.
+
+Die Schriftgröße gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − unter macOS.
 
 **Import** (i im Manager): sshTermy sucht selbst nach `~/.ssh/config` (mit `Include`, `Host *`-Vorgaben und
 `ProxyJump`), den PuTTY-Sitzungen in der Registry und `%APPDATA%\MobaXterm\MobaXterm.ini`. Neue Ziele sind
@@ -209,7 +218,7 @@ Telnet ist unverschlüsselt, nur in vertrauenswürdigen Netzen verwenden.
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
 **Befehlspalette (Strg+Leertaste):** ein Feld für alles, Text wird zum Ziel oder zur Frage, darunter Vorschläge, Tunnel, Verbindungen und Aktionen.
-Schalter, Aussehen, Sprache und Einrichtung liegen im Untermenü **⚙ Einstellungen ›** (rechts steht „an“/„aus“, die Palette bleibt beim Umschalten offen), Tastenkürzel, Tour, Neuigkeiten und Update unter **? Hilfe & Info ›**. Wer tippt, findet auch die Punkte aus den Untermenüs direkt; Esc oder ← führt zurück.
+Schalter, Aussehen, Sprache und Einrichtung liegen im Untermenü **[:] Einstellungen ›** (rechts steht „an“/„aus“, die Palette bleibt beim Umschalten offen), Tastenkürzel, Tour, Neuigkeiten und Update unter **[?] Hilfe & Info ›**. Wer tippt, findet auch die Punkte aus den Untermenüs direkt; Esc oder ← führt zurück.
 
 ![Befehlspalette](docs/bilder/09-palette.png)
 

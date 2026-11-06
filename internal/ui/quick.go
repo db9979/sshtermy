@@ -257,7 +257,7 @@ func (a *App) quickModalView(m *modal) string {
 		if c != "" {
 			txt = st.Text.Render(trunc(c, cw-12))
 			if f := safety.Check(c, kind); len(f) > 0 {
-				txt = st.Danger.Render(trunc(c, cw-14) + " ⚠")
+				txt = st.Danger.Render(trunc(c, cw-14) + " ▲")
 			}
 		}
 		row := " " + st.Accent.Render(key) + "  " + txt
@@ -286,7 +286,7 @@ func (a *App) quickModalView(m *modal) string {
 			cnt += strings.Repeat(" ", max(0, 5-len([]rune(cnt))))
 			txt := st.Text.Render(trunc(u.Cmd, cw-12))
 			if f := safety.Check(u.Cmd, kind); len(f) > 0 {
-				txt = st.Danger.Render(trunc(u.Cmd, cw-14) + " ⚠")
+				txt = st.Danger.Render(trunc(u.Cmd, cw-14) + " ▲")
 			}
 			row := " " + st.Muted.Render(cnt) + "  " + txt
 			row += strings.Repeat(" ", max(0, cw-lipgloss.Width(row)))
@@ -317,9 +317,9 @@ func (a *App) quickModalView(m *modal) string {
 		}
 	}
 	if m.armed >= 0 {
-		lines = append(lines, "", st.Danger.Render(i18n.T("⚠ gefährlich: nochmal ⏎ zum Ausführen")))
+		lines = append(lines, "", st.Danger.Render(i18n.T("▲ gefährlich: nochmal ⏎ zum Ausführen")))
 	}
-	return st.dialog(dialog{icon: "↯", title: i18n.T("Schnellbefehle"), sub: sub, body: strings.Join(lines, "\n"), keys: keys}, a.w)
+	return st.dialog(dialog{icon: "►", title: i18n.T("Schnellbefehle"), sub: sub, body: strings.Join(lines, "\n"), keys: keys}, a.w)
 }
 
 func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
@@ -330,7 +330,7 @@ func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
 			continue
 		}
 		i, c := i, c
-		it := palItem{group: pgQuick, icon: "↯", label: c, hint: a.quickLabel(i),
+		it := palItem{group: pgQuick, icon: ic("quick"), label: c, hint: a.quickLabel(i),
 			run: func() tea.Cmd { s.panelFocus = false; return a.runQuick(s, i) }}
 		if f := safety.Check(c, a.safetyKind(s)); len(f) > 0 {
 			it.danger = f[0].Reason

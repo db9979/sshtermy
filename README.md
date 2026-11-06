@@ -62,7 +62,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   (OneDrive, Dropbox, iCloud, Syncthing) or directly via your NAS (Synology, QNAP, Nextcloud, any WebDAV server)
 - **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export) and MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), with jump hosts and folders, one key press (i in the manager)
-- **Themes** dark, light and high contrast (a in the manager) and **freely assignable keyboard shortcuts** (b in the manager)
+- **Themes** dark, light, high contrast, Matrix, Amber and Neon (a in the manager), **custom colours** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
 - **English and German**: switch the language in the palette („Language“/„Sprache“) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Versioning and auto-update** from GitHub Releases (signed)
@@ -179,8 +179,17 @@ in the file `language` in the config folder so that the unlock screen already kn
 language decides (`LANG`/`LC_ALL`, on Windows the display language): German on a German system, otherwise English.
 The instructions to the AI stay in German internally; with English selected, the AI answers in English.
 
-**Appearance:** a in the manager switches dark → light → high contrast (or palette → „Appearance“). The font size
-belongs to the terminal window: Ctrl + plus/minus in Windows Terminal, ⌘ + / − on macOS.
+**Appearance:** a in the manager switches dark → light → high contrast → Matrix (green) → Amber (retro) → Neon (or
+palette → Settings › "Appearance"). **Customise colours** in the same submenu: pick a template, then change each colour
+with ←/→ (hue), +/− (brightness) or as a hex value; the whole UI previews it live, a contrast check warns about hard to
+read colours, Ctrl+S saves (synced to your other computers).
+
+**Icons:** menus use text tags like `[+]` `[k]` `[/]`, the manager shows the system's prompt character (`$` Linux,
+`%` macOS, `>` Windows, `#` switch). They only use characters every terminal font has, so nothing looks misaligned.
+With a Nerd Font (e.g. "Cascadia Mono NF") switch on Settings › "Nerd Font icons" for real pictograms; the toggle is
+per computer.
+
+The font size belongs to the terminal window: Ctrl + plus/minus in Windows Terminal, ⌘ + / − on macOS.
 
 **Import** (i in the manager): sshTermy looks for `~/.ssh/config` (with `Include`, `Host *` defaults and
 `ProxyJump`), the PuTTY sessions in the registry and `%APPDATA%\MobaXterm\MobaXterm.ini` by itself. New targets are
@@ -211,7 +220,7 @@ The screenshots show the German interface; the English one looks the same.
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
 **Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question, below it suggestions, tunnels, connections and actions.
-Toggles, look, language and setup live in the **⚙ Settings ›** submenu (each toggle shows "on"/"off" and the palette stays open while you flip them); shortcuts, tour, news and update are under **? Help & info ›**. Typing still finds items inside the submenus directly; Esc or ← goes back.
+Toggles, look, language and setup live in the **[:] Settings ›** submenu (each toggle shows "on"/"off" and the palette stays open while you flip them); shortcuts, tour, news and update are under **[?] Help & info ›**. Typing still finds items inside the submenus directly; Esc or ← goes back.
 
 ![Command palette](docs/bilder/09-palette.png)
 

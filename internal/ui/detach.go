@@ -131,7 +131,7 @@ func (a *App) onDetachConn(m detachConnMsg) {
 	s.term.MuteReplies(true) // das echte Terminal dort antwortet selbst
 	s.scroll, s.sel, s.selecting = 0, nil, false
 	a.resize(s)
-	a.flash("↗ " + s.conn.Alias + i18n.T(" läuft jetzt in eigenem Fenster"))
+	a.flash("↑ " + s.conn.Alias + i18n.T(" läuft jetzt in eigenem Fenster"))
 
 	// Tasten und Größe aus dem Fenster
 	sid, ev, c := s.id, a.events, m.conn
@@ -166,7 +166,7 @@ func (a *App) onDetachEnd(m detachEndMsg) {
 		return
 	}
 	a.reattach(s, "")
-	a.flash("↙ " + s.conn.Alias + i18n.T(" ist zurück im Tab"))
+	a.flash("↓ " + s.conn.Alias + i18n.T(" ist zurück im Tab"))
 }
 
 // reattach: Fenster entlassen (mit Meldung) und Größe wieder übernehmen.
@@ -240,7 +240,7 @@ func (a *App) detachedView(s *session, cols, rows int) string {
 	if d.conn == nil {
 		head = st.AI.Render(i18n.T("⠿ Öffne eigenes Fenster für ") + s.conn.Alias + " …")
 	} else {
-		head = st.AI.Render("↗ "+s.conn.Alias+i18n.T(" läuft in eigenem Fenster")) + "\n" +
+		head = st.AI.Render("↑ "+s.conn.Alias+i18n.T(" läuft in eigenem Fenster")) + "\n" +
 			st.Muted.Render(fmt.Sprintf(i18n.T("seit %s · %d×%d · Fenster schließen holt den Tab zurück"), d.since.Format("15:04"), d.cols, d.rows))
 	}
 	hints := a.hints(st.Muted, [2]string{"⏎", i18n.T("hierher zurückholen")}, [2]string{a.keys.label(actManager), i18n.T("Manager")})
@@ -252,7 +252,7 @@ func (a *App) detachedView(s *session, cols, rows int) string {
 func (a *App) detachedKey(s *session, key string) tea.Cmd {
 	if key == "enter" || a.keys.is(actDetach, key) {
 		a.reattach(s, i18n.T("Tab in sshTermy zurückgeholt."))
-		a.flash("↙ " + s.conn.Alias + i18n.T(" ist zurück im Tab"))
+		a.flash("↓ " + s.conn.Alias + i18n.T(" ist zurück im Tab"))
 	}
 	return nil
 }

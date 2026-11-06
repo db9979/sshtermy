@@ -32,7 +32,7 @@ var enPalette = map[string]string{
 	"Sitzungsprotokoll schreiben":                          "Write session log",
 	"Einfügeschutz: Vorschau bei mehreren Zeilen":          "Paste guard: preview multi-line pastes",
 	"Gefahren-Check auf allen Hosts (sonst nur Produktiv)": "Danger check on all hosts (otherwise production only)",
-	"⚙ Einstellungen ›":                                    "⚙ Settings ›",
+	"◈ Einstellungen ›":                                    "◈ Settings ›",
 	"Schalter, Aussehen, Sprache":                          "toggles, look, language",
 	"Esc / ← (Untermenü)":                                  "Esc / ← (submenu)",
 	"Startanimation":                                       "Startup animation",

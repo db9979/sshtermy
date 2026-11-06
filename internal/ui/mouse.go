@@ -218,7 +218,7 @@ func keyFromLabel(label string) (tea.KeyPressMsg, bool) {
 	}
 	named := map[string]rune{
 		"⏎": tea.KeyEnter, "Enter": tea.KeyEnter, "Esc": tea.KeyEscape, "Tab": tea.KeyTab,
-		"Space": tea.KeySpace, "Leertaste": tea.KeySpace, "Entf": tea.KeyDelete, "⌫": tea.KeyBackspace,
+		"Space": tea.KeySpace, "Leertaste": tea.KeySpace, "Entf": tea.KeyDelete, "Bksp": tea.KeyBackspace,
 		"↑": tea.KeyUp, "↓": tea.KeyDown, "←": tea.KeyLeft, "→": tea.KeyRight,
 		"Bild↑": tea.KeyPgUp, "Bild↓": tea.KeyPgDown, "Pos1": tea.KeyHome, "Ende": tea.KeyEnd,
 		"Del": tea.KeyDelete, "PgUp": tea.KeyPgUp, "PgDn": tea.KeyPgDown, "Home": tea.KeyHome, "End": tea.KeyEnd,
@@ -547,9 +547,9 @@ func (a *App) modalKeys() [][2]string {
 		} else {
 			keys = append(keys, [2]string{"c", i18n.T("nach Updates suchen")})
 		}
-		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("☕ Kaffee spendieren")}, [2]string{"l", langTarget()}, [2]string{"Esc", i18n.T("schließen")})
+		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("♥ Kaffee spendieren")}, [2]string{"l", langTarget()}, [2]string{"Esc", i18n.T("schließen")})
 	case mChangelog:
-		keys = [][2]string{{"b", i18n.T("☕ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
+		keys = [][2]string{{"b", i18n.T("♥ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
 	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", i18n.T("schließen")}}
 	case mLLM:

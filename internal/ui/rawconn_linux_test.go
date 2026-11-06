@@ -89,7 +89,7 @@ func TestSerialSession(t *testing.T) {
 	if s.host.err != "" || s.host.sw == nil {
 		t.Fatalf("Übersicht über die Konsole: %q", s.host.err)
 	}
-	if v, _ := a.viewTerminal(); !strings.Contains(v, "⌁ pts/") {
+	if v, _ := a.viewTerminal(); !strings.Contains(v, "≈ pts/") {
 		t.Fatal("Konsolen-Plakette fehlt")
 	}
 	if cmd := a.sendBreak(s); cmd != nil {

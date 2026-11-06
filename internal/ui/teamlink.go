@@ -215,7 +215,7 @@ func linkName(path string) string {
 func linkStatus(l domain.TeamLink) string {
 	switch {
 	case l.LastErr != "":
-		return "✗ " + trunc(l.LastErr, 40)
+		return "× " + trunc(l.LastErr, 40)
 	case !l.LastRun.IsZero():
 		return "✓ " + ago(l.LastRun)
 	}
@@ -233,9 +233,9 @@ func (a *App) openTeamLinks() tea.Cmd {
 	var items []menuItem
 	for _, l := range links {
 		l := l
-		icon, what := "⇩", i18n.T("Abo")
+		icon, what := "↓", i18n.T("Abo")
 		if l.Role == domain.TeamPublish {
-			icon, what = "⇪", i18n.T("Veröffentlicht")
+			icon, what = "↑", i18n.T("Veröffentlicht")
 		}
 		items = append(items, menuItem{label: icon + " " + what + ": " + l.Name, hint: linkStatus(l), run: func() tea.Cmd { return a.openTeamLink(l) }})
 	}

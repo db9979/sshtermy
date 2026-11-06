@@ -249,18 +249,7 @@ func isAlnum(b byte) bool {
 	return b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9'
 }
 
-// Symbole bewusst aus einfachen Unicode-Blöcken (eine Spalte breit, auch in
-// Consolas, Cascadia und Menlo vorhanden), keine Emojis und keine Nerd-Font.
-var devIcons = map[devClass]string{
-	devUnknown:  "·",
-	devLinux:    "❯",
-	devMac:      "⌘",
-	devBSD:      "❯",
-	devWindows:  "⊞",
-	devSwitch:   "▦",
-	devRouter:   "⊕",
-	devFirewall: "▤",
-}
+// Gerätesymbole: devGlyph in icons.go (Text-Tags oder Nerd Font).
 
 func devName(d devClass) string {
 	return map[devClass]string{
@@ -289,7 +278,7 @@ func (a *App) devColor(d devClass) color.Color {
 // devIcon: Symbol der Verbindung und seine Farbe.
 func (a *App) devIcon(c domain.Connection) (string, color.Color) {
 	d := deviceClass(c)
-	return devIcons[d], a.devColor(d)
+	return devGlyph(d), a.devColor(d)
 }
 
 // glyph färbt ein einzelnes Zeichen, optional auf Hintergrund.

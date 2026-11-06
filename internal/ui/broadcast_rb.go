@@ -168,7 +168,7 @@ func (a *App) viewBcVars() string {
 	if rb := b.book(); rb != nil {
 		title = "▶ " + rb.Name
 	}
-	o.WriteString(s.Accent.Render(i18n.T("⇉ Variablen ausfüllen")) + s.Muted.Render("  "+trunc(title, w-30)) + "\n\n")
+	o.WriteString(s.Accent.Render(i18n.T("» Variablen ausfüllen")) + s.Muted.Render("  "+trunc(title, w-30)) + "\n\n")
 	for i, st := range b.stepList() {
 		o.WriteString(s.Muted.Render(fmt.Sprintf("%d. ", i+1)) + s.Code.Render(trunc(st, w-10)) + "\n")
 	}
@@ -188,7 +188,7 @@ func (a *App) viewBcVars() string {
 		o.WriteString("\n" + s.Muted.Render(i18n.T("{{host}}, {{alias}}, {{user}} und {{port}} setzt sshTermy pro Host ein.")) + "\n")
 	}
 	if b.err != "" {
-		o.WriteString("\n" + s.Danger.Render("✗ "+b.err) + "\n")
+		o.WriteString("\n" + s.Danger.Render("× "+b.err) + "\n")
 	}
 	o.WriteString("\n" + a.hints(s.Muted, [2]string{"⏎", i18n.T("nächstes Feld")}, [2]string{"Strg+S", i18n.T("weiter")}, [2]string{"Esc", i18n.T("zurück")}))
 	return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, s.Panel.Width(w).Render(o.String()))
@@ -392,7 +392,7 @@ func (a *App) reviewLines(hosts []domain.Connection, w int) []string {
 			if sum == "" {
 				sum = fmt.Sprintf(i18n.T("%d Schritte passen nicht"), hr.r.Changed())
 			}
-			out = append(out, s.Warn.Render("⇆ ")+name+pad+s.Warn.Render(trunc(sum, w-26)))
+			out = append(out, s.Warn.Render("↔ ")+name+pad+s.Warn.Render(trunc(sum, w-26)))
 			shown := 0
 			for i, st := range hr.r.Steps {
 				if st.OK || i >= len(hr.steps) {
@@ -407,7 +407,7 @@ func (a *App) reviewLines(hosts []domain.Connection, w int) []string {
 				if st.Adapted.Command != "" {
 					to = s.Code.Render(trunc(st.Adapted.Command, max(10, (w-30)/2)))
 					if len(st.Adapted.Danger) > 0 {
-						to = s.Danger.Render(trunc(st.Adapted.Command, max(10, (w-30)/2)) + " ⚠")
+						to = s.Danger.Render(trunc(st.Adapted.Command, max(10, (w-30)/2)) + " ▲")
 					}
 				}
 				from := s.Muted.Render(fmt.Sprintf("%d. ", i+1) + trunc(hr.steps[i], max(10, (w-30)/2)))
