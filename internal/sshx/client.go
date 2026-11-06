@@ -285,6 +285,13 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		}
 		return nil, err
 	}
+	if relayKey != nil && len(cfg.HostKeyAlgorithms) == 0 {
+		// Unbekannter Host: genau den Schlüsseltyp verlangen, den der Anker
+		// gemeldet hat. Sonst bietet ein Server mit mehreren Host-Keys
+		// (ed25519 + ecdsa) zuerst ecdsa an, der Anker meldet aber ed25519,
+		// und die Verbindung wird fälschlich als Fälschung abgelehnt.
+		cfg.HostKeyAlgorithms = algosFor(relayKey.Type())
+	}
 
 	if c.ViaRelay() {
 		// raw kommt schon vom Vermittler

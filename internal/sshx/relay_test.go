@@ -2,6 +2,10 @@ package sshx
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
+	"crypto/rand"
 	"errors"
 	"net"
 	"path/filepath"
@@ -55,4 +59,63 @@ func TestRelayHostKey(t *testing.T) {
 	if _, err := Dial(context.Background(), c, Options{HostKeys: &HostKeyStore{}}); err == nil {
 		t.Fatal("ohne RelayDialer")
 	}
+}
+
+// Server mit mehreren Host-Keys (wie jedes OpenSSH: ecdsa + ed25519): der Anker
+// meldet ed25519, der Client muss genau diesen Typ aushandeln.
+func TestRelayHostKeyMultiKeyServer(t *testing.T) {
+	_, edPriv, _ := ed25519.GenerateKey(rand.Reader)
+	ecPriv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	edS, _ := ssh.NewSignerFromKey(edPriv)
+	ecS, _ := ssh.NewSignerFromKey(ecPriv)
+	cfg := &ssh.ServerConfig{PasswordCallback: func(ssh.ConnMetadata, []byte) (*ssh.Permissions, error) { return nil, nil }}
+	cfg.AddHostKey(ecS)
+	cfg.AddHostKey(edS)
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { ln.Close() })
+	go func() {
+		for {
+			nc, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go func() {
+				sc, chans, reqs, err := ssh.NewServerConn(nc, cfg)
+				if err != nil {
+					return
+				}
+				go ssh.DiscardRequests(reqs)
+				go func() {
+					for nch := range chans {
+						nch.Reject(ssh.Prohibited, "nein")
+					}
+				}()
+				_ = sc.Wait()
+			}()
+		}
+	}()
+	addr := ln.Addr().String()
+	good, err := relay.ProbeHostKey(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(good, ssh.KeyAlgoED25519) {
+		t.Fatalf("Anker meldet %q, erwartet ed25519", good)
+	}
+	hs, _ := NewHostKeyStore(filepath.Join(t.TempDir(), "known_hosts"))
+	c := domain.Connection{Alias: "r", Host: "web", RelayID: "rabc", RelaySystem: "a_1", Username: "u",
+		Auth: domain.AuthPassword, Password: "x", Device: domain.DeviceServer}
+	cl, err := Dial(context.Background(), c, Options{HostKeys: hs, Timeout: 5 * time.Second,
+		Prompt: func(string, string, string) bool { t.Error("Rückfrage trotz gemeldetem Host-Key"); return false },
+		Relay: func(ctx context.Context, cc domain.Connection) (net.Conn, string, error) {
+			nc, err := net.Dial("tcp", addr)
+			return nc, good, err
+		}})
+	if err != nil {
+		t.Fatalf("Server mit ecdsa+ed25519: %v", err)
+	}
+	cl.Close()
 }
