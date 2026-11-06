@@ -72,7 +72,21 @@ The AI interaction concept (suggestions, goal mode, fixed danger rules) comes fr
 
 ## Installation
 
-Download the matching file from the [Releases](https://github.com/db9979/sshtermy/releases/latest):
+📖 Guide with animations: **https://db9979.github.io/sshtermy/**
+
+**Package managers** (they also take care of updates):
+
+```
+winget install db9979.sshTermy                                   # Windows (once approved in the winget catalog)
+brew tap db9979/sshtermy https://github.com/db9979/sshtermy      # macOS and Linux
+brew install sshtermy
+echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
+sudo apt update && sudo apt install sshtermy                     # Debian, Ubuntu (amd64, arm64)
+```
+
+Installed via Homebrew or apt, sshTermy does not replace itself but shows the update command instead.
+
+Or download the matching file from the [Releases](https://github.com/db9979/sshtermy/releases/latest):
 
 | System | File |
 |---|---|

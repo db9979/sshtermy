@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sshTermy – SSH-Terminal mit KI-Copilot</title>
+<meta name="description" content="sshTermy ist ein SSH-Terminal (TUI) mit KI-Copilot für Windows, macOS und Linux: Verbindungsmanager, Ziel-Modus, Ghost-Text, SFTP, Tunnel, Broadcast. Idee: Dominik Bornhäußer.">
+<link rel="alternate" hreflang="en" href="../">
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14' fill='%23bb9af7'>◆</text></svg>">
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="logo" href="./"><span>◆</span> sshTermy</a>
+    <nav>
+      <a href="#installieren">Installieren</a>
+      <a href="#rundgang">Rundgang</a>
+      <a href="#funktionen">Funktionen</a>
+      <a href="#ki">KI einrichten</a>
+      <a href="#tasten">Tasten</a>
+      <a href="#updates">Updates</a>
+      <a href="#faq">Fragen</a>
+      <a href="https://github.com/db9979/sshtermy">GitHub</a>
+    </nav>
+    <div class="lang"><a href="../">EN</a> · <b>DE</b></div>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <h1>SSH-Terminal mit <span class="accent">KI-Copilot</span></h1>
+  <p class="lead">Eine kleine Datei für Windows, macOS und Linux. Verbindungsmanager, echtes Terminal, SFTP und Tunnel, dazu eine KI, die Befehle vorschlägt, ein Ziel Schritt für Schritt umsetzt und Fehler erklärt. Jeder Befehl braucht deine Bestätigung.</p>
+  <p class="credit">Idee: Dominik Bornhäußer</p>
+  <div class="buttons">
+    <a class="btn primary" href="#installieren">Installieren</a>
+    <a class="btn" href="https://github.com/db9979/sshtermy/releases/latest">Download</a>
+    <a class="btn coffee" href="https://buymeacoffee.com/zquu1xu570">☕ Kaffee spendieren</a>
+  </div>
+  <figure>
+    <img src="../gifs/goal-de.gif" width="962" height="594" alt="Ziel-Modus: die KI richtet Nginx Schritt für Schritt ein, jeder Befehl wird mit Enter bestätigt">
+    <figcaption>Ziel-Modus (F2): Ziel beschreiben, die KI schlägt immer genau einen Befehl vor, du bestätigst.</figcaption>
+  </figure>
+</section>
+
+<section id="installieren">
+  <h2>Installieren</h2>
+  <p>Wähle dein System. Jeder Weg installiert dasselbe Release von GitHub.</p>
+  <div class="os">
+    <div class="card">
+      <h3>Windows <span class="tag">ARM64 · x64 · x86</span></h3>
+      <p>Mit winget (Windows 11 und 10):</p>
+      <div class="cmd" data-copy="Kopieren"><pre>winget install db9979.sshTermy</pre></div>
+      <p><small>Verfügbar, sobald das Paket im winget-Katalog freigegeben ist.</small></p>
+      <p>Oder die <code>.exe</code> für deinen Prozessor aus den <a href="https://github.com/db9979/sshtermy/releases/latest">Releases</a> laden und im <a href="https://aka.ms/terminal">Windows Terminal</a> starten.</p>
+    </div>
+    <div class="card">
+      <h3>macOS <span class="tag">Apple Silicon · Intel</span></h3>
+      <p>Mit Homebrew:</p>
+      <div class="cmd" data-copy="Kopieren"><pre>brew tap db9979/sshtermy https://github.com/db9979/sshtermy
+brew install sshtermy</pre></div>
+      <p>Oder mit einer Zeile, die zusätzlich <code>~/Applications/sshTermy.app</code> anlegt:</p>
+      <div class="cmd" data-copy="Kopieren"><pre>curl -fsSL https://raw.githubusercontent.com/db9979/sshtermy/main/install.sh | sh</pre></div>
+    </div>
+    <div class="card">
+      <h3>Linux <span class="tag">amd64 · arm64</span></h3>
+      <p>Debian, Ubuntu, Raspberry Pi OS 64 Bit (apt):</p>
+      <div class="cmd" data-copy="Kopieren"><pre>echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
+sudo apt update && sudo apt install sshtermy</pre></div>
+      <p>Homebrew und der Einzeiler von oben gehen auch unter Linux.</p>
+    </div>
+  </div>
+  <p>Danach <code>sshtermy</code> eingeben. Beim ersten Start legst du ein Master-Passwort für deinen verschlüsselten Speicher fest.</p>
+</section>
+
+<section id="rundgang">
+  <h2>Rundgang</h2>
+  <div class="demo">
+    <div class="text">
+      <h3>Entsperren, Host wählen, los</h3>
+      <p>Verbindungen, Passwörter und Schlüssel liegen in einem verschlüsselten Speicher (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI). Der Manager zeigt Ordner, Tags und Details, Enter verbindet. Die Statuszeile zeigt sofort Last, RAM und Platte des Servers.</p>
+    </div>
+    <figure><img src="../gifs/start-de.gif" width="962" height="594" alt="Startanimation, Entsperren mit dem Master-Passwort, Verbinden mit web-01" loading="lazy"></figure>
+  </div>
+  <div class="demo">
+    <div class="text">
+      <h3>Ghost-Text und Fehler erklärt</h3>
+      <p>Beim Tippen ergänzt die KI die Zeile in Grau, Tab übernimmt. Nach jedem Befehl gibt es Folgebefehle (Alt+1…4). Schlägt ein Befehl fehl, fragt Alt+0 die KI nach dem Grund, mit der Ausgabe als Kontext, und 1…9 fügt einen vorgeschlagenen Fix ein.</p>
+    </div>
+    <figure><img src="../gifs/ghost-de.gif" width="962" height="594" alt="Ghost-Text ergänzt systemctl status nginx, der Befehl schlägt fehl, Alt+0 erklärt den Grund und fügt den Fix ein" loading="lazy"></figure>
+  </div>
+  <div class="demo">
+    <div class="text">
+      <h3>Eine Palette für alles</h3>
+      <p><kbd>Strg</kbd>+<kbd>Leertaste</kbd> öffnet die Befehlspalette: Aktionen, Tunnel, Verbindungen und Runbooks. Freier Text wird ein Ziel (Enter) oder eine Frage an die KI (Tab).</p>
+    </div>
+    <figure><img src="../gifs/palette-de.gif" width="962" height="594" alt="Die Befehlspalette filtert Aktionen, dann geht eine Frage mit Terminal-Kontext an die KI" loading="lazy"></figure>
+  </div>
+</section>
+
+<section id="funktionen">
+  <h2>Funktionen</h2>
+  <div class="features">
+    <div class="card"><h3>Verbindungsmanager</h3><p>Ordner, Tags, Jump-Hosts, Import aus <code>~/.ssh/config</code>, PuTTY und MobaXterm.</p></div>
+    <div class="card"><h3>Echtes Terminal</h3><p>xterm-256color, Truecolor, vim, htop und tmux, Scrollback, Tabs, geteilte Ansicht, Suche.</p></div>
+    <div class="card"><h3>Auto-Reconnect</h3><p>Reißt WLAN oder VPN ab, kommt die Sitzung von selbst zurück, mit Tunneln und tmux/screen.</p></div>
+    <div class="card"><h3>Dateien (F5)</h3><p>SFTP über dieselbe Verbindung: links lokal, rechts der Server.</p></div>
+    <div class="card"><h3>Host-Übersicht (F6)</h3><p>CPU, Last, RAM, Platte und Updates bei Servern; Firmware, Ports und VLANs bei Aruba- und Cisco-Switches, mit Konfig-Sicherung und Diff.</p></div>
+    <div class="card"><h3>Tunnel</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) und Webdienste mit einem Klick.</p></div>
+    <div class="card"><h3>Broadcast</h3><p>Ein Befehl oder Runbook parallel auf einer ganzen Gruppe, Ergebnisse nebeneinander.</p></div>
+    <div class="card"><h3>Netzwerk-Scan</h3><p>SSH-Geräte in einem Subnetz finden und als Verbindungen anlegen.</p></div>
+    <div class="card"><h3>Gefahr-Regeln</h3><p>Feste Regeln markieren riskante Befehle rot; sie brauchen zweimal Enter, auch beim Einfügen.</p></div>
+    <div class="card"><h3>Sitzungsprotokoll</h3><p>Verschlüsselt, durchsuchbar, mit KI-Zusammenfassung und Markdown-Export.</p></div>
+    <div class="card"><h3>Sync</h3><p>Ende-zu-Ende-verschlüsselt über OneDrive, Dropbox, iCloud, Syncthing oder WebDAV (Synology, Nextcloud).</p></div>
+    <div class="card"><h3>Systemprofil</h3><p>Kennt Linux-Distributionen, macOS, Windows und Netzwerk-Dialekte, damit die KI passende Befehle vorschlägt.</p></div>
+  </div>
+  <div class="shots">
+    <figure><img src="../bilder/02-manager.png" alt="Verbindungsmanager" loading="lazy"><figcaption>Verbindungsmanager</figcaption></figure>
+    <figure><img src="../bilder/14-host-switch.png" alt="Host-Übersicht eines Switches" loading="lazy"><figcaption>Host-Übersicht eines Switches (F6)</figcaption></figure>
+    <figure><img src="../bilder/12-dateien.png" alt="Dateien per SFTP" loading="lazy"><figcaption>Dateien per SFTP (F5)</figcaption></figure>
+    <figure><img src="../bilder/04-gefahr.png" alt="Gefährlicher Befehl braucht Bestätigung" loading="lazy"><figcaption>Gefahr-Regeln</figcaption></figure>
+  </div>
+</section>
+
+<section id="ki">
+  <h2>KI einrichten</h2>
+  <p>sshTermy spricht mit jedem OpenAI-kompatiblen Endpunkt (<code>/v1/chat/completions</code>): Ollama, vLLM, SGLang, LiteLLM, LocalAI oder OpenAI selbst. Mit einem lokalen Modell bleibt dein Terminal-Inhalt auf deiner eigenen Hardware.</p>
+  <ol>
+    <li>Im Manager <kbd>s</kbd> drücken (KI-Einstellungen).</li>
+    <li>URL eintragen, z. B. <code>http://localhost:11434/v1</code> für Ollama, und einen API-Schlüssel, falls der Endpunkt einen braucht (wird verschlüsselt gespeichert).</li>
+    <li><kbd>Strg</kbd>+<kbd>T</kbd> testet den Endpunkt, <kbd>Strg</kbd>+<kbd>L</kbd> listet die Modelle zur Auswahl.</li>
+  </ol>
+  <p>Der Punkt oben rechts zeigt, ob die KI erreichbar ist (grün, gelb bei langsamer Antwort, rot bei Fehler). Die KI hat keine eigenen Werkzeuge: sie schlägt nur vor, du entscheidest, was läuft. Passwörter und Geheimnisse werden vor dem Senden aus dem Kontext entfernt.</p>
+</section>
+
+<section id="tasten">
+  <h2>Tasten</h2>
+  <table>
+    <tr><th>Taste</th><th>Wirkung</th></tr>
+    <tr><td><kbd>Strg</kbd>+<kbd>Leertaste</kbd></td><td>Befehlspalette</td></tr>
+    <tr><td><kbd>Tab</kbd> / <kbd>→</kbd></td><td>Ghost-Text übernehmen</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd></td><td>Folgebefehl einfügen</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>Nach einem Fehler: Ursache und Fix</td></tr>
+    <tr><td><kbd>F2</kbd></td><td>Ziel-Modus (Agent)</td></tr>
+    <tr><td><kbd>F3</kbd></td><td>KI fragen, mit Terminal-Kontext</td></tr>
+    <tr><td><kbd>F4</kbd> / <kbd>F5</kbd> / <kbd>F6</kbd></td><td>Tunnel / Dateien (SFTP) / Host-Übersicht</td></tr>
+    <tr><td><kbd>F9</kbd>, <kbd>⇧</kbd>+<kbd>F1</kbd>…<kbd>F8</kbd></td><td>Schnellbefehle</td></tr>
+    <tr><td><kbd>F10</kbd></td><td>Zurück zum Manager (Sitzungen laufen weiter)</td></tr>
+    <tr><td><kbd>F1</kbd> / <kbd>F12</kbd> / <kbd>Strg</kbd>+<kbd>Q</kbd></td><td>Hilfe / Über und Update / Beenden</td></tr>
+  </table>
+  <p>Alle Tasten lassen sich ändern: <kbd>b</kbd> im Manager. Die ganze Liste steht in der <a href="https://github.com/db9979/sshtermy/blob/main/README.de.md">README</a> und in der App (<kbd>F1</kbd>).</p>
+</section>
+
+<section id="updates">
+  <h2>Updates</h2>
+  <p>Ein direkter Download oder der Einzeiler aktualisiert sich selbst: sshTermy fragt einmal am Tag bei GitHub nach, prüft die Prüfsumme und tauscht die Datei aus (<kbd>F12</kbd> → <kbd>u</kbd> oder <code>sshtermy --update</code>).</p>
+  <p>Über eine Paketquelle installiert, aktualisiert die Paketquelle:</p>
+  <table>
+    <tr><td>Homebrew</td><td><code>brew upgrade sshtermy</code></td></tr>
+    <tr><td>apt</td><td><code>sudo apt update && sudo apt upgrade</code></td></tr>
+    <tr><td>winget</td><td><code>winget upgrade db9979.sshTermy</code> (das eingebaute Update geht auch)</td></tr>
+  </table>
+</section>
+
+<section id="faq">
+  <h2>Fragen</h2>
+  <details><summary>Windows meldet „Der Computer wurde durch Windows geschützt“</summary><p>Die <code>.exe</code> ist noch nicht codesigniert, deshalb warnt SmartScreen beim ersten Start. „Weitere Informationen“ → „Trotzdem ausführen“. Mit winget installiert, kommt die Warnung meist nicht.</p></details>
+  <details><summary>macOS meldet, die App „kann nicht geöffnet werden“</summary><p>Mit dem Browser geladene Dateien bekommen eine Quarantäne-Markierung. Nimm Homebrew oder den Einzeiler, oder entferne die Markierung: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
+  <details><summary>Wo liegen meine Daten?</summary><p>Windows: <code>%APPDATA%\sshtermy</code>, macOS: <code>~/Library/Application Support/sshtermy</code>, Linux: <code>~/.config/sshtermy</code>. Die Umgebungsvariable <code>SSHTERMY_HOME</code> verlegt sie, z. B. auf einen USB-Stick.</p></details>
+  <details><summary>Welches Terminal soll ich nehmen?</summary><p>Unter Windows das Windows Terminal, unter macOS Terminal oder iTerm2, unter Linux jedes moderne Terminal. Funktionstasten und Truecolor sollten gehen.</p></details>
+  <details><summary>Geht das auch auf Englisch?</summary><p>Ja: <kbd>F12</kbd> → <kbd>l</kbd> oder Palette → „Sprache“. Beim ersten Start folgt sshTermy der Systemsprache.</p></details>
+</section>
+</main>
+
+<footer>
+  <div class="bar">
+    <span><b>sshTermy</b> · Idee: Dominik Bornhäußer</span>
+    <a href="https://github.com/db9979/sshtermy">GitHub</a>
+    <a href="https://github.com/db9979/sshtermy/releases">Releases</a>
+    <a href="https://buymeacoffee.com/zquu1xu570">☕ Kaffee spendieren</a>
+    <a href="../">English</a>
+  </div>
+</footer>
+<script src="../site.js"></script>
+</body>
+</html>

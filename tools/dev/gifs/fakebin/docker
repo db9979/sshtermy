@@ -1,0 +1,7 @@
+#!/bin/sh
+case "$1" in
+--version) echo "Docker version 27.3.1, build ce12230" ;;
+run) echo "Unable to find image 'nginx:stable' locally"; sleep 0.4; echo "stable: Pulling from library/nginx"; sleep 0.3; echo "Status: Downloaded newer image for nginx:stable"; echo "3f9c1e7b2a4d8e6f0c5b9a1d7e3f2c4b6a8d0e1f3c5b7a9d1e3f5c7b9a1d3e5f" ;;
+ps) printf 'NAMES     STATUS\nproxy     Up 2 minutes\napp       Up 3 days\n' ;;
+*) echo "docker: '$1' is not a docker command." ;;
+esac

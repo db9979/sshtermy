@@ -13,6 +13,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/termemu"
+	"github.com/db9979/sshtermy/internal/update"
 )
 
 // Maus
@@ -500,8 +501,10 @@ func (a *App) modalKeys() [][2]string {
 	case mInput:
 		keys = [][2]string{{"⏎", i18n.T("übernehmen")}, {"Esc", i18n.T("abbrechen")}}
 	case mAbout:
-		if a.rel != nil {
+		if a.rel != nil && update.Managed() == "" {
 			keys = append(keys, [2]string{"u", i18n.T("aktualisieren")})
+		} else if a.rel != nil {
+			// Paketquelle: Befehl steht im Dialog, kein „u“.
 		} else if a.restartPending != "" {
 			keys = append(keys, [2]string{"r", i18n.T("neu starten")})
 		} else {

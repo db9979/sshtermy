@@ -4,7 +4,7 @@
 //
 // Regeln (passen zu .github/workflows/release.yml):
 //   - Jeder Commit auf main (first-parent) ist ein Release, außer er ändert
-//     nur docs/** oder *.md. Dessen Neuerungen wandern ins nächste Release.
+//     nur docs/**, site/**, Formula/** oder *.md. Dessen Neuerungen wandern ins nächste Release.
 //   - Version = MAJOR.MINOR aus VERSION + Anzahl Commits bis dahin.
 //   - Text: aus dem PR-Abschnitt „## Was ist neu“ (Stichpunkte für Nutzer).
 //     Fehlt er, der PR-Titel. Steht dort nur „intern“ oder „-“, entfällt der
@@ -139,11 +139,22 @@ func releases(c commit, root bool) bool {
 		return true
 	}
 	for _, f := range strings.Fields(files) {
-		if !strings.HasPrefix(f, "docs/") && !strings.HasSuffix(f, ".md") {
+		if !noRelease(f) {
 			return true
 		}
 	}
 	return false
+}
+
+// noRelease: Pfade aus paths-ignore in release.yml (Doku, Webseite, die
+// vom Release selbst geschriebene Homebrew-Formel).
+func noRelease(f string) bool {
+	for _, p := range []string{"docs/", "site/", "Formula/"} {
+		if strings.HasPrefix(f, p) {
+			return true
+		}
+	}
+	return strings.HasSuffix(f, ".md")
 }
 
 func itemsFor(c commit, gh *github) []string {

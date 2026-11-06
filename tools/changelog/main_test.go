@@ -16,3 +16,14 @@ func TestNewsSection(t *testing.T) {
 		t.Fatal("ohne Abschnitt")
 	}
 }
+
+func TestNoRelease(t *testing.T) {
+	for f, want := range map[string]bool{
+		"docs/bilder/a.png": true, "site/index.html": true, "Formula/sshtermy.rb": true,
+		"README.md": true, "internal/ui/app.go": false, "packaging/deb.sh": false,
+	} {
+		if noRelease(f) != want {
+			t.Errorf("%s: %v", f, !want)
+		}
+	}
+}

@@ -85,6 +85,9 @@ func (a *App) aboutModal() *modal {
 		i18n.T("☕ Gefällt dir sshTermy? Spendier einen Kaffee: ") + version.Coffee + "\n\n"
 	if a.rel != nil {
 		b += i18n.T("⬆ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6)
+		if cmd := update.Managed(); cmd != "" {
+			b += "\n\n" + i18n.T("Aktualisieren mit: ") + cmd
+		}
 	} else if a.restartPending != "" {
 		b += "v" + a.restartPending + i18n.T(" ist installiert.")
 	}
@@ -174,7 +177,7 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	case mAbout:
 		switch key {
 		case "u":
-			if a.rel != nil {
+			if a.rel != nil && update.Managed() == "" {
 				rel := a.rel
 				a.modal = &modal{kind: mBusy, title: "Update", body: i18n.T("Lade v") + rel.Version + i18n.T(", prüfe Signatur und Prüfsumme …")}
 				return func() tea.Msg { return applyDoneMsg{update.Apply(context.Background(), rel)} }

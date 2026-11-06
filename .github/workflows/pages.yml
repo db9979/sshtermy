@@ -1,0 +1,64 @@
+# Webseite (site/, Englisch + Deutsch) und apt-Paketquelle auf GitHub Pages:
+#   https://db9979.github.io/sshtermy/        Anleitung
+#   https://db9979.github.io/sshtermy/apt/    apt-Quelle (.deb aus dem neuesten Release)
+# Läuft nach jedem Release und bei Änderungen an der Webseite.
+# Einmalig nötig: Settings → Pages → Source „GitHub Actions“.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "docs/bilder/**", "packaging/apt-repo.sh", ".github/workflows/pages.yml"]
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Webseite zusammenstellen
+        run: |
+          mkdir -p _site
+          cp -r site/. _site/
+          mkdir -p _site/bilder && cp docs/bilder/*.png _site/bilder/
+
+      - name: apt-Quelle aus dem neuesten Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: |
+          mkdir -p _site/apt
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern '*.deb' --dir _site/apt || echo "noch kein Release mit .deb"
+          sudo apt-get install -y -qq apt-utils >/dev/null
+          packaging/apt-repo.sh _site/apt
+          ls -la _site/apt
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
