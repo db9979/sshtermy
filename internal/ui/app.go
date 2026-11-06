@@ -89,6 +89,7 @@ type App struct {
 	pal        *palette
 	llm        llmUI
 	lh         llmHealthState // KI-Status (llmhealth.go)
+	reach      reachState     // Online-Punkt im Manager (reach.go)
 	toast      string
 	toastUntil time.Time
 	rel        *update.Release
@@ -216,9 +217,12 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case tickMsg:
-		return a, tea.Batch(tick(), a.onTick(), a.llmTick())
+		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick())
 	case llmProbeMsg:
 		a.lh.probing = false
+		return a, nil
+	case reachMsg:
+		a.onReach(m)
 		return a, nil
 
 	case outputMsg:

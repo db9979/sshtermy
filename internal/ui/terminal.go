@@ -634,7 +634,13 @@ func (a *App) tabStrip() string {
 		}
 		return " " + trunc(x.conn.Alias, l)
 	}
-	tabW := func(i, l int) int { return 1 + lipgloss.Width(label(i, l)) + 3 } // Punkt, Text, Leerraum, Innenabstand
+	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand
+		w := 1 + lipgloss.Width(label(i, l)) + 3
+		if a.accentOf(a.sessions[i].conn) != nil {
+			w++
+		}
+		return w
+	}
 	fit := 0
 	for _, l := range []int{16, 12, 8, 4, 0} {
 		fit = l
@@ -675,10 +681,19 @@ func (a *App) tabStrip() string {
 	for i := from; i < to; i++ {
 		x := a.sessions[i]
 		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
-		tab := st.Tab.Render(dot + label(i, fit) + " ")
+		ts := st.Tab
 		if i == a.cur {
-			tab = st.TabActive.Render(dot + label(i, fit) + " ")
+			ts = st.TabActive
 		}
+		// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
+		stripe, text := "", label(i, fit)
+		if col := a.accentOf(x.conn); col != nil {
+			stripe = glyph("▌", col, ts.GetBackground())
+			if i == a.cur {
+				text = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(true).Render(strings.TrimPrefix(text, " "))
+			}
+		}
+		tab := ts.Render(stripe + dot + text + " ")
 		i := i
 		b.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
 			a.focusSession(i)

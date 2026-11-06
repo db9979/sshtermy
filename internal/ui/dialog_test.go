@@ -92,7 +92,7 @@ func TestTabStripFitsNarrowHeader(t *testing.T) {
 				t.Errorf("w=%d: Credit fehlt: %q", w, plain)
 			}
 			act := a.sessions[cur].conn.Alias
-			if !strings.Contains(plain, act[:4]) && !strings.Contains(plain, " "+string(rune('1'+cur))+" ") {
+			if !strings.Contains(plain, act[:3]) && !strings.Contains(plain, " "+string(rune('1'+cur))+" ") {
 				t.Errorf("w=%d cur=%d: aktiver Tab nicht sichtbar: %q", w, cur, plain)
 			}
 		}

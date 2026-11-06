@@ -623,6 +623,11 @@ func (a *App) viewFolderDetails(n *domain.TreeNode, w int) string {
 		row("Tags", strings.Join(ts, " "))
 	}
 	km := a.keys
+	if n.Total == 0 && len(n.Folders) == 0 {
+		b.WriteString(a.emptyState("▸", i18n.T("Leerer Ordner"),
+			i18n.T("Lege hier eine Verbindung an oder schiebe eine vorhandene hinein (auch mit der Maus ziehen)."),
+			[]emptyStep{{"n", i18n.T("neue Verbindung hier")}, {km.label(actFolderNew), i18n.T("Unterordner anlegen")}}, w))
+	}
 	b.WriteString("\n " + s.PanelTitle.Render(i18n.T("Ordner")) + "\n")
 	keys := [][2]string{
 		{"⏎", i18n.T("auf-/zuklappen")}, {"n", i18n.T("neue Verbindung hier")}, {km.label(actFolderNew), i18n.T("Unterordner anlegen")},

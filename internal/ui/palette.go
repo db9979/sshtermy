@@ -181,6 +181,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "★", label: i18n.T("Was ist neu (Changelog)"), hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: i18n.T("Maus"), run: func() tea.Cmd { return a.toggleMouse() }},
 		{icon: "⟳", label: reconnectLabel(a.autoReconnect()), hint: "Reconnect", run: func() tea.Cmd { return a.toggleAutoReconnect() }},
+		{icon: "●", label: reachLabel(a.reachEnabled()), hint: i18n.T("Online"), run: func() tea.Cmd { return a.toggleReach() }},
 		{icon: "☰", label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: "l", run: func() tea.Cmd { return a.openLogs() }},
 		{icon: "●", label: logLabel(a.logsEnabled()), hint: i18n.T("Protokoll"), run: func() tea.Cmd { return a.toggleSessionLog() }},
 		{icon: "▶", label: i18n.T("Einführungstour"), hint: i18n.T("5 Schritte"), run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
