@@ -291,8 +291,13 @@ func (s Styles) helpSection(sec helpSection, ctx helpCtx) []string {
 		title += " " + s.Badge.Render(i18n.T("hier"))
 	}
 	lines := []string{title}
-	for _, r := range sec.rows {
-		k := s.Key.Render(relabelDefault(r[0], sec.ctx))
+	// gleiche Reihenfolge wie in der Fußzeile: Palette, F1 … F12, ⇧F, Rest
+	rows := make([][2]string, len(sec.rows))
+	for i, r := range sec.rows {
+		rows[i] = [2]string{relabelDefault(r[0], sec.ctx), r[1]}
+	}
+	for _, r := range sortFKeys(rows, activeKeys.label(actPalette)) {
+		k := s.Key.Render(r[0])
 		k += strings.Repeat(" ", max(0, helpKeyW-lipgloss.Width(k)))
 		lines = append(lines, k+s.Text.Render(ansi.Truncate(i18n.T(r[1]), helpColW-helpKeyW, "…")))
 	}

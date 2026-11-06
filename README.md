@@ -132,16 +132,19 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | Broadcast | Space / g / a, Tab, Ctrl+S | select host / folder / all, hosts·source·command, check and confirm |
 | | ←→ / ↑↓ / z / c / r / x | host column / scroll / enlarge / copy output / again / cancel |
 | Network scan | Ctrl+S, Space / a, ⏎ | start scan, select hits, create as connections |
-| Terminal | Tab or → | accept ghost text |
-| | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
-| | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
-| | F2 | goal mode (agent) |
+| Terminal | F2 | goal mode (agent) |
 | | F3 | ask AI |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
 | | F5 | files (SFTP): Tab side, c copy (up/down), Space/a mark, drag copies, n folder, d delete, . hidden |
 | | F6 | host overview: r/⏎ query, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
+| | F9 / ⇧F1…F8 | quick commands: list / run directly |
 | | F10 | back to the manager (sessions keep running) |
+| | ⇧F9 | key bar explains the keys of the current area |
+| | Ctrl+F / Ctrl+T | search the scrollback / split view (2 / 4) |
+| | Tab or → | accept ghost text |
+| | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
+| | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
 | | Ctrl+click / right-click | open URL in the browser / menu for a link, IP or host: connect (directly or via the server), ping from the server or from here, copy |
 | | Paste | multi-line shows a preview first (⏎ paste, o without the last Enter, Esc cancel); palette „Paste guard off“ |
 | Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |

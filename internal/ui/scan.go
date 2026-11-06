@@ -341,13 +341,13 @@ func (a *App) updateScan(msg tea.Msg) tea.Cmd {
 
 func (a *App) scanKeys() [][2]string {
 	if a.scan == nil || a.scan.phase == scSetup {
-		return [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("Scan starten")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
+		return [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("Scan starten")}, {"Esc", i18n.T("abbrechen")}, {a.keys.label(actHelp), i18n.T("Hilfe")}}
 	}
 	k := [][2]string{{"Space", i18n.T("wählen")}, {"a", i18n.T("alle")}, {"⏎", i18n.T("anlegen")}}
 	if a.scan.running {
 		k = append(k, [2]string{"x", i18n.T("stoppen")})
 	}
-	return append(k, [2]string{"r", i18n.T("neu scannen")}, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{"F1", i18n.T("Hilfe")})
+	return append(k, [2]string{"r", i18n.T("neu scannen")}, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{a.keys.label(actHelp), i18n.T("Hilfe")})
 }
 
 func (a *App) viewScan() string {

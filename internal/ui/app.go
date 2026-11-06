@@ -582,12 +582,9 @@ func (a *App) footer(keys [][2]string) string {
 	if c := a.cheatLine(); c != "" {
 		return c // F9: Tastenzeile mit Erklärungen für den aktuellen Bereich
 	}
-	keys = append([][2]string(nil), keys...)
-	for i := range keys {
-		keys[i][0] = i18n.Keys(keys[i][0])
-	}
+	shown := a.sortedFooter(keys)
 	var b strings.Builder
-	for _, k := range a.fitFooter(keys) {
+	for _, k := range shown {
 		if k[1] == "" {
 			b.WriteString(a.keyZone(k[0], a.s.Key.Render(k[0])))
 		} else {
@@ -599,6 +596,24 @@ func (a *App) footer(keys [][2]string) string {
 		out += a.s.Footer.Render(strings.Repeat(" ", a.w-w))
 	}
 	return ansi.Truncate(out, a.w, "")
+}
+
+// sortedFooter: Tasten übersetzen, nach Wichtigkeit kürzen (die Aufrufer
+// liefern die wichtigsten vorn) und erst dann für die Anzeige sortieren:
+// Palette, F1 … F12, ⇧F-Tasten, Rest (Strg+…, Buchstaben).
+func (a *App) sortedFooter(keys [][2]string) [][2]string {
+	keys = append([][2]string(nil), keys...)
+	for i := range keys {
+		keys[i][0] = i18n.Keys(keys[i][0])
+	}
+	shown := a.fitFooter(keys)
+	pal := strings.ReplaceAll(i18n.Keys(a.keys.label(actPalette)), "Shift+", "⇧")
+	for _, k := range shown {
+		if k[0] == pal { // nur Hauptleisten; Panel-Leisten bleiben wie sie sind
+			return sortFKeys(shown, pal)
+		}
+	}
+	return shown
 }
 
 // fitFooter passt die Tastenzeile an schmale Fenster an. Eine Taste ohne

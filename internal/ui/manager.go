@@ -89,7 +89,7 @@ func (a *App) managerKeys() [][2]string {
 	}
 	k = append(k, [2]string{"s", i18n.T("KI")}, [2]string{"y", "Sync"}, [2]string{"l", i18n.T("Protokolle")},
 		[2]string{km.label(actHelp), i18n.T("Hilfe")}, [2]string{km.label(actCheat), i18n.T("erklären")}, [2]string{km.label(actAbout), i18n.T("Über")}, [2]string{km.label(actQuit), i18n.T("beenden")})
-	return sortFKeys(k)
+	return k
 }
 
 func (a *App) hasTags() bool {
