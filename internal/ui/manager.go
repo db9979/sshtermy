@@ -189,7 +189,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	case actFoldAll, actUnfoldAll:
 		collapse := a.keys.is(actFoldAll, k.String())
 		if err := a.st.SetCollapsed(collapse); err != nil {
-			a.flash(err.Error())
+			a.flashErr(err.Error())
 		}
 		if have && collapse {
 			// Auswahl auf den obersten Ordner der aktuellen Zeile
@@ -274,7 +274,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			c := cur.conn
 			a.modal = confirmModal(i18n.T("Verbindung löschen"), "„"+c.Alias+i18n.T("“ und ihre Tunnel wirklich löschen?"), func() tea.Cmd {
 				if err := a.st.DeleteConnection(c.ID); err != nil {
-					a.flash(err.Error())
+					a.flashErr(err.Error())
 				}
 				m.sel = max(0, m.sel-1)
 				return nil

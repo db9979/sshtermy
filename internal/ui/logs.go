@@ -154,7 +154,7 @@ func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
 			a.modal = confirmModal(i18n.T("Protokoll löschen"), i18n.T("Protokoll „")+l.Host+i18n.T("“ vom ")+l.Started.Format("02.01.2006 15:04")+i18n.T(" wirklich löschen?"), func() tea.Cmd {
 				if b, err := a.logBook(); err == nil {
 					if err := b.Delete(l.ID); err != nil {
-						a.flash(err.Error())
+						a.flashErr(err.Error())
 					}
 				}
 				a.reloadLogs()
@@ -183,7 +183,7 @@ func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
 func (a *App) toggleSessionLog() tea.Cmd {
 	on := !a.logsEnabled()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoSessionLog = !on }); err != nil {
-		a.flash(err.Error())
+		a.flashErr(err.Error())
 		return nil
 	}
 	if on {
@@ -205,7 +205,7 @@ func (a *App) toggleSessionLog() tea.Cmd {
 func (a *App) summarizeLogs(list []*sessionlog.Log, id string) tea.Cmd {
 	ag, err := a.agentClient()
 	if err != nil {
-		a.flash("KI: " + err.Error())
+		a.flashErr("KI: " + err.Error())
 		return nil
 	}
 	var b strings.Builder
@@ -241,7 +241,7 @@ func (a *App) logsMsg(msg tea.Msg) (tea.Cmd, bool) {
 	}
 	a.logs.busy = ""
 	if m.err != nil {
-		a.flash(i18n.T("Zusammenfassung: ") + m.err.Error())
+		a.flashErr(i18n.T("Zusammenfassung: ") + m.err.Error())
 		return nil, true
 	}
 	if m.id == "" {
@@ -255,7 +255,7 @@ func (a *App) logsMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if l, err := b.Load(m.id); err == nil {
 			l.Summary = m.text
 			if err := b.Save(l); err != nil {
-				a.flash(err.Error())
+				a.flashErr(err.Error())
 			}
 		}
 	}
@@ -283,7 +283,7 @@ func (a *App) exportLog(l *sessionlog.Log) {
 	name := fmt.Sprintf("sshtermy-%s-%s.md", strings.Trim(unsafeName.ReplaceAllString(l.Host, "_"), "_"), l.Started.Format("20060102-1504"))
 	p := filepath.Join(exportDir(), name)
 	if err := os.WriteFile(p, []byte(l.Markdown()), 0o600); err != nil {
-		a.flash(i18n.T("Export: ") + err.Error())
+		a.flashErr(i18n.T("Export: ") + err.Error())
 		return
 	}
 	a.flash(i18n.T("Exportiert: ") + p)

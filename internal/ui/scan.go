@@ -251,7 +251,7 @@ func (a *App) scanCreate() tea.Cmd {
 	}
 	switch {
 	case firstErr != nil:
-		a.flash(i18n.T("Nicht alle angelegt: ") + firstErr.Error())
+		a.flashErr(i18n.T("Nicht alle angelegt: ") + firstErr.Error())
 	case n == 0:
 		a.flash(i18n.T("Nichts gewählt (Leertaste wählt, a = alle)"))
 		return nil

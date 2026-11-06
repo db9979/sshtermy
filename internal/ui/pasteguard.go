@@ -60,7 +60,7 @@ func (a *App) pasteGuardEnabled() bool { return !a.st.Settings().NoPasteGuard }
 func (a *App) togglePasteGuard() tea.Cmd {
 	on := !a.pasteGuardEnabled()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoPasteGuard = !on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {

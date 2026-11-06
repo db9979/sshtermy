@@ -235,7 +235,7 @@ type menuItem struct {
 
 func (a *App) openURL(u string) tea.Cmd {
 	if err := sshx.OpenBrowser(u); err != nil {
-		a.flash(i18n.T("Browser ließ sich nicht öffnen: ") + err.Error())
+		a.flashErr(i18n.T("Browser ließ sich nicht öffnen: ") + err.Error())
 	} else {
 		a.flash(i18n.T("Öffne im Browser: ") + trunc(u, 60))
 	}

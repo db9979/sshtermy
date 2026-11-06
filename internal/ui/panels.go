@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -55,14 +54,17 @@ func (g *goalState) cancel() {
 func (g *goalState) startWait() { g.waiting, g.waitSince = true, time.Now() }
 
 type askState struct {
-	input    aiInput
-	inited   bool
-	question string
-	answer   strings.Builder
-	busy     bool
-	seq      int
-	cancelFn context.CancelFunc
-	err      string
+	input     aiInput
+	inited    bool
+	question  string
+	answer    strings.Builder
+	busy      bool
+	seq       int
+	cancelFn  context.CancelFunc
+	err       string
+	sel       int  // gewählte Befehlskarte (aicards.go)
+	armed     int  // Karte, deren gefährlicher Befehl auf den zweiten Druck wartet (-1 = keine)
+	collapsed bool // Erklärung eingeklappt
 }
 
 func (q *askState) cancel() {
@@ -413,32 +415,13 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-var codeBlock = regexp.MustCompile("(?s)```(?:sh|bash|shell|zsh|powershell|ps1|console)?\\s*\\n(.*?)```")
-
-func extractCommands(ans string) []string {
-	var out []string
-	for _, m := range codeBlock.FindAllStringSubmatch(ans, 9) {
-		c := strings.TrimSpace(m[1])
-		c = strings.TrimPrefix(c, "$ ")
-		if c != "" && !strings.Contains(c, "\n") {
-			out = append(out, c)
-		}
-	}
-	return out
-}
-
 func (a *App) askKey(s *session, msg tea.Msg) tea.Cmd {
 	q := &s.ask
 	k, isKey := msg.(tea.KeyPressMsg)
 	if isKey && !q.input.Focused() {
 		key := k.String()
-		if len(key) == 1 && key[0] >= '1' && key[0] <= '9' {
-			cmds := extractCommands(agent.VisibleAnswer(q.answer.String()))
-			if i := int(key[0] - '1'); i < len(cmds) {
-				s.term.SendText(cmds[i]) // nur einfügen, Enter drückt der Mensch
-				s.panelFocus = false
-			}
-			return nil
+		if cmd, ok := a.askCardKey(s, key); ok {
+			return cmd
 		}
 		if key == "n" || key == "enter" {
 			q.input.SetValue("")
@@ -468,7 +451,7 @@ func (a *App) tunnelKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 				s.tunnels.Stop(t.ID)
 				a.flash(i18n.T("Tunnel gestoppt: ") + t.Name)
 			} else if at, err := s.tunnels.Start(t); err != nil {
-				a.flash(i18n.T("Tunnel: ") + err.Error())
+				a.flashErr(i18n.T("Tunnel: ") + err.Error())
 			} else if at.URL() != "" {
 				a.flash(i18n.T("Web-Service bereit: ") + at.URL())
 			}
@@ -532,8 +515,15 @@ func (a *App) panelKeys(s *session) [][2]string {
 			return [][2]string{{"⏎", i18n.T("fragen")}, {"Esc", "Terminal"}, {a.keys.label(actAsk), i18n.T("schließen")}}
 		}
 		k := [][2]string{}
-		if n := len(extractCommands(agent.VisibleAnswer(q.answer.String()))); n > 0 {
-			k = append(k, [2]string{"1…" + fmt.Sprint(min(9, n)), i18n.T("Befehl einfügen")})
+		if cards := answerCards(agent.VisibleAnswer(q.answer.String())); len(cards) > 0 {
+			if cards[clamp(q.sel, 0, len(cards)-1)].runnable() {
+				k = append(k, [2]string{"⏎", i18n.T("einfügen")}, [2]string{"a", i18n.T("ausführen")})
+			}
+			k = append(k, [2]string{"c", i18n.T("kopieren")})
+			if len(cards) > 1 {
+				k = append(k, [2]string{"↑↓", i18n.T("Befehl wählen")})
+			}
+			k = append(k, [2]string{"z", i18n.T("Erklärung")})
 		}
 		return append(k, [2]string{"n", i18n.T("neue Frage")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actAsk), i18n.T("schließen")})
 	case panelTunnels:
@@ -678,7 +668,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 			g.edit.SetWidth(w - 6)
 			cmdLine = g.edit.View()
 		} else {
-			cmdLine = st.Code.Render("$ " + cmdLine)
+			cmdLine = st.Muted.Render("$ ") + highlightShell(cmdLine, st)
 		}
 		b.WriteString(head + "\n")
 		b.WriteString(box.Width(w).Render(wrap(cmdLine, w-4)) + "\n")
@@ -709,23 +699,7 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 		b.WriteString(st.Muted.Render(i18n.T("denkt nach …")) + "\n")
 	}
 	if ans != "" {
-		// Codeblöcke nummerieren, damit 1…9 sie einfügen kann
-		n := 0
-		out := codeBlock.ReplaceAllStringFunc(ans, func(m string) string {
-			sub := codeBlock.FindStringSubmatch(m)
-			n++
-			code := strings.TrimSpace(sub[1])
-			txt := st.Key.Render(fmt.Sprintf("%d", n)) + " " + st.Code.Render(code)
-			if c := strings.TrimPrefix(code, "$ "); c != "" && !strings.Contains(c, "\n") {
-				txt = a.z.click(txt, func(tea.Mouse, bool) tea.Cmd {
-					s.term.SendText(c) // nur einfügen, Enter drückt der Mensch
-					s.panelFocus = false
-					return nil
-				})
-			}
-			return txt
-		})
-		b.WriteString(wrap(st.Text.Render(out), w) + "\n")
+		a.viewAnswer(b, s, ans, w) // Erklärung + Befehlskarten (aicards.go)
 	}
 	if q.busy {
 		b.WriteString(st.AI.Render("▍"))
@@ -834,6 +808,7 @@ func (a *App) startAsk(s *session, text string) tea.Cmd {
 	q.input.SetValue(q.question)
 	q.answer.Reset()
 	q.err, q.busy = "", true
+	q.sel, q.armed = 0, -1
 	q.seq++
 	q.input.Blur()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -898,7 +873,7 @@ func (a *App) saveRunbook(s *session) {
 	}
 	saved, err := a.st.UpsertRunbook(rb)
 	if err != nil {
-		a.flash(i18n.T("Runbook: ") + err.Error())
+		a.flashErr(i18n.T("Runbook: ") + err.Error())
 		return
 	}
 	if running {

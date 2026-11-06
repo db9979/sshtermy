@@ -145,7 +145,7 @@ type adaptMsg struct {
 func (a *App) startAdapt(s *session, cmd string) tea.Cmd {
 	ag, err := a.agentClient()
 	if err != nil {
-		a.flash("KI: " + err.Error())
+		a.flashErr("KI: " + err.Error())
 		return nil
 	}
 	c := a.agentContext(s, true)
@@ -168,7 +168,7 @@ func (a *App) onAdapt(m adaptMsg) {
 	}
 	switch {
 	case m.err != nil:
-		a.flash(i18n.T("Umschreiben: ") + m.err.Error())
+		a.flashErr(i18n.T("Umschreiben: ") + m.err.Error())
 	case m.sug.Command == "":
 		a.flash(i18n.T("Auf ") + s.conn.Alias + i18n.T(" gibt es dafür keine Entsprechung") + reasonSuffix(m.sug.Reason))
 	case m.sug.Command == strings.TrimSpace(m.from):

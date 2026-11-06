@@ -116,6 +116,10 @@ var helpSections = []helpSection{
 		{"⏎", "Frage senden"},
 		{"⇧⏎ / Strg+J", "neue Zeile"},
 		{"1…9", "Befehl einfügen"},
+		{"↑ ↓", "Befehlskarte wählen"},
+		{"a", "Befehl ausführen (rote zweimal)"},
+		{"c", "Befehl kopieren"},
+		{"z", "Erklärung ein-/ausklappen"},
 		{"n", "neue Frage"},
 	}},
 	{hcTunnel, "⇄", "Tunnel", "F4", false, [][2]string{
