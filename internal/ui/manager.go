@@ -578,7 +578,7 @@ func (a *App) viewManager() string {
 			row(i18n.T("Zuletzt"), c.LastUsed.Format("02.01.2006 15:04"))
 		}
 		tuns := a.st.Tunnels(c.ID)
-		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render(i18n.T("t = neuer Tunnel"))) + "\n")
+		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render(i18n.T("t = neuer Tunnel"))) + s.Muted.Render(i18n.T(" · Klick = bearbeiten/löschen")) + "\n")
 		if len(tuns) == 0 {
 			rb.WriteString(s.Muted.Render(i18n.T("  noch keine · z. B. Weboberfläche oder Datenbank sicher auf diesen Rechner holen")) + "\n")
 		}
@@ -591,7 +591,9 @@ func (a *App) viewManager() string {
 			if t.AutoStart {
 				auto = s.OK.Render(i18n.T(" auto"))
 			}
-			rb.WriteString(fmt.Sprintf("  %s %-20s %s%s\n", icon, trunc(t.Name, 20), s.Muted.Render(t.Spec()), auto))
+			t := t
+			line := fmt.Sprintf("  %s %-20s %s%s", icon, trunc(t.Name, 20), s.Muted.Render(t.Spec()), auto)
+			rb.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd { return a.openTunnelForm(t) }) + "\n")
 		}
 		cfg := a.st.LLM()
 		rb.WriteString("\n " + s.PanelTitle.Render(i18n.T("KI-Copilot")) + "\n")
@@ -752,6 +754,10 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrQuickForm && a.quickFormKey(k) {
 		return nil
 	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrTunnelForm && k.String() == "ctrl+d" && a.formTunnel.ID != "" {
+		a.confirmDeleteTunnel(a.formTunnel)
+		return nil
+	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" {
 		a.form = nil
 		a.scr = scrManager
@@ -885,6 +891,29 @@ func (a *App) saveConn() error {
 		}
 	}
 	return err
+}
+
+// confirmDeleteTunnel: Tunnel nach Rückfrage löschen (aus dem Formular,
+// Strg+D). Läuft er gerade in einer Sitzung, wird er vorher gestoppt.
+func (a *App) confirmDeleteTunnel(t domain.Tunnel) {
+	a.modal = confirmModal(i18n.T("Tunnel löschen"), "„"+t.Name+i18n.T("“ löschen?"), func() tea.Cmd {
+		for _, s := range a.sessions {
+			if s.tunnels != nil {
+				s.tunnels.Stop(t.ID)
+			}
+		}
+		if err := a.st.DeleteTunnel(t.ID); err != nil {
+			a.flashErr(i18n.T("Tunnel: ") + err.Error())
+			return nil
+		}
+		a.form = nil
+		a.scr = scrManager
+		if a.returnToTerminal {
+			a.scr, a.returnToTerminal = scrTerminal, false
+		}
+		a.flash(i18n.T("Tunnel gelöscht: ") + t.Name)
+		return nil
+	})
 }
 
 func (a *App) saveTunnel() error {

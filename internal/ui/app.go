@@ -535,7 +535,13 @@ func (a *App) View() tea.View {
 		body = a.viewUnlock()
 	case scrManager:
 		body = a.frame(a.viewManager(), a.managerKeys())
-	case scrConnForm, scrTunnelForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMonitorForm:
+	case scrTunnelForm:
+		k := [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}}
+		if a.formTunnel.ID != "" {
+			k = append(k, [2]string{"Strg+D", i18n.T("löschen")})
+		}
+		body = a.frame(a.viewForm(), append(k, [2]string{"Esc", i18n.T("abbrechen")}))
+	case scrConnForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMonitorForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
