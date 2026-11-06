@@ -713,7 +713,8 @@ func (a *App) openTunnelForm(t domain.Tunnel) tea.Cmd {
 
 func (a *App) openSettings() tea.Cmd {
 	c := a.st.LLM()
-	f := &form{title: i18n.T("KI-Copilot (OpenAI-kompatibel: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)")}
+	f := &form{title: i18n.T("KI-Copilot: Spark/vLLM, Ollama, OpenAI, Claude oder jeder OpenAI-kompatible Server")}
+	f.choice("prov", i18n.T("Anbieter"), providerLabels(false), c.Provider.Label(), i18n.T("←/→ wählt; Adresse und Modell werden vorbelegt"))
 	f.text("base", i18n.T("Base-URL"), c.BaseURL, i18n.T("z. B. http://dgx-spark:8000/v1 · Ollama: http://localhost:11434/v1"))
 	f.secret("key", i18n.T("API-Key"), c.APIKey.Reveal(), i18n.T("verschlüsselt gespeichert; leer für lokale Server"))
 	f.text("model", i18n.T("Modell"), c.Model, i18n.T("Strg+L: Liste vom Endpunkt · Strg+T: Verbindung testen"))
@@ -726,8 +727,11 @@ func (a *App) openSettings() tea.Cmd {
 	f.number("lines", i18n.T("Kontext-Zeilen"), c.ContextLines, "")
 	f.number("steps", i18n.T("Ziel: Schritte/min"), c.GoalStepsMin, i18n.T("Ratenlimit im Ziel-Modus"))
 	f.toggle("insecure", i18n.T("http mit API-Key"), c.AllowInsecure, i18n.T("nur wenn du weißt, was du tust"))
+	f.pick("fallbacks", i18n.T("Ersatz-Anbieter"), "", func(string) string { return a.fallbackSummary(a.st.LLM()) },
+		func() tea.Cmd { return a.settingsToFallbacks() }, i18n.T("⏎ öffnet: springen ein, wenn der Endpunkt nicht antwortet"))
 	a.form, a.scr = f, scrSettings
 	a.llm = llmUI{}
+	a.llm.rememberProviders(f)
 	return f.setFocus(0)
 }
 
@@ -756,6 +760,9 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		return nil
 	}
 	submit, cmd := a.form.update(msg)
+	if a.scr == scrSettings && a.form != nil {
+		a.applyProviderDefaults()
+	}
 	if a.scr == scrConnForm {
 		syncProtoPort(a.form)
 	}
@@ -903,6 +910,9 @@ func (a *App) saveTunnel() error {
 }
 
 func (a *App) saveSettings() error {
+	if a.llm.fallback {
+		return a.saveFallbacks()
+	}
 	c := a.formLLM()
 	if err := checkLLM(c); err != nil {
 		return err

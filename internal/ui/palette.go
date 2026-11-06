@@ -214,6 +214,8 @@ func (a *App) paletteItems() []palItem {
 		}},
 		{icon: "⇉", label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
 		{icon: "⌕", label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
+		{icon: "⇪", label: i18n.T("Mit dem Team teilen (verschlüsselt, ohne Passwörter)"), hint: "Team", run: func() tea.Cmd { a.scr = scrManager; return a.openTeamShare() }},
+		{icon: "⇩", label: i18n.T("Team-Paket übernehmen"), hint: "Team", run: func() tea.Cmd { return a.openTeamTake() }},
 		{icon: "☰", label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: "l", run: func() tea.Cmd { return a.openLogs() }},
 	}
 	if a.restartPending != "" {
@@ -374,6 +376,7 @@ func (a *App) palMenuItems() []palItem {
 		palItem{group: pgSetLook, menu: "settings", icon: "◇", label: "Sprache / Language", hint: lang, keys: "english deutsch german",
 			keep: true, run: func() tea.Cmd { return a.toggleLang() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: "✦", label: i18n.T("KI-Einstellungen"), hint: "s", keys: "ai llm", run: func() tea.Cmd { return a.openSettings() }},
+		palItem{group: pgSetSetup, menu: "settings", icon: "✦", label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), hint: "KI", keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: "●", label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), hint: "llm",
 			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: "⌨", label: i18n.T("Tastenkürzel anpassen"), hint: a.keys.label(actKeys), keys: "keys", run: func() tea.Cmd { return a.openKeys() }},
