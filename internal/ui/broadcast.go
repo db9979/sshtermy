@@ -529,14 +529,14 @@ func (a *App) broadcastKeys() [][2]string {
 		} else {
 			k = append(k, [2]string{"r", i18n.T("nochmal")}, [2]string{"e", i18n.T("ändern")})
 		}
-		return append(k, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{"F1", i18n.T("Hilfe")})
+		return append(k, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{a.keys.label(actHelp), i18n.T("Hilfe")})
 	}
 	if b.focus == bcFocusSource && b.src > 0 {
 		return [][2]string{{"←/→", "Runbook"}, {"e", i18n.T("bearbeiten")}, {"Strg+D", i18n.T("löschen")},
-			{"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
+			{"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("abbrechen")}, {a.keys.label(actHelp), i18n.T("Hilfe")}}
 	}
 	return [][2]string{{"Tab", i18n.T("Hosts/Quelle/Befehl")}, {"Space", i18n.T("Host wählen")}, {"g", i18n.T("Ordner")}, {"a", i18n.T("alle")},
-		{"Strg+R", i18n.T("als Runbook")}, {"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
+		{"Strg+R", i18n.T("als Runbook")}, {"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("abbrechen")}, {a.keys.label(actHelp), i18n.T("Hilfe")}}
 }
 
 // ---------------------------------------------------------------- Ansicht

@@ -94,7 +94,7 @@ func (m *modal) tourView(s Styles, w int) string {
 	sub := strconv.Itoa(m.scroll+1) + "/" + strconv.Itoa(len(tourSteps))
 	body := lipgloss.NewStyle().Width(cw).Render(s.Text.Render(i18n.T(step.text)))
 	var keys []string
-	for _, k := range step.keys {
+	for _, k := range sortFKeys(step.keys, "Strg+Space") {
 		kk := s.Key.Render(i18n.T(k[0]))
 		kk += strings.Repeat(" ", max(0, 14-lipgloss.Width(kk)))
 		keys = append(keys, kk+s.Text.Render(i18n.T(k[1])))
@@ -165,7 +165,7 @@ func (a *App) cheatTips() [][2]string {
 	case len(s.chips) > 0:
 		return [][2]string{{i18n.T("Alt+1…4"), i18n.T("fügt den Vorschlag ein (ohne ⏎)")}, {i18n.T("rot"), i18n.T("= gefährlich, zweimal drücken")}}
 	}
-	return [][2]string{{"F9", i18n.T("Schnellbefehle")}, {"F2", i18n.T("Ziel an die KI")}, {"F3", i18n.T("Frage an die KI")}, {"Strg+Space", i18n.T("findet alles")}}
+	return [][2]string{{"Strg+Space", i18n.T("findet alles")}, {"F2", i18n.T("Ziel an die KI")}, {"F3", i18n.T("Frage an die KI")}, {"F9", i18n.T("Schnellbefehle")}}
 }
 
 // cheatLine: Tastenzeile mit Erklärungen (leer, wenn aus oder nichts passt;

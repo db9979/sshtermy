@@ -612,14 +612,19 @@ func (a *App) terminalKeys(s *session) [][2]string {
 			keys = append(keys, [2]string{i18n.T("Alt+1…") + strconv.Itoa(min(4, len(s.chips))), i18n.T("Vorschlag einfügen")})
 		}
 		keys = append(keys, [2]string{k.label(actGoal), i18n.T("Ziel")}, [2]string{k.label(actAsk), i18n.T("KI fragen")}, [2]string{k.label(actTunnels), "Tunnel"},
-			[2]string{k.label(actFiles), i18n.T("Dateien")}, [2]string{k.label(actSearch), i18n.T("Suche")}, [2]string{k.label(actSplit), i18n.T("Teilen")}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), i18n.T("Schnellbefehle")})
+			[2]string{k.label(actFiles), i18n.T("Dateien")}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), i18n.T("Schnellbefehle")})
 	}
 	if len(a.sessions) > 1 {
 		keys = append(keys, [2]string{k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"})
 	}
 	keys = append(keys, [2]string{k.label(actManager), "Manager"},
-		[2]string{k.label(actHelp), i18n.T("Hilfe")}, [2]string{k.label(actCheat), i18n.T("erklären")}, [2]string{k.label(actQuit), i18n.T("beenden")})
-	keys = sortFKeys(keys)
+		[2]string{k.label(actHelp), i18n.T("Hilfe")}, [2]string{k.label(actCheat), i18n.T("erklären")})
+	if s.state == stConnected {
+		// weniger wichtig: fällt in schmalen Fenstern vor den F-Tasten weg
+		keys = append(keys, [2]string{k.label(actSearch), i18n.T("Suche")}, [2]string{k.label(actSplit), i18n.T("Teilen")})
+	}
+	keys = append(keys, [2]string{k.label(actQuit), i18n.T("beenden")})
+	// Anzeige-Reihenfolge (Palette, F1 … F12, ⇧F, Rest) macht footer().
 	if s.fail != nil {
 		keys = append([][2]string{{"Alt+0", i18n.T("Warum? & Fix")}}, keys...)
 	}

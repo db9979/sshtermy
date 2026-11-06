@@ -476,7 +476,7 @@ func (a *App) showBackup(s *session) {
 
 func (a *App) hostPanelKeys(s *session) [][2]string {
 	if s.host.busy {
-		return [][2]string{{"x", i18n.T("abbrechen")}, {"Esc", "Terminal"}, {"F6", i18n.T("schließen")}}
+		return [][2]string{{"x", i18n.T("abbrechen")}, {"Esc", "Terminal"}, {a.keys.label(actHost), i18n.T("schließen")}}
 	}
 	if s.netDev() {
 		k := [][2]string{{"⏎", i18n.T("abfragen")}, {"b", i18n.T("Config sichern")}}
@@ -486,9 +486,9 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		if len(s.host.backups) > 0 {
 			k = append(k, [2]string{"↑↓", i18n.T("Stand")}, [2]string{"v", i18n.T("ansehen")})
 		}
-		return append(k, [2]string{"Esc", "Terminal"}, [2]string{"F6", i18n.T("schließen")})
+		return append(k, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 	}
-	return [][2]string{{"r", i18n.T("aktualisieren")}, {"Esc", "Terminal"}, {"F6", i18n.T("schließen")}}
+	return [][2]string{{"r", i18n.T("aktualisieren")}, {"Esc", "Terminal"}, {a.keys.label(actHost), i18n.T("schließen")}}
 }
 
 // ---------------------------------------------------------------- Ansicht

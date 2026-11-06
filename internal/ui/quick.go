@@ -359,32 +359,39 @@ func (a *App) editQuickFor(s *session) tea.Cmd {
 	return a.openQuickForm(c, a.remoteText(s))
 }
 
-// sortFKeys: F-Tasten der Fußzeile nach Nummer ordnen (F1, F2 … F12, dann ⇧F).
-func sortFKeys(keys [][2]string) [][2]string {
+// sortFKeys ordnet eine Hauptleiste nach fester Regel: alles bis
+// einschließlich der Palette bleibt vorn, dann alle F-Tasten streng nach
+// Nummer (F1 … F12), danach die ⇧F-Tasten und zuletzt alle anderen Tasten
+// (Strg+…, Buchstaben …) in ihrer bisherigen Reihenfolge. So stehen nie
+// Strg-Tasten zwischen den F-Tasten, auch nicht bei eigener Belegung.
+func sortFKeys(keys [][2]string, palette string) [][2]string {
 	num := func(label string) int {
 		var n int
-		l := strings.TrimPrefix(label, "Shift+")
+		l := strings.TrimPrefix(strings.TrimPrefix(label, "Shift+"), "⇧")
 		if _, err := fmt.Sscanf(l, "F%d", &n); err == nil && strings.HasPrefix(l, "F") {
 			if l != label {
 				n += 100 // ⇧F-Tasten nach den normalen
 			}
 			return n
 		}
-		return 1000
+		return 0
 	}
-	// Nur die F-Tasten untereinander tauschen; andere (Palette, Strg+Q)
-	// bleiben an ihrem Platz.
-	var idx []int
-	var fk [][2]string
+	head := 0
 	for i, k := range keys {
-		if num(k[0]) < 1000 {
-			idx, fk = append(idx, i), append(fk, k)
+		if k[0] == palette {
+			head = i + 1
+			break
+		}
+	}
+	out := append([][2]string(nil), keys[:head]...)
+	var fk, rest [][2]string
+	for _, k := range keys[head:] {
+		if num(k[0]) > 0 {
+			fk = append(fk, k)
+		} else {
+			rest = append(rest, k)
 		}
 	}
 	sort.SliceStable(fk, func(i, j int) bool { return num(fk[i][0]) < num(fk[j][0]) })
-	out := append([][2]string(nil), keys...)
-	for n, i := range idx {
-		out[i] = fk[n]
-	}
-	return out
+	return append(append(out, fk...), rest...)
 }
