@@ -158,6 +158,36 @@ func (a *App) quickModalKey(key string) tea.Cmd {
 		a.modal = nil
 		return nil
 	}
+	sugg := a.favSuggestions(s)
+	rows := maxQuick + len(sugg)
+	if m.scroll >= rows {
+		m.scroll = rows - 1
+	}
+	if m.scroll >= maxQuick { // Vorschlag aus dem Verlauf gewählt
+		u := sugg[m.scroll-maxQuick]
+		switch key {
+		case "enter":
+			if len(safety.Check(u.Cmd, a.safetyKind(s))) > 0 && m.armed != m.scroll {
+				m.armed = m.scroll
+				return nil
+			}
+			a.modal = nil
+			s.panelFocus = false
+			return a.sendCommand(s, u.Cmd)
+		case "a", "+":
+			if err := a.adoptFavorite(s, u.Cmd); err != nil {
+				a.flashErr(err.Error())
+			}
+			m.armed = -1
+			m.scroll = min(m.scroll, maxQuick+len(a.favSuggestions(s))-1)
+			return nil
+		case "x", "delete":
+			_ = a.st.MarkCommand(s.conn.ID, u.Cmd, true, true)
+			m.armed = -1
+			m.scroll = min(m.scroll, maxQuick+len(a.favSuggestions(s))-1)
+			return nil
+		}
+	}
 	run := func(i int) tea.Cmd {
 		cmds, _ := a.quickCmds(s)
 		if i >= len(cmds) || strings.TrimSpace(cmds[i]) == "" {
@@ -176,10 +206,10 @@ func (a *App) quickModalKey(key string) tea.Cmd {
 	}
 	switch key {
 	case "up", "k":
-		m.scroll = (m.scroll + maxQuick - 1) % maxQuick
+		m.scroll = (m.scroll + rows - 1) % rows
 		m.armed = -1
 	case "down", "j", "tab":
-		m.scroll = (m.scroll + 1) % maxQuick
+		m.scroll = (m.scroll + 1) % rows
 		m.armed = -1
 	case "enter":
 		return run(m.scroll)
@@ -248,6 +278,44 @@ func (a *App) quickModalView(m *modal) string {
 		}))
 	}
 	keys := [][2]string{{"⏎", i18n.T("ausführen")}, {"1…8", ""}, {"↑↓", i18n.T("wählen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
+	if sugg := a.favSuggestions(s); len(sugg) > 0 {
+		lines = append(lines, "", " "+st.AI.Render(i18n.T("Vorschläge aus deinem Verlauf")))
+		for j, u := range sugg {
+			i := maxQuick + j
+			cnt := fmt.Sprintf("%d×", u.N)
+			cnt += strings.Repeat(" ", max(0, 5-len([]rune(cnt))))
+			txt := st.Text.Render(trunc(u.Cmd, cw-12))
+			if f := safety.Check(u.Cmd, kind); len(f) > 0 {
+				txt = st.Danger.Render(trunc(u.Cmd, cw-14) + " ⚠")
+			}
+			row := " " + st.Muted.Render(cnt) + "  " + txt
+			row += strings.Repeat(" ", max(0, cw-lipgloss.Width(row)))
+			if i == m.scroll {
+				row = st.Selected.Render(ansi.Strip(row))
+				if i == m.armed {
+					row = st.ChipDanger.Render(ansi.Strip(row))
+				}
+			}
+			lines = append(lines, a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+				if m.scroll == i || double {
+					return a.quickModalKey("enter")
+				}
+				m.scroll, m.armed = i, -1
+				return nil
+			}))
+		}
+		if m.scroll >= maxQuick {
+			slot, repl := a.adoptSlot(s)
+			hint := fmt.Sprintf(i18n.T("a legt ihn auf %s"), a.quickLabel(slot))
+			if repl != "" {
+				hint += fmt.Sprintf(i18n.T(" (ersetzt „%s“, am seltensten benutzt)"), trunc(repl, 24))
+			} else {
+				hint += i18n.T(" (frei)")
+			}
+			lines = append(lines, "", " "+st.Muted.Render(trunc(hint, cw)))
+			keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"a", i18n.T("als Schnellbefehl")}, {"x", i18n.T("nicht vorschlagen")}, {"↑↓", i18n.T("wählen")}, {"Esc", i18n.T("schließen")}}
+		}
+	}
 	if m.armed >= 0 {
 		lines = append(lines, "", st.Danger.Render(i18n.T("⚠ gefährlich: nochmal ⏎ zum Ausführen")))
 	}

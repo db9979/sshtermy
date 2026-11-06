@@ -567,6 +567,10 @@ func (a *App) viewManager() string {
 			if n := len(c.Profile.Failed); n > 0 {
 				row(i18n.T("Gelernt"), plural(n, i18n.T("abgelehnter Befehl"), i18n.T("abgelehnte Befehle"))+i18n.T(" · schlägt die KI nicht mehr vor"))
 			}
+			if n := len(c.Profile.Learned); n > 0 {
+				last := c.Profile.Learned[n-1]
+				row(i18n.T("Korrigiert"), trunc(plural(n, i18n.T("Korrektur"), i18n.T("Korrekturen"))+" · "+last.AI+" → "+last.Fixed, max(10, rightW-22)))
+			}
 		} else {
 			row("System", s.Muted.Render(i18n.T("wird beim ersten Verbinden erkannt")))
 		}
@@ -673,8 +677,15 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.text("p_os", "System", pr.OS, i18n.T("erkannt beim Verbinden; eigene Angabe hat Vorrang, z. B. „ArubaOS-CX 10.13“"))
 	f.choice("p_dialect", i18n.T("Befehlssatz"), dialectLabels(), dialectLabel(pr.Dialect), i18n.T("welche Befehle die KI vorschlägt (automatisch = erkennen)"))
 	f.text("p_notes", i18n.T("KI-Notizen"), pr.Notes, i18n.T("eigene Hinweise, z. B. „Core-Switch, VLAN 99 = Management, nie reload“"))
-	if len(pr.Failed) > 0 {
-		f.toggle("p_forget", i18n.T("Gelerntes löschen"), false, plural(len(pr.Failed), i18n.T("abgelehnter Befehl"), i18n.T("abgelehnte Befehle"))+i18n.T(" gemerkt"))
+	if len(pr.Failed) > 0 || len(pr.Learned) > 0 {
+		var parts []string
+		if len(pr.Failed) > 0 {
+			parts = append(parts, plural(len(pr.Failed), i18n.T("abgelehnter Befehl"), i18n.T("abgelehnte Befehle")))
+		}
+		if len(pr.Learned) > 0 {
+			parts = append(parts, plural(len(pr.Learned), i18n.T("Korrektur"), i18n.T("Korrekturen")))
+		}
+		f.toggle("p_forget", i18n.T("Gelerntes löschen"), false, strings.Join(parts, ", ")+i18n.T(" gemerkt"))
 	}
 	a.form, a.formID, a.scr = f, c.ID, scrConnForm
 	a.formBase = c
@@ -769,6 +780,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveSettings()
 	case scrQuickForm:
 		err = a.saveQuick()
+	case scrMonitorForm:
+		err = a.saveMonitor()
 	}
 	if err != nil {
 		a.form.err = err.Error()
@@ -963,6 +976,7 @@ func profileFromForm(f *form, base *domain.SystemProfile) *domain.SystemProfile 
 	if base != nil {
 		p = *base
 		p.Failed = append([]string(nil), base.Failed...)
+		p.Learned = append([]domain.Correction(nil), base.Learned...)
 	}
 	osText, notes := f.str("p_os"), f.str("p_notes")
 	dia := ""
@@ -982,7 +996,7 @@ func profileFromForm(f *form, base *domain.SystemProfile) *domain.SystemProfile 
 	}
 	p.Notes = notes
 	if fl := f.get("p_forget"); fl != nil && fl.on {
-		p.Failed = nil
+		p.Failed, p.Learned = nil, nil
 	}
 	if p.Empty() && p.Banner == "" {
 		return nil

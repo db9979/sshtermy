@@ -56,6 +56,8 @@ type Store struct {
 	// Übernehmen eines Sync-Stands), z. B. um einen Abgleich anzustoßen.
 	OnChange func()
 	rev      uint64 // zählt lokale Änderungen
+
+	stats cmdStats // Befehlsstatistik (cmdstats.go), nur lokal
 }
 
 // Open öffnet (oder bereitet vor) den Store im Standardordner.
@@ -106,6 +108,7 @@ func (s *Store) Lock() {
 	s.mu.Lock()
 	s.data = nil
 	s.mu.Unlock()
+	s.forgetStats()
 	s.V.Lock()
 }
 
@@ -329,6 +332,7 @@ func (s *Store) SetProfile(id string, p domain.SystemProfile) error {
 		if s.data.Connections[i].ID == id {
 			cp := p
 			cp.Failed = append([]string(nil), p.Failed...)
+			cp.Learned = append([]domain.Correction(nil), p.Learned...)
 			s.data.Connections[i].Profile = &cp
 			s.data.Connections[i].UpdatedAt = time.Now().UTC()
 			found = true
@@ -400,6 +404,7 @@ func (s *Store) DeleteConnection(id string) error {
 	}
 	s.data.Tunnels = ts
 	s.mu.Unlock()
+	s.dropStats(id)
 	return s.save()
 }
 
