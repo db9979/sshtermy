@@ -1476,4 +1476,6 @@ var en = map[string]string{
 	"auf die andere Seite kopieren":              "copy to the other side",
 	"Ablegen":                                    "Drop",
 	"Dateien aus Explorer/Finder hochladen":      "upload files from Explorer/Finder",
+	"trotzdem ausführen":                         "run anyway",
+	"abbrechen (Zeile bleibt stehen)":            "cancel (line stays at the prompt)",
 }
