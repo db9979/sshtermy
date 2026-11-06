@@ -376,6 +376,7 @@ Windows login ──DPAPI CryptProtectData────────────�
 
 ```
 make test         # go vet + tests
+make bench        # performance: terminal throughput, memory per tab, manager with 500 connections
 make build        # bin/sshtermy
 make dist         # all platforms to dist/ + checksums.txt
 ```
@@ -391,6 +392,9 @@ cd tools/dev/devsshd && go run .          # test SSH server on 127.0.0.1:2222 (a
 python3 tools/dev/fakellm.py              # test LLM on 127.0.0.1:11434 (/v1/chat/completions)
 SSHTERMY_HOME=/tmp/sth go run ./cmd/sshtermy
 ```
+
+The terminal emulator is a patched copy in `third_party/vt` (faster scrolling, compact scrollback),
+see `third_party/vt/README.sshtermy.md`.
 
 ## Next steps (suggestions)
 
@@ -451,3 +455,8 @@ Syncing happens at start, a few seconds after every change and every 5 minutes; 
 
 To try it without a NAS: `go run ./tools/dev/devdav` (http on port 5005) or `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
 (self-signed), user `dominik`, password `nas-pw`.
+
+## License
+
+sshTermy is released under the [MIT License](LICENSE): you may use, copy, change and pass it on, also commercially,
+as long as the copyright notice and the license text stay included. Idea: Dominik Bornhäußer.

@@ -32,10 +32,10 @@ func (t *Term) lineText(sb, w, l int) (string, []int) {
 	var b strings.Builder
 	cols := make([]int, 0, w)
 	for x := 0; x < w; x++ {
-		c := t.cellAt(sb, Pos{l, x})
+		c, ok := t.cellAt(sb, Pos{l, x})
 		s := " "
 		switch {
-		case c == nil:
+		case !ok:
 		case c.IsZero():
 			continue // zweite Hälfte eines breiten Zeichens
 		case c.Content != "":
@@ -105,7 +105,7 @@ func (t *Term) Search(q string, errorsOnly bool) []Match {
 
 // cellWidthAt: Breite des Zeichens in Spalte x (1 oder 2).
 func cellWidthAt(sb int, t *Term, l, x int) int {
-	if c := t.cellAt(sb, Pos{l, x}); c != nil && c.Width > 1 {
+	if c, ok := t.cellAt(sb, Pos{l, x}); ok && c.Width > 1 {
 		return c.Width
 	}
 	return 1

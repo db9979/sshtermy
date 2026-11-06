@@ -6,12 +6,17 @@ PKG     := github.com/db9979/sshtermy/internal/version
 LDFLAGS := -s -w -X $(PKG).Version=$(VERSION) -X $(PKG).Commit=$(COMMIT) -X $(PKG).Date=$(DATE) -X $(PKG).UpdatePubKey=$(UPDATE_PUBKEY)
 TARGETS := windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64 linux/arm64
 
-.PHONY: build test dist clean run
+.PHONY: build test bench dist clean run
 build:
 	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/sshtermy ./cmd/sshtermy
 
 test:
 	go vet ./... && go test ./...
+	cd third_party/vt && go test ./...
+
+# Leistung: Terminal-Durchsatz, Speicher pro Tab, Manager mit 500 Verbindungen
+bench:
+	go test -run '^$$' -bench . -benchtime 2s ./internal/termemu ./internal/ui ./internal/store
 
 dist: test
 	@mkdir -p dist

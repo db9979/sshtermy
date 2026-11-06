@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
@@ -57,8 +58,25 @@ type Store struct {
 	OnChange func()
 	rev      uint64 // zählt lokale Änderungen
 
+	// Zwischenspeicher für Connections(): bei 500 Verbindungen kostet das
+	// Sortieren pro Bild mehrere Millisekunden, und der Manager fragt pro
+	// Bild mehrmals. gen zählt jede Änderung (persist, Laden, Sperren); ein
+	// Eintrag gilt nur, solange seine gen aktuell ist.
+	gen   atomic.Uint64
+	cmu   sync.Mutex
+	conns connCache
+
 	stats cmdStats // Befehlsstatistik (cmdstats.go), nur lokal
 }
+
+type connCache struct {
+	gen uint64
+	ok  bool
+	cs  []domain.Connection
+}
+
+// changed macht den Zwischenspeicher ungültig.
+func (s *Store) changed() { s.gen.Add(1) }
 
 // Open öffnet (oder bereitet vor) den Store im Standardordner.
 func Open() (*Store, error) {
@@ -88,6 +106,7 @@ func (s *Store) Init(password []byte, useDPAPI bool) error {
 	s.data = domain.NewData()
 	s.data.Settings.UseDPAPI = s.V.HasDPAPI()
 	s.mu.Unlock()
+	s.changed()
 	return s.save()
 }
 
@@ -100,6 +119,7 @@ func (s *Store) AfterUnlock() error {
 	s.mu.Lock()
 	s.data = d
 	s.mu.Unlock()
+	s.changed()
 	return nil
 }
 
@@ -108,6 +128,7 @@ func (s *Store) Lock() {
 	s.mu.Lock()
 	s.data = nil
 	s.mu.Unlock()
+	s.changed()
 	s.forgetStats()
 	s.V.Lock()
 }
@@ -126,6 +147,7 @@ func (s *Store) save() error {
 }
 
 func (s *Store) persist() error {
+	s.changed()
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if s.data == nil {
@@ -149,12 +171,32 @@ func newID() string {
 }
 
 // Connections: sortiert nach Ordner, dann Reihenfolge im Ordner, dann Alias.
+// Der Aufrufer bekommt eine eigene Kopie und darf sie verändern.
 func (s *Store) Connections() []domain.Connection {
+	g := s.gen.Load()
+	s.cmu.Lock()
+	if c := s.conns; c.ok && c.gen == g {
+		s.cmu.Unlock()
+		return append([]domain.Connection(nil), c.cs...)
+	}
+	s.cmu.Unlock()
+
 	s.mu.RLock()
-	defer s.mu.RUnlock()
 	if s.data == nil {
+		s.mu.RUnlock()
 		return nil
 	}
+	out := s.sortedConns()
+	s.mu.RUnlock()
+
+	s.cmu.Lock()
+	s.conns = connCache{gen: g, ok: true, cs: out}
+	s.cmu.Unlock()
+	return append([]domain.Connection(nil), out...)
+}
+
+// sortedConns (Aufrufer hält s.mu).
+func (s *Store) sortedConns() []domain.Connection {
 	out := append([]domain.Connection(nil), s.data.Connections...)
 	for i := range out {
 		out[i] = s.withLocalKey(out[i])

@@ -100,22 +100,23 @@ func connMatches(c domain.Connection, words, tags []string) bool {
 // Ordner mit Treffern aufgeklappt, leere fallen weg.
 func buildRows(tree *domain.TreeNode, words, tags []string) []mgrRow {
 	filtering := len(words) > 0 || len(tags) > 0
-	var walk func(n *domain.TreeNode, depth int) []mgrRow
-	walk = func(n *domain.TreeNode, depth int) []mgrRow {
-		var out []mgrRow
+	// alles in ein Feld anhängen: mgrRow trägt die ganze Verbindung, und bei
+	// Hunderten Einträgen kostete das Zusammenkopieren der Teillisten pro
+	// Ebene spürbar Zeit in jedem Bild
+	var out []mgrRow
+	var walk func(n *domain.TreeNode, depth int)
+	walk = func(n *domain.TreeNode, depth int) {
 		for _, f := range n.Folders {
-			inner := walk(f, depth+1)
-			if filtering {
-				if len(inner) == 0 && (len(tags) > 0 || !allIn(strings.ToLower(f.Path), words)) {
-					continue
-				}
-				out = append(out, mgrRow{node: f, depth: depth})
-				out = append(out, inner...)
-				continue
-			}
+			at := len(out)
 			out = append(out, mgrRow{node: f, depth: depth})
-			if !f.Collapsed {
-				out = append(out, inner...)
+			switch {
+			case filtering:
+				walk(f, depth+1)
+				if len(out) == at+1 && (len(tags) > 0 || !allIn(strings.ToLower(f.Path), words)) {
+					out = out[:at] // Ordner ohne Treffer weglassen
+				}
+			case !f.Collapsed:
+				walk(f, depth+1)
 			}
 		}
 		for _, c := range n.Conns {
@@ -123,9 +124,9 @@ func buildRows(tree *domain.TreeNode, words, tags []string) []mgrRow {
 				out = append(out, mgrRow{conn: c, depth: depth})
 			}
 		}
-		return out
 	}
-	return walk(tree, 0)
+	walk(tree, 0)
+	return out
 }
 
 func allIn(hay string, words []string) bool {

@@ -96,15 +96,19 @@ func (t *Term) ScrollbackLen() int {
 	if t.AltScreen() {
 		return 0
 	}
-	return t.emu.ScrollbackLen()
+	return t.sb.Len()
 }
 
-// cellAt liefert die Zelle im Gesamtpuffer.
-func (t *Term) cellAt(sb int, p Pos) *uv.Cell {
+// cellAt liefert die Zelle im Gesamtpuffer; ok = false, wenn dort keine
+// ist (hinter dem Zeilenende im Verlauf, außerhalb des Bildschirms).
+func (t *Term) cellAt(sb int, p Pos) (uv.Cell, bool) {
 	if p.Line < sb {
-		return t.emu.ScrollbackCellAt(p.Col, p.Line)
+		return t.sb.cell(p.Col, p.Line)
 	}
-	return t.emu.CellAt(p.Col, p.Line-sb)
+	if c := t.emu.CellAt(p.Col, p.Line-sb); c != nil {
+		return *c, true
+	}
+	return uv.Cell{}, false
 }
 
 // Render zeichnet den Bildschirm, um offset Zeilen in den Scrollback
@@ -122,11 +126,10 @@ func (t *Term) render(offset int, sel *Sel, hook func(line, x int, c *uv.Cell)) 
 	for y := 0; y < h; y++ {
 		abs := first + y
 		for x := 0; x < w; x++ {
-			c := t.cellAt(sb, Pos{abs, x})
-			if c == nil {
-				line[x] = uv.EmptyCell
+			if c, ok := t.cellAt(sb, Pos{abs, x}); ok {
+				line[x] = c
 			} else {
-				line[x] = *c
+				line[x] = uv.EmptyCell
 			}
 			if sel != nil && !line[x].IsZero() && sel.Contains(Pos{abs, x}) {
 				if line[x].Content == "" {
@@ -172,9 +175,9 @@ func (t *Term) Text(s Sel) string {
 		}
 		var sbuf strings.Builder
 		for x := from; x <= to; x++ {
-			c := t.cellAt(sb, Pos{l, x})
+			c, ok := t.cellAt(sb, Pos{l, x})
 			switch {
-			case c == nil:
+			case !ok:
 				sbuf.WriteByte(' ')
 			case c.IsZero():
 				// zweite Hälfte eines breiten Zeichens
@@ -196,8 +199,8 @@ func (t *Term) WordAt(p Pos) Sel {
 	w, _ := t.Size()
 	sb := t.ScrollbackLen()
 	isWord := func(x int) bool {
-		c := t.cellAt(sb, Pos{p.Line, x})
-		if c == nil {
+		c, ok := t.cellAt(sb, Pos{p.Line, x})
+		if !ok {
 			return false
 		}
 		if c.IsZero() {
@@ -235,9 +238,9 @@ func (t *Term) LineText(line int) (text string, cols []int) {
 	cols = make([]int, w+1)
 	last := 0
 	for x := 0; x < w; x++ {
-		c := t.cellAt(sb, Pos{line, x})
+		c, ok := t.cellAt(sb, Pos{line, x})
 		switch {
-		case c == nil, c.Content == "" && !c.IsZero():
+		case !ok, c.Content == "" && !c.IsZero():
 			cols[x] = b.Len()
 			b.WriteByte(' ')
 		case c.IsZero():

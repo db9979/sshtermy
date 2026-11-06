@@ -373,6 +373,7 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 
 ```
 make test         # go vet + Tests
+make bench        # Leistung: Terminal-Durchsatz, Speicher pro Tab, Manager mit 500 Verbindungen
 make build        # bin/sshtermy
 make dist         # alle Plattformen nach dist/ + checksums.txt
 ```
@@ -388,6 +389,9 @@ cd tools/dev/devsshd && go run .          # Test-SSH-Server auf 127.0.0.1:2222 (
 python3 tools/dev/fakellm.py              # Test-LLM auf 127.0.0.1:11434 (/v1/chat/completions)
 SSHTERMY_HOME=/tmp/sth go run ./cmd/sshtermy
 ```
+
+Der Terminal-Emulator liegt als angepasste Kopie in `third_party/vt` (schnellerer Bildlauf, kompakter Verlauf),
+siehe `third_party/vt/README.sshtermy.md`.
 
 ## Nächste Schritte (Vorschläge)
 
@@ -448,3 +452,8 @@ betreffen. Abgeglichen wird beim Start, wenige Sekunden nach jeder Änderung und
 
 Zum Ausprobieren ohne NAS: `go run ./tools/dev/devdav` (http auf Port 5005) oder `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
 (selbstsigniert), Benutzer `dominik`, Passwort `nas-pw`.
+
+## Lizenz
+
+sshTermy steht unter der [MIT-Lizenz](LICENSE): Du darfst es benutzen, kopieren, ändern und weitergeben, auch
+kommerziell, solange der Urheberhinweis und der Lizenztext dabei bleiben. Idee: Dominik Bornhäußer.
