@@ -352,7 +352,7 @@ func (a *App) viewLogs() string {
 	case len(a.logs.all) == 0:
 		lb.WriteString(s.Muted.Render(i18n.T("  Noch keine Protokolle.\n  Jede SSH-Sitzung wird ab dem\n  ersten Befehl mitgeschrieben.")))
 	case len(list) == 0:
-		lb.WriteString(s.Muted.Render(i18n.T("  Keine Treffer.")))
+		lb.WriteString(s.Muted.Render(i18n.T("  Keine Treffer.\n  Andere Wörter probieren oder\n  Esc leert die Suche.")))
 	}
 	if m.unreadable > 0 {
 		lb.WriteString("\n" + s.Muted.Render(fmt.Sprintf(i18n.T("  %d Datei(en) nicht lesbar"), m.unreadable)))

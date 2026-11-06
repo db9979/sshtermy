@@ -376,6 +376,12 @@ func (a *App) paneTitle(s *session, w int, focused bool) string {
 	if s == nil {
 		return bar.Width(w).MaxWidth(w).Render(i18n.T(" ○ leer"))
 	}
+	// Akzentfarbe der Verbindung: aktiver Bereich ganz in der Farbe,
+	// die anderen mit Farbstreifen (accent.go)
+	col := a.accentOf(s.conn)
+	if col != nil && focused {
+		bar = bar.Background(col)
+	}
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○"}[s.state]
 	left := " " + dot + " " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string
@@ -397,7 +403,11 @@ func (a *App) paneTitle(s *session, w int, focused bool) string {
 	}
 	left = ansi.Truncate(left, max(0, w-ansi.StringWidth(right)-1), "…")
 	line := left + strings.Repeat(" ", max(1, w-ansi.StringWidth(left)-ansi.StringWidth(right))) + right
-	line = bar.Render(ansi.Truncate(line, w, ""))
+	if col != nil && !focused {
+		line = glyph("▌", col, st.T.Surface) + bar.Render(ansi.Truncate(strings.TrimPrefix(line, " "), w-1, ""))
+	} else {
+		line = bar.Render(ansi.Truncate(line, w, ""))
+	}
 	return a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
 		if i := a.indexOf(s); i >= 0 {
 			a.focusSession(i)
