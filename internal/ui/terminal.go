@@ -223,6 +223,10 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		switch id := a.keys.which(key, actGoal, actAsk, actTunnels, actHost); id {
 		case actGoal, actAsk, actTunnels, actHost:
+			if id == actTunnels && s.conn.Protocol.Raw() {
+				a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
+				return nil
+			}
 			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels, actHost: panelHost}[id]
 			if s.panel == kind && s.panelFocus {
 				s.panel, s.panelFocus = panelNone, false

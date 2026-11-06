@@ -46,7 +46,7 @@ func (a *App) applyLook() {
 
 func (a *App) setTheme(name string) tea.Cmd {
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Theme = name }); err != nil {
-		a.flash(err.Error())
+		a.flashErr(err.Error())
 		return nil
 	}
 	a.applyLook()
@@ -157,7 +157,7 @@ func (a *App) updateKeys(msg tea.Msg) tea.Cmd {
 	case "r":
 		a.modal = confirmModal(i18n.T("Tastenkürzel"), i18n.T("Alle Tastenkürzel auf Standard zurücksetzen?"), func() tea.Cmd {
 			if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Keys = nil }); err != nil {
-				a.flash(err.Error())
+				a.flashErr(err.Error())
 			}
 			a.applyLook()
 			return nil

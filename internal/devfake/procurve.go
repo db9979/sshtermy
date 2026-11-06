@@ -63,7 +63,12 @@ func StartSwitch(addr string) (*Switch, error) {
 }
 
 // Close beendet den Server.
-func (sw *Switch) Close() error { return sw.ln.Close() }
+func (sw *Switch) Close() error {
+	if sw.ln == nil {
+		return nil
+	}
+	return sw.ln.Close()
+}
 
 // AddVLAN ändert die Konfiguration (wie "vlan <n>" in der Shell).
 func (sw *Switch) AddVLAN(id int) {
@@ -115,7 +120,7 @@ func (sw *Switch) serve(nc net.Conn, cfg *ssh.ServerConfig) {
 
 const prompt = "\r\x1b[2Ksw-buero# "
 
-func (sw *Switch) shell(ch ssh.Channel) {
+func (sw *Switch) shell(ch io.ReadWriteCloser) {
 	defer ch.Close()
 	w := func(s string) { _, _ = io.WriteString(ch, s) }
 	key := make([]byte, 1)
@@ -166,7 +171,7 @@ func (sw *Switch) shell(ch ssh.Channel) {
 }
 
 // pageOut gibt Zeilen aus, bei page mit "-- MORE --" alle 22 Zeilen.
-func (sw *Switch) pageOut(ch ssh.Channel, out string, page bool) bool {
+func (sw *Switch) pageOut(ch io.ReadWriter, out string, page bool) bool {
 	if out == "" {
 		return true
 	}

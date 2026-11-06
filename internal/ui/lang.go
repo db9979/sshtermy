@@ -29,7 +29,7 @@ func (a *App) applyLang() {
 // setLang wählt die Sprache und speichert sie.
 func (a *App) setLang(l string) tea.Cmd {
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Language = l }); err != nil {
-		a.flash(err.Error())
+		a.flashErr(err.Error())
 		return nil
 	}
 	a.applyLang()

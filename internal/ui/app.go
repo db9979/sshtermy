@@ -85,14 +85,14 @@ type App struct {
 	split    splitMode // geteilte Ansicht (Strg+T)
 	panes    []int     // Sitzungs-IDs je Bereich, 0 = leer
 
-	modal      *modal
-	pal        *palette
-	llm        llmUI
-	lh         llmHealthState // KI-Status (llmhealth.go)
-	reach      reachState     // Online-Punkt im Manager (reach.go)
-	toast      string
-	toastUntil time.Time
-	rel        *update.Release
+	modal        *modal
+	pal          *palette
+	llm          llmUI
+	lh           llmHealthState // KI-Status (llmhealth.go)
+	reach        reachState     // Online-Punkt im Manager (reach.go)
+	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
+	toastTicking bool
+	rel          *update.Release
 	// restartPending: installierte, noch nicht gestartete Version.
 	restartPending string
 	restart        bool // nach dem Beenden neu starten (siehe Restart)
@@ -169,11 +169,6 @@ func (a *App) Init() tea.Cmd {
 	return tea.Batch(a.listen(), tick(), a.tryDPAPI(), intro)
 }
 
-func (a *App) flash(s string) {
-	a.toast = s
-	a.toastUntil = time.Now().Add(4 * time.Second)
-}
-
 func (a *App) current() *session {
 	if a.cur >= 0 && a.cur < len(a.sessions) {
 		return a.sessions[a.cur]
@@ -191,15 +186,23 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if _, ok := msg.(fadeMsg); ok {
+	switch msg.(type) {
+	case fadeMsg:
 		if a.fadeRunning() {
 			return a, fadeTick()
 		}
 		return a, nil
+	case toastTickMsg:
+		a.toastTicking = false
+		a.liveToasts(time.Now())
+		return a, a.toastTick()
 	}
 	m, cmd := a.update(msg)
 	if c := a.trackFade(); c != nil {
 		cmd = tea.Batch(cmd, c)
+	}
+	if t := a.toastTick(); t != nil {
+		cmd = tea.Batch(cmd, t)
 	}
 	return m, cmd
 }
@@ -244,16 +247,22 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if s := a.byID(m.sid); s != nil {
 			s.client, s.shell, s.state = m.client, m.shell, stConnected
 			s.connectedAt = time.Now()
-			s.tunnels = sshx.NewTunnelManager(m.client)
+			if m.client != nil {
+				s.tunnels = sshx.NewTunnelManager(m.client)
+			}
 			a.st.Touch(s.conn.ID)
-			if m.client.Learned {
+			if m.note != "" {
+				a.flash(m.note)
+			}
+			if m.client != nil && m.client.Learned {
 				a.rememberNetDevice(s)
 			}
 			a.profileConnected(s)
+			a.flashOK(i18n.T("Verbunden: ") + s.conn.Alias)
 			for _, t := range a.st.Tunnels(s.conn.ID) {
-				if t.AutoStart {
+				if t.AutoStart && s.tunnels != nil {
 					if _, err := s.tunnels.Start(t); err != nil {
-						a.flash("Tunnel " + t.Name + ": " + err.Error())
+						a.flashErr("Tunnel " + t.Name + ": " + err.Error())
 					}
 				}
 			}
@@ -308,7 +317,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case applyDoneMsg:
 		a.modal = nil
 		if m.err != nil {
-			a.flash(i18n.T("Update fehlgeschlagen: ") + m.err.Error())
+			a.flashErr(i18n.T("Update fehlgeschlagen: ") + m.err.Error())
 			return a, nil
 		}
 		if a.rel != nil {
@@ -514,6 +523,7 @@ func (a *App) View() tea.View {
 			body = c.Render()
 		}
 	}
+	body = a.withToasts(body)
 	if a.intro != nil && introFits(a.w, a.h) {
 		a.z.reset() // während der Animation ist nichts klickbar
 		body, cur = a.viewIntro(), nil
@@ -543,9 +553,7 @@ func (a *App) headerLeft() string {
 
 func (a *App) header(right string) string {
 	left := a.headerLeft()
-	if a.toast != "" && time.Now().Before(a.toastUntil) {
-		right = a.s.Header.Foreground(a.s.T.Warn).Render(" " + a.toast + " ")
-	} else if a.rel != nil && right == "" {
+	if a.rel != nil && right == "" {
 		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
 	} else if a.restartPending != "" && right == "" {
 		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+i18n.T(" installiert · Neustart ")+a.keys.label(actAbout)+" "))

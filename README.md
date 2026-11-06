@@ -44,7 +44,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
-  - **Ask AI** (F3) with terminal context, insert commands from the answer with 1…9
+  - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z)
   - **System profile per connection**: sshTermy detects system, version and command set (Linux with package manager and
     init system, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware …) from the
     SSH banner, an invisible query (servers only) and the terminal it reads along (network devices, no exec).
@@ -160,6 +160,15 @@ preselected, existing ones deselected; ⏎ imports. With f you load a file from 
 PuTTY export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), a portable `MobaXterm.ini` or an
 `.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. Please load PuTTY keys
 (`.ppk`) into Pageant or export them to OpenSSH with PuTTYgen.
+
+**Telnet and serial console:** in the connection form, „Connect via“ switches between SSH, Telnet and
+„Serial (console cable)“, e.g. for an Aruba switch on a USB console cable. Port „automatic“ uses the only USB
+console cable that is plugged in, so a synced connection also works on the other computer (COM5 on Windows,
+`/dev/cu.usbserial-…` on macOS, `/dev/ttyUSB0` on Linux). Default 9600 baud 8N1. If user and password are stored,
+sshTermy types them as soon as the device asks (and answers „Press any key to continue“). In the palette,
+`telnet 10.0.0.5`, `COM3` or `console /dev/ttyUSB0 115200` connects right away; palette → „Send break“ sends a serial
+break. Host overview (F6), config backup, quick commands and the AI work as with SSH; files, tunnels and broadcast
+need SSH. Linux: the user needs to be in the `dialout` group. Telnet is unencrypted, use it only in trusted networks.
 
 ## Screens
 
