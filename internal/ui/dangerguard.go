@@ -124,7 +124,7 @@ func (a *App) dangerView(m *modal) string {
 	s := a.byID(d.sid)
 	host := ""
 	if s != nil {
-		host = s.conn.Alias + " (" + s.conn.Username + "@" + s.conn.Addr() + ")"
+		host = s.conn.Alias + " (" + s.conn.Username + "@" + s.conn.ShowAddr() + ")"
 	}
 	var b strings.Builder
 	if d.prod {

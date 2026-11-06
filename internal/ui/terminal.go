@@ -479,7 +479,7 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	switch {
 	case s.state == stConnecting:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			st.AI.Render(i18n.T("⠿ Verbinde mit ")+s.conn.Alias+" ("+s.conn.Addr()+") …"))
+			st.AI.Render(i18n.T("⠿ Verbinde mit ")+s.conn.Alias+" ("+s.conn.ShowAddr()+") …"))
 	case s.state == stReconnect:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.reconnectView(s))
 	case s.state == stClosed:

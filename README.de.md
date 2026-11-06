@@ -37,6 +37,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Netzwerk-Scan** (f im Manager): ein Subnetz nach SSH-Geräten durchsuchen (nur Port und SSH-Kennung, ohne Anmeldung),
   Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL; pro Verbindung gespeichert, ein Klick schaltet an/aus, auf Wunsch startet ein Tunnel mit der Verbindung; läuft auch über Jump-Hosts
+- **Vermittler für Server hinter NAT/Firewall**: der Server baut selbst die Verbindung zu einem Vermittler auf (`sshtermy anker`), sshTermy erreicht sein sshd darüber, ohne offenen Port. SSH läuft Ende-zu-Ende, Dateien und Tunnel gehen wie gewohnt. Den Vermittler bringt sshTermy selbst mit (`sshtermy vermittler`), alternativ dient Speech on DGX Spark als Vermittler ([Anleitung](docs/vermittler.md))
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
   - **Ghost-Text** beim Tippen (Tab übernimmt)
@@ -388,6 +389,28 @@ SSHTERMY_HOME=/tmp/sth go run ./cmd/sshtermy
 
 1. Windows-Ressourcen (Icon, Versionsinfo) und Code-Signing der `.exe`, macOS Notarisierung.
 2. macOS-Schlüsselbund als zweiter Entsperr-Weg (wie DPAPI unter Windows).
+
+## Vermittler: Server hinter NAT/Firewall
+
+Kurz (ausführlich in [docs/vermittler.md](docs/vermittler.md)):
+
+```
+# 1. auf einem erreichbaren Rechner (VPS, Pi, NAS)
+sshtermy vermittler start --url https://vermittler.example.org:8022
+sshtermy vermittler code --anker        # Zeile für einen Server
+sshtermy vermittler code                # Zeile für sshTermy
+
+# 2. auf dem Server, der erreichbar werden soll
+sshtermy anker koppeln 'https://vermittler.example.org:8022#termy=…&fp=…'
+sshtermy anker dienst | sudo tee /etc/systemd/system/sshtermy-anker.service
+sudo systemctl enable --now sshtermy-anker
+```
+
+3. In sshTermy: Strg+Leertaste → „Vermittler koppeln / verwalten“, Zeile einfügen. „Systeme über Vermittler“ zeigt
+   alle Server mit Online-Punkt, ⏎ legt die Verbindung an oder verbindet.
+
+Der Vermittler reicht nur verschlüsselte Bytes durch. Den Host-Key meldet der Anker; passt er nicht, bricht sshTermy
+ab. Ohne Vermittler ändert sich nichts.
 
 ## Sync zwischen Rechnern
 

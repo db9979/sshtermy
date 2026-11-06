@@ -37,6 +37,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Network scan** (f in the manager): search a subnet for SSH devices (only port and SSH banner, no login),
   recognize switches and routers by their banner and create the hits as connections with one key press.
 - **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL; saved per connection, one click turns them on/off, optionally start with the connection; works through jump hosts
+- **Relay for servers behind NAT/firewall**: the server itself connects out to a relay (`sshtermy anker`), sshTermy reaches its sshd through it without an open port. SSH runs end to end, files and tunnels work as usual. sshTermy brings its own relay (`sshtermy relay`, also `sshtermy vermittler`); Speech on DGX Spark can serve as a relay too ([guide, German](docs/vermittler.md))
 - **AI copilot** for any OpenAI-compatible endpoint (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question, plus suggestions, tunnels, connections and actions
   - **Ghost text** while typing (Tab accepts)
@@ -391,6 +392,28 @@ SSHTERMY_HOME=/tmp/sth go run ./cmd/sshtermy
 
 1. Windows resources (icon, version info) and code signing of the `.exe`, macOS notarization.
 2. macOS keychain as a second unlock path (like DPAPI on Windows).
+
+## Relay: servers behind NAT/firewall
+
+In short (details in [docs/vermittler.md](docs/vermittler.md), German):
+
+```
+# 1. on a reachable machine (VPS, Pi, NAS)
+sshtermy relay start --url https://relay.example.org:8022
+sshtermy relay code --anker             # line for a server
+sshtermy relay code                     # line for sshTermy
+
+# 2. on the server that should become reachable
+sshtermy anchor koppeln 'https://relay.example.org:8022#termy=…&fp=…'
+sshtermy anchor dienst | sudo tee /etc/systemd/system/sshtermy-anker.service
+sudo systemctl enable --now sshtermy-anker
+```
+
+3. In sshTermy: Ctrl+Space → “Pair / manage relays”, paste the line. “Systems via relay” lists all servers with an
+   online dot, ⏎ creates the connection or connects.
+
+The relay only passes encrypted bytes. The anchor reports the host key; if it does not match, sshTermy aborts.
+Without a relay nothing changes.
 
 ## Sync between computers
 

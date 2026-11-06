@@ -175,6 +175,9 @@ func shortTarget(c domain.Connection) string {
 	if c.Username != "" {
 		t = c.Username + "@" + c.Host
 	}
+	if c.ViaRelay() {
+		return "⇌ " + t
+	}
 	switch c.Protocol {
 	case domain.ProtoTelnet:
 		return "telnet " + t

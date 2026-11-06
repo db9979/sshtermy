@@ -205,6 +205,7 @@ func (a *App) dialOpts() sshx.Options {
 	return sshx.Options{
 		HostKeys: a.hostKeys,
 		Resolve:  a.st.Connection,
+		Relay:    a.relayDialer(),
 		Prompt: func(host, fp, typ string) bool {
 			r := make(chan bool, 1)
 			ev <- hostKeyAskMsg{host, fp, typ, r}

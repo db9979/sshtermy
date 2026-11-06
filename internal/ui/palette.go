@@ -180,6 +180,8 @@ func (a *App) paletteItems() []palItem {
 		{icon: "⇉", label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
 		{icon: "⌕", label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
 		{icon: "✦", label: i18n.T("KI-Einstellungen"), hint: "s", run: func() tea.Cmd { return a.openSettings() }},
+		{icon: "⇌", label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), hint: i18n.T("Vermittler"), run: func() tea.Cmd { return a.openRelaySystems() }},
+		{icon: "⇌", label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), hint: i18n.T("Vermittler"), run: func() tea.Cmd { return a.openRelayManage() }},
 		{icon: "⇅", label: i18n.T("Sync zwischen Rechnern einrichten"), hint: "y", run: func() tea.Cmd { return a.openSync() }},
 		{icon: "⇩", label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm)"), hint: a.keys.label(actImport), run: func() tea.Cmd { return a.openImport() }},
 		{icon: "?", label: i18n.T("Tastenkürzel anzeigen"), hint: a.keys.label(actHelp), run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},

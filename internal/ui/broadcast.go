@@ -358,12 +358,14 @@ func (a *App) bcStart(targets []domain.Connection, steps []string, per [][]strin
 // kommen nacheinander, nie zwei Dialoge gleichzeitig.
 func (a *App) bcDialer() broadcast.Dialer {
 	ev, hk, st := a.events, a.hostKeys, a.st
+	relayDial := a.relayDialer()
 	var mu sync.Mutex
 	answered := map[string]bool{}
 	return func(ctx context.Context, c domain.Connection) (broadcast.Executor, error) {
 		opts := sshx.Options{
 			HostKeys: hk,
 			Resolve:  st.Connection,
+			Relay:    relayDial,
 			Prompt: func(host, fp, typ string) bool {
 				mu.Lock()
 				defer mu.Unlock()

@@ -58,6 +58,7 @@ const (
 	scrScan
 	scrKeyForm    // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
 	scrSSHKeyForm // SSH-Schlüssel erzeugen / übertragen (sshkey.go)
+	scrRelayForm  // Vermittler koppeln (relay.go)
 )
 
 // App ist das Wurzel-Modell.
@@ -119,8 +120,9 @@ type App struct {
 	rbVals map[string]map[string]string // zuletzt eingegebene Runbook-Variablen (nur im Speicher)
 	scan   *scanState                   // Netzwerk-Scan
 
-	intro *introState // Startanimation, nil = aus oder vorbei
-	fx    fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
+	intro  *introState // Startanimation, nil = aus oder vorbei
+	relays relayCache  // Systemlisten der Vermittler (relay.go)
+	fx     fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
 }
 
 func New(st *store.Store) (*App, error) {
@@ -246,6 +248,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.listen()
 	case sshKeyDoneMsg:
 		return a, a.sshKeyDone(m)
+	case relayMsg:
+		return a, m.apply(a)
 
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
@@ -376,7 +380,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pick != nil {
 			return a, a.pickerKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -414,7 +418,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrKeyForm, scrSSHKeyForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrKeyForm, scrSSHKeyForm, scrRelayForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -490,7 +494,7 @@ func (a *App) View() tea.View {
 		body = a.viewUnlock()
 	case scrManager:
 		body = a.frame(a.viewManager(), a.managerKeys())
-	case scrConnForm, scrTunnelForm, scrKeyForm, scrSSHKeyForm:
+	case scrConnForm, scrTunnelForm, scrKeyForm, scrSSHKeyForm, scrRelayForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
