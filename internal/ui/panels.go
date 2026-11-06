@@ -370,7 +370,7 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 				st.Command = cmd
 				st.Reason = i18n.T("von dir bearbeitet")
 				*g.cur = st
-				fresh := agent.ParseStepCommand(cmd, s.client.Remote.String())
+				fresh := agent.ParseStepCommand(cmd, s.remoteString())
 				g.cur.Danger, g.cur.Elevated = fresh.Danger, fresh.Elevated
 			}
 			g.editing = false

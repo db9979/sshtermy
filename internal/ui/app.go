@@ -223,14 +223,19 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if s := a.byID(m.sid); s != nil {
 			s.client, s.shell, s.state = m.client, m.shell, stConnected
 			s.connectedAt = time.Now()
-			s.tunnels = sshx.NewTunnelManager(m.client)
+			if m.client != nil {
+				s.tunnels = sshx.NewTunnelManager(m.client)
+			}
 			a.st.Touch(s.conn.ID)
-			if m.client.Learned {
+			if m.note != "" {
+				a.flash(m.note)
+			}
+			if m.client != nil && m.client.Learned {
 				a.rememberNetDevice(s)
 			}
 			a.profileConnected(s)
 			for _, t := range a.st.Tunnels(s.conn.ID) {
-				if t.AutoStart {
+				if t.AutoStart && s.tunnels != nil {
 					if _, err := s.tunnels.Start(t); err != nil {
 						a.flash("Tunnel " + t.Name + ": " + err.Error())
 					}

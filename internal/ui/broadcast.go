@@ -73,7 +73,12 @@ type bcUpdateMsg struct {
 type bcDoneMsg struct{ seq int }
 
 func (a *App) openBroadcast() tea.Cmd {
-	conns := a.st.Connections()
+	var conns []domain.Connection
+	for _, c := range a.st.Connections() {
+		if !c.Protocol.Raw() { // Broadcast läuft über SSH-Exec
+			conns = append(conns, c)
+		}
+	}
 	sort.SliceStable(conns, func(i, j int) bool { return conns[i].Group < conns[j].Group })
 	b := &bcState{conns: conns, picked: map[string]bool{}, books: a.st.Runbooks(""), cmd: newAIInput(i18n.T("Befehl, z. B. uptime · ⇧⏎ = weiterer Schritt"))}
 	b.cmd.MaxHeight = 5

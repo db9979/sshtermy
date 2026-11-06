@@ -151,6 +151,15 @@ PuTTY export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), a portabl
 `.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. Please load PuTTY keys
 (`.ppk`) into Pageant or export them to OpenSSH with PuTTYgen.
 
+**Telnet and serial console:** in the connection form, „Connect via“ switches between SSH, Telnet and
+„Serial (console cable)“, e.g. for an Aruba switch on a USB console cable. Port „automatic“ uses the only USB
+console cable that is plugged in, so a synced connection also works on the other computer (COM5 on Windows,
+`/dev/cu.usbserial-…` on macOS, `/dev/ttyUSB0` on Linux). Default 9600 baud 8N1. If user and password are stored,
+sshTermy types them as soon as the device asks (and answers „Press any key to continue“). In the palette,
+`telnet 10.0.0.5`, `COM3` or `console /dev/ttyUSB0 115200` connects right away; palette → „Send break“ sends a serial
+break. Host overview (F6), config backup, quick commands and the AI work as with SSH; files, tunnels and broadcast
+need SSH. Linux: the user needs to be in the `dialout` group. Telnet is unencrypted, use it only in trusted networks.
+
 ## Screens
 
 The screenshots show the German interface; the English one looks the same.

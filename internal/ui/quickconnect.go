@@ -159,6 +159,9 @@ func localUser() string {
 
 // quickItems: Palette-Einträge für ein getipptes SSH-Ziel.
 func (a *App) quickItems(q string) (items []palItem, strong bool) {
+	if rc, ok := parseQuickRaw(q); ok {
+		return a.quickRawItems(rc), true
+	}
 	c, strong, ok := parseQuick(q)
 	if !ok {
 		return nil, false

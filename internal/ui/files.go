@@ -68,6 +68,10 @@ func (a *App) toggleFiles(s *session) tea.Cmd {
 		f.open = false
 		return nil
 	}
+	if s.conn.Protocol.Raw() {
+		a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
+		return nil
+	}
 	f.open = true
 	if f.remote != nil || f.opening || s.client == nil {
 		return nil

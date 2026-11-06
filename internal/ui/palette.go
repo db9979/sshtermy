@@ -143,7 +143,7 @@ func (a *App) paletteItems() []palItem {
 		if !match(c.Alias + " " + c.Host + " " + c.Group) {
 			continue
 		}
-		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: c.Username + "@" + c.Host,
+		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: shortTarget(c),
 			run: func() tea.Cmd { return a.openOrConnect(c) }})
 	}
 	actions := []palItem{
@@ -214,7 +214,10 @@ func (a *App) paletteItems() []palItem {
 			a.resize(s)
 			return a.panelOpened(s)
 		}})
-		if s.client != nil && s.client.NetDevice {
+		if s.isSerial() && s.state == stConnected {
+			actions = append(actions, palItem{icon: "⌁", label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
+		}
+		if s.netDev() {
 			actions = append(actions, palItem{icon: "▣", label: i18n.T("Switch-Config sichern und vergleichen"), hint: "b", run: func() tea.Cmd {
 				withPanel(s, panelHost)
 				s.panelFocus = false
