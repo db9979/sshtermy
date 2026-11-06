@@ -131,7 +131,7 @@ func (a *App) sessionBar(s *session) string {
 	h := a.llmHealth()
 	// KI-Anzeige in drei Breiten: Modell + Antwortzeit, nur Antwortzeit, nur Punkt
 	aiBadge := func(full, short bool) string {
-		txt := "✦ " + trunc(cfg.Model, 22)
+		txt := "✦ " + trunc(h.model(), 22)
 		if !full {
 			txt = "✦"
 		}

@@ -340,6 +340,17 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 - API-Key geht nie per `http://` an einen fremden Host (außer bewusst erlaubt).
 - Ratenlimit im Ziel-Modus (Standard 6 Schritte/min, max. 40 Schritte pro Ziel).
 
+### KI-Anbieter und Ersatz
+
+- **Anbieter** in den KI-Einstellungen (`s`): Spark bzw. jeder OpenAI-kompatible Server (vLLM, SGLang, LiteLLM,
+  LM Studio), Ollama, OpenAI oder Claude (Anthropic Messages-API). ←/→ wechselt und belegt Adresse und Modell vor;
+  Strg+L listet die Modelle des Anbieters, Strg+T testet.
+- **Ersatz-Anbieter** (Einstellungen → „Ersatz-Anbieter“ oder `r` im KI-Status): bis zu drei, die der Reihe nach
+  einspringen, wenn der Endpunkt nicht antwortet. Ein ausgefallener Endpunkt wird 5 Minuten übersprungen oder bis
+  die Hintergrundprüfung ihn wieder erreicht. Der Status-Punkt wird gelb und zeigt „Ersatz: Claude“, solange ein
+  Ersatz antwortet.
+- Cloud-Dienste brauchen immer einen API-Key; er liegt verschlüsselt wie die Passwörter.
+
 ### Fehler erkennen und Sitzungsprotokoll
 
 - **Wann ist ein Befehl fertig?** Nach Enter, sobald wieder ein leerer Prompt dasteht und die Ausgabe ruht. Seine
@@ -469,6 +480,30 @@ Ende ins Archiv; in der Protokollansicht steht, von welchem Rechner ein Protokol
 
 Zum Ausprobieren ohne NAS: `go run ./tools/dev/devdav` (http auf Port 5005) oder `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
 (selbstsigniert), Benutzer `dominik`, Passwort `nas-pw`.
+
+## Mit dem Team teilen
+
+Strg+Leertaste → „Mit dem Team teilen“: Verbindungen wählen (Leertaste, `g` Ordner, `a` alle), dann Passwort und
+Optionen. sshTermy schreibt eine verschlüsselte `.sshteam`-Datei (Argon2id + AES-256-GCM, ohne Passwort ist nichts
+lesbar, auch nicht der Absender). Jump-Hosts kommen automatisch mit; Tunnel, Runbooks und Schnellbefehle nach Wahl.
+**Nie enthalten:** Passwörter, eingebettete Keys, Passphrasen, Key-Pfade außerhalb von `~/`, Benutzernamen (nach
+Wahl), gelernte abgelehnte Vorschläge, KI- und Sync-Einstellungen. Bleibt das Passwort leer, erzeugt sshTermy eines.
+
+Der Kollege nimmt Strg+Leertaste → „Team-Paket übernehmen“: Datei, Passwort, Zielordner (Standard „Team“). Eine
+Vorschau zeigt neue und aktualisierte Einträge. Wer dasselbe Paket später erneut übernimmt, bekommt die Änderungen;
+eigene Passwörter, Keys und Benutzernamen bleiben erhalten.
+
+### Team-Ordner: automatisch aktuell
+
+Leg die Datei beim Teilen in einen Ordner, den alle erreichen (Netzlaufwerk, OneDrive- oder Teams-Ordner) oder gib
+eine https-/WebDAV-Adresse an (`https://benutzer:passwort@nas:5006/team/acme.sshteam`), und schalte „Aktuell halten“
+ein. Dann schreibt sshTermy die Datei neu, sobald sich an den Verbindungen etwas ändert (Prüfung jede Minute). Wer aus
+einem Ordner im Manager geteilt hat, teilt den ganzen Ordner: Neue Verbindungen darin gehen automatisch mit.
+
+Kollegen lassen beim Übernehmen „Abonnieren“ an. sshTermy liest die Datei dann alle 5 Minuten und übernimmt
+Änderungen: neue Verbindungen kommen dazu, geänderte werden aktualisiert, beim Absender gelöschte verschwinden auch
+hier. Eigene Passwörter, Keys und Benutzernamen bleiben. Strg+Leertaste → „Team-Ordner“ zeigt den Stand, gleicht
+sofort ab oder beendet ein Abo (die Verbindungen bleiben dann). Team-Ordner sind rein lokal und gehen nicht in den Sync.
 
 ## Lizenz
 

@@ -1,6 +1,13 @@
-// Package llm ist ein schlanker Client für OpenAI-kompatible
-// /v1/chat/completions-Endpunkte (OpenAI, LocalAI, vLLM, SGLang, Ollama,
-// LiteLLM, LM Studio). Keine SDK-Abhängigkeit, nur net/http.
+// Package llm ist ein schlanker Client für Sprachmodelle ohne SDK, nur
+// net/http. Er spricht zwei Protokolle:
+//
+//   - OpenAI-kompatibel (/v1/chat/completions): der Spark mit vLLM/SGLang,
+//     Ollama, OpenAI, LiteLLM, LocalAI, LM Studio …
+//   - Anthropic Messages (/v1/messages) für Claude.
+//
+// Ein Client kennt den eingestellten Endpunkt und die Ersatz-Anbieter
+// (domain.LLMConfig.Fallbacks). Antwortet der Endpunkt nicht, springt der
+// nächste ein (siehe chain.go).
 package llm
 
 import (
@@ -28,12 +35,14 @@ type Message struct {
 }
 
 type request struct {
-	Model       string    `json:"model"`
-	Messages    []Message `json:"messages"`
-	MaxTokens   int       `json:"max_tokens,omitempty"`
-	Temperature float64   `json:"temperature"`
-	Stream      bool      `json:"stream,omitempty"`
-	Stop        []string  `json:"stop,omitempty"`
+	Model     string    `json:"model"`
+	Messages  []Message `json:"messages"`
+	MaxTokens int       `json:"max_tokens,omitempty"`
+	// OpenAI selbst: neuere Modelle kennen nur noch max_completion_tokens.
+	MaxCompletionTokens int      `json:"max_completion_tokens,omitempty"`
+	Temperature         *float64 `json:"temperature,omitempty"`
+	Stream              bool     `json:"stream,omitempty"`
+	Stop                []string `json:"stop,omitempty"`
 	// vLLM/SGLang: Qwen3-Thinking per Chat-Template abschalten.
 	ChatTemplateKwargs map[string]any `json:"chat_template_kwargs,omitempty"`
 }
@@ -59,23 +68,40 @@ type response struct {
 	} `json:"error,omitempty"`
 }
 
-// Client hält die Konfiguration und einen wiederverwendeten HTTP-Client.
-type Client struct {
+// conn ist ein einzelner Endpunkt (Hauptendpunkt oder ein Ersatz).
+type conn struct {
 	cfg  domain.LLMConfig
 	http *http.Client
+	idx  int // 0 = eingestellter Endpunkt, 1… = Ersatz-Anbieter
+}
+
+// Client hält den Endpunkt samt Ersatz-Anbietern.
+type Client struct {
+	cfg   domain.LLMConfig
+	conns []*conn
 }
 
 const maxBody = 2 << 20 // Antworten über 2 MiB werden abgeschnitten (Schutz vor Speicherfluten)
 
+// New prüft den Hauptendpunkt; Ersatz-Anbieter mit unvollständigen Angaben
+// werden still übergangen (sie sollen den Copiloten nicht abschalten).
 func New(cfg domain.LLMConfig) (*Client, error) {
 	if err := Check(cfg); err != nil {
 		return nil, err
 	}
-	return &Client{cfg: cfg, http: httpClient(cfg)}, nil
+	c := &Client{cfg: cfg}
+	for i, e := range cfg.Chain() {
+		if i > 0 && Check(e) != nil {
+			continue
+		}
+		c.conns = append(c.conns, &conn{cfg: e, http: httpClient(e), idx: i})
+	}
+	return c, nil
 }
 
-// Check: Base-URL gültig; ein API-Key geht nie unverschlüsselt (http) an
-// einen fremden Host, außer AllowInsecure ist bewusst gesetzt.
+// Check: Modell gesetzt, Base-URL gültig, Cloud-Dienste mit API-Key; ein
+// API-Key geht nie unverschlüsselt (http) an einen fremden Host, außer
+// AllowInsecure ist bewusst gesetzt.
 func Check(cfg domain.LLMConfig) error {
 	if cfg.Model == "" {
 		return errors.New(i18n.T("Modellname fehlt"))
@@ -89,6 +115,9 @@ func CheckEndpoint(cfg domain.LLMConfig) error {
 	u, err := url.Parse(strings.TrimRight(cfg.BaseURL, "/"))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return errors.New(i18n.T("Base-URL ungültig (http(s)://host[:port]/v1)"))
+	}
+	if cfg.Provider.NeedsKey() && !cfg.APIKey.IsSet() {
+		return fmt.Errorf(i18n.T("%s braucht einen API-Key"), cfg.Provider.Label())
 	}
 	if u.Scheme == "http" && cfg.APIKey.IsSet() && !cfg.AllowInsecure && !isLocal(u.Hostname()) {
 		return errors.New(i18n.T("API-Key würde unverschlüsselt (http) übertragen; https nutzen oder 'unsicher erlauben' setzen"))
@@ -105,33 +134,65 @@ func isLocal(h string) bool {
 }
 
 func baseURL(cfg domain.LLMConfig) string {
-	return strings.TrimSuffix(strings.TrimRight(cfg.BaseURL, "/"), "/chat/completions")
+	b := strings.TrimRight(cfg.BaseURL, "/")
+	b = strings.TrimSuffix(b, "/chat/completions")
+	return strings.TrimSuffix(b, "/messages")
 }
 
-func (c *Client) endpoint() string { return baseURL(c.cfg) + "/chat/completions" }
+func (c *conn) endpoint() string {
+	if c.cfg.Provider == domain.ProviderAnthropic {
+		return baseURL(c.cfg) + "/messages"
+	}
+	return baseURL(c.cfg) + "/chat/completions"
+}
+
+// transport: kurzer Verbindungsaufbau, damit ein ausgeschalteter Spark
+// schnell als „nicht erreichbar“ gilt und der Ersatz übernimmt, statt erst
+// nach dem vollen Timeout.
+var transport = &http.Transport{
+	Proxy:                 http.ProxyFromEnvironment,
+	DialContext:           (&net.Dialer{Timeout: 6 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+	TLSHandshakeTimeout:   10 * time.Second,
+	MaxIdleConns:          16,
+	IdleConnTimeout:       90 * time.Second,
+	ExpectContinueTimeout: time.Second,
+	ForceAttemptHTTP2:     true,
+}
 
 func httpClient(cfg domain.LLMConfig) *http.Client {
 	t := cfg.TimeoutSec
 	if t <= 0 {
 		t = 60
 	}
-	return &http.Client{Timeout: time.Duration(t) * time.Second}
+	return &http.Client{Timeout: time.Duration(t) * time.Second, Transport: transport}
+}
+
+func setAuth(req *http.Request, cfg domain.LLMConfig) {
+	req.Header.Set("User-Agent", "sshtermy")
+	if cfg.Provider == domain.ProviderAnthropic {
+		req.Header.Set("anthropic-version", "2023-06-01")
+		if cfg.APIKey.IsSet() {
+			req.Header.Set("x-api-key", cfg.APIKey.Reveal())
+		}
+		return
+	}
+	if cfg.APIKey.IsSet() {
+		req.Header.Set("Authorization", "Bearer "+cfg.APIKey.Reveal())
+	}
 }
 
 // Models fragt GET {base}/models ab (OpenAI-Format {"data":[{"id":…}]}; so
-// liefern es auch vLLM, SGLang, LiteLLM, LocalAI, LM Studio und Ollama).
+// liefern es auch vLLM, SGLang, LiteLLM, LocalAI, LM Studio, Ollama und die
+// Anthropic-API).
 func Models(ctx context.Context, cfg domain.LLMConfig) ([]string, error) {
 	if err := CheckEndpoint(cfg); err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL(cfg)+"/models", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL(cfg)+"/models?limit=1000", nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "sshtermy")
-	if cfg.APIKey.IsSet() {
-		req.Header.Set("Authorization", "Bearer "+cfg.APIKey.Reveal())
-	}
+	setAuth(req, cfg)
 	resp, err := httpClient(cfg).Do(req)
 	if err != nil {
 		return nil, err
@@ -148,9 +209,7 @@ func Models(ctx context.Context, cfg domain.LLMConfig) ([]string, error) {
 		Models []struct { // Ollama /api/tags-Form, falls ein Proxy sie durchreicht
 			Name string `json:"name"`
 		} `json:"models"`
-		Error *struct {
-			Message string `json:"message"`
-		} `json:"error"`
+		Error json.RawMessage `json:"error"`
 	}
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		return nil, fmt.Errorf(i18n.T("HTTP %d: API-Key fehlt oder ist falsch"), resp.StatusCode)
@@ -158,8 +217,8 @@ func Models(ctx context.Context, cfg domain.LLMConfig) ([]string, error) {
 	if json.Unmarshal(raw, &r) != nil {
 		return nil, fmt.Errorf(i18n.T("HTTP %d, keine JSON-Antwort von /models"), resp.StatusCode)
 	}
-	if r.Error != nil {
-		return nil, fmt.Errorf("%s", r.Error.Message)
+	if m := errMessage(r.Error); m != "" {
+		return nil, fmt.Errorf("%s", m)
 	}
 	if resp.StatusCode/100 != 2 {
 		return nil, fmt.Errorf(i18n.T("HTTP %d von /models"), resp.StatusCode)
@@ -182,6 +241,24 @@ func Models(ctx context.Context, cfg domain.LLMConfig) ([]string, error) {
 	return out, nil
 }
 
+// errMessage liest {"message": …} (OpenAI) oder einen reinen Text.
+func errMessage(raw json.RawMessage) string {
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	var e struct {
+		Message string `json:"message"`
+	}
+	if json.Unmarshal(raw, &e) == nil && e.Message != "" {
+		return e.Message
+	}
+	var s string
+	if json.Unmarshal(raw, &s) == nil {
+		return s
+	}
+	return ""
+}
+
 // TestResult beschreibt einen Verbindungstest.
 type TestResult struct {
 	Models    []string
@@ -193,40 +270,26 @@ type TestResult struct {
 
 // Test lädt die Modell-Liste und schickt eine winzige Chat-Anfrage an das
 // eingestellte Modell. Beides wird getrennt gemeldet, weil manche Server
-// /models nicht anbieten, Chat aber funktioniert.
+// /models nicht anbieten, Chat aber funktioniert. Getestet wird nur dieser
+// eine Endpunkt, nicht die Ersatz-Anbieter.
 func Test(ctx context.Context, cfg domain.LLMConfig) TestResult {
+	cfg.Fallbacks = nil
 	var r TestResult
 	r.Models, r.ModelsErr = Models(ctx, cfg)
 	if cfg.Model == "" {
 		r.ChatErr = errors.New(i18n.T("kein Modell gewählt"))
 		return r
 	}
-	c, err := New(cfg)
-	if err != nil {
+	if err := Check(cfg); err != nil {
 		r.ChatErr = err
 		return r
 	}
+	c := &conn{cfg: cfg, http: httpClient(cfg)}
 	t0 := time.Now()
-	r.Reply, r.ChatErr = c.Complete(ctx, []Message{{Role: "user", Content: "Antworte nur mit: OK"}}, Opts{MaxTokens: 16, Temperature: 0.01})
+	res, err := c.completeResult(ctx, []Message{{Role: "user", Content: "Antworte nur mit: OK"}}, Opts{MaxTokens: 16, Temperature: 0.01})
+	r.Reply, r.ChatErr = res.Content, err
 	r.Latency = time.Since(t0)
 	return r
-}
-
-func (c *Client) newRequest(ctx context.Context, body request) (*http.Request, error) {
-	raw, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint(), bytes.NewReader(raw))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "sshtermy")
-	if c.cfg.APIKey.IsSet() {
-		req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey.Reveal())
-	}
-	return req, nil
 }
 
 // Opts überschreibt pro Aufruf Tokens und Temperatur.
@@ -263,15 +326,7 @@ func (c *Client) Complete(ctx context.Context, msgs []Message, o Opts) (string, 
 	return r.Content, err
 }
 
-// CompleteResult wie Complete, aber mit finish_reason und Reasoning.
-func (c *Client) CompleteResult(ctx context.Context, msgs []Message, o Opts) (Result, error) {
-	t0 := time.Now()
-	r, err := c.completeResult(ctx, msgs, o)
-	c.observe(t0, err, false)
-	return r, err
-}
-
-func (c *Client) completeResult(ctx context.Context, msgs []Message, o Opts) (Result, error) {
+func (c *conn) params(o Opts) (int, float64) {
 	mt, temp := c.cfg.MaxTokens, c.cfg.Temperature
 	if o.MaxTokens > 0 {
 		mt = o.MaxTokens
@@ -279,13 +334,41 @@ func (c *Client) completeResult(ctx context.Context, msgs []Message, o Opts) (Re
 	if o.Temperature > 0 {
 		temp = o.Temperature
 	}
-	body := request{Model: c.cfg.Model, Messages: msgs, MaxTokens: mt, Temperature: temp}
+	return mt, temp
+}
+
+// openAIBody baut die Anfrage im OpenAI-Format.
+func (c *conn) openAIBody(msgs []Message, o Opts, stream bool) request {
+	mt, temp := c.params(o)
+	body := request{Model: c.cfg.Model, Messages: msgs, Temperature: &temp, Stream: stream}
+	if c.cfg.Provider == domain.ProviderOpenAI {
+		body.MaxCompletionTokens = mt
+	} else {
+		body.MaxTokens = mt
+	}
 	if o.NoThink {
 		body.ChatTemplateKwargs = noThinkKwargs(c.cfg.Model)
 	}
+	return body
+}
+
+// rejects: der Server lehnt ein Feld der Anfrage ab (HTTP 400 mit Hinweis).
+func rejects(status int, raw []byte, field string) bool {
+	return status == http.StatusBadRequest && bytes.Contains(bytes.ToLower(raw), []byte(field))
+}
+
+func (c *conn) completeResult(ctx context.Context, msgs []Message, o Opts) (Result, error) {
+	if c.cfg.Provider == domain.ProviderAnthropic {
+		return c.anthropicComplete(ctx, msgs, o)
+	}
+	body := c.openAIBody(msgs, o, false)
 	status, raw, err := c.post(ctx, body)
 	if err == nil && status == http.StatusBadRequest && body.ChatTemplateKwargs != nil {
 		body.ChatTemplateKwargs = nil // Server kennt das Feld nicht
+		status, raw, err = c.post(ctx, body)
+	}
+	if err == nil && rejects(status, raw, "temperature") {
+		body.Temperature = nil // Reasoning-Modelle bei OpenAI erlauben nur den Standard
 		status, raw, err = c.post(ctx, body)
 	}
 	if err != nil {
@@ -309,12 +392,29 @@ func (c *Client) completeResult(ctx context.Context, msgs []Message, o Opts) (Re
 	return Result{Content: ch.Message.Content, Reasoning: reasoning, FinishReason: ch.FinishReason}, nil
 }
 
-func (c *Client) post(ctx context.Context, body request) (int, []byte, error) {
-	req, err := c.newRequest(ctx, body)
+func (c *conn) do(ctx context.Context, body any, stream bool) (*http.Response, error) {
+	raw, err := json.Marshal(body)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
-	resp, err := c.http.Do(req)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint(), bytes.NewReader(raw))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	setAuth(req, c.cfg)
+	cl := c.http
+	if stream {
+		req.Header.Set("Accept", "text/event-stream")
+		cp := *c.http
+		cp.Timeout = 0 // Streams dürfen länger dauern; Abbruch über ctx
+		cl = &cp
+	}
+	return cl.Do(req)
+}
+
+func (c *conn) post(ctx context.Context, body any) (int, []byte, error) {
+	resp, err := c.do(ctx, body, false)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -323,34 +423,48 @@ func (c *Client) post(ctx context.Context, body request) (int, []byte, error) {
 	return resp.StatusCode, raw, err
 }
 
-// Stream liefert die Antwort stückweise (Server-Sent Events), z. B. für den
-// Frage-Modus, damit die Erklärung sofort zu lesen ist.
-func (c *Client) Stream(ctx context.Context, msgs []Message, o Opts, onDelta func(string)) error {
-	mt := c.cfg.MaxTokens
-	if o.MaxTokens > 0 {
-		mt = o.MaxTokens
+// openStream startet einen Stream; nil-Fehler heißt: Kopfzeilen mit 2xx da.
+func (c *conn) openStream(ctx context.Context, msgs []Message, o Opts) (*http.Response, error) {
+	var body any
+	if c.cfg.Provider == domain.ProviderAnthropic {
+		b := c.anthropicBody(msgs, o)
+		b.Stream = true
+		body = b
+	} else {
+		b := c.openAIBody(msgs, o, true)
+		b.ChatTemplateKwargs = nil
+		body = b
 	}
-	req, err := c.newRequest(ctx, request{Model: c.cfg.Model, Messages: msgs, MaxTokens: mt,
-		Temperature: c.cfg.Temperature, Stream: true})
+	resp, err := c.do(ctx, body, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	req.Header.Set("Accept", "text/event-stream")
-	cl := *c.http
-	cl.Timeout = 0 // Streams dürfen länger dauern; Abbruch über ctx
-	t0 := time.Now()
-	resp, err := cl.Do(req)
-	if err != nil {
-		c.observe(t0, err, true)
-		return err
-	}
-	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
-		err := fmt.Errorf("LLM: HTTP %d", resp.StatusCode)
-		c.observe(t0, err, true)
-		return err
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+		resp.Body.Close()
+		if m := apiError(raw); m != "" {
+			return nil, fmt.Errorf("LLM: HTTP %d: %s", resp.StatusCode, m)
+		}
+		return nil, fmt.Errorf("LLM: HTTP %d", resp.StatusCode)
 	}
-	c.observe(t0, nil, true) // Kopfzeilen da: der Server antwortet
+	return resp, nil
+}
+
+// apiError: Fehlermeldung aus einer JSON-Antwort (OpenAI und Anthropic
+// haben beide {"error":{"message":…}}).
+func apiError(raw []byte) string {
+	var r struct {
+		Error json.RawMessage `json:"error"`
+	}
+	if json.Unmarshal(raw, &r) != nil {
+		return ""
+	}
+	return errMessage(r.Error)
+}
+
+// readStream liest Server-Sent Events beider Formate.
+func (c *conn) readStream(resp *http.Response, onDelta func(string)) error {
+	defer resp.Body.Close()
 	sc := bufio.NewScanner(io.LimitReader(resp.Body, maxBody))
 	sc.Buffer(make([]byte, 64*1024), 1<<20)
 	for sc.Scan() {
@@ -361,6 +475,25 @@ func (c *Client) Stream(ctx context.Context, msgs []Message, o Opts, onDelta fun
 		data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
 		if data == "[DONE]" {
 			return nil
+		}
+		if c.cfg.Provider == domain.ProviderAnthropic {
+			var ev anthropicEvent
+			if json.Unmarshal([]byte(data), &ev) != nil {
+				continue
+			}
+			switch ev.Type {
+			case "content_block_delta":
+				if ev.Delta.Text != "" {
+					onDelta(ev.Delta.Text)
+				}
+			case "message_stop":
+				return nil
+			case "error":
+				if ev.Error != nil {
+					return fmt.Errorf("LLM: %s", ev.Error.Message)
+				}
+			}
+			continue
 		}
 		var r response
 		if json.Unmarshal([]byte(data), &r) == nil && len(r.Choices) > 0 {

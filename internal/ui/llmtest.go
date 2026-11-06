@@ -35,6 +35,11 @@ type llmUI struct {
 	status string // Ergebnis (bereits gestylt)
 	models []string
 	pick   *modelPick
+
+	fallback  bool                 // Formular für die Ersatz-Anbieter statt Hauptendpunkt
+	modelsFor string               // Feld, zu dem models gehört (Liste gilt nur dort)
+	prev      map[string]string    // zuletzt gesehene Anbieter-Auswahl je Feld
+	saved     map[string][2]string // Feld|Anbieter → Adresse, Modell vor dem Wechsel
 }
 
 func (p *modelPick) visible() []string {
@@ -52,6 +57,11 @@ func (p *modelPick) visible() []string {
 func (a *App) formLLM() domain.LLMConfig {
 	f := a.form
 	c := a.st.LLM()
+	if a.llm.fallback {
+		c.Fallbacks = a.formFallbacks()
+		return c
+	}
+	c.Provider = providerFromLabel(f.sel("prov"))
 	c.BaseURL, c.APIKey, c.Model = f.str("base"), domain.Secret(f.raw("key")), f.str("model")
 	c.MaxTokens, c.TimeoutSec = f.num("tokens"), f.num("timeout")
 	fmt.Sscanf(f.str("temp"), "%f", &c.Temperature)
@@ -69,7 +79,11 @@ func testTimeout(c domain.LLMConfig) time.Duration {
 }
 
 func (a *App) llmTestCmd() tea.Cmd {
-	c := a.formLLM()
+	c, ok := a.focusedLLM()
+	if !ok {
+		a.llm.status = a.s.Warn.Render(i18n.T("⚠ Erst einen Anbieter wählen (←/→)."))
+		return nil
+	}
 	a.llm.busy, a.llm.status = i18n.T("teste ")+c.BaseURL+" …", ""
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), testTimeout(c))
@@ -79,7 +93,12 @@ func (a *App) llmTestCmd() tea.Cmd {
 }
 
 func (a *App) llmModelsCmd() tea.Cmd {
-	c := a.formLLM()
+	c, ok := a.focusedLLM()
+	if !ok {
+		a.llm.status = a.s.Warn.Render(i18n.T("⚠ Erst einen Anbieter wählen (←/→)."))
+		return nil
+	}
+	a.llm.modelsFor = a.modelKey()
 	a.llm.busy, a.llm.status = i18n.T("lade Modelle von ")+c.BaseURL+" …", ""
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), testTimeout(c))
@@ -90,7 +109,7 @@ func (a *App) llmModelsCmd() tea.Cmd {
 }
 
 func (a *App) openModelPick() {
-	cur := a.form.str("model")
+	cur := a.form.str(a.modelKey())
 	p := &modelPick{all: a.llm.models}
 	for i, m := range p.all {
 		if m == cur {
@@ -111,12 +130,12 @@ func (a *App) llmMsg(msg tea.Msg) (tea.Cmd, bool) {
 		r := m.res
 		var parts []string
 		if r.ModelsErr == nil {
-			a.llm.models = r.Models
+			a.llm.models, a.llm.modelsFor = r.Models, a.modelKey()
 			parts = append(parts, a.s.OK.Render(fmt.Sprintf(i18n.T("✓ /models: %d Modelle"), len(r.Models))))
 		} else {
 			parts = append(parts, a.s.Warn.Render(i18n.T("⚠ /models: ")+r.ModelsErr.Error()))
 		}
-		model := a.form.str("model")
+		model := a.form.str(a.modelKey())
 		switch {
 		case r.ChatErr != nil:
 			parts = append(parts, a.s.Danger.Render(i18n.T("✗ Chat: ")+r.ChatErr.Error()))
@@ -162,7 +181,7 @@ func (a *App) settingsKey(k tea.KeyPressMsg) (tea.Cmd, bool) {
 			p.sel = min(len(vis)-1, p.sel+1)
 		case "enter", "tab":
 			if p.sel < len(vis) {
-				fl := a.form.get("model")
+				fl := a.form.get(a.modelKey())
 				fl.in.SetValue(vis[p.sel])
 				fl.in.CursorEnd()
 				a.llm.status = a.s.OK.Render(i18n.T("Modell „") + vis[p.sel] + i18n.T("“ gewählt · Strg+T testen · Strg+S speichern"))
@@ -183,7 +202,7 @@ func (a *App) settingsKey(k tea.KeyPressMsg) (tea.Cmd, bool) {
 	case "ctrl+t":
 		return a.llmTestCmd(), true
 	case "ctrl+l":
-		if len(a.llm.models) > 0 {
+		if len(a.llm.models) > 0 && a.llm.modelsFor == a.modelKey() {
 			a.openModelPick()
 			return nil, true
 		}
@@ -212,7 +231,7 @@ func (a *App) viewLLMExtra(w int) string {
 		if p.sel >= rows {
 			start = p.sel - rows + 1
 		}
-		cur := a.form.str("model")
+		cur := a.form.str(a.modelKey())
 		for i := start; i < len(vis) && i < start+rows; i++ {
 			mark := "  "
 			if vis[i] == cur {

@@ -268,15 +268,82 @@ func (t Tunnel) IsWebService() bool {
 	return t.WebScheme != "" && (t.Kind == TunnelLocal)
 }
 
-// LLMConfig: jeder OpenAI-kompatible Endpunkt (/v1/chat/completions):
-// OpenAI, LocalAI, vLLM, SGLang, Ollama (/v1), LiteLLM, LM Studio …
+// LLMProvider: welche Art von KI-Dienst hinter einem Endpunkt steckt.
+type LLMProvider string
+
+const (
+	// ProviderCompat: jeder OpenAI-kompatible Server (Spark mit vLLM/SGLang,
+	// LiteLLM, LocalAI, LM Studio …). Leer, damit alte Stores so bleiben.
+	ProviderCompat    LLMProvider = ""
+	ProviderOllama    LLMProvider = "ollama"
+	ProviderOpenAI    LLMProvider = "openai"
+	ProviderAnthropic LLMProvider = "anthropic" // Claude (Messages-API)
+)
+
+// Providers: Reihenfolge in der Auswahl.
+var Providers = []LLMProvider{ProviderCompat, ProviderOllama, ProviderOpenAI, ProviderAnthropic}
+
+// DefaultBaseURL: Adresse, die beim Wählen des Anbieters vorbelegt wird.
+func (p LLMProvider) DefaultBaseURL() string {
+	switch p {
+	case ProviderOllama:
+		return "http://localhost:11434/v1"
+	case ProviderOpenAI:
+		return "https://api.openai.com/v1"
+	case ProviderAnthropic:
+		return "https://api.anthropic.com/v1"
+	}
+	return ""
+}
+
+// DefaultModel: Modell, das beim Wählen des Anbieters vorbelegt wird.
+func (p LLMProvider) DefaultModel() string {
+	switch p {
+	case ProviderOllama:
+		return "qwen2.5-coder:7b"
+	case ProviderOpenAI:
+		return "gpt-4.1-mini"
+	case ProviderAnthropic:
+		return "claude-haiku-5-5"
+	}
+	return ""
+}
+
+// NeedsKey: Cloud-Dienste brauchen immer einen API-Key.
+func (p LLMProvider) NeedsKey() bool { return p == ProviderOpenAI || p == ProviderAnthropic }
+
+// Label: Name in der Oberfläche (deutsch, wird beim Anzeigen übersetzt).
+func (p LLMProvider) Label() string {
+	switch p {
+	case ProviderOllama:
+		return "Ollama"
+	case ProviderOpenAI:
+		return "OpenAI"
+	case ProviderAnthropic:
+		return "Claude"
+	}
+	return "Spark / kompatibel"
+}
+
+// LLMBackup ist ein Ersatz-Anbieter, der einspringt, wenn der eigentliche
+// Endpunkt nicht antwortet.
+type LLMBackup struct {
+	Provider LLMProvider `json:"provider,omitempty"`
+	BaseURL  string      `json:"base_url,omitempty"`
+	APIKey   Secret      `json:"api_key,omitempty"`
+	Model    string      `json:"model,omitempty"`
+}
+
+// LLMConfig: der eigentliche KI-Endpunkt (Standard: OpenAI-kompatibel, z. B.
+// der Spark mit vLLM) plus Ersatz-Anbieter in fester Reihenfolge.
 type LLMConfig struct {
-	BaseURL     string  `json:"base_url"` // z. B. http://dgx-spark:8000/v1
-	APIKey      Secret  `json:"api_key,omitempty"`
-	Model       string  `json:"model"`
-	MaxTokens   int     `json:"max_tokens"`
-	Temperature float64 `json:"temperature"`
-	TimeoutSec  int     `json:"timeout_s"`
+	Provider    LLMProvider `json:"provider,omitempty"`
+	BaseURL     string      `json:"base_url"` // z. B. http://dgx-spark:8000/v1
+	APIKey      Secret      `json:"api_key,omitempty"`
+	Model       string      `json:"model"`
+	MaxTokens   int         `json:"max_tokens"`
+	Temperature float64     `json:"temperature"`
+	TimeoutSec  int         `json:"timeout_s"`
 
 	// Feineinstellungen der Assistenz
 	SuggestEnabled bool `json:"suggest_enabled"` // Ghost-Text beim Tippen
@@ -285,6 +352,30 @@ type LLMConfig struct {
 	SendScreen     bool `json:"send_screen"`    // Bildschirm überhaupt mitschicken
 	GoalStepsMin   int  `json:"goal_steps_min"` // Ratenlimit Ziel-Modus pro Minute
 	AllowInsecure  bool `json:"allow_insecure"` // http:// zu Nicht-Localhost erlauben
+
+	// Fallbacks: der Reihe nach, wenn der Endpunkt oben nicht antwortet.
+	Fallbacks []LLMBackup `json:"fallbacks,omitempty"`
+}
+
+// Chain: der Endpunkt und alle eingerichteten Ersatz-Anbieter, jeweils als
+// vollständige Einstellung (Tokens, Temperatur, Timeout vom Hauptendpunkt).
+func (c LLMConfig) Chain() []LLMConfig {
+	main := c
+	main.Fallbacks = nil
+	out := []LLMConfig{main}
+	for _, b := range c.Fallbacks {
+		if b.Model == "" && b.BaseURL == "" {
+			continue
+		}
+		e := main
+		e.Provider, e.BaseURL, e.APIKey, e.Model = b.Provider, b.BaseURL, b.APIKey, b.Model
+		if e.BaseURL == "" {
+			e.BaseURL = b.Provider.DefaultBaseURL()
+		}
+		e.AllowInsecure = false
+		out = append(out, e)
+	}
+	return out
 }
 
 // DefaultLLM: sinnvolle Standardwerte (lokales Modell, nichts verlässt das Netz).
@@ -426,6 +517,46 @@ type Data struct {
 	// vor Connection.KeyPath, wenn der Key hier woanders liegt als auf dem
 	// Rechner, der die Verbindung angelegt hat.
 	LocalKeys map[string]string `json:"local_keys,omitempty"`
+
+	// TeamLinks: Team-Ordner (veröffentlichen bzw. abonnieren). Rein lokal:
+	// Pfade sind je Rechner anders, das Team-Passwort bleibt auf dem Gerät.
+	TeamLinks []TeamLink `json:"team_links,omitempty"`
+}
+
+// Rollen eines Team-Ordners.
+const (
+	TeamPublish   = "pub" // dieser Rechner schreibt das Team-Paket bei Änderungen neu
+	TeamSubscribe = "sub" // dieser Rechner liest es regelmäßig und übernimmt Änderungen
+)
+
+// TeamLink ist ein Team-Paket in einem gemeinsamen Ordner (Netzlaufwerk,
+// OneDrive, Teams) oder unter einer https-/WebDAV-Adresse.
+type TeamLink struct {
+	ID       string `json:"id"`
+	Role     string `json:"role"` // TeamPublish | TeamSubscribe
+	Name     string `json:"name"`
+	Path     string `json:"path"` // Datei oder https://[user:pw@]host/…/x.sshteam
+	TeamPass Secret `json:"team_pass"`
+
+	// Veröffentlichen: was ins Paket geht. Folder = ganzer Ordner (auch
+	// später dazugekommene Verbindungen), IDs = einzeln gewählte.
+	Folder    string   `json:"folder,omitempty"`
+	IDs       []string `json:"ids,omitempty"`
+	From      string   `json:"from,omitempty"`
+	Users     bool     `json:"users,omitempty"`
+	QuickCmds bool     `json:"quick,omitempty"`
+	Runbooks  bool     `json:"runbooks,omitempty"`
+	Tunnels   bool     `json:"tunnels,omitempty"`
+
+	// Abonnieren: wohin und was schon da ist.
+	Into        string   `json:"into,omitempty"` // Zielordner, z. B. „Team“
+	DefaultUser string   `json:"user,omitempty"` // für Verbindungen ohne Benutzernamen
+	Have        []string `json:"have,omitempty"` // IDs, die zuletzt aus dem Paket kamen
+	Skip        []string `json:"skip,omitempty"` // in der Vorschau abgewählt: nie übernehmen
+
+	LastSum string    `json:"last_sum,omitempty"` // Stand des zuletzt geschriebenen/gelesenen Pakets
+	LastRun time.Time `json:"last_run,omitempty"` // letzte Änderung (geschrieben/übernommen)
+	LastErr string    `json:"last_err,omitempty"`
 }
 
 // Relay ist ein gekoppelter Vermittler.
