@@ -310,7 +310,7 @@ func (a *App) llmStatusView() string {
 		b.WriteString(row(i18n.T("Zuletzt"), s.Text.Render(what+" "+ago(h.last.At)+" · ")+res))
 	}
 	if h.last.Err != nil && h.level != lhOff {
-		w := min(90, a.w-4) - 6 - 13 // Rahmen, Innenabstand, Spalte links
+		w := dialogInner(a.w) - 13 // Spalte links
 		b.WriteString(row(i18n.T("Meldung"), s.Danger.Render(trunc(llmErrText(h.last.Err), max(20, w)))))
 		if hint := llmErrHint(h.last.Err.Error()); hint != "" {
 			b.WriteString("\n" + s.Warn.Render(i18n.T("Was tun: ")) + s.Text.Render(hint) + "\n")
@@ -337,7 +337,7 @@ func (a *App) llmStatusView() string {
 			b.WriteString("\n" + s.Muted.Render(i18n.T("Nächste Prüfung in ")+fmtWait(d)+i18n.T(", nur falls bis dahin keine echte Anfrage lief.")) + "\n")
 		}
 	}
-	return s.Modal.Width(min(90, a.w-4)).Render(s.Accent.Render(i18n.T("✦ KI-Status")) + "\n\n" + strings.TrimRight(b.String(), "\n"))
+	return s.dialog(dialog{icon: "✦", title: i18n.T("KI-Status"), tone: s.T.AI, body: b.String(), keys: a.modalKeys(), width: dialogInner(a.w)}, a.w)
 }
 
 func fmtWait(d time.Duration) string {

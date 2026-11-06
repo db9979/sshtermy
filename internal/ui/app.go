@@ -121,6 +121,7 @@ type App struct {
 	scan   *scanState                   // Netzwerk-Scan
 
 	intro *introState // Startanimation, nil = aus oder vorbei
+	fx    fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
 }
 
 func New(st *store.Store) (*App, error) {
@@ -128,7 +129,8 @@ func New(st *store.Store) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
+	a := &App{st: st, hostKeys: hk, events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
+	a.setStyles(Nacht)
 	a.unlock = newUnlock(st)
 	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
@@ -187,12 +189,21 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if _, ok := msg.(toastTickMsg); ok {
+	switch msg.(type) {
+	case fadeMsg:
+		if a.fadeRunning() {
+			return a, fadeTick()
+		}
+		return a, nil
+	case toastTickMsg:
 		a.toastTicking = false
 		a.liveToasts(time.Now())
 		return a, a.toastTick()
 	}
 	m, cmd := a.update(msg)
+	if c := a.trackFade(); c != nil {
+		cmd = tea.Batch(cmd, c)
+	}
 	if t := a.toastTick(); t != nil {
 		cmd = tea.Batch(cmd, t)
 	}
@@ -516,6 +527,12 @@ func (a *App) View() tea.View {
 	} else if a.pal != nil {
 		body = a.overlay(body, a.viewPalette())
 		cur = nil
+	} else if a.fx.out && a.fx.ghost != "" {
+		// gerade geschlossenes Popup blendet aus (nicht mehr klickbar)
+		if k, run := a.fadeLevel(); run {
+			c := lipgloss.NewCompositor(lipgloss.NewLayer(body), lipgloss.NewLayer(fadeANSI(a.fx.ghost, a.s.T, k)).X(a.fx.x).Y(a.fx.y).Z(1))
+			body = c.Render()
+		}
 	}
 	body = a.withToasts(body)
 	if a.intro != nil && introFits(a.w, a.h) {
@@ -536,8 +553,17 @@ func (a *App) View() tea.View {
 }
 
 // header: Logo, Version, Credit, Tabs/Status rechts.
+// headerLeft: Logo, Version und Credit. Im schmalen Fenster fällt zuerst die
+// Version weg (steht im Über-Dialog), der Credit bleibt immer sichtbar.
+func (a *App) headerLeft() string {
+	if a.w < 90 {
+		return a.s.Logo.Render("◆ "+version.Name) + a.s.Credit.Render(" "+i18n.T(version.Idea)+" ")
+	}
+	return a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
+}
+
 func (a *App) header(right string) string {
-	left := a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
+	left := a.headerLeft()
 	if a.rel != nil && right == "" {
 		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
 	} else if a.restartPending != "" && right == "" {
@@ -636,15 +662,14 @@ func (a *App) frame(content string, keys [][2]string) string {
 // overlay legt ein Modal mittig über den Inhalt (Compositing mit lipgloss v2).
 // Klickbar ist dann nur noch das Modal (die Zonen darunter verfallen).
 func (a *App) overlay(base, box string) string {
-	if a.modal != nil {
-		if b := a.modalButtons(); b != "" {
-			box = lipgloss.JoinVertical(lipgloss.Center, box, b)
-		}
-	}
 	bw, bh := lipgloss.Width(box), lipgloss.Height(box)
 	x, y := max(0, (a.w-bw)/2), max(0, (a.h-bh)/2)
 	if m := a.modal; m != nil && m.anchored {
 		x, y = clamp(m.at[0]+1, 0, max(0, a.w-bw)), clamp(m.at[1]+1, 0, max(0, a.h-bh))
+	}
+	a.fx.ghost, a.fx.x, a.fx.y = zoneRe.ReplaceAllString(box, ""), x, y
+	if k, run := a.fadeLevel(); run && !a.fx.out {
+		box = fadeANSI(box, a.s.T, k)
 	}
 	a.z.rects = a.z.rects[:0]
 	box = a.z.scan(box, x, y)

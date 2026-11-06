@@ -44,8 +44,14 @@ func TestHostKeyModalClosesOnCapitalJ(t *testing.T) {
 }
 
 func TestAboutShowsCoffeeLink(t *testing.T) {
-	m := (&App{}).aboutModal()
-	if !strings.Contains(m.body, version.Coffee) || !strings.Contains(m.body, "b = Kaffee") {
+	a := &App{}
+	m := a.aboutModal()
+	a.modal = m
+	coffee := false
+	for _, k := range a.modalKeys() {
+		coffee = coffee || (k[0] == "b" && strings.Contains(k[1], "Kaffee"))
+	}
+	if !strings.Contains(m.body, version.Coffee) || !coffee {
 		t.Fatalf("Kaffee-Link fehlt im Über-Dialog:\n%s", m.body)
 	}
 	if !strings.HasPrefix(version.Coffee, "https://buymeacoffee.com/") {

@@ -212,7 +212,7 @@ var helpSections = []helpSection{
 		{"Palette", "„Verlauf als Text“"},
 	}},
 	{hcNone, "◐", "Aussehen & Tasten", "", false, [][2]string{
-		{"a", "Dunkel · Hell · Kontrast"},
+		{"a", "Dunkel · Hell · Kontrast · Kontrast hell"},
 		{"b", "Tastenkürzel belegen"},
 		{"Strg +/−", "Schrift (Terminalfenster)"},
 		{"Palette", "„Startanimation aus“"},
@@ -340,7 +340,7 @@ func splitColumns(h []int, n int) [][]int {
 }
 
 func (m *modal) helpView(s Styles, w, h int) string {
-	avail := w - 4 - 6 // Rand und Innenabstand des Modals
+	avail := dialog{maxW: 200}.innerMax(w)
 	n := max(1, min(3, (avail+helpGap)/(helpColW+helpGap)))
 	blocks := make([][]string, len(helpSections))
 	heights := make([]int, len(helpSections))
@@ -364,44 +364,32 @@ func (m *modal) helpView(s Styles, w, h int) string {
 		cols = append(cols, col)
 	}
 	body := lipgloss.JoinHorizontal(lipgloss.Top, cols...)
-	cw := lipgloss.Width(body)
+	cw := min(avail, lipgloss.Width(body))
 
 	note := s.Muted.Render(i18n.T("Esc führt aus jedem Panel zurück ins Terminal."))
-	cw = max(cw, lipgloss.Width(note))
-	header := s.Accent.Render(i18n.T("? Tastenkürzel")) + s.Muted.Render("  ·  "+version.Short())
 	warn := s.ChipDanger.Render(i18n.T("ROT")) + " " + s.Text.Render(i18n.T("Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. ")) +
 		s.AI.Render(i18n.T("KI-Vorschläge")) + s.Text.Render(i18n.T(" werden nur eingefügt, nie ausgeführt."))
 	warn = lipgloss.NewStyle().Width(cw).Render(warn)
+	note = lipgloss.NewStyle().Width(cw).Render(note)
 
-	// Höhe begrenzen: Rand des Fensters (2), Modal-Rahmen und Innenabstand (4),
-	// Kopf (2), Fuß (Leerzeile, Warnung, Hinweiszeile).
+	// Höhe begrenzen: Fensterrand (2), Rahmen und Abstand (4), Warnung und
+	// Hinweis mit Leerzeile davor, Tastenzeile mit Leerzeile davor.
 	bodyLines := strings.Split(body, "\n")
-	closeHint, scrollHint := i18n.T("beliebige Taste schließt"), i18n.T("▾ mehr · ")+i18n.T("↑↓ blättern · ")
-	footH := 1
-	if lipgloss.Width(note)+2+lipgloss.Width(scrollHint+closeHint) > cw {
-		footH = 2
-	}
-	maxBody := max(3, h-2-4-2-(1+lipgloss.Height(warn)+footH))
-	hint := closeHint
+	maxBody := max(3, h-2-4-(1+lipgloss.Height(warn)+lipgloss.Height(note))-2)
+	keys := [][2]string{{"Esc", i18n.T("schließen")}}
+	info := ""
 	if total := len(bodyLines); total > maxBody {
 		m.scroll = max(0, min(m.scroll, total-maxBody))
 		bodyLines = bodyLines[m.scroll : m.scroll+maxBody]
-		hint = i18n.T("↑↓ blättern · ") + hint
+		keys = append([][2]string{{"↑↓", i18n.T("blättern")}}, keys...)
 		if m.scroll+maxBody < total {
-			hint = i18n.T("▾ mehr · ") + hint
+			info = i18n.T("▾ mehr")
 		}
 	} else {
 		m.scroll = 0
 	}
-	footer := s.Muted.Render(hint)
-	if gap := cw - lipgloss.Width(note) - lipgloss.Width(footer); footH == 1 {
-		footer = note + strings.Repeat(" ", gap) + footer
-	} else {
-		footer = note + "\n" + footer
-	}
-
-	out := header + "\n\n" + strings.Join(bodyLines, "\n") + "\n\n" + warn + "\n" + footer
-	return s.Modal.Render(out)
+	return s.dialog(dialog{icon: "?", title: i18n.T("Tastenkürzel"), sub: version.Short(),
+		body: strings.Join(bodyLines, "\n") + "\n\n" + warn + "\n" + note, info: info, keys: keys, width: cw, maxW: 200}, w)
 }
 
 func (m *modal) helpKey(key string) (closeIt bool) {

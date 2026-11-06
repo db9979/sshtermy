@@ -62,11 +62,28 @@ var Kontrast = Theme{
 	AI:       lipgloss.Color("#ff80ff"),
 	OK:       lipgloss.Color("#00ff5f"),
 	Warn:     lipgloss.Color("#ffff00"),
-	Danger:   lipgloss.Color("#ff3030"),
+	Danger:   lipgloss.Color("#ff6060"),
+}
+
+// KontrastHell: Hochkontrast auf Weiß, für Tageslicht und Beamer, wenn
+// „Hell“ zu blass ist. Reines Schwarz, kräftige dunkle Signalfarben.
+var KontrastHell = Theme{
+	Name: "kontrasthell", Label: "Hochkontrast hell", Dark: false,
+	Bg:       lipgloss.Color("#ffffff"),
+	Surface:  lipgloss.Color("#ffffff"),
+	Surface2: lipgloss.Color("#d8d8d8"),
+	Border:   lipgloss.Color("#000000"),
+	Text:     lipgloss.Color("#000000"),
+	Muted:    lipgloss.Color("#333333"),
+	Accent:   lipgloss.Color("#0033cc"),
+	AI:       lipgloss.Color("#7a00b3"),
+	OK:       lipgloss.Color("#006400"),
+	Warn:     lipgloss.Color("#7a4100"),
+	Danger:   lipgloss.Color("#b00000"),
 }
 
 // Themes in der Reihenfolge der Auswahl.
-var Themes = []Theme{Nacht, Hell, Kontrast}
+var Themes = []Theme{Nacht, Hell, Kontrast, KontrastHell}
 
 // ThemeByName: unbekannte oder leere Namen ergeben „Nacht“.
 func ThemeByName(name string) Theme {
@@ -92,6 +109,9 @@ type Styles struct {
 	Chip, ChipDanger, Badge, BadgeAI    lipgloss.Style
 	Modal, Input, Label, Tab, TabActive lipgloss.Style
 	Code                                lipgloss.Style
+
+	// zoneKey macht Tastenknöpfe in Dialogen klickbar (setzt die App).
+	zoneKey func(label, rendered string) string
 }
 
 func NewStyles(t Theme) Styles {
