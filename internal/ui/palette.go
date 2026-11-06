@@ -93,7 +93,7 @@ func (a *App) paletteItems() []palItem {
 				continue
 			}
 			it := palItem{group: pgSuggest, icon: "$", label: c.Command, hint: i18n.T("einfügen"),
-				run: func() tea.Cmd { s.term.SendText(c.Command); s.panelFocus = false; return nil }}
+				run: func() tea.Cmd { s.term.SendText(c.Command); s.noteAI(c.Command, true); s.panelFocus = false; return nil }}
 			if len(c.Danger) > 0 {
 				it.danger = c.Danger[0].Reason
 			} else if c.Elevated {

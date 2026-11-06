@@ -340,6 +340,7 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			}
 			s.chipArmed = -1
 			s.term.SendText(c.Command)
+			s.noteAI(c.Command, true)
 			s.chips = nil
 		}
 		return nil
@@ -352,7 +353,12 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	}
 	if key == "enter" {
 		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
+			a.finishCommand(s) // Ergebnis des vorigen Befehls (Fehlschlag?) zuerst
+			from := s.correctionFrom(typed)
 			a.beginCommand(s, typed)
+			if from != "" && s.run != nil {
+				s.run.learnFrom = from
+			}
 			s.history = append(s.history, strings.TrimSpace(typed))
 			a.profileCommand(s, strings.TrimSpace(typed))
 			s.noteCommand(strings.TrimSpace(typed))

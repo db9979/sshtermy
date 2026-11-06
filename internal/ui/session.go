@@ -72,6 +72,7 @@ type session struct {
 	// eigene Befehle und Folgebefehle
 	history    []string
 	chips      []agent.Suggestion
+	aiPend     *aiPending // zuletzt eingefügter/ausgeführter KI-Befehl (learn.go)
 	chipSeq    int
 	chipArmed  int // Index eines roten Chips nach dem ersten Druck, sonst -1
 	quickArmed int // dasselbe für Schnellbefehle (⇧F1 …)

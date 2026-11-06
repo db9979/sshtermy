@@ -65,6 +65,8 @@ type Store struct {
 	gen   atomic.Uint64
 	cmu   sync.Mutex
 	conns connCache
+
+	stats cmdStats // Befehlsstatistik (cmdstats.go), nur lokal
 }
 
 type connCache struct {
@@ -127,6 +129,7 @@ func (s *Store) Lock() {
 	s.data = nil
 	s.mu.Unlock()
 	s.changed()
+	s.forgetStats()
 	s.V.Lock()
 }
 
@@ -371,6 +374,7 @@ func (s *Store) SetProfile(id string, p domain.SystemProfile) error {
 		if s.data.Connections[i].ID == id {
 			cp := p
 			cp.Failed = append([]string(nil), p.Failed...)
+			cp.Learned = append([]domain.Correction(nil), p.Learned...)
 			s.data.Connections[i].Profile = &cp
 			s.data.Connections[i].UpdatedAt = time.Now().UTC()
 			found = true
@@ -442,6 +446,7 @@ func (s *Store) DeleteConnection(id string) error {
 	}
 	s.data.Tunnels = ts
 	s.mu.Unlock()
+	s.dropStats(id)
 	return s.save()
 }
 

@@ -52,6 +52,7 @@ const (
 	scrSync
 	scrLogs
 	scrQuickForm
+	scrMonitorForm // Grenzwerte der Überwachung (monitor.go)
 	scrImport
 	scrKeys
 	scrBroadcast
@@ -395,7 +396,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pick != nil {
 			return a, a.pickerKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -433,7 +434,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrKeyForm, scrSSHKeyForm, scrRelayForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrKeyForm, scrSSHKeyForm, scrRelayForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -491,6 +492,9 @@ func (a *App) onTick() tea.Cmd {
 			cmds = append(cmds, c)
 		}
 		a.profileTick(s)
+		if c := a.monitorTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
 		if c := a.reconnectTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
@@ -509,7 +513,7 @@ func (a *App) View() tea.View {
 		body = a.viewUnlock()
 	case scrManager:
 		body = a.frame(a.viewManager(), a.managerKeys())
-	case scrConnForm, scrTunnelForm, scrKeyForm, scrSSHKeyForm, scrRelayForm:
+	case scrConnForm, scrTunnelForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMonitorForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})

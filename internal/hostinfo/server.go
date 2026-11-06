@@ -9,6 +9,7 @@ package hostinfo
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +30,8 @@ else
   ps=$(sysctl -n hw.pagesize 2>/dev/null)
   vm_stat 2>/dev/null | awk -v ps="$ps" '/Pages free/{f=$3}/Pages inactive/{i=$3}/Pages speculative/{s=$3}END{gsub(/\./,"",f);gsub(/\./,"",i);gsub(/\./,"",s);if(ps!="")print "memfree_b="(f+i+s)*ps}'
 fi
+if [ -r /proc/stat ]; then echo "stat1=$(head -n 1 /proc/stat)"; sleep 1; echo "stat2=$(head -n 1 /proc/stat)"
+else echo "cpu_top=$(top -l 2 -n 0 -s 1 2>/dev/null | grep 'CPU usage' | tail -n 1)"; fi
 df -Pk / 2>/dev/null | awk 'NR==2{print "disk_kb="$2" "$3" "$4}'
 if [ -r /proc/uptime ]; then echo "uptime_s=$(cut -d' ' -f1 /proc/uptime)"; else echo "boot=$(sysctl -n kern.boottime 2>/dev/null | sed 's/.*sec = \([0-9]*\).*/\1/')"; fi
 echo "now=$(date +%s)"
@@ -55,6 +58,7 @@ exit 0
 // Server: Kennzahlen eines Servers. Unbekannte Werte sind 0 bzw. -1.
 type Server struct {
 	CPUs              int
+	CPUPct            int // Auslastung über eine Sekunde, -1 = unbekannt
 	Load              [3]float64
 	HasLoad           bool
 	MemTotal, MemFree uint64 // Bytes (frei = verfügbar)
@@ -70,8 +74,9 @@ type Server struct {
 
 // ParseServer liest die Ausgabe von ServerScript.
 func ParseServer(out string) (Server, error) {
-	s := Server{Updates: -1, Security: -1, At: time.Now()}
+	s := Server{Updates: -1, Security: -1, CPUPct: -1, At: time.Now()}
 	var boot, now int64
+	var stat1, stat2 string
 	seen := 0
 	for _, line := range strings.Split(strings.ReplaceAll(out, "\r", ""), "\n") {
 		k, v, ok := strings.Cut(strings.TrimSpace(line), "=")
@@ -88,6 +93,16 @@ func ParseServer(out string) (Server, error) {
 				x, err := strconv.ParseFloat(strings.ReplaceAll(f[i], ",", "."), 64)
 				if err == nil {
 					s.Load[i], s.HasLoad = x, true
+				}
+			}
+		case "stat1":
+			stat1 = v
+		case "stat2":
+			stat2 = v
+		case "cpu_top":
+			if m := topIdle.FindStringSubmatch(v); m != nil {
+				if idle, err := strconv.ParseFloat(m[1], 64); err == nil && idle >= 0 && idle <= 100 {
+					s.CPUPct = int(100 - idle + 0.5)
 				}
 			}
 		case "mem_kb":
@@ -128,6 +143,9 @@ func ParseServer(out string) (Server, error) {
 			s.RebootNeeded = true
 		}
 	}
+	if p, ok := statPct(stat1, stat2); ok {
+		s.CPUPct = p
+	}
 	if s.Uptime == 0 && boot > 0 && now > boot {
 		s.Uptime = time.Duration(now-boot) * time.Second
 	}
@@ -135,6 +153,43 @@ func ParseServer(out string) (Server, error) {
 		return s, errors.New(i18n.T("keine Kennzahlen (nur Linux/macOS mit sh)"))
 	}
 	return s, nil
+}
+
+var topIdle = regexp.MustCompile(`([\d.]+)%\s*idle`)
+
+// statPct: CPU-Auslastung aus zwei "cpu …"-Zeilen von /proc/stat (user nice
+// system idle iowait irq softirq steal …). Leerlauf = idle + iowait.
+func statPct(a, b string) (int, bool) {
+	parse := func(l string) (total, idle uint64, ok bool) {
+		f := strings.Fields(l)
+		if len(f) < 5 || f[0] != "cpu" {
+			return 0, 0, false
+		}
+		for i, x := range f[1:] {
+			if i >= 8 { // guest/guest_nice stecken schon in user
+				break
+			}
+			n, err := strconv.ParseUint(x, 10, 64)
+			if err != nil {
+				return 0, 0, false
+			}
+			total += n
+			if i == 3 || i == 4 {
+				idle += n
+			}
+		}
+		return total, idle, true
+	}
+	t1, i1, ok1 := parse(a)
+	t2, i2, ok2 := parse(b)
+	if !ok1 || !ok2 || t2 <= t1 || i2 < i1 {
+		return 0, false
+	}
+	dt, di := t2-t1, i2-i1
+	if di > dt {
+		return 0, false
+	}
+	return int(((dt-di)*100 + dt/2) / dt), true
 }
 
 func num(v string) uint64 {
@@ -161,7 +216,9 @@ func (s Server) DiskPct() int {
 // Summary: eine Zeile für die Sitzungsleiste.
 func (s Server) Summary() string {
 	parts := []string{}
-	if s.HasLoad {
+	if s.CPUPct >= 0 {
+		parts = append(parts, fmt.Sprintf("CPU %d%%", s.CPUPct))
+	} else if s.HasLoad {
 		parts = append(parts, fmt.Sprintf(i18n.T("Last %.2f"), s.Load[0]))
 	}
 	if s.MemTotal > 0 {

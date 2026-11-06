@@ -30,6 +30,7 @@ type cmdRun struct {
 	exitSeq     int  // Zähler der OSC-133-Meldungen beim Start
 	private     bool // Leerzeichen am Anfang: nicht protokollieren
 	interrupted bool // Strg+C während der Befehl lief
+	learnFrom   string // korrigiert diesen KI-Befehl (learn.go)
 }
 
 // beginCommand: Enter mit einem Befehl am Prompt.
@@ -91,6 +92,12 @@ func (a *App) finishCommand(s *session) {
 		if g := &s.goal; len(g.steps) > 0 && strings.HasPrefix(r.cmd, g.steps[len(g.steps)-1].Command) {
 			g.steps[len(g.steps)-1].ExitHint = orDefault(f.Reason, i18n.T("Fehlermeldung in der Ausgabe"))
 		}
+	}
+	if r.learnFrom != "" && !failed && !r.interrupted {
+		a.learnCorrection(s, r.learnFrom, r.cmd)
+	}
+	if !failed && !r.interrupted && !r.private {
+		a.noteFavorite(s, r.cmd)
 	}
 	dur := 0.0
 	if s.lastOutput.After(r.at) {
