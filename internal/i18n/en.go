@@ -1404,7 +1404,6 @@ var en = map[string]string{
 	" c oder Ziehen kopiert auf die andere Seite (Leertaste markiert mehrere). Dateien aus dem Explorer/Finder hier ablegen lädt hoch": " c or dragging copies to the other side (Space marks several). Drop files from Explorer/Finder here to upload",
 	" gibt es in ":             " already exists in ",
 	"%d Dateien":               "%d files",
-	"%d Einträge":              "%d entries",
 	"%d Einträge (%s …)":       "%d entries (%s …)",
 	"Abgelegt: ":               "Dropped: ",
 	"Auf den Server hochladen": "Upload to the server",
