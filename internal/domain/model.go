@@ -86,6 +86,14 @@ type Connection struct {
 	KeepAlive   int        `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
 	Device      DeviceKind `json:"device,omitempty"`      // Server oder Netzwerkgerät, leer = automatisch
 
+	// Persist: beim Verbinden immer in dieselbe tmux-/screen-Sitzung
+	// ("auto", "tmux", "screen"; leer = aus). PersistName: Sitzungsname,
+	// leer = "sshtermy". PersistView: nur zuschauen (tmux attach -r), z. B.
+	// um einer laufenden Sitzung von einem zweiten Rechner aus zu folgen.
+	Persist     string `json:"persist,omitempty"`
+	PersistName string `json:"persist_name,omitempty"`
+	PersistView bool   `json:"persist_view,omitempty"`
+
 	// Profile: was für ein System dahinter steckt (automatisch erkannt,
 	// vom Nutzer ergänzbar). Geht in jeden KI-Prompt, damit Befehle im
 	// richtigen Dialekt kommen. Liegt wie alles andere verschlüsselt im Store.
@@ -110,6 +118,20 @@ type Connection struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	LastUsed  time.Time `json:"last_used,omitempty"`
+}
+
+// DefaultPersistName: Sitzungsname, wenn bei „Feste Sitzung“ keiner steht.
+const DefaultPersistName = "sshtermy"
+
+// PersistSession: Name der festen Sitzung (leer, wenn aus).
+func (c Connection) PersistSession() string {
+	if c.Persist == "" {
+		return ""
+	}
+	if c.PersistName != "" {
+		return c.PersistName
+	}
+	return DefaultPersistName
 }
 
 // Rev ist der Zeitstempel, nach dem der Sync entscheidet (alte Einträge ohne

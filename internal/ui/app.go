@@ -291,7 +291,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = a.onReconnected(s)
 			}
 			a.resize(s)
-			return a, tea.Batch(cmd, a.hostOnConnect(s))
+			return a, tea.Batch(cmd, a.hostOnConnect(s), a.persistOnConnect(s))
 		}
 		return a, nil
 	case adaptMsg:
@@ -300,6 +300,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case muxProbeMsg:
 		a.onMuxProbe(m)
 		return a, nil
+	case persistMsg:
+		return a, a.onPersist(m)
 	case connectErrMsg:
 		if s := a.byID(m.sid); s != nil {
 			if s.rc.active {
