@@ -149,7 +149,8 @@ func (a *App) askRestart() tea.Cmd {
 		a.modal = &modal{kind: mConfirm, title: i18n.T("Update installiert – jetzt neu starten?"),
 			body: "v" + v + i18n.T(" ist installiert und wird mit einem Neustart aktiv.\n\n") +
 				"⚠ " + plural(n, i18n.T("offene SSH-Sitzung wird"), i18n.T("offene SSH-Sitzungen werden")) + i18n.T(" dabei getrennt\n") +
-				i18n.T("  (laufende Befehle, Tunnel und Dateiübertragungen brechen ab).\n\n") +
+				i18n.T("  (laufende Befehle, Tunnel und Dateiübertragungen brechen ab).\n") +
+				i18n.T("  Die Tabs öffnen sich danach wieder, tmux/screen wird wieder angehängt.\n\n") +
 				i18n.T("j = jetzt neu starten · n = später (F12 oder Palette)"),
 			onYes: func() tea.Cmd { return a.doRestart() }}
 		return nil
@@ -159,6 +160,7 @@ func (a *App) askRestart() tea.Cmd {
 
 func (a *App) doRestart() tea.Cmd {
 	a.restart = true
+	a.saveRestore() // Tabs nach dem Neustart wieder öffnen (restore.go)
 	return a.quit()
 }
 

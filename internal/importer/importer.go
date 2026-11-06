@@ -195,16 +195,11 @@ func fillUser(e *Entry) {
 	}
 }
 
-// keyAuth: Schlüsseldatei übernehmen. PPK (PuTTY-Format) kann sshTermy nicht
-// lesen; dann bleibt der SSH-Agent (Pageant / OpenSSH-Agent) die Anmeldung.
+// keyAuth: Schlüsseldatei übernehmen. PuTTY-Keys (.ppk) liest sshTermy
+// direkt (sshx/ppk.go), ohne Pageant.
 func keyAuth(e *Entry, path string) {
 	path = strings.TrimSpace(path)
 	if path == "" {
-		return
-	}
-	if strings.HasSuffix(strings.ToLower(path), ".ppk") {
-		e.Conn.Auth = domain.AuthAgent
-		e.Notes = append(e.Notes, "PPK-Key "+filepath.Base(path)+i18n.T(": in Pageant laden oder mit PuTTYgen nach OpenSSH exportieren"))
 		return
 	}
 	e.Conn.Auth, e.Conn.KeyPath = domain.AuthKeyFile, path

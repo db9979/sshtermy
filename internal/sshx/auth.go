@@ -178,7 +178,7 @@ func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
 			pem[i] = 0
 		}
 	}()
-	signer, err := ssh.ParsePrivateKey(pem)
+	signer, err := parseKey(pem, nil)
 	var missing *ssh.PassphraseMissingError
 	if errors.As(err, &missing) {
 		pass := c.KeyPassphrase.Reveal()
@@ -187,7 +187,7 @@ func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
 				return nil, err
 			}
 		}
-		signer, err = ssh.ParsePrivateKeyWithPassphrase(pem, []byte(pass))
+		signer, err = parseKey(pem, []byte(pass))
 	}
 	return signer, err
 }
@@ -240,10 +240,13 @@ func CheckKeyFile(p string) error {
 			b[i] = 0
 		}
 	}()
+	if IsPPK(b) {
+		return CheckPPK(b)
+	}
 	_, err = ssh.ParseRawPrivateKey(b)
 	var missing *ssh.PassphraseMissingError
 	if err != nil && !errors.As(err, &missing) {
-		return errors.New(i18n.T("Das ist kein privater SSH-Key (OpenSSH- oder PEM-Format)"))
+		return errors.New(i18n.T("Das ist kein privater SSH-Key (OpenSSH-, PEM- oder PuTTY-Format)"))
 	}
 	return nil
 }
@@ -272,7 +275,7 @@ func LocalKeys() []string {
 		if err != nil {
 			continue
 		}
-		if strings.Contains(string(b[:min(len(b), 80)]), "PRIVATE KEY") {
+		if strings.Contains(string(b[:min(len(b), 80)]), "PRIVATE KEY") || IsPPK(b) {
 			out = append(out, "~/.ssh/"+e.Name())
 		}
 		for i := range b {
