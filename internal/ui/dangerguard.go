@@ -51,7 +51,7 @@ func (a *App) dangerGuardOn(c domain.Connection) bool { return isProduction(c) |
 func (a *App) toggleDangerAll() tea.Cmd {
 	on := !a.dangerAll()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.DangerAll = on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {

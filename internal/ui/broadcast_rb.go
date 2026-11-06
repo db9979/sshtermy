@@ -306,7 +306,7 @@ func (a *App) bcReview() tea.Cmd {
 	b := a.bc
 	ag, err := a.agentClient()
 	if err != nil {
-		a.flash(i18n.T("KI-Prüfung: ") + err.Error())
+		a.flashErr(i18n.T("KI-Prüfung: ") + err.Error())
 		return nil
 	}
 	if b.review == nil {

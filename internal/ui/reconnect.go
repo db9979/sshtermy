@@ -202,7 +202,7 @@ func (a *App) autoReconnect() bool { return !a.st.Settings().NoAutoReconnect }
 func (a *App) toggleAutoReconnect() tea.Cmd {
 	on := !a.autoReconnect()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoAutoReconnect = !on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {
@@ -369,7 +369,7 @@ func (a *App) onReconnected(s *session) tea.Cmd {
 			continue // AutoStart-Tunnel startet connectedMsg schon
 		}
 		if _, err := s.tunnels.Start(t); err != nil {
-			a.flash("Tunnel " + t.Name + ": " + err.Error())
+			a.flashErr("Tunnel " + t.Name + ": " + err.Error())
 		}
 	}
 	msg := fmt.Sprintf(i18n.T("%s wieder verbunden (%s getrennt)"), s.conn.Alias, down)

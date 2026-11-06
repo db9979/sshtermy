@@ -127,7 +127,7 @@ func (a *App) paletteItems() []palItem {
 				if s.tunnels.Get(t.ID) != nil {
 					s.tunnels.Stop(t.ID)
 				} else if at, err := s.tunnels.Start(t); err != nil {
-					a.flash(i18n.T("Tunnel: ") + err.Error())
+					a.flashErr(i18n.T("Tunnel: ") + err.Error())
 				} else if at.URL() != "" {
 					a.flash(i18n.T("Web-Service bereit: ") + at.URL())
 				}

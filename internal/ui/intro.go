@@ -70,7 +70,7 @@ func (a *App) toggleIntro() tea.Cmd {
 		err = os.Remove(p)
 	}
 	if err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if a.introOn() {
