@@ -573,13 +573,6 @@ func (a *App) modalKeys() [][2]string {
 	return keys
 }
 
-func mouseLabel(on bool) string {
-	if on {
-		return i18n.T("Maus aus (Terminalfenster markiert selbst)")
-	}
-	return i18n.T("Maus an (klicken, markieren, scrollen)")
-}
-
 // mouseHelp: Abschnitt für die Hilfe (F1).
 const mouseHelp = `Maus         Klick auf Tabs, Listen, Vorschläge, Felder, Fußzeile · Doppelklick öffnet
              Terminal: Ziehen markiert + kopiert · Doppel-/Dreifachklick Wort/Zeile

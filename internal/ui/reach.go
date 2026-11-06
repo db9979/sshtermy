@@ -200,10 +200,3 @@ func (a *App) toggleReach() tea.Cmd {
 	}
 	return nil
 }
-
-func reachLabel(on bool) string {
-	if on {
-		return i18n.T("Erreichbarkeit der Hosts nicht mehr prüfen")
-	}
-	return i18n.T("Erreichbarkeit der Hosts prüfen (Online-Punkt)")
-}

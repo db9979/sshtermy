@@ -71,13 +71,6 @@ func (a *App) togglePasteGuard() tea.Cmd {
 	return nil
 }
 
-func pasteGuardLabel(on bool) string {
-	if on {
-		return i18n.T("Einfügeschutz aus (mehrzeilig ohne Vorschau)")
-	}
-	return i18n.T("Einfügeschutz an (Vorschau bei mehreren Zeilen)")
-}
-
 // guardedPaste fügt ein oder zeigt zuerst die Vorschau.
 func (a *App) guardedPaste(s *session, text string) tea.Cmd {
 	if s.term == nil || s.state != stConnected || text == "" {

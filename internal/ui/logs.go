@@ -444,10 +444,3 @@ func indent(s, pre string) string {
 	}
 	return strings.Join(l, "\n")
 }
-
-func logLabel(on bool) string {
-	if on {
-		return i18n.T("Sitzungsprotokoll ausschalten")
-	}
-	return i18n.T("Sitzungsprotokoll einschalten")
-}

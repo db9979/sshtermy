@@ -213,13 +213,6 @@ func (a *App) toggleAutoReconnect() tea.Cmd {
 	return nil
 }
 
-func reconnectLabel(on bool) string {
-	if on {
-		return i18n.T("Auto-Reconnect aus")
-	}
-	return i18n.T("Auto-Reconnect an (Sitzung nach Abbruch neu verbinden)")
-}
-
 // onShellClosed entscheidet: neu verbinden oder Sitzung beenden.
 func (a *App) onShellClosed(s *session, m shellClosedMsg) {
 	if m.shell != nil && s.shell != m.shell {

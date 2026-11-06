@@ -204,10 +204,3 @@ func (a *App) cheatLine() string {
 	}
 	return out + bg.Render(strings.Repeat(" ", gap)) + back
 }
-
-func cheatLabel(on bool) string {
-	if on {
-		return i18n.T("Tastenzeile: nur Tasten")
-	}
-	return i18n.T("Tastenzeile: Tasten erklären")
-}

@@ -27,9 +27,9 @@ import (
 type cmdRun struct {
 	cmd         string
 	at          time.Time
-	exitSeq     int  // Zähler der OSC-133-Meldungen beim Start
-	private     bool // Leerzeichen am Anfang: nicht protokollieren
-	interrupted bool // Strg+C während der Befehl lief
+	exitSeq     int    // Zähler der OSC-133-Meldungen beim Start
+	private     bool   // Leerzeichen am Anfang: nicht protokollieren
+	interrupted bool   // Strg+C während der Befehl lief
 	learnFrom   string // korrigiert diesen KI-Befehl (learn.go)
 }
 

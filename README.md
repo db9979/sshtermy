@@ -210,6 +210,7 @@ The screenshots show the German interface; the English one looks the same.
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
 **Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question, below it suggestions, tunnels, connections and actions.
+Toggles, look, language and setup live in the **⚙ Settings ›** submenu (each toggle shows "on"/"off" and the palette stays open while you flip them); shortcuts, tour, news and update are under **? Help & info ›**. Typing still finds items inside the submenus directly; Esc or ← goes back.
 
 ![Command palette](docs/bilder/09-palette.png)
 
