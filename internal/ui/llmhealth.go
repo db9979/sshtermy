@@ -40,6 +40,7 @@ type llmHealthState struct {
 	fails   int       // Fehler in Folge (für den Abstand)
 	sig     string    // Endpunkt+Modell der letzten Prüfung
 	seen    uint64    // zuletzt verarbeitete Meldung
+	seenAt  time.Time // Zeit der zuletzt verarbeiteten Meldung zum Hauptendpunkt
 }
 
 type llmLevel int
@@ -50,33 +51,39 @@ const (
 	lhOK
 	lhSlow
 	lhError
+	lhFallback // Endpunkt fällt aus, ein Ersatz-Anbieter antwortet
 )
 
 // llmHealth fasst den Stand für die aktuelle Einstellung zusammen.
 type llmHealth struct {
 	level   llmLevel
-	last    llm.Observation // letzte Meldung zu diesem Endpunkt/Modell
-	latency time.Duration   // letzte gemessene Reaktionszeit (0 = keine)
-	cfg     domain.LLMConfig
+	last    llm.Observation  // letzte Meldung zu diesem Endpunkt/Modell
+	latency time.Duration    // letzte gemessene Reaktionszeit (0 = keine)
+	cfg     domain.LLMConfig // Hauptendpunkt (ohne Ersatz)
+	fb      *llmBackupUse    // gesetzt, wenn gerade ein Ersatz einspringt
 }
 
-func llmSig(c domain.LLMConfig) string { return llm.BaseURL(c) + "|" + c.Model }
+// llmBackupUse: der Ersatz-Anbieter, der zuletzt geantwortet hat.
+type llmBackupUse struct {
+	cfg  domain.LLMConfig
+	last llm.Observation
+}
+
+func llmSig(c domain.LLMConfig) string { return llm.Sig(c) }
 
 func (a *App) llmHealth() llmHealth {
-	cfg := a.st.LLM()
+	chain := a.st.LLM().Chain()
+	cfg := chain[0]
 	h := llmHealth{cfg: cfg}
 	if strings.TrimSpace(cfg.BaseURL) == "" || strings.TrimSpace(cfg.Model) == "" {
 		h.level = lhOff
 		return h
 	}
-	last, ok, _ := llm.LastHealth()
-	match := func(o llm.Observation) bool {
-		return !o.At.IsZero() && o.BaseURL == llm.BaseURL(cfg) && o.Model == cfg.Model
-	}
-	if match(ok) {
+	last, ok := llm.HealthOf(cfg)
+	if !ok.At.IsZero() {
 		h.latency = ok.Latency
 	}
-	if !match(last) {
+	if last.At.IsZero() {
 		return h
 	}
 	h.last = last
@@ -88,14 +95,37 @@ func (a *App) llmHealth() llmHealth {
 	default:
 		h.level = lhOK
 	}
+	if h.level == lhError {
+		// Springt ein Ersatz ein? Zählt, wenn er nach dem Ausfall geantwortet hat.
+		for _, e := range chain[1:] {
+			fl, _ := llm.HealthOf(e)
+			if fl.At.IsZero() || fl.Err != nil || fl.At.Before(last.At.Add(-5*time.Minute)) {
+				continue
+			}
+			if h.fb == nil || fl.At.After(h.fb.last.At) {
+				h.fb = &llmBackupUse{cfg: e, last: fl}
+			}
+		}
+		if h.fb != nil {
+			h.level = lhFallback
+		}
+	}
 	return h
+}
+
+// model: das Modell, das gerade antwortet (bei Ersatz dessen Name).
+func (h llmHealth) model() string {
+	if h.fb != nil {
+		return h.fb.cfg.Model
+	}
+	return h.cfg.Model
 }
 
 func (a *App) llmColor(l llmLevel) color.Color {
 	switch l {
 	case lhOK:
 		return a.s.T.OK
-	case lhSlow:
+	case lhSlow, lhFallback:
 		return a.s.T.Warn
 	case lhError:
 		return a.s.T.Danger
@@ -125,6 +155,8 @@ func (h llmHealth) badgeText() string {
 	switch h.level {
 	case lhError:
 		return i18n.T("Fehler")
+	case lhFallback:
+		return i18n.T("Ersatz: ") + i18n.T(h.fb.cfg.Provider.Label())
 	case lhOK, lhSlow:
 		if h.latency > 0 {
 			return fmtLatency(h.latency)
@@ -153,15 +185,16 @@ func (a *App) llmTick() tea.Cmd {
 	if a.scr == scrUnlock || a.intro != nil {
 		return nil
 	}
-	cfg := a.st.LLM()
+	cfg := a.st.LLM().Chain()[0]
 	if cfg.BaseURL == "" || cfg.Model == "" {
 		return nil
 	}
 	now := time.Now()
-	last, _, n := llm.LastHealth()
+	_, _, n := llm.LastHealth()
 	if n != a.lh.seen { // neue Meldung, auch von echten Anfragen
 		a.lh.seen = n
-		if last.BaseURL == llm.BaseURL(cfg) && last.Model == cfg.Model {
+		if last, _ := llm.HealthOf(cfg); !last.At.IsZero() && last.At != a.lh.seenAt {
+			a.lh.seenAt = last.At
 			d := llmProbeEvery
 			if last.Err == nil {
 				a.lh.fails = 0
@@ -187,13 +220,21 @@ func (a *App) llmProbeCmd() tea.Cmd {
 	if a.lh.probing {
 		return nil
 	}
-	cfg := a.st.LLM()
+	chain := a.st.LLM().Chain()
 	a.lh.probing = true
 	a.lh.next = time.Now().Add(llmProbeEvery) // wird von der Meldung neu gesetzt
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), testTimeout(cfg))
-		defer cancel()
-		_ = llm.Probe(ctx, cfg)
+		// Antwortet der Endpunkt nicht, gleich nachsehen, welcher Ersatz
+		// einspringen kann, damit die Anzeige das schon vor der nächsten
+		// echten Anfrage zeigt.
+		for _, cfg := range chain {
+			ctx, cancel := context.WithTimeout(context.Background(), testTimeout(cfg))
+			err := llm.Probe(ctx, cfg)
+			cancel()
+			if err == nil {
+				break
+			}
+		}
 		return llmProbeMsg{}
 	}
 }
@@ -213,6 +254,10 @@ func (a *App) llmStatusKey(key string) tea.Cmd {
 		a.modal = nil
 		a.returnToTerminal = a.scr == scrTerminal
 		return a.openSettings()
+	case "r":
+		a.modal = nil
+		a.returnToTerminal = a.scr == scrTerminal
+		return a.openFallbackForm()
 	case "esc", "q", "enter":
 		a.modal = nil
 	}
@@ -237,6 +282,9 @@ func (a *App) llmStatusView() string {
 		head = c.Render(i18n.T("● erreichbar, aber langsam")) + s.Muted.Render(i18n.T(" · über ")+fmtLatency(llmSlow)+i18n.T(" für ein Token"))
 	case h.level == lhError:
 		head = c.Render(i18n.T("● Fehler: das Modell antwortet nicht"))
+	case h.level == lhFallback:
+		head = c.Render(i18n.T("● Endpunkt antwortet nicht, Ersatz springt ein: ")) +
+			s.Text.Render(i18n.T(h.fb.cfg.Provider.Label())+" · "+h.fb.cfg.Model)
 	}
 	if a.lh.probing && h.level != lhUnknown {
 		head += s.AI.Render(i18n.T("  ◌ prüfe …"))
@@ -244,6 +292,7 @@ func (a *App) llmStatusView() string {
 	row := func(k, v string) string { return s.Muted.Render(fmt.Sprintf("%-13s", k)) + v + "\n" }
 	var b strings.Builder
 	b.WriteString(head + "\n\n")
+	b.WriteString(row(i18n.T("Anbieter"), s.Text.Render(i18n.T(h.cfg.Provider.Label()))))
 	b.WriteString(row(i18n.T("Endpunkt"), s.Text.Render(llm.BaseURL(h.cfg))))
 	b.WriteString(row(i18n.T("Modell"), s.Text.Render(h.cfg.Model)))
 	if h.latency > 0 && h.level != lhError {
@@ -260,12 +309,28 @@ func (a *App) llmStatusView() string {
 		}
 		b.WriteString(row(i18n.T("Zuletzt"), s.Text.Render(what+" "+ago(h.last.At)+" · ")+res))
 	}
-	if h.last.Err != nil {
+	if h.last.Err != nil && h.level != lhOff {
 		w := min(90, a.w-4) - 6 - 13 // Rahmen, Innenabstand, Spalte links
 		b.WriteString(row(i18n.T("Meldung"), s.Danger.Render(trunc(llmErrText(h.last.Err), max(20, w)))))
 		if hint := llmErrHint(h.last.Err.Error()); hint != "" {
 			b.WriteString("\n" + s.Warn.Render(i18n.T("Was tun: ")) + s.Text.Render(hint) + "\n")
 		}
+	}
+	if chain := a.st.LLM().Chain(); len(chain) > 1 {
+		b.WriteString("\n" + s.Accent.Render(i18n.T("Ersatz-Anbieter")) + s.Muted.Render(i18n.T(" · springen der Reihe nach ein, wenn der Endpunkt nicht antwortet")) + "\n")
+		for i, e := range chain[1:] {
+			st := s.Muted.Render(i18n.T("noch nicht gebraucht"))
+			if fl, _ := llm.HealthOf(e); !fl.At.IsZero() {
+				if fl.Err != nil {
+					st = s.Danger.Render(i18n.T("Fehler ")+ago(fl.At)) + s.Muted.Render(" · "+trunc(llmErrText(fl.Err), 40))
+				} else {
+					st = s.OK.Render(i18n.T("ok ") + ago(fl.At))
+				}
+			}
+			b.WriteString(fmt.Sprintf("  %d. ", i+1) + s.Text.Render(i18n.T(e.Provider.Label())+" · "+trunc(e.Model, 28)) + "  " + st + "\n")
+		}
+	} else if h.level == lhError {
+		b.WriteString("\n" + s.Muted.Render(i18n.T("Tipp: Mit r richtest du Ersatz-Anbieter ein (Ollama, OpenAI, Claude), die einspringen, wenn der Endpunkt ausfällt.")) + "\n")
 	}
 	if h.level != lhOff && !a.lh.probing && !a.lh.next.IsZero() {
 		if d := time.Until(a.lh.next); d > 0 {

@@ -78,8 +78,10 @@ var helpSections = []helpSection{
 		{"F10", "zurück zum Terminal"},
 	}},
 	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
+		{"←/→", "Anbieter: Spark, Ollama, OpenAI, Claude"},
 		{"Strg+T", "Endpunkt testen"},
 		{"Strg+L", "Modell wählen"},
+		{"Ersatz ⏎", "Ersatz-Anbieter einrichten"},
 		{"Strg+S", "speichern"},
 	}},
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{

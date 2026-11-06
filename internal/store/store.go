@@ -546,6 +546,19 @@ func (s *Store) ApplySync(rev uint64, apply func(d *domain.Data)) (changed bool,
 	return changed, s.persist()
 }
 
+// Update ändert den Stand in einem Schritt und speichert einmal (z. B. bei
+// der Übernahme eines Team-Pakets).
+func (s *Store) Update(f func(d *domain.Data)) error {
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return vault.ErrLocked
+	}
+	f(s.data)
+	s.mu.Unlock()
+	return s.save()
+}
+
 // UpdateSettings ändert die Einstellungen und speichert.
 func (s *Store) UpdateSettings(f func(*domain.Settings)) error {
 	s.mu.Lock()

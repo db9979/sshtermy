@@ -290,6 +290,16 @@ Windows login ──DPAPI CryptProtectData────────────�
 - The API key is never sent via `http://` to a foreign host (unless explicitly allowed).
 - Rate limit in goal mode (default 6 steps/min, at most 40 steps per goal).
 
+### AI providers and fallback
+
+- **Provider** in the AI settings (`s`): Spark / any OpenAI-compatible server (vLLM, SGLang, LiteLLM, LM Studio),
+  Ollama, OpenAI or Claude (Anthropic Messages API). ←/→ switches and prefills address and model; Ctrl+L lists
+  the provider's models, Ctrl+T tests.
+- **Fallback providers** (settings → „Fallback providers“, or `r` in the AI status): up to three, tried in order
+  when the endpoint does not answer. A failed endpoint is skipped for 5 minutes or until the background check
+  reaches it again. The status dot turns yellow and shows „fallback: Claude“ while a fallback answers.
+- Cloud providers always need an API key; keys are stored encrypted like passwords.
+
 ### Error detection and session log
 
 - **When is a command done?** After Enter, as soon as an empty prompt is back and the output settles. Its
@@ -385,3 +395,15 @@ Syncing happens at start, a few seconds after every change and every 5 minutes; 
 
 To try it without a NAS: `go run ./tools/dev/devdav` (http on port 5005) or `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
 (self-signed), user `dominik`, password `nas-pw`.
+
+## Sharing with the team
+
+Ctrl+Space → „Share with the team“: choose connections (Space, `g` folder, `a` all), then password and options.
+sshTermy writes an encrypted `.sshteam` file (Argon2id + AES-256-GCM, nothing readable without the password,
+not even the sender). Jump hosts are added automatically; tunnels, runbooks and quick commands are optional.
+**Never included:** passwords, embedded keys, passphrases, key paths outside `~/`, user names (optional),
+learned rejected suggestions, AI and sync settings. Leave the password empty and sshTermy creates one.
+
+The colleague uses Ctrl+Space → „Import team package“: file, password, target folder (default „Team“). A
+preview shows new and updated entries. Importing the same package again updates the entries but keeps the
+colleague's own passwords, keys and user names.

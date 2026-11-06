@@ -506,7 +506,7 @@ func (a *App) modalButtons() string {
 	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", i18n.T("schließen")}}
 	case mLLM:
-		keys = [][2]string{{"p", i18n.T("jetzt prüfen")}, {"e", i18n.T("Einstellungen")}, {"Esc", i18n.T("schließen")}}
+		keys = [][2]string{{"p", i18n.T("jetzt prüfen")}, {"e", i18n.T("Einstellungen")}, {"r", i18n.T("Ersatz-Anbieter")}, {"Esc", i18n.T("schließen")}}
 	case mTour:
 		keys = tourButtons(a.modal)
 	case mQuick:

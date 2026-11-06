@@ -116,9 +116,9 @@ func (a *App) sessionBar(s *session) string {
 	cfg := a.st.LLM()
 	// KI: Punkt = Zustand des Endpunkts (llmhealth.go), Klick = Erklärung
 	h := a.llmHealth()
-	ai := st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22))
+	ai := st.BadgeAI.Render("✦ " + trunc(h.model(), 22))
 	if t := h.badgeText(); t != "" {
-		ai = st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22) + " · " + t)
+		ai = st.BadgeAI.Render("✦ " + trunc(h.model(), 22) + " · " + t)
 	}
 	if !cfg.SuggestEnabled {
 		ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("✦ Ghost aus"))

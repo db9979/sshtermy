@@ -56,7 +56,9 @@ const (
 	scrKeys
 	scrBroadcast
 	scrScan
-	scrKeyForm // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
+	scrKeyForm  // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
+	scrTeam     // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
+	scrTeamForm // Team-Freigabe: Passwort, Datei, Optionen
 )
 
 // App ist das Wurzel-Modell.
@@ -103,6 +105,7 @@ type App struct {
 	sync    syncState
 	wiz     *syncWizard
 	imp     importState // Import aus ssh-config, PuTTY, MobaXterm
+	team    teamState   // Team-Freigabe (team.go)
 	keyEd   keyEditor   // Tastenkürzel anpassen
 	keys    keymap      // aktuelle Tastenbelegung
 	lookSig string      // Theme+Tasten, zuletzt übernommen
@@ -389,6 +392,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateLogs(msg)
 	case scrImport:
 		return a, a.updateImport(msg)
+	case scrTeam:
+		return a, a.updateTeam(msg)
+	case scrTeamForm:
+		return a, a.updateTeamForm(msg)
 	case scrKeys:
 		return a, a.updateKeys(msg)
 	case scrBroadcast:
@@ -468,6 +475,10 @@ func (a *App) View() tea.View {
 		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrImport:
 		body = a.frame(a.viewImport(), a.importKeys())
+	case scrTeam:
+		body = a.frame(a.viewTeam(), a.teamKeys())
+	case scrTeamForm:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Space", i18n.T("an/aus")}, {"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("zurück")}})
 	case scrKeys:
 		body = a.frame(a.viewKeys(), a.keysKeys())
 	case scrBroadcast:
