@@ -462,16 +462,12 @@ func (a *App) tunnelKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	case "down", "j":
 		s.tunSel = min(len(list)-1, s.tunSel+1)
 	case "enter", "space":
-		if s.tunSel < len(list) && s.tunnels != nil {
-			t := list[s.tunSel]
-			if s.tunnels.Get(t.ID) != nil {
-				s.tunnels.Stop(t.ID)
-				a.flash(i18n.T("Tunnel gestoppt: ") + t.Name)
-			} else if at, err := s.tunnels.Start(t); err != nil {
-				a.flash(i18n.T("Tunnel: ") + err.Error())
-			} else if at.URL() != "" {
-				a.flash(i18n.T("Web-Service bereit: ") + at.URL())
-			}
+		if s.tunSel < len(list) {
+			a.toggleTunnel(s, list[s.tunSel])
+		}
+	case "a":
+		if s.tunSel < len(list) {
+			a.toggleTunnelAuto(list[s.tunSel])
 		}
 	case "o":
 		if s.tunSel < len(list) && s.tunnels != nil {
@@ -500,6 +496,39 @@ func (a *App) tunnelKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// toggleTunnel schaltet einen gespeicherten Tunnel an oder aus. Er läuft über
+// die SSH-Verbindung der Sitzung, also auch über deren Jump-Host-Kette.
+func (a *App) toggleTunnel(s *session, t domain.Tunnel) {
+	if s.tunnels == nil {
+		a.flash(i18n.T("Tunnel brauchen eine bestehende Verbindung"))
+		return
+	}
+	if s.tunnels.Get(t.ID) != nil {
+		s.tunnels.Stop(t.ID)
+		a.flash(i18n.T("Tunnel gestoppt: ") + t.Name)
+	} else if at, err := s.tunnels.Start(t); err != nil {
+		a.flash(i18n.T("Tunnel: ") + err.Error())
+	} else if at.URL() != "" {
+		a.flash(i18n.T("Web-Service bereit: ") + at.URL())
+	} else {
+		a.flash(i18n.T("Tunnel läuft: ") + t.Name + " · " + at.Addr)
+	}
+}
+
+// toggleTunnelAuto: Tunnel mit der Verbindung automatisch starten, oder nicht.
+func (a *App) toggleTunnelAuto(t domain.Tunnel) {
+	t.AutoStart = !t.AutoStart
+	if _, err := a.st.UpsertTunnel(t); err != nil {
+		a.flash(i18n.T("Tunnel: ") + err.Error())
+		return
+	}
+	if t.AutoStart {
+		a.flash(i18n.T("Startet ab jetzt mit der Verbindung: ") + t.Name)
+	} else {
+		a.flash(i18n.T("Startet nicht mehr automatisch: ") + t.Name)
+	}
 }
 
 func (a *App) panelKeys(s *session) [][2]string {
@@ -541,7 +570,7 @@ func (a *App) panelKeys(s *session) [][2]string {
 		if len(list) == 0 {
 			return [][2]string{{"n", i18n.T("neuer Tunnel")}, {"Esc", i18n.T("zurück")}}
 		}
-		k := [][2]string{{"⏎", i18n.T("an/aus")}}
+		k := [][2]string{{"⏎", i18n.T("an/aus")}, {"a", i18n.T("automatisch")}}
 		if s.tunSel < len(list) && s.tunnels != nil {
 			if at := s.tunnels.Get(list[s.tunSel].ID); at != nil && at.URL() != "" {
 				k = append(k, [2]string{"o", "Browser"})
@@ -743,28 +772,44 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		b.WriteString(st.Muted.Render(i18n.T("Noch keine Tunnel für diese Verbindung.\nn = neuer Tunnel (z. B. -L 3000:localhost:3000)")))
 		return
 	}
+	via := ""
+	if s.conn.JumpHostID != "" {
+		if j, ok := a.st.Connection(s.conn.JumpHostID); ok {
+			via = i18n.T(" · über ") + j.Alias
+		}
+	}
 	for i, t := range list {
 		var at *sshx.ActiveTunnel
 		if s.tunnels != nil {
 			at = s.tunnels.Get(t.ID)
 		}
-		dot := st.Muted.Render("○")
+		// Schalter: ein Klick schaltet an/aus
+		sw := st.Muted.Render("○ " + i18n.T("aus"))
 		if at != nil {
-			dot = st.OK.Render("●")
+			sw = st.OK.Render("● " + i18n.T("an") + " ")
 		}
-		name := trunc(t.Name, w-4)
+		i, t := i, t
+		sw = a.z.click(sw, func(tea.Mouse, bool) tea.Cmd {
+			s.panelFocus, s.tunSel = true, i
+			a.toggleTunnel(s, t)
+			return nil
+		})
+		auto := ""
+		if t.AutoStart {
+			auto = st.Muted.Render(" ⟳")
+		}
+		name := trunc(t.Name, max(4, w-8-lipgloss.Width(auto)))
 		if i == s.tunSel {
 			name = st.Selected.Render(name)
 		}
-		i := i
-		b.WriteString(a.z.click(dot+" "+name, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(sw + " " + a.z.click(name+auto, func(_ tea.Mouse, double bool) tea.Cmd {
 			s.panelFocus, s.tunSel = true, i
 			if double {
-				return a.pressKey("⏎")
+				a.toggleTunnel(s, t)
 			}
 			return nil
 		}) + "\n")
-		b.WriteString("  " + st.Muted.Render(t.Spec()) + "\n")
+		b.WriteString("  " + st.Muted.Render(trunc(t.Spec()+via, w-2)) + "\n")
 		if at != nil {
 			if u := at.URL(); u != "" {
 				b.WriteString("  " + a.z.click(st.Accent.Underline(true).Render(u)+st.Muted.Render(i18n.T("  o öffnen")),
@@ -780,6 +825,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		}
 		b.WriteString("\n")
 	}
+	b.WriteString(st.Muted.Render(i18n.T("Klick auf an/aus schaltet um.\n⟳ = startet mit der Verbindung (a).")))
 }
 
 func human(n int64) string {

@@ -18,7 +18,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Auto-reconnect**: if the line drops (Wi-Fi, VPN, standby), sshTermy reconnects the session by itself, restarts running tunnels and reattaches tmux/screen (can be turned off in the palette)
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag „Produktion“, „prod“, „live“) get a red line
-- **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders
+- **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
 - **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
@@ -26,7 +26,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   Servers get every step via exec (with exit code), network devices get the commands typed into their shell („-- MORE --“ is paged automatically).
 - **Network scan** (f in the manager): search a subnet for SSH devices (only port and SSH banner, no login),
   recognize switches and routers by their banner and create the hits as connections with one key press.
-- **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL
+- **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL; saved per connection, one click turns them on/off, optionally start with the connection; works through jump hosts
 - **AI copilot** for any OpenAI-compatible endpoint (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question, plus suggestions, tunnels, connections and actions
   - **Ghost text** while typing (Tab accepts)
@@ -112,8 +112,8 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
 | | F2 | goal mode (agent) |
 | | F3 | ask AI |
-| | F4 | tunnels on/off, open a web service in the browser |
-| | F5 | files (SFTP): Tab side, c copy (up/down), n folder, d delete, . hidden |
+| | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
+| | F5 | files (SFTP): Tab side, c copy (up/down), Space/a mark, drag copies, n folder, d delete, . hidden |
 | | F6 | host overview: r/⏎ query, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | F10 | back to the manager (sessions keep running) |
@@ -271,6 +271,12 @@ Windows login ──DPAPI CryptProtectData────────────�
   host key aborts the connection, without „connect anyway“ (possible man-in-the-middle).
 - Agent auth preferred: private keys stay in the agent. Embedded keys are only stored encrypted in the store.
 - Tunnels bind to `127.0.0.1` by default. SOCKS5 resolves names on the server (no local DNS leaks).
+- **SSH keys (`c` in the manager):** generates ed25519 or RSA-4096 keys (like `ssh-keygen`, optionally with a
+  passphrase, as a file in `~/.ssh` or embedded), adds them to `~/.ssh/authorized_keys` like `ssh-copy-id` and
+  switches the connection only after a successful test login with the key.
+- **Keychain:** a password or key passphrase can live in the macOS Keychain, Windows Credential Manager or the
+  Secret Service (Linux, `secret-tool`) instead of the store. Each computer has its own entry; if it is missing
+  after a sync, sshTermy asks once and saves the answer there.
 
 ### AI
 
