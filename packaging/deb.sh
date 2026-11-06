@@ -14,7 +14,10 @@ cat >"$root/usr/share/doc/sshtermy/copyright" <<'TXT'
 sshTermy – SSH terminal with an AI copilot
 Idea: Dominik Bornhäußer
 Source: https://github.com/db9979/sshtermy
+License: MIT
+
 TXT
+cat "$(dirname "$0")/../LICENSE" >>"$root/usr/share/doc/sshtermy/copyright"
 size="$(du -sk "$root/usr" | cut -f1)"
 cat >"$root/DEBIAN/control" <<TXT
 Package: sshtermy

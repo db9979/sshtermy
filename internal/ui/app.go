@@ -628,39 +628,52 @@ func (a *App) fitFooter(keys [][2]string) [][2]string {
 		out[i] = [2]string{strings.ReplaceAll(k[0], "Shift+", "⇧"), k[1]} // kürzer: ⇧F9
 	}
 	keep := func(k [2]string) bool { return k[0] == help || k[0] == explain }
-	width := func(ks [][2]string) int {
-		w := 0
-		for _, k := range ks {
-			w += lipgloss.Width(a.s.Key.Render(k[0]))
-			if k[1] != "" {
-				w += lipgloss.Width(a.s.KeyDesc.Render(k[1]))
-			}
+	// Breiten einmal messen und die Summe mitführen: lipgloss.Width über
+	// gerenderte Stile ist teuer, und die Schleifen unten fragten früher
+	// bei jedem Schritt die ganze Zeile neu ab (pro Bild Hunderte Mal).
+	kw, dw := make([]int, len(out)), make([]int, len(out))
+	total := 0
+	for i, k := range out {
+		kw[i] = lipgloss.Width(a.s.Key.Render(k[0]))
+		if k[1] != "" {
+			dw[i] = lipgloss.Width(a.s.KeyDesc.Render(k[1]))
 		}
-		return w
+		total += kw[i] + dw[i]
+	}
+	drop := func(i int) {
+		total -= kw[i] + dw[i]
+		out = append(out[:i], out[i+1:]...)
+		kw = append(kw[:i], kw[i+1:]...)
+		dw = append(dw[:i], dw[i+1:]...)
+	}
+	noDesc := func(i int) {
+		total -= dw[i]
+		dw[i] = 0
+		out[i][1] = ""
 	}
 	const minKeys = 4 // so viele beschriftete Tasten bleiben mindestens
 	// 1. ganze Tasten von hinten weglassen, Beschriftungen bleiben
-	for i := len(out) - 1; i >= 0 && width(out) > a.w && len(out) > minKeys; i-- {
+	for i := len(out) - 1; i >= 0 && total > a.w && len(out) > minKeys; i-- {
 		if !keep(out[i]) {
-			out = append(out[:i], out[i+1:]...)
+			drop(i)
 		}
 	}
 	// 2. Beschreibungen von hinten weglassen (nicht die der Hilfe)
-	for i := len(out) - 1; i >= 0 && width(out) > a.w; i-- {
+	for i := len(out) - 1; i >= 0 && total > a.w; i-- {
 		if out[i][0] != help {
-			out[i][1] = ""
+			noDesc(i)
 		}
 	}
 	// 3. weitere Tasten von hinten weglassen, nie die Hilfe
-	for i := len(out) - 1; i >= 0 && width(out) > a.w; i-- {
+	for i := len(out) - 1; i >= 0 && total > a.w; i-- {
 		if out[i][0] != help {
-			out = append(out[:i], out[i+1:]...)
+			drop(i)
 		}
 	}
 	// 4. zur Not auch „Hilfe“ nur als Taste
 	for i := range out {
-		if width(out) > a.w && out[i][0] == help {
-			out[i][1] = ""
+		if total > a.w && out[i][0] == help {
+			noDesc(i)
 		}
 	}
 	return out

@@ -57,7 +57,8 @@ Publisher: Dominik Bornhäußer
 PublisherUrl: https://github.com/db9979
 PackageName: sshTermy
 PackageUrl: https://db9979.github.io/sshtermy/
-License: Freeware
+License: MIT
+LicenseUrl: https://github.com/db9979/sshtermy/blob/main/LICENSE
 ShortDescription: SSH terminal with an AI copilot
 Description: Terminal application with connection manager, encrypted store, SFTP, tunnels, broadcast and an AI copilot for any OpenAI-compatible endpoint.
 Moniker: sshtermy
@@ -80,7 +81,8 @@ PackageLocale: de-DE
 Publisher: Dominik Bornhäußer
 PackageName: sshTermy
 PackageUrl: https://db9979.github.io/sshtermy/de/
-License: Freeware
+License: MIT
+LicenseUrl: https://github.com/db9979/sshtermy/blob/main/LICENSE
 ShortDescription: SSH-Terminal mit KI-Copilot
 ManifestType: locale
 ManifestVersion: $mv_

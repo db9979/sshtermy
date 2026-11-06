@@ -16,6 +16,7 @@ cat <<RB
 class Sshtermy < Formula
   desc "SSH terminal with an AI copilot"
   homepage "https://db9979.github.io/sshtermy/"
+  license "MIT"
   version "$ver"
 
   on_macos do
