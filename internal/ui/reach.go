@@ -142,6 +142,9 @@ func (a *App) reachText(c domain.Connection) string {
 	if c.JumpHostID != "" {
 		return s.Muted.Render(i18n.T("○ über Jump-Host, nicht direkt geprüft"))
 	}
+	if c.Protocol == domain.ProtoSerial {
+		return s.Muted.Render(i18n.T("○ serielle Konsole, Kabel wird beim Verbinden gesucht"))
+	}
 	if !a.reachEnabled() {
 		return s.Muted.Render(i18n.T("○ Prüfung aus (Befehlspalette)"))
 	}

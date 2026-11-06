@@ -138,7 +138,7 @@ func (a *App) startLog(s *session) {
 	if !a.logsEnabled() || s.log != nil {
 		return
 	}
-	l := sessionlog.New(s.conn.ID, s.conn.Alias, s.conn.Username+"@"+s.conn.Addr())
+	l := sessionlog.New(s.conn.ID, s.conn.Alias, s.conn.Target())
 	if s.client != nil {
 		l.System = s.profileSummary()
 	}

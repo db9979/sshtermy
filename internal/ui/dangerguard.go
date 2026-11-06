@@ -35,7 +35,7 @@ type dangerAsk struct {
 
 // netDevice: Switch/Router (Verbindung, Systemprofil oder Erkennung beim Aufbau).
 func (s *session) netDevice() bool {
-	return (s.client != nil && s.client.NetDevice) || s.prof.Family == domain.FamilyNetwork || s.conn.Device == domain.DeviceNetwork
+	return s.netDev() || s.prof.Family == domain.FamilyNetwork || s.conn.Device == domain.DeviceNetwork
 }
 
 // safetyKind: Regelgruppe für die Sitzung (unix, windows, network).

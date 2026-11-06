@@ -258,8 +258,8 @@ func (a *App) beginReconnect(s *session, cause string) {
 		return
 	}
 	s.rc.active, s.rc.dialing, s.rc.cause, s.rc.lastErr = true, false, cause, ""
-	if s.client != nil {
-		s.rc.netDev = s.client.NetDevice
+	if s.client != nil || s.conn.Protocol.Raw() {
+		s.rc.netDev = s.netDev()
 	}
 	if s.tunnels != nil {
 		s.rc.tunnels = s.rc.tunnels[:0]
@@ -374,12 +374,12 @@ func (a *App) onReconnected(s *session) tea.Cmd {
 	}
 	msg := fmt.Sprintf(i18n.T("%s wieder verbunden (%s getrennt)"), s.conn.Alias, down)
 	var probe tea.Cmd
-	if s.mux.kind == "" && s.rc.alt && !s.client.NetDevice {
+	if s.mux.kind == "" && s.rc.alt && s.client != nil && !s.client.NetDevice {
 		// Vollbild lief, aber kein tmux-Aufruf gesehen (z. B. tmux startet aus
 		// .bashrc): fragen, ob genau eine tmux-Sitzung noch angehängt ist.
 		probe = probeMux(s.id, s.client)
 	}
-	if s.mux.kind != "" && !s.client.NetDevice {
+	if s.mux.kind != "" && !s.netDev() {
 		s.rc.active, s.rc.dialing = false, false
 		s.rc.tunnels = nil
 		s.muxPending = true

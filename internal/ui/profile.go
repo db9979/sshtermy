@@ -24,7 +24,13 @@ func (a *App) profileConnected(s *session) {
 	if c, ok := a.st.Connection(s.conn.ID); ok && c.Profile != nil {
 		old = *c.Profile
 	}
-	p, changed := sysprof.Merge(old, s.client.Profile)
+	var fresh domain.SystemProfile
+	if s.client != nil {
+		fresh = s.client.Profile
+	} else if s.netDev() {
+		fresh.Family = domain.FamilyNetwork // Telnet/Konsole: Rest kommt aus dem Bildschirm
+	}
+	p, changed := sysprof.Merge(old, fresh)
 	s.prof = p
 	if changed {
 		a.saveProfile(s)
@@ -48,7 +54,7 @@ func (a *App) profileCommand(s *session, cmd string) {
 
 // profileTick liest nach einer Ruhepause im Terminal mit.
 func (a *App) profileTick(s *session) {
-	if s.profDue.IsZero() || time.Now().Before(s.profDue) || s.term == nil || s.client == nil {
+	if s.profDue.IsZero() || time.Now().Before(s.profDue) || s.term == nil || (s.client == nil && !s.conn.Protocol.Raw()) {
 		return
 	}
 	if time.Since(s.lastOutput) < 700*time.Millisecond {
@@ -64,7 +70,7 @@ func (a *App) profileTick(s *session) {
 	// Aus dem Bildschirm nur lernen, solange das Profil noch allgemein ist
 	// (oder es ein Netzwerkgerät ist): Wer auf einem Linux-Server per ssh auf
 	// einen Switch springt, soll das Profil des Servers nicht verbiegen.
-	if !s.prof.Manual && (s.client.NetDevice || s.prof.Dialect == "" || s.prof.Dialect == "network") {
+	if !s.prof.Manual && (s.netDev() || s.prof.Dialect == "" || s.prof.Dialect == "network") {
 		fresh := sysprof.FromScreen(screen)
 		var ch bool
 		before := s.prof.Dialect
@@ -125,7 +131,7 @@ func hostVendor(p domain.SystemProfile) hostinfo.Vendor {
 // rejectionFits: Ablehnungen im Stil einer Geräte-CLI („% Invalid input“)
 // zählen nur bei Netzwerkgeräten; auf Servern nur „command not found“.
 func rejectionFits(s *session, msg string) bool {
-	if s.client.NetDevice || s.prof.Family == domain.FamilyNetwork {
+	if s.netDev() || s.prof.Family == domain.FamilyNetwork {
 		return true
 	}
 	l := strings.ToLower(msg)

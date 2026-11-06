@@ -351,7 +351,7 @@ func (a *App) pingRemote(s *session, host string) tea.Cmd {
 	}
 	cmd := "ping -c 4 " + host
 	switch {
-	case s.client != nil && s.client.NetDevice, s.conn.Device == domain.DeviceNetwork:
+	case s.netDev(), s.conn.Device == domain.DeviceNetwork:
 		cmd = "ping " + host
 	case s.client != nil && strings.Contains(strings.ToLower(s.client.Remote.String()), "windows"):
 		cmd = "ping -n 4 " + host

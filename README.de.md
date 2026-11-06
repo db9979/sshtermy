@@ -160,6 +160,16 @@ PuTTY-Export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), eine port
 `.mxtsessions`-Datei. Passwörter werden nicht übernommen, sshTermy fragt beim ersten Verbinden. PuTTY-Keys
 (`.ppk`) bitte in Pageant laden oder mit PuTTYgen nach OpenSSH exportieren.
 
+**Telnet und serielle Konsole:** Im Verbindungsformular wählt „Verbindung über“ zwischen SSH, Telnet und
+„Seriell (Konsolenkabel)“, z. B. für einen Aruba-Switch am USB-Konsolenkabel. Schnittstelle „automatisch“ nimmt das
+einzige eingesteckte USB-Konsolenkabel, so klappt eine synchronisierte Verbindung auch auf dem anderen Rechner (COM5
+unter Windows, `/dev/cu.usbserial-…` unter macOS, `/dev/ttyUSB0` unter Linux). Standard 9600 Baud 8N1. Sind Benutzer
+und Passwort hinterlegt, tippt sshTermy sie ein, sobald das Gerät fragt (und beantwortet „Press any key to
+continue“). In der Palette verbindet `telnet 10.0.0.5`, `COM3` oder `konsole /dev/ttyUSB0 115200` sofort;
+Palette → „Break senden“ schickt ein serielles Break. Host-Übersicht (F6), Config-Sicherung, Schnellbefehle und KI
+laufen wie bei SSH; Dateien, Tunnel und Broadcast brauchen SSH. Linux: Benutzer muss in der Gruppe `dialout` sein.
+Telnet ist unverschlüsselt, nur in vertrauenswürdigen Netzen verwenden.
+
 ## Screens
 
 | Entsperren | Verbindungs-Manager |
