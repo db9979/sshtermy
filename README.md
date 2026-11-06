@@ -18,15 +18,25 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Auto-reconnect**: if the line drops (Wi-Fi, VPN, standby), sshTermy reconnects the session by itself, restarts running tunnels and reattaches tmux/screen (can be turned off in the palette)
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag „Produktion“, „prod“, „live“) get a red line
-- **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders
+- **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
 - **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
   the results are shown side by side in columns. The danger rules apply here too: red needs ⏎ twice.
   Servers get every step via exec (with exit code), network devices get the commands typed into their shell („-- MORE --“ is paged automatically).
+- **Runbooks with variables:** `{{vlan}}` or `{{vlan=20}}` in a step is asked before the run, `{{host}}`, `{{alias}}`,
+  `{{user}}`, `{{port}}` are filled in per host. In the broadcast `e` loads a runbook for editing, `Ctrl+R` saves,
+  `Ctrl+D` deletes. Before the run `k` lets the AI check the steps against each host's system profile and suggest
+  equivalents (`a` applies them). Whether something is dangerous is still decided by the fixed rules.
+- **Danger check:** on production hosts (folder, tag or alias with „prod“, tag „live“) sshTermy asks before risky
+  commands run (`rm -rf`, `reboot`, on switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …). Only `y` runs
+  them, Esc leaves the line in place. Palette „Danger check on all hosts“ extends it to every host.
+- **Export recordings:** palette „Start recording“ records the tab as an asciinema file (`.cast`, with colours and
+  vim/htop), playable with `asciinema play`. Session logs (`l`, then `x`) export as Markdown, text or a rebuilt
+  recording; „Export terminal history as text“ saves the scrollback. Everything goes to your Downloads folder.
 - **Network scan** (f in the manager): search a subnet for SSH devices (only port and SSH banner, no login),
   recognize switches and routers by their banner and create the hits as connections with one key press.
-- **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL
+- **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL; saved per connection, one click turns them on/off, optionally start with the connection; works through jump hosts
 - **AI copilot** for any OpenAI-compatible endpoint (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question, plus suggestions, tunnels, connections and actions
   - **Ghost text** while typing (Tab accepts)
@@ -34,7 +44,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
-  - **Ask AI** (F3) with terminal context, insert commands from the answer with 1…9
+  - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z)
   - **System profile per connection**: sshTermy detects system, version and command set (Linux with package manager and
     init system, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware …) from the
     SSH banner, an invisible query (servers only) and the terminal it reads along (network devices, no exec).
@@ -126,8 +136,8 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
 | | F2 | goal mode (agent) |
 | | F3 | ask AI |
-| | F4 | tunnels on/off, open a web service in the browser |
-| | F5 | files (SFTP): Tab side, c copy (up/down), n folder, d delete, . hidden |
+| | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
+| | F5 | files (SFTP): Tab side, c copy (up/down), Space/a mark, drag copies, n folder, d delete, . hidden |
 | | F6 | host overview: r/⏎ query, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | F10 | back to the manager (sessions keep running) |
@@ -164,6 +174,15 @@ preselected, existing ones deselected; ⏎ imports. With f you load a file from 
 PuTTY export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), a portable `MobaXterm.ini` or an
 `.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. Please load PuTTY keys
 (`.ppk`) into Pageant or export them to OpenSSH with PuTTYgen.
+
+**Telnet and serial console:** in the connection form, „Connect via“ switches between SSH, Telnet and
+„Serial (console cable)“, e.g. for an Aruba switch on a USB console cable. Port „automatic“ uses the only USB
+console cable that is plugged in, so a synced connection also works on the other computer (COM5 on Windows,
+`/dev/cu.usbserial-…` on macOS, `/dev/ttyUSB0` on Linux). Default 9600 baud 8N1. If user and password are stored,
+sshTermy types them as soon as the device asks (and answers „Press any key to continue“). In the palette,
+`telnet 10.0.0.5`, `COM3` or `console /dev/ttyUSB0 115200` connects right away; palette → „Send break“ sends a serial
+break. Host overview (F6), config backup, quick commands and the AI work as with SSH; files, tunnels and broadcast
+need SSH. Linux: the user needs to be in the `dialout` group. Telnet is unencrypted, use it only in trusted networks.
 
 ## Screens
 
@@ -285,6 +304,12 @@ Windows login ──DPAPI CryptProtectData────────────�
   host key aborts the connection, without „connect anyway“ (possible man-in-the-middle).
 - Agent auth preferred: private keys stay in the agent. Embedded keys are only stored encrypted in the store.
 - Tunnels bind to `127.0.0.1` by default. SOCKS5 resolves names on the server (no local DNS leaks).
+- **SSH keys (`c` in the manager):** generates ed25519 or RSA-4096 keys (like `ssh-keygen`, optionally with a
+  passphrase, as a file in `~/.ssh` or embedded), adds them to `~/.ssh/authorized_keys` like `ssh-copy-id` and
+  switches the connection only after a successful test login with the key.
+- **Keychain:** a password or key passphrase can live in the macOS Keychain, Windows Credential Manager or the
+  Secret Service (Linux, `secret-tool`) instead of the store. Each computer has its own entry; if it is missing
+  after a sync, sshTermy asks once and saves the answer there.
 
 ### AI
 

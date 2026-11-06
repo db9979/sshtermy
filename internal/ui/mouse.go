@@ -13,6 +13,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/termemu"
+	"github.com/db9979/sshtermy/internal/update"
 )
 
 // Maus
@@ -43,7 +44,7 @@ func (a *App) mouseEnabled() bool { return !a.st.Settings().NoMouse }
 func (a *App) toggleMouse() tea.Cmd {
 	on := !a.mouseEnabled()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoMouse = !on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {
@@ -134,6 +135,10 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	if isClick && a.modal != nil && (a.modal.kind == mMenu) && m.Button != tea.MouseLeft {
 		a.modal = nil
 		return nil
+	}
+	// Ziehen im Dateibrowser: Einträge auf die andere Seite kopieren
+	if a.scr == scrTerminal && s != nil && s.files.open && s.files.drag != nil && a.modal == nil && a.pal == nil && a.pick == nil && !isClick {
+		return a.filesDragMouse(s, msg)
 	}
 	// Ziehen im Manager: Verbindungen und Ordner umsortieren
 	if a.scr == scrManager && a.modal == nil && a.pal == nil && a.pick == nil && a.mgr.drag != nil && !isClick {
@@ -302,13 +307,14 @@ func (a *App) button(key, label string) string {
 func (a *App) inTermArea(s *session, x, y int) bool {
 	cols, rows := a.termSize(s)
 	r := a.termRect(s)
+	cols = min(cols, r.w-a.panelShown(s)) // aufgeklapptes Panel verdeckt einen Teil
 	return x >= r.x && x < r.x+cols && y >= r.y && y < r.y+rows
 }
 
 // inPanel: liegt (x, y) im Seitenpanel der Sitzung?
 func (a *App) inPanel(s *session, x, y int) bool {
 	r := a.termRect(s)
-	return r.has(x, y) && x >= r.x+r.w-a.panelWidth(s)
+	return r.has(x, y) && x >= r.x+r.w-a.panelShown(s)
 }
 
 func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
@@ -482,8 +488,8 @@ func (a *App) onPaste(m pasteMsg) tea.Cmd {
 	return a.guardedPaste(s, m.text)
 }
 
-// modalButtons: Knöpfe unter dem Dialog (Klick = Taste).
-func (a *App) modalButtons() string {
+// modalKeys: Tastenhinweise unten im Dialog (Klick = Taste).
+func (a *App) modalKeys() [][2]string {
 	var keys [][2]string
 	switch a.modal.kind {
 	case mHostKey:
@@ -492,15 +498,19 @@ func (a *App) modalButtons() string {
 		keys = [][2]string{{yesKey(), i18n.T("ja")}, {"n", i18n.T("nein")}}
 	case mSecret:
 		keys = [][2]string{{"⏎", i18n.T("senden")}, {"Esc", i18n.T("abbrechen")}}
+	case mInput:
+		keys = [][2]string{{"⏎", i18n.T("übernehmen")}, {"Esc", i18n.T("abbrechen")}}
 	case mAbout:
-		if a.rel != nil {
+		if a.rel != nil && update.Managed() == "" {
 			keys = append(keys, [2]string{"u", i18n.T("aktualisieren")})
+		} else if a.rel != nil {
+			// Paketquelle: Befehl steht im Dialog, kein „u“.
 		} else if a.restartPending != "" {
 			keys = append(keys, [2]string{"r", i18n.T("neu starten")})
 		} else {
 			keys = append(keys, [2]string{"c", i18n.T("nach Updates suchen")})
 		}
-		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("☕ Kaffee spendieren")}, [2]string{"l", "Language"}, [2]string{"Esc", i18n.T("schließen")})
+		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("☕ Kaffee spendieren")}, [2]string{"l", langTarget()}, [2]string{"Esc", i18n.T("schließen")})
 	case mChangelog:
 		keys = [][2]string{{"b", i18n.T("☕ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
 	case mHelp, mInfo:
@@ -511,23 +521,16 @@ func (a *App) modalButtons() string {
 		keys = tourButtons(a.modal)
 	case mQuick:
 		keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
+	case mDanger:
+		keys = [][2]string{{yesKey(), i18n.T("trotzdem ausführen")}, {"Esc", i18n.T("abbrechen")}}
 	case mPaste:
 		keys = [][2]string{{"⏎", i18n.T("einfügen")}}
 		if a.modal.paste.multi {
 			keys = append(keys, [2]string{"o", i18n.T("ohne letztes ⏎")})
 		}
 		keys = append(keys, [2]string{"Esc", i18n.T("abbrechen")})
-	default:
-		return ""
 	}
-	var b strings.Builder
-	for i, k := range keys {
-		if i > 0 {
-			b.WriteString("  ")
-		}
-		b.WriteString(a.button(k[0], k[1]))
-	}
-	return b.String()
+	return keys
 }
 
 func mouseLabel(on bool) string {

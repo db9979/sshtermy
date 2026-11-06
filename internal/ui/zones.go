@@ -24,7 +24,8 @@ type zoneAction struct {
 	click func(m tea.Mouse, double bool) tea.Cmd // nil = nicht klickbar
 	wheel func(up bool) tea.Cmd                  // nil = Rad geht weiter nach außen
 	block bool                                   // rechteckiger Block (Box), sonst Fließtext
-	row   int                                    // Manager: Zeile+1 als Ziel beim Ziehen (0 = keins)
+	row   int                                    // Manager: Zeile+1 als Ziel beim Ziehen (0 = keins); Dateien: Eintrag+1
+	pane  int                                    // Dateien: Seite+1 (0 = keine)
 }
 
 type zoneRect struct {
@@ -146,10 +147,27 @@ func (z *zones) at(x, y int, wheel bool) *zoneAction {
 // rowAt: Zeile (row-1) unter x/y für das Ziehen im Manager, sonst -1.
 func (z *zones) rowAt(x, y int) int {
 	for _, r := range z.rects {
-		if y >= r.y0 && y <= r.y1 && z.acts[r.id].row > 0 { // nur die Zeile zählt
+		if y >= r.y0 && y <= r.y1 && z.acts[r.id].row > 0 && z.acts[r.id].pane == 0 { // nur die Zeile zählt
 			_ = x
 			return z.acts[r.id].row - 1
 		}
 	}
 	return -1
+}
+
+// fileAt: Seite und Eintrag des Dateibrowsers unter x/y (je -1 = keiner).
+func (z *zones) fileAt(x, y int) (side, row int) {
+	side, row = -1, -1
+	bestArea := math.MaxInt
+	for _, r := range z.rects {
+		act := z.acts[r.id]
+		if act.pane == 0 || !r.contains(x, y) {
+			continue
+		}
+		area := (r.y1-r.y0+1)*4096 + (r.x1 - r.x0)
+		if area <= bestArea {
+			bestArea, side, row = area, act.pane-1, act.row-1
+		}
+	}
+	return side, row
 }

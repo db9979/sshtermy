@@ -20,6 +20,12 @@ func fontHint() string {
 	return i18n.T("Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)")
 }
 
+// setStyles: Farben des Themes, Knöpfe in Dialogen werden klickbar.
+func (a *App) setStyles(t Theme) {
+	a.s = NewStyles(t)
+	a.s.zoneKey = a.keyZone
+}
+
 // applyLook übernimmt Theme und Tasten aus den Einstellungen.
 func (a *App) applyLook() {
 	a.applyLang()
@@ -31,7 +37,7 @@ func (a *App) applyLook() {
 	a.lookSig = string(sig)
 	t := ThemeByName(set.Theme)
 	activeTheme = t
-	a.s = NewStyles(t)
+	a.setStyles(t)
 	a.keys = newKeymap(set.Keys)
 	activeKeys = a.keys
 	// Felder, die schon existieren, bekommen die neuen Farben.
@@ -40,7 +46,7 @@ func (a *App) applyLook() {
 
 func (a *App) setTheme(name string) tea.Cmd {
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Theme = name }); err != nil {
-		a.flash(err.Error())
+		a.flashErr(err.Error())
 		return nil
 	}
 	a.applyLook()
@@ -48,7 +54,7 @@ func (a *App) setTheme(name string) tea.Cmd {
 	return nil
 }
 
-// cycleTheme: Dunkel → Hell → Hochkontrast → Dunkel.
+// cycleTheme: Dunkel → Hell → Hochkontrast → Hochkontrast hell → Dunkel.
 func (a *App) cycleTheme() tea.Cmd {
 	cur := ThemeByName(a.st.Settings().Theme).Name
 	for i, t := range Themes {
@@ -151,7 +157,7 @@ func (a *App) updateKeys(msg tea.Msg) tea.Cmd {
 	case "r":
 		a.modal = confirmModal(i18n.T("Tastenkürzel"), i18n.T("Alle Tastenkürzel auf Standard zurücksetzen?"), func() tea.Cmd {
 			if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Keys = nil }); err != nil {
-				a.flash(err.Error())
+				a.flashErr(err.Error())
 			}
 			a.applyLook()
 			return nil

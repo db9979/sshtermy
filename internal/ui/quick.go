@@ -130,13 +130,13 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 		return nil
 	}
 	cmd := cmds[i]
-	if f := safety.Check(cmd, safety.Kind(a.remoteText(s))); len(f) > 0 && s.quickArmed != i {
+	if f := safety.Check(cmd, a.safetyKind(s)); len(f) > 0 && s.quickArmed != i {
 		s.quickArmed = i
 		a.flash(i18n.T("Vorsicht: ") + f[0].Reason + i18n.T(". Nochmal ") + a.quickLabel(i) + i18n.T(" zum Ausführen"))
 		return nil
 	}
 	s.quickArmed = -1
-	a.toast = ""
+	a.clearToasts()
 	s.sel, s.scroll, s.ghost, s.chips = nil, 0, "", nil
 	s.term.SendText(cmd + "\r")
 	s.history = append(s.history, cmd)
@@ -164,7 +164,7 @@ func (a *App) quickModalKey(key string) tea.Cmd {
 			return nil
 		}
 		m.scroll = i
-		if len(safety.Check(cmds[i], safety.Kind(a.remoteText(s)))) > 0 && m.armed != i {
+		if len(safety.Check(cmds[i], a.safetyKind(s))) > 0 && m.armed != i {
 			m.armed = i // erster Druck: nur warnen, Liste bleibt offen
 			s.quickArmed = -1
 			return a.runQuick(s, i)
@@ -209,13 +209,13 @@ func (a *App) quickModalView(m *modal) string {
 		return ""
 	}
 	cmds, preset := a.quickCmds(s)
-	kind := safety.Kind(a.remoteText(s))
+	kind := a.safetyKind(s)
 	cw := min(64, a.w-12)
-	head := st.Accent.Render(i18n.T("↯ Schnellbefehle")) + st.Muted.Render("  "+s.conn.Alias)
+	sub := s.conn.Alias
 	if preset != "" {
-		head += st.Muted.Render(i18n.T(" · Vorbelegung „") + preset + "“")
+		sub += i18n.T(" · Vorbelegung „") + preset + "“"
 	}
-	lines := []string{head, ""}
+	var lines []string
 	for i := 0; i < maxQuick; i++ {
 		c := ""
 		if i < len(cmds) {
@@ -247,12 +247,11 @@ func (a *App) quickModalView(m *modal) string {
 			return nil
 		}))
 	}
-	hint := i18n.T("⏎ oder 1…8 ausführen · ↑↓ wählen · e bearbeiten · Esc schließt")
+	keys := [][2]string{{"⏎", i18n.T("ausführen")}, {"1…8", ""}, {"↑↓", i18n.T("wählen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
 	if m.armed >= 0 {
-		hint = i18n.T("⚠ gefährlich: nochmal ⏎ zum Ausführen")
+		lines = append(lines, "", st.Danger.Render(i18n.T("⚠ gefährlich: nochmal ⏎ zum Ausführen")))
 	}
-	lines = append(lines, "", st.Muted.Render(hint))
-	return st.Modal.Render(strings.Join(lines, "\n"))
+	return st.dialog(dialog{icon: "↯", title: i18n.T("Schnellbefehle"), sub: sub, body: strings.Join(lines, "\n"), keys: keys}, a.w)
 }
 
 func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
@@ -265,7 +264,7 @@ func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
 		i, c := i, c
 		it := palItem{group: pgQuick, icon: "↯", label: c, hint: a.quickLabel(i),
 			run: func() tea.Cmd { s.panelFocus = false; return a.runQuick(s, i) }}
-		if f := safety.Check(c, safety.Kind(a.remoteText(s))); len(f) > 0 {
+		if f := safety.Check(c, a.safetyKind(s)); len(f) > 0 {
 			it.danger = f[0].Reason
 		}
 		items = append(items, it)

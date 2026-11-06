@@ -18,6 +18,7 @@ import (
 type SecretPrompt func(label string) (string, error)
 
 func clientConfig(c domain.Connection, o Options) (*ssh.ClientConfig, error) {
+	c = withKeychain(c)
 	methods, err := authMethods(c, o)
 	if err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 		pw := c.Password.Reveal()
 		m := []ssh.AuthMethod{ssh.PasswordCallback(func() (string, error) {
 			if pw == "" && o.AskSecret != nil {
-				return o.AskSecret(i18n.T("Passwort für ") + c.Username + "@" + c.Host)
+				return o.AskSecret(PasswordLabel(c))
 			}
 			return pw, nil
 		})}
@@ -63,9 +64,18 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 		m = append(m, ssh.KeyboardInteractive(func(_, _ string, qs []string, echos []bool) ([]string, error) {
 			ans := make([]string, len(qs))
 			for i, q := range qs {
+				isPass := strings.Contains(strings.ToLower(q), "pass")
 				switch {
-				case pw != "" && strings.Contains(strings.ToLower(q), "pass"):
+				case pw != "" && isPass:
 					ans[i] = pw
+				case isPass && o.AskSecret != nil:
+					// gleiche Frage wie beim Passwort-Verfahren: nur einmal
+					// fragen, und die Oberfläche kann die Antwort merken
+					a, err := o.AskSecret(PasswordLabel(c))
+					if err != nil {
+						return nil, err
+					}
+					ans[i] = a
 				case o.AskSecret != nil:
 					a, err := o.AskSecret(strings.TrimSpace(q))
 					if err != nil {
@@ -132,14 +142,14 @@ func autoMethods(c domain.Connection, o Options) []ssh.AuthMethod {
 		return m
 	}
 	m = append(m, ssh.PasswordCallback(func() (string, error) {
-		return o.AskSecret(i18n.T("Passwort für ") + c.Username + "@" + c.Host)
+		return o.AskSecret(PasswordLabel(c))
 	}))
 	m = append(m, ssh.KeyboardInteractive(func(_, _ string, qs []string, _ []bool) ([]string, error) {
 		ans := make([]string, len(qs))
 		for i, q := range qs {
 			label := strings.TrimSpace(q)
 			if strings.Contains(strings.ToLower(q), "pass") {
-				label = i18n.T("Passwort für ") + c.Username + "@" + c.Host // gleiche Frage wie oben, nur einmal
+				label = PasswordLabel(c) // gleiche Frage wie oben, nur einmal
 			}
 			a, err := o.AskSecret(label)
 			if err != nil {
@@ -173,7 +183,7 @@ func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
 	if errors.As(err, &missing) {
 		pass := c.KeyPassphrase.Reveal()
 		if pass == "" && o.AskSecret != nil {
-			if pass, err = o.AskSecret(i18n.T("Passphrase für den Key von ") + c.Alias); err != nil {
+			if pass, err = o.AskSecret(PassphraseLabel(c)); err != nil {
 				return nil, err
 			}
 		}

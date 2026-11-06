@@ -69,6 +69,13 @@ type Connection struct {
 	KeyPEM        Secret `json:"key_pem,omitempty"`        // … oder eingebettet im Store
 	KeyPassphrase Secret `json:"key_passphrase,omitempty"` // optional für verschlüsselte Keys
 
+	// Keychain: Passwort bzw. Key-Passphrase liegen nicht im Store, sondern
+	// im Schlüsselbund des Betriebssystems (macOS-Schlüsselbund, Windows-
+	// Anmeldeinformationsverwaltung). Jeder Rechner hat seinen eigenen
+	// Eintrag; der Sync überträgt nur diesen Schalter. Fehlt der Eintrag,
+	// fragt sshTermy beim Verbinden und legt die Antwort dort ab.
+	Keychain bool `json:"keychain,omitempty"`
+
 	JumpHostID string     `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
 	TunnelIDs  []string   `json:"tunnel_ids,omitempty"`   // Tunnel, die mit dieser Verbindung starten
 	KeepAlive  int        `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
@@ -79,8 +86,21 @@ type Connection struct {
 	// richtigen Dialekt kommen. Liegt wie alles andere verschlüsselt im Store.
 	Profile *SystemProfile `json:"profile,omitempty"`
 
+	// Color: Akzentfarbe in Tab, Statuszeile und Liste ("red", "green" …).
+	// Leer = automatisch aus Ordner/Tags/Alias (prod → rot, test → grün,
+	// labor → blau), "none" = keine Farbe.
+	Color string `json:"color,omitempty"`
+
 	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
 	QuickCmds []string `json:"quick_cmds,omitempty"`
+
+	// Protocol: SSH (leer), Telnet oder serielle Konsole (USB-Konsolenkabel).
+	// Bei Telnet und seriell meldet sshTermy sich selbst an, wenn Benutzer
+	// und Passwort hinterlegt sind (Auth/Keyfile/Jump-Host gelten nur für SSH).
+	Protocol   Protocol `json:"protocol,omitempty"`
+	SerialPort string   `json:"serial_port,omitempty"` // COM3, /dev/ttyUSB0 … leer = automatisch (einziges USB-Kabel)
+	Baud       int      `json:"baud,omitempty"`        // 0 = 9600
+	Frame      string   `json:"frame,omitempty"`       // Datenbits, Parität, Stoppbits, leer = "8N1"
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
@@ -96,11 +116,69 @@ func (c Connection) Rev() time.Time {
 	return c.UpdatedAt
 }
 
-// Addr liefert host:port (IPv6 korrekt geklammert).
+// Protocol: wie sshTermy die Gegenstelle erreicht.
+type Protocol string
+
+const (
+	ProtoSSH    Protocol = ""       // Standard
+	ProtoTelnet Protocol = "telnet" // unverschlüsselt, für ältere Switches
+	ProtoSerial Protocol = "serial" // serielle Konsole (USB-Konsolenkabel)
+)
+
+// Raw: kein SSH, also keine Exec-Abfragen, kein SFTP und keine Tunnel.
+func (p Protocol) Raw() bool { return p == ProtoTelnet || p == ProtoSerial }
+
+// DefaultBaud: übliche Geschwindigkeit von Switch-Konsolen (Aruba, Cisco, HPE).
+const DefaultBaud = 9600
+
+// SerialBaud und SerialFrame liefern die Einstellung samt Standardwert.
+func (c Connection) SerialBaud() int {
+	if c.Baud <= 0 {
+		return DefaultBaud
+	}
+	return c.Baud
+}
+func (c Connection) SerialFrame() string {
+	if c.Frame == "" {
+		return "8N1"
+	}
+	return c.Frame
+}
+
+// DefaultPort: 22 für SSH, 23 für Telnet.
+func (c Connection) DefaultPort() int {
+	if c.Protocol == ProtoTelnet {
+		return 23
+	}
+	return 22
+}
+
+// Target: Anzeige des Ziels, z. B. „admin@10.0.0.1:22“ oder bei seriellen
+// Verbindungen „COM3 · 9600 8N1“.
+func (c Connection) Target() string {
+	a := c.Addr()
+	if c.Protocol != ProtoSerial && c.Username != "" {
+		a = c.Username + "@" + a
+	}
+	if c.Protocol == ProtoTelnet {
+		a = "telnet://" + a
+	}
+	return a
+}
+
+// Addr liefert host:port (IPv6 korrekt geklammert), bei seriellen
+// Verbindungen Schnittstelle und Geschwindigkeit.
 func (c Connection) Addr() string {
+	if c.Protocol == ProtoSerial {
+		port := c.SerialPort
+		if port == "" {
+			port = "USB"
+		}
+		return fmt.Sprintf("%s · %d %s", port, c.SerialBaud(), c.SerialFrame())
+	}
 	p := c.Port
 	if p == 0 {
-		p = 22
+		p = c.DefaultPort()
 	}
 	if len(c.Host) > 0 && c.Host[0] != '[' && containsColon(c.Host) {
 		return fmt.Sprintf("[%s]:%d", c.Host, p)
@@ -198,18 +276,21 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast"
+	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast" | "kontrasthell"
 	UseDPAPI     bool   `json:"use_dpapi"`                // Windows: Store-Schlüssel zusätzlich per DPAPI
 	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
 	Language     string `json:"language"`                 // "de" | "en"
 	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
 	NoSessionLog bool   `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
 	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
+	DangerAll    bool   `json:"danger_all,omitempty"`     // Gefahren-Check beim Tippen auf allen Hosts, nicht nur Produktiv
 	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
 	// NoAutoReconnect: abgerissene Sitzungen nicht von selbst neu verbinden.
 	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`
 	TourDone        bool `json:"tour_done,omitempty"`
 	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
+	// NoReachCheck: im Manager nicht prüfen, ob die Hosts erreichbar sind.
+	NoReachCheck bool `json:"no_reach_check,omitempty"`
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.

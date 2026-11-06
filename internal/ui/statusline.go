@@ -42,7 +42,7 @@ func (s *session) rootNow() bool {
 	if s.conn.Username == "root" {
 		return true
 	}
-	if s.term == nil || (s.client != nil && s.client.NetDevice) {
+	if s.term == nil || (s.netDev()) {
 		return false
 	}
 	if s.term.AtIdlePrompt() {
@@ -73,12 +73,21 @@ func (a *App) sessionBar(s *session) string {
 	if prod {
 		left.WriteString(lipgloss.NewStyle().Background(st.T.Bg).Foreground(st.T.Danger).Bold(true).Padding(0, 1).Render(i18n.T("PRODUKTIV")))
 	}
+	if col := a.accentOf(s.conn); col != nil && !prod {
+		// Akzentfarbe (accent.go): Umgebung als Schild, sonst ein Farbblock
+		left.WriteString(lipgloss.NewStyle().Background(col).Foreground(st.T.Bg).Bold(true).Padding(0, 1).Render(envLabel(envKind(s.conn))))
+	}
 	if s.state == stConnected && s.rootNow() {
 		left.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("⚠ root")))
 	}
-	info := s.conn.Username + "@" + s.conn.Addr()
+	if s.recording() {
+		left.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
+	}
+	info := s.conn.Target()
 	if s.client != nil {
 		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.profileSummary()
+	} else if s.state == stConnected && s.conn.Protocol.Raw() {
+		info = s.conn.Target() + "  ·  " + s.profileSummary()
 	}
 
 	// rechts: Leitung
@@ -107,6 +116,10 @@ func (a *App) sessionBar(s *session) string {
 			}
 			line = append(line, st.Badge.Foreground(c).Render(enc))
 		}
+	}
+
+	if s.state == stConnected && s.client == nil && s.conn.Protocol.Raw() {
+		line = append(line, st.Badge.Foreground(st.T.Text).Render("⏱ "+fmtDuration(time.Since(s.connectedAt))), a.protoBadge(s))
 	}
 
 	nT := 0

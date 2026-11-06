@@ -191,7 +191,7 @@ func (a *App) mgrContext() string {
 
 func (a *App) toggleFolder(path string, collapsed bool) {
 	if err := a.st.SetCollapsed(collapsed, path); err != nil {
-		a.flash(err.Error())
+		a.flashErr(err.Error())
 	}
 }
 
@@ -207,7 +207,7 @@ func (a *App) newFolderDialog() tea.Cmd {
 		}
 		p, err := a.st.CreateFolder(domain.PathJoin(parent, name))
 		if err != nil {
-			a.flash(err.Error())
+			a.flashErr(err.Error())
 			return nil
 		}
 		a.expandTo(p)
@@ -236,7 +236,7 @@ func (a *App) renameFolderDialog(path string) tea.Cmd {
 			return nil
 		}
 		if err := a.st.MoveFolder(path, neu); err != nil {
-			a.flash(err.Error())
+			a.flashErr(err.Error())
 			return nil
 		}
 		a.mgr.want = "f:" + neu
@@ -259,7 +259,7 @@ func (a *App) deleteFolderDialog(n *domain.TreeNode) {
 	}
 	a.modal = confirmModal(i18n.T("Ordner auflösen"), body, func() tea.Cmd {
 		if err := a.st.DeleteFolder(path); err != nil {
-			a.flash(err.Error())
+			a.flashErr(err.Error())
 		}
 		return nil
 	})
@@ -326,7 +326,7 @@ func (a *App) moveRowTo(r mgrRow, target string) {
 		a.mgr.want = r.key()
 	}
 	if err != nil {
-		a.flash(err.Error())
+		a.flashErr(err.Error())
 		return
 	}
 	a.expandTo(target) // Ziel aufklappen, damit man es sieht
@@ -360,7 +360,7 @@ func (a *App) moveStep(r mgrRow, d int) {
 		}
 		paths[idx], paths[j] = paths[j], paths[idx]
 		if err := a.st.OrderFolders(paths); err != nil {
-			a.flash(err.Error())
+			a.flashErr(err.Error())
 		}
 		return
 	}
@@ -382,7 +382,7 @@ func (a *App) moveStep(r mgrRow, d int) {
 	}
 	ids[idx], ids[j] = ids[j], ids[idx]
 	if err := a.st.PlaceConns(r.conn.Group, ids); err != nil {
-		a.flash(err.Error())
+		a.flashErr(err.Error())
 	}
 }
 
@@ -451,7 +451,7 @@ func (a *App) dropPlan(rows []mgrRow, from, to int) (desc string, do func()) {
 			return rel + " „" + dst.node.Name + "“", func() {
 				a.mgr.want = src.key()
 				if err := a.st.OrderFolders(paths); err != nil {
-					a.flash(err.Error())
+					a.flashErr(err.Error())
 				}
 			}
 		}
@@ -497,7 +497,7 @@ func (a *App) dropPlan(rows []mgrRow, from, to int) (desc string, do func()) {
 	return rel + " „" + dst.conn.Alias + "“" + where, func() {
 		a.mgr.want = src.key()
 		if err := a.st.PlaceConns(group, ids); err != nil {
-			a.flash(err.Error())
+			a.flashErr(err.Error())
 		}
 	}
 }
@@ -623,6 +623,11 @@ func (a *App) viewFolderDetails(n *domain.TreeNode, w int) string {
 		row("Tags", strings.Join(ts, " "))
 	}
 	km := a.keys
+	if n.Total == 0 && len(n.Folders) == 0 {
+		b.WriteString(a.emptyState("▸", i18n.T("Leerer Ordner"),
+			i18n.T("Lege hier eine Verbindung an oder schiebe eine vorhandene hinein (auch mit der Maus ziehen)."),
+			[]emptyStep{{"n", i18n.T("neue Verbindung hier")}, {km.label(actFolderNew), i18n.T("Unterordner anlegen")}}, w))
+	}
 	b.WriteString("\n " + s.PanelTitle.Render(i18n.T("Ordner")) + "\n")
 	keys := [][2]string{
 		{"⏎", i18n.T("auf-/zuklappen")}, {"n", i18n.T("neue Verbindung hier")}, {km.label(actFolderNew), i18n.T("Unterordner anlegen")},

@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/keychain"
+	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 )
 
@@ -63,7 +66,8 @@ func (a *App) managerKeys() [][2]string {
 			[2]string{km.label(actMoveTo), i18n.T("verschieben")})
 	case have:
 		k = append(k, [2]string{"⏎", i18n.T("verbinden")}, [2]string{"n", i18n.T("neu")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")},
-			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), i18n.T("Schnellbefehle")})
+			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), i18n.T("Schnellbefehle")},
+			[2]string{km.label(actSSHKey), i18n.T("SSH-Key")})
 	default:
 		k = append(k, [2]string{"n", i18n.T("neue Verbindung")}, [2]string{km.label(actImport), "Import"}, [2]string{km.label(actScan), "Scan"})
 	}
@@ -130,13 +134,18 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	if have {
 		cur = rows[m.sel]
 	}
-	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit,
+	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
 		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll) {
 	case actCheat:
 		return a.toggleCheat()
 	case actQuickEdit:
 		if have && !cur.isFolder() {
 			return a.openQuickForm(cur.conn, "")
+		}
+		return nil
+	case actSSHKey:
+		if have && !cur.isFolder() {
+			return a.openSSHKeyForm(cur.conn)
 		}
 		return nil
 	case actManager:
@@ -189,7 +198,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	case actFoldAll, actUnfoldAll:
 		collapse := a.keys.is(actFoldAll, k.String())
 		if err := a.st.SetCollapsed(collapse); err != nil {
-			a.flash(err.Error())
+			a.flashErr(err.Error())
 		}
 		if have && collapse {
 			// Auswahl auf den obersten Ordner der aktuellen Zeile
@@ -274,13 +283,19 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			c := cur.conn
 			a.modal = confirmModal(i18n.T("Verbindung löschen"), "„"+c.Alias+i18n.T("“ und ihre Tunnel wirklich löschen?"), func() tea.Cmd {
 				if err := a.st.DeleteConnection(c.ID); err != nil {
-					a.flash(err.Error())
+					a.flashErr(err.Error())
+				} else if c.Keychain {
+					sshx.ForgetKeychain(c.ID)
 				}
 				m.sel = max(0, m.sel-1)
 				return nil
 			})
 		}
 	case "t":
+		if have && !cur.isFolder() && cur.conn.Protocol.Raw() {
+			a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
+			return nil
+		}
 		if have && !cur.isFolder() {
 			return a.openTunnelForm(domain.Tunnel{ConnectionID: cur.conn.ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
 		}
@@ -422,21 +437,29 @@ func (a *App) viewManager() string {
 			plain += pad + cnt
 		} else {
 			c := r.conn
-			dot := s.Muted.Render("○")
-			pdot := "○"
-			if a.connected(c.ID) {
-				dot, pdot = s.OK.Render("●"), "●"
-			}
-			aw := max(8, min(18-2*min(r.depth, 5), (leftW-6-len(indent))*11/20))
-			hw := max(4, leftW-6-len(indent)-aw)
+			pdot, dotC := a.reachDot(c)
+			picon, iconC := a.devIcon(c)
+			stripe, _ := a.stripe(c, nil)
+			aw := max(8, min(18-2*min(r.depth, 5), (leftW-8-len(indent))*11/20))
+			hw := max(4, leftW-8-len(indent)-aw)
 			alias := fmt.Sprintf("%-*s", aw, trunc(c.Alias, aw))
-			target := trunc(c.Username+"@"+c.Host, hw)
-			plain = fmt.Sprintf(" %s%s %s %s", indent, pdot, alias, target)
-			styled = " " + indent + dot + " " + alias + " " + s.Muted.Render(target)
+			target := trunc(shortTarget(c), hw)
+			plain = fmt.Sprintf("%s%s %s %s %s", indent, pdot, picon, alias, target)
+			styled = stripe + indent + glyph(pdot, dotC, nil) + " " + glyph(picon, iconC, nil) + " " + alias + " " + s.Muted.Render(target)
+			if i == m.sel {
+				// Auswahl: Hintergrund über die ganze Zeile, Punkt und
+				// Symbol behalten ihre Farbe (rot = nicht erreichbar).
+				bg := s.T.Surface2
+				sel := s.Selected
+				stripeSel, _ := a.stripe(c, bg)
+				body := sel.Render(indent) + glyph(pdot, dotC, bg) + sel.Render(" ") + glyph(picon, iconC, bg) + sel.Render(" "+alias+" "+target)
+				styled = stripeSel + body + sel.Render(strings.Repeat(" ", max(0, leftW-2-lipgloss.Width(body))))
+			}
+			plain = " " + plain
 		}
 		line := styled
 		switch {
-		case i == m.sel:
+		case i == m.sel && r.isFolder():
 			line = s.Selected.Width(leftW - 1).Render(plain)
 		case m.drag != nil && m.drag.moved && i == m.drag.over:
 			line = lipgloss.NewStyle().Foreground(s.T.Warn).Underline(true).Width(leftW - 1).Render(plain)
@@ -456,9 +479,9 @@ func (a *App) viewManager() string {
 	if len(rows) == 0 {
 		switch {
 		case a.mgrFiltering():
-			lb.WriteString(s.Muted.Render(i18n.T("  Nichts gefunden.\n  Esc = Filter aufheben")))
+			lb.WriteString(a.mgrNoMatch(leftW))
 		default:
-			lb.WriteString(s.Muted.Render(i18n.T("  Noch keine Verbindung.\n  n = neue Verbindung anlegen\n  o = Ordner anlegen")))
+			lb.WriteString(a.mgrEmpty(leftW))
 		}
 	}
 	listBox := a.z.mark(lb.String(), zoneAction{block: true, wheel: func(up bool) tea.Cmd {
@@ -493,13 +516,36 @@ func (a *App) viewManager() string {
 		row := func(k, v string) {
 			rb.WriteString(" " + label.Render(k) + s.Text.Render(ansi.Truncate(v, textW, "…")) + "\n")
 		}
-		row(i18n.T("Ziel"), fmt.Sprintf("%s@%s", c.Username, c.Addr()))
+		row(i18n.T("Ziel"), c.Target())
+		row(i18n.T("Status"), a.reachText(c))
+		if d := deviceClass(c); d != devUnknown {
+			ic, col := a.devIcon(c)
+			row(i18n.T("Gerät"), glyph(ic, col, nil)+" "+devName(d))
+		}
+		if acc := a.accentOf(c); acc != nil {
+			lbl := envLabel(envKind(c))
+			if c.Color != accentAuto || lbl == "" {
+				lbl = i18n.T(accentLabel(connAccent(c)))
+			}
+			row(i18n.T("Farbe"), glyph("▌", acc, nil)+" "+lbl)
+		}
 		auth := map[domain.AuthMethod]string{domain.AuthPassword: i18n.T("Passwort (verschlüsselt)"), domain.AuthKeyFile: "Keyfile", domain.AuthAgent: i18n.T("SSH-Agent")}[c.Auth]
 		if c.Auth == domain.AuthKeyFile {
 			if c.KeyPEM.IsSet() {
 				auth += i18n.T(" (eingebettet, verschlüsselt)")
 			} else {
 				auth += " " + c.KeyPath
+			}
+		}
+		if c.Keychain && c.Auth == domain.AuthPassword {
+			auth = i18n.T("Passwort") + " · " + i18n.T(keychainName())
+		} else if c.Keychain && c.Auth == domain.AuthKeyFile {
+			auth += " · " + i18n.T("Passphrase") + " " + i18n.T(keychainName())
+		}
+		if c.Protocol.Raw() {
+			auth = i18n.T("von Hand am Gerät")
+			if c.Username != "" || c.Password.IsSet() {
+				auth = i18n.T("automatisch, sobald das Gerät fragt")
 			}
 		}
 		row(i18n.T("Anmeldung"), auth)
@@ -530,7 +576,7 @@ func (a *App) viewManager() string {
 		tuns := a.st.Tunnels(c.ID)
 		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render(i18n.T("t = neuer Tunnel"))) + "\n")
 		if len(tuns) == 0 {
-			rb.WriteString(s.Muted.Render(i18n.T("  keine")) + "\n")
+			rb.WriteString(s.Muted.Render(i18n.T("  noch keine · z. B. Weboberfläche oder Datenbank sicher auf diesen Rechner holen")) + "\n")
 		}
 		for _, t := range tuns {
 			icon := "⇄"
@@ -546,6 +592,9 @@ func (a *App) viewManager() string {
 		cfg := a.st.LLM()
 		rb.WriteString("\n " + s.PanelTitle.Render(i18n.T("KI-Copilot")) + "\n")
 		rb.WriteString("  " + s.Muted.Render(trunc(cfg.Model+" @ "+cfg.BaseURL, max(10, rightW-3))) + "\n")
+	}
+	if len(rows) == 0 && !a.mgrFiltering() {
+		rb.WriteString(a.mgrLegend(rightW))
 	}
 	if len(rows) > 0 || a.st.SyncConfig().Enabled() {
 		rb.WriteString("\n " + s.PanelTitle.Render("Sync") + "\n  " + a.syncStatus() + "\n")
@@ -573,14 +622,37 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		f.title = i18n.T("Verbindung bearbeiten: ") + c.Alias
 	}
 	f.text("alias", "Alias", c.Alias, i18n.T("Anzeigename, z. B. „DGX Spark“"))
-	f.text("host", "Host", c.Host, i18n.T("Name oder IP"))
-	f.number("port", "Port", c.Port, i18n.T("Standard 22"))
-	f.text("user", i18n.T("Benutzer"), c.Username, "")
-	f.choice("auth", i18n.T("Anmeldung"), []string{"agent", "keyfile", "password"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen)"))
-	isAuth := func(v string) func(*form) bool { return func(f *form) bool { return f.sel("auth") != v } }
-	f.secret("password", i18n.T("Passwort"), c.Password.Reveal(), i18n.T("wird mit AES-256-GCM verschlüsselt gespeichert")).hidden = isAuth("password")
+	f.choice("proto", i18n.T("Verbindung über"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel")).value = protoLabel(c.Protocol)
+	isProto := func(p domain.Protocol) bool { return protoFromLabel(f.sel("proto")) == p }
+	raw := func(*form) bool { return protoFromLabel(f.sel("proto")).Raw() }
+	notSerial := func(*form) bool { return !isProto(domain.ProtoSerial) }
+	f.text("host", "Host", c.Host, i18n.T("Name oder IP")).hidden = func(*form) bool { return isProto(domain.ProtoSerial) }
+	f.number("port", "Port", c.Port, i18n.T("Standard 22 · Telnet 23")).hidden = func(*form) bool { return isProto(domain.ProtoSerial) }
+	sports, scur := serialPortOptions(c.SerialPort)
+	f.choice("sport", i18n.T("Schnittstelle"), sports, scur, serialPortHelp()).hidden = notSerial
+	f.choice("baud", "Baud", baudOpts(c.SerialBaud()), strconv.Itoa(c.SerialBaud()), i18n.T("Aruba/HPE/Cisco: 9600 · viele neuere Geräte: 115200")).hidden = notSerial
+	f.choice("frame", i18n.T("Datenformat"), frameOpts(c.SerialFrame()), c.SerialFrame(), i18n.T("Datenbits, Parität, Stoppbits · fast immer 8N1")).hidden = notSerial
+	f.text("user", i18n.T("Benutzer"), c.Username, "").help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt")
+	f.choice("auth", i18n.T("Anmeldung"), []string{"agent", "keyfile", "password"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen)")).hidden = raw
+	isAuth := func(v string) func(*form) bool {
+		return func(f *form) bool { return raw(f) || f.sel("auth") != v }
+	}
+	pw, pp := c.Password.Reveal(), c.KeyPassphrase.Reveal()
+	a.formKC = [2]string{}
+	if c.Keychain && c.ID != "" {
+		a.formKC = [2]string{sshx.KeychainSecret(c.ID, sshx.SecretPassword), sshx.KeychainSecret(c.ID, sshx.SecretPassphrase)}
+		pw, pp = a.formKC[0], a.formKC[1]
+	}
+	f.secret("password", i18n.T("Passwort"), pw, i18n.T("wird mit AES-256-GCM verschlüsselt gespeichert")).hidden = func(f *form) bool {
+		return !raw(f) && f.sel("auth") != "password"
+	}
 	f.text("keypath", "Keyfile", c.KeyPath, i18n.T("z. B. ~/.ssh/id_ed25519 (leer lassen bei eingebettetem Key)")).hidden = isAuth("keyfile")
-	f.secret("keypass", "Passphrase", c.KeyPassphrase.Reveal(), i18n.T("optional; leer = beim Verbinden fragen")).hidden = isAuth("keyfile")
+	f.secret("keypass", "Passphrase", pp, i18n.T("optional; leer = beim Verbinden fragen")).hidden = isAuth("keyfile")
+	if keychain.Available() {
+		f.toggle("keychain", i18n.T("Im Schlüsselbund"), c.Keychain, keychainHelp()).hidden = func(f *form) bool {
+			return raw(f) || f.sel("auth") != "password" && f.sel("auth") != "keyfile"
+		}
+	}
 	f.pick("group", i18n.T("Ordner"), domain.NormPath(c.Group), func(v string) string {
 		if v == "" {
 			return a.s.Muted.Render(i18n.T("— oberste Ebene"))
@@ -588,9 +660,10 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		return "▸ " + v
 	}, func() tea.Cmd { return a.pickFolderField() }, i18n.T("Auswahl mit Suche; neuen Namen tippen legt einen Ordner an („A / B“ verschachtelt)"))
 	f.text("tags", "Tags", strings.Join(c.Tags, ", "), i18n.T("durch Komma getrennt, z. B. prod, linux · im Manager filtern mit #"))
+	f.choice("color", i18n.T("Farbe"), accentLabels(), accentLabel(c.Color), i18n.T("Streifen in Tab, Statuszeile und Liste · automatisch: prod rot, test grün, labor blau"))
 	self := c
 	f.pick("jump", i18n.T("Jump-Host"), c.JumpHostID, func(v string) string { return a.jumpFieldText(self, v) },
-		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche"))
+		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
 	f.choice("device", i18n.T("Gerätetyp"), deviceLabels, deviceLabel(c.Device), i18n.T("Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage"))
 	var pr domain.SystemProfile
 	if c.Profile != nil {
@@ -671,15 +744,20 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		return nil
 	}
 	submit, cmd := a.form.update(msg)
+	if a.scr == scrConnForm {
+		syncProtoPort(a.form)
+	}
 	if !submit {
 		return cmd
 	}
 	var err error
 	var next tea.Cmd
-	wasKey := a.scr == scrKeyForm
+	wasKey := a.scr == scrKeyForm || a.scr == scrSSHKeyForm
 	switch a.scr {
 	case scrKeyForm:
 		next, err = a.saveKeyFix()
+	case scrSSHKeyForm:
+		next, err = a.startSSHKey()
 	case scrConnForm:
 		err = a.saveConn()
 	case scrTunnelForm:
@@ -708,11 +786,30 @@ func (a *App) saveConn() error {
 	f := a.form
 	c := a.formBase
 	c.Alias, c.Host, c.Port, c.Username = f.str("alias"), f.str("host"), f.num("port"), f.str("user")
-	if c.Port == 0 {
-		c.Port = 22
+	c.Protocol = protoFromLabel(f.sel("proto"))
+	c.SerialPort, c.Baud, c.Frame = "", 0, ""
+	if c.Protocol == domain.ProtoSerial {
+		if p := f.sel("sport"); p != serialAuto {
+			c.SerialPort = p
+		}
+		c.Baud, _ = strconv.Atoi(f.sel("baud"))
+		c.Frame = f.sel("frame")
+		c.Host, c.Port = "", 0
+		if c.Alias == "" {
+			c.Alias = i18n.T("Konsole")
+		}
+	}
+	if c.Protocol == domain.ProtoTelnet && c.Port == 22 && a.formBase.Protocol != domain.ProtoTelnet {
+		c.Port = 23 // Vorbelegung für SSH stehen gelassen
+	}
+	if c.Port == 0 && c.Protocol != domain.ProtoSerial {
+		c.Port = c.DefaultPort()
 	}
 	c.Auth = domain.AuthMethod(f.sel("auth"))
 	c.Password, c.KeyPath, c.KeyPassphrase = "", "", ""
+	if c.Protocol.Raw() {
+		c.Auth = domain.AuthPassword
+	}
 	switch c.Auth {
 	case domain.AuthPassword:
 		c.Password = domain.Secret(f.raw("password"))
@@ -727,9 +824,13 @@ func (a *App) saveConn() error {
 			c.Tags = append(c.Tags, t)
 		}
 	}
+	c.Color = accentFromLabel(f.sel("color"))
 	c.Device = deviceFromLabel(f.sel("device"))
 	c.Profile = profileFromForm(f, a.formBase.Profile)
 	c.JumpHostID = f.val("jump")
+	if c.Protocol.Raw() {
+		c.JumpHostID, c.KeyPEM = "", ""
+	}
 	if c.JumpHostID != "" {
 		if _, ok := a.st.Connection(c.JumpHostID); !ok {
 			return errors.New(i18n.T("Jump-Host gibt es nicht mehr"))
@@ -738,7 +839,11 @@ func (a *App) saveConn() error {
 			return errors.New(i18n.T("Jump-Host würde einen Kreis bilden"))
 		}
 	}
+	secret := a.connFormKeychain(&c)
 	saved, err := a.st.UpsertConnection(c)
+	if err == nil {
+		err = a.saveConnKeychain(saved, secret)
+	}
 	if err == nil {
 		a.mgr.want = "c:" + saved.ID
 		a.expandTo(saved.Group)

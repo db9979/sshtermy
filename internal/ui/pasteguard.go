@@ -60,7 +60,7 @@ func (a *App) pasteGuardEnabled() bool { return !a.st.Settings().NoPasteGuard }
 func (a *App) togglePasteGuard() tea.Cmd {
 	on := !a.pasteGuardEnabled()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoPasteGuard = !on }); err != nil {
-		a.flash(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
 	if on {
@@ -88,11 +88,7 @@ func (a *App) guardedPaste(s *session, text string) tea.Cmd {
 		s.term.Paste(text)
 		return nil
 	}
-	kind := "unix"
-	if s.client != nil {
-		kind = safety.Kind(s.client.Remote.String())
-	}
-	pc := checkPaste(text, kind)
+	pc := checkPaste(text, a.safetyKind(s))
 	pc.sid = s.id
 	if pc.dangerous == 0 && (!pc.multi || !a.pasteGuardEnabled()) {
 		s.sel, s.scroll = nil, 0
@@ -139,14 +135,12 @@ const pastePreviewLines = 12
 func (a *App) pasteView(m *modal) string {
 	st := a.s
 	pc := m.paste
-	w := min(90, a.w-4)
-	inner := max(20, w-6)
+	inner := dialogInner(a.w)
 	var b strings.Builder
-	title := st.Accent.Render(m.title)
+	d := dialog{icon: "⎘", title: m.title, width: inner, keys: a.modalKeys()}
 	if pc.dangerous > 0 {
-		title = st.Danger.Render(m.title)
+		d.icon, d.tone = "⚠", st.T.Danger
 	}
-	b.WriteString(title + "\n\n")
 	n := len(pc.lines)
 	info := plural(n, i18n.T("Zeile"), i18n.T("Zeilen")) + " · " + plural(utf8.RuneCountInString(pc.text), i18n.T("Zeichen"), i18n.T("Zeichen"))
 	if pc.multi {
@@ -196,5 +190,6 @@ func (a *App) pasteView(m *modal) string {
 	default:
 		b.WriteString(st.Muted.Render(i18n.T("Prüfe den Text, bevor er in die Shell geht.")))
 	}
-	return st.Modal.Width(w).Render(b.String())
+	d.body = b.String()
+	return st.dialog(d, a.w)
 }

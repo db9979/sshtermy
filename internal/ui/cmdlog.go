@@ -138,7 +138,7 @@ func (a *App) startLog(s *session) {
 	if !a.logsEnabled() || s.log != nil {
 		return
 	}
-	l := sessionlog.New(s.conn.ID, s.conn.Alias, s.conn.Username+"@"+s.conn.Addr())
+	l := sessionlog.New(s.conn.ID, s.conn.Alias, s.conn.Target())
 	if s.client != nil {
 		l.System = s.profileSummary()
 	}
@@ -157,7 +157,7 @@ func (a *App) saveLog(s *session) {
 	}
 	if err != nil && !s.logErr {
 		s.logErr = true
-		a.flash(i18n.T("Sitzungsprotokoll: ") + err.Error())
+		a.flashErr(i18n.T("Sitzungsprotokoll: ") + err.Error())
 	}
 }
 

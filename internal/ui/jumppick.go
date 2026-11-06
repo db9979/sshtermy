@@ -82,8 +82,8 @@ func (a *App) pickJumpField(self domain.Connection) tea.Cmd {
 		aw = max(aw, min(20, len([]rune(c.Alias))))
 	}
 	for _, c := range all {
-		if self.ID != "" && c.ID == self.ID {
-			continue
+		if (self.ID != "" && c.ID == self.ID) || c.Protocol.Raw() {
+			continue // Telnet und Konsolen können nicht weiterleiten
 		}
 		it := pickItem{value: c.ID, label: fmt.Sprintf("%-*s", aw, trunc(c.Alias, aw)), search: c.Alias + " " + c.Host + " " + c.Username + " " + c.Group + " " + strings.Join(c.Tags, " ")}
 		folder := c.Group

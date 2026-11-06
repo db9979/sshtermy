@@ -7,6 +7,7 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/update"
@@ -24,13 +25,14 @@ const (
 	mBusy
 	mChangelog
 	mTour
-	mPaste // Einfügeschutz (pasteguard.go)
-	mMenu  // Kontextmenü, z. B. zu Links (links.go)
-	mInfo  // Ergebnis anzeigen (Ping)
-	mInput // eine Zeile Text (Ordnername)
-	mQuick // Schnellbefehle (quick.go)
-	mText  // blätterbarer Text (Config-Diff, Konfiguration)
-	mLLM   // KI-Status (llmhealth.go)
+	mPaste  // Einfügeschutz (pasteguard.go)
+	mMenu   // Kontextmenü, z. B. zu Links (links.go)
+	mInfo   // Ergebnis anzeigen (Ping)
+	mInput  // eine Zeile Text (Ordnername)
+	mQuick  // Schnellbefehle (quick.go)
+	mText   // blätterbarer Text (Config-Diff, Konfiguration)
+	mLLM    // KI-Status (llmhealth.go)
+	mDanger // Gefahren-Check beim Tippen (dangerguard.go)
 )
 
 type modal struct {
@@ -49,18 +51,19 @@ type modal struct {
 	lines    []string             // Changelog/Text: fertig gestaltete Zeilen
 
 	paste    *pasteCheck // nur Einfügeschutz
+	danger   *dangerAsk  // nur Gefahren-Check
 	items    []menuItem  // nur Menü
 	sel      int         // nur Menü: Auswahl
 	at       [2]int      // nur Menü: Bildschirmposition (Mauszeiger)
 	anchored bool        // am Mauszeiger statt mittig
+	hints    [][2]string // Tastenhinweise (setzt modalView aus modalKeys)
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
 	return &modal{kind: mHostKey, title: i18n.T("Unbekannter Host"), hk: m,
 		body: i18n.T("Der Server ") + m.host + i18n.T(" ist noch nicht bekannt.\n\n") +
 			i18n.T("Schlüssel: ") + m.typ + i18n.T("\nFingerprint: ") + m.fp + "\n\n" +
-			i18n.T("Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).\n") +
-			i18n.T("j = vertrauen und merken · n = abbrechen")}
+			i18n.T("Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).")}
 }
 
 func secretModal(m secretAskMsg) *modal {
@@ -70,7 +73,7 @@ func secretModal(m secretAskMsg) *modal {
 }
 
 func confirmModal(title, body string, yes func() tea.Cmd) *modal {
-	return &modal{kind: mConfirm, title: title, body: body + i18n.T("\n\nj = ja · n = nein"), onYes: yes}
+	return &modal{kind: mConfirm, title: title, body: body, onYes: yes}
 }
 
 type applyDoneMsg struct{ err error }
@@ -81,18 +84,14 @@ func (a *App) aboutModal() *modal {
 		i18n.T("KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.\n\n") +
 		i18n.T("☕ Gefällt dir sshTermy? Spendier einen Kaffee: ") + version.Coffee + "\n\n"
 	if a.rel != nil {
-		b += i18n.T("⬆ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6) + "\n\n"
+		b += i18n.T("⬆ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6)
 		if cmd := update.Managed(); cmd != "" {
-			b += i18n.T("Aktualisieren mit: ") + cmd + "\n\n"
-		} else {
-			b += i18n.T("u = jetzt aktualisieren · ")
+			b += "\n\n" + i18n.T("Aktualisieren mit: ") + cmd
 		}
 	} else if a.restartPending != "" {
-		b += "v" + a.restartPending + i18n.T(" ist installiert.\n\nr = jetzt neu starten · ")
-	} else {
-		b += i18n.T("c = nach Updates suchen · ")
+		b += "v" + a.restartPending + i18n.T(" ist installiert.")
 	}
-	b += i18n.T("w = was ist neu · b = Kaffee spendieren · Esc = schließen") + "\nl = " + langLabel()
+	b = strings.TrimRight(b, "\n")
 	return &modal{kind: mAbout, title: i18n.T("Über ") + version.Name, body: b}
 }
 
@@ -206,6 +205,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.inputKey(k)
 	case mPaste:
 		return a.pasteKey(key)
+	case mDanger:
+		return a.dangerKey(k)
 	case mMenu:
 		return a.menuKey(key)
 	case mLLM:
@@ -250,18 +251,35 @@ func (m *modal) view(s Styles, w, h int) string {
 	if m.kind == mText {
 		return m.textView(s, w, h)
 	}
-	title := s.Accent.Render(m.title)
-	if m.kind == mHostKey {
-		title = s.Warn.Render("⚠ " + m.title)
+	d := dialog{title: m.title, keys: m.hints, width: dialogInner(w)}
+	switch m.kind {
+	case mHostKey:
+		d.icon, d.tone = "⚠", s.T.Warn
+	case mConfirm:
+		d.icon = "?"
+	case mAbout:
+		d.icon = "◆"
+	case mBusy:
+		d.icon, d.tone, d.noClose = "◌", s.T.AI, true
+	case mInfo:
+		d.icon = "ℹ"
+	case mInput:
+		d.icon = "✎"
+	case mSecret:
+		d.icon = "✱"
 	}
-	body := s.Text.Render(m.body)
-	if m.kind == mInput {
-		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render(i18n.T("⏎ übernehmen · Esc abbrechen"))
+	body := ansi.Wrap(s.Text.Render(m.body), d.width, "")
+	switch m.kind {
+	case mInput:
+		body += "\n\n" + m.in.View()
+	case mSecret:
+		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render(i18n.T("Wird nicht gespeichert."))
 	}
-	if m.kind == mSecret {
-		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render(i18n.T("⏎ senden · Esc abbrechen (wird nicht gespeichert)"))
+	d.body = body
+	if m.kind != mAbout && m.kind != mHostKey && m.kind != mInput && m.kind != mSecret {
+		d.width = 0 // kurze Dialoge nur so breit wie nötig
 	}
-	return s.Modal.Width(min(90, w-4)).Render(title + "\n\n" + body)
+	return s.dialog(d, w)
 }
 
 // modalView: Dialoge, die das App-Objekt brauchen (Zonen, Breite), sonst view.
@@ -269,6 +287,8 @@ func (a *App) modalView() string {
 	switch a.modal.kind {
 	case mPaste:
 		return a.pasteView(a.modal)
+	case mDanger:
+		return a.dangerView(a.modal)
 	case mMenu:
 		return a.menuView(a.modal)
 	case mQuick:
@@ -276,5 +296,6 @@ func (a *App) modalView() string {
 	case mLLM:
 		return a.llmStatusView()
 	}
+	a.modal.hints = a.modalKeys()
 	return a.modal.view(a.s, a.w, a.h)
 }

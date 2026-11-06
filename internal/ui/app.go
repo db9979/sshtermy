@@ -56,7 +56,8 @@ const (
 	scrKeys
 	scrBroadcast
 	scrScan
-	scrKeyForm // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
+	scrKeyForm    // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
+	scrSSHKeyForm // SSH-Schlüssel erzeugen / übertragen (sshkey.go)
 )
 
 // App ist das Wurzel-Modell.
@@ -74,6 +75,7 @@ type App struct {
 	form             *form
 	formID           string // ID des bearbeiteten Datensatzes
 	formBase         domain.Connection
+	formKC           [2]string // Verbindungsformular: Werte aus dem Schlüsselbund beim Öffnen
 	formTunnel       domain.Tunnel
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
@@ -85,13 +87,14 @@ type App struct {
 	split    splitMode // geteilte Ansicht (Strg+T)
 	panes    []int     // Sitzungs-IDs je Bereich, 0 = leer
 
-	modal      *modal
-	pal        *palette
-	llm        llmUI
-	lh         llmHealthState // KI-Status (llmhealth.go)
-	toast      string
-	toastUntil time.Time
-	rel        *update.Release
+	modal        *modal
+	pal          *palette
+	llm          llmUI
+	lh           llmHealthState // KI-Status (llmhealth.go)
+	reach        reachState     // Online-Punkt im Manager (reach.go)
+	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
+	toastTicking bool
+	rel          *update.Release
 	// restartPending: installierte, noch nicht gestartete Version.
 	restartPending string
 	restart        bool // nach dem Beenden neu starten (siehe Restart)
@@ -112,10 +115,12 @@ type App struct {
 
 	pick *picker // Auswahlliste mit Suche (Jump-Host, Ordner, Tag)
 
-	bc   *bcState   // Broadcast an mehrere Hosts
-	scan *scanState // Netzwerk-Scan
+	bc     *bcState                     // Broadcast an mehrere Hosts
+	rbVals map[string]map[string]string // zuletzt eingegebene Runbook-Variablen (nur im Speicher)
+	scan   *scanState                   // Netzwerk-Scan
 
 	intro *introState // Startanimation, nil = aus oder vorbei
+	fx    fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
 }
 
 func New(st *store.Store) (*App, error) {
@@ -123,7 +128,8 @@ func New(st *store.Store) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := &App{st: st, hostKeys: hk, s: NewStyles(Nacht), events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
+	a := &App{st: st, hostKeys: hk, events: make(chan tea.Msg, 256), lastKey: time.Now(), keys: newKeymap(nil)}
+	a.setStyles(Nacht)
 	a.unlock = newUnlock(st)
 	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
@@ -165,11 +171,6 @@ func (a *App) Init() tea.Cmd {
 	return tea.Batch(a.listen(), tick(), a.tryDPAPI(), intro)
 }
 
-func (a *App) flash(s string) {
-	a.toast = s
-	a.toastUntil = time.Now().Add(4 * time.Second)
-}
-
 func (a *App) current() *session {
 	if a.cur >= 0 && a.cur < len(a.sessions) {
 		return a.sessions[a.cur]
@@ -187,6 +188,28 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg.(type) {
+	case fadeMsg:
+		if a.fadeRunning() {
+			return a, fadeTick()
+		}
+		return a, nil
+	case toastTickMsg:
+		a.toastTicking = false
+		a.liveToasts(time.Now())
+		return a, a.toastTick()
+	}
+	m, cmd := a.update(msg)
+	if c := a.trackFade(); c != nil {
+		cmd = tea.Batch(cmd, c)
+	}
+	if t := a.toastTick(); t != nil {
+		cmd = tea.Batch(cmd, t)
+	}
+	return m, cmd
+}
+
+func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.logInput(msg)
 	if cmd, ok := a.introMsg(msg); ok {
 		return a, cmd
@@ -200,9 +223,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case tickMsg:
-		return a, tea.Batch(tick(), a.onTick(), a.llmTick())
+		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick())
 	case llmProbeMsg:
 		a.lh.probing = false
+		return a, nil
+	case reachMsg:
+		a.onReach(m)
 		return a, nil
 
 	case outputMsg:
@@ -218,21 +244,30 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case secretAskMsg:
 		a.modal = secretModal(m)
 		return a, a.listen()
+	case sshKeyDoneMsg:
+		return a, a.sshKeyDone(m)
 
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
 			s.client, s.shell, s.state = m.client, m.shell, stConnected
 			s.connectedAt = time.Now()
-			s.tunnels = sshx.NewTunnelManager(m.client)
+			if m.client != nil {
+				s.tunnels = sshx.NewTunnelManager(m.client)
+			}
 			a.st.Touch(s.conn.ID)
-			if m.client.Learned {
+			if m.note != "" {
+				a.flash(m.note)
+			}
+			if m.client != nil && m.client.Learned {
 				a.rememberNetDevice(s)
 			}
 			a.profileConnected(s)
+			a.learnKeychain(s)
+			a.flashOK(i18n.T("Verbunden: ") + s.conn.Alias)
 			for _, t := range a.st.Tunnels(s.conn.ID) {
-				if t.AutoStart {
+				if t.AutoStart && s.tunnels != nil {
 					if _, err := s.tunnels.Start(t); err != nil {
-						a.flash("Tunnel " + t.Name + ": " + err.Error())
+						a.flashErr("Tunnel " + t.Name + ": " + err.Error())
 					}
 				}
 			}
@@ -287,7 +322,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case applyDoneMsg:
 		a.modal = nil
 		if m.err != nil {
-			a.flash(i18n.T("Update fehlgeschlagen: ") + m.err.Error())
+			a.flashErr(i18n.T("Update fehlgeschlagen: ") + m.err.Error())
 			return a, nil
 		}
 		if a.rel != nil {
@@ -341,7 +376,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pick != nil {
 			return a, a.pickerKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrKeyForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -379,7 +414,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrKeyForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrKeyForm, scrSSHKeyForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -402,6 +437,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) quit() tea.Cmd {
 	for _, s := range a.sessions {
 		a.endLog(s)
+		a.stopRecording(s)
 		s.close()
 	}
 	a.closeBook()
@@ -454,7 +490,7 @@ func (a *App) View() tea.View {
 		body = a.viewUnlock()
 	case scrManager:
 		body = a.frame(a.viewManager(), a.managerKeys())
-	case scrConnForm, scrTunnelForm, scrKeyForm:
+	case scrConnForm, scrTunnelForm, scrKeyForm, scrSSHKeyForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
@@ -485,7 +521,14 @@ func (a *App) View() tea.View {
 	} else if a.pal != nil {
 		body = a.overlay(body, a.viewPalette())
 		cur = nil
+	} else if a.fx.out && a.fx.ghost != "" {
+		// gerade geschlossenes Popup blendet aus (nicht mehr klickbar)
+		if k, run := a.fadeLevel(); run {
+			c := lipgloss.NewCompositor(lipgloss.NewLayer(body), lipgloss.NewLayer(fadeANSI(a.fx.ghost, a.s.T, k)).X(a.fx.x).Y(a.fx.y).Z(1))
+			body = c.Render()
+		}
 	}
+	body = a.withToasts(body)
 	if a.intro != nil && introFits(a.w, a.h) {
 		a.z.reset() // während der Animation ist nichts klickbar
 		body, cur = a.viewIntro(), nil
@@ -504,11 +547,18 @@ func (a *App) View() tea.View {
 }
 
 // header: Logo, Version, Credit, Tabs/Status rechts.
+// headerLeft: Logo, Version und Credit. Im schmalen Fenster fällt zuerst die
+// Version weg (steht im Über-Dialog), der Credit bleibt immer sichtbar.
+func (a *App) headerLeft() string {
+	if a.w < 90 {
+		return a.s.Logo.Render("◆ "+version.Name) + a.s.Credit.Render(" "+i18n.T(version.Idea)+" ")
+	}
+	return a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
+}
+
 func (a *App) header(right string) string {
-	left := a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
-	if a.toast != "" && time.Now().Before(a.toastUntil) {
-		right = a.s.Header.Foreground(a.s.T.Warn).Render(" " + a.toast + " ")
-	} else if a.rel != nil && right == "" {
+	left := a.headerLeft()
+	if a.rel != nil && right == "" {
 		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
 	} else if a.restartPending != "" && right == "" {
 		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+i18n.T(" installiert · Neustart ")+a.keys.label(actAbout)+" "))
@@ -606,15 +656,14 @@ func (a *App) frame(content string, keys [][2]string) string {
 // overlay legt ein Modal mittig über den Inhalt (Compositing mit lipgloss v2).
 // Klickbar ist dann nur noch das Modal (die Zonen darunter verfallen).
 func (a *App) overlay(base, box string) string {
-	if a.modal != nil {
-		if b := a.modalButtons(); b != "" {
-			box = lipgloss.JoinVertical(lipgloss.Center, box, b)
-		}
-	}
 	bw, bh := lipgloss.Width(box), lipgloss.Height(box)
 	x, y := max(0, (a.w-bw)/2), max(0, (a.h-bh)/2)
 	if m := a.modal; m != nil && m.anchored {
 		x, y = clamp(m.at[0]+1, 0, max(0, a.w-bw)), clamp(m.at[1]+1, 0, max(0, a.h-bh))
+	}
+	a.fx.ghost, a.fx.x, a.fx.y = zoneRe.ReplaceAllString(box, ""), x, y
+	if k, run := a.fadeLevel(); run && !a.fx.out {
+		box = fadeANSI(box, a.s.T, k)
 	}
 	a.z.rects = a.z.rects[:0]
 	box = a.z.scan(box, x, y)

@@ -127,7 +127,7 @@ func (a *App) paletteItems() []palItem {
 				if s.tunnels.Get(t.ID) != nil {
 					s.tunnels.Stop(t.ID)
 				} else if at, err := s.tunnels.Start(t); err != nil {
-					a.flash(i18n.T("Tunnel: ") + err.Error())
+					a.flashErr(i18n.T("Tunnel: ") + err.Error())
 				} else if at.URL() != "" {
 					a.flash(i18n.T("Web-Service bereit: ") + at.URL())
 				}
@@ -143,7 +143,7 @@ func (a *App) paletteItems() []palItem {
 		if !match(c.Alias + " " + c.Host + " " + c.Group) {
 			continue
 		}
-		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: c.Username + "@" + c.Host,
+		items = append(items, palItem{group: pgConnect, icon: "▸", label: c.Alias, hint: shortTarget(c),
 			run: func() tea.Cmd { return a.openOrConnect(c) }})
 	}
 	actions := []palItem{
@@ -170,6 +170,13 @@ func (a *App) paletteItems() []palItem {
 		}},
 		{icon: "≡", label: i18n.T("Verbindungs-Manager"), hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
 		{icon: "+", label: i18n.T("Neue Verbindung"), hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		{icon: "⚿", label: i18n.T("SSH-Schlüssel erzeugen / auf den Server übertragen"), hint: a.keys.label(actSSHKey), run: func() tea.Cmd {
+			if c, ok := a.sshKeyTarget(); ok {
+				return a.openSSHKeyForm(c)
+			}
+			a.flash(i18n.T("Erst eine Verbindung im Manager wählen oder verbinden"))
+			return nil
+		}},
 		{icon: "⇉", label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
 		{icon: "⌕", label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
 		{icon: "✦", label: i18n.T("KI-Einstellungen"), hint: "s", run: func() tea.Cmd { return a.openSettings() }},
@@ -181,11 +188,13 @@ func (a *App) paletteItems() []palItem {
 		{icon: "★", label: i18n.T("Was ist neu (Changelog)"), hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
 		{icon: "↖", label: mouseLabel(a.mouseEnabled()), hint: i18n.T("Maus"), run: func() tea.Cmd { return a.toggleMouse() }},
 		{icon: "⟳", label: reconnectLabel(a.autoReconnect()), hint: "Reconnect", run: func() tea.Cmd { return a.toggleAutoReconnect() }},
+		{icon: "●", label: reachLabel(a.reachEnabled()), hint: i18n.T("Online"), run: func() tea.Cmd { return a.toggleReach() }},
 		{icon: "☰", label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: "l", run: func() tea.Cmd { return a.openLogs() }},
 		{icon: "●", label: logLabel(a.logsEnabled()), hint: i18n.T("Protokoll"), run: func() tea.Cmd { return a.toggleSessionLog() }},
 		{icon: "▶", label: i18n.T("Einführungstour"), hint: i18n.T("5 Schritte"), run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
 		{icon: "?", label: cheatLabel(a.cheatOn()), hint: a.keys.label(actCheat), run: func() tea.Cmd { return a.toggleCheat() }},
 		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: i18n.T("Einfügen"), run: func() tea.Cmd { return a.togglePasteGuard() }},
+		{icon: "⚠", label: dangerAllLabel(a.dangerAll()), hint: i18n.T("Gefahr"), run: func() tea.Cmd { return a.toggleDangerAll() }},
 		{icon: "✦", label: introLabel(a.introOn()), hint: "Start", run: func() tea.Cmd { return a.toggleIntro() }},
 		{icon: "◇", label: langLabel(), hint: "Language", run: func() tea.Cmd { return a.toggleLang() }},
 	}
@@ -214,7 +223,13 @@ func (a *App) paletteItems() []palItem {
 			a.resize(s)
 			return a.panelOpened(s)
 		}})
-		if s.client != nil && s.client.NetDevice {
+		if s.isSerial() && s.state == stConnected {
+			actions = append(actions, palItem{icon: "⌁", label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
+		}
+		actions = append(actions,
+			palItem{icon: "●", label: recordLabel(s.recording()), hint: "asciinema", run: func() tea.Cmd { return a.toggleRecording(s) }},
+			palItem{icon: "⇩", label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }})
+		if s.netDev() {
 			actions = append(actions, palItem{icon: "▣", label: i18n.T("Switch-Config sichern und vergleichen"), hint: "b", run: func() tea.Cmd {
 				withPanel(s, panelHost)
 				s.panelFocus = false
@@ -363,8 +378,9 @@ func (a *App) viewPalette() string {
 	if len(items) == 0 {
 		b.WriteString(st.Muted.Render(i18n.T("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.")) + "\n")
 	}
-	b.WriteString("\n" + st.Muted.Render(fmt.Sprintf(i18n.T("↑↓ wählen · ⏎ ausführen · Tab KI fragen · Esc schließen · %d Einträge"), len(items))))
-	box := st.Modal.BorderForeground(st.T.AI).Padding(0, 1).Width(w).Render(b.String())
+	keys := [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("ausführen")}, {"Tab", i18n.T("KI fragen")}, {"Esc", i18n.T("schließen")}}
+	box := st.dialog(dialog{icon: "✦", title: i18n.T("Befehlspalette"), sub: fmt.Sprintf(i18n.T("%d Einträge"), len(items)), tone: st.T.AI,
+		body: b.String(), keys: keys, width: w - 4, compact: true}, a.w)
 	return a.z.mark(box, zoneAction{block: true, wheel: func(up bool) tea.Cmd {
 		if up {
 			p.sel = max(0, p.sel-1)

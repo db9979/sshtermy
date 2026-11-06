@@ -29,10 +29,76 @@ func (a *App) panelWidth(s *session) int {
 		return 0
 	}
 	w := a.termRect(s).w
+	if w < panelNarrow {
+		return panelRailW
+	}
 	if w >= 110 {
 		return 48
 	}
 	return w / 2
+}
+
+// Schmale Fenster: Unter panelNarrow Spalten wäre neben dem Panel kaum noch
+// Terminal übrig. Dann klappt das Panel zu einer schmalen Leiste am rechten
+// Rand ein. Hat es den Fokus (Taste, Klick auf die Leiste), klappt es über
+// dem Terminal auf; Esc klappt es wieder ein. Die Terminalgröße bleibt dabei
+// gleich, damit der Server nicht bei jedem Fokuswechsel neu umbricht.
+const (
+	panelNarrow = 100
+	panelRailW  = 3
+)
+
+func (a *App) panelCollapsed(s *session) bool {
+	return s != nil && s.panel != panelNone && a.termRect(s).w < panelNarrow
+}
+
+// panelShown: Breite, die das Panel gerade auf dem Bildschirm belegt.
+func (a *App) panelShown(s *session) int {
+	if !a.panelCollapsed(s) || !s.panelFocus {
+		return a.panelWidth(s)
+	}
+	w := a.termRect(s).w
+	return max(panelRailW, min(w-8, max(44, w*2/3)))
+}
+
+// panelRail: eingeklappte Leiste mit Symbol und Taste des Panels.
+func (a *App) panelRail(s *session, h int) string {
+	st := a.s
+	icon, act := "◎", actGoal
+	switch s.panel {
+	case panelAsk:
+		icon, act = "✦", actAsk
+	case panelTunnels:
+		icon, act = "⇄", actTunnels
+	case panelHost:
+		icon, act = "▤", actHost
+	}
+	// Zustand: KI arbeitet (◌) oder ein Vorschlag wartet auf dich (●)
+	state := ""
+	switch {
+	case (s.panel == panelGoal && s.goal.busy) || (s.panel == panelAsk && s.ask.busy):
+		state = st.AI.Render("◌")
+	case s.panel == panelGoal && s.goal.cur != nil:
+		state = st.Warn.Render("●")
+	}
+	cells := []string{st.PanelTitle.Render(icon), state}
+	for _, r := range i18n.Keys(a.keys.label(act)) {
+		cells = append(cells, st.Accent.Render(string(r)))
+	}
+	cells = append(cells, "", st.Muted.Render("◂"))
+	side := lipgloss.NewStyle().Foreground(st.T.Border).Render("│")
+	lines := make([]string, h)
+	for i := range lines {
+		c := " "
+		if i < len(cells) && cells[i] != "" {
+			c = cells[i]
+		}
+		lines[i] = side + ansi.Truncate(c, 1, "") + " "
+	}
+	return a.z.mark(strings.Join(lines, "\n"), zoneAction{block: true, click: func(tea.Mouse, bool) tea.Cmd {
+		s.panelFocus = true
+		return nil
+	}})
 }
 
 // termSize: Spalten und Zeilen des Terminals (Bereich minus Seitenpanel).
@@ -50,6 +116,7 @@ func (a *App) resize(s *session) {
 		return
 	}
 	s.term.Resize(c, r)
+	s.resizeRecording(c, r)
 	if s.shell != nil {
 		_ = s.shell.Resize(c, r)
 	}
@@ -77,15 +144,17 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.searchPaste(s, m)
 		}
 		if s.files.open {
-			if s.files.mkdir != nil {
-				var cmd tea.Cmd
-				*s.files.mkdir, cmd = s.files.mkdir.Update(msg)
-				return cmd
-			}
-			return nil
+			return a.filesPaste(s, m)
 		}
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
+		}
+		// Dateien aus dem Explorer/Finder ins Fenster gezogen: hochladen?
+		if s.client != nil && s.state == stConnected && s.term != nil && !s.term.AltScreen() {
+			if paths := droppedPaths(m.Content); paths != nil {
+				a.dropMenu(s, m.Content, paths)
+				return nil
+			}
 		}
 		return a.guardedPaste(s, m.Content)
 	case tea.KeyPressMsg:
@@ -154,6 +223,10 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		switch id := a.keys.which(key, actGoal, actAsk, actTunnels, actHost); id {
 		case actGoal, actAsk, actTunnels, actHost:
+			if id == actTunnels && s.conn.Protocol.Raw() {
+				a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
+				return nil
+			}
 			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels, actHost: panelHost}[id]
 			if s.panel == kind && s.panelFocus {
 				s.panel, s.panelFocus = panelNone, false
@@ -200,6 +273,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 
 func (a *App) closeTab(s *session) {
 	a.endLog(s)
+	a.stopRecording(s)
 	s.close()
 	for i, x := range a.sessions {
 		if x == s {
@@ -255,6 +329,9 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	}
 	if key == "ctrl+c" && s.run != nil {
 		s.run.interrupted = true
+	}
+	if key == "enter" && a.dangerCheck(s, k) {
+		return nil // Gefahren-Check: erst bestätigen (dangerguard.go)
 	}
 	if key == "enter" {
 		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
@@ -368,23 +445,7 @@ func (a *App) followTick(s *session) tea.Cmd {
 
 func (a *App) viewTerminal() (string, *tea.Cursor) {
 	s := a.current()
-	st := a.s
-	// Tabs rechts in der Kopfzeile
-	var tabs strings.Builder
-	for i, x := range a.sessions {
-		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
-		label := " " + trunc(x.conn.Alias, 16) + " "
-		tab := st.Tab.Render(dot + label)
-		if i == a.cur {
-			tab = st.TabActive.Render(dot + label)
-		}
-		i := i
-		tabs.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
-			a.focusSession(i)
-			return nil
-		}))
-	}
-	top := a.header(tabs.String())
+	top := a.header(a.tabStrip())
 
 	// Sitzungszeile (statusline.go)
 	bar := a.sessionBar(s)
@@ -458,6 +519,19 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	}
 	if s.files.open {
 		body, cur = a.viewFiles(s, tr.w, rows), nil
+	} else if a.panelCollapsed(s) {
+		if s.panelFocus {
+			pw := a.panelShown(s)
+			vis := cols + panelRailW - pw
+			lines := strings.Split(body, "\n")
+			for i, l := range lines {
+				l = ansi.Truncate(l, vis, "")
+				lines[i] = l + strings.Repeat(" ", max(0, vis-lipgloss.Width(l)))
+			}
+			body, cur = lipgloss.JoinHorizontal(lipgloss.Top, strings.Join(lines, "\n"), a.viewPanel(s, pw, rows)), nil
+		} else {
+			body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.panelRail(s, rows))
+		}
 	} else if s.panel != panelNone {
 		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
 	}
@@ -550,4 +624,93 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		keys = append([][2]string{{"Alt+0", i18n.T("Warum? & Fix")}}, keys...)
 	}
 	return keys
+}
+
+// tabStrip: Sitzungs-Tabs für die Kopfzeile. Wird es eng, kürzen sich erst
+// die Namen (16 → 4 Zeichen), dann bleibt nur Punkt und Nummer; reicht auch
+// das nicht, zeigt die Leiste einen Ausschnitt um den aktiven Tab mit ‹ ›.
+func (a *App) tabStrip() string {
+	st := a.s
+	n := len(a.sessions)
+	if n == 0 {
+		return ""
+	}
+	room := a.w - lipgloss.Width(a.headerLeft()) - 1
+	label := func(i, l int) string {
+		x := a.sessions[i]
+		if l == 0 {
+			return " " + strconv.Itoa(i+1)
+		}
+		return " " + trunc(x.conn.Alias, l)
+	}
+	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand
+		w := 1 + lipgloss.Width(label(i, l)) + 3
+		if a.accentOf(a.sessions[i].conn) != nil {
+			w++
+		}
+		return w
+	}
+	fit := 0
+	for _, l := range []int{16, 12, 8, 4, 0} {
+		fit = l
+		total := 0
+		for i := 0; i < n; i++ {
+			total += tabW(i, l)
+		}
+		if total <= room {
+			break
+		}
+	}
+	// Ausschnitt um den aktiven Tab
+	from, to := 0, n
+	total := func() int {
+		t := 0
+		for i := from; i < to; i++ {
+			t += tabW(i, fit)
+		}
+		if from > 0 {
+			t += 2
+		}
+		if to < n {
+			t += 2
+		}
+		return t
+	}
+	for total() > room && to-from > 1 {
+		if a.cur-from > to-1-a.cur {
+			from++
+		} else {
+			to--
+		}
+	}
+	var b strings.Builder
+	if from > 0 {
+		b.WriteString(st.Header.Foreground(st.T.Muted).Render("‹ "))
+	}
+	for i := from; i < to; i++ {
+		x := a.sessions[i]
+		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
+		ts := st.Tab
+		if i == a.cur {
+			ts = st.TabActive
+		}
+		// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
+		stripe, text := "", label(i, fit)
+		if col := a.accentOf(x.conn); col != nil {
+			stripe = glyph("▌", col, ts.GetBackground())
+			if i == a.cur {
+				text = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(true).Render(strings.TrimPrefix(text, " "))
+			}
+		}
+		tab := ts.Render(stripe + dot + text + " ")
+		i := i
+		b.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
+			a.focusSession(i)
+			return nil
+		}))
+	}
+	if to < n {
+		b.WriteString(st.Header.Foreground(st.T.Muted).Render(" ›"))
+	}
+	return b.String()
 }

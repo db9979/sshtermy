@@ -235,7 +235,7 @@ type menuItem struct {
 
 func (a *App) openURL(u string) tea.Cmd {
 	if err := sshx.OpenBrowser(u); err != nil {
-		a.flash(i18n.T("Browser ließ sich nicht öffnen: ") + err.Error())
+		a.flashErr(i18n.T("Browser ließ sich nicht öffnen: ") + err.Error())
 	} else {
 		a.flash(i18n.T("Öffne im Browser: ") + trunc(u, 60))
 	}
@@ -335,6 +335,9 @@ func (a *App) connectTo(s *session, l link, viaJump bool) tea.Cmd {
 	}
 	if src.Auth == domain.AuthAgent || src.Auth == domain.AuthKeyFile {
 		c.Auth, c.KeyPath, c.KeyPEM, c.KeyPassphrase = src.Auth, src.KeyPath, src.KeyPEM, src.KeyPassphrase
+		if src.Keychain && !c.KeyPassphrase.IsSet() {
+			c.KeyPassphrase = domain.Secret(sshx.KeychainSecret(src.ID, sshx.SecretPassphrase))
+		}
 	}
 	if viaJump {
 		c.JumpHostID = src.ID
@@ -351,7 +354,7 @@ func (a *App) pingRemote(s *session, host string) tea.Cmd {
 	}
 	cmd := "ping -c 4 " + host
 	switch {
-	case s.client != nil && s.client.NetDevice, s.conn.Device == domain.DeviceNetwork:
+	case s.netDev(), s.conn.Device == domain.DeviceNetwork:
 		cmd = "ping " + host
 	case s.client != nil && strings.Contains(strings.ToLower(s.client.Remote.String()), "windows"):
 		cmd = "ping -n 4 " + host
@@ -420,9 +423,8 @@ func (a *App) menuView(m *modal) string {
 	for _, it := range m.items {
 		w = max(w, lipgloss.Width(it.label)+lipgloss.Width(it.hint)+6)
 	}
-	w = min(w, max(20, a.w-4))
+	w = min(w, max(20, a.w-6))
 	var b strings.Builder
-	b.WriteString(st.Accent.Render(trunc(m.title, w)) + "\n")
 	for i, it := range m.items {
 		label := fmt.Sprintf("%d %s", i+1, it.label)
 		gap := max(1, w-lipgloss.Width(label)-lipgloss.Width(it.hint))
@@ -431,12 +433,15 @@ func (a *App) menuView(m *modal) string {
 			line = st.Selected.Render(label + strings.Repeat(" ", gap) + it.hint)
 		}
 		i := i
-		b.WriteString("\n" + a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
 			m.sel = i
 			return a.menuRun()
 		}))
 	}
-	return st.Modal.Padding(0, 1).Render(b.String())
+	return st.dialog(dialog{title: m.title, body: b.String(), width: w, compact: true}, a.w)
 }
 
 func (a *App) menuRun() tea.Cmd {
