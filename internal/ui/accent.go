@@ -300,4 +300,3 @@ func glyph(g string, fg, bg color.Color) string {
 	}
 	return st.Render(g)
 }
-
