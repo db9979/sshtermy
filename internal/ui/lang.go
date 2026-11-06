@@ -61,3 +61,11 @@ func yesKey() string {
 	}
 	return "j"
 }
+
+// langTarget: Beschriftung der Sprachtaste (die Sprache, zu der sie wechselt).
+func langTarget() string {
+	if i18n.English() {
+		return "Deutsch"
+	}
+	return "English"
+}

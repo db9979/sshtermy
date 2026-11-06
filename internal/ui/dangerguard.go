@@ -120,14 +120,13 @@ func (a *App) dangerKey(k tea.KeyPressMsg) tea.Cmd {
 func (a *App) dangerView(m *modal) string {
 	st := a.s
 	d := m.danger
-	w := min(80, a.w-4)
+	w := dialog{maxW: 80}.innerMax(a.w)
 	s := a.byID(d.sid)
 	host := ""
 	if s != nil {
 		host = s.conn.Alias + " (" + s.conn.Username + "@" + s.conn.Addr() + ")"
 	}
 	var b strings.Builder
-	b.WriteString(st.Danger.Render(m.title) + "\n\n")
 	if d.prod {
 		b.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("PRODUKTIV")) + " ")
 	}
@@ -135,14 +134,13 @@ func (a *App) dangerView(m *modal) string {
 		b.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("⚠ root")) + " ")
 	}
 	b.WriteString(st.Text.Render(host) + "\n\n")
-	b.WriteString(st.Muted.Render("$ ") + st.Danger.Render(trunc(d.cmd, w-10)) + "\n\n")
+	b.WriteString(st.Muted.Render("$ ") + st.Danger.Render(trunc(d.cmd, w-2)) + "\n\n")
 	for _, r := range d.reasons {
 		b.WriteString(st.Danger.Render("⚠ "+r) + "\n")
 	}
-	b.WriteString("\n")
 	if m.body == "again" {
-		b.WriteString(st.Warn.Render(fmt.Sprintf(i18n.T("⏎ reicht hier nicht: %s drücken zum Ausführen."), yesKey())) + "\n")
+		b.WriteString("\n" + st.Warn.Render(fmt.Sprintf(i18n.T("⏎ reicht hier nicht: %s drücken zum Ausführen."), yesKey())) + "\n")
 	}
-	b.WriteString(st.Text.Render(yesKey()+i18n.T(" = trotzdem ausführen")) + st.Muted.Render(i18n.T(" · Esc = abbrechen (Zeile bleibt stehen)")))
-	return st.Modal.Width(w).BorderForeground(st.T.Danger).Render(b.String())
+	keys := [][2]string{{yesKey(), i18n.T("trotzdem ausführen")}, {"Esc", i18n.T("abbrechen (Zeile bleibt stehen)")}}
+	return st.dialog(dialog{icon: "⚠", title: strings.TrimPrefix(m.title, "⚠ "), tone: st.T.Danger, body: b.String(), keys: keys, width: w, maxW: 80}, a.w)
 }
