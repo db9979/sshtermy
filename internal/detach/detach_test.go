@@ -9,6 +9,7 @@ import (
 )
 
 // fakeClient dockt wie „sshtermy attach“ an, nur ohne Terminal.
+// Ein abgewiesener Client darf beim Schreiben scheitern (Server hat schon zu).
 func fakeClient(t *testing.T, dir, token string) *frameWriter {
 	t.Helper()
 	network, addr, err := readAddr(dir)
@@ -21,11 +22,10 @@ func fakeClient(t *testing.T, dir, token string) *frameWriter {
 	}
 	t.Cleanup(func() { nc.Close() })
 	fw := &frameWriter{w: nc}
-	if err := fw.write(frHello, []byte(token)); err != nil {
-		t.Fatal(err)
-	}
-	if err := fw.write(frResize, sizePayload(120, 40)); err != nil {
-		t.Fatal(err)
+	errHello := fw.write(frHello, []byte(token))
+	errSize := fw.write(frResize, sizePayload(120, 40))
+	if token != "falsch" && (errHello != nil || errSize != nil) {
+		t.Fatal(errHello, errSize)
 	}
 	return fw
 }
