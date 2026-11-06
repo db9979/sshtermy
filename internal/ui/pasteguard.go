@@ -135,14 +135,12 @@ const pastePreviewLines = 12
 func (a *App) pasteView(m *modal) string {
 	st := a.s
 	pc := m.paste
-	w := min(90, a.w-4)
-	inner := max(20, w-6)
+	inner := dialogInner(a.w)
 	var b strings.Builder
-	title := st.Accent.Render(m.title)
+	d := dialog{icon: "⎘", title: m.title, width: inner, keys: a.modalKeys()}
 	if pc.dangerous > 0 {
-		title = st.Danger.Render(m.title)
+		d.icon, d.tone = "⚠", st.T.Danger
 	}
-	b.WriteString(title + "\n\n")
 	n := len(pc.lines)
 	info := plural(n, i18n.T("Zeile"), i18n.T("Zeilen")) + " · " + plural(utf8.RuneCountInString(pc.text), i18n.T("Zeichen"), i18n.T("Zeichen"))
 	if pc.multi {
@@ -192,5 +190,6 @@ func (a *App) pasteView(m *modal) string {
 	default:
 		b.WriteString(st.Muted.Render(i18n.T("Prüfe den Text, bevor er in die Shell geht.")))
 	}
-	return st.Modal.Width(w).Render(b.String())
+	d.body = b.String()
+	return st.dialog(d, a.w)
 }

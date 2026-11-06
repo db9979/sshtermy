@@ -60,28 +60,25 @@ func (a *App) changelogModal(entries []changelog.Entry) *modal {
 	return &modal{kind: mChangelog, title: title, lines: lines}
 }
 
-// changelogMaxBody: sichtbare Zeilen (Fensterrand 2, Rahmen+Abstand 4, Titel 2, Fuß 2).
-func changelogMaxBody(h int) int { return max(3, h-2-4-2-2) }
+// changelogMaxBody: sichtbare Zeilen (Fensterrand 2, Rahmen, Abstand und Tastenzeile).
+func changelogMaxBody(h int) int { return max(3, h-2-dialogChrome) }
 
 func (m *modal) changelogView(s Styles, w, h int) string {
 	maxBody := changelogMaxBody(h)
 	lines := m.lines
-	hint := ""
+	keys := m.hints
+	info := ""
 	if total := len(lines); total > maxBody {
 		m.scroll = max(0, min(m.scroll, total-maxBody))
 		lines = lines[m.scroll : m.scroll+maxBody]
-		hint = i18n.T("↑↓ blättern")
+		keys = append([][2]string{{"↑↓", i18n.T("blättern")}}, keys...)
 		if m.scroll+maxBody < total {
-			hint = i18n.T("▾ mehr · ") + hint
+			info = i18n.T("▾ mehr")
 		}
 	} else {
 		m.scroll = 0
 	}
-	out := s.Accent.Render("★ "+m.title) + "\n\n" + strings.Join(lines, "\n")
-	if hint != "" {
-		out += "\n\n" + s.Muted.Render(hint)
-	}
-	return s.Modal.Width(min(90, w-4)).Render(out)
+	return s.dialog(dialog{icon: "★", title: m.title, body: strings.Join(lines, "\n"), info: info, keys: keys, width: dialogInner(w)}, w)
 }
 
 func (m *modal) changelogKey(key string, h int) (closeIt bool) {

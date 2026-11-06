@@ -35,9 +35,8 @@ func crashModal(r *crash.Report) *modal {
 		i18n.T("Meldung: ") + trunc(strings.TrimPrefix(r.Title, "Crash: "), 70) + "\n" +
 		i18n.T("Bericht: ") + r.Path + "\n\n" +
 		i18n.T("Im Bericht stehen Version, System und die Stelle im Programm. Passwörter,\n") +
-		i18n.T("Keys, Hosts und IP-Adressen sind entfernt.\n\n") +
-		i18n.T("g = als GitHub-Issue melden (der Browser zeigt alles vor dem Absenden)\n") +
-		i18n.T("o = Bericht öffnen · Esc = schließen")
+		i18n.T("Keys, Hosts und IP-Adressen sind entfernt. Beim Melden zeigt der Browser\n") +
+		i18n.T("alles vor dem Absenden.")
 	return &modal{kind: mCrash, title: i18n.T("Absturzbericht"), body: body, crash: r}
 }
 

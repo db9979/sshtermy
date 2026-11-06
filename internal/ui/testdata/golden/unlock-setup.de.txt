@@ -2,7 +2,8 @@
 
 
 
-       ╭────────────────────────────────────────────────────────────────────────────────────╮
+
+       ╭─ ◆ sshTermy  vdev ─────────────────────────────────────────────────────────────────╮
        │                                                                                    │
        │                                                                                    │
        │   ┌─┐┌─┐┬ ┬╔╦╗┌─┐┬─┐┌┬┐┬ ┬                                                         │
@@ -12,17 +13,16 @@
        │   Idee: Dominik Bornhäußer                                                         │
        │                                                                                    │
        │  Willkommen! Lege ein Master-Passwort für deinen verschlüsselten Store an.         │
-       │  Es wird nie gespeichert. Argon2id + AES-256-GCM schützen Passwörter, Keys und     │
-       │  API-Keys.                                                                         │
+       │  Es wird nie gespeichert. Argon2id + AES-256-GCM schützen Passwörter, Keys und A…  │
        │                                                                                    │
        │  Master-Passwort     Master-Passwort                                               │
        │  Wiederholen         wiederholen                                                   │
        │    ○ DPAPI nur unter Windows (linux: nur Master-Passwort)                          │
        │                                                                                    │
-       │                                                                                    │
-       │  ⏎ weiter · Tab Feld · Esc beenden                                                 │
+       │   ⏎ weiter    Tab Feld    Esc beenden                                              │
        │                                                                                    │
        ╰────────────────────────────────────────────────────────────────────────────────────╯
+
 
 
 

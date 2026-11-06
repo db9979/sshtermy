@@ -7,17 +7,17 @@
    ▾ Web                      2  │ Folder
 ▌    ○ · web-01      deploy@10…  │  ⏎      expand/collapse
 ▌    ○ · web-02      deploy@10…  │  n      new connection here
-▌  ○ ╭────────────────────────────────────────────────────────────────────────────────────────╮
+▌  ○ · db-01        postgres@1…  │  o      add subfolder
+ ○ · ╭─ ✦ AI status ────────────────────────────────────────────────────────────────────── ✕ ─╮
  ○ · │                                                                                        │
- ○ · │  ✦ AI status                                                                           │
-     │                                                                                        │
      │  ● not checked yet                                                                     │
      │                                                                                        │
      │  Endpoint     http://spark.lan:8000/v1                                                 │
-     │  Model        qwen3-coder                                                              │en
+     │  Model        qwen3-coder                                                              │
+     │                                                                                        │en
+     │   p check now    e Settings    Esc close                                               │
      │                                                                                        │
      ╰────────────────────────────────────────────────────────────────────────────────────────╯
-                               p check now    e Settings    Esc close
                                  │  not set up · y = wizard
                                  │
                                  │

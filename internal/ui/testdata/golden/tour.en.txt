@@ -5,21 +5,21 @@
    ○ ▦ switch-core  manager@19…  │ Content      1 connection
  ▾ Produktion                 3  │
    ▾ Web                      2  │ Folder
-▌    ○ · web-01      deploy@10…  │  ⏎      expand/collapse
-▌    ○ · web-02╭────────────────────────────────────────────────────────────────────╮
-▌  ○ · db-01   │                                                                    │
- ○ · nas       │  ◆ Welcome to sshTermy  ● ○ ○ ○ ○  1/5                             │
- ○ · spark     │                                                                    │
-               │  Here in the connection manager you add your servers and           │
+▌    ○ · web-01╭─ ◆ Welcome to sshTermy  1/5 ─────────────────────────────────── ✕ ─╮
+▌    ○ · web-02│                                                                    │
+▌  ○ · db-01   │  ● ○ ○ ○ ○                                                         │
+ ○ · nas       │                                                                    │
+ ○ · spark     │  Here in the connection manager you add your servers and           │
                │  switches. Passwords and keys are stored encrypted on your         │
                │  computer.                                                         │
                │                                                                    │
-               │   n            new connection                                      │r or between
-               │   ⏎            connect                                             │
+               │   n            new connection                                      │
+               │   ⏎            connect                                             │r or between
                │   F10          between manager and terminal                        │
                │                                                                    │
+               │   → next    Esc skip                                               │
+               │                                                                    │
                ╰────────────────────────────────────────────────────────────────────╯
-                                         → next    Esc skip
                                  │
                                  │
                                  │

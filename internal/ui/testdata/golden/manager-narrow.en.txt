@@ -1,4 +1,4 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                 ● AI
+ ◆ sshTermy  Idea: Dominik Bornhäußer                                      ● AI
  connections  6  / search       │ ▾ Netzwerk
                                 │
  ▾ Netzwerk                  1  │ Path         Netzwerk

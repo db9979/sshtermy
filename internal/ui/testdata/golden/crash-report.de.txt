@@ -4,23 +4,23 @@
  ▾ Netzwerk                   1  │ Pfad         Netzwerk
    ○ ▦ switch-core  manager@19…  │ Inhalt       1 Verbindung
  ▾ Produktion                 3  │
-   ▾ ╭────────────────────────────────────────────────────────────────────────────────────────╮
-▌    │                                                                                        │
-▌    │  ⚠ Absturzbericht                                                                      │
-▌  ○ │                                                                                        │
- ○ · │  sshTermy ist beim letzten Mal abgestürzt. Das tut mir leid.                           │
- ○ · │                                                                                        │
-     │  Meldung: runtime error: index out of range [3] with length 3                          │
-     │  Bericht: /home/golden/.config/sshtermy/crash/sshtermy-crash-20261106-071500.txt       │
-     │                                                                                        │
-     │  Im Bericht stehen Version, System und die Stelle im Programm. Passwörter,             │
-     │  Keys, Hosts und IP-Adressen sind entfernt.                                            │
-     │                                                                                        │
-     │  g = als GitHub-Issue melden (der Browser zeigt alles vor dem Absenden)                │
-     │  o = Bericht öffnen · Esc = schließen                                                  │
-     │                                                                                        │
-     ╰────────────────────────────────────────────────────────────────────────────────────────╯
-                       g als Issue melden    o Bericht öffnen    Esc schließen
+   ▾ Web                      2  │ Ordner
+▌    ○ · web-01      deploy@10…  │  ⏎      auf-/zuklappen
+▌    ○ ╭─ ⚠ Absturzbericht ──────────────────────────────────────────────────────────── ✕ ─╮
+▌  ○ · │                                                                                   │
+ ○ · na│  sshTermy ist beim letzten Mal abgestürzt. Das tut mir leid.                      │
+ ○ · sp│                                                                                   │
+       │  Meldung: runtime error: index out of range [3] with length 3                     │
+       │  Bericht: /home/golden/.config/sshtermy/crash/sshtermy-crash-20261106-071500.txt  │
+       │                                                                                   │
+       │  Im Bericht stehen Version, System und die Stelle im Programm. Passwörter,        │
+       │  Keys, Hosts und IP-Adressen sind entfernt. Beim Melden zeigt der Browser         │r
+       │  alles vor dem Absenden.                                                          │
+       │                                                                                   │
+       │   g als Issue melden    o Bericht öffnen    Esc schließen                         │
+       │                                                                                   │
+       ╰───────────────────────────────────────────────────────────────────────────────────╯
+                                 │
                                  │
                                  │
                                  │

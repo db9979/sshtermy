@@ -420,9 +420,8 @@ func (a *App) menuView(m *modal) string {
 	for _, it := range m.items {
 		w = max(w, lipgloss.Width(it.label)+lipgloss.Width(it.hint)+6)
 	}
-	w = min(w, max(20, a.w-4))
+	w = min(w, max(20, a.w-6))
 	var b strings.Builder
-	b.WriteString(st.Accent.Render(trunc(m.title, w)) + "\n")
 	for i, it := range m.items {
 		label := fmt.Sprintf("%d %s", i+1, it.label)
 		gap := max(1, w-lipgloss.Width(label)-lipgloss.Width(it.hint))
@@ -431,12 +430,15 @@ func (a *App) menuView(m *modal) string {
 			line = st.Selected.Render(label + strings.Repeat(" ", gap) + it.hint)
 		}
 		i := i
-		b.WriteString("\n" + a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
 			m.sel = i
 			return a.menuRun()
 		}))
 	}
-	return st.Modal.Padding(0, 1).Render(b.String())
+	return st.dialog(dialog{title: m.title, body: b.String(), width: w, compact: true}, a.w)
 }
 
 func (a *App) menuRun() tea.Cmd {

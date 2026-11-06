@@ -1,16 +1,15 @@
- ◆╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮KI
- V│                                                                                                                 │
-  │  ? Tastenkürzel  ·  sshTermy vdev                                                                               │
- ▾│                                                                                                                 │
-  │  ◆ Überall                            ◎ Ziel-Modus F2                      ☰ Sitzungsprotokolle l              │
- ▾│   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   /           suchen (auch Ausgabe)   │
-  │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       z           KI-Zusammenfassung      │
-▌ │   ⇧F9         Tastenzeile erklären     i           nur einfügen (Dry-Run)   Z           alle Treffer zusammen…  │
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                         ● KI
+ V╭─ ? Tastenkürzel  sshTermy vdev ───────────────────────────────────────────────────────────────────────────── ✕ ─╮
+  │                                                                                                                 │
+ ▾│  ◆ Überall                            ◎ Ziel-Modus F2                      ☰ Sitzungsprotokolle l              │
+  │   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   /           suchen (auch Ausgabe)   │
+ ▾│   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       z           KI-Zusammenfassung      │
+  │   ⇧F9         Tastenzeile erklären     i           nur einfügen (Dry-Run)   Z           alle Treffer zusammen…  │
 ▌ │   F12         Über & Update            e           bearbeiten               x           Export: md · txt · ca…  │
 ▌ │   F12 w       Was ist neu              s           überspringen             d           löschen                 │
- ○│   F12 l       Sprache: Deutsch/Engl…   r           neu vorschlagen          a           Mitschreiben an/aus     │
+▌ │   F12 l       Sprache: Deutsch/Engl…   r           neu vorschlagen          a           Mitschreiben an/aus     │
  ○│   Strg+Q      beenden                  x           Ziel beenden             ⎵ Befehl    nicht protokollieren    │
-  │                                        ↑ ↓         Runbook wählen                                               │
+ ○│                                        ↑ ↓         Runbook wählen                                               │
   │  ≡ Verbindungs-Manager F10  hier       Strg+S      als Runbook speichern   ⇉ Broadcast m                        │
   │   ⏎           verbinden                Strg+D      Runbook löschen          Space / g / a Host / Ordner / alle  │
   │   n           neue Verbindung                                               Tab         Hosts · Quelle · Befe…  │
@@ -29,8 +28,9 @@
   │   m           Broadcast an mehrere …   a           mit Verbindung starten  ⌕ Netzwerk-Scan f                    │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
-  │  Esc führt aus jedem Panel zurück ins Terminal.                ▾ mehr · ↑↓ blättern · beliebige Taste schließt  │
+  │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │
+  │                                                                                                                 │
+  │  ▾ mehr   ↑↓ blättern    Esc schließen                                                                          │
   │                                                                                                                 │
   ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-                                                     Esc schließen
  Strg+Space Palette  ⏎ zuklappen  n neu hier  e umbenennen  d löschen  v verschieben  / suchen  F1 Hilfe  ⇧F9 erklären

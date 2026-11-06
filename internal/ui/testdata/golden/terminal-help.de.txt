@@ -1,13 +1,12 @@
- ◆╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮1
- P│                                                                                                                 │er
-Li│  ? Tastenkürzel  ·  sshTermy vdev                                                                               │
-  │                                                                                                                 │
-de│  ◆ Überall                            ◎ Ziel-Modus F2                      ☰ Sitzungsprotokolle l              │
-● │   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   /           suchen (auch Ausgabe)   │
-  │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       z           KI-Zusammenfassung      │
+ ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                   ▌● web-01
+ P╭─ ? Tastenkürzel  sshTermy vdev ───────────────────────────────────────────────────────────────────────────── ✕ ─╮er
+Li│                                                                                                                 │
+  │  ◆ Überall                            ◎ Ziel-Modus F2                      ☰ Sitzungsprotokolle l              │
+de│   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   /           suchen (auch Ausgabe)   │
+● │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       z           KI-Zusammenfassung      │
   │   ⇧F9         Tastenzeile erklären     i           nur einfügen (Dry-Run)   Z           alle Treffer zusammen…  │
-de│   F12         Über & Update            e           bearbeiten               x           Export: md · txt · ca…  │
-  │   F12 w       Was ist neu              s           überspringen             d           löschen                 │
+  │   F12         Über & Update            e           bearbeiten               x           Export: md · txt · ca…  │
+de│   F12 w       Was ist neu              s           überspringen             d           löschen                 │
   │   F12 l       Sprache: Deutsch/Engl…   r           neu vorschlagen          a           Mitschreiben an/aus     │
   │   Strg+Q      beenden                  x           Ziel beenden             ⎵ Befehl    nicht protokollieren    │
   │                                        ↑ ↓         Runbook wählen                                               │
@@ -29,8 +28,9 @@ de│   F12         Über & Update            e           bearbeiten            
   │   m           Broadcast an mehrere …   a           mit Verbindung starten  ⌕ Netzwerk-Scan f                    │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
-  │  Esc führt aus jedem Panel zurück ins Terminal.                ▾ mehr · ↑↓ blättern · beliebige Taste schließt  │
+  │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │
+  │                                                                                                                 │
+  │  ▾ mehr   ↑↓ blättern    Esc schließen                                                                          │
   │                                                                                                                 │
   ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-                                                     Esc schließen
  Strg+Space Palette  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  Strg+F Suche  Strg+T Teilen  F5 Dateien  ⇧F9 erklären

@@ -4,24 +4,24 @@
  ▾ Netzwerk                   1  │ Path         Netzwerk
    ○ ▦ switch-core  manager@19…  │ Content      1 connection
  ▾ Produktion                 3  │
-   ▾ ╭────────────────────────────────────────────────────────────────────────────────────────╮
+   ▾ Web                      2  │ Folder
+▌    ╭─ ◆ About sshTermy ───────────────────────────────────────────────────────────────── ✕ ─╮
 ▌    │                                                                                        │
-▌    │  About sshTermy                                                                        │
-▌  ○ │                                                                                        │
- ○ · │  sshTermy vdev (none, unknown) linux/amd64                                             │
+▌  ○ │  sshTermy vdev (none, unknown) linux/amd64                                             │
  ○ · │  SSH terminal with AI copilot                                                          │
-     │  Idea: Dominik Bornhäußer · https://github.com/db9979/sshtermy                         │
+ ○ · │  Idea: Dominik Bornhäußer · https://github.com/db9979/sshtermy                         │
      │                                                                                        │
      │  Security: AES-256-GCM, Argon2id, DPAPI (Windows), host key check (TOFU),              │
      │  AI without tools: every command needs your confirmation.                              │
-     │                                                                                        │en
-     │  ☕ Like sshTermy? Buy me a coffee: https://buymeacoffee.com/zquu1xu570                │
      │                                                                                        │
-     │  c = check for updates · w = what's new · b = buy a coffee · Esc = close               │
-     │  l = Language: English → Deutsch                                                       │
+     │  ☕ Like sshTermy? Buy me a coffee: https://buymeacoffee.com/zquu1xu570                │en
+     │                                                                                        │
+     │   c check for updates    w what's new    b ☕ Buy me a coffee    l Deutsch             │
+     │   Esc close                                                                            │
      │                                                                                        │
      ╰────────────────────────────────────────────────────────────────────────────────────────╯
-       c check for updates    w what's new    b ☕ Buy me a coffee    l Language    Esc close
+                                 │
+                                 │
                                  │
                                  │
                                  │

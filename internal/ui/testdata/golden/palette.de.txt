@@ -1,6 +1,6 @@
  ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                     ● KI
  Verbindungen  6  / suchen       │ ▾ Netzwerk
-            ╭──────────────────────────────────────────────────────────────────────────╮
+            ╭─ ✦ Befehlspalette  33 Einträge ────────────────────────────────────── ✕ ─╮
  ▾ Netzwerk │ ✦ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
    ○ ▦ switc│ ──────────────────────────────────────────────────────────────────────── │
  ▾ Produktio│ VERBINDEN                                                                │
@@ -24,7 +24,7 @@
             │ ★ Was ist neu (Changelog)                                          F12 w │
             │ ↖ Maus aus (Terminalfenster markiert selbst)                        Maus │
             │                                                                          │
-            │ ↑↓ wählen · ⏎ ausführen · Tab KI fragen · Esc schließen · 32 Einträge    │
+            │  ↑↓ wählen    ⏎ ausführen    Tab KI fragen    Esc schließen              │
             ╰──────────────────────────────────────────────────────────────────────────╯
                                  │
  Strg+Space Palette  ⏎ zuklappen  n neu hier  e umbenennen  d löschen  F1 Hilfe  ⇧F9 erklären

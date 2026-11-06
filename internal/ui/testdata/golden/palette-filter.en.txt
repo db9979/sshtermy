@@ -9,12 +9,12 @@
 ▌    ○ · web-02      deploy@10…  │  n      new connection here
 ▌  ○ · db-01        postgres@1…  │  o      add subfolder
  ○ · nas           admin@nas.l…  │  r      rename
- ○ · spark  ╭──────────────────────────────────────────────────────────────────────────╮
+ ○ · spark  ╭─ ✦ Command palette  0 entries ─────────────────────────────────────── ✕ ─╮
             │ ✦ tunnel                                                                 │
             │ ──────────────────────────────────────────────────────────────────────── │
             │ Nothing found. In the terminal, text becomes a goal or a question.       │
             │                                                                          │
-            │ ↑↓ select · ⏎ run · Tab ask AI · Esc close · 0 entries                   │r between
+            │  ↑↓ select    ⏎ run    Tab Ask AI    Esc close                           │r between
             ╰──────────────────────────────────────────────────────────────────────────╯
                                  │
                                  │ Sync

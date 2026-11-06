@@ -1,6 +1,6 @@
  ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
  connections  6  / search        │ ▾ Netzwerk
-            ╭──────────────────────────────────────────────────────────────────────────╮
+            ╭─ ✦ Command palette  33 entries ────────────────────────────────────── ✕ ─╮
  ▾ Netzwerk │ ✦ Goal, question, command, tunnel, connection or user@host:port …        │
    ○ ▦ switc│ ──────────────────────────────────────────────────────────────────────── │
  ▾ Produktio│ CONNECT                                                                  │
@@ -24,7 +24,7 @@
             │ ★ What's new (changelog)                                           F12 w │
             │ ↖ Mouse off (terminal window selects itself)                       Mouse │
             │                                                                          │
-            │ ↑↓ select · ⏎ run · Tab ask AI · Esc close · 32 entries                  │
+            │  ↑↓ select    ⏎ run    Tab Ask AI    Esc close                           │
             ╰──────────────────────────────────────────────────────────────────────────╯
                                  │
  Ctrl+Space Palette  ⏎ collapse  n new here  e rename  d delete  v move  F1 Help  ⇧F9 explain

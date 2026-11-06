@@ -69,6 +69,7 @@ func newGold(t *testing.T, lang string, w, h int, seed bool) *gold {
 	t.Setenv("SSHTERMY_HOME", dir)
 	t.Setenv("HOME", goldenHome) // fester Pfad, steht z. B. im Import-Bildschirm
 	t.Setenv("SSHTERMY_DEBUG", "")
+	t.Setenv("SSHTERMY_NO_ANIM", "1") // Ein-/Ausblenden hinge an der Uhr
 	t.Setenv("USER", "golden") // Vorbelegung im Netzwerk-Scan
 	t.Setenv("USERNAME", "golden")
 	subnets := netscan.LocalSubnets // eigene Netzwerkkarten, je Rechner anders

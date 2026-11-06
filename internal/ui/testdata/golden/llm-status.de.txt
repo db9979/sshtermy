@@ -7,17 +7,17 @@
    ▾ Web                      2  │ Ordner
 ▌    ○ · web-01      deploy@10…  │  ⏎      auf-/zuklappen
 ▌    ○ · web-02      deploy@10…  │  n      neue Verbindung hier
-▌  ○ ╭────────────────────────────────────────────────────────────────────────────────────────╮
+▌  ○ · db-01        postgres@1…  │  o      Unterordner anlegen
+ ○ · ╭─ ✦ KI-Status ────────────────────────────────────────────────────────────────────── ✕ ─╮
  ○ · │                                                                                        │
- ○ · │  ✦ KI-Status                                                                           │
-     │                                                                                        │
      │  ● noch nicht geprüft                                                                  │
      │                                                                                        │
      │  Endpunkt     http://spark.lan:8000/v1                                                 │
      │  Modell       qwen3-coder                                                              │
      │                                                                                        │
+     │   p jetzt prüfen    e Einstellungen    Esc schließen                                   │
+     │                                                                                        │
      ╰────────────────────────────────────────────────────────────────────────────────────────╯
-                         p jetzt prüfen    e Einstellungen    Esc schließen
                                  │  nicht eingerichtet · y = Assistent
                                  │
                                  │

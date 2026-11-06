@@ -9,12 +9,12 @@
 ▌    ○ · web-02      deploy@10…  │  n      neue Verbindung hier
 ▌  ○ · db-01        postgres@1…  │  o      Unterordner anlegen
  ○ · nas           admin@nas.l…  │  r      umbenennen
- ○ · spark  ╭──────────────────────────────────────────────────────────────────────────╮
+ ○ · spark  ╭─ ✦ Befehlspalette  0 Einträge ─────────────────────────────────────── ✕ ─╮
             │ ✦ tunnel                                                                 │
             │ ──────────────────────────────────────────────────────────────────────── │
             │ Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.          │
             │                                                                          │
-            │ ↑↓ wählen · ⏎ ausführen · Tab KI fragen · Esc schließen · 0 Einträge     │ oder
+            │  ↑↓ wählen    ⏎ ausführen    Tab KI fragen    Esc schließen              │ oder
             ╰──────────────────────────────────────────────────────────────────────────╯
                                  │
                                  │ Sync

@@ -5,9 +5,8 @@
 
 
 
-     ╭────────────────────────────────────────────────────────────────────────────────────────╮
-     │                                                                                        │
-     │  ⚠ Unbekannter Host                                                                    │
+
+     ╭─ ⚠ Unbekannter Host ─────────────────────────────────────────────────────────────── ✕ ─╮
      │                                                                                        │
      │  Der Server web-01 (10.0.0.11:22) ist noch nicht bekannt.                              │
      │                                                                                        │
@@ -16,10 +15,11 @@
      │                                                                                        │
      │  Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf                             │
      │  /etc/ssh/ssh_host_*_key.pub).                                                         │
-     │  j = vertrauen und merken · n = abbrechen                                              │
+     │                                                                                        │
+     │   j vertrauen    n abbrechen                                                           │
      │                                                                                        │
      ╰────────────────────────────────────────────────────────────────────────────────────────╯
-                                     j vertrauen    n abbrechen
+
 
 
 

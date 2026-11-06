@@ -173,7 +173,7 @@ func (a *App) viewUnlock() string {
 	if u.err != "" {
 		b.WriteString("\n" + s.Danger.Render("✗ "+u.err))
 	}
-	b.WriteString("\n\n" + s.Muted.Render(i18n.T("⏎ weiter · Tab Feld · Esc beenden")))
-	box := s.Modal.Width(min(86, a.w-4)).Render(b.String())
+	keys := [][2]string{{"⏎", i18n.T("weiter")}, {"Tab", i18n.T("Feld")}, {"Esc", i18n.T("beenden")}}
+	box := s.dialog(dialog{icon: "◆", title: version.Name, sub: "v" + version.Version, body: b.String(), keys: keys, width: min(80, a.w-8), noClose: true}, a.w)
 	return lipgloss.Place(a.w, a.h, lipgloss.Center, lipgloss.Center, box)
 }

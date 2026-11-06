@@ -5,21 +5,21 @@
    ○ ▦ switch-core  manager@19…  │ Inhalt       1 Verbindung
  ▾ Produktion                 3  │
    ▾ Web                      2  │ Ordner
-▌    ○ · web-01      deploy@10…  │  ⏎      auf-/zuklappen
-▌    ○ · web-02╭────────────────────────────────────────────────────────────────────╮
-▌  ○ · db-01   │                                                                    │
- ○ · nas       │  ◆ Willkommen bei sshTermy  ● ○ ○ ○ ○  1/5                         │
- ○ · spark     │                                                                    │
-               │  Hier im Verbindungs-Manager legst du deine Server und Switches    │
+▌    ○ · web-01╭─ ◆ Willkommen bei sshTermy  1/5 ─────────────────────────────── ✕ ─╮
+▌    ○ · web-02│                                                                    │
+▌  ○ · db-01   │  ● ○ ○ ○ ○                                                         │
+ ○ · nas       │                                                                    │
+ ○ · spark     │  Hier im Verbindungs-Manager legst du deine Server und Switches    │
                │  an. Passwörter und Schlüssel liegen verschlüsselt auf deinem      │
                │  Rechner.                                                          │
                │                                                                    │
-               │   n            neue Verbindung                                     │ner oder
-               │   ⏎            verbinden                                           │
+               │   n            neue Verbindung                                     │
+               │   ⏎            verbinden                                           │ner oder
                │   F10          zwischen Manager und Terminal                       │
                │                                                                    │
+               │   → weiter    Esc überspringen                                     │
+               │                                                                    │
                ╰────────────────────────────────────────────────────────────────────╯
-                                    → weiter    Esc überspringen
                                  │
                                  │
                                  │
