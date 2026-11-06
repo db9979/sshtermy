@@ -77,15 +77,17 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.searchPaste(s, m)
 		}
 		if s.files.open {
-			if s.files.mkdir != nil {
-				var cmd tea.Cmd
-				*s.files.mkdir, cmd = s.files.mkdir.Update(msg)
-				return cmd
-			}
-			return nil
+			return a.filesPaste(s, m)
 		}
 		if s.panelFocus {
 			return a.panelMsg(s, msg)
+		}
+		// Dateien aus dem Explorer/Finder ins Fenster gezogen: hochladen?
+		if s.client != nil && s.state == stConnected && s.term != nil && !s.term.AltScreen() {
+			if paths := droppedPaths(m.Content); paths != nil {
+				a.dropMenu(s, m.Content, paths)
+				return nil
+			}
 		}
 		return a.guardedPaste(s, m.Content)
 	case tea.KeyPressMsg:
@@ -378,10 +380,19 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	for i, x := range a.sessions {
 		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
 		label := " " + trunc(x.conn.Alias, 16) + " "
-		tab := st.Tab.Render(dot + label)
+		ts := st.Tab
 		if i == a.cur {
-			tab = st.TabActive.Render(dot + label)
+			ts = st.TabActive
 		}
+		// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
+		stripe := ""
+		if col := a.accentOf(x.conn); col != nil {
+			stripe = glyph("▌", col, ts.GetBackground())
+			if i == a.cur {
+				label = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(true).Render(trunc(x.conn.Alias, 16)) + " "
+			}
+		}
+		tab := ts.Render(stripe + dot + label)
 		i := i
 		tabs.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
 			a.focusSession(i)

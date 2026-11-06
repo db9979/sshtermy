@@ -28,6 +28,7 @@ var enConsole = map[string]string{
 	"automatisch = das einzige USB-Konsolenkabel (auch auf anderen Rechnern)": "automatic = the only USB console cable (also on other computers)",
 	"automatisch, sobald das Gerät fragt":                                     "automatic, as soon as the device asks",
 	"kein Kabel gefunden · automatisch = das einzige USB-Konsolenkabel":       "no cable found · automatic = the only USB console cable",
+	"○ serielle Konsole, Kabel wird beim Verbinden gesucht":                   "○ serial console, cable is looked for when connecting",
 	"telnet · unverschlüsselt":                                                "telnet · unencrypted",
 	"von Hand am Gerät":                                                       "by hand on the device",
 }

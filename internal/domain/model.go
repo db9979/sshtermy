@@ -79,6 +79,11 @@ type Connection struct {
 	// richtigen Dialekt kommen. Liegt wie alles andere verschlüsselt im Store.
 	Profile *SystemProfile `json:"profile,omitempty"`
 
+	// Color: Akzentfarbe in Tab, Statuszeile und Liste ("red", "green" …).
+	// Leer = automatisch aus Ordner/Tags/Alias (prod → rot, test → grün,
+	// labor → blau), "none" = keine Farbe.
+	Color string `json:"color,omitempty"`
+
 	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
 	QuickCmds []string `json:"quick_cmds,omitempty"`
 
@@ -276,6 +281,8 @@ type Settings struct {
 	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`
 	TourDone        bool `json:"tour_done,omitempty"`
 	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
+	// NoReachCheck: im Manager nicht prüfen, ob die Hosts erreichbar sind.
+	NoReachCheck bool `json:"no_reach_check,omitempty"`
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.

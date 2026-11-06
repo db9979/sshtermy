@@ -427,21 +427,29 @@ func (a *App) viewManager() string {
 			plain += pad + cnt
 		} else {
 			c := r.conn
-			dot := s.Muted.Render("○")
-			pdot := "○"
-			if a.connected(c.ID) {
-				dot, pdot = s.OK.Render("●"), "●"
-			}
-			aw := max(8, min(18-2*min(r.depth, 5), (leftW-6-len(indent))*11/20))
-			hw := max(4, leftW-6-len(indent)-aw)
+			pdot, dotC := a.reachDot(c)
+			picon, iconC := a.devIcon(c)
+			stripe, _ := a.stripe(c, nil)
+			aw := max(8, min(18-2*min(r.depth, 5), (leftW-8-len(indent))*11/20))
+			hw := max(4, leftW-8-len(indent)-aw)
 			alias := fmt.Sprintf("%-*s", aw, trunc(c.Alias, aw))
 			target := trunc(shortTarget(c), hw)
-			plain = fmt.Sprintf(" %s%s %s %s", indent, pdot, alias, target)
-			styled = " " + indent + dot + " " + alias + " " + s.Muted.Render(target)
+			plain = fmt.Sprintf("%s%s %s %s %s", indent, pdot, picon, alias, target)
+			styled = stripe + indent + glyph(pdot, dotC, nil) + " " + glyph(picon, iconC, nil) + " " + alias + " " + s.Muted.Render(target)
+			if i == m.sel {
+				// Auswahl: Hintergrund über die ganze Zeile, Punkt und
+				// Symbol behalten ihre Farbe (rot = nicht erreichbar).
+				bg := s.T.Surface2
+				sel := s.Selected
+				stripeSel, _ := a.stripe(c, bg)
+				body := sel.Render(indent) + glyph(pdot, dotC, bg) + sel.Render(" ") + glyph(picon, iconC, bg) + sel.Render(" "+alias+" "+target)
+				styled = stripeSel + body + sel.Render(strings.Repeat(" ", max(0, leftW-2-lipgloss.Width(body))))
+			}
+			plain = " " + plain
 		}
 		line := styled
 		switch {
-		case i == m.sel:
+		case i == m.sel && r.isFolder():
 			line = s.Selected.Width(leftW - 1).Render(plain)
 		case m.drag != nil && m.drag.moved && i == m.drag.over:
 			line = lipgloss.NewStyle().Foreground(s.T.Warn).Underline(true).Width(leftW - 1).Render(plain)
@@ -461,9 +469,9 @@ func (a *App) viewManager() string {
 	if len(rows) == 0 {
 		switch {
 		case a.mgrFiltering():
-			lb.WriteString(s.Muted.Render(i18n.T("  Nichts gefunden.\n  Esc = Filter aufheben")))
+			lb.WriteString(a.mgrNoMatch(leftW))
 		default:
-			lb.WriteString(s.Muted.Render(i18n.T("  Noch keine Verbindung.\n  n = neue Verbindung anlegen\n  o = Ordner anlegen")))
+			lb.WriteString(a.mgrEmpty(leftW))
 		}
 	}
 	listBox := a.z.mark(lb.String(), zoneAction{block: true, wheel: func(up bool) tea.Cmd {
@@ -499,6 +507,18 @@ func (a *App) viewManager() string {
 			rb.WriteString(" " + label.Render(k) + s.Text.Render(ansi.Truncate(v, textW, "…")) + "\n")
 		}
 		row(i18n.T("Ziel"), c.Target())
+		row(i18n.T("Status"), a.reachText(c))
+		if d := deviceClass(c); d != devUnknown {
+			ic, col := a.devIcon(c)
+			row(i18n.T("Gerät"), glyph(ic, col, nil)+" "+devName(d))
+		}
+		if acc := a.accentOf(c); acc != nil {
+			lbl := envLabel(envKind(c))
+			if c.Color != accentAuto || lbl == "" {
+				lbl = i18n.T(accentLabel(connAccent(c)))
+			}
+			row(i18n.T("Farbe"), glyph("▌", acc, nil)+" "+lbl)
+		}
 		auth := map[domain.AuthMethod]string{domain.AuthPassword: i18n.T("Passwort (verschlüsselt)"), domain.AuthKeyFile: "Keyfile", domain.AuthAgent: i18n.T("SSH-Agent")}[c.Auth]
 		if c.Auth == domain.AuthKeyFile {
 			if c.KeyPEM.IsSet() {
@@ -541,7 +561,7 @@ func (a *App) viewManager() string {
 		tuns := a.st.Tunnels(c.ID)
 		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render(i18n.T("t = neuer Tunnel"))) + "\n")
 		if len(tuns) == 0 {
-			rb.WriteString(s.Muted.Render(i18n.T("  keine")) + "\n")
+			rb.WriteString(s.Muted.Render(i18n.T("  noch keine · z. B. Weboberfläche oder Datenbank sicher auf diesen Rechner holen")) + "\n")
 		}
 		for _, t := range tuns {
 			icon := "⇄"
@@ -557,6 +577,9 @@ func (a *App) viewManager() string {
 		cfg := a.st.LLM()
 		rb.WriteString("\n " + s.PanelTitle.Render(i18n.T("KI-Copilot")) + "\n")
 		rb.WriteString("  " + s.Muted.Render(trunc(cfg.Model+" @ "+cfg.BaseURL, max(10, rightW-3))) + "\n")
+	}
+	if len(rows) == 0 && !a.mgrFiltering() {
+		rb.WriteString(a.mgrLegend(rightW))
 	}
 	if len(rows) > 0 || a.st.SyncConfig().Enabled() {
 		rb.WriteString("\n " + s.PanelTitle.Render("Sync") + "\n  " + a.syncStatus() + "\n")
@@ -611,6 +634,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		return "▸ " + v
 	}, func() tea.Cmd { return a.pickFolderField() }, i18n.T("Auswahl mit Suche; neuen Namen tippen legt einen Ordner an („A / B“ verschachtelt)"))
 	f.text("tags", "Tags", strings.Join(c.Tags, ", "), i18n.T("durch Komma getrennt, z. B. prod, linux · im Manager filtern mit #"))
+	f.choice("color", i18n.T("Farbe"), accentLabels(), accentLabel(c.Color), i18n.T("Streifen in Tab, Statuszeile und Liste · automatisch: prod rot, test grün, labor blau"))
 	self := c
 	f.pick("jump", i18n.T("Jump-Host"), c.JumpHostID, func(v string) string { return a.jumpFieldText(self, v) },
 		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
@@ -772,6 +796,7 @@ func (a *App) saveConn() error {
 			c.Tags = append(c.Tags, t)
 		}
 	}
+	c.Color = accentFromLabel(f.sel("color"))
 	c.Device = deviceFromLabel(f.sel("device"))
 	c.Profile = profileFromForm(f, a.formBase.Profile)
 	c.JumpHostID = f.val("jump")

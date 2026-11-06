@@ -181,7 +181,7 @@ func (a *App) viewPicker() string {
 		list.WriteString(line + "\n")
 	}
 	if len(vis) == 0 {
-		list.WriteString(s.Muted.Render(i18n.T("  nichts gefunden")) + "\n")
+		list.WriteString(s.Muted.Render(i18n.T("  nichts gefunden · Esc zurück, Rücktaste ändert die Suche")) + "\n")
 	}
 	b.WriteString(a.z.mark(list.String(), zoneAction{wheel: func(up bool) tea.Cmd {
 		if up {
