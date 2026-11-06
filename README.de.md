@@ -176,7 +176,7 @@ gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − 
 vorausgewählt, schon vorhandene abgewählt; ⏎ übernimmt. Mit f lädst du eine Datei von woanders, z. B. einen
 PuTTY-Export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), eine portable `MobaXterm.ini` oder eine
 `.mxtsessions`-Datei. Passwörter werden nicht übernommen, sshTermy fragt beim ersten Verbinden. PuTTY-Keys
-(`.ppk`) bitte in Pageant laden oder mit PuTTYgen nach OpenSSH exportieren.
+(`.ppk`, Version 2 und 3, auch mit Passphrase) liest sshTermy direkt, Pageant ist nicht nötig.
 
 **Telnet und serielle Konsole:** Im Verbindungsformular wählt „Verbindung über“ zwischen SSH, Telnet und
 „Seriell (Konsolenkabel)“, z. B. für einen Aruba-Switch am USB-Konsolenkabel. Schnittstelle „automatisch“ nimmt das
