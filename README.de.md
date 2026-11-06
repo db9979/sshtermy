@@ -24,6 +24,16 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
   die Ergebnisse stehen in Spalten nebeneinander. Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
   Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
+- **Runbooks mit Variablen:** `{{vlan}}` oder `{{vlan=20}}` in einem Schritt wird vor dem Start abgefragt, `{{host}}`,
+  `{{alias}}`, `{{user}}`, `{{port}}` setzt sshTermy pro Host ein. Im Broadcast lädt `e` ein Runbook zum Bearbeiten,
+  `Strg+R` speichert, `Strg+D` löscht. Vor dem Start prüft die KI mit `k` gegen das Systemprofil jedes Hosts, ob die
+  Schritte dort laufen, und schlägt Entsprechungen vor (`a` übernimmt sie). Gefährlich oder nicht entscheiden weiter die festen Regeln.
+- **Gefahren-Check:** Auf Produktiv-Hosts (Ordner, Tag oder Alias mit „prod“, Tag „live“) fragt sshTermy bei riskanten
+  Befehlen vor dem Enter nach (`rm -rf`, `reboot`, auf Switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …).
+  Ausführen nur mit `j`, Esc lässt die Zeile stehen. Palette „Gefahren-Check auf allen Hosts“ weitet das auf alle aus.
+- **Aufzeichnung exportieren:** Palette „Aufnahme starten“ nimmt den Tab als asciinema-Datei (`.cast`, mit Farben und
+  vim/htop) auf, abspielbar mit `asciinema play`. Protokolle (`l`, dann `x`) gehen als Markdown, Text oder nachgebaute
+  Aufnahme raus; „Terminal-Verlauf als Text exportieren“ speichert den Verlauf. Alles landet im Download-Ordner.
 - **Netzwerk-Scan** (f im Manager): ein Subnetz nach SSH-Geräten durchsuchen (nur Port und SSH-Kennung, ohne Anmeldung),
   Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL; pro Verbindung gespeichert, ein Klick schaltet an/aus, auf Wunsch startet ein Tunnel mit der Verbindung; läuft auch über Jump-Hosts

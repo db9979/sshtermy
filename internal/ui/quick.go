@@ -130,7 +130,7 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 		return nil
 	}
 	cmd := cmds[i]
-	if f := safety.Check(cmd, safety.Kind(a.remoteText(s))); len(f) > 0 && s.quickArmed != i {
+	if f := safety.Check(cmd, a.safetyKind(s)); len(f) > 0 && s.quickArmed != i {
 		s.quickArmed = i
 		a.flash(i18n.T("Vorsicht: ") + f[0].Reason + i18n.T(". Nochmal ") + a.quickLabel(i) + i18n.T(" zum Ausführen"))
 		return nil
@@ -164,7 +164,7 @@ func (a *App) quickModalKey(key string) tea.Cmd {
 			return nil
 		}
 		m.scroll = i
-		if len(safety.Check(cmds[i], safety.Kind(a.remoteText(s)))) > 0 && m.armed != i {
+		if len(safety.Check(cmds[i], a.safetyKind(s))) > 0 && m.armed != i {
 			m.armed = i // erster Druck: nur warnen, Liste bleibt offen
 			s.quickArmed = -1
 			return a.runQuick(s, i)
@@ -209,7 +209,7 @@ func (a *App) quickModalView(m *modal) string {
 		return ""
 	}
 	cmds, preset := a.quickCmds(s)
-	kind := safety.Kind(a.remoteText(s))
+	kind := a.safetyKind(s)
 	cw := min(64, a.w-12)
 	sub := s.conn.Alias
 	if preset != "" {
@@ -264,7 +264,7 @@ func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
 		i, c := i, c
 		it := palItem{group: pgQuick, icon: "↯", label: c, hint: a.quickLabel(i),
 			run: func() tea.Cmd { s.panelFocus = false; return a.runQuick(s, i) }}
-		if f := safety.Check(c, safety.Kind(a.remoteText(s))); len(f) > 0 {
+		if f := safety.Check(c, a.safetyKind(s)); len(f) > 0 {
 			it.danger = f[0].Reason
 		}
 		items = append(items, it)

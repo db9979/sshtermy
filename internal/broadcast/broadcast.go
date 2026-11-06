@@ -71,8 +71,12 @@ type Dialer func(ctx context.Context, c domain.Connection) (Executor, error)
 
 // Job: was wo laufen soll.
 type Job struct {
-	Conns    []domain.Connection
-	Steps    []string
+	Conns []domain.Connection
+	Steps []string
+	// PerHost: eigene Schritte je Host (gleiche Reihenfolge wie Conns), z. B.
+	// mit ausgefüllten Variablen oder von der KI angepasst. nil oder ein
+	// leerer Eintrag = Steps.
+	PerHost  [][]string
 	Parallel int           // gleichzeitige Hosts, Standard 8
 	Timeout  time.Duration // pro Host, Standard 5 min
 }
@@ -111,7 +115,11 @@ func Run(ctx context.Context, j Job, dial Dialer, update func(i int, r Result)) 
 			}
 			hctx, cancel := context.WithTimeout(ctx, tmo)
 			defer cancel()
-			runHost(hctx, c, j.Steps, dial, r, func() { update(i, *r) })
+			steps := j.Steps
+			if i < len(j.PerHost) && len(j.PerHost[i]) > 0 {
+				steps = j.PerHost[i]
+			}
+			runHost(hctx, c, steps, dial, r, func() { update(i, *r) })
 		}(i, c)
 	}
 	wg.Wait()
@@ -200,14 +208,15 @@ type Danger struct {
 }
 
 // Dangers prüft alle Schritte mit den festen Regeln. Das Zielsystem ist vor
-// dem Verbinden nicht bekannt, deshalb gelten Unix- und Windows-Regeln.
+// dem Verbinden nicht bekannt, deshalb gelten alle Regelgruppen (Unix,
+// Windows, Netzwerkgeräte).
 // sudo allein ist keine Gefahr, wird aber mit "läuft mit sudo" markiert.
 func Dangers(steps []string) []Danger {
 	var out []Danger
 	for i, cmd := range steps {
 		seen := map[string]bool{}
 		var reasons []string
-		for _, kind := range []string{"unix", "windows"} {
+		for _, kind := range safety.Kinds {
 			for _, f := range safety.Check(cmd, kind) {
 				if !seen[f.Reason] {
 					seen[f.Reason] = true

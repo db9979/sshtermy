@@ -13,6 +13,7 @@ import (
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/runbook"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -370,7 +371,7 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 				st.Command = cmd
 				st.Reason = i18n.T("von dir bearbeitet")
 				*g.cur = st
-				fresh := agent.ParseStepCommand(cmd, s.client.Remote.String())
+				fresh := agent.ParseStepCommand(cmd, a.safetyKind(s))
 				g.cur.Danger, g.cur.Elevated = fresh.Danger, fresh.Elevated
 			}
 			g.editing = false
@@ -845,9 +846,57 @@ func (a *App) startGoal(s *session, text string) tea.Cmd { return a.startGoalWit
 
 // startRunbook startet ein gespeichertes Ziel; die damals ausgeführten
 // Befehle gehen dem Agenten als Vorlage mit.
+//
+// Variablen ({{name}}) fragt sshTermy vorher einzeln ab, {{host}} usw.
+// kommen aus der Verbindung. Ein ausgefülltes Runbook überschreibt beim
+// Speichern (Strg+S) nicht die Vorlage.
 func (a *App) startRunbook(s *session, rb domain.Runbook) tea.Cmd {
-	a.st.UseRunbook(rb.ID)
-	return a.startGoalWith(s, rb.Goal, &rb)
+	tmpl := append([]string{rb.Goal}, rb.Steps...)
+	vars := runbook.Vars(tmpl)
+	if len(vars) == 0 && !runbook.HasBuiltins(tmpl) {
+		a.st.UseRunbook(rb.ID)
+		return a.startGoalWith(s, rb.Goal, &rb)
+	}
+	if a.rbVals == nil {
+		a.rbVals = map[string]map[string]string{}
+	}
+	vals := a.rbVals[rb.ID]
+	if vals == nil {
+		vals = map[string]string{}
+		a.rbVals[rb.ID] = vals
+	}
+	var ask func(i int) tea.Cmd
+	ask = func(i int) tea.Cmd {
+		if i == len(vars) {
+			all := runbook.Fill(tmpl, vals, s.conn)
+			filled := rb
+			filled.Goal, filled.Steps = all[0], all[1:]
+			a.st.UseRunbook(rb.ID)
+			cmd := a.startGoalWith(s, filled.Goal, &filled)
+			s.goal.runbookID = ""
+			return cmd
+		}
+		v := vars[i]
+		prev := vals[v.Name]
+		if prev == "" {
+			prev = v.Default
+		}
+		body := fmt.Sprintf(i18n.T("Wert für {{%s}} (%d von %d)"), v.Name, i+1, len(vars))
+		a.modal = inputModal("▶ "+trunc(rb.Name, 40), body, prev, func(x string) tea.Cmd {
+			if x == "" {
+				x = v.Default
+			}
+			if x == "" {
+				a.flash(i18n.T("Wert fehlt: ") + v.Name)
+				return ask(i)
+			}
+			vals[v.Name] = x
+			return ask(i + 1)
+		})
+		a.modal.in.Placeholder = v.Name
+		return nil
+	}
+	return ask(0)
 }
 
 func (a *App) startGoalWith(s *session, text string, rb *domain.Runbook) tea.Cmd {

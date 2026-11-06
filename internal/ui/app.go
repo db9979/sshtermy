@@ -113,8 +113,9 @@ type App struct {
 
 	pick *picker // Auswahlliste mit Suche (Jump-Host, Ordner, Tag)
 
-	bc   *bcState   // Broadcast an mehrere Hosts
-	scan *scanState // Netzwerk-Scan
+	bc     *bcState                     // Broadcast an mehrere Hosts
+	rbVals map[string]map[string]string // zuletzt eingegebene Runbook-Variablen (nur im Speicher)
+	scan   *scanState                   // Netzwerk-Scan
 
 	intro *introState // Startanimation, nil = aus oder vorbei
 	fx    fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
@@ -422,6 +423,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) quit() tea.Cmd {
 	for _, s := range a.sessions {
 		a.endLog(s)
+		a.stopRecording(s)
 		s.close()
 	}
 	a.closeBook()
