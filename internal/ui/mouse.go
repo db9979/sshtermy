@@ -558,6 +558,9 @@ func (a *App) modalKeys() [][2]string {
 		keys = tourButtons(a.modal)
 	case mQuick:
 		keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
+		if a.modal.scroll >= maxQuick {
+			keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"a", i18n.T("als Schnellbefehl")}, {"x", i18n.T("nicht vorschlagen")}, {"Esc", i18n.T("schließen")}}
+		}
 	case mDanger:
 		keys = [][2]string{{yesKey(), i18n.T("trotzdem ausführen")}, {"Esc", i18n.T("abbrechen")}}
 	case mPaste:

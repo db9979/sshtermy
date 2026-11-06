@@ -314,10 +314,52 @@ type Settings struct {
 	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
 	// NoReachCheck: im Manager nicht prüfen, ob die Hosts erreichbar sind.
 	NoReachCheck bool `json:"no_reach_check,omitempty"`
+	// Monitor: Warnschwellen der Host-Übersicht (F6) und wie oft Server
+	// automatisch nachgefragt werden.
+	Monitor MonitorConfig `json:"monitor,omitempty"`
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`
+}
+
+// MonitorConfig: Warnschwellen für CPU, RAM und Platte in Prozent (0 =
+// Standard 90 %) und der Abstand der automatischen Abfrage bei Servern in
+// Minuten (0 = Standard 5, negativ = aus). Netzwerkgeräte werden nie
+// automatisch abgefragt (dort tippt sshTermy sichtbar am Prompt).
+type MonitorConfig struct {
+	CPU      int `json:"cpu,omitempty"`
+	RAM      int `json:"ram,omitempty"`
+	Disk     int `json:"disk,omitempty"`
+	EveryMin int `json:"every_min,omitempty"`
+}
+
+// Standardwerte der Überwachung.
+const (
+	DefaultMonitorLimit = 90
+	DefaultMonitorEvery = 5
+)
+
+// Limits: wirksame Schwellen (Standard für 0, begrenzt auf 1…100).
+func (m MonitorConfig) Limits() (cpu, ram, disk int) {
+	f := func(v int) int {
+		if v <= 0 {
+			return DefaultMonitorLimit
+		}
+		return min(v, 100)
+	}
+	return f(m.CPU), f(m.RAM), f(m.Disk)
+}
+
+// Every: Abstand der automatischen Abfrage (0 = aus).
+func (m MonitorConfig) Every() time.Duration {
+	switch {
+	case m.EveryMin < 0:
+		return 0
+	case m.EveryMin == 0:
+		return DefaultMonitorEvery * time.Minute
+	}
+	return time.Duration(m.EveryMin) * time.Minute
 }
 
 // SyncBackend: wohin die verschlüsselte Sync-Datei geschrieben wird.

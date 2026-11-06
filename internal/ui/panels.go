@@ -32,7 +32,9 @@ type goalState struct {
 	plan                []string
 	cur                 *agent.Step
 	armed, editing      bool
-	waiting             bool // Befehl läuft, wir warten auf den Prompt
+	origCmd             string      // KI-Vorschlag vor dem Bearbeiten (e)
+	origStep            *agent.Step // zu welchem Vorschlag origCmd gehört
+	waiting             bool        // Befehl läuft, wir warten auf den Prompt
 	waitSince           time.Time
 	manualPending       bool // "i": eingefügt, wartet auf Enter des Nutzers
 	busy                bool
@@ -129,6 +131,12 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 	case followMsg:
 		if s := a.byID(m.sid); s != nil && m.seq == s.chipSeq {
 			s.chips, s.chipArmed = m.chips, -1
+			for i, c := range s.chips { // was der Admin hier korrigiert hat, gleich richtig
+				if fix, ok := s.learnedFix(c.Command); ok {
+					fresh := agent.ParseStepCommand(fix, a.safetyKind(s))
+					s.chips[i].Command, s.chips[i].Danger, s.chips[i].Elevated = fix, fresh.Danger, fresh.Elevated
+				}
+			}
 		}
 		return nil, true
 	case goalStepMsg:
@@ -153,6 +161,11 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			return g.answer.Focus(), true
 		default:
 			st := m.step
+			if fix, ok := s.learnedFix(st.Command); ok {
+				fresh := agent.ParseStepCommand(fix, a.safetyKind(s))
+				st.Command, st.Danger, st.Elevated = fix, fresh.Danger, fresh.Elevated
+				st.Reason = strings.TrimSpace(st.Reason + i18n.T(" (so hast du es hier korrigiert)"))
+			}
 			g.cur, g.armed = &st, false
 			if len(st.Plan) > 0 {
 				g.plan = st.Plan
@@ -240,17 +253,27 @@ func (a *App) goalTick(s *session) tea.Cmd {
 
 func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 	g := &s.goal
+	orig := cmd // was die KI vorgeschlagen hat
+	if g.cur != nil && g.origStep == g.cur && g.origCmd != "" {
+		orig = g.origCmd
+	}
+	g.origCmd, g.origStep = "", nil
 	g.steps = append(g.steps, agent.DoneStep{Command: cmd})
 	s.history = append(s.history, cmd)
 	g.cur, g.armed, g.editing = nil, false, false
 	if insertOnly {
 		s.term.SendText(cmd) // Dry-Run: steht in der Zeile, Nutzer drückt selbst Enter
+		s.noteAI(orig, true)
 		g.manualPending = true
 		s.panelFocus = false
 		return
 	}
 	a.beginCommand(s, cmd)
+	if orig != cmd && s.run != nil && similarCmd(orig, cmd) {
+		s.run.learnFrom = orig // im Ziel-Modus bearbeitet (e)
+	}
 	s.term.SendText(cmd + "\r")
+	s.noteAI(cmd, false)
 	a.profileCommand(s, cmd)
 	g.startWait()
 }
@@ -369,6 +392,9 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		case "enter":
 			cmd := strings.TrimSpace(g.edit.Value())
 			if cmd != "" {
+				if g.origStep != g.cur {
+					g.origCmd, g.origStep = g.cur.Command, g.cur
+				}
 				st := *g.cur
 				st.Command = cmd
 				st.Reason = i18n.T("von dir bearbeitet")

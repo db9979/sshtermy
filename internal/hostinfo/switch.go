@@ -1,6 +1,7 @@
 package hostinfo
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
@@ -67,7 +68,7 @@ func (v Vendor) InfoCommands() (system, ports, vlans string) {
 	case VendorArubaCX:
 		return "show system", "show interface brief", "show vlan"
 	case VendorCisco:
-		return "", "show interfaces status", "show vlan brief"
+		return "show processes cpu | include CPU utilization", "show interfaces status", "show vlan brief"
 	}
 	return "", "", ""
 }
@@ -88,13 +89,21 @@ type Switch struct {
 	PortsUp   int
 	PortsDown int
 	VLANs     []VLAN
+	CPUPct    int // -1 = unbekannt
+	MemPct    int // belegter Speicher in %, -1 = unbekannt
 	At        time.Time
 }
 
 // Summary: eine Zeile für die Sitzungsleiste.
 func (s Switch) Summary() string {
 	parts := []string{}
-	if s.Firmware != "" {
+	if s.CPUPct >= 0 {
+		parts = append(parts, fmt.Sprintf("CPU %d%%", s.CPUPct))
+	}
+	if s.MemPct >= 0 {
+		parts = append(parts, fmt.Sprintf(i18n.T("RAM %d%%"), s.MemPct))
+	}
+	if s.Firmware != "" && len(parts) == 0 {
 		parts = append(parts, s.Firmware)
 	}
 	if s.PortsUp+s.PortsDown > 0 {
@@ -121,12 +130,30 @@ var (
 	downWord    = regexp.MustCompile(`(?i)\b(down|notconnect|disabled|err-disabled|inactive)\b`)
 	vlanRow     = regexp.MustCompile(`^\s*(\d{1,4})\s+(\S+)`)
 	dashLine    = regexp.MustCompile(`^[\s\-+|=]{5,}$`)
+	cpuUtil     = regexp.MustCompile(`(?im)cpu\s+util(?:ization)?\s*(?:\(%\)|in %)?\s*:\s*(\d{1,3})\b`)
+	ciscoCPU    = regexp.MustCompile(`(?i)cpu utilization for five seconds:\s*(\d{1,3})%`)
+	memTotal    = regexp.MustCompile(`(?i)memory\s*-\s*total\s*:\s*([\d,.]+)`)
+	memFree     = regexp.MustCompile(`(?i)\bfree\s*:\s*([\d,.]+)`)
+	memUsage    = regexp.MustCompile(`(?im)memory\s+usage\s*(?:\(%\)|in %)?\s*:\s*(\d{1,3})\b`)
 )
 
 // ParseSwitch wertet die Ausgaben aus (fehlende Befehle sind leer).
 func ParseSwitch(v Vendor, version, system, ports, vlans string) Switch {
-	s := Switch{Vendor: v, At: time.Now()}
+	s := Switch{Vendor: v, At: time.Now(), CPUPct: -1, MemPct: -1}
 	all := version + "\n" + system
+	if m := cpuUtil.FindStringSubmatch(system); m != nil {
+		s.CPUPct = pct(m[1])
+	} else if m := ciscoCPU.FindStringSubmatch(system); m != nil {
+		s.CPUPct = pct(m[1])
+	}
+	if m := memUsage.FindStringSubmatch(system); m != nil {
+		s.MemPct = pct(m[1])
+	} else if t, f := memTotal.FindStringSubmatch(system), memFree.FindStringSubmatch(system); t != nil && f != nil {
+		tot, free := digits(t[1]), digits(f[1])
+		if tot > 0 && free <= tot {
+			s.MemPct = int((tot - free) * 100 / tot)
+		}
+	}
 	if m := versionKV.FindStringSubmatch(all); m != nil {
 		s.Firmware = m[1]
 	} else if m := ciscoVer.FindStringSubmatch(version); m != nil {
@@ -150,6 +177,19 @@ func ParseSwitch(v Vendor, version, system, ports, vlans string) Switch {
 	s.PortsUp, s.PortsDown = countPorts(ports)
 	s.VLANs = parseVLANs(vlans)
 	return s
+}
+
+func pct(v string) int {
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 || n > 100 {
+		return -1
+	}
+	return n
+}
+
+func digits(v string) uint64 {
+	n, _ := strconv.ParseUint(strings.NewReplacer(",", "", ".", "").Replace(v), 10, 64)
+	return n
 }
 
 // ModelFromConfig: ProCurve schreibt das Modell in den Kopf der Konfiguration

@@ -25,6 +25,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/store"
@@ -44,6 +45,8 @@ type hostState struct {
 	backups   []store.Backup
 	sel       int
 	note      string // Ergebnis der letzten Sicherung
+	alerts    []hostinfo.Alert // Kennzahlen über der Warnschwelle
+	lastTry   time.Time        // letzte Server-Abfrage (auch fehlgeschlagene)
 }
 
 func (h *hostState) cancel() {
@@ -95,8 +98,17 @@ type hostSrvMsg struct {
 	sid, seq int
 	srv      hostinfo.Server
 	err      error
-	quiet    bool // beim Verbinden: Fehler nicht laut melden
+	mode     hostMode
 }
+
+// hostMode: warum der Server abgefragt wird.
+type hostMode int
+
+const (
+	hostManual  hostMode = iota // r im Panel bzw. Panel geöffnet
+	hostConnect                 // nach dem Verbinden: Zusammenfassung als Toast
+	hostAuto                    // Überwachung im Hintergrund: nur Warnungen melden
+)
 
 type netResult struct {
 	vendor    hostinfo.Vendor
@@ -125,16 +137,45 @@ func (a *App) hostOnConnect(s *session) tea.Cmd {
 		s.host.backups = a.st.Backups(s.conn.ID)
 		return nil
 	}
-	if s.client == nil {
+	if !a.hostServerOK(s) {
 		return nil
 	}
-	return a.hostServerCmd(s, true)
+	return a.hostServerCmd(s, hostConnect)
 }
 
-func (a *App) hostServerCmd(s *session, quiet bool) tea.Cmd {
+// hostServerOK: darf der Server per Exec-Sitzung abgefragt werden? Nie bei
+// Netzwerkgeräten (Aruba/ProCurve trennen sonst die Verbindung), auch nicht,
+// wenn nur das Systemprofil sie als solche kennt, und nicht bei Windows
+// (kein sh).
+func (a *App) hostServerOK(s *session) bool {
+	return s.client != nil && !s.netDevice() && s.prof.Family != domain.FamilyWindows
+}
+
+// monLimits: Warnschwellen aus den Einstellungen.
+func (a *App) monLimits() hostinfo.Limits {
+	c, r, d := a.st.Settings().Monitor.Limits()
+	return hostinfo.Limits{CPU: c, RAM: r, Disk: d}
+}
+
+// monitorTick (jede Sekunde): Server im eingestellten Abstand still
+// nachfragen. Netzwerkgeräte nie, dort tippt sshTermy sichtbar am Prompt.
+func (a *App) monitorTick(s *session) tea.Cmd {
+	h := &s.host
+	every := a.st.Settings().Monitor.Every()
+	if every <= 0 || h.busy || s.state != stConnected || !a.hostServerOK(s) || h.lastTry.IsZero() {
+		return nil
+	}
+	if time.Since(h.lastTry) < every {
+		return nil
+	}
+	return a.hostServerCmd(s, hostAuto)
+}
+
+func (a *App) hostServerCmd(s *session, mode hostMode) tea.Cmd {
 	h := &s.host
 	h.cancel()
 	h.seq++
+	h.lastTry = time.Now()
 	h.busy, h.err, h.step = true, "", i18n.T("Kennzahlen abfragen …")
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	h.cancelFn = cancel
@@ -143,10 +184,10 @@ func (a *App) hostServerCmd(s *session, quiet bool) tea.Cmd {
 		defer cancel()
 		out, err := cl.RunScript(ctx, hostinfo.ServerScript)
 		if err != nil {
-			return hostSrvMsg{sid: sid, seq: seq, err: err, quiet: quiet}
+			return hostSrvMsg{sid: sid, seq: seq, err: err, mode: mode}
 		}
 		srv, err := hostinfo.ParseServer(out)
-		return hostSrvMsg{sid: sid, seq: seq, srv: srv, err: err, quiet: quiet}
+		return hostSrvMsg{sid: sid, seq: seq, srv: srv, err: err, mode: mode}
 	}
 }
 
@@ -319,7 +360,11 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		srv := m.srv
 		h.srv = &srv
-		if m.quiet && s == a.current() && a.scr == scrTerminal {
+		fresh := a.setAlerts(s, srv.Alerts(a.monLimits()))
+		switch {
+		case len(fresh) > 0:
+			a.pushToast(toastWarn, s.conn.Alias+": "+hostinfo.AlertsText(fresh))
+		case m.mode == hostConnect && s == a.current() && a.scr == scrTerminal:
 			a.flash(s.conn.Alias + ": " + srv.Summary())
 		}
 		return nil, true
@@ -338,6 +383,11 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 			h.sw.Model = r.model
 		}
 		a.profileFromSwitch(s, r.vendor, h.sw)
+		if r.sw != nil {
+			if fresh := a.setAlerts(s, r.sw.Alerts(a.monLimits())); len(fresh) > 0 {
+				a.pushToast(toastWarn, s.conn.Alias+": "+hostinfo.AlertsText(fresh))
+			}
+		}
 		switch {
 		case r.err != nil:
 			h.err = r.err.Error()
@@ -355,6 +405,19 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return nil, true
 	}
 	return nil, false
+}
+
+// setAlerts übernimmt die aktuellen Warnungen und liefert die, die neu
+// dazugekommen sind (eine Warnung meldet sich nur einmal, bis der Wert
+// wieder unter die Schwelle fällt).
+func (a *App) setAlerts(s *session, now []hostinfo.Alert) (fresh []hostinfo.Alert) {
+	for _, al := range now {
+		if !hostinfo.Over(s.host.alerts, al.Metric) {
+			fresh = append(fresh, al)
+		}
+	}
+	s.host.alerts = now
+	return fresh
 }
 
 func firstSentence(s string) string {
@@ -379,11 +442,11 @@ func (a *App) hostOpened(s *session) tea.Cmd {
 		s.host.backups = a.st.Backups(s.conn.ID)
 		return nil
 	}
-	if s.client == nil {
+	if !a.hostServerOK(s) {
 		return nil
 	}
 	if s.host.srv == nil && !s.host.busy {
-		return a.hostServerCmd(s, false)
+		return a.hostServerCmd(s, hostManual)
 	}
 	return nil
 }
@@ -405,7 +468,14 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			s.panelFocus = false // Ausgabe läuft sichtbar im Terminal
 			return a.hostNetCmd(s, true, false)
 		}
-		return a.hostServerCmd(s, false)
+		if !a.hostServerOK(s) {
+			return nil
+		}
+		return a.hostServerCmd(s, hostManual)
+	case "g":
+		if !h.busy {
+			return a.openMonitorForm()
+		}
 	case "b":
 		if net && !h.busy {
 			s.panelFocus = false
@@ -486,9 +556,9 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		if len(s.host.backups) > 0 {
 			k = append(k, [2]string{"↑↓", i18n.T("Stand")}, [2]string{"v", i18n.T("ansehen")})
 		}
-		return append(k, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+		return append(k, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 	}
-	return [][2]string{{"r", i18n.T("aktualisieren")}, {"Esc", "Terminal"}, {a.keys.label(actHost), i18n.T("schließen")}}
+	return [][2]string{{"r", i18n.T("aktualisieren")}, {"g", i18n.T("Grenzwerte")}, {"Esc", "Terminal"}, {a.keys.label(actHost), i18n.T("schließen")}}
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -511,8 +581,9 @@ func (a *App) hostBadge(s *session) string {
 		return ""
 	}
 	style := st.Badge
-	if h.srv != nil && (h.srv.DiskPct() >= 90 || h.srv.MemPct() >= 90) {
+	if len(h.alerts) > 0 && !h.busy {
 		style = style.Foreground(st.T.Warn)
+		txt = "⚠" + strings.TrimPrefix(txt, "▤")
 	}
 	return a.keyZone(a.keys.label(actHost), style.Render(trunc(txt, 46)))
 }
@@ -548,18 +619,22 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		if s.client != nil {
 			row("System", s.client.Remote.OS)
 		}
+		lim := a.monLimits()
 		cpu := fmt.Sprintf(i18n.T("%d Kerne"), srv.CPUs)
 		if srv.HasLoad {
 			cpu += fmt.Sprintf(i18n.T(" · Last %.2f %.2f %.2f"), srv.Load[0], srv.Load[1], srv.Load[2])
 		}
 		row("CPU", cpu)
+		if srv.CPUPct >= 0 {
+			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.CPUPct, w-10, lim.CPU) + "\n")
+		}
 		if srv.MemTotal > 0 {
 			row("RAM", fmt.Sprintf("%s / %s", hostinfo.Bytes(srv.MemTotal-min(srv.MemFree, srv.MemTotal)), hostinfo.Bytes(srv.MemTotal)))
-			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.MemPct(), w-10) + "\n")
+			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.MemPct(), w-10, lim.RAM) + "\n")
 		}
 		if srv.DiskTotal > 0 {
 			row(i18n.T("Platte /"), fmt.Sprintf("%s / %s", hostinfo.Bytes(srv.DiskUsed), hostinfo.Bytes(srv.DiskTotal)))
-			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.DiskPct(), w-10) + "\n")
+			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.DiskPct(), w-10, lim.Disk) + "\n")
 		}
 		if srv.Uptime > 0 {
 			row(i18n.T("Laufzeit"), hostinfo.Duration(srv.Uptime))
@@ -581,7 +656,9 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		if srv.RebootNeeded {
 			b.WriteString(st.Warn.Render(i18n.T("⟳ Neustart erforderlich")) + "\n")
 		}
+		a.viewAlerts(b, s, w)
 		b.WriteString("\n" + st.Muted.Render(i18n.T("Stand ")+srv.At.Format("15:04:05")+i18n.T(" · r aktualisieren")) + "\n")
+		b.WriteString(st.Muted.Render(wrap(a.monitorLine(false), w)) + "\n")
 		if srv.UpdateTool == "apt" {
 			b.WriteString(st.Muted.Render(wrap(i18n.T("Updates laut lokaler Paketliste (ohne apt update)."), w)) + "\n")
 		}
@@ -605,6 +682,13 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "Ports")) + st.OK.Render(fmt.Sprintf(i18n.T("%d aktiv"), sw.PortsUp)) +
 				st.Muted.Render(fmt.Sprintf(i18n.T(" · %d inaktiv"), sw.PortsDown)) + "\n")
 		}
+		lim := a.monLimits()
+		if sw.CPUPct >= 0 {
+			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "CPU")) + a.bar(sw.CPUPct, w-10, lim.CPU) + "\n")
+		}
+		if sw.MemPct >= 0 {
+			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "RAM")) + a.bar(sw.MemPct, w-10, lim.RAM) + "\n")
+		}
 		if len(sw.VLANs) > 0 {
 			var vs []string
 			for _, v := range sw.VLANs {
@@ -612,7 +696,9 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			}
 			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "VLANs")) + st.Text.Render(lipgloss.NewStyle().Width(w-10).Render(trunc(strings.Join(vs, ", "), 3*(w-10)))) + "\n")
 		}
+		a.viewAlerts(b, s, w)
 		b.WriteString(st.Muted.Render(i18n.T("Stand ")+sw.At.Format("15:04:05")) + "\n")
+		b.WriteString(st.Muted.Render(wrap(a.monitorLine(true), w)) + "\n")
 	} else if !h.busy {
 		b.WriteString(st.Text.Render(wrap(i18n.T("⏎ fragt Firmware, Ports und VLANs ab. sshTermy tippt dafür show-Befehle sichtbar am Prompt (keine versteckte Sitzung, die den Switch trennen könnte)."), w)) + "\n")
 	}
@@ -649,12 +735,37 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 	}
 }
 
-// bar: Belegungsbalken, ab 90 % gelb.
-func (a *App) bar(pct, w int) string {
+// viewAlerts: Warnzeilen über der Schwelle.
+func (a *App) viewAlerts(b *strings.Builder, s *session, w int) {
+	for _, al := range s.host.alerts {
+		b.WriteString(a.s.Warn.Render(wrap("⚠ "+al.Text(), w)) + "\n")
+	}
+}
+
+// monitorLine: eingestellte Schwellen und Prüfrhythmus.
+func (a *App) monitorLine(net bool) string {
+	m := a.st.Settings().Monitor
+	c, r, d := m.Limits()
+	var txt string
+	if net {
+		txt = fmt.Sprintf(i18n.T("Warnung ab CPU %d %% · RAM %d %% · nur auf Abruf (⏎)"), c, r)
+	} else {
+		txt = fmt.Sprintf(i18n.T("Warnung ab CPU %d %% · RAM %d %% · Platte %d %%"), c, r, d)
+		if e := m.Every(); e > 0 {
+			txt += fmt.Sprintf(i18n.T(" · prüft alle %d Min"), int(e.Minutes()))
+		} else {
+			txt += i18n.T(" · automatische Prüfung aus")
+		}
+	}
+	return txt + i18n.T(" · g ändern")
+}
+
+// bar: Belegungsbalken, ab der Warnschwelle gelb.
+func (a *App) bar(pct, w, limit int) string {
 	w = max(4, min(w-6, 24))
-	n := pct * w / 100
+	n := min(w, max(0, pct*w/100))
 	style := a.s.OK
-	if pct >= 90 {
+	if limit > 0 && pct >= limit {
 		style = a.s.Warn
 	}
 	return style.Render(strings.Repeat("█", n)) + a.s.Muted.Render(strings.Repeat("░", w-n)) + a.s.Muted.Render(fmt.Sprintf(" %d%%", pct))

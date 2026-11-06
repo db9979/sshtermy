@@ -211,7 +211,7 @@ func (sw *Switch) run(cmd string) string {
 	case "show version":
 		return "Image stamp:    /ws/swbuildm/rel_ukiah_qaoff/code/build/bom(swbuildm_rel_ukiah_qaoff_rel_ukiah)\n                Mar 10 2020 13:56:04\n                YA.16.10.0009\n                1102\nBoot Image:     Primary\n"
 	case "show system":
-		return " Status and Counters - General System Information\n\n  System Name        : sw-buero\n  System Contact     :\n  System Location    : Keller\n\n  Software revision  : YA.16.10.0009        Base MAC Addr      : 941882-123456\n  ROM Version        : YA.15.20            Serial Number      : CN12345678\n\n  Up Time            : 32 days             Memory   - Total   : 343,068,672\n"
+		return " Status and Counters - General System Information\n\n  System Name        : sw-buero\n  System Contact     :\n  System Location    : Keller\n\n  Software revision  : YA.16.10.0009        Base MAC Addr      : 941882-123456\n  ROM Version        : YA.15.20            Serial Number      : CN12345678\n\n  Up Time            : 32 days             Memory   - Total   : 343,068,672\n  CPU Util (%)       : 7                   Free    : 201,326,592\n"
 	case "show interfaces brief":
 		var b strings.Builder
 		b.WriteString(" Status and Counters - Port Status\n\n                          | Intrusion                           Flow  Bcast\n  Port         Type       | Alert     Enabled Status Mode       Ctrl  Limit\n  ------------ ---------- + --------- ------- ------ ---------- ----- ------\n")

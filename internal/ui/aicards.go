@@ -388,6 +388,7 @@ func (a *App) cardInsert(s *session, i int) tea.Cmd {
 	c := cd.code
 	s.ask.armed = -1
 	s.term.SendText(c)
+	s.noteAI(c, true)
 	s.panelFocus = false
 	return nil
 }
@@ -408,6 +409,7 @@ func (a *App) cardRun(s *session, i int) tea.Cmd {
 	a.clearToasts()
 	a.beginCommand(s, c)
 	s.term.SendText(c + "\r")
+	s.noteAI(c, false)
 	s.history = append(s.history, c)
 	a.profileCommand(s, c)
 	s.panelFocus = false

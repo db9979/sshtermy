@@ -89,6 +89,7 @@ var helpSections = []helpSection{
 		{"Alt+0", "Fehler: Warum? & Fix"},
 		{"⇧F1…F8", "Schnellbefehl ausführen"},
 		{"F9", "Schnellbefehle (Liste)"},
+		{"F9 → a", "häufigen Befehl übernehmen"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
@@ -138,6 +139,7 @@ var helpSections = []helpSection{
 		{"↑ ↓", "Sicherung wählen"},
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},
+		{"g", "Grenzwerte für Warnungen"},
 		{"x", "Abfrage abbrechen"},
 	}},
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{
@@ -204,6 +206,7 @@ var helpSections = []helpSection{
 		{"automatisch", "System + Befehlssatz erkennen"},
 		{"e (Manager)", "System, Befehlssatz, KI-Notizen"},
 		{"„% Invalid input“", "Befehl wird gemerkt + gemieden"},
+		{"KI-Befehl korrigiert", "Korrektur wird gemerkt"},
 	}},
 	{hcNone, "⚠", "Gefahren & Aufnahme", "", false, [][2]string{
 		{"Produktiv", "riskanter Befehl: j"},
