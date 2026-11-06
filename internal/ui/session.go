@@ -46,13 +46,16 @@ type session struct {
 	err     string
 	started time.Time
 
-	connectedAt time.Time    // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
-	quitAt      time.Time    // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
-	rc          reconnState  // Auto-Reconnect
-	mux         muxState     // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
-	secrets     *secretCache // Antworten auf Passwort-Rückfragen, nur im Speicher
-	muxPending  bool         // tmux/screen nach dem Neuverbinden anhängen
-	rootPrompt  bool         // letzter Prompt endete auf „#“
+	connectedAt time.Time                // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
+	quitAt      time.Time                // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
+	rc          reconnState              // Auto-Reconnect
+	mux         muxState                 // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
+	secrets     *secretCache             // Antworten auf Passwort-Rückfragen, nur im Speicher
+	muxPending  bool                     // tmux/screen nach dem Neuverbinden anhängen
+	rootPrompt  bool                     // letzter Prompt endete auf „#“
+	dangerOK    string                   // Gefahren-Check: diese Eingabe wurde bestätigt (dangerguard.go)
+	rec         atomic.Pointer[recorder] // laufende Aufnahme (record.go)
+	recStart    time.Time
 
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
@@ -111,6 +114,9 @@ type outputMsg struct{ sid int }
 
 func (w outWriter) Write(p []byte) (int, error) {
 	w.s.cap.feed(p)
+	if r := w.s.rec.Load(); r != nil {
+		r.Output(p)
+	}
 	n, err := w.s.term.Write(p)
 	if w.s.pending.CompareAndSwap(false, true) {
 		select {
@@ -258,9 +264,11 @@ func (a *App) agentContext(s *session, withScreen bool) agent.Context {
 		c.OS = s.profileSummary()
 		c.Shell = s.client.Remote.Shell
 		c.Profile = s.prof.Prompt()
+		c.Net = s.netDevice()
 	} else if s.conn.Protocol.Raw() {
 		c.OS = s.profileSummary()
 		c.Profile = s.prof.Prompt()
+		c.Net = s.netDevice()
 	}
 	if withScreen && cfg.SendScreen && s.term != nil {
 		n := cfg.ContextLines

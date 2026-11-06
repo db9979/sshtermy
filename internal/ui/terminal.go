@@ -50,6 +50,7 @@ func (a *App) resize(s *session) {
 		return
 	}
 	s.term.Resize(c, r)
+	s.resizeRecording(c, r)
 	if s.shell != nil {
 		_ = s.shell.Resize(c, r)
 	}
@@ -206,6 +207,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 
 func (a *App) closeTab(s *session) {
 	a.endLog(s)
+	a.stopRecording(s)
 	s.close()
 	for i, x := range a.sessions {
 		if x == s {
@@ -261,6 +263,9 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	}
 	if key == "ctrl+c" && s.run != nil {
 		s.run.interrupted = true
+	}
+	if key == "enter" && a.dangerCheck(s, k) {
+		return nil // Gefahren-Check: erst bestätigen (dangerguard.go)
 	}
 	if key == "enter" {
 		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {

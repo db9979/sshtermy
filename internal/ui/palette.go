@@ -187,6 +187,7 @@ func (a *App) paletteItems() []palItem {
 		{icon: "▶", label: i18n.T("Einführungstour"), hint: i18n.T("5 Schritte"), run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
 		{icon: "?", label: cheatLabel(a.cheatOn()), hint: a.keys.label(actCheat), run: func() tea.Cmd { return a.toggleCheat() }},
 		{icon: "⎘", label: pasteGuardLabel(a.pasteGuardEnabled()), hint: i18n.T("Einfügen"), run: func() tea.Cmd { return a.togglePasteGuard() }},
+		{icon: "⚠", label: dangerAllLabel(a.dangerAll()), hint: i18n.T("Gefahr"), run: func() tea.Cmd { return a.toggleDangerAll() }},
 		{icon: "✦", label: introLabel(a.introOn()), hint: "Start", run: func() tea.Cmd { return a.toggleIntro() }},
 		{icon: "◇", label: langLabel(), hint: "Language", run: func() tea.Cmd { return a.toggleLang() }},
 	}
@@ -218,6 +219,9 @@ func (a *App) paletteItems() []palItem {
 		if s.isSerial() && s.state == stConnected {
 			actions = append(actions, palItem{icon: "⌁", label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
 		}
+		actions = append(actions,
+			palItem{icon: "●", label: recordLabel(s.recording()), hint: "asciinema", run: func() tea.Cmd { return a.toggleRecording(s) }},
+			palItem{icon: "⇩", label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }})
 		if s.netDev() {
 			actions = append(actions, palItem{icon: "▣", label: i18n.T("Switch-Config sichern und vergleichen"), hint: "b", run: func() tea.Cmd {
 				withPanel(s, panelHost)
