@@ -82,7 +82,7 @@ winget install db9979.sshTermy                                   # Windows (soba
 brew tap db9979/sshtermy https://github.com/db9979/sshtermy      # macOS und Linux
 brew install sshtermy
 echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
-sudo apt update && sudo apt install sshtermy                     # Debian, Ubuntu (amd64, arm64)
+sudo apt update && sudo apt install sshtermy                     # Debian, Ubuntu, Raspberry Pi OS (amd64, arm64, armhf, riscv64)
 ```
 
 Über Homebrew oder apt installiert, tauscht sshTermy sich nicht selbst aus, sondern zeigt den Update-Befehl.
@@ -95,7 +95,7 @@ Oder lade die passende Datei aus den [Releases](https://github.com/db9979/sshter
 | Windows x86 32 Bit | `sshtermy_windows_386.exe` |
 | Windows x64 | `sshtermy_windows_amd64.exe` |
 | macOS Apple Silicon / Intel | `sshtermy_darwin_arm64` / `sshtermy_darwin_amd64` |
-| Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` |
+| Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` / `sshtermy_linux_arm` (32 Bit ARMv7) / `sshtermy_linux_riscv64` |
 
 **macOS (und Linux): eine Zeile im Terminal** installiert die neueste Version, prüft die Prüfsumme und legt
 `~/Applications/sshTermy.app` an (Doppelklick oder Spotlight „sshTermy“ öffnet sie im Terminal, bzw. in iTerm,
@@ -110,6 +110,14 @@ geöffnet werden“). Wer sie trotzdem nutzen will: `xattr -d com.apple.quaranti
 sshtermy_darwin_arm64`, dann im Terminal mit `./sshtermy_darwin_arm64` starten.
 
 Empfohlen unter Windows: **Windows Terminal** (Truecolor, F-Tasten, Unicode).
+
+**ClockworkPi uConsole** (und ähnliche Handhelds): apt und der Einzeiler wählen für jeden Kern das passende Programm
+(CM4/CM5 und A-06 mit 64-Bit-System: arm64, 32-Bit-Raspberry-Pi-OS: armhf, R-01: riscv64). Der 5"-Bildschirm reicht:
+Mit gut lesbarer Schrift passen etwa 80×22 bis 106×30 Zeichen, sshTermy ist ab 80×24 ausgelegt; darunter lassen
+Kopfzeile und Hilfe Details weg, statt Text abzuschneiden. Die Tastatur hat keine F-Reihe:
+**Fn+1 … Fn+0 = F1 … F10, Fn+- = F11, Fn+= = F12**. Für ⇧F1 … ⇧F10 *zuerst* Shift halten, dann Fn und die Ziffer.
+Alles steht auch in der Befehlspalette (**Strg+Leertaste**), mit dem Trackball lassen sich Tasten und Hinweise
+anklicken, und im Manager mit `b` jede Taste umlegen.
 
 ```
 sshtermy              # starten

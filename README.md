@@ -82,7 +82,7 @@ winget install db9979.sshTermy                                   # Windows (once
 brew tap db9979/sshtermy https://github.com/db9979/sshtermy      # macOS and Linux
 brew install sshtermy
 echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
-sudo apt update && sudo apt install sshtermy                     # Debian, Ubuntu (amd64, arm64)
+sudo apt update && sudo apt install sshtermy                     # Debian, Ubuntu, Raspberry Pi OS (amd64, arm64, armhf, riscv64)
 ```
 
 Installed via Homebrew or apt, sshTermy does not replace itself but shows the update command instead.
@@ -95,7 +95,7 @@ Or download the matching file from the [Releases](https://github.com/db9979/ssht
 | Windows x86 32 bit | `sshtermy_windows_386.exe` |
 | Windows x64 | `sshtermy_windows_amd64.exe` |
 | macOS Apple Silicon / Intel | `sshtermy_darwin_arm64` / `sshtermy_darwin_amd64` |
-| Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` |
+| Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` / `sshtermy_linux_arm` (32 bit ARMv7) / `sshtermy_linux_riscv64` |
 
 **macOS (and Linux): one line in Terminal** installs the latest version, checks its checksum and creates
 `~/Applications/sshTermy.app` (double-click or Spotlight "sshTermy" opens it in Terminal, or iTerm if installed)
@@ -110,6 +110,14 @@ opened"). If you still want to use it: `xattr -d com.apple.quarantine sshtermy_d
 sshtermy_darwin_arm64`, then start it from Terminal with `./sshtermy_darwin_arm64`.
 
 Recommended on Windows: **Windows Terminal** (truecolor, function keys, Unicode).
+
+**ClockworkPi uConsole** (and similar handhelds): apt or the one-line installer pick the right build for every core
+(CM4/CM5 and A-06 with a 64 bit system: arm64, 32 bit Raspberry Pi OS: armhf, R-01: riscv64). The 5" screen is big
+enough: with a readable font you get about 80×22 to 106×30 characters, and sshTermy is laid out for 80×24 and up;
+below that, the header and help drop details instead of cutting text. The keyboard has no function row:
+**Fn+1 … Fn+0 = F1 … F10, Fn+- = F11, Fn+= = F12**. For ⇧F1 … ⇧F10 hold Shift *first*, then Fn and the digit.
+Everything is also in the command palette (**Ctrl+Space**), the trackball clicks keys and hints, and keys can be
+changed in the manager with `b`.
 
 ```
 sshtermy              # start

@@ -129,15 +129,25 @@ func (a *App) sessionBar(s *session) string {
 	cfg := a.st.LLM()
 	// KI: Punkt = Zustand des Endpunkts (llmhealth.go), Klick = Erklärung
 	h := a.llmHealth()
-	ai := st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22))
-	if t := h.badgeText(); t != "" {
-		ai = st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22) + " · " + t)
+	// KI-Anzeige in drei Breiten: Modell + Antwortzeit, nur Antwortzeit, nur Punkt
+	aiBadge := func(full, short bool) string {
+		txt := "✦ " + trunc(cfg.Model, 22)
+		if !full {
+			txt = "✦"
+		}
+		if t := h.badgeText(); t != "" && (full || short) {
+			txt += " · " + t
+		}
+		ai := st.BadgeAI.Render(txt)
+		if !cfg.SuggestEnabled {
+			ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("✦ Ghost aus"))
+			if !full {
+				ai = st.Badge.Foreground(st.T.Muted).Render("✦")
+			}
+		}
+		ai = st.Badge.Foreground(a.llmColor(h.level)).PaddingRight(0).Render(h.dot(a.lh.probing)) + ai
+		return a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
 	}
-	if !cfg.SuggestEnabled {
-		ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("✦ Ghost aus"))
-	}
-	ai = st.Badge.Foreground(a.llmColor(h.level)).PaddingRight(0).Render(h.dot(a.lh.probing)) + ai
-	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
 	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, i18n.Pick("Tunnel", "tunnel"), i18n.Pick("Tunnel", "tunnels"))))
 	goal := ""
 	if s.goal.active {
@@ -147,12 +157,28 @@ func (a *App) sessionBar(s *session) string {
 		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf(i18n.T("⇡ Verlauf −%d · Esc"), s.scroll)),
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
-	if hb := a.hostBadge(s); hb != "" {
-		tun = hb + " " + tun
-	}
-	right := strings.Join(line, "") + " " + goal + " " + tun + " " + ai
-	if lw := lipgloss.Width(left.String()); a.w-lw-lipgloss.Width(right) < 24 && len(line) > 0 {
-		right = goal + " " + tun + " " + ai // schmales Fenster: Leitung weglassen
+	hb := a.hostBadge(s)
+	// Schmales Fenster (z. B. uConsole mit großer Schrift): Teile von rechts
+	// nach Wichtigkeit weglassen statt mitten im Text abzuschneiden.
+	lw := lipgloss.Width(left.String())
+	var right string
+	for stage := 0; stage <= 5; stage++ {
+		parts := []string{}
+		if stage < 1 {
+			parts = append(parts, strings.Join(line, ""))
+		}
+		parts = append(parts, goal)
+		if hb != "" && stage < 3 {
+			parts = append(parts, hb)
+		}
+		if stage < 4 || nT > 0 {
+			parts = append(parts, tun)
+		}
+		parts = append(parts, aiBadge(stage < 2, stage < 5))
+		right = strings.Join(parts, " ")
+		if a.w-lw-lipgloss.Width(right) >= 24 {
+			break
+		}
 	}
 	l := left.String()
 	room := a.w - lipgloss.Width(l) - lipgloss.Width(right) - 3
