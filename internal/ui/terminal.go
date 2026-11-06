@@ -374,10 +374,19 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	for i, x := range a.sessions {
 		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
 		label := " " + trunc(x.conn.Alias, 16) + " "
-		tab := st.Tab.Render(dot + label)
+		ts := st.Tab
 		if i == a.cur {
-			tab = st.TabActive.Render(dot + label)
+			ts = st.TabActive
 		}
+		// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
+		stripe := ""
+		if col := a.accentOf(x.conn); col != nil {
+			stripe = glyph("▌", col, ts.GetBackground())
+			if i == a.cur {
+				label = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(true).Render(trunc(x.conn.Alias, 16)) + " "
+			}
+		}
+		tab := ts.Render(stripe + dot + label)
 		i := i
 		tabs.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
 			a.focusSession(i)
