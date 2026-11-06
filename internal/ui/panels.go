@@ -615,7 +615,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		b.WriteString(wrap(st.Muted.Render(i18n.T("Die KI zerlegt das Ziel in einzelne Befehle, erklärt jeden kurz und wartet auf ")+
 			i18n.T("deine Bestätigung. Sie tippt nie selbst.")), w))
 		if rbs := a.st.Runbooks(s.conn.ID); len(rbs) > 0 {
-			b.WriteString("\n\n" + st.Muted.Render(i18n.T("RUNBOOKS  ↑↓ wählen · ⏎ starten")) + "\n")
+			b.WriteString("\n\n" + st.Muted.Render(i18n.T("RUNBOOKS")+"  ") + a.hintsIn(s, st.Muted, [2]string{"↑↓", i18n.T("wählen")}, [2]string{"⏎", i18n.T("starten")}) + "\n")
 			for i, rb := range rbs {
 				if i >= 8 {
 					b.WriteString(st.Muted.Render(fmt.Sprintf(i18n.T("  … %d weitere (Strg+Leertaste sucht)"), len(rbs)-8)) + "\n")
@@ -673,7 +673,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	b.WriteString("\n")
 	switch {
 	case g.done:
-		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + st.Muted.Render(i18n.T("Strg+S als Runbook merken · ⏎ neues Ziel · ")+a.keys.label(actGoal)+i18n.T(" schließen")))
+		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, [2]string{"Strg+S", i18n.T("als Runbook merken")}, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{a.keys.label(actGoal), i18n.T("schließen")}))
 		if s.panelFocus && g.done {
 			g.active = false
 		}

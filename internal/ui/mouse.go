@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
 	uv "github.com/charmbracelet/ultraviolet"
 
@@ -102,7 +103,9 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil {
 		if s.search.open && s.search.list && !s.selecting && a.inTermArea(s, m.X, m.Y) && !isWheel {
 			// Fehlerliste: Zeilen sind Zonen
-		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open) {
+		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open && s.state == stConnected) {
+			// ohne laufende Sitzung (Verbinden, Reconnect, beendet) zeigt die
+			// Fläche anklickbare Hinweise, die Klicks gehen an die Zonen
 			return a.termMouse(s, msg, clicks)
 		}
 	}
@@ -295,6 +298,40 @@ func (a *App) keyChip(key, desc string) string {
 		b.WriteString(a.keyZone(p, p))
 	}
 	return a.s.Key.Render(b.String()) + a.s.KeyDesc.Render(desc)
+}
+
+// hints: Hinweiszeile wie „⏎ neu verbinden · x Tab schließen“, in der jede
+// Taste samt Beschreibung anklickbar ist. Leere Taste = nur Text.
+func (a *App) hints(style lipgloss.Style, items ...[2]string) string {
+	return a.hintsIn(nil, style, items...)
+}
+
+// hintsIn: wie hints, aber für ein Seitenpanel. Ein Klick holt erst den
+// Fokus ins Panel, damit die Taste dort ankommt und nicht in der Shell.
+func (a *App) hintsIn(s *session, style lipgloss.Style, items ...[2]string) string {
+	var b strings.Builder
+	for i, it := range items {
+		if i > 0 {
+			b.WriteString(style.Render(" · "))
+		}
+		key, desc := i18n.T(it[0]), it[1]
+		text := desc
+		if key != "" {
+			text = key + " " + desc
+		}
+		r := style.Render(text)
+		if _, ok := keyFromLabel(key); !ok || key == "" {
+			b.WriteString(r)
+			continue
+		}
+		b.WriteString(a.z.click(r, func(tea.Mouse, bool) tea.Cmd {
+			if s != nil {
+				s.panelFocus = true
+			}
+			return a.pressKey(key)
+		}))
+	}
+	return b.String()
 }
 
 // button: anklickbarer Knopf für Dialoge.

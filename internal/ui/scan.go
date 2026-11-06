@@ -364,7 +364,7 @@ func (a *App) viewScan() string {
 		if l := netscan.LocalSubnets(); len(l) > 1 {
 			o.WriteString(s.Muted.Render(i18n.T("Eigene Netze: ")+strings.Join(l, ", ")) + "\n")
 		}
-		o.WriteString("\n" + s.Muted.Render(i18n.T("Strg+S oder ⏎ im letzten Feld startet den Scan")))
+		o.WriteString("\n" + a.keyZone("Strg+S", s.Muted.Render(i18n.T("Strg+S oder ⏎ im letzten Feld startet den Scan"))))
 		return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, s.Panel.Width(w).Render(o.String()))
 	}
 

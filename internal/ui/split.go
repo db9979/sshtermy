@@ -340,7 +340,8 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 		if ps == nil {
 			body = lipgloss.Place(rc.w, rc.h-1, lipgloss.Center, lipgloss.Center,
 				st.Muted.Render(i18n.T("Leerer Bereich"))+"\n\n"+st.Muted.Render(i18n.T("Neue Verbindung landet hier:"))+"\n"+
-					st.Muted.Render(i18n.T("Strg+Space oder F10 → ⏎")))
+					a.keyZone("Strg+Space", st.Muted.Render(i18n.T("Strg+Space")))+st.Muted.Render(" "+i18n.T("oder")+" ")+
+					a.keyZone(a.keys.label(actManager), st.Muted.Render(a.keys.label(actManager)))+st.Muted.Render(" → ⏎"))
 		} else {
 			b, cc := a.paneBody(ps, ps == focus)
 			body = b
