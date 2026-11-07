@@ -22,9 +22,10 @@ bench:
 golden:
 	go test ./internal/ui -run TestGolden -update
 
-# Kurzreferenz zum Ausdrucken (site/handout/*.pdf), braucht Node + Playwright
+# Kurzreferenz zum Ausdrucken (site/handout/*.pdf) + Fingerabdruck der Tasten, braucht Node + Playwright
 handout:
 	node tools/handout/render.mjs
+	HANDOUT_STAMP=1 go test ./internal/ui -run TestHandoutKeysCurrent -count=1
 
 dist: test
 	@mkdir -p dist

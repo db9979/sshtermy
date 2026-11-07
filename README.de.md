@@ -465,6 +465,7 @@ make build        # bin/sshtermy
 make dist         # alle Plattformen nach dist/ + checksums.txt
 make golden       # Bildschirm-Tests nach einer gewollten Änderung neu schreiben
 make handout      # Kurzreferenz zum Ausdrucken site/handout/*.pdf (Node + Playwright; Inhalt in tools/handout/content.mjs)
+                  # TestHandoutKeysCurrent schlägt fehl, wenn sich Tasten oder Hilfe ändern, bis das neu gelaufen ist
 ```
 
 **Bildschirm-Tests:** `internal/ui/golden_test.go` zeichnet jede Ansicht (Manager, Formulare, Dialoge, Terminal mit

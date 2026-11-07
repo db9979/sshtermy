@@ -465,6 +465,7 @@ make build        # bin/sshtermy
 make dist         # all platforms to dist/ + checksums.txt
 make golden       # rewrite the screen tests after an intended UI change
 make handout      # printable quick reference site/handout/*.pdf (Node + Playwright; content in tools/handout/content.mjs)
+                  # TestHandoutKeysCurrent fails when keys or help change until this has run again
 ```
 
 **Screen tests:** `internal/ui/golden_test.go` draws every view (manager, forms, dialogs, terminal with panels,
