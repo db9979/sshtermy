@@ -101,7 +101,7 @@ export const de = {
       ['Strg+S', 'als Runbook speichern'],
       ['Strg+D', 'Runbook löschen'],
       ['⇧⏎ / Strg+J', 'neue Zeile im Ziel'],
-      ['Tab', 'Modus: Schritt für Schritt → Agent'],
+      ['Tab', 'Modus: Schritt für Schritt → Agent → Erst planen'],
     ]},
     { t: 'Agent-Modus', ic: '◆', key: 'F2 → Tab', ai: true, rows: [
       ['Esc', 'anhalten (auch: ins Terminal tippen)'],
@@ -110,6 +110,15 @@ export const de = {
       ['⏎ ⏎', 'gefährlichen Schritt freigeben', 'warn'],
       ['s / r', '(am Ende) als Runbook speichern / Skripte löschen'],
     ], note: '<b>Vorsichtig</b>: nur Lesendes läuft allein · <b>Normal</b>: alles außer Gefahr und sudo · <b>Voll</b>: auch sudo. Gefahr wartet immer. Grenzen: 25 Schritte, 15 min, 3 Fehler in Folge.' },
+    { t: 'Plan-Modus', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
+      ['↑ / ↓', 'Schritt wählen'],
+      ['Space', 'Schritt streichen / zurückholen'],
+      ['e / v', 'Schritt ändern / Skript ansehen'],
+      ['?', 'neu planen lassen'],
+      ['Tab', 'Ausführung: Schritt für Schritt / Agent-Stufe'],
+      ['⏎', 'Plan freigeben und ausführen'],
+      ['Strg+S / x', 'als Runbook speichern / verwerfen'],
+    ]},
     { t: 'KI fragen', ic: '◆', key: 'F3', ai: true, rows: [
       ['⏎', 'Frage senden (mit Terminal-Kontext)'],
       ['↑ / ↓', 'Befehlskarte wählen'],
@@ -274,7 +283,7 @@ export const en = {
       ['Ctrl+S', 'save as runbook'],
       ['Ctrl+D', 'delete runbook'],
       ['⇧⏎ / Ctrl+J', 'new line in the goal'],
-      ['Tab', 'mode: step by step → agent'],
+      ['Tab', 'mode: step by step → agent → plan first'],
     ]},
     { t: 'Agent mode', ic: '◆', key: 'F2 → Tab', ai: true, rows: [
       ['Esc', 'pause (typing in the terminal too)'],
@@ -283,6 +292,15 @@ export const en = {
       ['⏎ ⏎', 'allow a dangerous step', 'warn'],
       ['s / r', '(at the end) save as runbook / delete scripts'],
     ], note: '<b>Careful</b>: only read-only runs on its own · <b>Normal</b>: all but danger and sudo · <b>Full</b>: sudo too. Danger always waits. Limits: 25 steps, 15 min, 3 failures in a row.' },
+    { t: 'Plan mode', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
+      ['↑ / ↓', 'choose a step'],
+      ['Space', 'remove / restore a step'],
+      ['e / v', 'edit step / view script'],
+      ['?', 'have it re-planned'],
+      ['Tab', 'run: step by step / agent level'],
+      ['⏎', 'approve the plan and run it'],
+      ['Ctrl+S / x', 'save as runbook / discard'],
+    ]},
     { t: 'Ask AI', ic: '◆', key: 'F3', ai: true, rows: [
       ['⏎', 'send question (with terminal context)'],
       ['↑ / ↓', 'choose a command card'],

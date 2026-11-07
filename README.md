@@ -190,8 +190,10 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | Paste | multi-line shows a preview first (⏎ paste, o without the last Enter, Esc cancel); palette „Paste guard off“ |
 | Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |
 | | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |
-| | Tab | step by step → agent *Careful* → *Normal* → *Full* |
+| | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
 | Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host |
+| Plan mode | ↑↓ / Space / e / v / ? | choose step / remove or restore / edit / view script / re-plan |
+| | Tab / ⏎ / x | how it runs (step by step or agent level) / approve and run / discard; Ctrl+S saves the plan as a runbook |
 | AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |
 | Logs | / / Tab / f / s | search (output too) / by day or by host / filter today · 7 days · failures / sort hosts |
 | | z / Z / x / d / a | AI summary / summarize all matches / export (md, txt, cast) / delete / recording on/off |
