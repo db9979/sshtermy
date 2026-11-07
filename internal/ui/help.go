@@ -170,6 +170,10 @@ var helpSections = []helpSection{
 	}},
 	{hcLogs, "≡", "Sitzungsprotokolle", "l", false, [][2]string{
 		{"/", "suchen (auch Ausgabe)"},
+		{"⏎ / → ←", "auf-/zuklappen"},
+		{"Tab", "nach Zeit / nach Host"},
+		{"f", "Filter: heute · 7 Tage · Fehler"},
+		{"s", "Hosts sortieren"},
 		{"z", "KI-Zusammenfassung"},
 		{"Z", "alle Treffer zusammenfassen"},
 		{"x", "Export: md · txt · cast"},
