@@ -7,6 +7,7 @@ var enLocal = map[string]string{
 	"Lokal":                        "Local",
 	"lokal":                        "local",
 	"Lokal (dieser Rechner)":       "Local (this computer)",
+	"lokale Shell (neuer Tab)":     "local shell (new tab)",
 	"Lokale Shell":                 "Local shell",
 	"Lokale Shell in neuem Tab":    "Local shell in a new tab",
 	"Lokale Shell startet nicht: ": "Local shell does not start: ",
