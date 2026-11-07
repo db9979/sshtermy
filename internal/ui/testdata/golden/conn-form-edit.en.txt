@@ -1,32 +1,32 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
-
-
-
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Edit connection: web-01                                                                      │
   │                                                                                              │
-  │ ▌ Alias               web-01                                                                 │
-  │                       Display name, e.g. „DGX Spark“                                         │
-  │   Connect via          SSH  Telnet  Serial (console cable)                                   │
-  │   Host                10.0.0.11                                                              │
-  │   Port                                                                                       │
-  │   User                deploy                                                                 │
-  │   Login                agent  keyfile  password  kerberos                                    │
-  │   Folder              ▸ Produktion / Web ▾                                                   │
-  │   Tags                prod, nginx                                                            │
-  │   Color                automatic  none  Red  Orange  Yellow  Green  Cyan  Blue  Purple       │
-  │   Jump host           — direct (no jump host) ▾                                              │
-  │   Device type          automatic  Server  Network device                                     │
-  │   Forward agent       ○ off                                                                  │
-  │   Forward X11         ○ off                                                                  │
-  │   Persistent session   off  automatic  tmux  screen                                          │
-  │   System                                                                                     │
-  │   Command set         ‹  automatic  ›  1/15                                                  │
-  │   AI notes                                                                                   │
+  │ ━━ connection ────────────────────────────────────────────────────────────────────────────── │
+  │ ▌ Alias                  web-01                                                              │
+  │ │ Connection type        SSH                                                                 │
+  │ │ Host                   10.0.0.11                                                           │
+  │ │ Port                   22                                                                  │
+  │ │ Jump host              — direct (no jump host) ▾                                           │
   │                                                                                              │
-  └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
-
-
-
+  │ ━━ Login ─────────────────────────────────────────────────────────────────────────────────── │
+  │ │ User                   deploy                                                              │
+  │ │ Method                 agent                                                               │
+  │                                                                                              │
+  │ ━━ Organize ──────────────────────────────────────────────────────────────────────────────── │
+  │ │ Folder                 ▸ Produktion / Web ▾                                                │
+  │ │ Tags                   prod, nginx                                                         │
+  │ │ Color                  automatic                                                           │
+  │                                                                                              │
+  │ ━━ Device & AI ───────────────────────────────────────────────────────────────────────────── │
+  │ │ Device type            automatic                                                           │
+  │ │ System                 not detected yet · determined on connect                            │
+  │ │ Command set            automatic                                                           │
+  │ │ AI notes               none · e.g. “VLAN 99 = management, never reload”                    │
+  │                                                                                              │
+  │  ▸ Advanced  all off ─────────────────────────────────────────────────────────────────────── │
+  │                                                                                              │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ Display name, e.g. „DGX Spark“                                                               │
+  │                                                                                              │
  Tab next  ←/→ select  Ctrl+S save  Esc cancel

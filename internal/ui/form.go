@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"strconv"
 	"strings"
 
@@ -44,6 +45,10 @@ type field struct {
 	// summary zeigt im zugeklappten Zustand, was darin eingestellt ist.
 	fold    bool
 	summary func(f *form) string
+	tint    func(t Theme) color.Color // Abschnittsfarbe (fHeader)
+
+	// swatch (fChoice, optional): Farbpunkt vor der Option, z. B. bei „Farbe“
+	swatch func(t Theme, opt string) color.Color
 }
 
 // form ist ein kleines, tastaturgesteuertes Formular (Tab/↑↓ wechseln,
@@ -103,8 +108,8 @@ func (f *form) toggle(key, label string, on bool, help string) *field {
 
 // section beginnt einen Abschnitt mit Überschrift. Felder darunter gehören
 // dazu, bis der nächste Abschnitt beginnt.
-func (f *form) section(key, label string) *field {
-	return f.add(&field{key: key, label: label, kind: fHeader})
+func (f *form) section(key, label string, tint func(Theme) color.Color) *field {
+	return f.add(&field{key: key, label: label, kind: fHeader, tint: tint})
 }
 
 // folded beginnt einen einklappbaren Abschnitt (zu, solange open false).
@@ -274,6 +279,7 @@ func (f *form) view(s Styles, width int, z *zones) string {
 	const labelW = 22
 	inW := max(20, width-labelW-4)
 	first := true
+	var tint color.Color // Farbe des aktuellen Abschnitts (nil = ohne)
 	for _, i := range f.visible() {
 		fl := f.fields[i]
 		focused := i == f.focus
@@ -282,7 +288,11 @@ func (f *form) view(s Styles, width int, z *zones) string {
 				put("")
 			}
 			first = false
-			put(f.headerRow(s, i, fl, focused, width, z))
+			tint = s.T.Muted
+			if fl.tint != nil {
+				tint = fl.tint(s.T)
+			}
+			put(f.headerRow(s, i, fl, focused, tint, width, z))
 			continue
 		}
 		first = false
@@ -290,7 +300,7 @@ func (f *form) view(s Styles, width int, z *zones) string {
 		var val string
 		switch fl.kind {
 		case fChoice:
-			val = f.choiceView(s, i, fl, focused, inW, z)
+			val = f.choiceView(s, i, fl, focused, tint, inW, z)
 		case fPick:
 			v := fl.value
 			if fl.display != nil {
@@ -308,8 +318,15 @@ func (f *form) view(s Styles, width int, z *zones) string {
 			val = " " + fl.in.View()
 		}
 		marker := "  "
+		if tint != nil {
+			marker = lipgloss.NewStyle().Foreground(tint).Faint(true).Render("│ ")
+		}
 		if focused {
-			marker = s.Accent.Render("▌ ")
+			fc := s.T.Accent
+			if tint != nil {
+				fc = tint
+			}
+			marker = lipgloss.NewStyle().Foreground(fc).Render("▌ ")
 			label = lipgloss.NewStyle().Foreground(s.T.Text).Bold(true).Width(labelW).Render(fl.label)
 		}
 		row := marker + label + val
@@ -338,7 +355,7 @@ func (f *form) view(s Styles, width int, z *zones) string {
 		hl = append(hl, "")
 	}
 	put("")
-	put(s.Muted.Render(strings.Repeat("─", max(10, width-2))))
+	put(s.Muted.Render(strings.Repeat("─", max(10, width))))
 	for _, l := range hl[:2] {
 		put(s.Muted.Render(strings.TrimRight(l, " ")))
 	}
@@ -355,19 +372,37 @@ func (f *form) view(s Styles, width int, z *zones) string {
 
 // choiceView: mit Fokus alle Optionen (passt es nicht, ‹ Wert › zum
 // Durchschalten), ohne Fokus nur der gewählte Wert.
-func (f *form) choiceView(s Styles, i int, fl *field, focused bool, inW int, z *zones) string {
+func (f *form) choiceView(s Styles, i int, fl *field, focused bool, tint color.Color, inW int, z *zones) string {
 	if fl.opt >= len(fl.options) {
 		return ""
 	}
 	cur := i18n.T(fl.options[fl.opt])
 	if !focused {
-		return " " + lipgloss.NewStyle().Foreground(s.T.Text).Render(cur)
+		if fl.swatch != nil {
+			if c := fl.swatch(s.T, fl.options[fl.opt]); c != nil {
+				return " " + lipgloss.NewStyle().Foreground(c).Render("● "+cur)
+			}
+		}
+		if tint == nil {
+			tint = s.T.Text
+		}
+		return " " + lipgloss.NewStyle().Foreground(tint).Render(cur)
 	}
 	parts := make([]string, len(fl.options))
 	for j, o := range fl.options {
-		if j == fl.opt {
+		var sw color.Color
+		if fl.swatch != nil {
+			sw = fl.swatch(s.T, o)
+		}
+		switch {
+		case j == fl.opt:
 			parts[j] = s.Selected.Render(" " + i18n.T(o) + " ")
-		} else {
+			if sw != nil {
+				parts[j] = s.Selected.Foreground(sw).Render(" " + i18n.T(o) + " ")
+			}
+		case sw != nil:
+			parts[j] = lipgloss.NewStyle().Foreground(sw).Faint(true).Render(" " + i18n.T(o) + " ")
+		default:
 			parts[j] = s.Muted.Render(" " + i18n.T(o) + " ")
 		}
 		if z != nil {
@@ -384,9 +419,10 @@ func (f *form) choiceView(s Styles, i int, fl *field, focused bool, inW int, z *
 }
 
 // headerRow: „── Anmeldung ──────“; einklappbar mit ▸/▾ und Zusammenfassung.
-func (f *form) headerRow(s Styles, i int, fl *field, focused bool, width int, z *zones) string {
-	title := s.Accent.Bold(true).Render(fl.label)
-	lead := s.Muted.Render("── ")
+func (f *form) headerRow(s Styles, i int, fl *field, focused bool, tint color.Color, width int, z *zones) string {
+	tc := lipgloss.NewStyle().Foreground(tint)
+	title := tc.Bold(true).Render(fl.label)
+	lead := tc.Render("━━ ")
 	extra := ""
 	if fl.fold {
 		arrow := "▸ "
@@ -397,14 +433,14 @@ func (f *form) headerRow(s Styles, i int, fl *field, focused bool, width int, z 
 				extra = "  " + s.Muted.Render(sm)
 			}
 		}
-		lead = s.Muted.Render(" " + arrow)
+		lead = tc.Render(" " + arrow)
 		if focused {
-			lead = s.Accent.Render("▌" + arrow)
+			lead = s.Accent.Render("▌") + tc.Render(arrow)
 		}
 	}
 	row := lead + title + extra + " "
-	if rest := width - 2 - lipgloss.Width(row); rest > 0 {
-		row += s.Muted.Render(strings.Repeat("─", rest))
+	if rest := width - lipgloss.Width(row); rest > 0 {
+		row += tc.Faint(true).Render(strings.Repeat("─", rest))
 	}
 	if fl.fold && z != nil {
 		row = z.click(row, func(tea.Mouse, bool) tea.Cmd { fl.on = !fl.on; return f.setFocus(i) })

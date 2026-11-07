@@ -5,22 +5,22 @@
 
 
 
-
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Tunnel / port forwarding                                                                     │
-  │                                                                                              │
   │ ▌ Name                                                                                       │
-  │                       e.g. „Grafana“                                                         │
-  │   Type                 local  remote  dynamic                                                │
-  │   Bind address        127.0.0.1                                                              │
+  │   Type                   local                                                               │
+  │   Bind address           127.0.0.1                                                           │
   │   Port                                                                                       │
-  │   Target host         127.0.0.1                                                              │
+  │   Target host            127.0.0.1                                                           │
   │   Target port                                                                                │
-  │   Web service          —  http  https                                                        │
-  │   Autostart           ○ off                                                                  │
+  │   Web service            —                                                                   │
+  │   Autostart              ○ off                                                               │
+  │                                                                                              │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ e.g. „Grafana“                                                                               │
+  │                                                                                              │
   │                                                                                              │
   └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 

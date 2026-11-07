@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"image/color"
 	"strconv"
 	"strings"
 	"time"
@@ -640,9 +641,9 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	if c.ID != "" {
 		f.title = i18n.T("Verbindung bearbeiten: ") + c.Alias
 	}
-	f.section("s_conn", i18n.T("Verbindung"))
+	f.section("s_conn", i18n.T("Verbindung"), func(t Theme) color.Color { return t.Accent })
 	f.text("alias", "Alias", c.Alias, i18n.T("Anzeigename, z. B. „DGX Spark“"))
-	f.choice("proto", i18n.T("Protokoll"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel")).value = protoLabel(c.Protocol)
+	f.choice("proto", i18n.T("Verbindungsart"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel")).value = protoLabel(c.Protocol)
 	isProto := func(p domain.Protocol) bool { return protoFromLabel(f.sel("proto")) == p }
 	raw := func(*form) bool { return protoFromLabel(f.sel("proto")).Raw() }
 	notSerial := func(*form) bool { return !isProto(domain.ProtoSerial) }
@@ -657,7 +658,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
 	a.addRelayField(f, c)
 
-	f.section("s_auth", i18n.T("Anmeldung"))
+	f.section("s_auth", i18n.T("Anmeldung"), func(t Theme) color.Color { return t.Warn })
 	f.text("user", i18n.T("Benutzer"), c.Username, "").help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt")
 	f.choice("auth", i18n.T("Verfahren"), []string{"agent", "keyfile", "password", "kerberos"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen) · kerberos = Ticket der Firmen-Domäne (Windows-Anmeldung oder kinit)")).hidden = raw
 	isAuth := func(v string) func(*form) bool {
@@ -681,7 +682,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		}
 	}
 
-	f.section("s_org", i18n.T("Einordnung"))
+	f.section("s_org", i18n.T("Einordnung"), func(t Theme) color.Color { return t.OK })
 	f.pick("group", i18n.T("Ordner"), domain.NormPath(c.Group), func(v string) string {
 		if v == "" {
 			return a.s.Muted.Render(i18n.T("— oberste Ebene"))
@@ -689,9 +690,14 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		return "▸ " + v
 	}, func() tea.Cmd { return a.pickFolderField() }, i18n.T("Auswahl mit Suche; neuen Namen tippen legt einen Ordner an („A / B“ verschachtelt)"))
 	f.text("tags", "Tags", strings.Join(c.Tags, ", "), i18n.T("durch Komma getrennt, z. B. prod, linux · im Manager filtern mit #"))
-	f.choice("color", i18n.T("Farbe"), accentLabels(), accentLabel(c.Color), i18n.T("Streifen in Tab, Statuszeile und Liste · automatisch: prod rot, test grün, labor blau"))
+	f.choice("color", i18n.T("Farbe"), accentLabels(), accentLabel(c.Color), i18n.T("Streifen in Tab, Statuszeile und Liste · automatisch: prod rot, test grün, labor blau")).swatch = func(t Theme, opt string) color.Color {
+		if id := accentFromLabel(opt); id != accentAuto && id != accentNone {
+			return accentColor(t, id)
+		}
+		return nil
+	}
 
-	f.section("s_dev", i18n.T("Gerät & KI"))
+	f.section("s_dev", i18n.T("Gerät & KI"), func(t Theme) color.Color { return t.AI })
 	f.choice("device", i18n.T("Gerätetyp"), deviceLabels, deviceLabel(c.Device), i18n.T("Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage"))
 	var pr domain.SystemProfile
 	if c.Profile != nil {

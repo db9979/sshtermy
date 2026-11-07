@@ -5,22 +5,22 @@
 
 
 
-
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Quick commands: web-01  (defaults „Linux-Server“)                                            │
+  │ ▌ ⇧F1                    df -h                                                               │
+  │   ⇧F2                    free -h                                                             │
+  │   ⇧F3                    uptime                                                              │
+  │   ⇧F4                    ip -br a                                                            │
+  │   ⇧F5                    systemctl --failed                                                  │
+  │   ⇧F6                    journalctl -p err -b -n 50 --no-pager                               │
+  │   ⇧F7                    docker ps                                                           │
+  │   ⇧F8                    top -bn1 | head -20                                                 │
   │                                                                                              │
-  │ ▌ ⇧F1                 df -h                                                                  │
-  │                       Ctrl+R = defaults „Linux-Server“ · Ctrl+S save                         │
-  │   ⇧F2                 free -h                                                                │
-  │   ⇧F3                 uptime                                                                 │
-  │   ⇧F4                 ip -br a                                                               │
-  │   ⇧F5                 systemctl --failed                                                     │
-  │   ⇧F6                 journalctl -p err -b -n 50 --no-pager                                  │
-  │   ⇧F7                 docker ps                                                              │
-  │   ⇧F8                 top -bn1 | head -20                                                    │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ Ctrl+R = defaults „Linux-Server“ · Ctrl+S save                                               │
+  │                                                                                              │
   │                                                                                              │
   └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 
