@@ -14,14 +14,78 @@ import (
 // länger offline war, kann danach gelöschte Einträge wieder einbringen.
 const tombstoneTTL = 180 * 24 * time.Hour
 
-// SharedSettings: der Teil der Einstellungen, der zwischen Rechnern gleich
-// sein soll. UseDPAPI ist bewusst nicht dabei (gehört zum jeweiligen Rechner).
+// SharedSettings: die Einstellungen, die auf allen Rechnern gleich sind.
+// Rein lokal bleiben nur Dinge, die vom Rechner abhängen: Windows-DPAPI,
+// ob das Terminal hier eine Nerd Font hat, ob die Maus eingefangen wird
+// (hängt vom Terminalprogramm ab) und die zuletzt gestartete Version.
 type SharedSettings struct {
 	Theme        string               `json:"theme"`
 	LockAfterMin int                  `json:"lock_after_min"`
 	Language     string               `json:"language"`
 	Keys         map[string]string    `json:"keys,omitempty"`   // eigene Tastenkürzel
 	Colors       *domain.CustomColors `json:"colors,omitempty"` // eigene Farben
+	// Prefs: alle übrigen Schalter. Zeiger, damit ein Stand von einer
+	// älteren Version (ohne Prefs) die lokalen Schalter nicht zurücksetzt.
+	Prefs *SharedPrefs `json:"prefs,omitempty"`
+}
+
+// SharedPrefs: Verhalten, Meldungen, Überwachung und Aussehen.
+type SharedPrefs struct {
+	NoSessionLog    bool                 `json:"no_session_log,omitempty"`
+	NoPasteGuard    bool                 `json:"no_paste_guard,omitempty"`
+	DangerAll       bool                 `json:"danger_all,omitempty"`
+	NoAutoReconnect bool                 `json:"no_auto_reconnect,omitempty"`
+	TourDone        bool                 `json:"tour_done,omitempty"`
+	ExplainKeys     bool                 `json:"explain_keys,omitempty"`
+	NoReachCheck    bool                 `json:"no_reach_check,omitempty"`
+	NoNotify        bool                 `json:"no_notify,omitempty"`
+	NoDesktopNotify bool                 `json:"no_desktop_notify,omitempty"`
+	NoOSC52         bool                 `json:"no_osc52,omitempty"`
+	Monitor         domain.MonitorConfig `json:"monitor,omitempty"`
+	Icons           string               `json:"icons,omitempty"`
+	Intro           string               `json:"intro,omitempty"`
+	DimPanes        bool                 `json:"dim_panes,omitempty"`
+	Workspaces      []domain.Workspace   `json:"workspaces,omitempty"`
+}
+
+func sharedSettings(s domain.Settings) SharedSettings {
+	return SharedSettings{
+		Theme: s.Theme, LockAfterMin: s.LockAfterMin, Language: s.Language,
+		Keys: copyKeys(s.Keys), Colors: copyColors(s.Colors),
+		Prefs: &SharedPrefs{
+			NoSessionLog: s.NoSessionLog, NoPasteGuard: s.NoPasteGuard, DangerAll: s.DangerAll,
+			NoAutoReconnect: s.NoAutoReconnect, TourDone: s.TourDone, ExplainKeys: s.ExplainKeys,
+			NoReachCheck: s.NoReachCheck, NoNotify: s.NoNotify, NoDesktopNotify: s.NoDesktopNotify,
+			NoOSC52: s.NoOSC52, Monitor: s.Monitor, Icons: s.Icons, Intro: s.Intro,
+			DimPanes: s.DimPanes, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
+		},
+	}
+}
+
+// applyShared übernimmt den gemeinsamen Teil in die lokalen Einstellungen.
+func applyShared(p SharedSettings, d *domain.Settings) {
+	d.Theme, d.LockAfterMin, d.Language = p.Theme, p.LockAfterMin, p.Language
+	d.Keys = copyKeys(p.Keys)
+	// Ältere Versionen kennen keine eigenen Farben: dann die lokalen behalten.
+	if p.Colors != nil || p.Theme != "eigene" {
+		d.Colors = copyColors(p.Colors)
+	}
+	x := p.Prefs
+	if x == nil {
+		return // Stand einer älteren Version: lokale Schalter behalten
+	}
+	d.NoSessionLog, d.NoPasteGuard, d.DangerAll = x.NoSessionLog, x.NoPasteGuard, x.DangerAll
+	d.NoAutoReconnect, d.ExplainKeys, d.NoReachCheck = x.NoAutoReconnect, x.ExplainKeys, x.NoReachCheck
+	d.NoNotify, d.NoDesktopNotify, d.NoOSC52 = x.NoNotify, x.NoDesktopNotify, x.NoOSC52
+	d.TourDone = d.TourDone || x.TourDone
+	d.Monitor, d.Intro = x.Monitor, x.Intro
+	d.DimPanes, d.Workspaces = x.DimPanes, append([]domain.Workspace(nil), x.Workspaces...)
+	// Nerd-Font-Symbole von einem anderen Rechner: hier erst nach der Probe,
+	// sonst stünden in jedem Menü Kästchen.
+	if x.Icons == "nerd" && d.Icons != "nerd" && d.NerdFont != "ja" {
+		d.NerdFont = "nein"
+	}
+	d.Icons = x.Icons
 }
 
 // Payload ist der entschlüsselte Inhalt der Sync-Datei.
@@ -49,7 +113,7 @@ func FromData(d *domain.Data, knownHosts []string) *Payload {
 		Runbooks:    append([]domain.Runbook(nil), d.Runbooks...),
 		Folders:     append([]domain.Folder(nil), d.Folders...),
 		LLM:         d.LLM, LLMAt: d.LLMUpdatedAt,
-		Settings:   SharedSettings{d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language, copyKeys(d.Settings.Keys), copyColors(d.Settings.Colors)},
+		Settings:   sharedSettings(d.Settings),
 		SettingsAt: d.SettingsUpdatedAt,
 		Deleted:    map[string]time.Time{},
 		KnownHosts: append([]string(nil), knownHosts...),
@@ -61,19 +125,15 @@ func FromData(d *domain.Data, knownHosts []string) *Payload {
 }
 
 // ApplyTo schreibt den zusammengeführten Inhalt in den lokalen Store. Lokale
-// Felder (Sync-Konfiguration, DPAPI) bleiben unberührt.
+// Felder (Sync-Konfiguration, Schlüsselpfade, DPAPI, Nerd Font, Maus)
+// bleiben unberührt.
 func (p *Payload) ApplyTo(d *domain.Data) {
 	d.Connections = append([]domain.Connection(nil), p.Connections...)
 	d.Tunnels = append([]domain.Tunnel(nil), p.Tunnels...)
 	d.Runbooks = append([]domain.Runbook(nil), p.Runbooks...)
 	d.Folders = append([]domain.Folder(nil), p.Folders...)
 	d.LLM, d.LLMUpdatedAt = p.LLM, p.LLMAt
-	d.Settings.Theme, d.Settings.LockAfterMin, d.Settings.Language = p.Settings.Theme, p.Settings.LockAfterMin, p.Settings.Language
-	d.Settings.Keys = copyKeys(p.Settings.Keys)
-	// Ältere Versionen kennen keine eigenen Farben: dann die lokalen behalten.
-	if p.Settings.Colors != nil || p.Settings.Theme != "eigene" {
-		d.Settings.Colors = copyColors(p.Settings.Colors)
-	}
+	applyShared(p.Settings, &d.Settings)
 	d.SettingsUpdatedAt = p.SettingsAt
 	d.Deleted = map[string]time.Time{}
 	for k, v := range p.Deleted {

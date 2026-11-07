@@ -5,8 +5,8 @@
 
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ ↕ Sync between computers                                                                     │
-  │ Connections, tunnels, runbooks and AI settings are stored as an end-to-end encrypted file at │
-  │ the                                                                                          │
+  │ Connections, tunnels, runbooks, AI and all settings are stored as an end-to-end encrypted    │
+  │ file at the                                                                                  │
   │ chosen location. The location never sees plain text; DPAPI and master password stay per      │
   │ computer.                                                                                    │
   │                                                                                              │

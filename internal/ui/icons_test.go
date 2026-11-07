@@ -104,8 +104,13 @@ func TestIconStyles(t *testing.T) {
 	if a.st.Settings().Icons != "" || ic("settings") != "[:]" {
 		t.Fatal("zurück zu Text-Tags")
 	}
-	// Die Palette zeigt alle vier Stile, der aktive mit Haken.
+	// Die Palette zeigt einen Durchschalt-Eintrag; die Suche findet alle
+	// vier Stile einzeln, den aktiven mit Haken.
 	a.palEnter("settings")
+	if it, ok := hasLabel(a.paletteItems(), "Symbole"); !ok || it.cycle == nil || it.hint != "Text-Tags" {
+		t.Fatalf("Durchschalt-Eintrag Symbole: %+v", it)
+	}
+	a.pal.in.SetValue("symbole")
 	n := 0
 	for _, it := range a.paletteItems() {
 		if strings.HasPrefix(it.label, "Symbole: ") {

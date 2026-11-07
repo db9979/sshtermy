@@ -32,13 +32,14 @@ const (
 	pgAction
 	pgConns // gespeicherte Verbindungen (palconn.go)
 	pgSetBehave
+	pgSetSafe
 	pgSetLook
 	pgSetSetup
 	pgHelp
 )
 
 var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgQuick: "SCHNELLBEFEHLE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN", pgConns: "VERBINDUNGEN",
-	pgSetBehave: "VERHALTEN", pgSetLook: "AUSSEHEN & SPRACHE", pgSetSetup: "EINRICHTEN", pgHelp: "HILFE & INFO"}
+	pgSetBehave: "VERHALTEN", pgSetSafe: "SICHERHEIT", pgSetLook: "AUSSEHEN & SPRACHE", pgSetSetup: "EINRICHTEN", pgHelp: "HILFE & INFO"}
 
 type palItem struct {
 	group     palGroup
@@ -54,6 +55,14 @@ type palItem struct {
 	state     palState
 	keep      bool // Palette bleibt nach dem Ausführen offen (Schalter)
 	run       func() tea.Cmd
+	// cycle: Durchschalt-Eintrag (‹ Wert › rechts). ⏎, → und Klick gehen
+	// einen Wert weiter, ← einen zurück.
+	cycle func(dir int) tea.Cmd
+	// hidden: nur bei getipptem Text sichtbar (Einzelwerte hinter einem
+	// Durchschalt-Eintrag, damit die Suche z. B. „Matrix“ direkt findet).
+	hidden bool
+	// open: Eintrag öffnet ein Unter-Untermenü (z. B. "settings/ki").
+	open string
 }
 
 // palState: Schalter zeigen rechts „an“ oder „aus“ statt eines Hinweises.
@@ -89,10 +98,20 @@ func (a *App) paletteItems() []palItem {
 	q := strings.TrimSpace(a.pal.in.Value())
 	ql := strings.ToLower(q)
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
-	if a.pal.menu != "" {
+	if m := a.pal.menu; m != "" {
+		// Ohne Text: nur die Einträge dieser Ebene. Mit Text: Treffer auch
+		// aus den Unterordnern und die Einzelwerte hinter Durchschalt-Einträgen.
 		var items []palItem
 		for _, x := range a.palMenuItems() {
-			if x.menu == a.pal.menu && x.matches(match) {
+			switch {
+			case ql == "":
+				if x.menu == m && !x.hidden {
+					items = append(items, x)
+				}
+			case x.open == "" && (x.menu == m || strings.HasPrefix(x.menu, m+"/")) && x.matches(match):
+				if x.menu != m {
+					x.sub = "· " + i18n.T(palMenuLabel(x.menu))
+				}
 				items = append(items, x)
 			}
 		}
@@ -329,8 +348,8 @@ func (a *App) paletteItems() []palItem {
 	}
 	if ql != "" {
 		for _, x := range a.palMenuItems() {
-			if x.matches(match) {
-				x.sub = "· " + i18n.T(palMenuLabel(x.menu))
+			if x.open == "" && x.matches(match) {
+				x.sub = "· " + palMenuPath(x.menu)
 				x.group = pgAction
 				items = append(items, x)
 			}
@@ -350,8 +369,35 @@ var palMenus = []palMenu{
 	{"help", "help", "Hilfe & Info", "Tasten, Tour, Neues, Update", "help hilfe info"},
 }
 
+// Unterordner der Einstellungen: nicht in der Übersicht, sondern als
+// Eintrag mit „›“ im Untermenü (palFolder).
+var palSubMenus = []palMenu{
+	{"settings/ki", "ai", "KI", "Endpunkt, Ersatz-Anbieter, Status", "ai llm ki"},
+	{"settings/relay", "relay", "Vermittler", "Server hinter NAT/Firewall", "relay vermittler"},
+	{"settings/io", "import", "Import / Export", "ssh-config, PuTTY, Ansible, CSV", "import export csv"},
+}
+
+// palParent: übergeordnetes Menü ("settings/ki" → "settings", "settings" → "").
+func palParent(id string) string {
+	if i := strings.LastIndex(id, "/"); i >= 0 {
+		return id[:i]
+	}
+	return ""
+}
+
+// palMenuPath: „Einstellungen › KI“ für Titel und graue Herkunft in der Suche.
+func palMenuPath(id string) string {
+	if id == "" {
+		return ""
+	}
+	if p := palParent(id); p != "" {
+		return palMenuPath(p) + " › " + i18n.T(palMenuLabel(id))
+	}
+	return i18n.T(palMenuLabel(id))
+}
+
 func palMenuLabel(id string) string {
-	for _, m := range palMenus {
+	for _, m := range append(palMenus[:len(palMenus):len(palMenus)], palSubMenus...) {
 		if m.id == id {
 			return m.label
 		}
@@ -379,28 +425,78 @@ func palToggle(icon, label string, on bool, keys string, run func() tea.Cmd) pal
 	return palItem{group: pgSetBehave, menu: "settings", icon: icon, label: label, state: st, keys: keys, keep: true, run: run}
 }
 
+// palCycle: Durchschalt-Eintrag. value ist der aktuelle Wert, set(dir)
+// stellt den nächsten (dir=1) oder vorigen (dir=-1) ein.
+func palCycle(group palGroup, icon, label, value, keys string, set func(dir int) tea.Cmd) palItem {
+	return palItem{group: group, menu: "settings", icon: icon, label: label, hint: value, keys: keys, keep: true,
+		cycle: set, run: func() tea.Cmd { return set(1) }}
+}
+
+// palFolder: Eintrag, der einen Unterordner der Einstellungen öffnet.
+func (a *App) palFolder(id string) palItem {
+	for _, m := range palSubMenus {
+		if m.id == id {
+			return palItem{group: pgSetSetup, menu: palParent(id), icon: ic(m.icon), label: i18n.T(m.label), sub: i18n.T(m.hint), hint: "›",
+				keys: m.keys, keep: true, open: id, run: func() tea.Cmd { a.palEnter(id); return nil }}
+		}
+	}
+	return palItem{}
+}
+
+// cycleIndex: Position von cur in n Werten, um dir verschoben (rundherum).
+// Unbekannter Wert: vorwärts beim ersten, rückwärts beim letzten beginnen.
+func cycleIndex(cur, n, dir int) int {
+	if cur < 0 {
+		if dir > 0 {
+			return 0
+		}
+		return n - 1
+	}
+	return ((cur+dir)%n + n) % n
+}
+
 // palMenuItems: Inhalt beider Untermenüs, in Anzeigereihenfolge.
 func (a *App) palMenuItems() []palItem {
+	set := a.st.Settings()
+	safe := func(it palItem) palItem { it.group = pgSetSafe; return it }
+	hide := func(it palItem) palItem { it.hidden = true; return it }
 	items := []palItem{
+		// Verhalten
 		palToggle(ic("mouse"), i18n.T("Maus: klicken, markieren, scrollen"), a.mouseEnabled(), "mouse", func() tea.Cmd { return a.toggleMouse() }),
 		palToggle(ic("reconnect"), i18n.T("Auto-Reconnect: nach Abbruch neu verbinden"), a.autoReconnect(), "reconnect", func() tea.Cmd { return a.toggleAutoReconnect() }),
 		palToggle(ic("reach"), i18n.T("Online-Punkt: Erreichbarkeit der Hosts prüfen"), a.reachEnabled(), "online reach", func() tea.Cmd { return a.toggleReach() }),
 		palToggle(ic("sesslog"), i18n.T("Sitzungsprotokoll schreiben"), a.logsEnabled(), "log protokoll", func() tea.Cmd { return a.toggleSessionLog() }),
-		palToggle(ic("paste"), i18n.T("Einfügeschutz: Vorschau bei mehreren Zeilen"), a.pasteGuardEnabled(), "paste einfügen", func() tea.Cmd { return a.togglePasteGuard() }),
-		palToggle(ic("danger"), i18n.T("Gefahren-Check auf allen Hosts (sonst nur Produktiv)"), a.dangerAll(), "danger gefahr", func() tea.Cmd { return a.toggleDangerAll() }),
-		palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() }),
-		palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() }),
-		palToggle(ic("paste"), i18n.T("Server darf in die Zwischenablage kopieren (OSC 52)"), a.osc52On(), "clipboard zwischenablage osc52 tmux vim", func() tea.Cmd { return a.toggleOSC52() }),
-		palItem{group: pgSetBehave, menu: "settings", icon: ic("sshkey"), label: i18n.T("Automatisch sperren bei Leerlauf"), hint: lockLabel(a.st.Settings().LockAfterMin),
-			keys: "lock sperren idle leerlauf", keep: true, run: func() tea.Cmd { return a.cycleLockAfter() }},
+		palCycle(pgSetBehave, ic("news"), i18n.T("Meldung, wenn lange Befehle fertig sind"), notifyLabel(a.notifyLevel()),
+			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }),
+		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
+		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
 		palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
 		palToggle(ic("split"), i18n.T("Geteilte Ansicht: andere Bereiche abdunkeln"), a.dimPanes(), "split dim abdunkeln", func() tea.Cmd { return a.toggleDimPanes() }),
+
+		// Sicherheit
+		safe(palToggle(ic("paste"), i18n.T("Einfügeschutz: Vorschau bei mehreren Zeilen"), a.pasteGuardEnabled(), "paste einfügen", func() tea.Cmd { return a.togglePasteGuard() })),
+		palCycle(pgSetSafe, ic("danger"), i18n.T("Gefahren-Check"), dangerLabel(a.dangerAll()), "danger gefahr produktiv alle hosts",
+			func(int) tea.Cmd { return a.toggleDangerAll() }),
+		safe(palToggle(ic("paste"), i18n.T("Server darf in die Zwischenablage kopieren (OSC 52)"), a.osc52On(), "clipboard zwischenablage osc52 tmux vim", func() tea.Cmd { return a.toggleOSC52() })),
+		palCycle(pgSetSafe, ic("sshkey"), i18n.T("Automatisch sperren bei Leerlauf"), lockLabel(set.LockAfterMin), "lock sperren idle leerlauf",
+			func(dir int) tea.Cmd { return a.cycleLockAfter(dir) }),
 	}
-	cur := a.st.Settings().Theme
+
+	// Aussehen & Sprache: je ein Durchschalt-Eintrag, die Einzelwerte nur
+	// für die Suche.
+	cur := set.Theme
 	if cur != CustomName {
 		cur = ThemeByName(cur).Name
 	}
+	themeIdx, themeVal := -1, i18n.T("Eigene Farben")
+	for i, t := range Themes {
+		if t.Name == cur {
+			themeIdx, themeVal = i, i18n.T(t.Label)
+		}
+	}
+	items = append(items, palCycle(pgSetLook, ic("theme"), i18n.T("Farbschema"), themeVal, "theme farbe color aussehen",
+		func(dir int) tea.Cmd { return a.setTheme(Themes[cycleIndex(themeIdx, len(Themes), dir)].Name) }))
 	for _, t := range Themes {
 		t := t
 		hint := ""
@@ -408,20 +504,24 @@ func (a *App) palMenuItems() []palItem {
 			hint = "✓ " + i18n.T("aktiv")
 		}
 		items = append(items, palItem{group: pgSetLook, menu: "settings", icon: ic("theme"), label: i18n.T("Aussehen: ") + i18n.T(t.Label), hint: hint,
-			keys: "theme farbe color", keep: true, run: func() tea.Cmd { return a.setTheme(t.Name) }})
+			keys: "theme farbe color", keep: true, hidden: true, run: func() tea.Cmd { return a.setTheme(t.Name) }})
 	}
 	colHint := i18n.T("Editor")
 	if cur == CustomName {
 		colHint = "✓ " + i18n.T("aktiv")
 	}
-	lang := "Deutsch"
-	if i18n.English() {
-		lang = "English"
-	}
 	items = append(items,
 		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farben anpassen (eigene Farben)"), hint: colHint,
 			keys: "theme farbe color colors eigene custom", run: func() tea.Cmd { return a.openColors() }},
 	)
+	iconIdx := -1
+	for i, st := range iconStyles {
+		if iconSet == st.id {
+			iconIdx = i
+		}
+	}
+	items = append(items, palCycle(pgSetLook, ic("icons"), i18n.T("Symbole"), i18n.T(iconStyleLabel(iconSet)), "icons symbole nerd font unicode minimal tags",
+		func(dir int) tea.Cmd { return a.chooseIcons(iconStyles[cycleIndex(iconIdx, len(iconStyles), dir)].id) }))
 	for _, st := range iconStyles {
 		st := st
 		hint := i18n.T(st.sample)
@@ -429,21 +529,30 @@ func (a *App) palMenuItems() []palItem {
 			hint = "✓ " + i18n.T("aktiv")
 		}
 		items = append(items, palItem{group: pgSetLook, menu: "settings", icon: ic("icons"), label: i18n.T("Symbole: ") + i18n.T(st.label), hint: hint,
-			keys: "icons symbole nerd font unicode minimal tags", keep: true, run: func() tea.Cmd { return a.chooseIcons(st.id) }})
+			keys: "icons symbole nerd font unicode minimal tags", keep: true, hidden: true, run: func() tea.Cmd { return a.chooseIcons(st.id) }})
+	}
+	lang := "Deutsch"
+	if i18n.English() {
+		lang = "English"
 	}
 	items = append(items,
-		palItem{group: pgSetLook, menu: "settings", icon: ic("language"), label: "Sprache / Language", hint: lang, keys: "english deutsch german",
-			keep: true, run: func() tea.Cmd { return a.toggleLang() }},
-		palItem{group: pgSetSetup, menu: "settings", icon: ic("ai"), label: i18n.T("KI-Einstellungen"), hint: "s", keys: "ai llm", run: func() tea.Cmd { return a.openSettings() }},
-		palItem{group: pgSetSetup, menu: "settings", icon: ic("ai"), label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), hint: "KI", keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
-		palItem{group: pgSetSetup, menu: "settings", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), hint: "llm",
-			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
+		palCycle(pgSetLook, ic("language"), "Sprache / Language", lang, "english deutsch german", func(int) tea.Cmd { return a.toggleLang() }),
+
+		// Einrichten: Verwandtes in Unterordnern
+		a.palFolder("settings/ki"),
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("keys"), label: i18n.T("Tastenkürzel anpassen"), hint: a.keys.label(actKeys), keys: "keys", run: func() tea.Cmd { return a.openKeys() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("sync"), label: i18n.T("Sync zwischen Rechnern einrichten"), hint: "y", keys: "sync", run: func() tea.Cmd { return a.openSync() }},
-		palItem{group: pgSetSetup, menu: "settings", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},
-		palItem{group: pgSetSetup, menu: "settings", icon: ic("relay"), label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelayManage() }},
-		palItem{group: pgSetSetup, menu: "settings", icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm, Ansible, CSV)"), hint: a.keys.label(actImport), keys: "import netbox", run: func() tea.Cmd { return a.openImport() }},
-		palItem{group: pgSetSetup, menu: "settings", icon: ic("export"), label: i18n.T("Verbindungen als CSV exportieren (ohne Passwörter)"), hint: ".csv", keys: "export csv excel", run: func() tea.Cmd { return a.exportConnsCSV() }},
+		a.palFolder("settings/relay"),
+		a.palFolder("settings/io"),
+
+		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Einstellungen"), hint: "s", keys: "ai llm", run: func() tea.Cmd { return a.openSettings() }},
+		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), hint: "KI", keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
+		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), hint: "llm",
+			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
+		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},
+		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelayManage() }},
+		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm, Ansible, CSV)"), hint: a.keys.label(actImport), keys: "import netbox", run: func() tea.Cmd { return a.openImport() }},
+		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("export"), label: i18n.T("Verbindungen als CSV exportieren (ohne Passwörter)"), hint: ".csv", keys: "export csv excel", run: func() tea.Cmd { return a.exportConnsCSV() }},
 
 		palItem{group: pgHelp, menu: "help", icon: ic("help"), label: i18n.T("Tastenkürzel anzeigen"), hint: a.keys.label(actHelp), keys: "help keys", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		palItem{group: pgHelp, menu: "help", icon: ic("tour"), label: i18n.T("Einführungstour"), hint: i18n.T("5 Schritte"), keys: "tour", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
@@ -487,12 +596,24 @@ func palAskItem(items []palItem) (palItem, bool) {
 func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 	p := a.pal
 	items := a.paletteItems()
+	var cur palItem
+	if p.sel < len(items) {
+		cur = items[p.sel]
+	}
 	switch key := k.String(); {
+	case (key == "left" || key == "right") && cur.cycle != nil:
+		dir := 1
+		if key == "left" {
+			dir = -1
+		}
+		return a.palRun(palItem{menu: cur.menu, keep: true, run: func() tea.Cmd { return cur.cycle(dir) }})
+	case key == "right" && cur.open != "" && p.in.Value() == "":
+		return a.palRun(cur)
 	case key == "esc" && p.menu != "":
-		a.palEnter("")
+		a.palEnter(palParent(p.menu))
 		return nil
 	case key == "left" && p.menu != "" && p.in.Value() == "":
-		a.palEnter("")
+		a.palEnter(palParent(p.menu))
 		return nil
 	case key == "esc" || isPaletteKey(key):
 		a.pal = nil
@@ -577,6 +698,9 @@ func (a *App) viewPalette() string {
 		it.icon = padIcon(it.icon)
 		iw := lipgloss.Width(it.icon) - 1
 		hint := st.Muted.Render(it.hint)
+		if it.cycle != nil {
+			hint = st.Muted.Render("‹ ") + st.Accent.Render(it.hint) + st.Muted.Render(" ›")
+		}
 		switch it.state {
 		case palOn:
 			hint = st.OK.Render("● " + i18n.T("an"))
@@ -626,7 +750,10 @@ func (a *App) viewPalette() string {
 	title := i18n.T("Befehlspalette")
 	if p.menu != "" {
 		keys = [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("ausführen / umschalten")}, {"Esc", i18n.T("zurück")}}
-		title += " › " + i18n.T(palMenuLabel(p.menu))
+		if p.sel < len(items) && items[p.sel].cycle != nil {
+			keys[1] = [2]string{"←→", i18n.T("durchschalten")}
+		}
+		title += " › " + palMenuPath(p.menu)
 	}
 	box := st.dialog(dialog{icon: "◆", title: title, sub: fmt.Sprintf(i18n.T("%d Einträge"), len(items)), tone: st.T.AI,
 		body: b.String(), keys: keys, width: w - 4, compact: true}, a.w)

@@ -451,14 +451,24 @@ type Settings struct {
 	// Colors: eigene Farben (Theme "eigene"), wird mit dem Sync übertragen.
 	Colors *CustomColors `json:"colors,omitempty"`
 	// Icons: Symbolstil der Menüs. "" = Text-Tags wie [+] (läuft mit jeder
-	// Schrift), "nerd" = Nerd-Font-Symbole. Gehört zum Rechner (Schrift), kein Sync.
+	// Schrift), "uni", "min", "nerd" = Nerd-Font-Symbole. Wird mit dem Sync
+	// übertragen; "nerd" greift aber nur, wo NerdFont nicht "nein" ist.
 	Icons string `json:"icons,omitempty"`
+	// NerdFont: hat das Terminal dieses Rechners eine Nerd Font? "" = nicht
+	// gefragt (wer "nerd" selbst gewählt hat, hat sie), "ja" = Probe bestätigt,
+	// "nein" = per Sync von einem anderen Rechner gekommen, hier noch nicht
+	// bestätigt. Rein lokal, nie im Sync.
+	NerdFont string `json:"nerd_font,omitempty"`
+	// Intro: Startanimation "an" / "aus" ("" = nie umgestellt). Wird mit dem
+	// Sync übertragen; die Oberfläche spiegelt sie in die Datei no-intro,
+	// weil die Animation schon vor dem Entsperren läuft.
+	Intro string `json:"intro,omitempty"`
 
 	// DimPanes: in der geteilten Ansicht die nicht aktiven Bereiche abdunkeln.
 	DimPanes bool `json:"dim_panes,omitempty"`
 	// Workspaces: gespeicherte Arbeitsplätze (Aufteilung + Verbindungen),
 	// LastLayout: Aufteilung beim letzten Beenden (Eintrag „Zuletzt“).
-	// Gehören zum Rechner, kein Sync.
+	// Arbeitsplätze gehen mit dem Sync, „Zuletzt“ bleibt auf dem Rechner.
 	Workspaces []Workspace `json:"workspaces,omitempty"`
 	LastLayout *Workspace  `json:"last_layout,omitempty"`
 
@@ -479,6 +489,16 @@ type Workspace struct {
 	Conns  []string  `json:"conns,omitempty"`
 	Folder string    `json:"folder,omitempty"`
 	Saved  time.Time `json:"saved"`
+}
+
+// IconsNow: der Symbolstil, der auf diesem Rechner wirklich gilt. Kam
+// "nerd" per Sync und ist die Schrift hier nicht bestätigt, bleiben die
+// Text-Tags.
+func (s Settings) IconsNow() string {
+	if s.Icons == "nerd" && s.NerdFont == "nein" {
+		return ""
+	}
+	return s.Icons
 }
 
 // CustomColors: eigene Farben als "#rrggbb". Base ist das Theme, von dem

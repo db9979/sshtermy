@@ -18,7 +18,8 @@ import (
 // einmal (schon offene Tabs derselben Verbindung werden genommen statt neu
 // verbunden). „Zuletzt“ schreibt sshTermy beim Beenden von selbst, solange
 // die Ansicht geteilt war. Ein Ordner im Manager (g) öffnet alle seine
-// Verbindungen als Raster. Arbeitsplätze gehören zum Rechner (kein Sync).
+// Verbindungen als Raster. Arbeitsplätze gehen mit dem Sync mit, „Zuletzt“
+// bleibt auf dem Rechner.
 
 // currentWorkspace: die geteilte Ansicht als Arbeitsplatz (nur gespeicherte
 // Verbindungen; Schnellverbindungen bleiben leere Bereiche).

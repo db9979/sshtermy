@@ -195,7 +195,7 @@ Palette → Einstellungen › „Aussehen“). **Farben anpassen** im selben Unt
 ←/→ (Farbton), +/− (Helligkeit) oder als Hex-Wert ändern; die Oberfläche zeigt die Änderung sofort, ein Kontrast-Check
 warnt vor schlecht lesbaren Farben, Strg+S speichert (geht mit dem Sync mit).
 
-**Symbole:** Einstellungen › „Symbole: …“ bietet vier Stile, gespeichert pro Rechner. Drei davon laufen mit jeder
+**Symbole:** Einstellungen › „Symbole: …“ bietet vier Stile (gehen mit dem Sync mit). Drei davon laufen mit jeder
 Terminalschrift, weil sie nur Zeichen nutzen, die Cascadia Mono, Menlo und Co. selbst haben:
 **Text-Tags** (Standard) wie `[+]` `[k]` `[/]`, im Manager mit Prompt-Zeichen (`$` Linux, `%` macOS, `>` Windows,
 `#` Switch); **Unicode-Formen** wie `+ ¤ ◎ ◈ ¶`; **Minimal** mit `▸` für Aktionen, `»` für Untermenüs und `◆` für
@@ -513,7 +513,11 @@ Rechner gebunden; das Sync-Passwort gibst du pro Rechner nur einmal bei der Einr
 pro Eintrag die neuere Änderung, gelöschte Einträge werden als Grabstein gemerkt (180 Tage), und „zuletzt benutzt“
 zählt nicht als Änderung. So gehen Änderungen auf zwei Rechnern nicht verloren, solange sie verschiedene Einträge
 betreffen. Abgeglichen wird beim Start, wenige Sekunden nach jeder Änderung und alle 5 Minuten; manuell über die Palette
-(„Jetzt synchronisieren“). Nicht synchronisiert werden rechnerspezifische Dinge wie DPAPI und die Sync-Einstellungen selbst.
+(„Jetzt synchronisieren“). Alle Einstellungen gehen mit: Aussehen, Farben, Symbole, Sprache, Tasten, KI, Sperre,
+Meldungen, Grenzwerte der Überwachung, Gefahren-Check, Einfüge-Vorschau, Protokolle, Startanimation usw.
+Nur rechnerspezifische Dinge bleiben lokal: DPAPI, die Sync-Einstellungen selbst, Schlüsseldatei-Pfade, gekoppelte
+Vermittler, Team-Ordner-Pfade und der Schalter „Maus“ (hängt vom Terminalprogramm ab). Nerd-Font-Symbole gehen
+ebenfalls mit, schalten sich auf einem anderen Rechner aber erst nach der Probe ein, weil die Schrift dort fehlen kann.
 
 **Archiv (zuschaltbar):** Mit dem Schalter „Archiv“ im Sync-Assistenten (y) wandern auch die Config-Sicherungen der
 Switches (F6) und die Sitzungsprotokolle auf die anderen Rechner. Sie liegen im Unterordner `sshtermy-archiv/` neben der

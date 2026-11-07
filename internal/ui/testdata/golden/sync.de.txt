@@ -5,8 +5,8 @@
 
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ ↕ Sync zwischen Rechnern                                                                     │
-  │ Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte   │
-  │ Datei am                                                                                     │
+  │ Verbindungen, Tunnel, Runbooks, KI und alle Einstellungen landen als Ende-zu-Ende            │
+  │ verschlüsselte Datei am                                                                      │
   │ gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro     │
   │ Rechner.                                                                                     │
   │                                                                                              │
