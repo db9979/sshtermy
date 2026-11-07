@@ -1,0 +1,34 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ● KI
+ ▪ Tastenkürzel anpassen   ⏎ oder Doppelklick belegt neu · werden mit dem Sync übernommen
+
+ ÜBERALL
+▶Befehlspalette                Strg+Space / Strg+@
+ Hilfe                         F1
+ Manager ↔ Terminal            F10
+ Über & Update                 F12
+ Tastenzeile erklären an/aus   Shift+F9 / F21
+ Beenden                       Strg+Q
+ TERMINAL
+ Ziel-Modus (Agent)            F2
+ KI fragen                     F3
+ Tunnel                        F4
+ Dateien (SFTP)                F5
+ Host-Übersicht                F6
+ Tab zurück                    F7
+ Tab vor                       F8
+ Neuer Tab                     Alt+N
+ Tab schließen                 Alt+W
+ Alle Tabs (Liste)             Alt+T
+ Schnellbefehle (Liste)        F9
+ Schnellbefehl 1               Shift+F1 / F13
+ Schnellbefehl 2               Shift+F2 / F14
+ Schnellbefehl 3               Shift+F3 / F15
+ Schnellbefehl 4               Shift+F4 / F16
+ Schnellbefehl 5               Shift+F5 / F17
+ Schnellbefehl 6               Shift+F6 / F18
+ Schnellbefehl 7               Shift+F7 / F19
+
+ Alt+⏎ ist gesperrt: Windows Terminal schaltet damit auf Vollbild.
+ Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)
+
+ ⏎ neu belegen  Entf Standard  r alle zurücksetzen  Esc zurück

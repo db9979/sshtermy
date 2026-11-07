@@ -130,6 +130,8 @@ type App struct {
 	intro  *introState // Startanimation, nil = aus oder vorbei
 	relays relayCache  // Systemlisten der Vermittler (relay.go)
 	fx     fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
+
+	crashTest string // sshtermy -crash-test (crash.go)
 }
 
 func New(st *store.Store) (*App, error) {
@@ -232,7 +234,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case tickMsg:
-		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick())
+		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick(), a.crashTestTick())
+	case crashTestMsg:
+		panic("sshTermy crash test (ui) password=hunter2")
 	case llmProbeMsg:
 		a.lh.probing = false
 		return a, nil

@@ -1,0 +1,32 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
+
+
+
+
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Verbindung bearbeiten: web-01                                                                │
+  │                                                                                              │
+  │ ▌ Alias               web-01                                                                 │
+  │                       Anzeigename, z. B. „DGX Spark“                                         │
+  │   Verbindung über      SSH  Telnet  Seriell (Konsolenkabel)                                  │
+  │   Host                10.0.0.11                                                              │
+  │   Port                                                                                       │
+  │   Benutzer            deploy                                                                 │
+  │   Anmeldung            agent  keyfile  password                                              │
+  │   Ordner              ▸ Produktion / Web ▾                                                   │
+  │   Tags                prod, nginx                                                            │
+  │   Farbe               ‹  automatisch  ›  1/9                                                 │
+  │   Jump-Host           — direkt (ohne Jump-Host) ▾                                            │
+  │   Gerätetyp            automatisch  Server  Netzwerkgerät                                    │
+  │   Feste Sitzung        aus  automatisch  tmux  screen                                        │
+  │   System                                                                                     │
+  │   Befehlssatz         ‹  automatisch  ›  1/15                                                │
+  │   KI-Notizen                                                                                 │
+  │                                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+ Tab weiter  ←/→ wählen  Strg+S speichern  Esc abbrechen

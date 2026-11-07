@@ -1,0 +1,36 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ▌● web-01 ×  +
+ P┌─ ? Tastenkürzel  sshTermy vdev ───────────────────────────────────────────────────────────────────────────── × ─┐er
+Li│                                                                                                                 │
+  │  ◆ Überall                            ◎ Ziel-Modus F2                      » Broadcast m                        │
+de│   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   Space / g / a Host / Ordner / alle  │
+● │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       Tab         Hosts · Quelle · Befe…  │
+  │   F12         Über & Update            i           nur einfügen (Dry-Run)   ⇧⏎          weiterer Schritt        │
+  │   F12 w       Was ist neu              e           bearbeiten               Strg+S      prüfen, dann ⏎          │
+de│   F12 l       Sprache: Deutsch/Engl…   s           überspringen             ← / →       Host-Spalte wählen      │
+  │   ⇧F9         Tastenzeile erklären     r           neu vorschlagen          ↑ ↓ Bild↑↓  Ausgabe blättern        │
+  │   Strg+Q      beenden                  x           Ziel beenden             z / c       groß / kopieren         │
+  │                                        ↑ ↓         Runbook wählen           r / e / x   nochmal / ändern / St…  │
+  │  ≡ Verbindungs-Manager F10             Strg+S      als Runbook speichern    {{name}}    Variable, wird abgefr…  │
+  │   F10         zurück zum Terminal      Strg+D      Runbook löschen          {{host}}    je Host eingesetzt      │
+  │   ⏎           verbinden                                                     Strg+R      als Runbook speichern   │
+  │   n           neue Verbindung         ◆ KI fragen F3                        e / Strg+D  ändern / löschen        │
+  │   e           bearbeiten               ⏎           Frage senden             k / a       KI prüft / übernehmen   │
+  │   d           löschen                  ⇧⏎ / Strg+J neue Zeile                                                   │
+  │   /           suchen (auch #tag)       1…9         Befehl einfügen         / Netzwerk-Scan f                    │
+  │   o           neuer Ordner (A / B v…   ↑ ↓         Befehlskarte wählen      Strg+S      Scan starten            │
+  │   r           Ordner umbenennen        a           Befehl ausführen (rot…   Space / a   Fund / alle wählen      │
+  │   v           in Ordner verschieben    c           Befehl kopieren          ⏎           als Verbindungen anle…  │
+  │   Shift+↑     nach oben schieben (↓…   z           Erklärung ein-/auskla…   x           Scan stoppen            │
+  │   ← / →       Ordner zu-/aufklappen    n           neue Frage               r           neu scannen             │
+  │   - / +       alle Ordner zu/auf                                                                                │
+  │   #           nach Tag filtern        ↔ Tunnel F4                          ❯ Befehlspalette Strg+Space          │
+  │   t           Tunnel anlegen           ⏎ / Klick   starten / stoppen        tippen      filtern / Ziel / Frage  │
+  │   c           SSH-Schlüssel erzeuge…   a           mit Verbindung starten   user@host   schnell verbinden       │
+  │                                                                                                                 │
+  │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
+  │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │
+  │                                                                                                                 │
+  │  ▾ mehr   ↑↓ blättern    Esc schließen                                                                          │
+  │                                                                                                                 │
+  └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ Strg+Space Palette  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  F9 Schnellbefehle  ⇧F9 erklären

@@ -1,0 +1,30 @@
+
+
+
+
+
+       ┌─ ◆ sshTermy  vdev ─────────────────────────────────────────────────────────────────┐
+       │                                                                                    │
+       │                                                                                    │
+       │   ┌─┐┌─┐┬ ┬╔╦╗┌─┐┬─┐┌┬┐┬ ┬                                                         │
+       │   └─┐└─┐├─┤ ║ ├┤ ├┬┘│││└┬┘                                                         │
+       │   └─┘└─┘┴ ┴ ╩ └─┘┴└─┴ ┴ ┴                                                          │
+       │   SSH terminal with AI copilot · vdev                                              │
+       │   Idea: Dominik Bornhäußer                                                         │
+       │                                                                                    │
+       │  Welcome! Create a master password for your encrypted store.                       │
+       │  It is never stored. Argon2id + AES-256-GCM protect passwords, keys and API keys.  │
+       │                                                                                    │
+       │  Master password     Master password                                               │
+       │  Repeat              repeat                                                        │
+       │    ○ DPAPI only on Windows (linux: master password only)                           │
+       │                                                                                    │
+       │   ⏎ next    Tab field    Esc quit                                                  │
+       │                                                                                    │
+       └────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+

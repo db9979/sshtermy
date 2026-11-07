@@ -165,7 +165,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	case a.pal != nil:
 		a.pal = nil
 	case a.modal != nil:
-		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo || a.modal.kind == mLLM {
+		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo || a.modal.kind == mLLM || a.modal.kind == mCrash {
 			a.modal = nil
 		}
 	case a.scr == scrTerminal && s != nil && s.panel != panelNone && !s.files.open && a.inPanel(s, m.X, m.Y):
@@ -557,6 +557,8 @@ func (a *App) modalKeys() [][2]string {
 		keys = [][2]string{{"b", i18n.T("♥ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
 	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", i18n.T("schließen")}}
+	case mCrash:
+		keys = [][2]string{{"g", i18n.T("als Issue melden")}, {"o", i18n.T("Bericht öffnen")}, {"Esc", i18n.T("schließen")}}
 	case mLLM:
 		keys = [][2]string{{"p", i18n.T("jetzt prüfen")}, {"e", i18n.T("Einstellungen")}, {"r", i18n.T("Ersatz-Anbieter")}, {"Esc", i18n.T("schließen")}}
 	case mTour:

@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/update"
 	"github.com/db9979/sshtermy/internal/version"
@@ -33,6 +34,7 @@ const (
 	mText   // blätterbarer Text (Config-Diff, Konfiguration)
 	mLLM    // KI-Status (llmhealth.go)
 	mDanger // Gefahren-Check beim Tippen (dangerguard.go)
+	mCrash  // Absturzbericht der letzten Sitzung (crash.go)
 )
 
 type modal struct {
@@ -57,6 +59,8 @@ type modal struct {
 	at       [2]int      // nur Menü: Bildschirmposition (Mauszeiger)
 	anchored bool        // am Mauszeiger statt mittig
 	hints    [][2]string // Tastenhinweise (setzt modalView aus modalKeys)
+
+	crash *crash.Report // nur Absturzbericht
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
@@ -211,6 +215,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.menuKey(key)
 	case mLLM:
 		return a.llmStatusKey(key)
+	case mCrash:
+		return a.crashKey(key)
 	case mInfo:
 		if key == "esc" || key == "enter" || key == "q" {
 			a.modal = nil
@@ -253,7 +259,7 @@ func (m *modal) view(s Styles, w, h int) string {
 	}
 	d := dialog{title: m.title, keys: m.hints, width: dialogInner(w)}
 	switch m.kind {
-	case mHostKey:
+	case mHostKey, mCrash:
 		d.icon, d.tone = "▲", s.T.Warn
 	case mConfirm:
 		d.icon = "?"

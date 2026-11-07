@@ -4,14 +4,19 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/term"
 
+	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/ui"
 	"github.com/db9979/sshtermy/internal/update"
@@ -43,6 +48,7 @@ func main() {
 	showVersion := flag.Bool("version", false, i18n.T("Version anzeigen"))
 	noIntro := flag.Bool("no-intro", false, i18n.T("ohne Startanimation starten (dauerhaft: Palette „Startanimation aus“)"))
 	doUpdate := flag.Bool("update", false, i18n.T("auf die neueste Version aus GitHub aktualisieren und beenden"))
+	crashTest := flag.String("crash-test", "", i18n.T("nur zum Ausprobieren des Absturzberichts: ui, cmd oder fatal"))
 	flag.Parse()
 
 	if *showVersion {
@@ -80,7 +86,15 @@ func main() {
 	if *noIntro {
 		app.SkipIntro()
 	}
-	if _, err := tea.NewProgram(app).Run(); err != nil {
+	app.CrashTest(*crashTest)
+	// Absturzbericht: ab hier landen Paniken im crash-Ordner (internal/crash).
+	guard := crash.Start(st.Dir)
+	_, err = tea.NewProgram(app).Run()
+	if errors.Is(err, tea.ErrProgramPanic) {
+		crashed(guard, st)
+	}
+	guard.Close()
+	if err != nil {
 		fail(err)
 	}
 	if app.Restart() {
@@ -91,6 +105,29 @@ func main() {
 			fail(fmt.Errorf(i18n.T("Neustart fehlgeschlagen, bitte von Hand starten: %w"), err))
 		}
 	}
+}
+
+// crashed: Die Oberfläche ist abgestürzt, bubbletea hat das Terminal schon
+// wiederhergestellt. Bericht schreiben und fragen, ob er als Issue gehen soll.
+func crashed(g *crash.Guard, st *store.Store) {
+	raw := g.Panic()
+	r, err := crash.Write(st.Dir, crash.KindUI, raw, st.Sensitive())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, i18n.T("Absturzbericht ließ sich nicht schreiben: ")+err.Error())
+		os.Exit(2)
+	}
+	crash.Fprint(os.Stdout, r)
+	if term.IsTerminal(os.Stdin.Fd()) {
+		fmt.Print(i18n.T("Als GitHub-Issue melden? Der Browser zeigt den Bericht vor dem Absenden. [j/N] "))
+		var answer string
+		_, _ = fmt.Scanln(&answer)
+		if a := strings.ToLower(strings.TrimSpace(answer)); a == "j" || a == "y" || a == "ja" || a == "yes" {
+			if err := sshx.OpenBrowser(crash.IssueURL(r)); err != nil {
+				fmt.Println(i18n.T("Browser ließ sich nicht öffnen: ") + err.Error())
+			}
+		}
+	}
+	os.Exit(2)
 }
 
 func fail(err error) {

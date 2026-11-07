@@ -1,0 +1,36 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ● AI
+
+
+
+
+
+
+
+     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │ AI copilot: Spark/vLLM, Ollama, OpenAI, Claude or any OpenAI-compatible server                   │
+     │                                                                                                  │
+     │ ▌ Provider             Spark / compatible  Ollama  OpenAI  Claude                                │
+     │                       ←/→ selects; address and model are prefilled                               │
+     │   Base URL            http://spark.lan:8000/v1                                                   │
+     │   API key                                                                                        │
+     │   Model               qwen3-coder                                                                │
+     │   Max tokens          400                                                                        │
+     │   Temperature         0.20                                                                       │
+     │   Timeout (s)         60                                                                         │
+     │   Ghost text          ● on                                                                       │
+     │   Delay ms            450                                                                        │
+     │   Send screen         ● on                                                                       │
+     │   Context lines       80                                                                         │
+     │   Goal: steps/min     6                                                                          │
+     │   http with API key   ○ off                                                                      │
+     │   Fallback providers  none · ⏎ set up ▾                                                          │
+     │                                                                                                  │
+     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+
+
+ Ctrl+T test endpoint  Ctrl+L choose model  Tab next  ←/→ select  Ctrl+S save  Esc cancel

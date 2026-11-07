@@ -1,0 +1,36 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ▌● web-01 ×  +
+ P┌─ ? Keyboard shortcuts  sshTermy vdev ─────────────────────────────────────────────────────────────────────── × ─┐er
+Li│                                                                                                                 │
+  │  ◆ Everywhere                         ◎ Goal mode F2                       » Broadcast m                        │
+de│   Ctrl+Space  Command palette          ⏎           start goal / run         Space / g / a host / folder / all   │
+● │   F1          this help                ⇧⏎ / Ctrl+J new line in the goal     Tab         hosts · source · cmd    │
+  │   F12         About & update           i           only insert (dry run)    ⇧⏎          next step               │
+  │   F12 w       What's new               e           edit                     Ctrl+S      check, then ⏎           │
+de│   F12 l       Language / Sprache       s           skip                     ← / →       select host column      │
+  │   ⇧F9         explain key bar          r           suggest again            ↑ ↓ PgUp/Dn scroll output           │
+  │   Ctrl+Q      quit                     x           end goal                 z / c       enlarge / copy          │
+  │                                        ↑ ↓         choose runbook           r / e / x   again / change / stop   │
+  │  ≡ Connection manager F10              Ctrl+S      save as runbook          {{name}}    variable, asked first   │
+  │   F10         back to the terminal     Ctrl+D      Delete runbook           {{host}}    filled in per host      │
+  │   ⏎           connect                                                       Ctrl+R      save as runbook         │
+  │   n           new connection          ◆ Ask AI F3                           e / Ctrl+D  edit / delete           │
+  │   e           edit                     ⏎           send question            k / a       AI check / apply        │
+  │   d           delete                   ⇧⏎ / Ctrl+J new line                                                     │
+  │   /           search (also #tag)       1…9         insert command          / Network scan f                     │
+  │   o           new folder (A / B nes…   ↑ ↓         choose command card      Ctrl+S      start scan              │
+  │   r           Rename folder            a           run command (red ones…   Space / a   select hit / all        │
+  │   v           move to folder           c           copy command             ⏎           create as connections   │
+  │   Shift+↑     move up (↓ down)         z           collapse/expand expla…   x           stop scan               │
+  │   ← / →       collapse/expand folder   n           new question             r           scan again              │
+  │   - / +       collapse/expand all                                                                               │
+  │   #           filter by tag           ↔ Tunnel F4                          ❯ Command palette Ctrl+Space         │
+  │   t           add tunnel               ⏎ / click   start / stop             type        filter / goal / ask     │
+  │   c           Generate / copy SSH k…   a           start with connection    user@host   quick connect           │
+  │                                                                                                                 │
+  │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
+  │  Esc leads back to the terminal from every panel.                                                               │
+  │                                                                                                                 │
+  │  ▾ more   ↑↓ scroll    Esc close                                                                                │
+  │                                                                                                                 │
+  └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ Ctrl+Space Palette  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  F5 Files  F6 Host  F9 Quick commands  ⇧F9 explain

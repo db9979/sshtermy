@@ -1,0 +1,30 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
+ Verbindungen  6  / suchen       │ ▾ Netzwerk
+                                 │
+ ▾ Netzwerk                   1  │ Pfad         Netzwerk
+   ○ # switch-core  manager@19…  │ Inhalt       1 Verbindung
+ ▾ Produktion                 3  │
+   ▾ Web                      2  │ Ordner
+▌    ○ · web-01┌─ ◆ Willkommen bei sshTermy  1/5 ─────────────────────────────── × ─┐
+▌    ○ · web-02│                                                                    │
+▌  ○ · db-01   │  ● ○ ○ ○ ○                                                         │
+ ○ · nas       │                                                                    │
+ ○ · spark     │  Hier im Verbindungs-Manager legst du deine Server und Switches    │
+               │  an. Passwörter und Schlüssel liegen verschlüsselt auf deinem      │
+               │  Rechner.                                                          │
+               │                                                                    │
+               │   F10          zwischen Manager und Terminal                       │
+               │   n            neue Verbindung                                     │ner oder
+               │   ⏎            verbinden                                           │
+               │                                                                    │
+               │   → weiter    Esc überspringen                                     │
+               │                                                                    │
+               └────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+                                 │
+ Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e umbenennen  d löschen

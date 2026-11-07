@@ -1,0 +1,30 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
+ ↓ Verbindungen importieren
+
+ ~/.ssh/config       nicht gefunden  /home/golden/.ssh/config
+ PuTTY               nicht gefunden  HKCU\Software\SimonTatham\PuTTY\Sessions
+ MobaXterm           nicht gefunden  /home/golden/Documents/MobaXterm/MobaXterm.ini
+
+ Nichts gefunden. f = Datei laden (PuTTY-.reg-Export, MobaXterm.ini, .mxtsessions oder ssh_config).
+ PuTTY exportieren: reg export HKCU\Software\SimonTatham\PuTTY putty.reg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ⏎ 0 übernehmen  Space an/aus  a alle/keine  f Datei laden  Esc zurück

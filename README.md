@@ -382,6 +382,18 @@ Windows login ──DPAPI CryptProtectData────────────�
   tokens, `password=…`, `--password …` and private keys. Recording can be turned off entirely via the palette or `a` in the
   logs. The Markdown export (to `Downloads`) is plain text and only happens on request.
 
+### Crash report
+
+- If sshTermy crashes, it writes a plain-text report to `crash/` in the config folder: version, system and the
+  stack trace. **Before saving**, all passwords, keys, passphrases and API keys from the store are removed
+  verbatim, as are hosts, aliases, IP addresses, the home folder and typical patterns (`password=…`, `Bearer …`,
+  private keys).
+- A crash in the interface is caught: the terminal is restored and sshTermy asks whether to report it as a
+  GitHub issue. A hard crash (the process ends immediately) is turned into a report after the next unlock and
+  shown in a dialog (`g` = report as issue, `o` = open report).
+- Nothing is sent automatically. The issue opens in the browser with the report pre-filled; you see everything
+  before you submit. The last 10 reports are kept. Try it: `sshtermy -crash-test ui` (or `cmd`, `fatal`).
+
 ### Auto-update
 
 - Checks `releases/latest` of `db9979/sshtermy`, HTTPS to github.com only, redirects are checked.
@@ -410,7 +422,15 @@ make test         # go vet + tests
 make bench        # performance: terminal throughput, memory per tab, manager with 500 connections
 make build        # bin/sshtermy
 make dist         # all platforms to dist/ + checksums.txt
+make golden       # rewrite the screen tests after an intended UI change
 ```
+
+**Screen tests:** `internal/ui/golden_test.go` draws every view (manager, forms, dialogs, terminal with panels,
+split view …) at a fixed size in German and English, as plain text without colors, and compares it with
+`internal/ui/testdata/golden/*.txt`. It also checks that every screen fills the window exactly. After an
+intended change run `make golden` and look at the diff of the `.txt` files before committing. On a merge
+conflict in these files simply run `make golden` again after the merge. If CI fails, the job artifact
+`golden-actual` contains the screens as they look now. New view: add a line to `goldenCases`.
 
 **Interface texts** are written in German in the code and go through `i18n.T("…")` (formats: `i18n.F`, fixed
 errors: `i18n.NewError`). Every new text needs an entry in `internal/i18n/en.go`; `go test ./internal/i18n`

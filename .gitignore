@@ -7,3 +7,4 @@
 tools/dev/gifs/out/
 *.test
 *.out
+/internal/ui/testdata/golden-actual/

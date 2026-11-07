@@ -1,0 +1,30 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                          ▌● web-01 ×  +
+ PRODUKTIV  deploy@10.0.0.11:22                                        ↔ 0 Tunnel   ● ◆ qwen3-coder
+
+
+
+
+
+
+     ┌─ ▲ Unbekannter Host ─────────────────────────────────────────────────────────────── × ─┐
+     │                                                                                        │
+     │  Der Server web-01 (10.0.0.11:22) ist noch nicht bekannt.                              │
+     │                                                                                        │
+     │  Schlüssel: ssh-ed25519                                                                │
+     │  Fingerprint: SHA256:Golden0123456789abcdefGHIJKLMNOPqrstuvwxyz0                       │
+     │                                                                                        │
+     │  Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf                             │
+     │  /etc/ssh/ssh_host_*_key.pub).                                                         │
+     │                                                                                        │
+     │   j vertrauen    n abbrechen                                                           │
+     │                                                                                        │
+     └────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+
+
+
+ Strg+Space Palette  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  ⇧F9 erklären

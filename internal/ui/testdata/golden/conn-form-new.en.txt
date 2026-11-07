@@ -1,0 +1,32 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
+
+
+
+
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ New connection                                                                               │
+  │                                                                                              │
+  │ ▌ Alias                                                                                      │
+  │                       Display name, e.g. „DGX Spark“                                         │
+  │   Connect via          SSH  Telnet  Serial (console cable)                                   │
+  │   Host                                                                                       │
+  │   Port                22                                                                     │
+  │   User                                                                                       │
+  │   Login                agent  keyfile  password                                              │
+  │   Folder              ▸ Netzwerk ▾                                                           │
+  │   Tags                                                                                       │
+  │   Color                automatic  none  Red  Orange  Yellow  Green  Cyan  Blue  Purple       │
+  │   Jump host           — direct (no jump host) ▾                                              │
+  │   Device type          automatic  Server  Network device                                     │
+  │   Persistent session   off  automatic  tmux  screen                                          │
+  │   System                                                                                     │
+  │   Command set         ‹  automatic  ›  1/15                                                  │
+  │   AI notes                                                                                   │
+  │                                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+ Tab next  ←/→ select  Ctrl+S save  Esc cancel

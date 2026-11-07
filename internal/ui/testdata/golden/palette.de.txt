@@ -1,0 +1,30 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
+ Verbindungen  6  / suchen       │ ▾ Netzwerk
+            ┌─ ◆ Befehlspalette  17 Einträge ────────────────────────────────────── × ─┐
+ ▾ Netzwerk │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
+   ○ # switc│ ──────────────────────────────────────────────────────────────────────── │
+ ▾ Produktio│ // verbindungen                                                          │
+   ▾ Web    │ [·] nas                                                  admin@nas.local │
+▌    ○ · web│ [·] spark                                              dominik@spark.lan │
+▌    ○ · web│ [#] switch-core  Netzwerk                            manager@192.168.1.2 │
+▌  ○ · db-01│ [·] db-01  Produktion                                  postgres@10.0.1.5 │
+ ○ · nas    │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
+ ○ · spark  │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │
+            │ // aktionen                                                              │
+            │ [=] Verbindungs-Manager                                              F10 │
+            │ [+] Neue Verbindung                                                    n │
+            │ [k] SSH-Schlüssel erzeugen / auf den Server übertragen                 c │
+            │ [*] Broadcast: Befehl auf mehreren Hosts                               m │ oder
+            │ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
+            │ [&] Mit dem Team teilen (verschlüsselt, ohne Passwörter)            Team │
+            │ [&] Team-Paket übernehmen                                           Team │
+            │ [&] Team-Ordner (veröffentlicht / abonniert)                        Team │
+            │ [#] Sitzungsprotokolle durchsuchen                                     l │
+            │ [:] Einstellungen ›                        Maus, Aussehen, Sprache, KI … │
+            │ [?] Hilfe & Info ›                           Tasten, Tour, Neues, Update │
+            │                                                                          │
+            │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
+            └──────────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 │
+ Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e umbenennen  d löschen

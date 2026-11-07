@@ -1,0 +1,32 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
+
+
+
+
+
+     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │ » Broadcast  ein Befehl oder Runbook parallel auf mehreren Hosts                                           │
+     │                                                                                                            │
+     │   Hosts               1 von 6 gewählt   Leertaste wählen · g Ordner · a alle                               │
+     │     ALLGEMEIN                                                                                              │
+     │     [ ] nas                  admin@nas.local                                                               │
+     │     [ ] spark                dominik@spark.lan                                                             │
+     │     NETZWERK                                                                                               │
+     │     [x] switch-core          manager@192.168.1.2 · Netzwerkgerät                                           │
+     │     PRODUKTION                                                                                             │
+     │     [ ] db-01                postgres@10.0.1.5                                                             │
+     │     PRODUKTION / WEB                                                                                       │
+     │     [ ] web-01               deploy@10.0.0.11                                                              │
+     │     [ ] web-02               deploy@10.0.0.12                                                              │
+     │                                                                                                            │
+     │   Quelle               eigener Befehl                                                                      │
+     │ ▌ Befehl              Befehl, z. B. uptime · ⇧⏎ = weiterer Schritt                                         │
+     │                       Tipp: {{name}} wird vor dem Start abgefragt, {{host}} pro Host eingesetzt            │
+     │                                                                                                            │
+     └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+ Tab Hosts/Quelle/Befehl  Space Host wählen  g Ordner  a alle  Strg+R als Runbook  Strg+S weiter  F1 Hilfe
