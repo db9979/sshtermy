@@ -193,7 +193,7 @@ palette → Settings › "Appearance"). **Customise colours** in the same submen
 with ←/→ (hue), +/− (brightness) or as a hex value; the whole UI previews it live, a contrast check warns about hard to
 read colours, Ctrl+S saves (synced to your other computers).
 
-**Icons:** Settings › "Icons: …" offers four styles, saved per computer. Three work with any terminal font because
+**Icons:** Settings › "Icons: …" offers four styles (synced to your other computers). Three work with any terminal font because
 they only use characters Cascadia Mono, Menlo and co. have themselves: **text tags** (default) like `[+]` `[k]` `[/]`,
 with prompt characters in the manager (`$` Linux, `%` macOS, `>` Windows, `#` switch); **Unicode shapes** like
 `+ ¤ ◎ ◈ ¶`; **minimal** with `▸` for actions, `»` for submenus and `◆` for the AI. The fourth style, **Nerd Font**,
@@ -512,7 +512,11 @@ you enter the sync password only once per computer during setup.
 wins per entry, deleted entries are remembered as tombstones (180 days), and „last used“
 does not count as a change. This way changes on two computers are not lost as long as they affect different entries.
 Syncing happens at start, a few seconds after every change and every 5 minutes; manually via the palette
-(„Sync now“). Computer-specific things like DPAPI and the sync settings themselves are not synced.
+(„Sync now“). All settings travel along: look, colours, icons, language, keys, AI, lock, notifications, monitoring
+limits, danger check, paste preview, session logs, intro animation and so on. Only computer-specific things stay local:
+DPAPI, the sync settings themselves, key file paths, paired relays, team folder paths and the "mouse" switch (depends on
+the terminal program). Nerd Font icons sync too, but on another computer they only turn on after the test, since the
+font may be missing there.
 
 **Archive (optional):** With the „Archive“ switch in the sync wizard (y), the config backups of your switches (F6)
 and the session logs also travel to your other computers. They are stored in the subfolder `sshtermy-archiv/` next to

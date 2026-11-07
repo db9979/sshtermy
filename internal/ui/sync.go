@@ -689,7 +689,7 @@ func (a *App) viewSync() string {
 	width := min(110, a.w-4)
 	var b strings.Builder
 	b.WriteString(s.Accent.Render(i18n.T("↕ Sync zwischen Rechnern")) + "\n")
-	b.WriteString(s.Muted.Render(i18n.T("Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n")+
+	b.WriteString(s.Muted.Render(i18n.T("Verbindungen, Tunnel, Runbooks, KI und alle Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n")+
 		i18n.T("gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro Rechner.")) + "\n")
 	b.WriteString(w.f.view(s, width-4, &a.z))
 

@@ -16,8 +16,8 @@ func TestSyncCustomColors(t *testing.T) {
 	if dst.Settings.Colors == nil || dst.Settings.Colors.Accent != "#ff8800" || dst.Settings.Theme != "eigene" {
 		t.Fatalf("Farben nicht übertragen: %+v", dst.Settings)
 	}
-	if dst.Settings.Icons != "" {
-		t.Fatal("Symbolstil gehört zum Rechner (Schrift) und wird nicht übertragen")
+	if dst.Settings.Icons != "nerd" || dst.Settings.IconsNow() != "" {
+		t.Fatal("Symbolstil geht mit, Nerd Font greift hier aber erst nach der Probe")
 	}
 	src.Settings.Colors.Accent = "#000000"
 	if dst.Settings.Colors.Accent != "#ff8800" {

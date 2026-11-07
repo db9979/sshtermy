@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/version"
 )
@@ -62,21 +63,37 @@ func (a *App) SkipIntro() { a.intro = nil }
 func (a *App) introOn() bool { return IntroEnabled(a.st.Dir) }
 
 func (a *App) toggleIntro() tea.Cmd {
-	p := filepath.Join(a.st.Dir, noIntroFile)
-	var err error
-	if a.introOn() {
-		err = os.WriteFile(p, nil, 0o600)
-	} else {
-		err = os.Remove(p)
+	want := "aus"
+	if !a.introOn() {
+		want = "an"
 	}
-	if err != nil {
+	if err := syncIntroFile(a.st.Dir, want); err != nil {
 		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
 		return nil
 	}
+	// Für den Sync auch in den Einstellungen (gesperrt: nur die Datei).
+	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.Intro = want })
 	if a.introOn() {
 		a.flash(i18n.T("Startanimation an"))
 	} else {
 		a.flash(i18n.T("Startanimation aus"))
+	}
+	return nil
+}
+
+// syncIntroFile: die Einstellung (auch per Sync gekommen) in die Datei
+// no-intro spiegeln, die schon vor dem Entsperren gelesen wird.
+func syncIntroFile(dir, want string) error {
+	if dir == "" || want == "" {
+		return nil
+	}
+	p := filepath.Join(dir, noIntroFile)
+	_, err := os.Stat(p)
+	switch has := err == nil; {
+	case want == "aus" && !has:
+		return os.WriteFile(p, nil, 0o600)
+	case want == "an" && has:
+		return os.Remove(p)
 	}
 	return nil
 }

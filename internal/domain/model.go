@@ -80,10 +80,10 @@ type Connection struct {
 	// RelayID/RelaySystem: über einen Vermittler (eigener sshtermy
 	// vermittler oder Speech on DGX Spark) zum sshd eines Systems, das selbst
 	// die Verbindung zum Vermittler hält (Anker). Host ist dann nur Anzeige.
-	RelayID     string     `json:"relay_id,omitempty"`
-	RelaySystem string     `json:"relay_system,omitempty"`
-	TunnelIDs   []string   `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
-	KeepAlive   int        `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
+	RelayID     string   `json:"relay_id,omitempty"`
+	RelaySystem string   `json:"relay_system,omitempty"`
+	TunnelIDs   []string `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
+	KeepAlive   int      `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
 
 	// ForwardAgent: den lokalen SSH-Agent an den Server weiterreichen (wie
 	// ssh -A). Dort funktionieren dann git, ssh und scp mit den eigenen
@@ -91,8 +91,8 @@ type Connection struct {
 	ForwardAgent bool `json:"forward_agent,omitempty"`
 	// CertPath: SSH-Zertifikat zum Key (von einer CA signiert, *-cert.pub).
 	// Leer = neben dem Keyfile suchen (<key>-cert.pub, wie OpenSSH).
-	CertPath string `json:"cert_path,omitempty"`
-	Device      DeviceKind `json:"device,omitempty"`      // Server oder Netzwerkgerät, leer = automatisch
+	CertPath string     `json:"cert_path,omitempty"`
+	Device   DeviceKind `json:"device,omitempty"` // Server oder Netzwerkgerät, leer = automatisch
 
 	// Persist: beim Verbinden immer in dieselbe tmux-/screen-Sitzung
 	// ("auto", "tmux", "screen"; leer = aus). PersistName: Sitzungsname,
@@ -451,12 +451,32 @@ type Settings struct {
 	// Colors: eigene Farben (Theme "eigene"), wird mit dem Sync übertragen.
 	Colors *CustomColors `json:"colors,omitempty"`
 	// Icons: Symbolstil der Menüs. "" = Text-Tags wie [+] (läuft mit jeder
-	// Schrift), "nerd" = Nerd-Font-Symbole. Gehört zum Rechner (Schrift), kein Sync.
+	// Schrift), "uni", "min", "nerd" = Nerd-Font-Symbole. Wird mit dem Sync
+	// übertragen; "nerd" greift aber nur, wo NerdFont nicht "nein" ist.
 	Icons string `json:"icons,omitempty"`
+	// NerdFont: hat das Terminal dieses Rechners eine Nerd Font? "" = nicht
+	// gefragt (wer "nerd" selbst gewählt hat, hat sie), "ja" = Probe bestätigt,
+	// "nein" = per Sync von einem anderen Rechner gekommen, hier noch nicht
+	// bestätigt. Rein lokal, nie im Sync.
+	NerdFont string `json:"nerd_font,omitempty"`
+	// Intro: Startanimation "an" / "aus" ("" = nie umgestellt). Wird mit dem
+	// Sync übertragen; die Oberfläche spiegelt sie in die Datei no-intro,
+	// weil die Animation schon vor dem Entsperren läuft.
+	Intro string `json:"intro,omitempty"`
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`
+}
+
+// IconsNow: der Symbolstil, der auf diesem Rechner wirklich gilt. Kam
+// "nerd" per Sync und ist die Schrift hier nicht bestätigt, bleiben die
+// Text-Tags.
+func (s Settings) IconsNow() string {
+	if s.Icons == "nerd" && s.NerdFont == "nein" {
+		return ""
+	}
+	return s.Icons
 }
 
 // CustomColors: eigene Farben als "#rrggbb". Base ist das Theme, von dem

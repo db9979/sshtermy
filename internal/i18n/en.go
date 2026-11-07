@@ -800,7 +800,7 @@ var en = map[string]string{
 	"Verbindungen":                                       "connections",
 	"Verbindungen importieren":                           "Import connections",
 	"Verbindungen importieren (ssh-config, PuTTY, MobaXterm)":                                               "Import connections (ssh-config, PuTTY, MobaXterm)",
-	"Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n": "Connections, tunnels, runbooks and AI settings are stored as an end-to-end encrypted file at the\n",
+	"Verbindungen, Tunnel, Runbooks, KI und alle Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n": "Connections, tunnels, runbooks, AI and all settings are stored as an end-to-end encrypted file at the\n",
 	"Verbindungs-Manager": "Connection manager",
 	"Verbunden":           "Connected",
 	"Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).\n":                                       "Compare the fingerprint with the server (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub).\n",
