@@ -11,6 +11,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/localsh"
 	"github.com/db9979/sshtermy/internal/sysprof"
 )
 
@@ -27,6 +28,16 @@ func (a *App) profileConnected(s *session) {
 	var fresh domain.SystemProfile
 	if s.client != nil {
 		fresh = s.client.Profile
+	} else if s.isLocal() {
+		sh := s.conn.LocalShell
+		if st, ok := s.shell.(*localsh.Stream); ok {
+			sh = st.Shell
+		}
+		// Eigener Rechner: Profil steht fest (Shell kann je Rechner anders sein)
+		fresh = localProfile(sh)
+		if !old.Manual {
+			old.Family, old.OS, old.Dialect, old.Shell = "", "", "", ""
+		}
 	} else if s.netDev() {
 		fresh.Family = domain.FamilyNetwork // Telnet/Konsole: Rest kommt aus dem Bildschirm
 	}

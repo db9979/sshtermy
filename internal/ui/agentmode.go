@@ -82,7 +82,7 @@ func newRunID() string {
 // agentFilesOK: kann der Agent hier Dateien anlegen? Nur über SSH mit SFTP
 // auf Unix-Systemen; Switches, Telnet und serielle Konsolen bekommen nur Befehle.
 func (a *App) agentFilesOK(s *session) bool {
-	return s.client != nil && !s.netDevice() && a.safetyKind(s) == "unix"
+	return (s.client != nil || s.isLocal()) && !s.netDevice() && a.safetyKind(s) == "unix"
 }
 
 // agentInit: neuer Lauf (aus startGoalWith).
@@ -298,8 +298,7 @@ func (a *App) writeAgentFile(s *session) tea.Cmd {
 	}
 	f := *g.cur.File
 	g.cur, g.armed = nil, false
-	cl := s.client
-	if cl == nil || !a.agentFilesOK(s) {
+	if !a.agentFilesOK(s) {
 		g.steps = append(g.steps, agent.DoneStep{Command: i18n.T("Datei ") + f.Name, File: f.Name, ExitHint: i18n.T("Dateien gehen hier nicht")})
 		return a.agentNext(s)
 	}
@@ -309,12 +308,13 @@ func (a *App) writeAgentFile(s *session) tea.Cmd {
 	}
 	g.writing = true
 	sid, seq, run := s.id, g.seq, g.runID
+	local, cl := s.agentFSOf()
 	return func() tea.Msg {
-		fs, err := cl.OpenSFTP()
+		fs, done, err := agentFS(local, cl)
 		if err != nil {
 			return agentFileMsg{sid, seq, f, err}
 		}
-		defer fs.Close()
+		defer done()
 		dir := fs.Join(fs.Home(), agentDirBase, run)
 		if err := fs.Mkdir(dir); err != nil {
 			return agentFileMsg{sid, seq, f, err}
@@ -375,17 +375,17 @@ func (a *App) agentFileDone(m agentFileMsg) tea.Cmd {
 // agentCleanup löscht den Arbeitsordner des Laufs auf dem Host.
 func (a *App) agentCleanup(s *session) tea.Cmd {
 	g := &s.goal
-	cl := s.client
-	if cl == nil || len(g.files) == 0 || g.cleaned {
+	if (s.client == nil && !s.isLocal()) || len(g.files) == 0 || g.cleaned {
 		return nil
 	}
 	sid, run, show := s.id, g.runID, g.agentDir()
+	local, cl := s.agentFSOf()
 	return func() tea.Msg {
-		fs, err := cl.OpenSFTP()
+		fs, done, err := agentFS(local, cl)
 		if err != nil {
 			return agentCleanMsg{sid, show, err}
 		}
-		defer fs.Close()
+		defer done()
 		return agentCleanMsg{sid, show, fs.RemoveAll(fs.Join(fs.Home(), agentDirBase, run))}
 	}
 }

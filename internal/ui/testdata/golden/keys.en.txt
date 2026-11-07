@@ -8,6 +8,7 @@
  About & update                F12
  Explain key bar on/off        Shift+F9 / F21
  Quit                          Ctrl+Q
+ Open local shell              Alt+L
  TERMINAL
  Goal mode (agent)             F2
  Ask AI                        F3
@@ -26,7 +27,6 @@
  Quick command 4               Shift+F4 / F16
  Quick command 5               Shift+F5 / F17
  Quick command 6               Shift+F6 / F18
- Quick command 7               Shift+F7 / F19
 
  Alt+⏎ is blocked: Windows Terminal uses it for full screen.
  Font size: Ctrl + plus/minus in the terminal window (macOS: ⌘ + / −)

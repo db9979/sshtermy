@@ -294,6 +294,9 @@ func (a *App) agentContext(s *session, withScreen bool) agent.Context {
 		c.OS = s.profileSummary()
 		c.Profile = s.prof.Prompt()
 		c.Net = s.netDevice()
+		if s.isLocal() {
+			c.Shell = s.localShellName()
+		}
 	}
 	if withScreen && cfg.SendScreen && s.term != nil {
 		n := cfg.ContextLines

@@ -184,6 +184,8 @@ func deviceClass(c domain.Connection) devClass {
 	var p domain.SystemProfile
 	if c.Profile != nil {
 		p = *c.Profile
+	} else if c.Protocol == domain.ProtoLocal {
+		p = localProfile(c.LocalShell)
 	}
 	hay := strings.ToLower(p.OS + " " + p.Model + " " + p.Banner)
 	for _, k := range []string{"fortigate", "fortios", "pfsense", "opnsense", "firewall", "sophos", "palo alto", "pan-os", "asa", "checkpoint", "sonicwall", "watchguard"} {

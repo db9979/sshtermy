@@ -173,10 +173,6 @@ func (a *App) tabMenu(s *session, x, y int, after func()) *modal {
 // die Verbindung schon offen ist (zweite Shell auf demselben Server).
 func (a *App) openNewTab() tea.Cmd {
 	all := a.st.Connections()
-	if len(all) == 0 {
-		a.scr = scrManager
-		return a.openConnForm(newConnDefaults())
-	}
 	rank := func(c domain.Connection) int {
 		switch {
 		case a.connected(c.ID):
@@ -194,7 +190,11 @@ func (a *App) openNewTab() tea.Cmd {
 		return all[i].LastUsed.After(all[j].LastUsed)
 	})
 	byID := map[string]domain.Connection{}
-	var items []pickItem
+	// oben: Shell dieses Rechners (immer ein neuer Tab)
+	lc := localConn("")
+	byID[lc.ID] = lc
+	items := []pickItem{{value: lc.ID, label: ic("command") + " " + i18n.T("Lokale Shell"), detail: i18n.T("dieser Rechner"),
+		hint: shortTarget(lc), search: "local lokal shell terminal powershell pwsh cmd zsh bash"}}
 	for _, c := range all {
 		byID[c.ID] = c
 		icon, _ := a.devIcon(c)

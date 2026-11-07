@@ -7,7 +7,7 @@
   │                                                                                              │
   │ ▌ Alias               web-01                                                                 │
   │                       Anzeigename, z. B. „DGX Spark“                                         │
-  │   Verbindung über      SSH  Telnet  Seriell (Konsolenkabel)                                  │
+  │   Verbindung über      SSH  Telnet  Seriell (Konsolenkabel)  Lokal (dieser Rechner)          │
   │   Host                10.0.0.11                                                              │
   │   Port                                                                                       │
   │   Benutzer            deploy                                                                 │

@@ -196,3 +196,20 @@ func setChoice(t *testing.T, f *form, key, val string) {
 	}
 	t.Fatalf("%s: keine Option %q in %v", key, val, fl.options)
 }
+
+func TestParseQuickLocal(t *testing.T) {
+	for q, want := range map[string]string{"lokal": "", "Local": "", "pwsh": "pwsh", "wsl -d Ubuntu": "wsl -d Ubuntu", "cmd.exe": "cmd.exe"} {
+		c, ok := parseQuickLocal(q)
+		if !ok || c.Protocol != domain.ProtoLocal || c.LocalShell != want {
+			t.Errorf("%q: %+v %v", q, c, ok)
+		}
+	}
+	for _, q := range []string{"lokalserver", "pwsh.example.com", "admin@host", ""} {
+		if _, ok := parseQuickLocal(q); ok {
+			t.Errorf("%q gilt fälschlich als lokale Shell", q)
+		}
+	}
+	if err := store.Validate(domain.Connection{Alias: "x", Protocol: domain.ProtoLocal}); err != nil {
+		t.Fatal(err)
+	}
+}
