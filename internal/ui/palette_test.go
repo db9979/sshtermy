@@ -109,3 +109,63 @@ func TestPaletteSubmenus(t *testing.T) {
 		t.Fatal("Suche nach „language“ findet die Sprache nicht")
 	}
 }
+
+// Kompaktes Einstellungsmenü: Durchschalt-Einträge, Unterordner, Suche
+// findet Einzelwerte.
+func TestPaletteSettingsCompact(t *testing.T) {
+	a := newPaletteTestApp(t)
+	a.palEnter("settings")
+	items := a.paletteItems()
+	if _, ok := hasLabel(items, "Aussehen: "); ok {
+		t.Fatal("Einzelwerte nur bei der Suche")
+	}
+	sel := func(label string) {
+		for i, it := range a.paletteItems() {
+			if it.label == label {
+				a.pal.sel = i
+				return
+			}
+		}
+		t.Fatalf("%q fehlt", label)
+	}
+	sel("Automatisch sperren bei Leerlauf")
+	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyRight})
+	if a.st.Settings().LockAfterMin != 5 {
+		t.Fatalf("→: %d", a.st.Settings().LockAfterMin)
+	}
+	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyLeft})
+	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if a.st.Settings().LockAfterMin != 60 || a.pal == nil || a.pal.menu != "settings" {
+		t.Fatalf("← rundherum: %d", a.st.Settings().LockAfterMin)
+	}
+	sel("Meldung, wenn lange Befehle fertig sind")
+	old := desktopSend
+	desktopSend = func(string, string) {}
+	t.Cleanup(func() { desktopSend = old })
+	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if a.notifyLevel() != 0 || !a.st.Settings().NoNotify {
+		t.Fatalf("Meldung nach ⏎: %d", a.notifyLevel())
+	}
+	// Unterordner: → öffnet, Esc geht eine Ebene hoch.
+	sel("KI")
+	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyRight})
+	if a.pal.menu != "settings/ki" {
+		t.Fatalf("Ordner: %q", a.pal.menu)
+	}
+	if _, ok := hasLabel(a.paletteItems(), "KI-Ersatz-Anbieter"); !ok {
+		t.Fatal("KI-Ordner leer")
+	}
+	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if a.pal == nil || a.pal.menu != "settings" {
+		t.Fatal("Esc im Unterordner muss zu den Einstellungen")
+	}
+	// Suche: Einzelwerte und Einträge aus Unterordnern.
+	a.pal.in.SetValue("matrix")
+	if _, ok := hasLabel(a.paletteItems(), "Aussehen: Matrix"); !ok {
+		t.Fatal("Suche findet das Farbschema nicht")
+	}
+	a.pal.in.SetValue("csv")
+	if it, ok := hasLabel(a.paletteItems(), "Verbindungen als CSV"); !ok || !strings.Contains(it.sub, "Import / Export") {
+		t.Fatalf("Suche im Unterordner: %+v", it)
+	}
+}
