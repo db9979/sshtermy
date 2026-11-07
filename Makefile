@@ -6,7 +6,7 @@ PKG     := github.com/db9979/sshtermy/internal/version
 LDFLAGS := -s -w -X $(PKG).Version=$(VERSION) -X $(PKG).Commit=$(COMMIT) -X $(PKG).Date=$(DATE) -X $(PKG).UpdatePubKey=$(UPDATE_PUBKEY)
 TARGETS := windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 linux/arm linux/riscv64
 
-.PHONY: build test bench dist clean run golden
+.PHONY: build test bench dist clean run golden handout
 build:
 	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/sshtermy ./cmd/sshtermy
 
@@ -21,6 +21,10 @@ bench:
 # Bildschirm-Tests (internal/ui/testdata/golden) nach gewollten Änderungen neu schreiben
 golden:
 	go test ./internal/ui -run TestGolden -update
+
+# Kurzreferenz zum Ausdrucken (site/handout/*.pdf), braucht Node + Playwright
+handout:
+	node tools/handout/render.mjs
 
 dist: test
 	@mkdir -p dist
