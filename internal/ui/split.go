@@ -210,6 +210,9 @@ func (a *App) setSplit(m splitMode) {
 	}
 	old := a.panes
 	a.split = m
+	if m == splitOff {
+		a.syncIn = false
+	}
 	a.panes = nil
 	if m != splitOff {
 		n := m.slots()
@@ -386,6 +389,9 @@ func (a *App) paneTitle(s *session, w int, focused bool) string {
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○"}[s.state]
 	left := " " + dot + " " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string
+	if a.syncIn && s.state == stConnected && !s.detached() {
+		marks = append(marks, i18n.T("◈ alle"))
+	}
 	if s.search.open {
 		marks = append(marks, i18n.T("/ Suche"))
 	}

@@ -27,6 +27,8 @@ const (
 	SrcSSHConfig Source = "ssh-config"
 	SrcPuTTY     Source = "putty"
 	SrcMoba      Source = "mobaxterm"
+	SrcAnsible   Source = "ansible"
+	SrcCSV       Source = "csv"
 )
 
 // Label: Anzeigename der Quelle.
@@ -38,6 +40,10 @@ func (s Source) Label() string {
 		return "PuTTY"
 	case SrcMoba:
 		return "MobaXterm"
+	case SrcAnsible:
+		return "Ansible"
+	case SrcCSV:
+		return "CSV"
 	}
 	return string(s)
 }
@@ -88,6 +94,12 @@ func File(path string) Result {
 	case strings.Contains(strings.ToLower(txt), "[bookmarks") || strings.HasSuffix(strings.ToLower(path), ".mxtsessions"):
 		e, err := ParseMoba(txt)
 		return Result{Source: SrcMoba, Path: path, Entries: e, Err: err}
+	case LooksLikeCSV(txt, path):
+		e, err := ParseCSV(txt)
+		return Result{Source: SrcCSV, Path: path, Entries: e, Err: err}
+	case LooksLikeAnsible(txt, path):
+		e, err := ParseAnsible(txt)
+		return Result{Source: SrcAnsible, Path: path, Entries: e, Err: err}
 	}
 	return fromFile(SrcSSHConfig, path)
 }

@@ -654,6 +654,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	}
 	f.text("keypath", "Keyfile", c.KeyPath, i18n.T("z. B. ~/.ssh/id_ed25519 (leer lassen bei eingebettetem Key)")).hidden = isAuth("keyfile")
 	f.secret("keypass", "Passphrase", pp, i18n.T("optional; leer = beim Verbinden fragen")).hidden = isAuth("keyfile")
+	f.text("certpath", i18n.T("Zertifikat"), c.CertPath, i18n.T("optional, von einer CA signiert · leer = <Keyfile>-cert.pub, falls vorhanden")).hidden = isAuth("keyfile")
 	if keychain.Available() {
 		f.toggle("keychain", i18n.T("Im Schlüsselbund"), c.Keychain, keychainHelp()).hidden = func(f *form) bool {
 			return raw(f) || f.sel("auth") != "password" && f.sel("auth") != "keyfile"
@@ -840,7 +841,7 @@ func (a *App) saveConn() error {
 		c.Port = c.DefaultPort()
 	}
 	c.Auth = domain.AuthMethod(f.sel("auth"))
-	c.Password, c.KeyPath, c.KeyPassphrase = "", "", ""
+	c.Password, c.KeyPath, c.KeyPassphrase, c.CertPath = "", "", "", ""
 	if c.Protocol.Raw() {
 		c.Auth = domain.AuthPassword
 	}
@@ -849,6 +850,7 @@ func (a *App) saveConn() error {
 		c.Password = domain.Secret(f.raw("password"))
 	case domain.AuthKeyFile:
 		c.KeyPath, c.KeyPassphrase = f.str("keypath"), domain.Secret(f.raw("keypass"))
+		c.CertPath = f.str("certpath")
 		c.KeyPEM = a.formBase.KeyPEM
 	}
 	c.Group = f.val("group")

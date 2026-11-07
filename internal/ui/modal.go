@@ -46,6 +46,7 @@ type modal struct {
 	in       textinput.Model
 	onYes    func() tea.Cmd
 	onText   func(string) tea.Cmd // nur Texteingabe
+	onCancel func() tea.Cmd       // Texteingabe mit Esc verlassen (optional)
 	ctx      helpCtx              // nur Hilfe: aktueller Bereich
 	scroll   int                  // Hilfe/Changelog/Text: Scroll-Position; Schnellbefehle: Auswahl
 	quickSID int                  // nur Schnellbefehle: Sitzung

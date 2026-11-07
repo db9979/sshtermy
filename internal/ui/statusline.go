@@ -83,6 +83,9 @@ func (a *App) sessionBar(s *session) string {
 	if s.recording() {
 		left.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
 	}
+	if r := s.trz.Load(); r != nil {
+		left.WriteString(st.Badge.Foreground(st.T.AI).Bold(true).Render(r.label()))
+	}
 	info := s.conn.Target()
 	if s.client != nil {
 		info = s.conn.Username + "@" + s.conn.Host + "  ·  " + s.profileSummary()

@@ -272,6 +272,13 @@ func (a *App) paletteItems() []palItem {
 			}
 			actions = append(actions, palItem{icon: ic("split"), label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
+		if a.split != splitOff {
+			label := i18n.T("Eingabe an alle geteilten Bereiche: einschalten")
+			if a.syncIn {
+				label = i18n.T("Eingabe an alle geteilten Bereiche: ausschalten")
+			}
+			actions = append(actions, palItem{icon: ic("broadcast"), label: label, hint: a.keys.label(actSyncInput), run: func() tea.Cmd { a.toggleSyncInput(); return nil }})
+		}
 		actions = append(actions, a.persistPalette(s)...)
 		if s.detached() {
 			actions = append(actions, palItem{icon: ic("attach"), label: i18n.T("Tab aus eigenem Fenster zurückholen"), hint: a.keys.label(actDetach),
@@ -417,7 +424,8 @@ func (a *App) palMenuItems() []palItem {
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("sync"), label: i18n.T("Sync zwischen Rechnern einrichten"), hint: "y", keys: "sync", run: func() tea.Cmd { return a.openSync() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("relay"), label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelayManage() }},
-		palItem{group: pgSetSetup, menu: "settings", icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm)"), hint: a.keys.label(actImport), keys: "import", run: func() tea.Cmd { return a.openImport() }},
+		palItem{group: pgSetSetup, menu: "settings", icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm, Ansible, CSV)"), hint: a.keys.label(actImport), keys: "import netbox", run: func() tea.Cmd { return a.openImport() }},
+		palItem{group: pgSetSetup, menu: "settings", icon: ic("export"), label: i18n.T("Verbindungen als CSV exportieren (ohne Passwörter)"), hint: ".csv", keys: "export csv excel", run: func() tea.Cmd { return a.exportConnsCSV() }},
 
 		palItem{group: pgHelp, menu: "help", icon: ic("help"), label: i18n.T("Tastenkürzel anzeigen"), hint: a.keys.label(actHelp), keys: "help keys", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		palItem{group: pgHelp, menu: "help", icon: ic("tour"), label: i18n.T("Einführungstour"), hint: i18n.T("5 Schritte"), keys: "tour", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
