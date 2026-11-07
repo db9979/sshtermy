@@ -41,7 +41,7 @@ func TestPlanExploreOnlyReadOnly(t *testing.T) {
 	a, s, out := planSession(t)
 	g := &s.goal
 	a.sessionMsg(stepMsg(s, cmdStep("ls -la /var/log/app", "unix")))
-	if !strings.Contains(out.String(), "ls -la /var/log/app\r") || g.explored != 1 {
+	if !out.has("ls -la /var/log/app\r") || g.explored != 1 {
 		t.Fatalf("lesender Befehl muss beim Planen laufen: %q", out.String())
 	}
 	g.waiting = false
@@ -102,7 +102,7 @@ func TestPlanReviewAndRun(t *testing.T) {
 	}
 	// erster Schritt läuft ohne Plan-Pause
 	a.sessionMsg(stepMsg(s, cmdStep("du -sh /var/log/app", "unix")))
-	if g.paused || !strings.Contains(out.String(), "du -sh /var/log/app\r") {
+	if g.paused || !out.has("du -sh /var/log/app\r") {
 		t.Fatalf("freigegebener Plan muss ohne zweite Freigabe starten: %+v", g)
 	}
 }
@@ -141,7 +141,7 @@ func TestPlanRunStaysInPlan(t *testing.T) {
 	g.waiting = false
 	// ändernd und im Plan: läuft
 	a.sessionMsg(stepMsg(s, cmdStep("bash "+g.agentDir()+"/rotate.sh", "unix")))
-	if g.paused || !strings.Contains(out.String(), "rotate.sh\r") {
+	if g.paused || !out.has("rotate.sh\r") {
 		t.Fatalf("Planschritt muss laufen: %q", g.pauseWhy)
 	}
 	g.waiting = false
