@@ -188,7 +188,9 @@ warnt vor schlecht lesbaren Farben, Strg+S speichert (geht mit dem Sync mit).
 **Symbole:** Menüs zeigen Text-Tags wie `[+]` `[k]` `[/]`, im Manager stehen Prompt-Zeichen für das System (`$` Linux,
 `%` macOS, `>` Windows, `#` Switch). Sie bestehen nur aus Zeichen, die jede Terminalschrift hat, darum sieht nichts
 verrutscht aus. Wer eine Nerd Font nutzt (z. B. „Cascadia Mono NF“), schaltet unter Einstellungen ›
-„Nerd-Font-Symbole“ echte Bildsymbole ein; der Schalter gilt pro Rechner.
+„Nerd-Font-Symbole“ echte Bildsymbole ein; der Schalter gilt pro Rechner. Vorher zeigt sshTermy eine
+Probezeile: Erscheinen dort Kästchen oder „?“, fehlt dem Terminal die Schrift (Mac:
+`brew install --cask font-caskaydia-mono-nerd-font`, dann im Terminalprofil als Schrift wählen).
 
 Die Schriftgröße gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − unter macOS.
 

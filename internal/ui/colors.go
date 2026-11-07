@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+	"runtime"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -278,25 +279,50 @@ func ansiTrunc(s string, w int) string {
 	return ansi.Truncate(s, w, "…")
 }
 
-// toggleNerdIcons schaltet zwischen Text-Tags und Nerd-Font-Symbolen.
+// toggleNerdIcons schaltet zwischen Text-Tags und Nerd-Font-Symbolen. Welche
+// Schrift das Terminal nutzt, kann ein Programm darin nicht erfahren; darum
+// zeigt das Einschalten erst eine Probezeile, und nur wer dort Symbole statt
+// Kästchen sieht, schaltet um.
 func (a *App) toggleNerdIcons() tea.Cmd {
-	on := iconSet != iconNerd
-	if err := a.st.UpdateSettings(func(s *domain.Settings) {
-		s.Icons = ""
-		if on {
-			s.Icons = iconNerd
-		}
-	}); err != nil {
-		a.flashErr(err.Error())
+	if iconSet == iconNerd {
+		a.setIcons("")
+		a.flash(i18n.T("Text-Symbole an: [+] [k] [/] … laufen mit jeder Schrift"))
 		return nil
 	}
-	a.applyLook()
-	if on {
-		a.flash(i18n.T("Nerd-Font-Symbole an · fehlen Kästchen, im Terminal eine Nerd Font wählen (z. B. Cascadia Mono NF)"))
-	} else {
-		a.flash(i18n.T("Text-Symbole an: [+] [k] [/] … laufen mit jeder Schrift"))
-	}
+	a.modal = confirmModal(i18n.T("Nerd-Font-Symbole einschalten?"), nerdProbe(), func() tea.Cmd {
+		a.setIcons(iconNerd)
+		a.flash(i18n.T("Nerd-Font-Symbole an"))
+		return nil
+	})
 	return nil
+}
+
+func (a *App) setIcons(set string) {
+	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Icons = set }); err != nil {
+		a.flashErr(err.Error())
+		return
+	}
+	a.applyLook()
+}
+
+// nerdProbe: Probezeile mit Nerd-Font-Symbolen und wie man die Schrift bekommt.
+func nerdProbe() string {
+	probe := strings.Join([]string{iconDefs["settings"].nerd, iconDefs["sshkey"].nerd, iconDefs["search"].nerd,
+		devNerd[devLinux], devNerd[devMac], devNerd[devWindows], iconDefs["manager"].nerd}, "  ")
+	return i18n.T("Probe:") + "  " + probe + "\n\n" +
+		i18n.T("Siehst du Zahnrad, Schlüssel, Lupe, Pinguin, Apfel, Windows, Server?\nDann j. Kästchen oder „?“: deinem Terminal fehlt eine Nerd Font,\ndann n (die Text-Tags [+] [k] [/] laufen mit jeder Schrift).") +
+		"\n\n" + nerdFontHint()
+}
+
+// nerdFontHint: wo es eine Nerd Font gibt und wo man sie einstellt.
+func nerdFontHint() string {
+	switch runtime.GOOS {
+	case "darwin":
+		return i18n.T("Mac: brew install --cask font-caskaydia-mono-nerd-font\ndann Terminal › Einstellungen › Profile › Text › Schrift:\n„CaskaydiaMono Nerd Font“ (iTerm2: Settings › Profiles › Text › Font).")
+	case "windows":
+		return i18n.T("Windows: „Cascadia Mono NF“ installieren, zu finden unter\ngithub.com/microsoft/cascadia-code/releases, dann Windows Terminal ›\nEinstellungen › Profil › Darstellung › Schriftart.")
+	}
+	return i18n.T("Linux: eine Nerd Font von nerdfonts.com installieren (z. B.\nCaskaydiaMono) und im Terminalprofil als Schrift wählen.")
 }
 
 // ---------------------------------------------------------------- HSL
