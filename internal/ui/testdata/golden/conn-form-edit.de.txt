@@ -1,32 +1,32 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
-
-
-
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Verbindung bearbeiten: web-01                                                                │
   │                                                                                              │
-  │ ▌ Alias               web-01                                                                 │
-  │                       Anzeigename, z. B. „DGX Spark“                                         │
-  │   Verbindung über      SSH  Telnet  Seriell (Konsolenkabel)                                  │
-  │   Host                10.0.0.11                                                              │
-  │   Port                                                                                       │
-  │   Benutzer            deploy                                                                 │
-  │   Anmeldung            agent  keyfile  password  kerberos                                    │
-  │   Ordner              ▸ Produktion / Web ▾                                                   │
-  │   Tags                prod, nginx                                                            │
-  │   Farbe               ‹  automatisch  ›  1/9                                                 │
-  │   Jump-Host           — direkt (ohne Jump-Host) ▾                                            │
-  │   Gerätetyp            automatisch  Server  Netzwerkgerät                                    │
-  │   Agent weiterreichen ○ aus                                                                  │
-  │   X11 weiterleiten    ○ aus                                                                  │
-  │   Feste Sitzung        aus  automatisch  tmux  screen                                        │
-  │   System                                                                                     │
-  │   Befehlssatz         ‹  automatisch  ›  1/15                                                │
-  │   KI-Notizen                                                                                 │
+  │ ━━ Verbindung ────────────────────────────────────────────────────────────────────────────── │
+  │ ▌ Alias                  web-01                                                              │
+  │ │ Verbindungsart         SSH                                                                 │
+  │ │ Host                   10.0.0.11                                                           │
+  │ │ Port                   22                                                                  │
+  │ │ Jump-Host              — direkt (ohne Jump-Host) ▾                                         │
   │                                                                                              │
-  └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
-
-
-
+  │ ━━ Anmeldung ─────────────────────────────────────────────────────────────────────────────── │
+  │ │ Benutzer               deploy                                                              │
+  │ │ Verfahren              agent                                                               │
+  │                                                                                              │
+  │ ━━ Einordnung ────────────────────────────────────────────────────────────────────────────── │
+  │ │ Ordner                 ▸ Produktion / Web ▾                                                │
+  │ │ Tags                   prod, nginx                                                         │
+  │ │ Farbe                  automatisch                                                         │
+  │                                                                                              │
+  │ ━━ Gerät & KI ────────────────────────────────────────────────────────────────────────────── │
+  │ │ Gerätetyp              automatisch                                                         │
+  │ │ System                 noch nicht erkannt · wird beim Verbinden ermittelt                  │
+  │ │ Befehlssatz            automatisch                                                         │
+  │ │ KI-Notizen             keine · z. B. „VLAN 99 = Management, nie reload“                    │
+  │                                                                                              │
+  │  ▸ Erweitert  alles aus ──────────────────────────────────────────────────────────────────── │
+  │                                                                                              │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ Anzeigename, z. B. „DGX Spark“                                                               │
+  │                                                                                              │
  Tab weiter  ←/→ wählen  Strg+S speichern  Esc abbrechen

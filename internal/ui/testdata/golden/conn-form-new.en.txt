@@ -1,32 +1,32 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
-
-
-
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ New connection                                                                               │
   │                                                                                              │
+  │ ━━ connection ────────────────────────────────────────────────────────────────────────────── │
   │ ▌ Alias                                                                                      │
-  │                       Display name, e.g. „DGX Spark“                                         │
-  │   Connect via          SSH  Telnet  Serial (console cable)                                   │
-  │   Host                                                                                       │
-  │   Port                22                                                                     │
-  │   User                                                                                       │
-  │   Login                agent  keyfile  password  kerberos                                    │
-  │   Folder              ▸ Netzwerk ▾                                                           │
-  │   Tags                                                                                       │
-  │   Color                automatic  none  Red  Orange  Yellow  Green  Cyan  Blue  Purple       │
-  │   Jump host           — direct (no jump host) ▾                                              │
-  │   Device type          automatic  Server  Network device                                     │
-  │   Forward agent       ○ off                                                                  │
-  │   Forward X11         ○ off                                                                  │
-  │   Persistent session   off  automatic  tmux  screen                                          │
-  │   System                                                                                     │
-  │   Command set         ‹  automatic  ›  1/15                                                  │
-  │   AI notes                                                                                   │
+  │ │ Connection type        SSH                                                                 │
+  │ │ Host                                                                                       │
+  │ │ Port                   22                                                                  │
+  │ │ Jump host              — direct (no jump host) ▾                                           │
   │                                                                                              │
-  └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
-
-
-
+  │ ━━ Login ─────────────────────────────────────────────────────────────────────────────────── │
+  │ │ User                                                                                       │
+  │ │ Method                 agent                                                               │
+  │                                                                                              │
+  │ ━━ Organize ──────────────────────────────────────────────────────────────────────────────── │
+  │ │ Folder                 ▸ Netzwerk ▾                                                        │
+  │ │ Tags                   none                                                                │
+  │ │ Color                  automatic                                                           │
+  │                                                                                              │
+  │ ━━ Device & AI ───────────────────────────────────────────────────────────────────────────── │
+  │ │ Device type            automatic                                                           │
+  │ │ System                 not detected yet · determined on connect                            │
+  │ │ Command set            automatic                                                           │
+  │ │ AI notes               none · e.g. “VLAN 99 = management, never reload”                    │
+  │                                                                                              │
+  │  ▸ Advanced  all off ─────────────────────────────────────────────────────────────────────── │
+  │                                                                                              │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ Display name, e.g. „DGX Spark“                                                               │
+  │                                                                                              │
  Tab next  ←/→ select  Ctrl+S save  Esc cancel

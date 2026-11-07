@@ -5,28 +5,28 @@
 
 
 
-
      ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
      │ KI-Copilot: Spark/vLLM, Ollama, OpenAI, Claude oder jeder OpenAI-kompatible Server               │
-     │                                                                                                  │
-     │ ▌ Anbieter             Spark / kompatibel  Ollama  OpenAI  Claude                                │
-     │                       ←/→ wählt; Adresse und Modell werden vorbelegt                             │
-     │   Base-URL            http://spark.lan:8000/v1                                                   │
+     │ ▌ Anbieter               Spark / kompatibel  Ollama  OpenAI  Claude                              │
+     │   Base-URL               http://spark.lan:8000/v1                                                │
      │   API-Key                                                                                        │
-     │   Modell              qwen3-coder                                                                │
-     │   Max-Tokens          400                                                                        │
-     │   Temperatur          0.20                                                                       │
-     │   Timeout (s)         60                                                                         │
-     │   Ghost-Text          ● an                                                                       │
-     │   Verzögerung ms      450                                                                        │
-     │   Bildschirm senden   ● an                                                                       │
-     │   Kontext-Zeilen      80                                                                         │
-     │   Ziel: Schritte/min  6                                                                          │
-     │   http mit API-Key    ○ aus                                                                      │
-     │   Ersatz-Anbieter     keine · ⏎ einrichten ▾                                                     │
+     │   Modell                 qwen3-coder                                                             │
+     │   Max-Tokens             400                                                                     │
+     │   Temperatur             0.20                                                                    │
+     │   Timeout (s)            60                                                                      │
+     │   Ghost-Text             ● an                                                                    │
+     │   Verzögerung ms         450                                                                     │
+     │   Bildschirm senden      ● an                                                                    │
+     │   Kontext-Zeilen         80                                                                      │
+     │   Ziel: Schritte/min     6                                                                       │
+     │   http mit API-Key       ○ aus                                                                   │
+     │   Ersatz-Anbieter        keine · ⏎ einrichten ▾                                                  │
+     │                                                                                                  │
+     │ ──────────────────────────────────────────────────────────────────────────────────────────────── │
+     │ ←/→ wählt; Adresse und Modell werden vorbelegt                                                   │
+     │                                                                                                  │
      │                                                                                                  │
      └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 
