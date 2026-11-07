@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sshTermy – SSH-Terminal mit KI-Copilot</title>
-<meta name="description" content="sshTermy ist ein SSH-Terminal (TUI) mit KI-Copilot für Windows, macOS und Linux: Verbindungsmanager, Ziel-Modus, Ghost-Text, SFTP, Tunnel, Broadcast. Idee: Dominik Bornhäußer.">
+<meta name="description" content="sshTermy ist ein SSH-Terminal (TUI) mit KI-Copilot für Windows, macOS und Linux: Verbindungsmanager, Ziel- und Agent-Modus, Ghost-Text, geteilte Ansicht, SFTP, Tunnel, Broadcast. Idee: Dominik Bornhäußer.">
 <link rel="alternate" hreflang="en" href="../">
 <link rel="stylesheet" href="../style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14' fill='%23bb9af7'>◆</text></svg>">
@@ -19,6 +19,7 @@
       <a href="#funktionen">Funktionen</a>
       <a href="#ki">KI einrichten</a>
       <a href="#tasten">Tasten</a>
+      <a href="#kurzreferenz">Kurzreferenz</a>
       <a href="#updates">Updates</a>
       <a href="#faq">Fragen</a>
       <a href="https://github.com/db9979/sshtermy">GitHub</a>
@@ -30,7 +31,7 @@
 <main>
 <section class="hero">
   <h1>SSH-Terminal mit <span class="accent">KI-Copilot</span></h1>
-  <p class="lead">Eine kleine Datei für Windows, macOS und Linux. Verbindungsmanager, echtes Terminal, SFTP und Tunnel, dazu eine KI, die Befehle vorschlägt, ein Ziel Schritt für Schritt umsetzt und Fehler erklärt. Jeder Befehl braucht deine Bestätigung.</p>
+  <p class="lead">Eine kleine Datei für Windows, macOS und Linux. Verbindungsmanager, echtes Terminal, SFTP und Tunnel, dazu eine KI, die Befehle vorschlägt, ein Ziel Schritt für Schritt oder als Agent selbstständig umsetzt und Fehler erklärt. Gefährliche Befehle warten immer auf dich.</p>
   <p class="credit">Idee: Dominik Bornhäußer</p>
   <div class="buttons">
     <a class="btn primary" href="#installieren">Installieren</a>
@@ -96,6 +97,20 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     </div>
     <figure><img src="../gifs/palette-de.gif" width="962" height="594" alt="Die Befehlspalette filtert Aktionen, dann geht eine Frage mit Terminal-Kontext an die KI" loading="lazy"></figure>
   </div>
+  <div class="demo">
+    <div class="text">
+      <h3>Agent-Modus: das Ziel selbstständig erreichen</h3>
+      <p>Im Ziel-Modus (<kbd>F2</kbd>) schaltet <kbd>Tab</kbd> auf den Agenten. Er führt Befehle aus, liest die Ausgabe, legt Skripte per SFTP an und startet sie, zuerst als Probelauf. Du wählst die Stufe: <em>Vorsichtig</em> (nur Lesendes allein), <em>Normal</em> oder <em>Voll</em> (auch sudo). Gefährliche Befehle warten immer auf dich, <kbd>Esc</kbd> hält an, <kbd>?</kbd> gibt eine Anweisung. Mit <em>Erst planen</em> sieht er sich nur lesend um, schreibt einen vollständigen Plan, und du streichst oder änderst Schritte, bevor du mit <kbd>⏎</kbd> freigibst.</p>
+    </div>
+    <figure><img src="../bilder/16-agent.png" alt="Agent-Modus komprimiert alte Logs: rechts der Plan, ein Skript lief als Probelauf" loading="lazy"></figure>
+  </div>
+  <div class="demo">
+    <div class="text">
+      <h3>Geteilte Ansicht, Tabs und Arbeitsplätze</h3>
+      <p><kbd>Strg</kbd>+<kbd>T</kbd> zeigt bis zu sechs Sitzungen in sieben Aufteilungen. Trennlinien mit der Maus ziehen, einen Bereich mit <kbd>Alt</kbd>+<kbd>Z</kbd> zoomen, Bereiche per Titel tauschen, und <kbd>Alt</kbd>+<kbd>I</kbd> tippt in alle gleichzeitig. <kbd>w</kbd> im Manager speichert die ganze Anordnung als Arbeitsplatz.</p>
+    </div>
+    <figure><img src="../bilder/17-geteilt.png" alt="Geteilte Ansicht: links groß ein Produktiv-Host, rechts Datenbank und Switch" loading="lazy"></figure>
+  </div>
 </section>
 
 <section id="funktionen">
@@ -113,24 +128,35 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Sitzungsprotokoll</h3><p>Verschlüsselt, durchsuchbar, mit KI-Zusammenfassung und Markdown-Export.</p></div>
     <div class="card"><h3>Sync</h3><p>Ende-zu-Ende-verschlüsselt über OneDrive, Dropbox, iCloud, Syncthing oder WebDAV (Synology, Nextcloud).</p></div>
     <div class="card"><h3>Systemprofil</h3><p>Kennt Linux-Distributionen, macOS, Windows und Netzwerk-Dialekte, damit die KI passende Befehle vorschlägt.</p></div>
+    <div class="card"><h3>Agent- &amp; Plan-Modus</h3><p>Die KI arbeitet selbstständig aufs Ziel hin, legt Skripte an und führt sie aus; drei Stufen, gefährliche Schritte warten immer auf dich. Erst planen: den ganzen Plan prüfen und freigeben.</p></div>
+    <div class="card"><h3>Geteilte Ansicht &amp; Tabs</h3><p>Sieben Aufteilungen mit bis zu sechs Sitzungen, Zoom, Tauschen, Eingabe an alle; Tab-Leiste mit <code>+</code>, <code>×</code>, Rechtsklick-Menü und Tab-Liste (<kbd>Alt</kbd>+<kbd>T</kbd>).</p></div>
+    <div class="card"><h3>Telnet &amp; Konsole</h3><p>Telnet und USB-Konsolenkabel (z. B. Aruba-Switches), Kabel wird automatisch gewählt, Anmeldung getippt.</p></div>
+    <div class="card"><h3>Profi-SSH</h3><p>Agent-Weiterleitung, X11-Weiterleitung, FIDO2-Sicherheitsschlüssel, Kerberos/GSSAPI, SSH-Zertifikate, feste tmux/screen-Sitzungen.</p></div>
+    <div class="card"><h3>Dateien im Terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) auch durch <code>sudo su</code> und mehrere Sprünge, Zwischenablage vom Server per OSC 52.</p></div>
+    <div class="card"><h3>Team-Freigabe</h3><p>Verschlüsselte <code>.sshteam</code>-Pakete und Team-Ordner, die die Verbindungen aller aktuell halten, ohne Passwörter.</p></div>
+    <div class="card"><h3>Aussehen &amp; Tasten</h3><p>Sieben Themes, darunter Matrix, Bernstein und Neon, eigene Farben, vier Symbol-Stile, jede Taste frei belegbar.</p></div>
+    <div class="card"><h3>Bildschirmsperre</h3><p>Sofort sperren oder nach 5 bis 60 Minuten Leerlauf; Sitzungen laufen hinter der Sperre weiter.</p></div>
   </div>
   <div class="shots">
     <figure><img src="../bilder/02-manager.png" alt="Verbindungsmanager" loading="lazy"><figcaption>Verbindungsmanager</figcaption></figure>
     <figure><img src="../bilder/14-host-switch.png" alt="Host-Übersicht eines Switches" loading="lazy"><figcaption>Host-Übersicht eines Switches (F6)</figcaption></figure>
     <figure><img src="../bilder/12-dateien.png" alt="Dateien per SFTP" loading="lazy"><figcaption>Dateien per SFTP (F5)</figcaption></figure>
     <figure><img src="../bilder/04-gefahr.png" alt="Gefährlicher Befehl braucht Bestätigung" loading="lazy"><figcaption>Gefahr-Regeln</figcaption></figure>
+    <figure><img src="../bilder/18-tabs.png" alt="Tab-Liste mit allen offenen Sitzungen" loading="lazy"><figcaption>Tab-Liste (Alt+T)</figcaption></figure>
+    <figure><img src="../bilder/19-protokolle.png" alt="Sitzungsprotokolle nach Tagen gruppiert" loading="lazy"><figcaption>Sitzungsprotokolle nach Tagen oder Host (l)</figcaption></figure>
   </div>
 </section>
 
 <section id="ki">
   <h2>KI einrichten</h2>
-  <p>sshTermy spricht mit jedem OpenAI-kompatiblen Endpunkt (<code>/v1/chat/completions</code>): Ollama, vLLM, SGLang, LiteLLM, LocalAI oder OpenAI selbst. Mit einem lokalen Modell bleibt dein Terminal-Inhalt auf deiner eigenen Hardware.</p>
+  <p>sshTermy spricht mit jedem OpenAI-kompatiblen Endpunkt (<code>/v1/chat/completions</code>): Ollama, vLLM, SGLang, LiteLLM, LocalAI oder OpenAI selbst, außerdem Claude (Anthropic). Mit einem lokalen Modell bleibt dein Terminal-Inhalt auf deiner eigenen Hardware.</p>
   <ol>
     <li>Im Manager <kbd>s</kbd> drücken (KI-Einstellungen).</li>
     <li>URL eintragen, z. B. <code>http://localhost:11434/v1</code> für Ollama, und einen API-Schlüssel, falls der Endpunkt einen braucht (wird verschlüsselt gespeichert).</li>
     <li><kbd>Strg</kbd>+<kbd>T</kbd> testet den Endpunkt, <kbd>Strg</kbd>+<kbd>L</kbd> listet die Modelle zur Auswahl.</li>
+    <li>Auf Wunsch bis zu drei Ersatz-Anbieter, die der Reihe nach einspringen, wenn der erste nicht antwortet.</li>
   </ol>
-  <p>Der Punkt oben rechts zeigt, ob die KI erreichbar ist (grün, gelb bei langsamer Antwort, rot bei Fehler). Die KI hat keine eigenen Werkzeuge: sie schlägt nur vor, du entscheidest, was läuft. Passwörter und Geheimnisse werden vor dem Senden aus dem Kontext entfernt.</p>
+  <p>Der Punkt oben rechts zeigt, ob die KI erreichbar ist (grün, gelb bei langsamer Antwort, rot bei Fehler). Schritt für Schritt schlägt die KI nur vor, und du entscheidest, was läuft. Im Agent-Modus führt sie Befehle im Rahmen der gewählten Stufe aus; gefährliche Befehle und jede Änderung auf Produktiv-Hosts und Netzwerkgeräten warten trotzdem auf dich. Passwörter und Geheimnisse werden vor dem Senden aus dem Kontext entfernt.</p>
 </section>
 
 <section id="tasten">
@@ -144,11 +170,26 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F2</kbd></td><td>Ziel-Modus (Agent)</td></tr>
     <tr><td><kbd>F3</kbd></td><td>KI fragen, mit Terminal-Kontext</td></tr>
     <tr><td><kbd>F4</kbd> / <kbd>F5</kbd> / <kbd>F6</kbd></td><td>Tunnel / Dateien (SFTP) / Host-Übersicht</td></tr>
+    <tr><td><kbd>F7</kbd> / <kbd>F8</kbd></td><td>Tab zurück / vor</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>T</kbd> / <kbd>Alt</kbd>+<kbd>N</kbd> / <kbd>Alt</kbd>+<kbd>W</kbd></td><td>Tab-Liste / neuer Tab / Tab schließen</td></tr>
     <tr><td><kbd>F9</kbd>, <kbd>⇧</kbd>+<kbd>F1</kbd>…<kbd>F8</kbd></td><td>Schnellbefehle</td></tr>
+    <tr><td><kbd>Strg</kbd>+<kbd>T</kbd></td><td>Geteilte Ansicht: Aufteilung wählen (1…7)</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>Alt</kbd>+<kbd>I</kbd></td><td>Bereich zoomen / in alle Bereiche tippen</td></tr>
+    <tr><td><kbd>Strg</kbd>+<kbd>F</kbd></td><td>Im Verlauf suchen</td></tr>
+    <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Tab in ein eigenes Terminalfenster</td></tr>
     <tr><td><kbd>F10</kbd></td><td>Zurück zum Manager (Sitzungen laufen weiter)</td></tr>
     <tr><td><kbd>F1</kbd> / <kbd>F12</kbd> / <kbd>Strg</kbd>+<kbd>Q</kbd></td><td>Hilfe / Über und Update / Beenden</td></tr>
   </table>
   <p>Alle Tasten lassen sich ändern: <kbd>b</kbd> im Manager. Die ganze Liste steht in der <a href="https://github.com/db9979/sshtermy/blob/main/README.de.md">README</a> und in der App (<kbd>F1</kbd>).</p>
+</section>
+
+<section id="kurzreferenz">
+  <h2>Kurzreferenz zum Ausdrucken</h2>
+  <p>Alle Tasten, Modi und Funktionen auf zwei A4-Seiten, druckerfreundlich (weißer Hintergrund, wenig Tinte). Am besten neben die Tastatur legen.</p>
+  <div class="buttons">
+    <a class="btn primary" href="../handout/sshtermy-kurzreferenz-de.pdf">⤓ Kurzreferenz (Deutsch, PDF)</a>
+    <a class="btn" href="../handout/sshtermy-quickref-en.pdf">⤓ Quick reference (English, PDF)</a>
+  </div>
 </section>
 
 <section id="updates">
@@ -179,6 +220,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <a href="https://github.com/db9979/sshtermy/releases">Releases</a>
     <a href="https://github.com/db9979/sshtermy/blob/main/LICENSE">MIT-Lizenz</a>
     <a href="https://buymeacoffee.com/zquu1xu570">☕ Kaffee spendieren</a>
+    <a href="../handout/sshtermy-kurzreferenz-de.pdf">Kurzreferenz (PDF)</a>
     <a href="../">English</a>
   </div>
 </footer>

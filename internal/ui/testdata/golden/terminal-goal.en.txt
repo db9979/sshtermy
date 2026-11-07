@@ -12,12 +12,12 @@ deploy@web-01:~$                                                        │     
                                                                         │ ○ Agent · Careful                            │
                                                                         │ ○ Agent · Normal                             │
                                                                         │ ○ Agent · Full                               │
+                                                                        │ ○ Plan first                                 │
                                                                         │   you confirm every command                  │
                                                                         │                                              │
                                                                         │ The AI breaks the goal into single commands, │
                                                                         │ explains each briefly and waits for your     │
                                                                         │ confirmation. It never types by itself.      │
-                                                                        │                                              │
                                                                         │                                              │
                                                                         │                                              │
                                                                         │                                              │

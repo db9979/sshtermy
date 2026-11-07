@@ -234,7 +234,11 @@ func TestAgentViewRenders(t *testing.T) {
 		t.Errorf("Tab: Stufe %d", g.level)
 	}
 	a.panelMsg(s, tea.KeyPressMsg{Code: tea.KeyTab})
-	if g.auto {
-		t.Error("Tab nach Voll muss zu Schritt für Schritt wechseln")
+	if !g.planFirst {
+		t.Error("Tab nach Voll muss zu „Erst planen“ wechseln")
+	}
+	a.panelMsg(s, tea.KeyPressMsg{Code: tea.KeyTab})
+	if g.auto || g.planFirst {
+		t.Error("Tab nach „Erst planen“ muss zu Schritt für Schritt wechseln")
 	}
 }

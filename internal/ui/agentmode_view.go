@@ -20,14 +20,16 @@ func (a *App) viewModeChoice(b *strings.Builder, s *session, w int) {
 		level int
 		name  string
 		hint  string
+		plan  bool
 	}
-	opts := []opt{{false, 0, i18n.T("Schritt für Schritt"), i18n.T("du bestätigst jeden Befehl")}}
+	opts := []opt{{false, 0, i18n.T("Schritt für Schritt"), i18n.T("du bestätigst jeden Befehl"), false}}
 	for _, l := range []int{lvlCareful, lvlNormal, lvlFull} {
-		opts = append(opts, opt{true, l, i18n.T("Agent · ") + levelName(l), levelHint(l)})
+		opts = append(opts, opt{true, l, i18n.T("Agent · ") + levelName(l), levelHint(l), false})
 	}
+	opts = append(opts, opt{true, lvlNormal, i18n.T("Erst planen"), i18n.T("erkundet nur lesend, du gibst den Plan frei"), true})
 	hint := ""
 	for _, o := range opts {
-		sel := o.auto == g.auto && (!o.auto || o.level == g.level)
+		sel := o.plan == g.planFirst && (o.plan || (o.auto == g.auto && (!o.auto || o.level == g.level)))
 		mark, style := st.Muted.Render("○ "), st.Text
 		if sel {
 			mark, style, hint = st.AI.Render("● "), st.AI.Bold(true), o.hint
@@ -36,11 +38,16 @@ func (a *App) viewModeChoice(b *strings.Builder, s *session, w int) {
 		o := o
 		b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
 			s.panelFocus = true
-			g.auto, g.level = o.auto, o.level
+			g.auto, g.level, g.planFirst = o.auto, o.level, o.plan
 			return g.input.Focus()
 		}) + "\n")
 	}
-	b.WriteString(wrap(st.Muted.Render("  "+hint), w) + "\n\n")
+	b.WriteString(lipglossIndent(wrap(st.Muted.Render(hint), max(4, w-2)), 2) + "\n\n")
+	if g.planFirst {
+		b.WriteString(wrap(st.Muted.Render(i18n.T("Die KI sieht sich mit lesenden Befehlen um und schreibt einen vollständigen Plan: ")+
+			i18n.T("Schritte, Skripte, Risiken und Prüfung. Du streichst oder änderst Schritte, lässt neu planen und gibst ihn frei.")), w))
+		return
+	}
 	if !g.auto {
 		b.WriteString(wrap(st.Muted.Render(i18n.T("Die KI zerlegt das Ziel in einzelne Befehle, erklärt jeden kurz und wartet auf ")+
 			i18n.T("deine Bestätigung. Sie tippt nie selbst.")), w))
@@ -201,4 +208,25 @@ func (a *App) agentPanelKeys(s *session) [][2]string {
 		}
 	}
 	return append(k, [2]string{"?", i18n.T("anweisen")}, [2]string{"x", i18n.T("beenden")}, [2]string{"Esc", "Terminal"})
+}
+
+// savePlanRunbook: den Plan (vor der Ausführung) als Runbook speichern.
+func (a *App) savePlanRunbook(s *session) {
+	g := &s.goal
+	rb := g.planRunbook()
+	for _, x := range a.st.Runbooks("") {
+		if x.Goal == rb.Goal {
+			rb.ID, rb.Name, rb.CreatedAt, rb.Uses, rb.LastUsed, rb.ConnectionID = x.ID, x.Name, x.CreatedAt, x.Uses, x.LastUsed, x.ConnectionID
+			break
+		}
+	}
+	if s.client != nil {
+		rb.OS = s.client.Remote.OS
+	}
+	saved, err := a.st.UpsertRunbook(rb)
+	if err != nil {
+		a.flashErr(i18n.T("Runbook: ") + err.Error())
+		return
+	}
+	a.flash(i18n.T("Runbook gespeichert: ") + trunc(saved.Name, 40) + " (" + plural(len(saved.Steps), i18n.T("Schritt"), i18n.T("Schritte")) + ")")
 }

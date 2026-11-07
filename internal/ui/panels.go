@@ -60,6 +60,13 @@ type goalState struct {
 	rateUntil        time.Time // Ratenlimit: nächster Schritt erst dann
 	runID            string
 	files            []agent.FileAction
+
+	// Plan-Modus (planmode.go)
+	planFirst, planning bool            // „Erst planen“ gewählt / erkundet gerade
+	approved            bool            // Lauf führt einen freigegebenen Plan aus
+	fp, fpPrev          *agent.FullPlan // Plan zur Freigabe / beim Überarbeiten
+	planSel, explored   int
+	planOff             []bool
 	recipeFiles      []agent.FileAction
 }
 
@@ -166,12 +173,15 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 		g.busy = false
 		if m.err != nil {
 			g.err = m.err.Error()
-			if g.auto {
+			if g.auto && !g.planning {
 				a.agentPause(s, i18n.T("KI-Fehler, ⏎ versucht es erneut"))
 			}
 			return nil, true
 		}
 		g.err = ""
+		if g.planning && m.step.Question == "" {
+			return a.planStepMsg(s, m.step), true
+		}
 		switch {
 		case m.step.Done:
 			g.done, g.active, g.doneReason, g.cur = true, false, m.step.Reason, nil
@@ -258,10 +268,10 @@ func (a *App) requestStep(s *session) tea.Cmd {
 		}
 	}
 	g.times = recent
-	if g.auto {
+	if g.auto || g.planning {
 		limit *= 2 // der Agent macht viele kurze, lesende Schritte
 	}
-	if len(recent) >= limit && g.auto && len(recent) > 0 {
+	if len(recent) >= limit && (g.auto || g.planning) && len(recent) > 0 {
 		// Agent: kurz warten statt anhalten
 		wait := time.Minute - now.Sub(recent[0]) + 100*time.Millisecond
 		g.rateUntil = now.Add(wait)
@@ -292,8 +302,20 @@ func (a *App) requestStep(s *session) tea.Cmd {
 	goal, hist, ans := g.goal, append([]agent.DoneStep(nil), g.steps...), append([]string(nil), g.answers...)
 	recipe := g.recipe
 	c := a.agentContext(s, true)
+	if g.planning {
+		info := agent.AutoInfo{}
+		if a.agentFilesOK(s) {
+			info.Dir = g.agentDir()
+		}
+		prev, must := g.fpPrev, g.explored >= agent.MaxExplore
+		return func() tea.Msg {
+			defer cancel()
+			st, err := ag.PlanNext(ctx, goal, hist, ans, prev, must, info, c)
+			return goalStepMsg{sid, seq, st, err}
+		}
+	}
 	if g.auto {
-		info := agent.AutoInfo{Files: g.recipeFiles}
+		info := agent.AutoInfo{Files: g.recipeFiles, Approved: g.approved}
 		if a.agentFilesOK(s) {
 			info.Dir = g.agentDir()
 		}
@@ -320,6 +342,9 @@ func (a *App) goalTick(s *session) tea.Cmd {
 	quiet := time.Since(s.lastOutput) > 1500*time.Millisecond && time.Since(g.waitSince) > time.Second
 	if quiet && s.term.AtIdlePrompt() {
 		g.waiting = false
+		if g.planning {
+			return a.requestStep(s)
+		}
 		if g.auto {
 			return a.agentStepFinished(s)
 		}
@@ -404,6 +429,9 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	if key == "ctrl+s" {
 		a.saveRunbook(s)
 		return nil
+	}
+	if g.planReview() && isKey {
+		return a.planKey(s, key)
 	}
 	if cmd, ok := a.agentKey(s, key); ok {
 		return cmd
@@ -650,6 +678,9 @@ func (a *App) toggleTunnelAuto(t domain.Tunnel) {
 func (a *App) panelKeys(s *session) [][2]string {
 	switch s.panel {
 	case panelGoal:
+		if k := a.planPanelKeys(s); k != nil {
+			return k
+		}
 		if k := a.agentPanelKeys(s); k != nil {
 			return k
 		}
@@ -734,7 +765,9 @@ func (a *App) viewPanel(s *session, w, h int) string {
 	}
 	content := lipgloss.NewStyle().Width(inner).Render(b.String())
 	lines := strings.Split(content, "\n")
-	if len(lines) > h-2 {
+	if len(lines) > h-2 && s.panel == panelGoal && s.goal.planReview() {
+		lines = lines[:h-2] // Plan: Anfang mit den Schritten sichtbar halten
+	} else if len(lines) > h-2 {
 		lines = lines[len(lines)-(h-2):] // Ende sichtbar halten
 	}
 	return style.Width(w).Height(h).MaxHeight(h).Render(strings.Join(lines, "\n"))
@@ -745,7 +778,9 @@ func wrap(s string, w int) string { return lipgloss.NewStyle().Width(w).Render(s
 func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	st := a.s
 	g := &s.goal
-	if g.auto {
+	if g.planFirst && (!g.active || g.planning || g.fp != nil) && !g.done {
+		b.WriteString(st.PanelTitle.Foreground(st.T.AI).Render(i18n.T("◇ Plan-Modus")) + st.Muted.Render(i18n.T("  erst planen, dann ausführen")) + "\n\n")
+	} else if g.auto {
 		b.WriteString(st.PanelTitle.Foreground(st.T.AI).Render(i18n.T("◆ Agent-Modus")) + st.Muted.Render(i18n.T("  arbeitet selbstständig")) + "\n\n")
 	} else {
 		b.WriteString(st.PanelTitle.Render(i18n.T("◎ Ziel-Modus")) + st.Muted.Render(i18n.T("  KI-Agent")) + "\n\n")
@@ -790,7 +825,13 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	case g.runbookID != "":
 		b.WriteString(st.Badge.Foreground(st.T.AI).Render(i18n.T("▶ als Runbook gespeichert")) + "\n")
 	}
-	if g.auto {
+	if g.planReview() {
+		a.viewPlan(b, s, w)
+		return
+	}
+	if g.planning {
+		a.viewPlanning(b, s, w)
+	} else if g.auto {
 		a.viewAgentStatus(b, s, w)
 	}
 	b.WriteString(st.Muted.Render(i18n.T("Ziel")) + "\n" + wrap(st.Text.Bold(true).Render(g.goal), w) + "\n\n")
@@ -1054,14 +1095,22 @@ func (a *App) startGoalWith(s *session, text string, rb *domain.Runbook) tea.Cmd
 	a.panelOpened(withPanel(s, panelGoal))
 	g := &s.goal
 	g.cancel()
-	auto, level := g.auto, g.level
+	auto, level, pf := g.auto, g.level, g.planFirst
 	*g = goalState{input: g.input, edit: g.edit, answer: g.answer, inited: true,
-		goal: strings.TrimSpace(text), active: true, rbSel: -1, auto: auto, level: level}
+		goal: strings.TrimSpace(text), active: true, rbSel: -1, auto: auto, level: level, planFirst: pf}
+	fromPlan := rb != nil && rb.ID == planRunbookID
 	if rb != nil {
 		g.recipe, g.runbookID = append([]string(nil), rb.Steps...), rb.ID
 	}
-	if g.auto {
+	if fromPlan {
+		g.runbookID, g.approved = "", true
+	}
+	g.planning = pf && rb == nil
+	if g.auto || g.planning || fromPlan {
 		a.agentInit(s, rb)
+	}
+	if fromPlan {
+		g.planOK = true // der Plan ist schon freigegeben
 	}
 	g.input.SetValue(g.goal)
 	g.input.Blur()
@@ -1113,6 +1162,10 @@ func withPanel(s *session, k panelKind) *session {
 // aktualisiert statt dupliziert.
 func (a *App) saveRunbook(s *session) {
 	g := &s.goal
+	if g.planReview() {
+		a.savePlanRunbook(s)
+		return
+	}
 	running := g.active || g.done
 	goal := strings.TrimSpace(g.input.Value())
 	if running {

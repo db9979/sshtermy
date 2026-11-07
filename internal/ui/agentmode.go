@@ -66,7 +66,9 @@ func levelHint(l int) string {
 }
 
 // agentRunning: läuft gerade ein Agent (nicht angehalten)?
-func (g *goalState) agentRunning() bool { return g.auto && g.active && !g.paused }
+func (g *goalState) agentRunning() bool {
+	return g.auto && g.active && !g.paused && !g.planning && g.fp == nil
+}
 
 // agentDir: Arbeitsordner dieses Laufs, so wie die Shell ihn versteht.
 func (g *goalState) agentDir() string { return "~/" + agentDirBase + "/" + g.runID }
@@ -110,6 +112,8 @@ func (a *App) agentGate(s *session, st *agent.Step) (bool, string) {
 	prod, net := isProduction(s.conn), s.netDevice()
 	if st.File != nil {
 		switch {
+		case g.approved && !g.planHasFile(st.File.Name):
+			return false, i18n.T("nicht im freigegebenen Plan")
 		case g.level == lvlCareful:
 			return false, i18n.T("Stufe Vorsichtig: Datei anlegen fragt nach")
 		case prod:
@@ -123,6 +127,8 @@ func (a *App) agentGate(s *session, st *agent.Step) (bool, string) {
 		return true, ""
 	}
 	switch {
+	case g.approved && !g.planHasCmd(st.Command):
+		return false, i18n.T("nicht im freigegebenen Plan")
 	case g.level == lvlCareful:
 		return false, i18n.T("Stufe Vorsichtig: Befehl ändert etwas")
 	case net:
@@ -454,12 +460,14 @@ func (a *App) agentView(s *session) {
 // cycleMode: Tab im Startfeld: Schritt für Schritt → Agent (3 Stufen) → …
 func (g *goalState) cycleMode() {
 	switch {
+	case g.planFirst:
+		g.planFirst, g.auto = false, false
 	case !g.auto:
 		g.auto, g.level = true, lvlCareful
 	case g.level < lvlFull:
 		g.level++
 	default:
-		g.auto = false
+		g.planFirst, g.auto, g.level = true, true, lvlNormal // Plan läuft danach als Agent (Normal)
 	}
 }
 
@@ -467,7 +475,7 @@ func (g *goalState) cycleMode() {
 // die normale Ziel-Modus-Behandlung übernimmt.
 func (a *App) agentKey(s *session, key string) (tea.Cmd, bool) {
 	g := &s.goal
-	if !g.auto {
+	if !g.auto || g.planning {
 		return nil, false
 	}
 	if g.done && !g.active {

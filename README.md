@@ -62,6 +62,10 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     and network devices every change asks. Limits: 25 steps, 15 minutes, 3 failures in a row. Esc or typing in the
     terminal pauses it, `?` gives it an instruction. At the end: summary, changed files, `s` saves the run as a runbook
     including its scripts, `r` deletes the scripts on the host. Every step is marked "Agent" in the session log.
+  - **Plan mode** (F2, Tab until "Plan first"): the AI first looks around with read-only commands only, then writes a
+    complete plan (steps, scripts, risks, checks). Remove steps (Space), change them (`e`), have it re-planned (`?`),
+    pick how it runs (Tab: step by step or agent level) and approve with ⏎. The agent then sticks to the approved plan:
+    a changing command or file that is not in the plan pauses it. Ctrl+S saves the plan as a runbook.
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
   - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z)
@@ -147,11 +151,15 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 
 ## Usage
 
+🖨 **Printable quick reference** (A4, 2 pages): [English PDF](https://db9979.github.io/sshtermy/handout/sshtermy-quickref-en.pdf) · [German PDF](https://db9979.github.io/sshtermy/handout/sshtermy-kurzreferenz-de.pdf)
+
 | Where | Key | Effect |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | connect / new / edit / delete / search / tunnel / AI settings / sync / session logs |
 | | i / a / b | import connections / switch appearance / customize shortcuts |
+| | c / q | create or copy an SSH key / edit quick commands |
 | | m / f | broadcast to several hosts / network scan |
+| | w / g | workspaces (saved split layouts) / open a folder as a grid |
 | Folders | o / r / v / d | create folder („A / B“ nested) / rename / move / dissolve (content stays) |
 | | ← → Space / - + | collapse/expand folder / collapse or expand all |
 | | Shift+↑↓ (Alt+↑↓), drag with the mouse | change the order, drag into a folder |
@@ -171,8 +179,9 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | F10 | back to the manager (sessions keep running) |
 | | ⇧F9 | key bar explains the keys of the current area |
 | | ⇧F10 | move the tab to its own terminal window (Windows Terminal/console, Terminal.app/iTerm2, Linux terminals, tmux); the session stays open, closing the window or ⏎ brings it back. Own terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
-| | Ctrl+F | search the scrollback |
+| | Ctrl+F | search the scrollback (Ctrl+E only error lines, Tab error list) |
 | | Ctrl+T | choose a layout: one, two side by side/stacked, large + two, three, four, six (keys 1…7); inside, ⇧+arrow resizes, `=` equal sizes, `z` zoom, `d` dim the others, `w` workspaces |
+| | Alt+I | split view: type into all visible panes at once |
 | | Ctrl+arrow / Alt+⇧+arrow / Alt+Z | split view: switch pane / move divider / zoom the active pane. Mouse: drag a divider (double-click = equal sizes), drag a title onto another pane = swap, double-click a title = zoom |
 | | Tab or → | accept ghost text |
 | | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
@@ -181,12 +190,17 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | Paste | multi-line shows a preview first (⏎ paste, o without the last Enter, Esc cancel); palette „Paste guard off“ |
 | Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |
 | | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |
+| | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
+| Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host |
+| Plan mode | ↑↓ / Space / e / v / ? | choose step / remove or restore / edit / view script / re-plan |
+| | Tab / ⏎ / x | how it runs (step by step or agent level) / approve and run / discard; Ctrl+S saves the plan as a runbook |
 | AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |
-| Logs | / / z / Z / x / d / a | search / AI summary / summarize all matches / Markdown export / delete / recording on/off |
+| Logs | / / Tab / f / s | search (output too) / by day or by host / filter today · 7 days · failures / sort hosts |
+| | z / Z / x / d / a | AI summary / summarize all matches / export (md, txt, cast) / delete / recording on/off |
 | AI settings | Ctrl+T / Ctrl+L | test endpoint / choose a model from the endpoint's list |
 | Everywhere | Ctrl+Space | command palette: ⏎ start as goal, Tab ask AI, ↑↓ choose suggestion/tunnel/connection |
 | | F1 / F12 / Ctrl+Q | help / about + update / quit |
-| | F12 → l | switch language (English ↔ German) |
+| | F12 → l / F12 → w | switch language (English ↔ German) / what's new |
 
 Why function keys instead of `Ctrl+A`? In bash/zsh `Ctrl+A` means „beginning of line“ and it is the prefix of GNU screen.
 sshTermy only binds keys that shells and full-screen programs practically never need.
@@ -245,15 +259,19 @@ The screenshots show the German interface; the English one looks the same.
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
 **Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question, below it suggestions, tunnels, connections and actions.
-Toggles, look, language and setup live in the **[:] Settings ›** submenu (each toggle shows "on"/"off" and the palette stays open while you flip them); shortcuts, tour, news and update are under **[?] Help & info ›**. Typing still finds items inside the submenus directly; Esc or ← goes back.
+Toggles, look, language and setup live in the **[:] Settings ›** submenu (each toggle shows "on"/"off" and the palette stays open while you flip them); shortcuts, tour, news and update are under **[?] Help & info ›**. Entries with several values show them as ‹ value ›: ⏎, → or a click moves to the next one, ← back. AI, relay and import have their own subfolders. Typing still finds items inside the submenus directly, even single values like “Matrix”; Esc or ← goes back.
 
 ![Command palette](docs/bilder/09-palette.png)
 
 | Files (SFTP, F5) | Runbooks in goal mode |
 |---|---|
 | ![](docs/bilder/12-dateien.png) | ![](docs/bilder/11-runbooks.png) |
-| **Test the AI endpoint, choose a model** | |
-| ![](docs/bilder/10-ki-test.png) | |
+| **Test the AI endpoint, choose a model** | **Agent mode: works on its own, writes scripts** |
+| ![](docs/bilder/10-ki-test.png) | ![](docs/bilder/16-agent.png) |
+| **Split view: large + two** | **Tab list (Alt+T)** |
+| ![](docs/bilder/17-geteilt.png) | ![](docs/bilder/18-tabs.png) |
+| **Session logs by day** | |
+| ![](docs/bilder/19-protokolle.png) | |
 | **Host overview server (F6)** | **Switch: overview and config backup** |
 | ![](docs/bilder/15-host-server.png) | ![](docs/bilder/14-host-switch.png) |
 
@@ -446,6 +464,8 @@ make bench        # performance: terminal throughput, memory per tab, manager wi
 make build        # bin/sshtermy
 make dist         # all platforms to dist/ + checksums.txt
 make golden       # rewrite the screen tests after an intended UI change
+make handout      # printable quick reference site/handout/*.pdf (Node + Playwright; content in tools/handout/content.mjs)
+                  # TestHandoutKeysCurrent fails when keys or help change until this has run again
 ```
 
 **Screen tests:** `internal/ui/golden_test.go` draws every view (manager, forms, dialogs, terminal with panels,

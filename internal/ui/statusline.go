@@ -155,7 +155,9 @@ func (a *App) sessionBar(s *session) string {
 	goal := ""
 	if s.goal.active {
 		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render(i18n.T("◎ Ziel aktiv")))
-		if s.goal.auto {
+		if s.goal.planning || s.goal.fp != nil {
+			goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Bold(true).Render(i18n.T("◇ PLAN")))
+		} else if s.goal.auto {
 			label, fg := i18n.T("◆ AGENT LÄUFT"), st.T.AI
 			if s.goal.paused || (s.goal.cur != nil && s.goal.cur.Question != "") {
 				label, fg = i18n.T("◆ AGENT WARTET"), st.T.Warn

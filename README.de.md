@@ -62,6 +62,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     jede Änderung nach. Grenzen: 25 Schritte, 15 Minuten, 3 Fehler in Folge. Esc oder Tippen im Terminal hält ihn an,
     `?` gibt ihm eine Anweisung. Am Ende: Zusammenfassung, geänderte Dateien, `s` speichert den Lauf als Runbook samt
     Skripten, `r` löscht die Skripte auf dem Host. Jeder Schritt steht als „Agent“ im Sitzungsprotokoll.
+  - **Plan-Modus** (F2, Tab bis „Erst planen“): Die KI sieht sich erst nur mit lesenden Befehlen um und schreibt dann
+    einen vollständigen Plan (Schritte, Skripte, Risiken, Prüfung). Schritte streichen (Leertaste), ändern (`e`), neu
+    planen lassen (`?`), Ausführung wählen (Tab: Schritt für Schritt oder Agent-Stufe) und mit ⏎ freigeben. Der Agent
+    hält sich dann an den Plan: ein ändernder Befehl oder eine Datei, die nicht im Plan steht, hält ihn an.
+    Strg+S speichert den Plan als Runbook.
   - **Runbooks**: Ziele mit den ausgeführten Befehlen speichern (Strg+S) und wiederverwenden, der Agent nimmt sie als Vorlage
   - **Endpunkt-Test und Modellauswahl** in den KI-Einstellungen (Strg+T testet, Strg+L listet die Modelle von `/v1/models`)
   - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort als Karten mit Syntaxfarben: einfügen (⏎/1…9), ausführen (a), kopieren (c), Erklärung einklappbar (z)
@@ -147,11 +152,15 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 
 ## Bedienung
 
+🖨 **Kurzreferenz zum Ausdrucken** (A4, 2 Seiten): [Deutsch (PDF)](https://db9979.github.io/sshtermy/handout/sshtermy-kurzreferenz-de.pdf) · [English (PDF)](https://db9979.github.io/sshtermy/handout/sshtermy-quickref-en.pdf)
+
 | Wo | Taste | Wirkung |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
 | | i / a / b | Verbindungen importieren / Aussehen wechseln / Tastenkürzel anpassen |
+| | c / q | SSH-Schlüssel erzeugen oder übertragen / Schnellbefehle bearbeiten |
 | | m / f | Broadcast an mehrere Hosts / Netzwerk-Scan |
+| | w / g | Arbeitsplätze (gespeicherte Aufteilungen) / Ordner als Raster öffnen |
 | Ordner | o / r / v / d | Ordner anlegen („A / B“ verschachtelt) / umbenennen / verschieben / auflösen (Inhalt bleibt) |
 | | ← → Space / - + | Ordner zu-/aufklappen / alle zu bzw. auf |
 | | Shift+↑↓ (Alt+↑↓), Maus ziehen | Reihenfolge ändern, in einen Ordner ziehen |
@@ -171,8 +180,9 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
 | | ⇧F9 | Tastenzeile erklärt die Tasten des Bereichs |
 | | ⇧F10 | Tab in ein eigenes Terminalfenster abtrennen (Windows Terminal/Konsole, Terminal.app/iTerm2, Linux-Terminals, tmux); die Sitzung bleibt offen, Fenster schließen oder ⏎ holt sie zurück. Eigenes Terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
-| | Strg+F | im Verlauf suchen |
+| | Strg+F | im Verlauf suchen (Strg+E nur Fehlerzeilen, Tab Fehlerliste) |
 | | Strg+T | Aufteilung wählen: eine, zwei nebeneinander/untereinander, groß + zwei, drei, vier, sechs (Tasten 1…7); im Fenster ⇧+Pfeil Größe, `=` gleich groß, `z` Zoom, `d` andere abdunkeln, `w` Arbeitsplätze |
+| | Alt+I | geteilte Ansicht: Eingabe gleichzeitig an alle sichtbaren Bereiche |
 | | Strg+Pfeil / Alt+⇧+Pfeil / Alt+Z | geteilte Ansicht: Bereich wechseln / Trennlinie verschieben / aktiven Bereich zoomen. Maus: Trennlinie ziehen (Doppelklick = gleich groß), Titel auf anderen Bereich ziehen = tauschen, Doppelklick auf Titel = Zoom |
 | | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
@@ -181,11 +191,17 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | | Einfügen | mehrzeilig erst Vorschau (⏎ einfügen, o ohne letztes Enter, Esc abbrechen); Palette „Einfügeschutz aus“ |
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
 | | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |
+| | Tab | Schritt für Schritt → Agent *Vorsichtig* → *Normal* → *Voll* → *Erst planen* |
+| Agent-Modus | Esc / ? / v / x | anhalten / Anweisung geben / Skript ansehen / beenden; am Ende `s` als Runbook speichern, `r` Skripte auf dem Host löschen |
+| Plan-Modus | ↑↓ / Leertaste / e / v / ? | Schritt wählen / streichen oder zurückholen / ändern / Skript ansehen / neu planen |
+| | Tab / ⏎ / x | Ausführung (Schritt für Schritt oder Agent-Stufe) / freigeben und ausführen / verwerfen; Strg+S speichert den Plan als Runbook |
 | KI-Eingaben | ⇧⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |
-| Protokolle | / / z / Z / x / d / a | suchen / KI-Zusammenfassung / alle Treffer zusammenfassen / Markdown-Export / löschen / Mitschreiben an/aus |
+| Protokolle | / / Tab / f / s | suchen (auch in der Ausgabe) / nach Tagen oder nach Host / Filter heute · 7 Tage · Fehler / Hosts sortieren |
+| | z / Z / x / d / a | KI-Zusammenfassung / alle Treffer zusammenfassen / Export (md, txt, cast) / löschen / Mitschreiben an/aus |
 | KI-Einstellungen | Strg+T / Strg+L | Endpunkt testen / Modell aus der Liste des Endpunkts wählen |
 | Überall | Strg+Leertaste | Befehlspalette: ⏎ als Ziel starten, Tab KI fragen, ↑↓ Vorschlag/Tunnel/Verbindung wählen |
 | | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden |
+| | F12 → l / F12 → w | Sprache wechseln (Deutsch ↔ Englisch) / Was ist neu |
 
 Warum F-Tasten statt `Strg+A`? `Strg+A` ist in bash/zsh „Zeilenanfang“ und das Präfix von GNU screen. sshTermy
 belegt nur Tasten, die Shells und Vollbildprogramme praktisch nie brauchen.
@@ -243,15 +259,19 @@ Telnet ist unverschlüsselt, nur in vertrauenswürdigen Netzen verwenden.
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
 **Befehlspalette (Strg+Leertaste):** ein Feld für alles, Text wird zum Ziel oder zur Frage, darunter Vorschläge, Tunnel, Verbindungen und Aktionen.
-Schalter, Aussehen, Sprache und Einrichtung liegen im Untermenü **[:] Einstellungen ›** (rechts steht „an“/„aus“, die Palette bleibt beim Umschalten offen), Tastenkürzel, Tour, Neuigkeiten und Update unter **[?] Hilfe & Info ›**. Wer tippt, findet auch die Punkte aus den Untermenüs direkt; Esc oder ← führt zurück.
+Schalter, Aussehen, Sprache und Einrichtung liegen im Untermenü **[:] Einstellungen ›** (rechts steht „an“/„aus“, die Palette bleibt beim Umschalten offen), Tastenkürzel, Tour, Neuigkeiten und Update unter **[?] Hilfe & Info ›**. Einträge mit mehreren Werten zeigen sie als ‹ Wert ›: ⏎, → oder Klick schaltet weiter, ← zurück. KI, Vermittler und Import haben eigene Unterordner. Wer tippt, findet auch die Punkte aus den Untermenüs direkt, sogar Einzelwerte wie „Matrix“; Esc oder ← führt zurück.
 
 ![Befehlspalette](docs/bilder/09-palette.png)
 
 | Dateien (SFTP, F5) | Runbooks im Ziel-Modus |
 |---|---|
 | ![](docs/bilder/12-dateien.png) | ![](docs/bilder/11-runbooks.png) |
-| **KI-Endpunkt testen, Modell wählen** | |
-| ![](docs/bilder/10-ki-test.png) | |
+| **KI-Endpunkt testen, Modell wählen** | **Agent-Modus: arbeitet selbstständig, legt Skripte an** |
+| ![](docs/bilder/10-ki-test.png) | ![](docs/bilder/16-agent.png) |
+| **Geteilte Ansicht: groß + zwei** | **Tab-Liste (Alt+T)** |
+| ![](docs/bilder/17-geteilt.png) | ![](docs/bilder/18-tabs.png) |
+| **Sitzungsprotokolle nach Tagen** | |
+| ![](docs/bilder/19-protokolle.png) | |
 | **Host-Übersicht Server (F6)** | **Switch: Übersicht und Config-Sicherung** |
 | ![](docs/bilder/15-host-server.png) | ![](docs/bilder/14-host-switch.png) |
 
@@ -444,6 +464,8 @@ make bench        # Leistung: Terminal-Durchsatz, Speicher pro Tab, Manager mit 
 make build        # bin/sshtermy
 make dist         # alle Plattformen nach dist/ + checksums.txt
 make golden       # Bildschirm-Tests nach einer gewollten Änderung neu schreiben
+make handout      # Kurzreferenz zum Ausdrucken site/handout/*.pdf (Node + Playwright; Inhalt in tools/handout/content.mjs)
+                  # TestHandoutKeysCurrent schlägt fehl, wenn sich Tasten oder Hilfe ändern, bis das neu gelaufen ist
 ```
 
 **Bildschirm-Tests:** `internal/ui/golden_test.go` zeichnet jede Ansicht (Manager, Formulare, Dialoge, Terminal mit
