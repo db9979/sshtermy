@@ -11,7 +11,7 @@ import (
 	"github.com/db9979/sshtermy/internal/i18n"
 )
 
-// Aussehen (Theme) und eigene Tastenkürzel. Beides liegt in den
+// Aussehen (Theme, Symbole) und eigene Tastenkürzel. Alles liegt in den
 // Einstellungen und wird mit dem Sync auf andere Rechner übertragen.
 
 // fontHint: Die Schriftgröße gehört dem Terminalfenster, nicht dem Programm
@@ -30,13 +30,19 @@ func (a *App) setStyles(t Theme) {
 func (a *App) applyLook() {
 	a.applyLang()
 	set := a.st.Settings()
-	sig, _ := json.Marshal([]any{set.Theme, set.Keys, set.Colors, set.Icons})
+	_ = syncIntroFile(a.st.Dir, set.Intro)
+	sig, _ := json.Marshal([]any{set.Theme, set.Keys, set.Colors, set.Icons, set.NerdFont})
 	if string(sig) == a.lookSig {
 		return
 	}
+	first := a.lookSig == ""
 	a.lookSig = string(sig)
 	t := themeOf(set)
-	iconSet = set.Icons
+	if iconSet != set.IconsNow() && set.Icons == iconNerd && set.NerdFont == "nein" && !first {
+		// Nerd-Font-Symbole kamen per Sync von einem anderen Rechner.
+		a.flash(i18n.T("Nerd-Font-Symbole sind auf einem anderen Rechner an; hier erst nach der Probe (Einstellungen › Symbole)"))
+	}
+	iconSet = set.IconsNow()
 	activeTheme = t
 	a.setStyles(t)
 	a.keys = newKeymap(set.Keys)

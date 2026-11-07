@@ -289,7 +289,11 @@ func (a *App) chooseIcons(id string) tea.Cmd {
 		return nil
 	}
 	a.modal = confirmModal(i18n.T("Nerd-Font-Symbole einschalten?"), nerdProbe(), func() tea.Cmd {
-		a.setIcons(iconNerd)
+		if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Icons, s.NerdFont = iconNerd, "ja" }); err != nil {
+			a.flashErr(err.Error())
+			return nil
+		}
+		a.applyLook()
 		a.flash(i18n.T("Nerd-Font-Symbole an"))
 		return nil
 	})
