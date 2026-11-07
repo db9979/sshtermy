@@ -6,14 +6,15 @@
 
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Netzwerk-Scan: SSH-Geräte finden                                                             │
+  │ ▌ Subnetz                192.168.1.0/24                                                      │
+  │   Port                   22                                                                  │
+  │   Benutzer               golden                                                              │
+  │   Anmeldung              agent                                                               │
+  │   Ordner                 Netzwerk-Scan                                                       │
   │                                                                                              │
-  │ ▌ Subnetz             192.168.1.0/24                                                         │
-  │                       z. B. 192.168.1.0/24 · 10.0.0.10-50 · mehrere mit Komma (höchstens     │
-  │ 4096 Adressen)                                                                               │
-  │   Port                22                                                                     │
-  │   Benutzer            golden                                                                 │
-  │   Anmeldung            agent  keyfile  password                                              │
-  │   Ordner              Netzwerk-Scan                                                          │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ z. B. 192.168.1.0/24 · 10.0.0.10-50 · mehrere mit Komma (höchstens 4096 Adressen)            │
+  │                                                                                              │
   │                                                                                              │
   │ Gesucht wird nur nach offenem SSH-Port und der SSH-Kennung (ohne Anmeldung).                 │
   │ Switches und Router (Aruba, Cisco, MikroTik …) werden am Banner erkannt.                     │
@@ -21,7 +22,6 @@
   │                                                                                              │
   │ Strg+S oder ⏎ im letzten Feld startet den Scan                                               │
   └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 

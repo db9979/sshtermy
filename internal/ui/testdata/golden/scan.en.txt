@@ -6,14 +6,15 @@
 
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Network scan: find SSH devices                                                               │
+  │ ▌ Subnet                 192.168.1.0/24                                                      │
+  │   Port                   22                                                                  │
+  │   User                   golden                                                              │
+  │   Login                  agent                                                               │
+  │   Folder                 Network scan                                                        │
   │                                                                                              │
-  │ ▌ Subnet              192.168.1.0/24                                                         │
-  │                       e.g. 192.168.1.0/24 · 10.0.0.10-50 · several separated by commas (at   │
-  │ most 4096 addresses)                                                                         │
-  │   Port                22                                                                     │
-  │   User                golden                                                                 │
-  │   Login                agent  keyfile  password                                              │
-  │   Folder              Network scan                                                           │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ e.g. 192.168.1.0/24 · 10.0.0.10-50 · several separated by commas (at most 4096 addresses)    │
+  │                                                                                              │
   │                                                                                              │
   │ Only the open SSH port and the SSH banner are checked (no login).                            │
   │ Switches and routers (Aruba, Cisco, MikroTik …) are recognized by their banner.              │
@@ -21,7 +22,6 @@
   │                                                                                              │
   │ Ctrl+S or ⏎ in the last field starts the scan                                                │
   └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 

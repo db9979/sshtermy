@@ -2,22 +2,22 @@
 
 
 
-
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ ↕ Sync between computers                                                                     │
   │ Connections, tunnels, runbooks, AI and all settings are stored as an end-to-end encrypted    │
   │ file at the                                                                                  │
   │ chosen location. The location never sees plain text; DPAPI and master password stay per      │
   │ computer.                                                                                    │
-  │                                                                                              │
-  │ ▌ Location             Folder (cloud)  NAS / WebDAV  off                                     │
-  │                       Folder = OneDrive, Dropbox, iCloud, Syncthing · NAS = Synology, QNAP,  │
-  │ Nextcloud directly                                                                           │
+  │ ▌ Location               Folder (cloud)  NAS / WebDAV  off                                   │
   │   Folder                                                                                     │
   │   Sync password                                                                              │
-  │   Host keys           ● on                                                                   │
-  │   Archive             ○ off                                                                  │
-  │   Automatic           ● on                                                                   │
+  │   Host keys              ● on                                                                │
+  │   Archive                ○ off                                                               │
+  │   Automatic              ● on                                                                │
+  │                                                                                              │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ Folder = OneDrive, Dropbox, iCloud, Syncthing · NAS = Synology, QNAP, Nextcloud directly     │
+  │                                                                                              │
   │                                                                                              │
   │ Live test                                                                                    │
   │ starts automatically once the details are complete (or Ctrl+T)                               │

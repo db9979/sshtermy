@@ -239,7 +239,7 @@ PuTTY export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), a portabl
 `.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. sshTermy reads PuTTY keys
 (`.ppk`, version 2 and 3, with or without passphrase) directly, no Pageant needed.
 
-**Telnet and serial console:** in the connection form, „Connect via“ switches between SSH, Telnet and
+**Telnet and serial console:** in the connection form, „Connection type“ switches between SSH, Telnet and
 „Serial (console cable)“, e.g. for an Aruba switch on a USB console cable. Port „automatic“ uses the only USB
 console cable that is plugged in, so a synced connection also works on the other computer (COM5 on Windows,
 `/dev/cu.usbserial-…` on macOS, `/dev/ttyUSB0` on Linux). Default 9600 baud 8N1. If user and password are stored,
