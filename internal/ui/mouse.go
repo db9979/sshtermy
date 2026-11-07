@@ -147,6 +147,11 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	if a.scr == scrManager && a.modal == nil && a.pal == nil && a.pick == nil && a.mgr.drag != nil && !isClick {
 		return a.mgrDragMouse(msg)
 	}
+	if isClick && (m.Button == tea.MouseRight || m.Button == tea.MouseMiddle) {
+		if act := a.z.atMenu(m.X, m.Y); act != nil {
+			return act.menu(m)
+		}
+	}
 	if !isClick || m.Button != tea.MouseLeft {
 		return nil
 	}

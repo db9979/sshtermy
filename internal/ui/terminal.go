@@ -190,7 +190,13 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll = 0
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList) {
+		case actNewTab:
+			return a.openNewTab()
+		case actCloseTab:
+			return a.closeTabAsk(s, nil)
+		case actTabList:
+			return a.openTabList()
 		case actHelp:
 			a.modal = a.helpModal()
 			return nil
@@ -652,6 +658,12 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		keys = append(keys, [2]string{k.label(actSearch), i18n.T("Suche")}, [2]string{k.label(actSplit), i18n.T("Teilen")},
 			[2]string{k.label(actDetach), i18n.T("Fenster")})
 	}
+	if len(a.sessions) > 1 {
+		keys = append(keys, [2]string{k.label(actTabList), i18n.T("Tab-Liste")})
+	}
+	if s.state == stConnected && !s.detached() {
+		keys = append(keys, [2]string{k.label(actNewTab), i18n.T("neuer Tab")})
+	}
 	keys = append(keys, [2]string{k.label(actQuit), i18n.T("beenden")})
 	// Anzeige-Reihenfolge (Palette, F1 … F12, ⇧F, Rest) macht footer().
 	if s.fail != nil {
@@ -669,18 +681,22 @@ func (a *App) tabStrip() string {
 	if n == 0 {
 		return ""
 	}
-	room := a.w - lipgloss.Width(a.headerLeft()) - 1
+	plus := st.Tab.Foreground(st.T.Accent).Bold(true).Render("+")
+	room := a.w - lipgloss.Width(a.headerLeft()) - 1 - lipgloss.Width(plus)
 	label := func(i, l int) string {
 		x := a.sessions[i]
 		if l == 0 {
 			return " " + strconv.Itoa(i+1)
 		}
-		return " " + trunc(x.conn.Alias, l)
+		return " " + trunc(x.tabName(), l)
 	}
-	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand
+	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven
 		w := 1 + lipgloss.Width(label(i, l)) + 3
 		if a.accentOf(a.sessions[i].conn) != nil {
 			w++
+		}
+		if i == a.cur {
+			w++ // „×“ statt des Leerzeichens am Ende
 		}
 		return w
 	}
@@ -739,15 +755,36 @@ func (a *App) tabStrip() string {
 				text = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(true).Render(strings.TrimPrefix(text, " "))
 			}
 		}
-		tab := ts.Render(stripe + dot + text + " ")
 		i := i
-		b.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
-			a.focusSession(i)
-			return nil
-		}))
+		end := " "
+		if i == a.cur {
+			end = ""
+		}
+		tab := a.z.mark(ts.Render(stripe+dot+text+end), zoneAction{
+			click: func(tea.Mouse, bool) tea.Cmd {
+				a.focusSession(i)
+				return nil
+			},
+			menu: func(m tea.Mouse) tea.Cmd {
+				if m.Button == tea.MouseMiddle {
+					return a.closeTabAsk(x, nil)
+				}
+				a.modal = a.tabMenu(x, m.X, m.Y, nil)
+				return nil
+			},
+		})
+		if i == a.cur {
+			// × schließt den aktiven Tab (bei laufender Verbindung mit Rückfrage)
+			close := a.z.click(ts.Padding(0, 1, 0, 0).Foreground(st.T.Muted).UnsetBold().Render("×"), func(tea.Mouse, bool) tea.Cmd {
+				return a.closeTabAsk(x, nil)
+			})
+			tab += close
+		}
+		b.WriteString(tab)
 	}
 	if to < n {
 		b.WriteString(st.Header.Foreground(st.T.Muted).Render(" ›"))
 	}
+	b.WriteString(a.z.click(plus, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() }))
 	return b.String()
 }

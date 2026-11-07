@@ -28,6 +28,7 @@ type restoreTab struct {
 	Adhoc   *domain.Connection `json:"adhoc,omitempty"` // nicht gespeicherte Verbindung, ohne Geheimnisse
 	Mux     string             `json:"mux,omitempty"`
 	MuxName string             `json:"mux_name,omitempty"`
+	Title   string             `json:"title,omitempty"` // umbenannter Tab
 }
 
 type restoreState struct {
@@ -60,7 +61,7 @@ func (a *App) saveRestore() {
 			continue
 		}
 		s.checkMuxGone()
-		t := restoreTab{Mux: s.mux.kind, MuxName: s.mux.name}
+		t := restoreTab{Mux: s.mux.kind, MuxName: s.mux.name, Title: s.title}
 		if _, ok := a.st.Connection(s.conn.ID); ok && s.conn.ID != "" {
 			t.ConnID = s.conn.ID
 		} else {
@@ -124,6 +125,9 @@ func (a *App) restoreTabs() tea.Cmd {
 			continue
 		}
 		cmd := a.connect(c)
+		if s := a.current(); s != nil {
+			s.title = t.Title
+		}
 		// Feste Sitzung: hängt sich nach dem Verbinden selbst an (geteilt, ohne -d)
 		if s := a.current(); s != nil && (t.Mux == "tmux" || t.Mux == "screen") && !c.Protocol.Raw() && c.Persist == "" {
 			s.mux, s.muxPending = muxState{kind: t.Mux, name: t.MuxName}, true

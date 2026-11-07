@@ -54,6 +54,9 @@ var iconDefs = map[string]iconDef{
 	"errors":    {"[!]", "\uf071"},     // warning
 	"split":     {"[|]", "\uf0db"},     // columns
 	"detach":    {"[^]", "\uf2d2"},     // window-restore
+	"tabs":      {"[T]", "\uf2d0"},     // window-maximize
+	"rename":    {"[n]", "\uf044"},     // pencil
+	"close":     {"[x]", "\uf00d"},     // times
 	"attach":    {"[v]", "\uf2d0"},     // window-maximize
 	"break":     {"[z]", "\uf1e6"},     // plug
 	"restart":   {"[u]", "\uf021"},     // refresh

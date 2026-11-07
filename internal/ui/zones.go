@@ -22,6 +22,7 @@ const zoneBase = 71000
 
 type zoneAction struct {
 	click func(m tea.Mouse, double bool) tea.Cmd // nil = nicht klickbar
+	menu  func(m tea.Mouse) tea.Cmd              // Rechts- oder Mittelklick, nil = keiner
 	wheel func(up bool) tea.Cmd                  // nil = Rad geht weiter nach außen
 	block bool                                   // rechteckiger Block (Box), sonst Fließtext
 	row   int                                    // Manager: Zeile+1 als Ziel beim Ziehen (0 = keins); Dateien: Eintrag+1
@@ -139,6 +140,21 @@ func (z *zones) at(x, y int, wheel bool) *zoneAction {
 		area := (r.y1-r.y0+1)*4096 + (r.x1 - r.x0)
 		if area <= bestArea {
 			best, bestArea = act, area
+		}
+	}
+	return best
+}
+
+// atMenu: die innerste Zone unter x/y mit Rechtsklick-Aktion (Tabs).
+func (z *zones) atMenu(x, y int) *zoneAction {
+	var best *zoneAction
+	bestArea := math.MaxInt
+	for _, r := range z.rects {
+		if !r.contains(x, y) || z.acts[r.id].menu == nil {
+			continue
+		}
+		if area := (r.y1-r.y0+1)*4096 + (r.x1 - r.x0); area <= bestArea {
+			best, bestArea = &z.acts[r.id], area
 		}
 	}
 	return best
