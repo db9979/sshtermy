@@ -640,8 +640,9 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	if c.ID != "" {
 		f.title = i18n.T("Verbindung bearbeiten: ") + c.Alias
 	}
+	f.section("s_conn", i18n.T("Verbindung"))
 	f.text("alias", "Alias", c.Alias, i18n.T("Anzeigename, z. B. „DGX Spark“"))
-	f.choice("proto", i18n.T("Verbindung über"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel")).value = protoLabel(c.Protocol)
+	f.choice("proto", i18n.T("Protokoll"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel")).value = protoLabel(c.Protocol)
 	isProto := func(p domain.Protocol) bool { return protoFromLabel(f.sel("proto")) == p }
 	raw := func(*form) bool { return protoFromLabel(f.sel("proto")).Raw() }
 	notSerial := func(*form) bool { return !isProto(domain.ProtoSerial) }
@@ -651,8 +652,14 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.choice("sport", i18n.T("Schnittstelle"), sports, scur, serialPortHelp()).hidden = notSerial
 	f.choice("baud", "Baud", baudOpts(c.SerialBaud()), strconv.Itoa(c.SerialBaud()), i18n.T("Aruba/HPE/Cisco: 9600 · viele neuere Geräte: 115200")).hidden = notSerial
 	f.choice("frame", i18n.T("Datenformat"), frameOpts(c.SerialFrame()), c.SerialFrame(), i18n.T("Datenbits, Parität, Stoppbits · fast immer 8N1")).hidden = notSerial
+	self := c
+	f.pick("jump", i18n.T("Jump-Host"), c.JumpHostID, func(v string) string { return a.jumpFieldText(self, v) },
+		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
+	a.addRelayField(f, c)
+
+	f.section("s_auth", i18n.T("Anmeldung"))
 	f.text("user", i18n.T("Benutzer"), c.Username, "").help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt")
-	f.choice("auth", i18n.T("Anmeldung"), []string{"agent", "keyfile", "password", "kerberos"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen) · kerberos = Ticket der Firmen-Domäne (Windows-Anmeldung oder kinit)")).hidden = raw
+	f.choice("auth", i18n.T("Verfahren"), []string{"agent", "keyfile", "password", "kerberos"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen) · kerberos = Ticket der Firmen-Domäne (Windows-Anmeldung oder kinit)")).hidden = raw
 	isAuth := func(v string) func(*form) bool {
 		return func(f *form) bool { return raw(f) || f.sel("auth") != v }
 	}
@@ -673,6 +680,8 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 			return raw(f) || f.sel("auth") != "password" && f.sel("auth") != "keyfile"
 		}
 	}
+
+	f.section("s_org", i18n.T("Einordnung"))
 	f.pick("group", i18n.T("Ordner"), domain.NormPath(c.Group), func(v string) string {
 		if v == "" {
 			return a.s.Muted.Render(i18n.T("— oberste Ebene"))
@@ -681,20 +690,9 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	}, func() tea.Cmd { return a.pickFolderField() }, i18n.T("Auswahl mit Suche; neuen Namen tippen legt einen Ordner an („A / B“ verschachtelt)"))
 	f.text("tags", "Tags", strings.Join(c.Tags, ", "), i18n.T("durch Komma getrennt, z. B. prod, linux · im Manager filtern mit #"))
 	f.choice("color", i18n.T("Farbe"), accentLabels(), accentLabel(c.Color), i18n.T("Streifen in Tab, Statuszeile und Liste · automatisch: prod rot, test grün, labor blau"))
-	self := c
-	f.pick("jump", i18n.T("Jump-Host"), c.JumpHostID, func(v string) string { return a.jumpFieldText(self, v) },
-		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
-	a.addRelayField(f, c)
+
+	f.section("s_dev", i18n.T("Gerät & KI"))
 	f.choice("device", i18n.T("Gerätetyp"), deviceLabels, deviceLabel(c.Device), i18n.T("Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage"))
-	f.toggle("fwdagent", i18n.T("Agent weiterreichen"), c.ForwardAgent,
-		i18n.T("wie ssh -A: git, ssh, scp auf dem Server mit deinen lokalen Keys · nur bei vertrauten Servern")).hidden = func(f *form) bool {
-		return raw(f) || deviceFromLabel(f.sel("device")) == domain.DeviceNetwork
-	}
-	f.toggle("fwdx11", i18n.T("X11 weiterleiten"), c.ForwardX11,
-		i18n.T("wie ssh -X: grafische Programme vom Server hier zeigen · braucht lokal einen X-Server (XQuartz, VcXsrv, WSLg)")).hidden = func(f *form) bool {
-		return raw(f) || deviceFromLabel(f.sel("device")) == domain.DeviceNetwork
-	}
-	addPersistFields(f, c, raw)
 	var pr domain.SystemProfile
 	if c.Profile != nil {
 		pr = *c.Profile
@@ -712,9 +710,41 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		}
 		f.toggle("p_forget", i18n.T("Gelerntes löschen"), false, strings.Join(parts, ", ")+i18n.T(" gemerkt"))
 	}
+
+	netDev := func(f *form) bool { return raw(f) || deviceFromLabel(f.sel("device")) == domain.DeviceNetwork }
+	f.folded("s_adv", i18n.T("Erweitert"), false, connAdvSummary,
+		i18n.T("Agent-/X11-Weiterleitung und feste tmux-/screen-Sitzung · ⏎ klappt auf"))
+	f.toggle("fwdagent", i18n.T("Agent weiterreichen"), c.ForwardAgent,
+		i18n.T("wie ssh -A: git, ssh, scp auf dem Server mit deinen lokalen Keys · nur bei vertrauten Servern")).hidden = netDev
+	f.toggle("fwdx11", i18n.T("X11 weiterleiten"), c.ForwardX11,
+		i18n.T("wie ssh -X: grafische Programme vom Server hier zeigen · braucht lokal einen X-Server (XQuartz, VcXsrv, WSLg)")).hidden = netDev
+	addPersistFields(f, c, raw)
+	f.get("tags").in.Placeholder = i18n.T("keine")
+	f.get("p_os").in.Placeholder = i18n.T("noch nicht erkannt · wird beim Verbinden ermittelt")
+	f.get("p_notes").in.Placeholder = i18n.T("keine · z. B. „VLAN 99 = Management, nie reload“")
+	f.get("port").in.Placeholder = "22"
 	a.form, a.formID, a.scr = f, c.ID, scrConnForm
 	a.formBase = c
 	return f.setFocus(0)
+}
+
+// connAdvSummary: was im zugeklappten Abschnitt „Erweitert“ eingeschaltet
+// ist, damit nichts versteckt wirkt.
+func connAdvSummary(f *form) string {
+	var on []string
+	if fl := f.get("fwdagent"); fl.on && (fl.hidden == nil || !fl.hidden(f)) {
+		on = append(on, i18n.T("Agent weiterreichen"))
+	}
+	if fl := f.get("fwdx11"); fl.on && (fl.hidden == nil || !fl.hidden(f)) {
+		on = append(on, i18n.T("X11"))
+	}
+	if fl := f.get("persist"); fl.options != nil && (fl.hidden == nil || !fl.hidden(f)) && persistFromLabel(f.sel("persist")) != "" {
+		on = append(on, i18n.T("Feste Sitzung: ")+i18n.T(f.sel("persist")))
+	}
+	if len(on) == 0 {
+		return i18n.T("alles aus")
+	}
+	return strings.Join(on, " · ")
 }
 
 func (a *App) openTunnelForm(t domain.Tunnel) tea.Cmd {

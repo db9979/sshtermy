@@ -22,7 +22,8 @@ const (
 	fNumber
 	fChoice
 	fBool
-	fPick // Auswahl über eine durchsuchbare Liste (picker.go)
+	fPick   // Auswahl über eine durchsuchbare Liste (picker.go)
+	fHeader // Abschnittsüberschrift; mit fold einklappbar und fokussierbar
 )
 
 type field struct {
@@ -38,6 +39,11 @@ type field struct {
 	value   string
 	display func(value string) string
 	open    func() tea.Cmd
+
+	// fHeader: fold = einklappbar (dann fokussierbar), on = aufgeklappt,
+	// summary zeigt im zugeklappten Zustand, was darin eingestellt ist.
+	fold    bool
+	summary func(f *form) string
 }
 
 // form ist ein kleines, tastaturgesteuertes Formular (Tab/↑↓ wechseln,
@@ -47,6 +53,7 @@ type form struct {
 	fields []*field
 	focus  int
 	err    string
+	minH   int // höchste bisher gezeigte Höhe: das Formular schrumpft nicht (kein Springen)
 }
 
 func newInput(val string, secret bool) textinput.Model {
@@ -94,6 +101,19 @@ func (f *form) toggle(key, label string, on bool, help string) *field {
 	return f.add(&field{key: key, label: label, help: help, kind: fBool, on: on})
 }
 
+// section beginnt einen Abschnitt mit Überschrift. Felder darunter gehören
+// dazu, bis der nächste Abschnitt beginnt.
+func (f *form) section(key, label string) *field {
+	return f.add(&field{key: key, label: label, kind: fHeader})
+}
+
+// folded beginnt einen einklappbaren Abschnitt (zu, solange open false).
+func (f *form) folded(key, label string, open bool, summary func(f *form) string, help string) *field {
+	return f.add(&field{key: key, label: label, kind: fHeader, fold: true, on: open, summary: summary, help: help})
+}
+
+func (fl *field) focusable() bool { return fl.kind != fHeader || fl.fold }
+
 func (f *form) get(key string) *field {
 	for _, fl := range f.fields {
 		if fl.key == key {
@@ -115,10 +135,36 @@ func (f *form) sel(key string) string {
 func (f *form) flag(key string) bool  { return f.get(key).on }
 func (f *form) val(key string) string { return f.get(key).value }
 
+// visible: sichtbare Felder in Reihenfolge. Felder in einem zugeklappten
+// Abschnitt sind unsichtbar; eine Überschrift erscheint nur, wenn ihr
+// Abschnitt (aufgeklappt) mindestens ein sichtbares Feld hätte.
 func (f *form) visible() []int {
 	var out []int
+	head, headUsed := -1, false
 	for i, fl := range f.fields {
-		if fl.hidden == nil || !fl.hidden(f) {
+		if fl.kind == fHeader {
+			head, headUsed = i, false
+			continue
+		}
+		if fl.hidden != nil && fl.hidden(f) {
+			continue
+		}
+		if head >= 0 && !headUsed {
+			out = append(out, head)
+			headUsed = true
+		}
+		if head >= 0 && f.fields[head].fold && !f.fields[head].on {
+			continue
+		}
+		out = append(out, i)
+	}
+	return out
+}
+
+func (f *form) focusables() []int {
+	var out []int
+	for _, i := range f.visible() {
+		if f.fields[i].focusable() {
 			out = append(out, i)
 		}
 	}
@@ -126,7 +172,7 @@ func (f *form) visible() []int {
 }
 
 func (f *form) move(d int) tea.Cmd {
-	vis := f.visible()
+	vis := f.focusables()
 	pos := 0
 	for i, v := range vis {
 		if v == f.focus {
@@ -138,6 +184,10 @@ func (f *form) move(d int) tea.Cmd {
 }
 
 func (f *form) setFocus(i int) tea.Cmd {
+	// Feste Überschriften bekommen keinen Fokus: zum nächsten Feld weiter.
+	for i < len(f.fields)-1 && !f.fields[i].focusable() {
+		i++
+	}
 	for j, fl := range f.fields {
 		if j != i {
 			fl.in.Blur()
@@ -152,7 +202,7 @@ func (f *form) setFocus(i int) tea.Cmd {
 }
 
 func (f *form) isLast() bool {
-	vis := f.visible()
+	vis := f.focusables()
 	return len(vis) > 0 && vis[len(vis)-1] == f.focus
 }
 
@@ -171,6 +221,10 @@ func (f *form) update(msg tea.Msg) (submit bool, cmd tea.Cmd) {
 		case "enter", "space", "right", "left":
 			if fl.kind == fPick && fl.open != nil {
 				return false, fl.open()
+			}
+			if fl.kind == fHeader {
+				fl.on = k.String() == "right" || (k.String() != "left" && !fl.on)
+				return false, nil
 			}
 		}
 		switch k.String() {
@@ -206,59 +260,57 @@ func (f *form) update(msg tea.Msg) (submit bool, cmd tea.Cmd) {
 
 // z (optional) macht Felder anklickbar: Klick setzt den Fokus, wählt eine
 // Option oder schaltet einen Schalter um.
+//
+// Ruhig gehalten: Auswahlfelder zeigen ohne Fokus nur den gewählten Wert,
+// die Hilfe steht in einer festen Zeile unten (statt sich unter das Feld
+// zu schieben) und das Formular wird nie wieder kleiner, solange es offen ist.
 func (f *form) view(s Styles, width int, z *zones) string {
 	var b strings.Builder
+	lines := 0
+	put := func(str string) { b.WriteString(str + "\n"); lines++ }
 	if f.title != "" {
-		b.WriteString(s.Accent.Render(f.title) + "\n\n")
-	} else {
-		b.WriteString("\n")
+		put(s.Accent.Render(f.title))
 	}
-	inW := max(20, width-26)
+	const labelW = 22
+	inW := max(20, width-labelW-4)
+	first := true
 	for _, i := range f.visible() {
 		fl := f.fields[i]
 		focused := i == f.focus
-		label := s.Label.Render(fl.label)
+		if fl.kind == fHeader {
+			if !first || f.title != "" {
+				put("")
+			}
+			first = false
+			put(f.headerRow(s, i, fl, focused, width, z))
+			continue
+		}
+		first = false
+		label := s.Label.Width(labelW).Render(fl.label)
 		var val string
 		switch fl.kind {
 		case fChoice:
-			parts := make([]string, len(fl.options))
-			for j, o := range fl.options {
-				if j == fl.opt {
-					parts[j] = s.Selected.Render(" " + i18n.T(o) + " ")
-				} else {
-					parts[j] = s.Muted.Render(" " + i18n.T(o) + " ")
-				}
-				if z != nil {
-					i, j, fl := i, j, fl
-					parts[j] = z.click(parts[j], func(tea.Mouse, bool) tea.Cmd { fl.opt = j; return f.setFocus(i) })
-				}
-			}
-			val = strings.Join(parts, "")
-			if lipgloss.Width(val) > inW && fl.opt < len(fl.options) {
-				// Zu viele Optionen für eine Zeile: nur die gewählte, ←/→ blättert.
-				val = s.Muted.Render("‹ ") + s.Selected.Render(" "+i18n.T(fl.options[fl.opt])+" ") + s.Muted.Render(" ›") +
-					s.Muted.Render(fmt.Sprintf("  %d/%d", fl.opt+1, len(fl.options)))
-			}
+			val = f.choiceView(s, i, fl, focused, inW, z)
 		case fPick:
 			v := fl.value
 			if fl.display != nil {
 				v = fl.display(fl.value)
 			}
-			val = ansi.Truncate(v, max(10, inW-2), "…") + s.Muted.Render(" ▾")
+			val = " " + ansi.Truncate(v, max(10, inW-3), "…") + s.Muted.Render(" ▾")
 		case fBool:
 			if fl.on {
-				val = s.OK.Render(i18n.T("● an"))
+				val = " " + s.OK.Render(i18n.T("● an"))
 			} else {
-				val = s.Muted.Render(i18n.T("○ aus"))
+				val = " " + s.Muted.Render(i18n.T("○ aus"))
 			}
 		default:
-			fl.in.SetWidth(inW)
-			val = fl.in.View()
+			fl.in.SetWidth(inW - 1)
+			val = " " + fl.in.View()
 		}
 		marker := "  "
 		if focused {
 			marker = s.Accent.Render("▌ ")
-			label = lipgloss.NewStyle().Foreground(s.T.Text).Bold(true).Width(20).Render(fl.label)
+			label = lipgloss.NewStyle().Foreground(s.T.Text).Bold(true).Width(labelW).Render(fl.label)
 		}
 		row := marker + label + val
 		if z != nil {
@@ -274,13 +326,88 @@ func (f *form) view(s Styles, width int, z *zones) string {
 				return f.setFocus(i)
 			})
 		}
-		b.WriteString(row + "\n")
-		if focused && fl.help != "" {
-			b.WriteString("  " + strings.Repeat(" ", 20) + s.Muted.Render(fl.help) + "\n")
-		}
+		put(row)
+	}
+	// Feste Hilfezone: immer zwei Zeilen, damit nichts nachrutscht.
+	help := ""
+	if f.focus < len(f.fields) {
+		help = f.fields[f.focus].help
+	}
+	hl := strings.Split(lipgloss.NewStyle().Width(max(20, width-2)).Render(help), "\n")
+	for len(hl) < 2 {
+		hl = append(hl, "")
+	}
+	put("")
+	put(s.Muted.Render(strings.Repeat("─", max(10, width-2))))
+	for _, l := range hl[:2] {
+		put(s.Muted.Render(strings.TrimRight(l, " ")))
 	}
 	if f.err != "" {
-		b.WriteString("\n" + s.Danger.Render("× "+f.err) + "\n")
+		put("")
+		put(s.Danger.Render("× " + f.err))
 	}
+	for lines < f.minH {
+		put("")
+	}
+	f.minH = lines
 	return b.String()
+}
+
+// choiceView: mit Fokus alle Optionen (passt es nicht, ‹ Wert › zum
+// Durchschalten), ohne Fokus nur der gewählte Wert.
+func (f *form) choiceView(s Styles, i int, fl *field, focused bool, inW int, z *zones) string {
+	if fl.opt >= len(fl.options) {
+		return ""
+	}
+	cur := i18n.T(fl.options[fl.opt])
+	if !focused {
+		return " " + lipgloss.NewStyle().Foreground(s.T.Text).Render(cur)
+	}
+	parts := make([]string, len(fl.options))
+	for j, o := range fl.options {
+		if j == fl.opt {
+			parts[j] = s.Selected.Render(" " + i18n.T(o) + " ")
+		} else {
+			parts[j] = s.Muted.Render(" " + i18n.T(o) + " ")
+		}
+		if z != nil {
+			j := j
+			parts[j] = z.click(parts[j], func(tea.Mouse, bool) tea.Cmd { fl.opt = j; return f.setFocus(i) })
+		}
+	}
+	val := strings.Join(parts, "")
+	if lipgloss.Width(val) > inW {
+		val = s.Muted.Render("‹ ") + s.Selected.Render(" "+cur+" ") + s.Muted.Render(" ›") +
+			s.Muted.Render(fmt.Sprintf("  %d/%d", fl.opt+1, len(fl.options)))
+	}
+	return val
+}
+
+// headerRow: „── Anmeldung ──────“; einklappbar mit ▸/▾ und Zusammenfassung.
+func (f *form) headerRow(s Styles, i int, fl *field, focused bool, width int, z *zones) string {
+	title := s.Accent.Bold(true).Render(fl.label)
+	lead := s.Muted.Render("── ")
+	extra := ""
+	if fl.fold {
+		arrow := "▸ "
+		if fl.on {
+			arrow = "▾ "
+		} else if fl.summary != nil {
+			if sm := fl.summary(f); sm != "" {
+				extra = "  " + s.Muted.Render(sm)
+			}
+		}
+		lead = s.Muted.Render(" " + arrow)
+		if focused {
+			lead = s.Accent.Render("▌" + arrow)
+		}
+	}
+	row := lead + title + extra + " "
+	if rest := width - 2 - lipgloss.Width(row); rest > 0 {
+		row += s.Muted.Render(strings.Repeat("─", rest))
+	}
+	if fl.fold && z != nil {
+		row = z.click(row, func(tea.Mouse, bool) tea.Cmd { fl.on = !fl.on; return f.setFocus(i) })
+	}
+	return row
 }

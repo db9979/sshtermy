@@ -317,7 +317,7 @@ func inputStyles(t Theme) textinput.Styles {
 	s := textinput.DefaultStyles(t.Dark)
 	s.Focused.Text = lipgloss.NewStyle().Foreground(t.Text)
 	s.Blurred.Text = lipgloss.NewStyle().Foreground(t.Muted)
-	s.Focused.Placeholder = lipgloss.NewStyle().Foreground(t.Muted)
+	s.Focused.Placeholder = lipgloss.NewStyle().Foreground(t.Muted).Faint(true).Italic(true)
 	s.Blurred.Placeholder = s.Focused.Placeholder
 	s.Focused.Prompt = lipgloss.NewStyle().Foreground(t.Accent)
 	s.Blurred.Prompt = s.Focused.Prompt
