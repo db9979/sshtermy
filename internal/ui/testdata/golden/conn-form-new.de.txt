@@ -2,7 +2,6 @@
 
 
 
-
   ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Neue Verbindung                                                                              │
   │                                                                                              │
@@ -12,13 +11,14 @@
   │   Host                                                                                       │
   │   Port                22                                                                     │
   │   Benutzer                                                                                   │
-  │   Anmeldung            agent  keyfile  password                                              │
+  │   Anmeldung            agent  keyfile  password  kerberos                                    │
   │   Ordner              ▸ Netzwerk ▾                                                           │
   │   Tags                                                                                       │
   │   Farbe               ‹  automatisch  ›  1/9                                                 │
   │   Jump-Host           — direkt (ohne Jump-Host) ▾                                            │
   │   Gerätetyp            automatisch  Server  Netzwerkgerät                                    │
   │   Agent weiterreichen ○ aus                                                                  │
+  │   X11 weiterleiten    ○ aus                                                                  │
   │   Feste Sitzung        aus  automatisch  tmux  screen                                        │
   │   System                                                                                     │
   │   Befehlssatz         ‹  automatisch  ›  1/15                                                │

@@ -26,6 +26,10 @@ import (
 )
 
 func main() {
+	// als SSH_ASKPASS von ssh-add gestartet (Sicherheitsschlüssel, sshx/sk.go)
+	if sshx.AskpassMain() {
+		return
+	}
 	// Sprache vor allem anderen: auch Hilfe zu den Schaltern und der
 	// Entsperr-Bildschirm sollen sie schon haben.
 	dir, _ := store.Dir()

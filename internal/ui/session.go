@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -37,16 +38,17 @@ const (
 
 // session ist eine offene SSH-Sitzung (ein Tab).
 type session struct {
-	id      int
-	conn    domain.Connection
-	title   string // eigener Tab-Name (tabs.go), "" = Alias
-	client  *sshx.Client
-	shell   termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
-	term    *termemu.Term
-	tunnels *sshx.TunnelManager
-	state   sessState
-	err     string
-	started time.Time
+	connNote string // Hinweis während des Verbindens (z. B. Sicherheitsschlüssel berühren)
+	id       int
+	conn     domain.Connection
+	title    string // eigener Tab-Name (tabs.go), "" = Alias
+	client   *sshx.Client
+	shell    termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
+	term     *termemu.Term
+	tunnels  *sshx.TunnelManager
+	state    sessState
+	err      string
+	started  time.Time
 
 	connectedAt time.Time                // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
 	quitAt      time.Time                // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
@@ -198,6 +200,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 				ev <- hostKeyAskMsg{host, fp, typ, r}
 				return <-r
 			},
+			Notice: func(text string) { ev <- connectNoticeMsg{s.id, text} },
 			AskSecret: sc.wrap(func(label string) (string, error) {
 				r := make(chan string, 1)
 				ev <- secretAskMsg{label, r}
@@ -232,7 +235,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 			dropped := err != nil && c.WaitDropped(1500*time.Millisecond)
 			ev <- shellClosedMsg{s.id, sh, err, dropped}
 		}()
-		return connectedMsg{sid: s.id, client: c, shell: sh, note: c.AgentNote()}
+		return connectedMsg{sid: s.id, client: c, shell: sh, note: joinNotes(c.AgentNote(), c.X11Note())}
 	}
 }
 
@@ -322,4 +325,21 @@ func (a *App) rememberNetDevice(s *session) {
 		s.conn = saved
 		a.flash(c.Alias + i18n.T(" als Netzwerkgerät gemerkt (ohne Systemabfrage)"))
 	}
+}
+
+// joinNotes: mehrere Hinweise für die Einblendung nach dem Verbinden.
+func joinNotes(ns ...string) string {
+	var out []string
+	for _, n := range ns {
+		if n != "" {
+			out = append(out, n)
+		}
+	}
+	return strings.Join(out, " · ")
+}
+
+// connectNoticeMsg: Hinweis beim Verbinden (Kerberos, Sicherheitsschlüssel).
+type connectNoticeMsg struct {
+	sid  int
+	text string
 }

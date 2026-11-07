@@ -39,6 +39,9 @@ const (
 	// AuthAuto: wie das ssh-Kommando: erst Agent und Standard-Keys
 	// (~/.ssh/id_*), dann Passwort-Abfrage. Für Schnellverbindungen.
 	AuthAuto AuthMethod = "auto"
+	// AuthKerberos: Anmeldung mit dem Kerberos-Ticket der Firmen-Domäne
+	// (gssapi-with-mic): Windows mit Domänen-Konto, sonst nach kinit.
+	AuthKerberos AuthMethod = "kerberos"
 )
 
 // DeviceKind: was am anderen Ende hängt. Netzwerkgeräte (Switches, Router,
@@ -89,6 +92,10 @@ type Connection struct {
 	// ssh -A). Dort funktionieren dann git, ssh und scp mit den eigenen
 	// Keys, ohne sie auf den Server zu kopieren. Nur für vertraute Server.
 	ForwardAgent bool `json:"forward_agent,omitempty"`
+	// ForwardX11: grafische Programme vom Server auf dem lokalen X-Server
+	// zeigen (wie ssh -X). Braucht lokal einen X-Server (Linux-Desktop,
+	// XQuartz, VcXsrv/X410/WSLg).
+	ForwardX11 bool `json:"forward_x11,omitempty"`
 	// CertPath: SSH-Zertifikat zum Key (von einer CA signiert, *-cert.pub).
 	// Leer = neben dem Keyfile suchen (<key>-cert.pub, wie OpenSSH).
 	CertPath string     `json:"cert_path,omitempty"`

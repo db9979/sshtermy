@@ -53,7 +53,7 @@ func adhocCopy(c domain.Connection) *domain.Connection {
 		KeyPath: c.KeyPath, JumpHostID: c.JumpHostID, RelayID: c.RelayID, RelaySystem: c.RelaySystem,
 		Device: c.Device, Protocol: c.Protocol, SerialPort: c.SerialPort, Baud: c.Baud, Frame: c.Frame,
 		Persist: c.Persist, PersistName: c.PersistName, PersistView: c.PersistView,
-		ForwardAgent: c.ForwardAgent, CertPath: c.CertPath,
+		ForwardAgent: c.ForwardAgent, ForwardX11: c.ForwardX11, CertPath: c.CertPath,
 	}
 }
 

@@ -52,6 +52,11 @@ type Client struct {
 	fwdOnce  sync.Once
 	fwdErr   error
 	fwdAsked error // Server hat die Weiterleitung abgelehnt
+
+	// X11-Weiterleitung (x11.go)
+	x11Once sync.Once
+	x11     *x11Fwd
+	x11Err  error
 }
 
 // RemoteInfo: was wir über das Zielsystem wissen (Kontext fürs LLM).
@@ -116,6 +121,7 @@ type Options struct {
 	Resolve   Resolver
 	Relay     RelayDialer  // für Verbindungen über einen Vermittler (optional)
 	AskSecret SecretPrompt // fehlende Passwörter/Passphrasen erfragen (optional)
+	Notice    func(string) // Hinweis während des Verbindens, z. B. „Schlüssel berühren“ (optional)
 	Timeout   time.Duration
 
 	forceNet  bool     // intern: zweiter Versuch nach abgebrochener Systemabfrage

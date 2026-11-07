@@ -56,6 +56,9 @@ func (c *Client) OpenShell(cols, rows int, out io.Writer) (*Shell, error) {
 			c.fwdAsked = err
 		}
 	}
+	if c.Conn.ForwardX11 && !c.NetDevice {
+		c.requestX11(s)
+	}
 	if err := s.Shell(); err != nil {
 		s.Close()
 		return nil, err
