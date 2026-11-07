@@ -189,7 +189,8 @@ read colours, Ctrl+S saves (synced to your other computers).
 **Icons:** menus use text tags like `[+]` `[k]` `[/]`, the manager shows the system's prompt character (`$` Linux,
 `%` macOS, `>` Windows, `#` switch). They only use characters every terminal font has, so nothing looks misaligned.
 With a Nerd Font (e.g. "Cascadia Mono NF") switch on Settings › "Nerd Font icons" for real pictograms; the toggle is
-per computer.
+per computer. sshTermy first shows a test line: boxes or "?" there mean the terminal lacks the font (Mac:
+`brew install --cask font-caskaydia-mono-nerd-font`, then pick it in the terminal profile).
 
 The font size belongs to the terminal window: Ctrl + plus/minus in Windows Terminal, ⌘ + / − on macOS.
 

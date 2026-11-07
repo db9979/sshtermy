@@ -76,7 +76,18 @@ func TestNerdToggle(t *testing.T) {
 	if ic("settings") != "[:]" {
 		t.Fatalf("Standard sind Text-Tags, nicht %q", ic("settings"))
 	}
+	// Einschalten fragt erst mit einer Probezeile; Nein lässt die Tags.
 	a.toggleNerdIcons()
+	if a.modal == nil || a.modal.kind != mConfirm || !strings.Contains(a.modal.body, devNerd[devLinux]) || !strings.Contains(a.modal.body, "Nerd Font") {
+		t.Fatalf("keine Probe: %+v", a.modal)
+	}
+	a.modal = nil
+	if a.st.Settings().Icons != "" || ic("settings") != "[:]" {
+		t.Fatal("ohne Ja darf nichts umschalten")
+	}
+	a.toggleNerdIcons()
+	a.modal.onYes()
+	a.modal = nil
 	if a.st.Settings().Icons != iconNerd || ic("settings") != "" {
 		t.Fatalf("Nerd an: %q %q", a.st.Settings().Icons, ic("settings"))
 	}
