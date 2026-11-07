@@ -252,7 +252,7 @@ func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 		case m.err == context.Canceled:
 			f.last = a.s.Warn.Render(i18n.T("Abgebrochen: ") + x.what)
 		case m.err != nil:
-			f.last = a.s.Danger.Render("✗ " + x.what + ": " + m.err.Error())
+			f.last = a.s.Danger.Render("× " + x.what + ": " + m.err.Error())
 		default:
 			f.last = a.s.OK.Render(fmt.Sprintf("✓ %s · %s in %s (%s/s)", x.what, humanBytes(x.pr.Done.Load()),
 				shortDur(d), humanBytes(int64(float64(x.pr.Done.Load())/max(d.Seconds(), 0.001)))))
@@ -560,7 +560,7 @@ func (a *App) filesKeys(s *session) [][2]string {
 	if s.files.mkdir != nil {
 		return [][2]string{{"⏎", i18n.T("anlegen")}, {"Esc", i18n.T("abbrechen")}}
 	}
-	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ⇄")}, {"Space", i18n.T("markieren")}, {"n", i18n.T("Ordner")}, {"d", i18n.T("löschen")},
+	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ↔")}, {"Space", i18n.T("markieren")}, {"n", i18n.T("Ordner")}, {"d", i18n.T("löschen")},
 		{".", i18n.T("versteckte")}, {"~", "Home"}, {"r", i18n.T("neu laden")}, {"Esc/F5", "Terminal"}}
 	if s.files.xfer != nil {
 		k = append([][2]string{{"x", i18n.T("abbrechen")}}, k...)
@@ -576,7 +576,7 @@ func (a *App) viewFiles(s *session, w, h int) string {
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.AI.Render(i18n.T("⠿ öffne SFTP-Kanal …")))
 	case f.err != "":
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center,
-			st.Danger.Render("✗ "+f.err)+"\n\n"+st.Muted.Render(i18n.T("Esc zurück zum Terminal")))
+			st.Danger.Render("× "+f.err)+"\n\n"+a.hints(st.Muted, [2]string{"Esc", i18n.T("zurück zum Terminal")}))
 	case f.panes[0] == nil:
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.Muted.Render(i18n.T("keine Verbindung")))
 	}
@@ -636,7 +636,7 @@ func (a *App) viewPane(f *filesState, side, w, h int) string {
 	b.WriteString(tr + " " + st.Muted.Render(truncLeft(p.path, max(4, w-lipgloss.Width(tr)-1))) + "\n")
 	rows := h - 1
 	if p.err != "" {
-		b.WriteString(st.Danger.Render(trunc(" ✗ "+p.err, w)) + "\n")
+		b.WriteString(st.Danger.Render(trunc(" × "+p.err, w)) + "\n")
 		rows--
 	}
 	start := 0
@@ -660,7 +660,7 @@ func (a *App) viewPane(f *filesState, side, w, h int) string {
 			size, date = humanBytes(e.Size), e.ModTime.Format("02.01. 15:04")
 		}
 		if e.Link {
-			icon = "↪ "
+			icon = "→ "
 		}
 		if p.marked[e.Name] {
 			icon = "✓ "

@@ -81,13 +81,6 @@ func (a *App) toggleIntro() tea.Cmd {
 	return nil
 }
 
-func introLabel(on bool) string {
-	if on {
-		return i18n.T("Startanimation aus")
-	}
-	return i18n.T("Startanimation an")
-}
-
 // introMsg: läuft vor allen anderen Nachrichten. ok=false: normal weiter.
 func (a *App) introMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if a.intro == nil {

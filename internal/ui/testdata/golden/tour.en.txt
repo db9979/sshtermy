@@ -1,11 +1,11 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
  connections  6  / search        │ ▾ Netzwerk
                                  │
  ▾ Netzwerk                   1  │ Path         Netzwerk
-   ○ ▦ switch-core  manager@19…  │ Content      1 connection
+   ○ # switch-core  manager@19…  │ Content      1 connection
  ▾ Produktion                 3  │
    ▾ Web                      2  │ Folder
-▌    ○ · web-01╭─ ◆ Welcome to sshTermy  1/5 ─────────────────────────────────── ✕ ─╮
+▌    ○ · web-01┌─ ◆ Welcome to sshTermy  1/5 ─────────────────────────────────── × ─┐
 ▌    ○ · web-02│                                                                    │
 ▌  ○ · db-01   │  ● ○ ○ ○ ○                                                         │
  ○ · nas       │                                                                    │
@@ -13,13 +13,13 @@
                │  switches. Passwords and keys are stored encrypted on your         │
                │  computer.                                                         │
                │                                                                    │
-               │   n            new connection                                      │
-               │   ⏎            connect                                             │r or between
                │   F10          between manager and terminal                        │
+               │   n            new connection                                      │r or between
+               │   ⏎            connect                                             │
                │                                                                    │
                │   → next    Esc skip                                               │
                │                                                                    │
-               ╰────────────────────────────────────────────────────────────────────╯
+               └────────────────────────────────────────────────────────────────────┘
                                  │
                                  │
                                  │
@@ -27,4 +27,4 @@
                                  │
                                  │
                                  │
- Ctrl+Space Palette  ⏎ collapse  n new here  e rename  d delete  v move  F1 Help  ⇧F9 explain
+ Ctrl+Space Palette  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e rename  d delete  v move

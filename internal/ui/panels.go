@@ -32,7 +32,9 @@ type goalState struct {
 	plan                []string
 	cur                 *agent.Step
 	armed, editing      bool
-	waiting             bool // Befehl läuft, wir warten auf den Prompt
+	origCmd             string      // KI-Vorschlag vor dem Bearbeiten (e)
+	origStep            *agent.Step // zu welchem Vorschlag origCmd gehört
+	waiting             bool        // Befehl läuft, wir warten auf den Prompt
 	waitSince           time.Time
 	manualPending       bool // "i": eingefügt, wartet auf Enter des Nutzers
 	busy                bool
@@ -43,6 +45,7 @@ type goalState struct {
 	recipe              []string // Vorlage aus einem Runbook
 	runbookID           string
 	rbSel               int // gewähltes Runbook in der Liste (-1 = keins)
+	optSel              int // gewählter Antwortvorschlag zur Rückfrage (-1 = keiner)
 }
 
 func (g *goalState) cancel() {
@@ -129,6 +132,12 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 	case followMsg:
 		if s := a.byID(m.sid); s != nil && m.seq == s.chipSeq {
 			s.chips, s.chipArmed = m.chips, -1
+			for i, c := range s.chips { // was der Admin hier korrigiert hat, gleich richtig
+				if fix, ok := s.learnedFix(c.Command); ok {
+					fresh := agent.ParseStepCommand(fix, a.safetyKind(s))
+					s.chips[i].Command, s.chips[i].Danger, s.chips[i].Elevated = fix, fresh.Danger, fresh.Elevated
+				}
+			}
 		}
 		return nil, true
 	case goalStepMsg:
@@ -148,11 +157,16 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			g.done, g.active, g.doneReason, g.cur = true, false, m.step.Reason, nil
 		case m.step.Question != "":
 			st := m.step
-			g.cur = &st
+			g.cur, g.optSel = &st, -1
 			g.answer.SetValue("")
 			return g.answer.Focus(), true
 		default:
 			st := m.step
+			if fix, ok := s.learnedFix(st.Command); ok {
+				fresh := agent.ParseStepCommand(fix, a.safetyKind(s))
+				st.Command, st.Danger, st.Elevated = fix, fresh.Danger, fresh.Elevated
+				st.Reason = strings.TrimSpace(st.Reason + i18n.T(" (so hast du es hier korrigiert)"))
+			}
 			g.cur, g.armed = &st, false
 			if len(st.Plan) > 0 {
 				g.plan = st.Plan
@@ -177,6 +191,20 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 }
 
 // ---------------------------------------------------------------- Ziel-Modus
+
+// answerQuestion gibt die Antwort auf die Rückfrage ans Modell und holt den
+// nächsten Schritt.
+func (a *App) answerQuestion(s *session, ans string) tea.Cmd {
+	g := &s.goal
+	ans = strings.TrimSpace(ans)
+	if g.cur == nil || g.cur.Question == "" || ans == "" {
+		return nil
+	}
+	g.answers = append(g.answers, g.cur.Question+" → "+ans)
+	g.answer.SetValue("")
+	g.answer.Blur()
+	return a.requestStep(s)
+}
 
 func (a *App) requestStep(s *session) tea.Cmd {
 	g := &s.goal
@@ -240,17 +268,27 @@ func (a *App) goalTick(s *session) tea.Cmd {
 
 func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 	g := &s.goal
+	orig := cmd // was die KI vorgeschlagen hat
+	if g.cur != nil && g.origStep == g.cur && g.origCmd != "" {
+		orig = g.origCmd
+	}
+	g.origCmd, g.origStep = "", nil
 	g.steps = append(g.steps, agent.DoneStep{Command: cmd})
 	s.history = append(s.history, cmd)
 	g.cur, g.armed, g.editing = nil, false, false
 	if insertOnly {
 		s.term.SendText(cmd) // Dry-Run: steht in der Zeile, Nutzer drückt selbst Enter
+		s.noteAI(orig, true)
 		g.manualPending = true
 		s.panelFocus = false
 		return
 	}
 	a.beginCommand(s, cmd)
+	if orig != cmd && s.run != nil && similarCmd(orig, cmd) {
+		s.run.learnFrom = orig // im Ziel-Modus bearbeitet (e)
+	}
 	s.term.SendText(cmd + "\r")
+	s.noteAI(cmd, false)
 	a.profileCommand(s, cmd)
 	g.startWait()
 }
@@ -351,9 +389,21 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	// 2) Rückfrage des Modells beantworten
 	if g.cur != nil && g.cur.Question != "" {
 		if key == "enter" && strings.TrimSpace(g.answer.Value()) != "" {
-			g.answers = append(g.answers, g.cur.Question+" → "+strings.TrimSpace(g.answer.Value()))
-			g.answer.Blur()
-			return a.requestStep(s)
+			return a.answerQuestion(s, g.answer.Value())
+		}
+		if opts := g.cur.Options; len(opts) > 0 && (key == "up" || key == "down") {
+			if key == "down" {
+				g.optSel = min(len(opts)-1, g.optSel+1)
+			} else {
+				g.optSel = max(-1, g.optSel-1)
+			}
+			if g.optSel >= 0 {
+				g.answer.SetValue(opts[g.optSel])
+				g.answer.CursorEnd()
+			} else {
+				g.answer.SetValue("")
+			}
+			return nil
 		}
 		if key == "x" && g.answer.Value() == "" {
 			g.active = false
@@ -369,6 +419,9 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		case "enter":
 			cmd := strings.TrimSpace(g.edit.Value())
 			if cmd != "" {
+				if g.origStep != g.cur {
+					g.origCmd, g.origStep = g.cur.Command, g.cur
+				}
 				st := *g.cur
 				st.Command = cmd
 				st.Reason = i18n.T("von dir bearbeitet")
@@ -529,6 +582,9 @@ func (a *App) panelKeys(s *session) [][2]string {
 			return [][2]string{{"⏎", i18n.T("Ziel starten")}, {"↑↓", "Runbook"}, {"Strg+D", i18n.T("Runbook löschen")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
 		}
 		if g.cur != nil && g.cur.Question != "" {
+			if len(g.cur.Options) > 0 {
+				return [][2]string{{"⏎", i18n.T("antworten")}, {"↑↓", i18n.T("Vorschlag")}, {"Esc", "Terminal"}}
+			}
 			return [][2]string{{"⏎", i18n.T("antworten")}, {"Esc", "Terminal"}}
 		}
 		if g.editing {
@@ -615,7 +671,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		b.WriteString(wrap(st.Muted.Render(i18n.T("Die KI zerlegt das Ziel in einzelne Befehle, erklärt jeden kurz und wartet auf ")+
 			i18n.T("deine Bestätigung. Sie tippt nie selbst.")), w))
 		if rbs := a.st.Runbooks(s.conn.ID); len(rbs) > 0 {
-			b.WriteString("\n\n" + st.Muted.Render(i18n.T("RUNBOOKS  ↑↓ wählen · ⏎ starten")) + "\n")
+			b.WriteString("\n\n" + st.Muted.Render(i18n.T("RUNBOOKS")+"  ") + a.hintsIn(s, st.Muted, [2]string{"↑↓", i18n.T("wählen")}, [2]string{"⏎", i18n.T("starten")}) + "\n")
 			for i, rb := range rbs {
 				if i >= 8 {
 					b.WriteString(st.Muted.Render(fmt.Sprintf(i18n.T("  … %d weitere (Strg+Leertaste sucht)"), len(rbs)-8)) + "\n")
@@ -654,7 +710,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	for _, d := range g.steps {
 		mark := st.OK.Render("✓ ")
 		if d.Skipped {
-			mark = st.Muted.Render("↷ ")
+			mark = st.Muted.Render("» ")
 		}
 		b.WriteString(mark + st.Muted.Render(trunc(d.Command, w-3)) + "\n")
 	}
@@ -673,24 +729,38 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	b.WriteString("\n")
 	switch {
 	case g.done:
-		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + st.Muted.Render(i18n.T("Strg+S als Runbook merken · ⏎ neues Ziel · ")+a.keys.label(actGoal)+i18n.T(" schließen")))
+		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, [2]string{"Strg+S", i18n.T("als Runbook merken")}, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{a.keys.label(actGoal), i18n.T("schließen")}))
 		if s.panelFocus && g.done {
 			g.active = false
 		}
 	case g.busy:
-		b.WriteString(st.AI.Render(i18n.T("✦ denkt über den nächsten Schritt nach …")))
+		b.WriteString(st.AI.Render(i18n.T("◆ denkt über den nächsten Schritt nach …")))
 	case g.err != "":
-		b.WriteString(wrap(st.Danger.Render("✗ "+g.err), w))
+		b.WriteString(wrap(st.Danger.Render("× "+g.err), w))
 	case g.cur != nil && g.cur.Question != "":
-		b.WriteString(st.AI.Render(i18n.T("✦ Rückfrage")) + "\n" + wrap(st.Text.Render(g.cur.Question), w) + "\n\n")
+		b.WriteString(st.AI.Render(i18n.T("◆ Rückfrage")) + "\n" + wrap(st.Text.Render(g.cur.Question), w) + "\n\n")
+		for i, o := range g.cur.Options {
+			mark, style := "○ ", st.Text
+			if i == g.optSel {
+				mark, style = "● ", st.Accent
+			}
+			line := st.Muted.Render(mark) + style.Render(trunc(o, w-3))
+			b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+				s.panelFocus = true
+				return a.answerQuestion(s, o)
+			}) + "\n")
+		}
+		if len(g.cur.Options) > 0 {
+			b.WriteString(st.Muted.Render(i18n.T("Antwort anklicken, mit ↑↓ wählen oder frei schreiben")) + "\n\n")
+		}
 		g.answer.SetWidth(w - 2)
 		b.WriteString(promptBlock(st.Accent.Render("› "), g.answer.View()))
 	case g.cur != nil:
 		c := g.cur
-		head := st.AI.Render(i18n.T("✦ Nächster Schritt"))
+		head := st.AI.Render(i18n.T("◆ Nächster Schritt"))
 		box := st.Panel
 		if len(c.Danger) > 0 {
-			head = st.Danger.Render(i18n.T("⚠ Vorsicht: ") + c.Danger[0].Reason)
+			head = st.Danger.Render(i18n.T("▲ Vorsicht: ") + c.Danger[0].Reason)
 			box = st.DangerBox
 		}
 		cmdLine := c.Command
@@ -706,7 +776,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 			b.WriteString(wrap(st.Muted.Render(c.Reason), w) + "\n")
 		}
 		if c.Elevated {
-			b.WriteString(st.Warn.Render(i18n.T("⬆ läuft mit erhöhten Rechten (sudo)")) + "\n")
+			b.WriteString(st.Warn.Render(i18n.T("↑ läuft mit erhöhten Rechten (sudo)")) + "\n")
 		}
 		if g.armed {
 			b.WriteString("\n" + st.Danger.Render(i18n.T("Nochmal ⏎ zum Ausführen. Esc/s zum Abbrechen.")) + "\n")
@@ -717,7 +787,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	st := a.s
 	q := &s.ask
-	b.WriteString(st.PanelTitle.Render(i18n.T("✦ KI fragen")) + st.Muted.Render(i18n.T("  mit Terminal-Kontext")) + "\n\n")
+	b.WriteString(st.PanelTitle.Render(i18n.T("◆ KI fragen")) + st.Muted.Render(i18n.T("  mit Terminal-Kontext")) + "\n\n")
 	q.input.SetWidth(w - 2)
 	if q.input.Focused() || q.question == "" {
 		b.WriteString(promptBlock(st.Accent.Render("› "), q.input.View()) + "\n\n")
@@ -735,13 +805,13 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 		b.WriteString(st.AI.Render("▍"))
 	}
 	if q.err != "" {
-		b.WriteString("\n" + wrap(st.Danger.Render("✗ "+q.err), w))
+		b.WriteString("\n" + wrap(st.Danger.Render("× "+q.err), w))
 	}
 }
 
 func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 	st := a.s
-	b.WriteString(st.PanelTitle.Foreground(st.T.Accent).Render(i18n.T("⇄ Tunnel & Web-Services")) + "\n\n")
+	b.WriteString(st.PanelTitle.Foreground(st.T.Accent).Render(i18n.T("↔ Tunnel & Web-Services")) + "\n\n")
 	list := a.st.Tunnels(s.conn.ID)
 	if len(list) == 0 {
 		b.WriteString(st.Muted.Render(i18n.T("Noch keine Tunnel für diese Verbindung.\nn = neuer Tunnel (z. B. -L 3000:localhost:3000)")))
@@ -771,7 +841,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		})
 		auto := ""
 		if t.AutoStart {
-			auto = st.Muted.Render(" ⟳")
+			auto = st.Muted.Render(" ◌")
 		}
 		name := trunc(t.Name, max(4, w-8-lipgloss.Width(auto)))
 		if i == s.tunSel {
@@ -800,7 +870,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		}
 		b.WriteString("\n")
 	}
-	b.WriteString(st.Muted.Render(i18n.T("Klick auf an/aus schaltet um.\n⟳ = startet mit der Verbindung (a).")))
+	b.WriteString(st.Muted.Render(i18n.T("Klick auf an/aus schaltet um.\n◌ = startet mit der Verbindung (a).")))
 }
 
 func human(n int64) string {

@@ -1,11 +1,11 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                                         ● AI
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                        ● AI
 
 
 
 
 
-     ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-     │ ⇉ Broadcast  one command or runbook in parallel on several hosts                                           │
+     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │ » Broadcast  one command or runbook in parallel on several hosts                                           │
      │                                                                                                            │
      │   Hosts               1 of 6 selected   Space selects · g folder · a all                                   │
      │     GENERAL                                                                                                │
@@ -23,7 +23,7 @@
      │ ▌ Command             Command, e.g. uptime · ⇧⏎ = next step                                                │
      │                       Tip: {{name}} is asked before the run, {{host}} filled in per host                   │
      │                                                                                                            │
-     ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+     └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 

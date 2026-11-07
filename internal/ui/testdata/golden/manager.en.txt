@@ -1,8 +1,8 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                                         ● AI
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                        ● AI
  connections  6  / search  # Tags       │ ▾ Netzwerk
                                         │
  ▾ Netzwerk                          1  │ Path                Netzwerk
-   ○ ▦ switch-core      manager@192.1…  │ Content             1 connection
+   ○ # switch-core      manager@192.1…  │ Content             1 connection
  ▾ Produktion                        3  │
    ▾ Web                             2  │ Folder
 ▌    ○ · web-01         deploy@10.0.0…  │  ⏎      expand/collapse
@@ -29,4 +29,4 @@
                                         │
                                         │
                                         │
- Ctrl+Space Palette  ⏎ collapse  n new here  e rename  d delete  v move  / search  ⇧↑/↓ reorder  F1 Help  ⇧F9 explain
+ Ctrl+Space Palette  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e rename  d delete  v move  / search  ⇧↑/↓ reorder

@@ -29,6 +29,22 @@ func main() {
 	dir, _ := store.Dir()
 	i18n.Load(dir)
 
+	// Unterbefehle ohne Oberfläche (eigener Vermittler, Anker auf Servern)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "vermittler", "relay":
+			os.Exit(runRelay(os.Args[2:]))
+		case "anker", "anchor":
+			os.Exit(runAnchor(os.Args[2:]))
+		case "attach":
+			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach
+			if len(os.Args) != 3 {
+				fail(fmt.Errorf("attach <ordner>"))
+			}
+			os.Exit(ui.Attach(os.Args[2]))
+		}
+	}
+
 	showVersion := flag.Bool("version", false, i18n.T("Version anzeigen"))
 	noIntro := flag.Bool("no-intro", false, i18n.T("ohne Startanimation starten (dauerhaft: Palette „Startanimation aus“)"))
 	doUpdate := flag.Bool("update", false, i18n.T("auf die neueste Version aus GitHub aktualisieren und beenden"))

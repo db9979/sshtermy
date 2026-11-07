@@ -13,6 +13,8 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go vet ./... && go test ./...
+      - name: Terminal-Emulator (eigene Kopie in third_party/vt)
+        run: cd third_party/vt && go test ./...
       # Bildschirm-Tests: abweichende Bilder zum Ansehen hochladen
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -22,6 +24,13 @@ jobs:
           if-no-files-found: ignore
       - name: Cross-Compile
         run: |
-          for t in windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64; do
-            CGO_ENABLED=0 GOOS=${t%/*} GOARCH=${t#*/} go build -o /dev/null ./cmd/sshtermy
+          for t in windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 linux/arm linux/riscv64; do
+            CGO_ENABLED=0 GOARM=7 GOOS=${t%/*} GOARCH=${t#*/} go build -o /dev/null ./cmd/sshtermy
           done
+
+  packaging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y -qq apt-utils python3-yaml >/dev/null
+      - run: packaging/check.sh

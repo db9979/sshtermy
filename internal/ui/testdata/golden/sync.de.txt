@@ -1,10 +1,10 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                     ● KI
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
 
 
 
 
-  ╭──────────────────────────────────────────────────────────────────────────────────────────────╮
-  │ ⇅ Sync zwischen Rechnern                                                                     │
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ↕ Sync zwischen Rechnern                                                                     │
   │ Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte   │
   │ Datei am                                                                                     │
   │ gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro     │
@@ -16,13 +16,13 @@
   │   Ordner                                                                                     │
   │   Sync-Passwort                                                                              │
   │   Host-Keys           ● an                                                                   │
+  │   Archiv              ○ aus                                                                  │
   │   Automatisch         ● an                                                                   │
   │                                                                                              │
   │ Live-Test                                                                                    │
   │ startet automatisch, sobald die Angaben vollständig sind (oder Strg+T)                       │
   │                                                                                              │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
-
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 

@@ -1,5 +1,5 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                     ● KI
- ⇩ Verbindungen importieren
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
+ ↓ Verbindungen importieren
 
  ~/.ssh/config       nicht gefunden  /home/golden/.ssh/config
  PuTTY               nicht gefunden  HKCU\Software\SimonTatham\PuTTY\Sessions

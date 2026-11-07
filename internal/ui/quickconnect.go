@@ -168,9 +168,9 @@ func (a *App) quickItems(q string) (items []palItem, strong bool) {
 	}
 	hint := i18n.T("Key/Passwort")
 	items = append(items,
-		palItem{group: pgConnect, icon: "⚡", label: i18n.T("Schnell verbinden: ") + c.Alias, hint: hint,
+		palItem{group: pgConnect, icon: ic("connect"), label: i18n.T("Schnell verbinden: ") + c.Alias, hint: hint,
 			run: func() tea.Cmd { return a.openOrConnect(c) }},
-		palItem{group: pgConnect, icon: "+", label: i18n.T("Als Verbindung speichern: ") + c.Alias, hint: i18n.T("anlegen"),
+		palItem{group: pgConnect, icon: ic("new"), label: i18n.T("Als Verbindung speichern: ") + c.Alias, hint: i18n.T("anlegen"),
 			run: func() tea.Cmd {
 				n := newConnDefaults()
 				n.Host, n.Port, n.Username, n.Alias = c.Host, c.Port, c.Username, c.Host

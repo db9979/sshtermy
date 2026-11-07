@@ -73,7 +73,7 @@ func (a *App) updateUnlock(msg tea.Msg) tea.Cmd {
 		a.showWhatsNew(u.setup)
 		a.maybeTour(u.setup)
 		a.checkCrash()
-		return tea.Batch(checkUpdate(), a.runSync())
+		return tea.Batch(checkUpdate(), a.runSync(), a.restoreTabs())
 	case tea.KeyPressMsg:
 		if u.busy {
 			return nil
@@ -171,7 +171,7 @@ func (a *App) viewUnlock() string {
 		b.WriteString("\n" + s.AI.Render(i18n.T("⠿ Schlüssel wird abgeleitet (Argon2id) …")))
 	}
 	if u.err != "" {
-		b.WriteString("\n" + s.Danger.Render("✗ "+u.err))
+		b.WriteString("\n" + s.Danger.Render("× "+u.err))
 	}
 	keys := [][2]string{{"⏎", i18n.T("weiter")}, {"Tab", i18n.T("Feld")}, {"Esc", i18n.T("beenden")}}
 	box := s.dialog(dialog{icon: "◆", title: version.Name, sub: "v" + version.Version, body: b.String(), keys: keys, width: min(80, a.w-8), noClose: true}, a.w)

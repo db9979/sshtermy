@@ -16,6 +16,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Connection manager** with an encrypted store (AES-256-GCM, Argon2id, plus DPAPI on Windows)
 - **a real SSH terminal** (xterm-256color, truecolor, vim/htop/tmux, scrollback, tabs, jump hosts)
 - **Auto-reconnect**: if the line drops (Wi-Fi, VPN, standby), sshTermy reconnects the session by itself, restarts running tunnels and reattaches tmux/screen (can be turned off in the palette)
+- **Persistent session** (idea: Dominik Bornhäußer): per connection, always land in the same tmux/screen session on connect, even from another computer. Other sessions already running? sshTermy asks which one. Same session name in two tabs or on two computers = mirrored screen; "view only" attaches tmux read-only. The palette opens a second watching tab or copies an `ssh … tmux attach -r` command for colleagues. Not on switches, Telnet or console.
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag „Produktion“, „prod“, „live“) get a red line
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
@@ -37,6 +38,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Network scan** (f in the manager): search a subnet for SSH devices (only port and SSH banner, no login),
   recognize switches and routers by their banner and create the hits as connections with one key press.
 - **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL; saved per connection, one click turns them on/off, optionally start with the connection; works through jump hosts
+- **Relay for servers behind NAT/firewall**: the server itself connects out to a relay (`sshtermy anker`), sshTermy reaches its sshd through it without an open port. SSH runs end to end, files and tunnels work as usual. sshTermy brings its own relay (`sshtermy relay`, also `sshtermy vermittler`); Speech on DGX Spark can serve as a relay too ([guide, German](docs/vermittler.md))
 - **AI copilot** for any OpenAI-compatible endpoint (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question, plus suggestions, tunnels, connections and actions
   - **Ghost text** while typing (Tab accepts)
@@ -60,7 +62,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   (OneDrive, Dropbox, iCloud, Syncthing) or directly via your NAS (Synology, QNAP, Nextcloud, any WebDAV server)
 - **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export) and MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), with jump hosts and folders, one key press (i in the manager)
-- **Themes** dark, light and high contrast (a in the manager) and **freely assignable keyboard shortcuts** (b in the manager)
+- **Themes** dark, light, high contrast, Matrix, Amber and Neon (a in the manager), **custom colours** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
 - **English and German**: switch the language in the palette („Language“/„Sprache“) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Versioning and auto-update** from GitHub Releases (signed)
@@ -72,7 +74,21 @@ The AI interaction concept (suggestions, goal mode, fixed danger rules) comes fr
 
 ## Installation
 
-Download the matching file from the [Releases](https://github.com/db9979/sshtermy/releases/latest):
+📖 Guide with animations: **https://db9979.github.io/sshtermy/**
+
+**Package managers** (they also take care of updates):
+
+```
+winget install db9979.sshTermy                                   # Windows (once approved in the winget catalog)
+brew tap db9979/sshtermy https://github.com/db9979/sshtermy      # macOS and Linux
+brew install sshtermy
+echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
+sudo apt update && sudo apt install sshtermy                     # Debian, Ubuntu, Raspberry Pi OS (amd64, arm64, armhf, riscv64)
+```
+
+Installed via Homebrew or apt, sshTermy does not replace itself but shows the update command instead.
+
+Or download the matching file from the [Releases](https://github.com/db9979/sshtermy/releases/latest):
 
 | System | File |
 |---|---|
@@ -80,7 +96,7 @@ Download the matching file from the [Releases](https://github.com/db9979/sshterm
 | Windows x86 32 bit | `sshtermy_windows_386.exe` |
 | Windows x64 | `sshtermy_windows_amd64.exe` |
 | macOS Apple Silicon / Intel | `sshtermy_darwin_arm64` / `sshtermy_darwin_amd64` |
-| Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` |
+| Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` / `sshtermy_linux_arm` (32 bit ARMv7) / `sshtermy_linux_riscv64` |
 
 **macOS (and Linux): one line in Terminal** installs the latest version, checks its checksum and creates
 `~/Applications/sshTermy.app` (double-click or Spotlight "sshTermy" opens it in Terminal, or iTerm if installed)
@@ -95,6 +111,14 @@ opened"). If you still want to use it: `xattr -d com.apple.quarantine sshtermy_d
 sshtermy_darwin_arm64`, then start it from Terminal with `./sshtermy_darwin_arm64`.
 
 Recommended on Windows: **Windows Terminal** (truecolor, function keys, Unicode).
+
+**ClockworkPi uConsole** (and similar handhelds): apt or the one-line installer pick the right build for every core
+(CM4/CM5 and A-06 with a 64 bit system: arm64, 32 bit Raspberry Pi OS: armhf, R-01: riscv64). The 5" screen is big
+enough: with a readable font you get about 80×22 to 106×30 characters, and sshTermy is laid out for 80×24 and up;
+below that, the header and help drop details instead of cutting text. The keyboard has no function row:
+**Fn+1 … Fn+0 = F1 … F10, Fn+- = F11, Fn+= = F12**. For ⇧F1 … ⇧F10 hold Shift *first*, then Fn and the digit.
+Everything is also in the command palette (**Ctrl+Space**), the trackball clicks keys and hints, and keys can be
+changed in the manager with `b`.
 
 ```
 sshtermy              # start
@@ -117,16 +141,22 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | Broadcast | Space / g / a, Tab, Ctrl+S | select host / folder / all, hosts·source·command, check and confirm |
 | | ←→ / ↑↓ / z / c / r / x | host column / scroll / enlarge / copy output / again / cancel |
 | Network scan | Ctrl+S, Space / a, ⏎ | start scan, select hits, create as connections |
-| Terminal | Tab or → | accept ghost text |
-| | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
-| | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
-| | F2 | goal mode (agent) |
+| Terminal | F2 | goal mode (agent) |
 | | F3 | ask AI |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
 | | F5 | files (SFTP): Tab side, c copy (up/down), Space/a mark, drag copies, n folder, d delete, . hidden |
 | | F6 | host overview: r/⏎ query, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
+| | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
+| | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu) |
+| | F9 / ⇧F1…F8 | quick commands: list / run directly |
 | | F10 | back to the manager (sessions keep running) |
+| | ⇧F9 | key bar explains the keys of the current area |
+| | ⇧F10 | move the tab to its own terminal window (Windows Terminal/console, Terminal.app/iTerm2, Linux terminals, tmux); the session stays open, closing the window or ⏎ brings it back. Own terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
+| | Ctrl+F / Ctrl+T | search the scrollback / split view (2 / 4) |
+| | Tab or → | accept ghost text |
+| | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
+| | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
 | | Ctrl+click / right-click | open URL in the browser / menu for a link, IP or host: connect (directly or via the server), ping from the server or from here, copy |
 | | Paste | multi-line shows a preview first (⏎ paste, o without the last Enter, Esc cancel); palette „Paste guard off“ |
 | Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |
@@ -151,15 +181,24 @@ in the file `language` in the config folder so that the unlock screen already kn
 language decides (`LANG`/`LC_ALL`, on Windows the display language): German on a German system, otherwise English.
 The instructions to the AI stay in German internally; with English selected, the AI answers in English.
 
-**Appearance:** a in the manager switches dark → light → high contrast (or palette → „Appearance“). The font size
-belongs to the terminal window: Ctrl + plus/minus in Windows Terminal, ⌘ + / − on macOS.
+**Appearance:** a in the manager switches dark → light → high contrast → Matrix (green) → Amber (retro) → Neon (or
+palette → Settings › "Appearance"). **Customise colours** in the same submenu: pick a template, then change each colour
+with ←/→ (hue), +/− (brightness) or as a hex value; the whole UI previews it live, a contrast check warns about hard to
+read colours, Ctrl+S saves (synced to your other computers).
+
+**Icons:** menus use text tags like `[+]` `[k]` `[/]`, the manager shows the system's prompt character (`$` Linux,
+`%` macOS, `>` Windows, `#` switch). They only use characters every terminal font has, so nothing looks misaligned.
+With a Nerd Font (e.g. "Cascadia Mono NF") switch on Settings › "Nerd Font icons" for real pictograms; the toggle is
+per computer.
+
+The font size belongs to the terminal window: Ctrl + plus/minus in Windows Terminal, ⌘ + / − on macOS.
 
 **Import** (i in the manager): sshTermy looks for `~/.ssh/config` (with `Include`, `Host *` defaults and
 `ProxyJump`), the PuTTY sessions in the registry and `%APPDATA%\MobaXterm\MobaXterm.ini` by itself. New targets are
 preselected, existing ones deselected; ⏎ imports. With f you load a file from somewhere else, e.g. a
 PuTTY export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), a portable `MobaXterm.ini` or an
-`.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. Please load PuTTY keys
-(`.ppk`) into Pageant or export them to OpenSSH with PuTTYgen.
+`.mxtsessions` file. Passwords are not imported, sshTermy asks for them on the first connect. sshTermy reads PuTTY keys
+(`.ppk`, version 2 and 3, with or without passphrase) directly, no Pageant needed.
 
 **Telnet and serial console:** in the connection form, „Connect via“ switches between SSH, Telnet and
 „Serial (console cable)“, e.g. for an Aruba switch on a USB console cable. Port „automatic“ uses the only USB
@@ -183,6 +222,7 @@ The screenshots show the German interface; the English one looks the same.
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
 **Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question, below it suggestions, tunnels, connections and actions.
+Toggles, look, language and setup live in the **[:] Settings ›** submenu (each toggle shows "on"/"off" and the palette stays open while you flip them); shortcuts, tour, news and update are under **[?] Help & info ›**. Typing still finds items inside the submenus directly; Esc or ← goes back.
 
 ![Command palette](docs/bilder/09-palette.png)
 
@@ -290,6 +330,12 @@ Windows login ──DPAPI CryptProtectData────────────�
   host key aborts the connection, without „connect anyway“ (possible man-in-the-middle).
 - Agent auth preferred: private keys stay in the agent. Embedded keys are only stored encrypted in the store.
 - Tunnels bind to `127.0.0.1` by default. SOCKS5 resolves names on the server (no local DNS leaks).
+- **SSH keys (`c` in the manager):** generates ed25519 or RSA-4096 keys (like `ssh-keygen`, optionally with a
+  passphrase, as a file in `~/.ssh` or embedded), adds them to `~/.ssh/authorized_keys` like `ssh-copy-id` and
+  switches the connection only after a successful test login with the key.
+- **Keychain:** a password or key passphrase can live in the macOS Keychain, Windows Credential Manager or the
+  Secret Service (Linux, `secret-tool`) instead of the store. Each computer has its own entry; if it is missing
+  after a sync, sshTermy asks once and saves the answer there.
 
 ### AI
 
@@ -309,6 +355,16 @@ Windows login ──DPAPI CryptProtectData────────────�
 - The API key is never sent via `http://` to a foreign host (unless explicitly allowed).
 - Rate limit in goal mode (default 6 steps/min, at most 40 steps per goal).
 
+### AI providers and fallback
+
+- **Provider** in the AI settings (`s`): Spark / any OpenAI-compatible server (vLLM, SGLang, LiteLLM, LM Studio),
+  Ollama, OpenAI or Claude (Anthropic Messages API). ←/→ switches and prefills address and model; Ctrl+L lists
+  the provider's models, Ctrl+T tests.
+- **Fallback providers** (settings → „Fallback providers“, or `r` in the AI status): up to three, tried in order
+  when the endpoint does not answer. A failed endpoint is skipped for 5 minutes or until the background check
+  reaches it again. The status dot turns yellow and shows „fallback: Claude“ while a fallback answers.
+- Cloud providers always need an API key; keys are stored encrypted like passwords.
+
 ### Error detection and session log
 
 - **When is a command done?** After Enter, as soon as an empty prompt is back and the output settles. Its
@@ -318,7 +374,7 @@ Windows login ──DPAPI CryptProtectData────────────�
   `PROMPT_COMMAND='printf "\033]133;D;%s\007" $?'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`.
   Without shell integration sshTermy estimates from typical error messages in the last lines (`command not found`,
   `No such file`, `Permission denied`, `E: …`, `% Invalid input` on switches and more). This is only an offer, never a block.
-- **Logs** are stored only locally in `logs/` in the config folder (never synced), one file per session,
+- **Logs** are stored in `logs/` in the config folder (synced only with the archive switched on, see below), one file per session,
   AES-256-GCM with a key derived from the store key (HMAC-SHA256); the AAD binds format and file ID.
   Without an unlocked store no log is readable.
 - **Not logged:** password inputs (they are not a command at the prompt and are not displayed) and commands with
@@ -363,6 +419,7 @@ Windows login ──DPAPI CryptProtectData────────────�
 
 ```
 make test         # go vet + tests
+make bench        # performance: terminal throughput, memory per tab, manager with 500 connections
 make build        # bin/sshtermy
 make dist         # all platforms to dist/ + checksums.txt
 make golden       # rewrite the screen tests after an intended UI change
@@ -387,10 +444,35 @@ python3 tools/dev/fakellm.py              # test LLM on 127.0.0.1:11434 (/v1/cha
 SSHTERMY_HOME=/tmp/sth go run ./cmd/sshtermy
 ```
 
+The terminal emulator is a patched copy in `third_party/vt` (faster scrolling, compact scrollback),
+see `third_party/vt/README.sshtermy.md`.
+
 ## Next steps (suggestions)
 
 1. Windows resources (icon, version info) and code signing of the `.exe`, macOS notarization.
 2. macOS keychain as a second unlock path (like DPAPI on Windows).
+
+## Relay: servers behind NAT/firewall
+
+In short (details in [docs/vermittler.md](docs/vermittler.md), German):
+
+```
+# 1. on a reachable machine (VPS, Pi, NAS)
+sshtermy relay start --url https://relay.example.org:8022
+sshtermy relay code --anker             # line for a server
+sshtermy relay code                     # line for sshTermy
+
+# 2. on the server that should become reachable
+sshtermy anchor koppeln 'https://relay.example.org:8022#termy=…&fp=…'
+sshtermy anchor dienst | sudo tee /etc/systemd/system/sshtermy-anker.service
+sudo systemctl enable --now sshtermy-anker
+```
+
+3. In sshTermy: Ctrl+Space → “Pair / manage relays”, paste the line. “Systems via relay” lists all servers with an
+   online dot, ⏎ creates the connection or connects.
+
+The relay only passes encrypted bytes. The anchor reports the host key; if it does not match, sshTermy aborts.
+Without a relay nothing changes.
 
 ## Sync between computers
 
@@ -422,5 +504,41 @@ does not count as a change. This way changes on two computers are not lost as lo
 Syncing happens at start, a few seconds after every change and every 5 minutes; manually via the palette
 („Sync now“). Computer-specific things like DPAPI and the sync settings themselves are not synced.
 
+**Archive (optional):** With the „Archive“ switch in the sync wizard (y), the config backups of your switches (F6)
+and the session logs also travel to your other computers. They are stored in the subfolder `sshtermy-archiv/` next to
+the sync file, one encrypted file per backup or log (key derived from the sync key; the file name only shows kind and
+day, no host names). Every file is written only once, so there are no conflicts. „Keep“ (30, 90 or 365 days) sets how
+long entries stay in the archive; local copies are kept. A deleted log also disappears on the other computers. Running
+sessions go into the archive after they end; the log view shows which computer a log came from.
+
 To try it without a NAS: `go run ./tools/dev/devdav` (http on port 5005) or `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
 (self-signed), user `dominik`, password `nas-pw`.
+
+## Sharing with the team
+
+Ctrl+Space → „Share with the team“: choose connections (Space, `g` folder, `a` all), then password and options.
+sshTermy writes an encrypted `.sshteam` file (Argon2id + AES-256-GCM, nothing readable without the password,
+not even the sender). Jump hosts are added automatically; tunnels, runbooks and quick commands are optional.
+**Never included:** passwords, embedded keys, passphrases, key paths outside `~/`, user names (optional),
+learned rejected suggestions, AI and sync settings. Leave the password empty and sshTermy creates one.
+
+The colleague uses Ctrl+Space → „Import team package“: file, password, target folder (default „Team“). A
+preview shows new and updated entries. Importing the same package again updates the entries but keeps the
+colleague's own passwords, keys and user names.
+
+### Team folders: kept up to date
+
+When sharing, put the file into a folder everyone can reach (network drive, OneDrive or Teams folder) or enter an
+https/WebDAV address (`https://user:password@nas:5006/team/acme.sshteam`) and turn on “Keep up to date”. sshTermy
+then rewrites the file whenever the connections change (checked every minute). If you shared from a folder in the
+manager, the whole folder is shared: new connections in it are included automatically.
+
+Colleagues leave “Subscribe” on when importing. sshTermy then re-reads the file every 5 minutes and applies changes:
+new connections are added, changed ones updated, and ones the sender deleted disappear here too. Their own
+passwords, keys and user names stay. Ctrl+Space → “Team folders” shows the status, checks right away or ends a
+subscription (the connections stay). Team folders are local only and not part of the sync.
+
+## License
+
+sshTermy is released under the [MIT License](LICENSE): you may use, copy, change and pass it on, also commercially,
+as long as the copyright notice and the license text stay included. Idea: Dominik Bornhäußer.

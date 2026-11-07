@@ -29,13 +29,13 @@ var tourSteps = []tourStep{
 	{"❯", "Eine Taste für alles", "Die Befehlspalette findet Verbindungen, Tunnel, Runbooks, Schnellbefehle und Aktionen. " +
 		"Was du tippst, kann auch direkt als Ziel oder Frage an die KI gehen.",
 		[][2]string{{"Strg+Space", "Befehlspalette"}, {"Tab", "in der Palette: KI fragen"}}},
-	{"✦", "Die KI tippt mit", "Beim Tippen erscheint grauer Text als Vorschlag. Nach einem Befehl schlägt die KI " +
+	{"◆", "Die KI tippt mit", "Beim Tippen erscheint grauer Text als Vorschlag. Nach einem Befehl schlägt die KI " +
 		"bis zu vier nächste Befehle vor. Eingefügt wird nur, ausgeführt erst mit deinem ⏎.",
 		[][2]string{{"Tab / →", "grauen Vorschlag übernehmen"}, {"Alt+1…4", "Folgebefehl einfügen"}, {"F3", "KI eine Frage stellen"}}},
 	{"◎", "Ziel-Modus", "Beschreibe ein Ziel („Docker aufräumen“), die KI schlägt Schritt für Schritt genau einen Befehl vor. " +
 		"Rote Befehle sind gefährlich und brauchen eine zweite Bestätigung.",
 		[][2]string{{"F2", "Ziel-Modus"}, {"⏎", "Schritt ausführen"}, {"i", "nur einfügen"}, {"x", "Ziel beenden"}}},
-	{"↯", "Schnellbefehle und mehr", "Häufige Befehle liegen auf ⇧F1 bis ⇧F8, je nach Gerät vorbelegt (z. B. „show vlans“ bei Aruba). F9 zeigt die Liste. " +
+	{"►", "Schnellbefehle und mehr", "Häufige Befehle liegen auf ⇧F1 bis ⇧F8, je nach Gerät vorbelegt (z. B. „show vlans“ bei Aruba). F9 zeigt die Liste. " +
 		"Mit ⇧F9 erklärt die Tastenzeile unten, was die Tasten im aktuellen Bereich bewirken.",
 		[][2]string{{"⇧F1…F8", "Schnellbefehl"}, {"F9", "Schnellbefehle (Liste)"}, {"F4", "Tunnel"}, {"⇧F9", "Tasten erklären"}, {"F1", "alle Tasten"}}},
 }
@@ -94,7 +94,7 @@ func (m *modal) tourView(s Styles, w int) string {
 	sub := strconv.Itoa(m.scroll+1) + "/" + strconv.Itoa(len(tourSteps))
 	body := lipgloss.NewStyle().Width(cw).Render(s.Text.Render(i18n.T(step.text)))
 	var keys []string
-	for _, k := range step.keys {
+	for _, k := range sortFKeys(step.keys, "Strg+Space") {
 		kk := s.Key.Render(i18n.T(k[0]))
 		kk += strings.Repeat(" ", max(0, 14-lipgloss.Width(kk)))
 		keys = append(keys, kk+s.Text.Render(i18n.T(k[1])))
@@ -165,7 +165,7 @@ func (a *App) cheatTips() [][2]string {
 	case len(s.chips) > 0:
 		return [][2]string{{i18n.T("Alt+1…4"), i18n.T("fügt den Vorschlag ein (ohne ⏎)")}, {i18n.T("rot"), i18n.T("= gefährlich, zweimal drücken")}}
 	}
-	return [][2]string{{"F9", i18n.T("Schnellbefehle")}, {"F2", i18n.T("Ziel an die KI")}, {"F3", i18n.T("Frage an die KI")}, {"Strg+Space", i18n.T("findet alles")}}
+	return [][2]string{{"Strg+Space", i18n.T("findet alles")}, {"F2", i18n.T("Ziel an die KI")}, {"F3", i18n.T("Frage an die KI")}, {"F9", i18n.T("Schnellbefehle")}}
 }
 
 // cheatLine: Tastenzeile mit Erklärungen (leer, wenn aus oder nichts passt;
@@ -203,11 +203,4 @@ func (a *App) cheatLine() string {
 		return ansi.Truncate(out, a.w, "")
 	}
 	return out + bg.Render(strings.Repeat(" ", gap)) + back
-}
-
-func cheatLabel(on bool) string {
-	if on {
-		return i18n.T("Tastenzeile: nur Tasten")
-	}
-	return i18n.T("Tastenzeile: Tasten erklären")
 }

@@ -1,23 +1,23 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
  connections  6  / search        │ ▾ Netzwerk
                                  │
  ▾ Netzwerk                   1  │ Path         Netzwerk
-   ○ ▦ switch-core  manager@19…  │ Content      1 connection
+   ○ # switch-core  manager@19…  │ Content      1 connection
  ▾ Produktion                 3  │
    ▾ Web                      2  │ Folder
 ▌    ○ · web-01      deploy@10…  │  ⏎      expand/collapse
 ▌    ○ · web-02      deploy@10…  │  n      new connection here
-▌  ○ · db-01        postgres@1…  │  o      add subfolder
- ○ · ╭─ ✦ AI status ────────────────────────────────────────────────────────────────────── ✕ ─╮
+▌  ○ ┌─ ◆ AI status ────────────────────────────────────────────────────────────────────── × ─┐
  ○ · │                                                                                        │
-     │  ● not checked yet                                                                     │
+ ○ · │  ● not checked yet                                                                     │
      │                                                                                        │
+     │  Provider     Spark / compatible                                                       │
      │  Endpoint     http://spark.lan:8000/v1                                                 │
      │  Model        qwen3-coder                                                              │
      │                                                                                        │en
-     │   p check now    e Settings    Esc close                                               │
+     │   p check now    e Settings    r Fallback providers    Esc close                       │
      │                                                                                        │
-     ╰────────────────────────────────────────────────────────────────────────────────────────╯
+     └────────────────────────────────────────────────────────────────────────────────────────┘
                                  │  not set up · y = wizard
                                  │
                                  │
@@ -27,4 +27,4 @@
                                  │
                                  │
                                  │
- Ctrl+Space Palette  ⏎ collapse  n new here  e rename  d delete  v move  F1 Help  ⇧F9 explain
+ Ctrl+Space Palette  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e rename  d delete  v move

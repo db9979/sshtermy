@@ -13,6 +13,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/syncx"
 )
 
@@ -43,6 +44,7 @@ type syncDoneMsg struct {
 	merged *syncx.Payload
 	rev    uint64
 	stats  syncx.Stats
+	arch   archiveStats
 	err    error
 }
 
@@ -102,6 +104,11 @@ func (a *App) runSync() tea.Cmd {
 		kh = a.hostKeys.Lines()
 	}
 	local := syncx.FromData(d, kh)
+	var book *sessionlog.Book
+	if cfg.Archive {
+		book, _ = a.logBook() // gesperrt/Fehler: nur Sicherungen
+	}
+	st := a.st
 	a.sync.running, a.sync.again = true, false
 	a.sync.next = time.Now().Add(syncInterval)
 	return func() tea.Msg {
@@ -115,8 +122,14 @@ func (a *App) runSync() tea.Cmd {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 		defer cancel()
-		m, st, err := syncx.Run(ctx, b, k, local, deviceName())
-		return syncDoneMsg{merged: m, rev: rev, stats: st, err: err}
+		m, stats, err := syncx.Run(ctx, b, k, local, deviceName())
+		done := syncDoneMsg{merged: m, rev: rev, stats: stats, err: err}
+		if err == nil && cfg.Archive {
+			actx, acancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer acancel()
+			done.arch = runArchive(actx, b, k, st, book, m.Deleted, cfg.ArchiveDays)
+		}
+		return done
 	}
 }
 
@@ -187,6 +200,18 @@ func (a *App) syncDone(m syncDoneMsg) tea.Cmd {
 		}
 		a.flash(i18n.T("Sync: ") + strings.Join(parts, ", "))
 	}
+	if n := archiveNote(m.arch); n != "" && a.wiz == nil {
+		a.flash(n)
+	}
+	if (m.arch.dropped > 0 || m.arch.logs > 0) && a.scr == scrLogs {
+		a.reloadLogs()
+	}
+	if m.arch.err != nil {
+		if e := i18n.T("Sync-Archiv: ") + m.arch.err.Error(); e != a.sync.lastErr {
+			a.flash(e)
+			a.sync.lastErr = e
+		}
+	}
 	a.wizFirstSync(m)
 	if changed {
 		return a.scheduleSync(syncDebounce)
@@ -217,7 +242,7 @@ func (a *App) syncStatus() string {
 	case a.sync.running:
 		return s.AI.Render(i18n.T("⠿ gleicht ab …")) + s.Muted.Render(" · "+where)
 	case cfg.LastError != "":
-		return s.Danger.Render("✗ "+trunc(cfg.LastError, 60)) + s.Muted.Render(" · y")
+		return s.Danger.Render("× "+trunc(cfg.LastError, 60)) + s.Muted.Render(" · y")
 	case !cfg.LastSync.IsZero():
 		return s.OK.Render("✓ "+ago(cfg.LastSync)) + s.Muted.Render(" · "+where)
 	}
@@ -314,6 +339,18 @@ func (a *App) openSync() tea.Cmd {
 		return off(f) || w.rep == nil || !w.rep.OK() || w.rep.RemoteExists || (w.keepKey() && f.raw("spw") == "")
 	}
 	f.toggle("hostkeys", i18n.T("Host-Keys"), cfg.HostKeys || !cfg.Enabled(), i18n.T("bekannte Server-Fingerprints mitnehmen (weniger Rückfragen)")).hidden = off
+	f.toggle("archive", i18n.T("Archiv"), cfg.Archive, i18n.T("Config-Sicherungen und Sitzungsprotokolle mitnehmen (verschlüsselt, eigener Unterordner)")).hidden = off
+	days := cfg.ArchiveDays
+	if days <= 0 {
+		days = syncx.DefaultArchiveDays
+	}
+	dayLabels := make([]string, len(archiveDayOptions))
+	for i, d := range archiveDayOptions {
+		dayLabels[i] = archiveDaysLabel(d)
+	}
+	f.choice("archivedays", i18n.T("Aufbewahren"), dayLabels, archiveDaysLabel(days), i18n.T("so lange bleiben Einträge im Archiv; lokale Kopien bleiben")).hidden = func(f *form) bool {
+		return off(f) || !f.flag("archive")
+	}
 	f.toggle("auto", i18n.T("Automatisch"), cfg.Auto || !cfg.Enabled(), i18n.T("beim Start, nach Änderungen und alle 5 Minuten")).hidden = off
 	w.f = f
 	a.wiz, a.form, a.scr = w, f, scrSync
@@ -539,6 +576,12 @@ func (a *App) wizSave() tea.Cmd {
 
 	nc := cfg
 	nc.Preset, nc.HostKeys, nc.Auto = w.presetKey(), f.flag("hostkeys"), f.flag("auto")
+	nc.Archive = f.flag("archive")
+	for _, d := range archiveDayOptions {
+		if archiveDaysLabel(d) == f.sel("archivedays") {
+			nc.ArchiveDays = d
+		}
+	}
 	nc.LastError = ""
 	if f.sel("mode") == modeFolder {
 		nc.Backend, nc.Folder = domain.SyncFolder, f.str("folder")
@@ -645,7 +688,7 @@ func (a *App) viewSync() string {
 	s := a.s
 	width := min(110, a.w-4)
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(i18n.T("⇅ Sync zwischen Rechnern")) + "\n")
+	b.WriteString(s.Accent.Render(i18n.T("↕ Sync zwischen Rechnern")) + "\n")
 	b.WriteString(s.Muted.Render(i18n.T("Verbindungen, Tunnel, Runbooks und KI-Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n")+
 		i18n.T("gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro Rechner.")) + "\n")
 	b.WriteString(w.f.view(s, width-4, &a.z))
@@ -671,9 +714,9 @@ func (a *App) viewSync() string {
 		icon, style := "✓", s.OK
 		switch st.State {
 		case syncx.StepWarn:
-			icon, style = "⚠", s.Warn
+			icon, style = "▲", s.Warn
 		case syncx.StepFail:
-			icon, style = "✗", s.Danger
+			icon, style = "×", s.Danger
 		}
 		b.WriteString(" " + style.Render(icon) + " " + s.Text.Render(lipgloss.NewStyle().Width(20).Render(i18n.T(st.Title))) + s.Muted.Render(trunc(st.Detail, width-30)) + "\n")
 		if st.Hint != "" && (st.State != syncx.StepOK || st.Title == "Erster Abgleich" || (st.Title == "Sync-Datei" && !w.keepKey())) {

@@ -52,9 +52,22 @@ type reconnState struct {
 type muxState struct {
 	kind string // "tmux" | "screen" | ""
 	name string // Sitzungsname, leer = zuletzt benutzte
+	// Feste Sitzung (persist.go): geteilt anhängen, ohne andere Zuschauer
+	// abzuhängen; view = schreibgeschützt; create = screen-Sitzung anlegen.
+	shared, view, create bool
 }
 
 func (m muxState) attachCmd() string {
+	switch {
+	case m.kind == "tmux" && m.view:
+		return "tmux attach -r -t " + shellQuote(m.name)
+	case m.kind == "tmux" && m.shared:
+		return "tmux new -A -s " + shellQuote(m.name)
+	case m.kind == "screen" && m.shared && m.create:
+		return "screen -S " + shellQuote(m.name)
+	case m.kind == "screen" && m.shared:
+		return "screen -x " + shellQuote(m.name)
+	}
 	switch m.kind {
 	case "tmux":
 		if m.name != "" {
@@ -71,10 +84,14 @@ func (m muxState) attachCmd() string {
 }
 
 func (m muxState) label() string {
+	l := m.kind + i18n.T("-Sitzung")
 	if m.name != "" {
-		return m.kind + i18n.T("-Sitzung „") + m.name + "“"
+		l = m.kind + i18n.T("-Sitzung „") + m.name + "“"
 	}
-	return m.kind + i18n.T("-Sitzung")
+	if m.view {
+		l += i18n.T(" (nur zuschauen)")
+	}
+	return l
 }
 
 func shellQuote(s string) string {
@@ -211,13 +228,6 @@ func (a *App) toggleAutoReconnect() tea.Cmd {
 		a.flash(i18n.T("Auto-Reconnect aus: nach einem Abbruch ⏎ zum Neuverbinden."))
 	}
 	return nil
-}
-
-func reconnectLabel(on bool) string {
-	if on {
-		return i18n.T("Auto-Reconnect aus")
-	}
-	return i18n.T("Auto-Reconnect an (Sitzung nach Abbruch neu verbinden)")
 }
 
 // onShellClosed entscheidet: neu verbinden oder Sitzung beenden.
@@ -445,6 +455,7 @@ func (a *App) resumeMux(s *session) tea.Cmd {
 	}
 	s.muxPending = false
 	s.term.SendText(s.mux.attachCmd() + "\r")
+	s.mux.create = false // beim Neuverbinden gibt es sie schon
 	return nil
 }
 
@@ -505,6 +516,14 @@ func (c *secretCache) wrap(ask sshx.SecretPrompt) sshx.SecretPrompt {
 	}
 }
 
+// get: Antwort auf eine bestimmte Rückfrage (für den Schlüsselbund).
+func (c *secretCache) get(label string) (string, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	v, ok := c.seen[label]
+	return v, ok
+}
+
 func (c *secretCache) forget() {
 	c.mu.Lock()
 	c.seen = nil
@@ -517,9 +536,9 @@ func (a *App) reconnectView(s *session) string {
 	r := s.rc
 	where := s.conn.Alias
 	if !strings.Contains(where, s.conn.Host) {
-		where += " (" + s.conn.Addr() + ")"
+		where += " (" + s.conn.ShowAddr() + ")"
 	}
-	head := st.Warn.Render("⟳ " + r.cause + ": " + where)
+	head := st.Warn.Render("◌ " + r.cause + ": " + where)
 	var line string
 	if r.dialing {
 		line = st.AI.Render(fmt.Sprintf(i18n.T("Verbinde neu … (Versuch %d von %d)"), r.attempts, len(reconnectWaits)))
@@ -537,6 +556,6 @@ func (a *App) reconnectView(s *session) string {
 	if n := len(r.tunnels); n > 0 {
 		out += "\n" + st.Muted.Render(plural(n, i18n.T("Tunnel startet"), i18n.T("Tunnel starten"))+i18n.T(" wieder."))
 	}
-	return out + "\n\n" + a.keyZone("⏎", st.Muted.Render(i18n.T("⏎ jetzt versuchen"))) + st.Muted.Render(" · ") +
-		a.keyZone("Esc", st.Muted.Render(i18n.T("Esc abbrechen"))) + st.Muted.Render(i18n.T(" · x Tab schließen · F10 Manager"))
+	return out + "\n\n" + a.hints(st.Muted, [2]string{"⏎", i18n.T("jetzt versuchen")}, [2]string{"Esc", i18n.T("abbrechen")},
+		[2]string{"x", i18n.T("Tab schließen")}, [2]string{a.keys.label(actManager), i18n.T("Manager")})
 }

@@ -14,6 +14,8 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/keychain"
+	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 )
 
@@ -64,7 +66,8 @@ func (a *App) managerKeys() [][2]string {
 			[2]string{km.label(actMoveTo), i18n.T("verschieben")})
 	case have:
 		k = append(k, [2]string{"⏎", i18n.T("verbinden")}, [2]string{"n", i18n.T("neu")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")},
-			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), i18n.T("Schnellbefehle")})
+			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), i18n.T("Schnellbefehle")},
+			[2]string{km.label(actSSHKey), i18n.T("SSH-Key")})
 	default:
 		k = append(k, [2]string{"n", i18n.T("neue Verbindung")}, [2]string{km.label(actImport), "Import"}, [2]string{km.label(actScan), "Scan"})
 	}
@@ -86,7 +89,7 @@ func (a *App) managerKeys() [][2]string {
 	}
 	k = append(k, [2]string{"s", i18n.T("KI")}, [2]string{"y", "Sync"}, [2]string{"l", i18n.T("Protokolle")},
 		[2]string{km.label(actHelp), i18n.T("Hilfe")}, [2]string{km.label(actCheat), i18n.T("erklären")}, [2]string{km.label(actAbout), i18n.T("Über")}, [2]string{km.label(actQuit), i18n.T("beenden")})
-	return sortFKeys(k)
+	return k
 }
 
 func (a *App) hasTags() bool {
@@ -131,13 +134,18 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	if have {
 		cur = rows[m.sel]
 	}
-	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit,
+	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
 		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll) {
 	case actCheat:
 		return a.toggleCheat()
 	case actQuickEdit:
 		if have && !cur.isFolder() {
 			return a.openQuickForm(cur.conn, "")
+		}
+		return nil
+	case actSSHKey:
+		if have && !cur.isFolder() {
+			return a.openSSHKeyForm(cur.conn)
 		}
 		return nil
 	case actManager:
@@ -276,6 +284,8 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			a.modal = confirmModal(i18n.T("Verbindung löschen"), "„"+c.Alias+i18n.T("“ und ihre Tunnel wirklich löschen?"), func() tea.Cmd {
 				if err := a.st.DeleteConnection(c.ID); err != nil {
 					a.flashErr(err.Error())
+				} else if c.Keychain {
+					sshx.ForgetKeychain(c.ID)
 				}
 				m.sel = max(0, m.sel-1)
 				return nil
@@ -362,7 +372,7 @@ func (a *App) viewManager() string {
 		if m.drag.from < len(rows) {
 			name = rows[m.drag.from].name()
 		}
-		lb.WriteString(" " + s.Warn.Render("⇅ „"+trunc(name, 16)+"“ "+trunc(desc, leftW-24)) + "\n")
+		lb.WriteString(" " + s.Warn.Render("↕ „"+trunc(name, 16)+"“ "+trunc(desc, leftW-24)) + "\n")
 	case m.searching || m.search.Value() != "":
 		m.search.SetWidth(leftW - 6)
 		lb.WriteString(" " + s.Accent.Render("/") + " " + m.search.View() + "\n")
@@ -380,7 +390,7 @@ func (a *App) viewManager() string {
 	// zweite Zeile: aktiver Filter bzw. Position
 	info := ""
 	if m.tag != "" {
-		info = a.z.click(s.Accent.Render(" #"+m.tag+" ✕"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
+		info = a.z.click(s.Accent.Render(" #"+m.tag+" ×"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
 	}
 	if a.mgrFiltering() {
 		n := 0
@@ -527,6 +537,11 @@ func (a *App) viewManager() string {
 				auth += " " + c.KeyPath
 			}
 		}
+		if c.Keychain && c.Auth == domain.AuthPassword {
+			auth = i18n.T("Passwort") + " · " + i18n.T(keychainName())
+		} else if c.Keychain && c.Auth == domain.AuthKeyFile {
+			auth += " · " + i18n.T("Passphrase") + " " + i18n.T(keychainName())
+		}
 		if c.Protocol.Raw() {
 			auth = i18n.T("von Hand am Gerät")
 			if c.Username != "" || c.Password.IsSet() {
@@ -552,6 +567,10 @@ func (a *App) viewManager() string {
 			if n := len(c.Profile.Failed); n > 0 {
 				row(i18n.T("Gelernt"), plural(n, i18n.T("abgelehnter Befehl"), i18n.T("abgelehnte Befehle"))+i18n.T(" · schlägt die KI nicht mehr vor"))
 			}
+			if n := len(c.Profile.Learned); n > 0 {
+				last := c.Profile.Learned[n-1]
+				row(i18n.T("Korrigiert"), trunc(plural(n, i18n.T("Korrektur"), i18n.T("Korrekturen"))+" · "+last.AI+" → "+last.Fixed, max(10, rightW-22)))
+			}
 		} else {
 			row("System", s.Muted.Render(i18n.T("wird beim ersten Verbinden erkannt")))
 		}
@@ -559,20 +578,22 @@ func (a *App) viewManager() string {
 			row(i18n.T("Zuletzt"), c.LastUsed.Format("02.01.2006 15:04"))
 		}
 		tuns := a.st.Tunnels(c.ID)
-		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render(i18n.T("t = neuer Tunnel"))) + "\n")
+		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render(i18n.T("t = neuer Tunnel"))) + s.Muted.Render(i18n.T(" · Klick = bearbeiten/löschen")) + "\n")
 		if len(tuns) == 0 {
 			rb.WriteString(s.Muted.Render(i18n.T("  noch keine · z. B. Weboberfläche oder Datenbank sicher auf diesen Rechner holen")) + "\n")
 		}
 		for _, t := range tuns {
-			icon := "⇄"
+			icon := "↔"
 			if t.IsWebService() {
-				icon = "🌐"
+				icon = "@"
 			}
 			auto := ""
 			if t.AutoStart {
 				auto = s.OK.Render(i18n.T(" auto"))
 			}
-			rb.WriteString(fmt.Sprintf("  %s %-20s %s%s\n", icon, trunc(t.Name, 20), s.Muted.Render(t.Spec()), auto))
+			t := t
+			line := fmt.Sprintf("  %s %-20s %s%s", icon, trunc(t.Name, 20), s.Muted.Render(t.Spec()), auto)
+			rb.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd { return a.openTunnelForm(t) }) + "\n")
 		}
 		cfg := a.st.LLM()
 		rb.WriteString("\n " + s.PanelTitle.Render(i18n.T("KI-Copilot")) + "\n")
@@ -622,11 +643,22 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	isAuth := func(v string) func(*form) bool {
 		return func(f *form) bool { return raw(f) || f.sel("auth") != v }
 	}
-	f.secret("password", i18n.T("Passwort"), c.Password.Reveal(), i18n.T("wird mit AES-256-GCM verschlüsselt gespeichert")).hidden = func(f *form) bool {
+	pw, pp := c.Password.Reveal(), c.KeyPassphrase.Reveal()
+	a.formKC = [2]string{}
+	if c.Keychain && c.ID != "" {
+		a.formKC = [2]string{sshx.KeychainSecret(c.ID, sshx.SecretPassword), sshx.KeychainSecret(c.ID, sshx.SecretPassphrase)}
+		pw, pp = a.formKC[0], a.formKC[1]
+	}
+	f.secret("password", i18n.T("Passwort"), pw, i18n.T("wird mit AES-256-GCM verschlüsselt gespeichert")).hidden = func(f *form) bool {
 		return !raw(f) && f.sel("auth") != "password"
 	}
 	f.text("keypath", "Keyfile", c.KeyPath, i18n.T("z. B. ~/.ssh/id_ed25519 (leer lassen bei eingebettetem Key)")).hidden = isAuth("keyfile")
-	f.secret("keypass", "Passphrase", c.KeyPassphrase.Reveal(), i18n.T("optional; leer = beim Verbinden fragen")).hidden = isAuth("keyfile")
+	f.secret("keypass", "Passphrase", pp, i18n.T("optional; leer = beim Verbinden fragen")).hidden = isAuth("keyfile")
+	if keychain.Available() {
+		f.toggle("keychain", i18n.T("Im Schlüsselbund"), c.Keychain, keychainHelp()).hidden = func(f *form) bool {
+			return raw(f) || f.sel("auth") != "password" && f.sel("auth") != "keyfile"
+		}
+	}
 	f.pick("group", i18n.T("Ordner"), domain.NormPath(c.Group), func(v string) string {
 		if v == "" {
 			return a.s.Muted.Render(i18n.T("— oberste Ebene"))
@@ -638,7 +670,9 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	self := c
 	f.pick("jump", i18n.T("Jump-Host"), c.JumpHostID, func(v string) string { return a.jumpFieldText(self, v) },
 		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
+	a.addRelayField(f, c)
 	f.choice("device", i18n.T("Gerätetyp"), deviceLabels, deviceLabel(c.Device), i18n.T("Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage"))
+	addPersistFields(f, c, raw)
 	var pr domain.SystemProfile
 	if c.Profile != nil {
 		pr = *c.Profile
@@ -646,8 +680,15 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.text("p_os", "System", pr.OS, i18n.T("erkannt beim Verbinden; eigene Angabe hat Vorrang, z. B. „ArubaOS-CX 10.13“"))
 	f.choice("p_dialect", i18n.T("Befehlssatz"), dialectLabels(), dialectLabel(pr.Dialect), i18n.T("welche Befehle die KI vorschlägt (automatisch = erkennen)"))
 	f.text("p_notes", i18n.T("KI-Notizen"), pr.Notes, i18n.T("eigene Hinweise, z. B. „Core-Switch, VLAN 99 = Management, nie reload“"))
-	if len(pr.Failed) > 0 {
-		f.toggle("p_forget", i18n.T("Gelerntes löschen"), false, plural(len(pr.Failed), i18n.T("abgelehnter Befehl"), i18n.T("abgelehnte Befehle"))+i18n.T(" gemerkt"))
+	if len(pr.Failed) > 0 || len(pr.Learned) > 0 {
+		var parts []string
+		if len(pr.Failed) > 0 {
+			parts = append(parts, plural(len(pr.Failed), i18n.T("abgelehnter Befehl"), i18n.T("abgelehnte Befehle")))
+		}
+		if len(pr.Learned) > 0 {
+			parts = append(parts, plural(len(pr.Learned), i18n.T("Korrektur"), i18n.T("Korrekturen")))
+		}
+		f.toggle("p_forget", i18n.T("Gelerntes löschen"), false, strings.Join(parts, ", ")+i18n.T(" gemerkt"))
 	}
 	a.form, a.formID, a.scr = f, c.ID, scrConnForm
 	a.formBase = c
@@ -675,7 +716,8 @@ func (a *App) openTunnelForm(t domain.Tunnel) tea.Cmd {
 
 func (a *App) openSettings() tea.Cmd {
 	c := a.st.LLM()
-	f := &form{title: i18n.T("KI-Copilot (OpenAI-kompatibel: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)")}
+	f := &form{title: i18n.T("KI-Copilot: Spark/vLLM, Ollama, OpenAI, Claude oder jeder OpenAI-kompatible Server")}
+	f.choice("prov", i18n.T("Anbieter"), providerLabels(false), c.Provider.Label(), i18n.T("←/→ wählt; Adresse und Modell werden vorbelegt"))
 	f.text("base", i18n.T("Base-URL"), c.BaseURL, i18n.T("z. B. http://dgx-spark:8000/v1 · Ollama: http://localhost:11434/v1"))
 	f.secret("key", i18n.T("API-Key"), c.APIKey.Reveal(), i18n.T("verschlüsselt gespeichert; leer für lokale Server"))
 	f.text("model", i18n.T("Modell"), c.Model, i18n.T("Strg+L: Liste vom Endpunkt · Strg+T: Verbindung testen"))
@@ -688,8 +730,11 @@ func (a *App) openSettings() tea.Cmd {
 	f.number("lines", i18n.T("Kontext-Zeilen"), c.ContextLines, "")
 	f.number("steps", i18n.T("Ziel: Schritte/min"), c.GoalStepsMin, i18n.T("Ratenlimit im Ziel-Modus"))
 	f.toggle("insecure", i18n.T("http mit API-Key"), c.AllowInsecure, i18n.T("nur wenn du weißt, was du tust"))
+	f.pick("fallbacks", i18n.T("Ersatz-Anbieter"), "", func(string) string { return a.fallbackSummary(a.st.LLM()) },
+		func() tea.Cmd { return a.settingsToFallbacks() }, i18n.T("⏎ öffnet: springen ein, wenn der Endpunkt nicht antwortet"))
 	a.form, a.scr = f, scrSettings
 	a.llm = llmUI{}
+	a.llm.rememberProviders(f)
 	return f.setFocus(0)
 }
 
@@ -709,6 +754,10 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrQuickForm && a.quickFormKey(k) {
 		return nil
 	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrTunnelForm && k.String() == "ctrl+d" && a.formTunnel.ID != "" {
+		a.confirmDeleteTunnel(a.formTunnel)
+		return nil
+	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" {
 		a.form = nil
 		a.scr = scrManager
@@ -718,6 +767,9 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		return nil
 	}
 	submit, cmd := a.form.update(msg)
+	if a.scr == scrSettings && a.form != nil {
+		a.applyProviderDefaults()
+	}
 	if a.scr == scrConnForm {
 		syncProtoPort(a.form)
 	}
@@ -726,10 +778,14 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	}
 	var err error
 	var next tea.Cmd
-	wasKey := a.scr == scrKeyForm
+	wasKey := a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm
 	switch a.scr {
 	case scrKeyForm:
 		next, err = a.saveKeyFix()
+	case scrSSHKeyForm:
+		next, err = a.startSSHKey()
+	case scrRelayForm:
+		next, err = a.startRelayPair()
 	case scrConnForm:
 		err = a.saveConn()
 	case scrTunnelForm:
@@ -738,6 +794,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveSettings()
 	case scrQuickForm:
 		err = a.saveQuick()
+	case scrMonitorForm:
+		err = a.saveMonitor()
 	}
 	if err != nil {
 		a.form.err = err.Error()
@@ -798,11 +856,13 @@ func (a *App) saveConn() error {
 	}
 	c.Color = accentFromLabel(f.sel("color"))
 	c.Device = deviceFromLabel(f.sel("device"))
+	applyPersistFields(f, &c)
 	c.Profile = profileFromForm(f, a.formBase.Profile)
 	c.JumpHostID = f.val("jump")
 	if c.Protocol.Raw() {
 		c.JumpHostID, c.KeyPEM = "", ""
 	}
+	a.applyRelayField(f, &c)
 	if c.JumpHostID != "" {
 		if _, ok := a.st.Connection(c.JumpHostID); !ok {
 			return errors.New(i18n.T("Jump-Host gibt es nicht mehr"))
@@ -811,7 +871,11 @@ func (a *App) saveConn() error {
 			return errors.New(i18n.T("Jump-Host würde einen Kreis bilden"))
 		}
 	}
+	secret := a.connFormKeychain(&c)
 	saved, err := a.st.UpsertConnection(c)
+	if err == nil {
+		err = a.saveConnKeychain(saved, secret)
+	}
 	if err == nil {
 		a.mgr.want = "c:" + saved.ID
 		a.expandTo(saved.Group)
@@ -827,6 +891,29 @@ func (a *App) saveConn() error {
 		}
 	}
 	return err
+}
+
+// confirmDeleteTunnel: Tunnel nach Rückfrage löschen (aus dem Formular,
+// Strg+D). Läuft er gerade in einer Sitzung, wird er vorher gestoppt.
+func (a *App) confirmDeleteTunnel(t domain.Tunnel) {
+	a.modal = confirmModal(i18n.T("Tunnel löschen"), "„"+t.Name+i18n.T("“ löschen?"), func() tea.Cmd {
+		for _, s := range a.sessions {
+			if s.tunnels != nil {
+				s.tunnels.Stop(t.ID)
+			}
+		}
+		if err := a.st.DeleteTunnel(t.ID); err != nil {
+			a.flashErr(i18n.T("Tunnel: ") + err.Error())
+			return nil
+		}
+		a.form = nil
+		a.scr = scrManager
+		if a.returnToTerminal {
+			a.scr, a.returnToTerminal = scrTerminal, false
+		}
+		a.flash(i18n.T("Tunnel gelöscht: ") + t.Name)
+		return nil
+	})
 }
 
 func (a *App) saveTunnel() error {
@@ -854,6 +941,9 @@ func (a *App) saveTunnel() error {
 }
 
 func (a *App) saveSettings() error {
+	if a.llm.fallback {
+		return a.saveFallbacks()
+	}
 	c := a.formLLM()
 	if err := checkLLM(c); err != nil {
 		return err
@@ -927,6 +1017,7 @@ func profileFromForm(f *form, base *domain.SystemProfile) *domain.SystemProfile 
 	if base != nil {
 		p = *base
 		p.Failed = append([]string(nil), base.Failed...)
+		p.Learned = append([]domain.Correction(nil), base.Learned...)
 	}
 	osText, notes := f.str("p_os"), f.str("p_notes")
 	dia := ""
@@ -946,7 +1037,7 @@ func profileFromForm(f *form, base *domain.SystemProfile) *domain.SystemProfile 
 	}
 	p.Notes = notes
 	if fl := f.get("p_forget"); fl != nil && fl.on {
-		p.Failed = nil
+		p.Failed, p.Learned = nil, nil
 	}
 	if p.Empty() && p.Banner == "" {
 		return nil

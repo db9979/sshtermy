@@ -158,6 +158,36 @@ func (a *App) quickModalKey(key string) tea.Cmd {
 		a.modal = nil
 		return nil
 	}
+	sugg := a.favSuggestions(s)
+	rows := maxQuick + len(sugg)
+	if m.scroll >= rows {
+		m.scroll = rows - 1
+	}
+	if m.scroll >= maxQuick { // Vorschlag aus dem Verlauf gewählt
+		u := sugg[m.scroll-maxQuick]
+		switch key {
+		case "enter":
+			if len(safety.Check(u.Cmd, a.safetyKind(s))) > 0 && m.armed != m.scroll {
+				m.armed = m.scroll
+				return nil
+			}
+			a.modal = nil
+			s.panelFocus = false
+			return a.sendCommand(s, u.Cmd)
+		case "a", "+":
+			if err := a.adoptFavorite(s, u.Cmd); err != nil {
+				a.flashErr(err.Error())
+			}
+			m.armed = -1
+			m.scroll = min(m.scroll, maxQuick+len(a.favSuggestions(s))-1)
+			return nil
+		case "x", "delete":
+			_ = a.st.MarkCommand(s.conn.ID, u.Cmd, true, true)
+			m.armed = -1
+			m.scroll = min(m.scroll, maxQuick+len(a.favSuggestions(s))-1)
+			return nil
+		}
+	}
 	run := func(i int) tea.Cmd {
 		cmds, _ := a.quickCmds(s)
 		if i >= len(cmds) || strings.TrimSpace(cmds[i]) == "" {
@@ -176,10 +206,10 @@ func (a *App) quickModalKey(key string) tea.Cmd {
 	}
 	switch key {
 	case "up", "k":
-		m.scroll = (m.scroll + maxQuick - 1) % maxQuick
+		m.scroll = (m.scroll + rows - 1) % rows
 		m.armed = -1
 	case "down", "j", "tab":
-		m.scroll = (m.scroll + 1) % maxQuick
+		m.scroll = (m.scroll + 1) % rows
 		m.armed = -1
 	case "enter":
 		return run(m.scroll)
@@ -227,7 +257,7 @@ func (a *App) quickModalView(m *modal) string {
 		if c != "" {
 			txt = st.Text.Render(trunc(c, cw-12))
 			if f := safety.Check(c, kind); len(f) > 0 {
-				txt = st.Danger.Render(trunc(c, cw-14) + " ⚠")
+				txt = st.Danger.Render(trunc(c, cw-14) + " ▲")
 			}
 		}
 		row := " " + st.Accent.Render(key) + "  " + txt
@@ -248,10 +278,48 @@ func (a *App) quickModalView(m *modal) string {
 		}))
 	}
 	keys := [][2]string{{"⏎", i18n.T("ausführen")}, {"1…8", ""}, {"↑↓", i18n.T("wählen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
-	if m.armed >= 0 {
-		lines = append(lines, "", st.Danger.Render(i18n.T("⚠ gefährlich: nochmal ⏎ zum Ausführen")))
+	if sugg := a.favSuggestions(s); len(sugg) > 0 {
+		lines = append(lines, "", " "+st.AI.Render(i18n.T("Vorschläge aus deinem Verlauf")))
+		for j, u := range sugg {
+			i := maxQuick + j
+			cnt := fmt.Sprintf("%d×", u.N)
+			cnt += strings.Repeat(" ", max(0, 5-len([]rune(cnt))))
+			txt := st.Text.Render(trunc(u.Cmd, cw-12))
+			if f := safety.Check(u.Cmd, kind); len(f) > 0 {
+				txt = st.Danger.Render(trunc(u.Cmd, cw-14) + " ▲")
+			}
+			row := " " + st.Muted.Render(cnt) + "  " + txt
+			row += strings.Repeat(" ", max(0, cw-lipgloss.Width(row)))
+			if i == m.scroll {
+				row = st.Selected.Render(ansi.Strip(row))
+				if i == m.armed {
+					row = st.ChipDanger.Render(ansi.Strip(row))
+				}
+			}
+			lines = append(lines, a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+				if m.scroll == i || double {
+					return a.quickModalKey("enter")
+				}
+				m.scroll, m.armed = i, -1
+				return nil
+			}))
+		}
+		if m.scroll >= maxQuick {
+			slot, repl := a.adoptSlot(s)
+			hint := fmt.Sprintf(i18n.T("a legt ihn auf %s"), a.quickLabel(slot))
+			if repl != "" {
+				hint += fmt.Sprintf(i18n.T(" (ersetzt „%s“, am seltensten benutzt)"), trunc(repl, 24))
+			} else {
+				hint += i18n.T(" (frei)")
+			}
+			lines = append(lines, "", " "+st.Muted.Render(trunc(hint, cw)))
+			keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"a", i18n.T("als Schnellbefehl")}, {"x", i18n.T("nicht vorschlagen")}, {"↑↓", i18n.T("wählen")}, {"Esc", i18n.T("schließen")}}
+		}
 	}
-	return st.dialog(dialog{icon: "↯", title: i18n.T("Schnellbefehle"), sub: sub, body: strings.Join(lines, "\n"), keys: keys}, a.w)
+	if m.armed >= 0 {
+		lines = append(lines, "", st.Danger.Render(i18n.T("▲ gefährlich: nochmal ⏎ zum Ausführen")))
+	}
+	return st.dialog(dialog{icon: "►", title: i18n.T("Schnellbefehle"), sub: sub, body: strings.Join(lines, "\n"), keys: keys}, a.w)
 }
 
 func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
@@ -262,7 +330,7 @@ func (a *App) quickPaletteItems(s *session, match func(string) bool) []palItem {
 			continue
 		}
 		i, c := i, c
-		it := palItem{group: pgQuick, icon: "↯", label: c, hint: a.quickLabel(i),
+		it := palItem{group: pgQuick, icon: ic("quick"), label: c, hint: a.quickLabel(i),
 			run: func() tea.Cmd { s.panelFocus = false; return a.runQuick(s, i) }}
 		if f := safety.Check(c, a.safetyKind(s)); len(f) > 0 {
 			it.danger = f[0].Reason
@@ -359,32 +427,39 @@ func (a *App) editQuickFor(s *session) tea.Cmd {
 	return a.openQuickForm(c, a.remoteText(s))
 }
 
-// sortFKeys: F-Tasten der Fußzeile nach Nummer ordnen (F1, F2 … F12, dann ⇧F).
-func sortFKeys(keys [][2]string) [][2]string {
+// sortFKeys ordnet eine Hauptleiste nach fester Regel: alles bis
+// einschließlich der Palette bleibt vorn, dann alle F-Tasten streng nach
+// Nummer (F1 … F12), danach die ⇧F-Tasten und zuletzt alle anderen Tasten
+// (Strg+…, Buchstaben …) in ihrer bisherigen Reihenfolge. So stehen nie
+// Strg-Tasten zwischen den F-Tasten, auch nicht bei eigener Belegung.
+func sortFKeys(keys [][2]string, palette string) [][2]string {
 	num := func(label string) int {
 		var n int
-		l := strings.TrimPrefix(label, "Shift+")
+		l := strings.TrimPrefix(strings.TrimPrefix(label, "Shift+"), "⇧")
 		if _, err := fmt.Sscanf(l, "F%d", &n); err == nil && strings.HasPrefix(l, "F") {
 			if l != label {
 				n += 100 // ⇧F-Tasten nach den normalen
 			}
 			return n
 		}
-		return 1000
+		return 0
 	}
-	// Nur die F-Tasten untereinander tauschen; andere (Palette, Strg+Q)
-	// bleiben an ihrem Platz.
-	var idx []int
-	var fk [][2]string
+	head := 0
 	for i, k := range keys {
-		if num(k[0]) < 1000 {
-			idx, fk = append(idx, i), append(fk, k)
+		if k[0] == palette {
+			head = i + 1
+			break
+		}
+	}
+	out := append([][2]string(nil), keys[:head]...)
+	var fk, rest [][2]string
+	for _, k := range keys[head:] {
+		if num(k[0]) > 0 {
+			fk = append(fk, k)
+		} else {
+			rest = append(rest, k)
 		}
 	}
 	sort.SliceStable(fk, func(i, j int) bool { return num(fk[i][0]) < num(fk[j][0]) })
-	out := append([][2]string(nil), keys...)
-	for n, i := range idx {
-		out[i] = fk[n]
-	}
-	return out
+	return append(append(out, fk...), rest...)
 }

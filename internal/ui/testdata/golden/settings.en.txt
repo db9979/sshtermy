@@ -1,4 +1,4 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                               ● AI
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ● AI
 
 
 
@@ -6,12 +6,12 @@
 
 
 
-
-     ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
-     │ AI copilot (OpenAI-compatible: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)                   │
+     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │ AI copilot: Spark/vLLM, Ollama, OpenAI, Claude or any OpenAI-compatible server                   │
      │                                                                                                  │
-     │ ▌ Base URL            http://spark.lan:8000/v1                                                   │
-     │                       e.g. http://dgx-spark:8000/v1 · Ollama: http://localhost:11434/v1          │
+     │ ▌ Provider             Spark / compatible  Ollama  OpenAI  Claude                                │
+     │                       ←/→ selects; address and model are prefilled                               │
+     │   Base URL            http://spark.lan:8000/v1                                                   │
      │   API key                                                                                        │
      │   Model               qwen3-coder                                                                │
      │   Max tokens          400                                                                        │
@@ -23,9 +23,9 @@
      │   Context lines       80                                                                         │
      │   Goal: steps/min     6                                                                          │
      │   http with API key   ○ off                                                                      │
+     │   Fallback providers  none · ⏎ set up ▾                                                          │
      │                                                                                                  │
-     ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-
+     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 

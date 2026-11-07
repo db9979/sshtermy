@@ -40,8 +40,22 @@ type SystemProfile struct {
 	// nicht noch einmal vorschlagen.
 	Failed []string `json:"failed,omitempty"`
 
+	// Learned: KI-Befehle, die der Admin auf diesem System korrigiert hat
+	// (neueste zuletzt). Die KI bekommt sie als „so heißt das hier“ mit.
+	Learned []Correction `json:"learned,omitempty"`
+
 	DetectedAt time.Time `json:"detected_at,omitempty"`
 }
+
+// Correction: KI-Vorschlag und das, was der Admin stattdessen ausgeführt hat.
+type Correction struct {
+	AI    string    `json:"ai"`
+	Fixed string    `json:"fixed"`
+	At    time.Time `json:"at,omitempty"`
+}
+
+// MaxLearned: so viele Korrekturen merkt sich ein Profil.
+const MaxLearned = 12
 
 // MaxFailed: so viele abgelehnte Befehle merkt sich ein Profil.
 const MaxFailed = 12
@@ -110,7 +124,7 @@ func DialectByName(name string) (Dialect, bool) {
 
 // Empty: noch nichts bekannt.
 func (p SystemProfile) Empty() bool {
-	return p.OS == "" && p.Dialect == "" && p.Family == "" && p.Notes == "" && len(p.Failed) == 0
+	return p.OS == "" && p.Dialect == "" && p.Family == "" && p.Notes == "" && len(p.Failed) == 0 && len(p.Learned) == 0
 }
 
 // Summary: eine kurze Zeile für Manager und Kopfzeile,
@@ -175,7 +189,46 @@ func (p SystemProfile) Prompt() string {
 			b.WriteString("  - " + f + "\n")
 		}
 	}
+	if len(p.Learned) > 0 {
+		b.WriteString("Vom Admin korrigiert (links dein früherer Vorschlag, rechts der richtige Befehl auf diesem System; künftig so vorschlagen):\n")
+		for _, c := range p.Learned {
+			b.WriteString("  - " + c.AI + "  →  " + c.Fixed + "\n")
+		}
+	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// AddLearned merkt sich eine Korrektur. Gibt es zum selben KI-Befehl schon
+// eine, gilt die neue. Eine Korrektur, die einen früheren Fehlschlag
+// behebt, darf auch die Liste der abgelehnten Befehle ergänzen; das macht
+// der Aufrufer.
+func (p *SystemProfile) AddLearned(ai, fixed string, at time.Time) bool {
+	ai, fixed = strings.TrimSpace(ai), strings.TrimSpace(fixed)
+	if ai == "" || fixed == "" || ai == fixed {
+		return false
+	}
+	out := p.Learned[:0:0]
+	for _, c := range p.Learned {
+		if c.AI == ai || c.Fixed == ai {
+			continue // überholt bzw. schon bekannt: neu hinten anstellen
+		}
+		out = append(out, c)
+	}
+	out = append(out, Correction{AI: ai, Fixed: fixed, At: at.UTC().Truncate(time.Second)})
+	if len(out) > MaxLearned {
+		out = out[len(out)-MaxLearned:]
+	}
+	same := len(out) == len(p.Learned)
+	if same {
+		for i := range out {
+			if out[i].AI != p.Learned[i].AI || out[i].Fixed != p.Learned[i].Fixed {
+				same = false
+				break
+			}
+		}
+	}
+	p.Learned = out
+	return !same
 }
 
 // AddFailed merkt sich einen abgelehnten Befehl (ohne Dubletten, begrenzt).

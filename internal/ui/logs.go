@@ -17,6 +17,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
+	"github.com/db9979/sshtermy/internal/syncx"
 )
 
 // Sitzungsprotokolle (Manager: l, Palette): Liste aller mitgeschriebenen
@@ -155,6 +156,8 @@ func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
 				if b, err := a.logBook(); err == nil {
 					if err := b.Delete(l.ID); err != nil {
 						a.flashErr(err.Error())
+					} else if a.st.SyncConfig().Archive {
+						_ = a.st.ForgetArchived(syncx.ArchiveTombstone(syncx.KindLog, l.ID))
 					}
 				}
 				a.reloadLogs()
@@ -320,7 +323,7 @@ func (a *App) viewLogs() string {
 		l := list[i]
 		fails := ""
 		if n := l.Failures(); n > 0 {
-			fails = s.Danger.Render(fmt.Sprintf(" ✗%d", n))
+			fails = s.Danger.Render(fmt.Sprintf(" ×%d", n))
 		}
 		live := " "
 		if a.activeLog(l.ID) != nil {
@@ -353,15 +356,15 @@ func (a *App) viewLogs() string {
 	var rb strings.Builder
 	w := rightW - 2
 	if m.busy != "" {
-		rb.WriteString(" " + s.AI.Render(i18n.T("✦ KI fasst zusammen: ")+m.busy+" …") + "\n\n")
+		rb.WriteString(" " + s.AI.Render(i18n.T("◆ KI fasst zusammen: ")+m.busy+" …") + "\n\n")
 	}
 	switch {
 	case m.group != "":
-		title := fmt.Sprintf(i18n.T("✦ Zusammenfassung über %s"), plural(len(list), i18n.T("Sitzung"), i18n.T("Sitzungen")))
+		title := fmt.Sprintf(i18n.T("◆ Zusammenfassung über %s"), plural(len(list), i18n.T("Sitzung"), i18n.T("Sitzungen")))
 		if m.groupQ != "" {
 			title += i18n.T(" zu „") + m.groupQ + "“"
 		}
-		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(title) + s.Muted.Render(i18n.T("  Esc schließen")) + "\n\n")
+		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(title) + s.Muted.Render("  ") + a.hints(s.Muted, [2]string{"Esc", i18n.T("schließen")}) + "\n\n")
 		rb.WriteString(indent(wrap(s.Text.Render(m.group), w), " "))
 	case m.sel < len(list):
 		l := list[m.sel]
@@ -382,9 +385,12 @@ func (a *App) viewLogs() string {
 		if l.System != "" {
 			info += " · " + l.System
 		}
+		if l.Device != "" {
+			info += i18n.T(" · von ") + l.Device
+		}
 		rb.WriteString(" " + s.Muted.Render(trunc(info, w)) + "\n\n")
 		if l.Summary != "" {
-			rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(i18n.T("✦ Zusammenfassung")) + "\n")
+			rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(i18n.T("◆ Zusammenfassung")) + "\n")
 			rb.WriteString(indent(wrap(s.Text.Render(l.Summary), w), " ") + "\n\n")
 		}
 		idx := make([]int, len(l.Entries))
@@ -401,7 +407,7 @@ func (a *App) viewLogs() string {
 			e := l.Entries[i]
 			mark := s.Accent.Render("$")
 			if e.Failed {
-				mark = s.Danger.Render("✗")
+				mark = s.Danger.Render("×")
 			}
 			rb.WriteString(" " + s.Muted.Render(e.At.Format("15:04:05")) + " " + mark + " " + s.Text.Bold(true).Render(trunc(e.Command, w-12)) + "\n")
 			if e.Failed && e.Reason != "" {
@@ -437,11 +443,4 @@ func indent(s, pre string) string {
 		l[i] = pre + l[i]
 	}
 	return strings.Join(l, "\n")
-}
-
-func logLabel(on bool) string {
-	if on {
-		return i18n.T("Sitzungsprotokoll ausschalten")
-	}
-	return i18n.T("Sitzungsprotokoll einschalten")
 }

@@ -82,7 +82,7 @@ func TestPuTTYReg(t *testing.T) {
 		t.Fatalf("%v %+v", err, es)
 	}
 	c := es[0].Conn
-	if c.Alias != "Core Switch" || c.Host != "10.1.1.1" || c.Username != "admin" || c.Port != 22 || c.Auth != domain.AuthAgent || len(es[0].Notes) == 0 {
+	if c.Alias != "Core Switch" || c.Host != "10.1.1.1" || c.Username != "admin" || c.Port != 22 || c.Auth != domain.AuthKeyFile || c.KeyPath != `C:\Keys\sw.ppk` {
 		t.Errorf("%+v %v", c, es[0].Notes)
 	}
 }

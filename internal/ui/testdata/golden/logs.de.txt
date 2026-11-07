@@ -1,4 +1,4 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                     ● KI
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
  Sitzungsprotokolle  0  / suchen │
                                  │
   Noch keine Protokolle.         │

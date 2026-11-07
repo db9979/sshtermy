@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/agent"
+	"github.com/db9979/sshtermy/internal/detach"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
@@ -38,6 +39,7 @@ const (
 type session struct {
 	id      int
 	conn    domain.Connection
+	title   string // eigener Tab-Name (tabs.go), "" = Alias
 	client  *sshx.Client
 	shell   termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
 	term    *termemu.Term
@@ -57,6 +59,9 @@ type session struct {
 	rec         atomic.Pointer[recorder] // laufende Aufnahme (record.go)
 	recStart    time.Time
 
+	detach *detachState                // Tab läuft in eigenem Fenster (detach.go)
+	detOut atomic.Pointer[detach.Conn] // dorthin geht die Ausgabe mit
+
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
 
@@ -68,6 +73,7 @@ type session struct {
 	// eigene Befehle und Folgebefehle
 	history    []string
 	chips      []agent.Suggestion
+	aiPend     *aiPending // zuletzt eingefügter/ausgeführter KI-Befehl (learn.go)
 	chipSeq    int
 	chipArmed  int // Index eines roten Chips nach dem ersten Druck, sonst -1
 	quickArmed int // dasselbe für Schnellbefehle (⇧F1 …)
@@ -118,6 +124,9 @@ func (w outWriter) Write(p []byte) (int, error) {
 		r.Output(p)
 	}
 	n, err := w.s.term.Write(p)
+	if c := w.s.detOut.Load(); c != nil {
+		_, _ = c.Write(p)
+	}
 	if w.s.pending.CompareAndSwap(false, true) {
 		select {
 		case w.ev <- outputMsg{w.s.id}:
@@ -172,6 +181,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 		opts := sshx.Options{
 			HostKeys: hk,
 			Resolve:  st.Connection,
+			Relay:    a.relayDialer(),
 			Prompt: func(host, fp, typ string) bool {
 				r := make(chan bool, 1)
 				ev <- hostKeyAskMsg{host, fp, typ, r}
@@ -229,6 +239,7 @@ func (w shellWriter) Write(p []byte) (int, error) {
 }
 
 func (s *session) close() {
+	s.endDetach(i18n.T("Sitzung in sshTermy beendet."))
 	if s.ghostCancel != nil {
 		s.ghostCancel()
 	}

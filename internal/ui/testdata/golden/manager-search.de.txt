@@ -1,4 +1,4 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                         ● KI
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
  / web                                  │ ▾ Produktion
   2 Treffer · Esc zeigt alle            │
  ▾ Produktion                        3  │ Pfad                Produktion

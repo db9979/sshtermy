@@ -1,0 +1,36 @@
+# Neueste Version bei winget einreichen (Pull Request an microsoft/winget-pkgs).
+# Von Hand starten (Actions → winget → Run workflow), nicht bei jedem Release:
+# jede Einreichung prüfen dort Menschen, tägliche PRs wären zu viel.
+# Einmalig nötig: Secret WINGET_TOKEN = klassischer GitHub-Token mit „public_repo“
+# (wingetcreate legt damit einen Fork von winget-pkgs im eigenen Konto an).
+name: winget
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Manifeste für das neueste Release schreiben
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern checksums.txt --dir rel
+          packaging/winget.sh "${tag#v}" rel/checksums.txt out
+          echo "DIR=$(cygpath -w "$(ls -d out/manifests/d/db9979/sshTermy/*)")" >> "$GITHUB_ENV"
+
+      - name: Einreichen
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          if (-not $env:WINGET_TOKEN) { throw "Secret WINGET_TOKEN fehlt (siehe Kommentar oben in winget.yml)" }
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe submit --token $env:WINGET_TOKEN $env:DIR

@@ -86,9 +86,12 @@ func (a *App) aboutModal() *modal {
 	b := version.Long() + "\n\n" +
 		i18n.T("Sicherheit: AES-256-GCM, Argon2id, DPAPI (Windows), Host-Key-Prüfung (TOFU),\n") +
 		i18n.T("KI ohne Werkzeuge: jeder Befehl braucht deine Bestätigung.\n\n") +
-		i18n.T("☕ Gefällt dir sshTermy? Spendier einen Kaffee: ") + version.Coffee + "\n\n"
+		i18n.T("♥ Gefällt dir sshTermy? Spendier einen Kaffee: ") + version.Coffee + "\n\n"
 	if a.rel != nil {
-		b += i18n.T("⬆ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6)
+		b += i18n.T("↑ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6)
+		if cmd := update.Managed(); cmd != "" {
+			b += "\n\n" + i18n.T("Aktualisieren mit: ") + cmd
+		}
 	} else if a.restartPending != "" {
 		b += "v" + a.restartPending + i18n.T(" ist installiert.")
 	}
@@ -178,7 +181,7 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	case mAbout:
 		switch key {
 		case "u":
-			if a.rel != nil {
+			if a.rel != nil && update.Managed() == "" {
 				rel := a.rel
 				a.modal = &modal{kind: mBusy, title: "Update", body: i18n.T("Lade v") + rel.Version + i18n.T(", prüfe Signatur und Prüfsumme …")}
 				return func() tea.Msg { return applyDoneMsg{update.Apply(context.Background(), rel)} }
@@ -257,7 +260,7 @@ func (m *modal) view(s Styles, w, h int) string {
 	d := dialog{title: m.title, keys: m.hints, width: dialogInner(w)}
 	switch m.kind {
 	case mHostKey, mCrash:
-		d.icon, d.tone = "⚠", s.T.Warn
+		d.icon, d.tone = "▲", s.T.Warn
 	case mConfirm:
 		d.icon = "?"
 	case mAbout:
@@ -265,11 +268,11 @@ func (m *modal) view(s Styles, w, h int) string {
 	case mBusy:
 		d.icon, d.tone, d.noClose = "◌", s.T.AI, true
 	case mInfo:
-		d.icon = "ℹ"
+		d.icon = "i"
 	case mInput:
-		d.icon = "✎"
+		d.icon = "»"
 	case mSecret:
-		d.icon = "✱"
+		d.icon = "*"
 	}
 	body := ansi.Wrap(s.Text.Render(m.body), d.width, "")
 	switch m.kind {

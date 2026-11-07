@@ -1,5 +1,5 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                   ▌● web-01
- PRODUKTIV  deploy@10.0.0.11:22                                                            ⇄ 0 Tunnel   ● ✦ qwen3-coder
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ▌● web-01 ×  +
+ PRODUKTIV  deploy@10.0.0.11:22                                                            ↔ 0 Tunnel   ● ◆ qwen3-coder
 Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64
 
 deploy@web-01:~$ systemctl status nginx --no-pager | head -3
@@ -27,4 +27,4 @@ deploy@web-01:~$
 
 
 
-  F9  Schnellbefehle ·  F2  Ziel an die KI ·  F3  Frage an die KI ·  Strg+Space  findet alles               ⇧F9  Tasten
+  Strg+Space  findet alles ·  F2  Ziel an die KI ·  F3  Frage an die KI ·  F9  Schnellbefehle               ⇧F9  Tasten

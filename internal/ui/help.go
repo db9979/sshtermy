@@ -66,6 +66,7 @@ var helpSections = []helpSection{
 		{"- / +", "alle Ordner zu/auf"},
 		{"#", "nach Tag filtern"},
 		{"t", "Tunnel anlegen"},
+		{"c", "SSH-Schlüssel erzeugen / übertragen"},
 		{"q", "Schnellbefehle"},
 		{"m", "Broadcast an mehrere Hosts"},
 		{"f", "Netzwerk-Scan"},
@@ -77,9 +78,11 @@ var helpSections = []helpSection{
 		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
 	}},
-	{hcSettings, "⚙", "KI-Einstellungen", "s", true, [][2]string{
+	{hcSettings, "◈", "KI-Einstellungen", "s", true, [][2]string{
+		{"←/→", "Anbieter: Spark, Ollama, OpenAI, Claude"},
 		{"Strg+T", "Endpunkt testen"},
 		{"Strg+L", "Modell wählen"},
+		{"Ersatz ⏎", "Ersatz-Anbieter einrichten"},
 		{"Strg+S", "speichern"},
 	}},
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{
@@ -88,15 +91,20 @@ var helpSections = []helpSection{
 		{"Alt+0", "Fehler: Warum? & Fix"},
 		{"⇧F1…F8", "Schnellbefehl ausführen"},
 		{"F9", "Schnellbefehle (Liste)"},
+		{"F9 → a", "häufigen Befehl übernehmen"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
 		{"Strg+T", "Ansicht teilen (2 / 4)"},
 		{"Strg+Pfeil", "Bereich wechseln (geteilt)"},
+		{"⇧F10", "Tab in eigenes Fenster (Sitzung bleibt offen)"},
 		{"Strg+F", "im Verlauf suchen"},
 		{"F6", "Host-Übersicht"},
 		{"F7 / F8", "Tab wechseln"},
+		{"Alt+T", "alle Tabs (Liste)"},
+		{"Alt+N", "neuer Tab"},
+		{"Alt+W", "Tab schließen"},
 		{"F10", "zum Manager"},
 		{"Abbruch", "verbindet neu (⏎ / Esc)"},
 	}},
@@ -112,7 +120,7 @@ var helpSections = []helpSection{
 		{"Strg+S", "als Runbook speichern"},
 		{"Strg+D", "Runbook löschen"},
 	}},
-	{hcAsk, "✦", "KI fragen", "F3", true, [][2]string{
+	{hcAsk, "◆", "KI fragen", "F3", true, [][2]string{
 		{"⏎", "Frage senden"},
 		{"⇧⏎ / Strg+J", "neue Zeile"},
 		{"1…9", "Befehl einfügen"},
@@ -122,7 +130,7 @@ var helpSections = []helpSection{
 		{"z", "Erklärung ein-/ausklappen"},
 		{"n", "neue Frage"},
 	}},
-	{hcTunnel, "⇄", "Tunnel", "F4", false, [][2]string{
+	{hcTunnel, "↔", "Tunnel", "F4", false, [][2]string{
 		{"⏎ / Klick", "starten / stoppen"},
 		{"a", "mit Verbindung starten"},
 		{"o", "im Browser öffnen"},
@@ -136,12 +144,13 @@ var helpSections = []helpSection{
 		{"↑ ↓", "Sicherung wählen"},
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},
+		{"g", "Grenzwerte für Warnungen"},
 		{"x", "Abfrage abbrechen"},
 	}},
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{
 		{"Tab", "Seite wechseln"},
 		{"⏎ / →", "Ordner öffnen"},
-		{"← / ⌫", "eine Ebene hoch"},
+		{"← / Bksp", "eine Ebene hoch"},
 		{"c / F6", "kopieren (hoch/runter)"},
 		{"Space / a", "markieren / alle"},
 		{"Ziehen", "auf die andere Seite kopieren"},
@@ -151,7 +160,7 @@ var helpSections = []helpSection{
 		{".", "versteckte Dateien"},
 		{"x", "Übertragung abbrechen"},
 	}},
-	{hcSearch, "⌕", "Suche im Verlauf", "Strg+F", false, [][2]string{
+	{hcSearch, "/", "Suche im Verlauf", "Strg+F", false, [][2]string{
 		{"tippen", "suchen (Groß = genau)"},
 		{"⏎ / ↑", "nächster (älter)"},
 		{"⇧⏎ / ↓", "zurück (neuer)"},
@@ -159,16 +168,16 @@ var helpSections = []helpSection{
 		{"Tab", "Fehlerliste / Verlauf"},
 		{"Esc", "schließen"},
 	}},
-	{hcLogs, "☰", "Sitzungsprotokolle", "l", false, [][2]string{
+	{hcLogs, "≡", "Sitzungsprotokolle", "l", false, [][2]string{
 		{"/", "suchen (auch Ausgabe)"},
 		{"z", "KI-Zusammenfassung"},
 		{"Z", "alle Treffer zusammenfassen"},
 		{"x", "Export: md · txt · cast"},
 		{"d", "löschen"},
 		{"a", "Mitschreiben an/aus"},
-		{"⎵ Befehl", "nicht protokollieren"},
+		{"␣ Befehl", "nicht protokollieren"},
 	}},
-	{hcBroadcast, "⇉", "Broadcast", "m", false, [][2]string{
+	{hcBroadcast, "»", "Broadcast", "m", false, [][2]string{
 		{"Space / g / a", "Host / Ordner / alle"},
 		{"Tab", "Hosts · Quelle · Befehl"},
 		{"⇧⏎", "weiterer Schritt"},
@@ -183,7 +192,7 @@ var helpSections = []helpSection{
 		{"e / Strg+D", "ändern / löschen"},
 		{"k / a", "KI prüft / übernehmen"},
 	}},
-	{hcScan, "⌕", "Netzwerk-Scan", "f", false, [][2]string{
+	{hcScan, "/", "Netzwerk-Scan", "f", false, [][2]string{
 		{"Strg+S", "Scan starten"},
 		{"Space / a", "Fund / alle wählen"},
 		{"⏎", "als Verbindungen anlegen"},
@@ -195,15 +204,18 @@ var helpSections = []helpSection{
 		{"user@host", "schnell verbinden"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
+		{"◈ Einstellungen ›", "Schalter, Aussehen, Sprache"},
+		{"Esc / ← (Untermenü)", "zurück"},
 		{"↓ „umschreiben“", "Befehl fürs System anpassen"},
 		{"Esc", "schließen"},
 	}},
-	{hcNone, "ⓘ", "Systemprofil", "", false, [][2]string{
+	{hcNone, "i", "Systemprofil", "", false, [][2]string{
 		{"automatisch", "System + Befehlssatz erkennen"},
 		{"e (Manager)", "System, Befehlssatz, KI-Notizen"},
 		{"„% Invalid input“", "Befehl wird gemerkt + gemieden"},
+		{"KI-Befehl korrigiert", "Korrektur wird gemerkt"},
 	}},
-	{hcNone, "⚠", "Gefahren & Aufnahme", "", false, [][2]string{
+	{hcNone, "▲", "Gefahren & Aufnahme", "", false, [][2]string{
 		{"Produktiv", "riskanter Befehl: j"},
 		{"Palette", "„Gefahren-Check“"},
 		{"Palette", "„Aufnahme starten“"},
@@ -215,12 +227,14 @@ var helpSections = []helpSection{
 		{"Strg +/−", "Schrift (Terminalfenster)"},
 		{"Palette", "„Startanimation aus“"},
 	}},
-	{hcNone, "⌖", "Maus", "", false, [][2]string{
+	{hcNone, "◦", "Maus", "", false, [][2]string{
 		{"Klick", "Tabs, Listen, Felder"},
 		{"Doppelklick", "öffnen / Wort"},
 		{"Ziehen", "markieren + kopieren"},
 		{"Rechtsklick", "einfügen"},
 		{"Rechtsklick Link", "Menü: Verbinden, Ping"},
+		{"Rechtsklick Tab", "Menü: umbenennen, schließen …"},
+		{"Mittelklick Tab", "Tab schließen"},
 		{"Strg+Klick", "URL im Browser"},
 		{"Rad", "im Verlauf blättern"},
 		{"Shift+Ziehen", "markieren in htop/vim"},
@@ -290,8 +304,13 @@ func (s Styles) helpSection(sec helpSection, ctx helpCtx) []string {
 		title += " " + s.Badge.Render(i18n.T("hier"))
 	}
 	lines := []string{title}
-	for _, r := range sec.rows {
-		k := s.Key.Render(relabelDefault(r[0], sec.ctx))
+	// gleiche Reihenfolge wie in der Fußzeile: Palette, F1 … F12, ⇧F, Rest
+	rows := make([][2]string, len(sec.rows))
+	for i, r := range sec.rows {
+		rows[i] = [2]string{relabelDefault(r[0], sec.ctx), r[1]}
+	}
+	for _, r := range sortFKeys(rows, activeKeys.label(actPalette)) {
+		k := s.Key.Render(r[0])
 		k += strings.Repeat(" ", max(0, helpKeyW-lipgloss.Width(k)))
 		lines = append(lines, k+s.Text.Render(ansi.Truncate(i18n.T(r[1]), helpColW-helpKeyW, "…")))
 	}
@@ -373,7 +392,14 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	// Höhe begrenzen: Fensterrand (2), Rahmen und Abstand (4), Warnung und
 	// Hinweis mit Leerzeile davor, Tastenzeile mit Leerzeile davor.
 	bodyLines := strings.Split(body, "\n")
+	foot := "\n\n" + warn + "\n" + note
 	maxBody := max(3, h-2-4-(1+lipgloss.Height(warn)+lipgloss.Height(note))-2)
+	if maxBody < 10 {
+		// wenige Zeilen (z. B. uConsole mit großer Schrift): Warnung und
+		// Hinweis blättern mit, damit mehr Platz für die Tasten bleibt
+		bodyLines = append(bodyLines, strings.Split(foot[1:], "\n")...)
+		foot, maxBody = "", max(3, h-2-4-2)
+	}
 	keys := [][2]string{{"Esc", i18n.T("schließen")}}
 	info := ""
 	if total := len(bodyLines); total > maxBody {
@@ -387,7 +413,7 @@ func (m *modal) helpView(s Styles, w, h int) string {
 		m.scroll = 0
 	}
 	return s.dialog(dialog{icon: "?", title: i18n.T("Tastenkürzel"), sub: version.Short(),
-		body: strings.Join(bodyLines, "\n") + "\n\n" + warn + "\n" + note, info: info, keys: keys, width: cw, maxW: 200}, w)
+		body: strings.Join(bodyLines, "\n") + foot, info: info, keys: keys, width: cw, maxW: 200}, w)
 }
 
 func (m *modal) helpKey(key string) (closeIt bool) {

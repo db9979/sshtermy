@@ -69,10 +69,30 @@ type Connection struct {
 	KeyPEM        Secret `json:"key_pem,omitempty"`        // … oder eingebettet im Store
 	KeyPassphrase Secret `json:"key_passphrase,omitempty"` // optional für verschlüsselte Keys
 
-	JumpHostID string     `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
-	TunnelIDs  []string   `json:"tunnel_ids,omitempty"`   // Tunnel, die mit dieser Verbindung starten
-	KeepAlive  int        `json:"keepalive_s,omitempty"`  // Sekunden, 0 = Standard (30)
-	Device     DeviceKind `json:"device,omitempty"`       // Server oder Netzwerkgerät, leer = automatisch
+	// Keychain: Passwort bzw. Key-Passphrase liegen nicht im Store, sondern
+	// im Schlüsselbund des Betriebssystems (macOS-Schlüsselbund, Windows-
+	// Anmeldeinformationsverwaltung). Jeder Rechner hat seinen eigenen
+	// Eintrag; der Sync überträgt nur diesen Schalter. Fehlt der Eintrag,
+	// fragt sshTermy beim Verbinden und legt die Antwort dort ab.
+	Keychain bool `json:"keychain,omitempty"`
+
+	JumpHostID string `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
+	// RelayID/RelaySystem: über einen Vermittler (eigener sshtermy
+	// vermittler oder Speech on DGX Spark) zum sshd eines Systems, das selbst
+	// die Verbindung zum Vermittler hält (Anker). Host ist dann nur Anzeige.
+	RelayID     string     `json:"relay_id,omitempty"`
+	RelaySystem string     `json:"relay_system,omitempty"`
+	TunnelIDs   []string   `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
+	KeepAlive   int        `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
+	Device      DeviceKind `json:"device,omitempty"`      // Server oder Netzwerkgerät, leer = automatisch
+
+	// Persist: beim Verbinden immer in dieselbe tmux-/screen-Sitzung
+	// ("auto", "tmux", "screen"; leer = aus). PersistName: Sitzungsname,
+	// leer = "sshtermy". PersistView: nur zuschauen (tmux attach -r), z. B.
+	// um einer laufenden Sitzung von einem zweiten Rechner aus zu folgen.
+	Persist     string `json:"persist,omitempty"`
+	PersistName string `json:"persist_name,omitempty"`
+	PersistView bool   `json:"persist_view,omitempty"`
 
 	// Profile: was für ein System dahinter steckt (automatisch erkannt,
 	// vom Nutzer ergänzbar). Geht in jeden KI-Prompt, damit Befehle im
@@ -98,6 +118,20 @@ type Connection struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	LastUsed  time.Time `json:"last_used,omitempty"`
+}
+
+// DefaultPersistName: Sitzungsname, wenn bei „Feste Sitzung“ keiner steht.
+const DefaultPersistName = "sshtermy"
+
+// PersistSession: Name der festen Sitzung (leer, wenn aus).
+func (c Connection) PersistSession() string {
+	if c.Persist == "" {
+		return ""
+	}
+	if c.PersistName != "" {
+		return c.PersistName
+	}
+	return DefaultPersistName
 }
 
 // Rev ist der Zeitstempel, nach dem der Sync entscheidet (alte Einträge ohne
@@ -149,7 +183,7 @@ func (c Connection) DefaultPort() int {
 // Target: Anzeige des Ziels, z. B. „admin@10.0.0.1:22“ oder bei seriellen
 // Verbindungen „COM3 · 9600 8N1“.
 func (c Connection) Target() string {
-	a := c.Addr()
+	a := c.ShowAddr()
 	if c.Protocol != ProtoSerial && c.Username != "" {
 		a = c.Username + "@" + a
 	}
@@ -162,6 +196,10 @@ func (c Connection) Target() string {
 // Addr liefert host:port (IPv6 korrekt geklammert), bei seriellen
 // Verbindungen Schnittstelle und Geschwindigkeit.
 func (c Connection) Addr() string {
+	if c.ViaRelay() {
+		// Name, unter dem known_hosts den Host-Key merkt (kein echter Host)
+		return c.RelaySystem + "." + c.RelayID + ".vermittler:22"
+	}
 	if c.Protocol == ProtoSerial {
 		port := c.SerialPort
 		if port == "" {
@@ -177,6 +215,20 @@ func (c Connection) Addr() string {
 		return fmt.Sprintf("[%s]:%d", c.Host, p)
 	}
 	return fmt.Sprintf("%s:%d", c.Host, p)
+}
+
+// ShowAddr: Adresse für die Anzeige. Über einen Vermittler der Name des
+// Systems mit „↔“ statt des internen Namens für known_hosts.
+func (c Connection) ShowAddr() string {
+	if c.ViaRelay() {
+		return c.Host + " ↔"
+	}
+	return c.Addr()
+}
+
+// ViaRelay: Verbindung läuft über einen Vermittler.
+func (c Connection) ViaRelay() bool {
+	return c.RelayID != "" && c.RelaySystem != "" && !c.Protocol.Raw()
 }
 
 func containsColon(s string) bool {
@@ -238,15 +290,82 @@ func (t Tunnel) IsWebService() bool {
 	return t.WebScheme != "" && (t.Kind == TunnelLocal)
 }
 
-// LLMConfig: jeder OpenAI-kompatible Endpunkt (/v1/chat/completions):
-// OpenAI, LocalAI, vLLM, SGLang, Ollama (/v1), LiteLLM, LM Studio …
+// LLMProvider: welche Art von KI-Dienst hinter einem Endpunkt steckt.
+type LLMProvider string
+
+const (
+	// ProviderCompat: jeder OpenAI-kompatible Server (Spark mit vLLM/SGLang,
+	// LiteLLM, LocalAI, LM Studio …). Leer, damit alte Stores so bleiben.
+	ProviderCompat    LLMProvider = ""
+	ProviderOllama    LLMProvider = "ollama"
+	ProviderOpenAI    LLMProvider = "openai"
+	ProviderAnthropic LLMProvider = "anthropic" // Claude (Messages-API)
+)
+
+// Providers: Reihenfolge in der Auswahl.
+var Providers = []LLMProvider{ProviderCompat, ProviderOllama, ProviderOpenAI, ProviderAnthropic}
+
+// DefaultBaseURL: Adresse, die beim Wählen des Anbieters vorbelegt wird.
+func (p LLMProvider) DefaultBaseURL() string {
+	switch p {
+	case ProviderOllama:
+		return "http://localhost:11434/v1"
+	case ProviderOpenAI:
+		return "https://api.openai.com/v1"
+	case ProviderAnthropic:
+		return "https://api.anthropic.com/v1"
+	}
+	return ""
+}
+
+// DefaultModel: Modell, das beim Wählen des Anbieters vorbelegt wird.
+func (p LLMProvider) DefaultModel() string {
+	switch p {
+	case ProviderOllama:
+		return "qwen2.5-coder:7b"
+	case ProviderOpenAI:
+		return "gpt-4.1-mini"
+	case ProviderAnthropic:
+		return "claude-haiku-5-5"
+	}
+	return ""
+}
+
+// NeedsKey: Cloud-Dienste brauchen immer einen API-Key.
+func (p LLMProvider) NeedsKey() bool { return p == ProviderOpenAI || p == ProviderAnthropic }
+
+// Label: Name in der Oberfläche (deutsch, wird beim Anzeigen übersetzt).
+func (p LLMProvider) Label() string {
+	switch p {
+	case ProviderOllama:
+		return "Ollama"
+	case ProviderOpenAI:
+		return "OpenAI"
+	case ProviderAnthropic:
+		return "Claude"
+	}
+	return "Spark / kompatibel"
+}
+
+// LLMBackup ist ein Ersatz-Anbieter, der einspringt, wenn der eigentliche
+// Endpunkt nicht antwortet.
+type LLMBackup struct {
+	Provider LLMProvider `json:"provider,omitempty"`
+	BaseURL  string      `json:"base_url,omitempty"`
+	APIKey   Secret      `json:"api_key,omitempty"`
+	Model    string      `json:"model,omitempty"`
+}
+
+// LLMConfig: der eigentliche KI-Endpunkt (Standard: OpenAI-kompatibel, z. B.
+// der Spark mit vLLM) plus Ersatz-Anbieter in fester Reihenfolge.
 type LLMConfig struct {
-	BaseURL     string  `json:"base_url"` // z. B. http://dgx-spark:8000/v1
-	APIKey      Secret  `json:"api_key,omitempty"`
-	Model       string  `json:"model"`
-	MaxTokens   int     `json:"max_tokens"`
-	Temperature float64 `json:"temperature"`
-	TimeoutSec  int     `json:"timeout_s"`
+	Provider    LLMProvider `json:"provider,omitempty"`
+	BaseURL     string      `json:"base_url"` // z. B. http://dgx-spark:8000/v1
+	APIKey      Secret      `json:"api_key,omitempty"`
+	Model       string      `json:"model"`
+	MaxTokens   int         `json:"max_tokens"`
+	Temperature float64     `json:"temperature"`
+	TimeoutSec  int         `json:"timeout_s"`
 
 	// Feineinstellungen der Assistenz
 	SuggestEnabled bool `json:"suggest_enabled"` // Ghost-Text beim Tippen
@@ -255,6 +374,30 @@ type LLMConfig struct {
 	SendScreen     bool `json:"send_screen"`    // Bildschirm überhaupt mitschicken
 	GoalStepsMin   int  `json:"goal_steps_min"` // Ratenlimit Ziel-Modus pro Minute
 	AllowInsecure  bool `json:"allow_insecure"` // http:// zu Nicht-Localhost erlauben
+
+	// Fallbacks: der Reihe nach, wenn der Endpunkt oben nicht antwortet.
+	Fallbacks []LLMBackup `json:"fallbacks,omitempty"`
+}
+
+// Chain: der Endpunkt und alle eingerichteten Ersatz-Anbieter, jeweils als
+// vollständige Einstellung (Tokens, Temperatur, Timeout vom Hauptendpunkt).
+func (c LLMConfig) Chain() []LLMConfig {
+	main := c
+	main.Fallbacks = nil
+	out := []LLMConfig{main}
+	for _, b := range c.Fallbacks {
+		if b.Model == "" && b.BaseURL == "" {
+			continue
+		}
+		e := main
+		e.Provider, e.BaseURL, e.APIKey, e.Model = b.Provider, b.BaseURL, b.APIKey, b.Model
+		if e.BaseURL == "" {
+			e.BaseURL = b.Provider.DefaultBaseURL()
+		}
+		e.AllowInsecure = false
+		out = append(out, e)
+	}
+	return out
 }
 
 // DefaultLLM: sinnvolle Standardwerte (lokales Modell, nichts verlässt das Netz).
@@ -269,7 +412,7 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast" | "kontrasthell"
+	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast" | "kontrasthell" | "matrix" | "bernstein" | "neon" | "eigene"
 	UseDPAPI     bool   `json:"use_dpapi"`                // Windows: Store-Schlüssel zusätzlich per DPAPI
 	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
 	Language     string `json:"language"`                 // "de" | "en"
@@ -284,10 +427,73 @@ type Settings struct {
 	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
 	// NoReachCheck: im Manager nicht prüfen, ob die Hosts erreichbar sind.
 	NoReachCheck bool `json:"no_reach_check,omitempty"`
+	// Monitor: Warnschwellen der Host-Übersicht (F6) und wie oft Server
+	// automatisch nachgefragt werden.
+	Monitor MonitorConfig `json:"monitor,omitempty"`
+
+	// Colors: eigene Farben (Theme "eigene"), wird mit dem Sync übertragen.
+	Colors *CustomColors `json:"colors,omitempty"`
+	// Icons: Symbolstil der Menüs. "" = Text-Tags wie [+] (läuft mit jeder
+	// Schrift), "nerd" = Nerd-Font-Symbole. Gehört zum Rechner (Schrift), kein Sync.
+	Icons string `json:"icons,omitempty"`
 
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`
+}
+
+// CustomColors: eigene Farben als "#rrggbb". Base ist das Theme, von dem
+// sie ausgehen; leere Felder nehmen dessen Farbe.
+type CustomColors struct {
+	Base   string `json:"base,omitempty"`
+	Bg     string `json:"bg,omitempty"`
+	Text   string `json:"text,omitempty"`
+	Muted  string `json:"muted,omitempty"`
+	Border string `json:"border,omitempty"`
+	Accent string `json:"accent,omitempty"`
+	AI     string `json:"ai,omitempty"`
+	OK     string `json:"ok,omitempty"`
+	Warn   string `json:"warn,omitempty"`
+	Danger string `json:"danger,omitempty"`
+}
+
+// MonitorConfig: Warnschwellen für CPU, RAM und Platte in Prozent (0 =
+// Standard 90 %) und der Abstand der automatischen Abfrage bei Servern in
+// Minuten (0 = Standard 5, negativ = aus). Netzwerkgeräte werden nie
+// automatisch abgefragt (dort tippt sshTermy sichtbar am Prompt).
+type MonitorConfig struct {
+	CPU      int `json:"cpu,omitempty"`
+	RAM      int `json:"ram,omitempty"`
+	Disk     int `json:"disk,omitempty"`
+	EveryMin int `json:"every_min,omitempty"`
+}
+
+// Standardwerte der Überwachung.
+const (
+	DefaultMonitorLimit = 90
+	DefaultMonitorEvery = 5
+)
+
+// Limits: wirksame Schwellen (Standard für 0, begrenzt auf 1…100).
+func (m MonitorConfig) Limits() (cpu, ram, disk int) {
+	f := func(v int) int {
+		if v <= 0 {
+			return DefaultMonitorLimit
+		}
+		return min(v, 100)
+	}
+	return f(m.CPU), f(m.RAM), f(m.Disk)
+}
+
+// Every: Abstand der automatischen Abfrage (0 = aus).
+func (m MonitorConfig) Every() time.Duration {
+	switch {
+	case m.EveryMin < 0:
+		return 0
+	case m.EveryMin == 0:
+		return DefaultMonitorEvery * time.Minute
+	}
+	return time.Duration(m.EveryMin) * time.Minute
 }
 
 // SyncBackend: wohin die verschlüsselte Sync-Datei geschrieben wird.
@@ -315,11 +521,15 @@ type SyncConfig struct {
 	Remote   string `json:"remote,omitempty"`   // Ordner am Server, z. B. /home/sshtermy
 	CertPin  string `json:"cert_pin,omitempty"` // SHA-256 des vertrauten (selbstsignierten) Zertifikats
 
-	Key       Secret    `json:"key,omitempty"` // Sync-Schlüssel (Base64), nicht das Passwort
-	HostKeys  bool      `json:"host_keys"`     // known_hosts mit abgleichen
-	Auto      bool      `json:"auto"`          // beim Start, nach Änderungen und alle 5 Minuten
-	LastSync  time.Time `json:"last_sync,omitempty"`
-	LastError string    `json:"last_error,omitempty"`
+	Key      Secret `json:"key,omitempty"` // Sync-Schlüssel (Base64), nicht das Passwort
+	HostKeys bool   `json:"host_keys"`     // known_hosts mit abgleichen
+	Auto     bool   `json:"auto"`          // beim Start, nach Änderungen und alle 5 Minuten
+	// Archiv: Config-Sicherungen und Sitzungsprotokolle mit abgleichen
+	// (eigener Unterordner neben der Sync-Datei, siehe syncx/archive.go).
+	Archive     bool      `json:"archive,omitempty"`
+	ArchiveDays int       `json:"archive_days,omitempty"` // Aufbewahrung im Archiv, 0 = 90 Tage
+	LastSync    time.Time `json:"last_sync,omitempty"`
+	LastError   string    `json:"last_error,omitempty"`
 }
 
 // Enabled: ist Sync eingerichtet?
@@ -341,11 +551,67 @@ type Data struct {
 	Deleted           map[string]time.Time `json:"deleted,omitempty"` // ID → Löschzeit (Grabsteine)
 	Sync              SyncConfig           `json:"sync,omitempty"`
 
+	// Relays: gekoppelte Vermittler. Rein lokal wie Sync: jeder Rechner
+	// koppelt sich selbst (eigener Geräteschlüssel), nie in der Sync-Datei.
+	Relays []Relay `json:"relays,omitempty"`
+
 	// LocalKeys: Schlüsseldatei pro Verbindung (ID → Pfad), nur für diesen
 	// Rechner. Rein lokal wie Sync, geht nie in die Sync-Datei. Hat Vorrang
 	// vor Connection.KeyPath, wenn der Key hier woanders liegt als auf dem
 	// Rechner, der die Verbindung angelegt hat.
 	LocalKeys map[string]string `json:"local_keys,omitempty"`
+
+	// TeamLinks: Team-Ordner (veröffentlichen bzw. abonnieren). Rein lokal:
+	// Pfade sind je Rechner anders, das Team-Passwort bleibt auf dem Gerät.
+	TeamLinks []TeamLink `json:"team_links,omitempty"`
+}
+
+// Rollen eines Team-Ordners.
+const (
+	TeamPublish   = "pub" // dieser Rechner schreibt das Team-Paket bei Änderungen neu
+	TeamSubscribe = "sub" // dieser Rechner liest es regelmäßig und übernimmt Änderungen
+)
+
+// TeamLink ist ein Team-Paket in einem gemeinsamen Ordner (Netzlaufwerk,
+// OneDrive, Teams) oder unter einer https-/WebDAV-Adresse.
+type TeamLink struct {
+	ID       string `json:"id"`
+	Role     string `json:"role"` // TeamPublish | TeamSubscribe
+	Name     string `json:"name"`
+	Path     string `json:"path"` // Datei oder https://[user:pw@]host/…/x.sshteam
+	TeamPass Secret `json:"team_pass"`
+
+	// Veröffentlichen: was ins Paket geht. Folder = ganzer Ordner (auch
+	// später dazugekommene Verbindungen), IDs = einzeln gewählte.
+	Folder    string   `json:"folder,omitempty"`
+	IDs       []string `json:"ids,omitempty"`
+	From      string   `json:"from,omitempty"`
+	Users     bool     `json:"users,omitempty"`
+	QuickCmds bool     `json:"quick,omitempty"`
+	Runbooks  bool     `json:"runbooks,omitempty"`
+	Tunnels   bool     `json:"tunnels,omitempty"`
+
+	// Abonnieren: wohin und was schon da ist.
+	Into        string   `json:"into,omitempty"` // Zielordner, z. B. „Team“
+	DefaultUser string   `json:"user,omitempty"` // für Verbindungen ohne Benutzernamen
+	Have        []string `json:"have,omitempty"` // IDs, die zuletzt aus dem Paket kamen
+	Skip        []string `json:"skip,omitempty"` // in der Vorschau abgewählt: nie übernehmen
+
+	LastSum string    `json:"last_sum,omitempty"` // Stand des zuletzt geschriebenen/gelesenen Pakets
+	LastRun time.Time `json:"last_run,omitempty"` // letzte Änderung (geschrieben/übernommen)
+	LastErr string    `json:"last_err,omitempty"`
+}
+
+// Relay ist ein gekoppelter Vermittler.
+type Relay struct {
+	ID     string    `json:"id"`
+	Name   string    `json:"name"`         // Anzeigename (vom Vermittler, änderbar)
+	Kind   string    `json:"kind"`         // "sshtermy" | "spark"
+	Base   string    `json:"base"`         // https://host[:port][/pfad]
+	FP     string    `json:"fp,omitempty"` // Pin des Zertifikats (SHA-256 hex), leer = System-CAs
+	Key    Secret    `json:"key"`          // Geräteschlüssel aus der Kopplung
+	Device string    `json:"device"`       // Name dieses Rechners beim Vermittler
+	Since  time.Time `json:"since"`
 }
 
 // NewData: leerer Store mit Standardwerten.

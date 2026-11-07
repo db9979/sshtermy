@@ -16,6 +16,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Verbindungs-Manager** mit verschlüsseltem Store (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI)
 - **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
 - **Auto-Reconnect**: reißt die Leitung ab (WLAN, VPN, Standby), verbindet sshTermy die Sitzung von selbst neu, startet laufende Tunnel wieder und hängt tmux/screen wieder an (abschaltbar über die Palette)
+- **Feste Sitzung** (Idee: Dominik Bornhäußer): pro Verbindung beim Verbinden immer in dieselbe tmux-/screen-Sitzung, auch von einem anderen Rechner aus. Laufen schon andere Sitzungen, fragt sshTermy, welche. Gleicher Sitzungsname in zwei Tabs oder auf zwei Rechnern = gespiegelter Bildschirm; „nur zuschauen“ hängt tmux schreibgeschützt an. Die Palette öffnet einen zweiten Tab zum Zuschauen oder kopiert einen `ssh … tmux attach -r`-Befehl für Kollegen. Nicht bei Switches, Telnet und Konsole.
 - **Schnellverbinden**: `user@host:port` oder `ssh -p 2222 user@host` in die Palette tippen, ohne die Verbindung anzulegen (Agent/Standard-Keys, sonst Passwort)
 - **Statuszeile pro Sitzung**: Verbindungsdauer, Latenz, Zeichensatz, Warnung bei root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) bekommen eine rote Zeile
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen, mit der Maus auf die andere Seite ziehen, mehrere mit der Leertaste markieren. Dateien aus Explorer/Finder ins Fenster ziehen lädt sie hoch, auch direkt im Terminal
@@ -37,6 +38,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Netzwerk-Scan** (f im Manager): ein Subnetz nach SSH-Geräten durchsuchen (nur Port und SSH-Kennung, ohne Anmeldung),
   Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL; pro Verbindung gespeichert, ein Klick schaltet an/aus, auf Wunsch startet ein Tunnel mit der Verbindung; läuft auch über Jump-Hosts
+- **Vermittler für Server hinter NAT/Firewall**: der Server baut selbst die Verbindung zu einem Vermittler auf (`sshtermy anker`), sshTermy erreicht sein sshd darüber, ohne offenen Port. SSH läuft Ende-zu-Ende, Dateien und Tunnel gehen wie gewohnt. Den Vermittler bringt sshTermy selbst mit (`sshtermy vermittler`), alternativ dient Speech on DGX Spark als Vermittler ([Anleitung](docs/vermittler.md))
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
   - **Ghost-Text** beim Tippen (Tab übernimmt)
@@ -60,7 +62,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   (OneDrive, Dropbox, iCloud, Syncthing) oder direkt über dein NAS (Synology, QNAP, Nextcloud, jeder WebDAV-Server)
 - **Import** bestehender Verbindungen aus `~/.ssh/config`, PuTTY (Registry oder `.reg`-Export) und MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), mit Jump-Hosts und Ordnern, ein Tastendruck (i im Manager)
-- **Themes** Dunkel, Hell und Hochkontrast (a im Manager) und **frei belegbare Tastenkürzel** (b im Manager)
+- **Themes** Dunkel, Hell, Hochkontrast, Matrix, Bernstein und Neon (a im Manager), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
 - **Deutsch und Englisch**: Sprache in der Palette („Sprache“/„Language“) oder im Über-Dialog (F12 → `l`) umschalten;
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Versionierung und Auto-Update** aus GitHub Releases (signiert)
@@ -72,7 +74,21 @@ Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt 
 
 ## Installation
 
-Lade die passende Datei aus den [Releases](https://github.com/db9979/sshtermy/releases/latest):
+📖 Anleitung mit Animationen: **https://db9979.github.io/sshtermy/de/**
+
+**Paketquellen** (die kümmern sich auch um Updates):
+
+```
+winget install db9979.sshTermy                                   # Windows (sobald im winget-Katalog freigegeben)
+brew tap db9979/sshtermy https://github.com/db9979/sshtermy      # macOS und Linux
+brew install sshtermy
+echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
+sudo apt update && sudo apt install sshtermy                     # Debian, Ubuntu, Raspberry Pi OS (amd64, arm64, armhf, riscv64)
+```
+
+Über Homebrew oder apt installiert, tauscht sshTermy sich nicht selbst aus, sondern zeigt den Update-Befehl.
+
+Oder lade die passende Datei aus den [Releases](https://github.com/db9979/sshtermy/releases/latest):
 
 | System | Datei |
 |---|---|
@@ -80,7 +96,7 @@ Lade die passende Datei aus den [Releases](https://github.com/db9979/sshtermy/re
 | Windows x86 32 Bit | `sshtermy_windows_386.exe` |
 | Windows x64 | `sshtermy_windows_amd64.exe` |
 | macOS Apple Silicon / Intel | `sshtermy_darwin_arm64` / `sshtermy_darwin_amd64` |
-| Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` |
+| Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` / `sshtermy_linux_arm` (32 Bit ARMv7) / `sshtermy_linux_riscv64` |
 
 **macOS (und Linux): eine Zeile im Terminal** installiert die neueste Version, prüft die Prüfsumme und legt
 `~/Applications/sshTermy.app` an (Doppelklick oder Spotlight „sshTermy“ öffnet sie im Terminal, bzw. in iTerm,
@@ -95,6 +111,14 @@ geöffnet werden“). Wer sie trotzdem nutzen will: `xattr -d com.apple.quaranti
 sshtermy_darwin_arm64`, dann im Terminal mit `./sshtermy_darwin_arm64` starten.
 
 Empfohlen unter Windows: **Windows Terminal** (Truecolor, F-Tasten, Unicode).
+
+**ClockworkPi uConsole** (und ähnliche Handhelds): apt und der Einzeiler wählen für jeden Kern das passende Programm
+(CM4/CM5 und A-06 mit 64-Bit-System: arm64, 32-Bit-Raspberry-Pi-OS: armhf, R-01: riscv64). Der 5"-Bildschirm reicht:
+Mit gut lesbarer Schrift passen etwa 80×22 bis 106×30 Zeichen, sshTermy ist ab 80×24 ausgelegt; darunter lassen
+Kopfzeile und Hilfe Details weg, statt Text abzuschneiden. Die Tastatur hat keine F-Reihe:
+**Fn+1 … Fn+0 = F1 … F10, Fn+- = F11, Fn+= = F12**. Für ⇧F1 … ⇧F10 *zuerst* Shift halten, dann Fn und die Ziffer.
+Alles steht auch in der Befehlspalette (**Strg+Leertaste**), mit dem Trackball lassen sich Tasten und Hinweise
+anklicken, und im Manager mit `b` jede Taste umlegen.
 
 ```
 sshtermy              # starten
@@ -117,16 +141,22 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | Broadcast | Space / g / a, Tab, Strg+S | Host / Ordner / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
 | | ←→ / ↑↓ / z / c / r / x | Host-Spalte / blättern / groß / Ausgabe kopieren / nochmal / abbrechen |
 | Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
-| Terminal | Tab oder → | Ghost-Text übernehmen |
-| | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
-| | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
-| | F2 | Ziel-Modus (Agent) |
+| Terminal | F2 | Ziel-Modus (Agent) |
 | | F3 | KI fragen |
 | | F4 | Tunnel an/aus (⏎ oder Klick), a mit Verbindung starten, Web-Service im Browser öffnen |
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), Leertaste/a markieren, Ziehen kopiert, n Ordner, d löschen, . versteckte |
 | | F6 | Host-Übersicht: r/⏎ abfragen, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
+| | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
+| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü) |
+| | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
+| | ⇧F9 | Tastenzeile erklärt die Tasten des Bereichs |
+| | ⇧F10 | Tab in ein eigenes Terminalfenster abtrennen (Windows Terminal/Konsole, Terminal.app/iTerm2, Linux-Terminals, tmux); die Sitzung bleibt offen, Fenster schließen oder ⏎ holt sie zurück. Eigenes Terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
+| | Strg+F / Strg+T | im Verlauf suchen / Ansicht teilen (2 / 4) |
+| | Tab oder → | Ghost-Text übernehmen |
+| | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
+| | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
 | | Strg+Klick / Rechtsklick | URL im Browser öffnen / Menü zu Link, IP oder Host: verbinden (direkt oder über den Server), Ping vom Server oder von hier, kopieren |
 | | Einfügen | mehrzeilig erst Vorschau (⏎ einfügen, o ohne letztes Enter, Esc abbrechen); Palette „Einfügeschutz aus“ |
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
@@ -150,15 +180,24 @@ unverschlüsselt in der Datei `language` im Konfigurationsordner, damit schon de
 Ohne diese Datei entscheidet die Systemsprache (`LANG`/`LC_ALL`, unter Windows die Anzeigesprache): Deutsch bei
 einem deutschen System, sonst Englisch. Die Hinweise an die KI bleiben deutsch; bei Englisch antwortet sie englisch.
 
-**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast (oder Palette → „Aussehen“). Die Schriftgröße
-gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − unter macOS.
+**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast → Matrix (grün) → Bernstein (Retro) → Neon (oder
+Palette → Einstellungen › „Aussehen“). **Farben anpassen** im selben Untermenü: Vorlage wählen, dann jede Farbe mit
+←/→ (Farbton), +/− (Helligkeit) oder als Hex-Wert ändern; die Oberfläche zeigt die Änderung sofort, ein Kontrast-Check
+warnt vor schlecht lesbaren Farben, Strg+S speichert (geht mit dem Sync mit).
+
+**Symbole:** Menüs zeigen Text-Tags wie `[+]` `[k]` `[/]`, im Manager stehen Prompt-Zeichen für das System (`$` Linux,
+`%` macOS, `>` Windows, `#` Switch). Sie bestehen nur aus Zeichen, die jede Terminalschrift hat, darum sieht nichts
+verrutscht aus. Wer eine Nerd Font nutzt (z. B. „Cascadia Mono NF“), schaltet unter Einstellungen ›
+„Nerd-Font-Symbole“ echte Bildsymbole ein; der Schalter gilt pro Rechner.
+
+Die Schriftgröße gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − unter macOS.
 
 **Import** (i im Manager): sshTermy sucht selbst nach `~/.ssh/config` (mit `Include`, `Host *`-Vorgaben und
 `ProxyJump`), den PuTTY-Sitzungen in der Registry und `%APPDATA%\MobaXterm\MobaXterm.ini`. Neue Ziele sind
 vorausgewählt, schon vorhandene abgewählt; ⏎ übernimmt. Mit f lädst du eine Datei von woanders, z. B. einen
 PuTTY-Export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), eine portable `MobaXterm.ini` oder eine
 `.mxtsessions`-Datei. Passwörter werden nicht übernommen, sshTermy fragt beim ersten Verbinden. PuTTY-Keys
-(`.ppk`) bitte in Pageant laden oder mit PuTTYgen nach OpenSSH exportieren.
+(`.ppk`, Version 2 und 3, auch mit Passphrase) liest sshTermy direkt, Pageant ist nicht nötig.
 
 **Telnet und serielle Konsole:** Im Verbindungsformular wählt „Verbindung über“ zwischen SSH, Telnet und
 „Seriell (Konsolenkabel)“, z. B. für einen Aruba-Switch am USB-Konsolenkabel. Schnittstelle „automatisch“ nimmt das
@@ -181,6 +220,7 @@ Telnet ist unverschlüsselt, nur in vertrauenswürdigen Netzen verwenden.
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
 **Befehlspalette (Strg+Leertaste):** ein Feld für alles, Text wird zum Ziel oder zur Frage, darunter Vorschläge, Tunnel, Verbindungen und Aktionen.
+Schalter, Aussehen, Sprache und Einrichtung liegen im Untermenü **[:] Einstellungen ›** (rechts steht „an“/„aus“, die Palette bleibt beim Umschalten offen), Tastenkürzel, Tour, Neuigkeiten und Update unter **[?] Hilfe & Info ›**. Wer tippt, findet auch die Punkte aus den Untermenüs direkt; Esc oder ← führt zurück.
 
 ![Befehlspalette](docs/bilder/09-palette.png)
 
@@ -287,6 +327,12 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   Host-Key bricht die Verbindung ab, ohne „trotzdem verbinden“ (möglicher Man-in-the-Middle).
 - Agent-Auth bevorzugt: Private Keys bleiben im Agent. Eingebettete Keys liegen nur verschlüsselt im Store.
 - Tunnel binden standardmäßig auf `127.0.0.1`. SOCKS5 löst Namen auf dem Server auf (keine lokalen DNS-Leaks).
+- **SSH-Schlüssel (`c` im Manager):** erzeugt ed25519- oder RSA-4096-Keys (wie `ssh-keygen`, wahlweise mit
+  Passphrase, als Datei in `~/.ssh` oder eingebettet), trägt sie wie `ssh-copy-id` in `~/.ssh/authorized_keys`
+  ein und stellt die Verbindung erst nach einer geglückten Probe-Anmeldung mit dem Key um.
+- **Schlüsselbund:** Passwort oder Key-Passphrase können statt im Store im macOS-Schlüsselbund, in der
+  Windows-Anmeldeinformationsverwaltung oder im Secret Service (Linux, `secret-tool`) liegen. Jeder Rechner
+  hat seinen eigenen Eintrag; fehlt er nach dem Sync, fragt sshTermy einmal und merkt sich die Antwort dort.
 
 ### KI
 
@@ -306,6 +352,17 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 - API-Key geht nie per `http://` an einen fremden Host (außer bewusst erlaubt).
 - Ratenlimit im Ziel-Modus (Standard 6 Schritte/min, max. 40 Schritte pro Ziel).
 
+### KI-Anbieter und Ersatz
+
+- **Anbieter** in den KI-Einstellungen (`s`): Spark bzw. jeder OpenAI-kompatible Server (vLLM, SGLang, LiteLLM,
+  LM Studio), Ollama, OpenAI oder Claude (Anthropic Messages-API). ←/→ wechselt und belegt Adresse und Modell vor;
+  Strg+L listet die Modelle des Anbieters, Strg+T testet.
+- **Ersatz-Anbieter** (Einstellungen → „Ersatz-Anbieter“ oder `r` im KI-Status): bis zu drei, die der Reihe nach
+  einspringen, wenn der Endpunkt nicht antwortet. Ein ausgefallener Endpunkt wird 5 Minuten übersprungen oder bis
+  die Hintergrundprüfung ihn wieder erreicht. Der Status-Punkt wird gelb und zeigt „Ersatz: Claude“, solange ein
+  Ersatz antwortet.
+- Cloud-Dienste brauchen immer einen API-Key; er liegt verschlüsselt wie die Passwörter.
+
 ### Fehler erkennen und Sitzungsprotokoll
 
 - **Wann ist ein Befehl fertig?** Nach Enter, sobald wieder ein leerer Prompt dasteht und die Ausgabe ruht. Seine
@@ -315,7 +372,7 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   `PROMPT_COMMAND='printf "\033]133;D;%s\007" $?'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`.
   Ohne Shell-Integration schätzt sshTermy anhand typischer Fehlermeldungen in den letzten Zeilen (`command not found`,
   `No such file`, `Permission denied`, `E: …`, `% Invalid input` bei Switches u. a.). Das ist nur ein Angebot, nie eine Sperre.
-- **Protokolle** liegen nur lokal in `logs/` im Konfigurationsordner (nie im Sync), eine Datei je Sitzung,
+- **Protokolle** liegen in `logs/` im Konfigurationsordner (im Sync nur mit eingeschaltetem Archiv, siehe unten), eine Datei je Sitzung,
   AES-256-GCM mit einem aus dem Store-Schlüssel abgeleiteten Schlüssel (HMAC-SHA256); die AAD bindet Format und Datei-ID.
   Ohne entsperrten Store ist kein Protokoll lesbar.
 - **Nicht protokolliert:** Passwort-Eingaben (sie sind kein Befehl am Prompt und werden nicht angezeigt) und Befehle mit
@@ -360,6 +417,7 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 
 ```
 make test         # go vet + Tests
+make bench        # Leistung: Terminal-Durchsatz, Speicher pro Tab, Manager mit 500 Verbindungen
 make build        # bin/sshtermy
 make dist         # alle Plattformen nach dist/ + checksums.txt
 make golden       # Bildschirm-Tests nach einer gewollten Änderung neu schreiben
@@ -384,10 +442,35 @@ python3 tools/dev/fakellm.py              # Test-LLM auf 127.0.0.1:11434 (/v1/ch
 SSHTERMY_HOME=/tmp/sth go run ./cmd/sshtermy
 ```
 
+Der Terminal-Emulator liegt als angepasste Kopie in `third_party/vt` (schnellerer Bildlauf, kompakter Verlauf),
+siehe `third_party/vt/README.sshtermy.md`.
+
 ## Nächste Schritte (Vorschläge)
 
 1. Windows-Ressourcen (Icon, Versionsinfo) und Code-Signing der `.exe`, macOS Notarisierung.
 2. macOS-Schlüsselbund als zweiter Entsperr-Weg (wie DPAPI unter Windows).
+
+## Vermittler: Server hinter NAT/Firewall
+
+Kurz (ausführlich in [docs/vermittler.md](docs/vermittler.md)):
+
+```
+# 1. auf einem erreichbaren Rechner (VPS, Pi, NAS)
+sshtermy vermittler start --url https://vermittler.example.org:8022
+sshtermy vermittler code --anker        # Zeile für einen Server
+sshtermy vermittler code                # Zeile für sshTermy
+
+# 2. auf dem Server, der erreichbar werden soll
+sshtermy anker koppeln 'https://vermittler.example.org:8022#termy=…&fp=…'
+sshtermy anker dienst | sudo tee /etc/systemd/system/sshtermy-anker.service
+sudo systemctl enable --now sshtermy-anker
+```
+
+3. In sshTermy: Strg+Leertaste → „Vermittler koppeln / verwalten“, Zeile einfügen. „Systeme über Vermittler“ zeigt
+   alle Server mit Online-Punkt, ⏎ legt die Verbindung an oder verbindet.
+
+Der Vermittler reicht nur verschlüsselte Bytes durch. Den Host-Key meldet der Anker; passt er nicht, bricht sshTermy
+ab. Ohne Vermittler ändert sich nichts.
 
 ## Sync zwischen Rechnern
 
@@ -419,5 +502,42 @@ zählt nicht als Änderung. So gehen Änderungen auf zwei Rechnern nicht verlore
 betreffen. Abgeglichen wird beim Start, wenige Sekunden nach jeder Änderung und alle 5 Minuten; manuell über die Palette
 („Jetzt synchronisieren“). Nicht synchronisiert werden rechnerspezifische Dinge wie DPAPI und die Sync-Einstellungen selbst.
 
+**Archiv (zuschaltbar):** Mit dem Schalter „Archiv“ im Sync-Assistenten (y) wandern auch die Config-Sicherungen der
+Switches (F6) und die Sitzungsprotokolle auf die anderen Rechner. Sie liegen im Unterordner `sshtermy-archiv/` neben der
+Sync-Datei, eine verschlüsselte Datei je Sicherung bzw. Protokoll (Schlüssel aus dem Sync-Schlüssel abgeleitet; der
+Dateiname verrät nur Art und Tag, keine Hostnamen). Jede Datei wird nur einmal geschrieben, deshalb gibt es keine
+Konflikte. „Aufbewahren“ (30, 90 oder 365 Tage) legt fest, wie lange Einträge im Archiv bleiben; lokale Kopien bleiben
+erhalten. Ein gelöschtes Protokoll verschwindet auch auf den anderen Rechnern. Laufende Sitzungen kommen erst nach dem
+Ende ins Archiv; in der Protokollansicht steht, von welchem Rechner ein Protokoll stammt.
+
 Zum Ausprobieren ohne NAS: `go run ./tools/dev/devdav` (http auf Port 5005) oder `go run ./tools/dev/devdav -tls -addr 127.0.0.1:5006`
 (selbstsigniert), Benutzer `dominik`, Passwort `nas-pw`.
+
+## Mit dem Team teilen
+
+Strg+Leertaste → „Mit dem Team teilen“: Verbindungen wählen (Leertaste, `g` Ordner, `a` alle), dann Passwort und
+Optionen. sshTermy schreibt eine verschlüsselte `.sshteam`-Datei (Argon2id + AES-256-GCM, ohne Passwort ist nichts
+lesbar, auch nicht der Absender). Jump-Hosts kommen automatisch mit; Tunnel, Runbooks und Schnellbefehle nach Wahl.
+**Nie enthalten:** Passwörter, eingebettete Keys, Passphrasen, Key-Pfade außerhalb von `~/`, Benutzernamen (nach
+Wahl), gelernte abgelehnte Vorschläge, KI- und Sync-Einstellungen. Bleibt das Passwort leer, erzeugt sshTermy eines.
+
+Der Kollege nimmt Strg+Leertaste → „Team-Paket übernehmen“: Datei, Passwort, Zielordner (Standard „Team“). Eine
+Vorschau zeigt neue und aktualisierte Einträge. Wer dasselbe Paket später erneut übernimmt, bekommt die Änderungen;
+eigene Passwörter, Keys und Benutzernamen bleiben erhalten.
+
+### Team-Ordner: automatisch aktuell
+
+Leg die Datei beim Teilen in einen Ordner, den alle erreichen (Netzlaufwerk, OneDrive- oder Teams-Ordner) oder gib
+eine https-/WebDAV-Adresse an (`https://benutzer:passwort@nas:5006/team/acme.sshteam`), und schalte „Aktuell halten“
+ein. Dann schreibt sshTermy die Datei neu, sobald sich an den Verbindungen etwas ändert (Prüfung jede Minute). Wer aus
+einem Ordner im Manager geteilt hat, teilt den ganzen Ordner: Neue Verbindungen darin gehen automatisch mit.
+
+Kollegen lassen beim Übernehmen „Abonnieren“ an. sshTermy liest die Datei dann alle 5 Minuten und übernimmt
+Änderungen: neue Verbindungen kommen dazu, geänderte werden aktualisiert, beim Absender gelöschte verschwinden auch
+hier. Eigene Passwörter, Keys und Benutzernamen bleiben. Strg+Leertaste → „Team-Ordner“ zeigt den Stand, gleicht
+sofort ab oder beendet ein Abo (die Verbindungen bleiben dann). Team-Ordner sind rein lokal und gehen nicht in den Sync.
+
+## Lizenz
+
+sshTermy steht unter der [MIT-Lizenz](LICENSE): Du darfst es benutzen, kopieren, ändern und weitergeben, auch
+kommerziell, solange der Urheberhinweis und der Lizenztext dabei bleiben. Idee: Dominik Bornhäußer.

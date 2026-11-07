@@ -41,7 +41,7 @@ func (a *App) emptyState(icon, title, text string, steps []emptyStep, w int) str
 
 // mgrEmpty: Manager ohne eine einzige Verbindung.
 func (a *App) mgrEmpty(w int) string {
-	return a.emptyState("⌁", i18n.T("Noch keine Verbindungen"),
+	return a.emptyState("≈", i18n.T("Noch keine Verbindungen"),
 		i18n.T("Hier stehen gleich deine Server, Switches und Firewalls, mit Farbe und Online-Punkt."),
 		[]emptyStep{
 			{"n", i18n.T("neue Verbindung anlegen")},
@@ -67,7 +67,7 @@ func (a *App) mgrNoMatch(w int) string {
 	if !a.mgr.searching { // beim Tippen in der Suche wäre „n“ ein Buchstabe
 		steps = append(steps, emptyStep{"n", i18n.T("neue Verbindung anlegen")})
 	}
-	return a.emptyState("⌕", title, i18n.T("Gesucht wird in Alias, Host, Benutzer, Ordner und Tags."), steps, w)
+	return a.emptyState("/", title, i18n.T("Gesucht wird in Alias, Host, Benutzer, Ordner und Tags."), steps, w)
 }
 
 // mgrLegend: rechts im leeren Manager erklärt, was Punkte, Symbole und
@@ -86,7 +86,7 @@ func (a *App) mgrLegend(w int) string {
 	item("○", t.Muted, i18n.T("noch nicht geprüft oder hinter Jump-Host"))
 	b.WriteString("\n")
 	for _, d := range []devClass{devLinux, devWindows, devMac, devSwitch, devRouter, devFirewall} {
-		item(devIcons[d], a.devColor(d), devName(d))
+		item(devGlyph(d), a.devColor(d), devName(d))
 	}
 	b.WriteString("\n")
 	item("▌", accentColor(t, "red"), i18n.T("Produktiv (Ordner, Tag oder Alias mit „prod“)"))

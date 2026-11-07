@@ -67,9 +67,9 @@ func (a *App) panelRail(s *session, h int) string {
 	icon, act := "◎", actGoal
 	switch s.panel {
 	case panelAsk:
-		icon, act = "✦", actAsk
+		icon, act = "◆", actAsk
 	case panelTunnels:
-		icon, act = "⇄", actTunnels
+		icon, act = "↔", actTunnels
 	case panelHost:
 		icon, act = "▤", actHost
 	}
@@ -103,6 +103,14 @@ func (a *App) panelRail(s *session, h int) string {
 
 // termSize: Spalten und Zeilen des Terminals (Bereich minus Seitenpanel).
 func (a *App) termSize(s *session) (int, int) {
+	if d := s.detach; d != nil && d.conn != nil {
+		return d.cols, d.rows // eigenes Fenster bestimmt die Größe (detach.go)
+	}
+	return a.paneSize(s)
+}
+
+// paneSize: Platz für das Terminal hier im Fenster.
+func (a *App) paneSize(s *session) (int, int) {
 	r := a.termRect(s)
 	return max(20, r.w-a.panelWidth(s)), max(3, r.h)
 }
@@ -140,6 +148,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 	}
 	switch m := msg.(type) {
 	case tea.PasteMsg:
+		if s.detached() && !s.panelFocus {
+			return nil // Einfügen geht im eigenen Fenster
+		}
 		if s.search.open && !s.panelFocus && !s.files.open {
 			return a.searchPaste(s, m)
 		}
@@ -179,7 +190,13 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll = 0
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList) {
+		case actNewTab:
+			return a.openNewTab()
+		case actCloseTab:
+			return a.closeTabAsk(s, nil)
+		case actTabList:
+			return a.openTabList()
 		case actHelp:
 			a.modal = a.helpModal()
 			return nil
@@ -192,7 +209,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		case actCheat:
 			return a.toggleCheat()
 		case actQuickMenu:
-			if s.state == stConnected {
+			if s.state == stConnected && !s.detached() {
 				a.modal = a.quickModal(s)
 			}
 			return nil
@@ -213,6 +230,12 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if s.files.open {
 			return a.filesKey(s, m)
+		}
+		if s.detached() && !s.panelFocus {
+			return a.detachedKey(s, key)
+		}
+		if a.keys.is(actDetach, key) && s.state == stConnected {
+			return a.toggleDetach(s)
 		}
 		if a.keys.is(actSplit, key) {
 			a.cycleSplit()
@@ -323,6 +346,7 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			}
 			s.chipArmed = -1
 			s.term.SendText(c.Command)
+			s.noteAI(c.Command, true)
 			s.chips = nil
 		}
 		return nil
@@ -335,7 +359,12 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	}
 	if key == "enter" {
 		if typed, ok := s.term.TypedInput(); ok && strings.TrimSpace(typed) != "" && !agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
+			a.finishCommand(s) // Ergebnis des vorigen Befehls (Fehlschlag?) zuerst
+			from := s.correctionFrom(typed)
 			a.beginCommand(s, typed)
+			if from != "" && s.run != nil {
+				s.run.learnFrom = from
+			}
 			s.history = append(s.history, strings.TrimSpace(typed))
 			a.profileCommand(s, strings.TrimSpace(typed))
 			s.noteCommand(strings.TrimSpace(typed))
@@ -469,7 +498,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 // Nur die aktive Sitzung bekommt Cursor und Ghost-Text.
 func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	st := a.s
-	cols, rows := a.termSize(s)
+	cols, rows := a.paneSize(s)
 	tr := a.termRect(s)
 	if s.search.open {
 		a.refreshSearch(s, false)
@@ -477,15 +506,18 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	var body string
 	var cur *tea.Cursor
 	switch {
+	case s.detached():
+		body = a.detachedView(s, cols, rows)
 	case s.state == stConnecting:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			st.AI.Render(i18n.T("⠿ Verbinde mit ")+s.conn.Alias+" ("+s.conn.Addr()+") …"))
+			st.AI.Render(i18n.T("⠿ Verbinde mit ")+s.conn.Alias+" ("+s.conn.ShowAddr()+") …"))
 	case s.state == stReconnect:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.reconnectView(s))
 	case s.state == stClosed:
-		msg := st.Danger.Render("✗ " + orDefault(s.err, i18n.T("getrennt")))
+		msg := st.Danger.Render("× " + orDefault(s.err, i18n.T("getrennt")))
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			msg+"\n\n"+st.Muted.Render(i18n.T("⏎ neu verbinden · x Tab schließen · ")+a.keys.label(actManager)+" Manager"))
+			msg+"\n\n"+a.hints(st.Muted, [2]string{"⏎", i18n.T("neu verbinden")}, [2]string{"x", i18n.T("Tab schließen")},
+				[2]string{a.keys.label(actManager), i18n.T("Manager")}))
 	case s.search.open && s.search.list:
 		body = a.viewErrorList(s, cols, rows)
 	case s.scroll > 0 || s.sel != nil || s.search.open:
@@ -543,12 +575,12 @@ func (a *App) chipBar(s *session) string {
 	st := a.s
 	var b strings.Builder
 	if g := a.visibleGhost(s); g != "" {
-		b.WriteString(a.z.click(st.AI.Render(" ✦ ")+st.Muted.Render(i18n.T("Tab übernimmt: "))+st.Ghost.Render(trunc(g, 60)),
+		b.WriteString(a.z.click(st.AI.Render(" ◆ ")+st.Muted.Render(i18n.T("Tab übernimmt: "))+st.Ghost.Render(trunc(g, 60)),
 			func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("Tab") }) + "  ")
 	} else {
 		if f := s.fail; f != nil {
 			why := orDefault(f.Reason, i18n.T("fehlgeschlagen"))
-			b.WriteString(a.z.click(st.Danger.Render(" ✗ "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(i18n.T(" Warum? & Fix ")),
+			b.WriteString(a.z.click(st.Danger.Render(" × "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(i18n.T(" Warum? & Fix ")),
 				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("alt+0") }) + " ")
 		}
 		a.chipList(s, &b)
@@ -563,7 +595,7 @@ func (a *App) chipBar(s *session) string {
 func (a *App) chipList(s *session, b *strings.Builder) {
 	st := a.s
 	if len(s.chips) > 0 {
-		b.WriteString(st.AI.Render(i18n.T(" ✦ Als Nächstes: ")))
+		b.WriteString(st.AI.Render(i18n.T(" ◆ Als Nächstes: ")))
 		for i, c := range s.chips {
 			style := st.Chip
 			if len(c.Danger) > 0 {
@@ -602,6 +634,8 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	switch {
 	case s.state == stClosed:
 		keys = append(keys, [2]string{"⏎", i18n.T("neu verbinden")}, [2]string{"x", i18n.T("Tab schließen")})
+	case s.detached():
+		keys = append(keys, [2]string{"⏎", i18n.T("zurückholen")})
 	case s.state == stConnected:
 		if s.scroll > 0 {
 			keys = append(keys, [2]string{"Esc", i18n.T("zurück zur Eingabe")})
@@ -612,14 +646,26 @@ func (a *App) terminalKeys(s *session) [][2]string {
 			keys = append(keys, [2]string{i18n.T("Alt+1…") + strconv.Itoa(min(4, len(s.chips))), i18n.T("Vorschlag einfügen")})
 		}
 		keys = append(keys, [2]string{k.label(actGoal), i18n.T("Ziel")}, [2]string{k.label(actAsk), i18n.T("KI fragen")}, [2]string{k.label(actTunnels), "Tunnel"},
-			[2]string{k.label(actFiles), i18n.T("Dateien")}, [2]string{k.label(actSearch), i18n.T("Suche")}, [2]string{k.label(actSplit), i18n.T("Teilen")}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), i18n.T("Schnellbefehle")})
+			[2]string{k.label(actFiles), i18n.T("Dateien")}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), i18n.T("Schnellbefehle")})
 	}
 	if len(a.sessions) > 1 {
 		keys = append(keys, [2]string{k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"})
 	}
 	keys = append(keys, [2]string{k.label(actManager), "Manager"},
-		[2]string{k.label(actHelp), i18n.T("Hilfe")}, [2]string{k.label(actCheat), i18n.T("erklären")}, [2]string{k.label(actQuit), i18n.T("beenden")})
-	keys = sortFKeys(keys)
+		[2]string{k.label(actHelp), i18n.T("Hilfe")}, [2]string{k.label(actCheat), i18n.T("erklären")})
+	if s.state == stConnected && !s.detached() {
+		// weniger wichtig: fällt in schmalen Fenstern vor den F-Tasten weg
+		keys = append(keys, [2]string{k.label(actSearch), i18n.T("Suche")}, [2]string{k.label(actSplit), i18n.T("Teilen")},
+			[2]string{k.label(actDetach), i18n.T("Fenster")})
+	}
+	if len(a.sessions) > 1 {
+		keys = append(keys, [2]string{k.label(actTabList), i18n.T("Tab-Liste")})
+	}
+	if s.state == stConnected && !s.detached() {
+		keys = append(keys, [2]string{k.label(actNewTab), i18n.T("neuer Tab")})
+	}
+	keys = append(keys, [2]string{k.label(actQuit), i18n.T("beenden")})
+	// Anzeige-Reihenfolge (Palette, F1 … F12, ⇧F, Rest) macht footer().
 	if s.fail != nil {
 		keys = append([][2]string{{"Alt+0", i18n.T("Warum? & Fix")}}, keys...)
 	}
@@ -635,18 +681,22 @@ func (a *App) tabStrip() string {
 	if n == 0 {
 		return ""
 	}
-	room := a.w - lipgloss.Width(a.headerLeft()) - 1
+	plus := st.Tab.Foreground(st.T.Accent).Bold(true).Render("+")
+	room := a.w - lipgloss.Width(a.headerLeft()) - 1 - lipgloss.Width(plus)
 	label := func(i, l int) string {
 		x := a.sessions[i]
 		if l == 0 {
 			return " " + strconv.Itoa(i+1)
 		}
-		return " " + trunc(x.conn.Alias, l)
+		return " " + trunc(x.tabName(), l)
 	}
-	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand
+	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven
 		w := 1 + lipgloss.Width(label(i, l)) + 3
 		if a.accentOf(a.sessions[i].conn) != nil {
 			w++
+		}
+		if i == a.cur {
+			w++ // „×“ statt des Leerzeichens am Ende
 		}
 		return w
 	}
@@ -689,7 +739,10 @@ func (a *App) tabStrip() string {
 	}
 	for i := from; i < to; i++ {
 		x := a.sessions[i]
-		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("⟳")}[x.state]
+		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("◌")}[x.state]
+		if x.detached() {
+			dot = st.AI.Render("↑") // läuft in eigenem Fenster
+		}
 		ts := st.Tab
 		if i == a.cur {
 			ts = st.TabActive
@@ -702,15 +755,36 @@ func (a *App) tabStrip() string {
 				text = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(true).Render(strings.TrimPrefix(text, " "))
 			}
 		}
-		tab := ts.Render(stripe + dot + text + " ")
 		i := i
-		b.WriteString(a.z.click(tab, func(tea.Mouse, bool) tea.Cmd {
-			a.focusSession(i)
-			return nil
-		}))
+		end := " "
+		if i == a.cur {
+			end = ""
+		}
+		tab := a.z.mark(ts.Render(stripe+dot+text+end), zoneAction{
+			click: func(tea.Mouse, bool) tea.Cmd {
+				a.focusSession(i)
+				return nil
+			},
+			menu: func(m tea.Mouse) tea.Cmd {
+				if m.Button == tea.MouseMiddle {
+					return a.closeTabAsk(x, nil)
+				}
+				a.modal = a.tabMenu(x, m.X, m.Y, nil)
+				return nil
+			},
+		})
+		if i == a.cur {
+			// × schließt den aktiven Tab (bei laufender Verbindung mit Rückfrage)
+			close := a.z.click(ts.Padding(0, 1, 0, 0).Foreground(st.T.Muted).UnsetBold().Render("×"), func(tea.Mouse, bool) tea.Cmd {
+				return a.closeTabAsk(x, nil)
+			})
+			tab += close
+		}
+		b.WriteString(tab)
 	}
 	if to < n {
 		b.WriteString(st.Header.Foreground(st.T.Muted).Render(" ›"))
 	}
+	b.WriteString(a.z.click(plus, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() }))
 	return b.String()
 }

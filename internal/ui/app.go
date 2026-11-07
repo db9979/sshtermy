@@ -52,11 +52,17 @@ const (
 	scrSync
 	scrLogs
 	scrQuickForm
+	scrMonitorForm // Grenzwerte der Überwachung (monitor.go)
 	scrImport
 	scrKeys
 	scrBroadcast
 	scrScan
-	scrKeyForm // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
+	scrKeyForm    // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
+	scrSSHKeyForm // SSH-Schlüssel erzeugen / übertragen (sshkey.go)
+	scrRelayForm  // Vermittler koppeln (relay.go)
+	scrColors     // Farben anpassen (colors.go)
+	scrTeam       // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
+	scrTeamForm   // Team-Freigabe: Passwort, Datei, Optionen
 )
 
 // App ist das Wurzel-Modell.
@@ -74,6 +80,7 @@ type App struct {
 	form             *form
 	formID           string // ID des bearbeiteten Datensatzes
 	formBase         domain.Connection
+	formKC           [2]string // Verbindungsformular: Werte aus dem Schlüsselbund beim Öffnen
 	formTunnel       domain.Tunnel
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
@@ -103,10 +110,13 @@ type App struct {
 
 	sync    syncState
 	wiz     *syncWizard
-	imp     importState // Import aus ssh-config, PuTTY, MobaXterm
-	keyEd   keyEditor   // Tastenkürzel anpassen
-	keys    keymap      // aktuelle Tastenbelegung
-	lookSig string      // Theme+Tasten, zuletzt übernommen
+	imp     importState   // Import aus ssh-config, PuTTY, MobaXterm
+	team    teamState     // Team-Freigabe (team.go)
+	tl      teamLinkState // Team-Ordner: veröffentlichen/abonnieren (teamlink.go)
+	keyEd   keyEditor     // Tastenkürzel anpassen
+	colEd   colorEditor   // Farben anpassen
+	keys    keymap        // aktuelle Tastenbelegung
+	lookSig string        // Theme+Tasten, zuletzt übernommen
 
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
@@ -117,8 +127,9 @@ type App struct {
 	rbVals map[string]map[string]string // zuletzt eingegebene Runbook-Variablen (nur im Speicher)
 	scan   *scanState                   // Netzwerk-Scan
 
-	intro *introState // Startanimation, nil = aus oder vorbei
-	fx    fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
+	intro  *introState // Startanimation, nil = aus oder vorbei
+	relays relayCache  // Systemlisten der Vermittler (relay.go)
+	fx     fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
 
 	crashTest string // sshtermy -crash-test (crash.go)
 }
@@ -246,6 +257,12 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case secretAskMsg:
 		a.modal = secretModal(m)
 		return a, a.listen()
+	case sshKeyDoneMsg:
+		return a, a.sshKeyDone(m)
+	case relayMsg:
+		return a, m.apply(a)
+	case teamLinkMsg:
+		return a, m.apply(a)
 
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
@@ -262,6 +279,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.rememberNetDevice(s)
 			}
 			a.profileConnected(s)
+			a.learnKeychain(s)
 			a.flashOK(i18n.T("Verbunden: ") + s.conn.Alias)
 			for _, t := range a.st.Tunnels(s.conn.ID) {
 				if t.AutoStart && s.tunnels != nil {
@@ -271,12 +289,15 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			a.startLog(s)
+			if s.detached() {
+				s.detachNotice(i18n.T("Wieder verbunden."))
+			}
 			var cmd tea.Cmd
 			if s.rc.active {
 				cmd = a.onReconnected(s)
 			}
 			a.resize(s)
-			return a, tea.Batch(cmd, a.hostOnConnect(s))
+			return a, tea.Batch(cmd, a.hostOnConnect(s), a.persistOnConnect(s))
 		}
 		return a, nil
 	case adaptMsg:
@@ -285,6 +306,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case muxProbeMsg:
 		a.onMuxProbe(m)
 		return a, nil
+	case persistMsg:
+		return a, a.onPersist(m)
 	case connectErrMsg:
 		if s := a.byID(m.sid); s != nil {
 			if s.rc.active {
@@ -301,7 +324,19 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case shellClosedMsg:
 		if s := a.byID(m.sid); s != nil {
 			a.onShellClosed(s, m)
+			if s.state == stReconnect {
+				s.detachNotice(i18n.T("Verbindung abgerissen, verbinde neu …"))
+			}
 		}
+		return a, a.listen()
+	case detachConnMsg:
+		a.onDetachConn(m)
+		return a, a.listen()
+	case detachResizeMsg:
+		a.onDetachResize(m)
+		return a, a.listen()
+	case detachEndMsg:
+		a.onDetachEnd(m)
 		return a, a.listen()
 
 	case tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg, tea.MouseWheelMsg:
@@ -363,6 +398,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if k, ok := msg.(tea.KeyPressMsg); ok {
 		a.lastKey = time.Now()
+		if a.scr == scrColors && a.colEd.editing && a.modal == nil {
+			return a, a.updateColors(k) // Hex-Eingabe: Buchstaben gehören dem Feld
+		}
 		if a.scr == scrKeys && a.keyEd.capturing && a.modal == nil {
 			return a, a.updateKeys(k) // neue Taste: nichts anderes darf sie abfangen
 		}
@@ -375,7 +413,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pick != nil {
 			return a, a.pickerKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrKeyForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -413,7 +451,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrKeyForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrKeyForm, scrSSHKeyForm, scrRelayForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -423,8 +461,14 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateLogs(msg)
 	case scrImport:
 		return a, a.updateImport(msg)
+	case scrTeam:
+		return a, a.updateTeam(msg)
+	case scrTeamForm:
+		return a, a.updateTeamForm(msg)
 	case scrKeys:
 		return a, a.updateKeys(msg)
+	case scrColors:
+		return a, a.updateColors(msg)
 	case scrBroadcast:
 		return a, a.updateBroadcast(msg)
 	case scrScan:
@@ -459,6 +503,9 @@ func (a *App) onTick() tea.Cmd {
 	if c := a.syncTick(); c != nil {
 		cmds = append(cmds, c)
 	}
+	if c := a.teamLinkTick(); c != nil {
+		cmds = append(cmds, c)
+	}
 	for _, s := range a.sessions {
 		if s.term != nil && s.term.TakeBell() {
 			cmds = append(cmds, func() tea.Msg { return nil })
@@ -471,6 +518,9 @@ func (a *App) onTick() tea.Cmd {
 			cmds = append(cmds, c)
 		}
 		a.profileTick(s)
+		if c := a.monitorTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
 		if c := a.reconnectTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
@@ -489,7 +539,13 @@ func (a *App) View() tea.View {
 		body = a.viewUnlock()
 	case scrManager:
 		body = a.frame(a.viewManager(), a.managerKeys())
-	case scrConnForm, scrTunnelForm, scrKeyForm:
+	case scrTunnelForm:
+		k := [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}}
+		if a.formTunnel.ID != "" {
+			k = append(k, [2]string{"Strg+D", i18n.T("löschen")})
+		}
+		body = a.frame(a.viewForm(), append(k, [2]string{"Esc", i18n.T("abbrechen")}))
+	case scrConnForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMonitorForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
@@ -503,8 +559,14 @@ func (a *App) View() tea.View {
 		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrImport:
 		body = a.frame(a.viewImport(), a.importKeys())
+	case scrTeam:
+		body = a.frame(a.viewTeam(), a.teamKeys())
+	case scrTeamForm:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Space", i18n.T("an/aus")}, {"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("zurück")}})
 	case scrKeys:
 		body = a.frame(a.viewKeys(), a.keysKeys())
+	case scrColors:
+		body = a.frame(a.viewColors(), a.colorsKeys())
 	case scrBroadcast:
 		body = a.frame(a.viewBroadcast(), a.broadcastKeys())
 	case scrScan:
@@ -550,17 +612,17 @@ func (a *App) View() tea.View {
 // Version weg (steht im Über-Dialog), der Credit bleibt immer sichtbar.
 func (a *App) headerLeft() string {
 	if a.w < 90 {
-		return a.s.Logo.Render("◆ "+version.Name) + a.s.Credit.Render(" "+i18n.T(version.Idea)+" ")
+		return a.s.Logo.Render(">_ "+version.Name) + a.s.Credit.Render(" "+i18n.T(version.Idea)+" ")
 	}
-	return a.s.Logo.Render("◆ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
+	return a.s.Logo.Render(">_ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
 }
 
 func (a *App) header(right string) string {
 	left := a.headerLeft()
 	if a.rel != nil && right == "" {
-		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⬆ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
+		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ↑ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
 	} else if a.restartPending != "" && right == "" {
-		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ⟳ v"+a.restartPending+i18n.T(" installiert · Neustart ")+a.keys.label(actAbout)+" "))
+		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ◌ v"+a.restartPending+i18n.T(" installiert · Neustart ")+a.keys.label(actAbout)+" "))
 	}
 	if a.scr != scrTerminal && a.scr != scrUnlock {
 		right += a.llmChip() // im Terminal steht der Status in der Sitzungszeile
@@ -577,12 +639,9 @@ func (a *App) footer(keys [][2]string) string {
 	if c := a.cheatLine(); c != "" {
 		return c // F9: Tastenzeile mit Erklärungen für den aktuellen Bereich
 	}
-	keys = append([][2]string(nil), keys...)
-	for i := range keys {
-		keys[i][0] = i18n.Keys(keys[i][0])
-	}
+	shown := a.sortedFooter(keys)
 	var b strings.Builder
-	for _, k := range a.fitFooter(keys) {
+	for _, k := range shown {
 		if k[1] == "" {
 			b.WriteString(a.keyZone(k[0], a.s.Key.Render(k[0])))
 		} else {
@@ -594,6 +653,24 @@ func (a *App) footer(keys [][2]string) string {
 		out += a.s.Footer.Render(strings.Repeat(" ", a.w-w))
 	}
 	return ansi.Truncate(out, a.w, "")
+}
+
+// sortedFooter: Tasten übersetzen, nach Wichtigkeit kürzen (die Aufrufer
+// liefern die wichtigsten vorn) und erst dann für die Anzeige sortieren:
+// Palette, F1 … F12, ⇧F-Tasten, Rest (Strg+…, Buchstaben).
+func (a *App) sortedFooter(keys [][2]string) [][2]string {
+	keys = append([][2]string(nil), keys...)
+	for i := range keys {
+		keys[i][0] = i18n.Keys(keys[i][0])
+	}
+	shown := a.fitFooter(keys)
+	pal := strings.ReplaceAll(i18n.Keys(a.keys.label(actPalette)), "Shift+", "⇧")
+	for _, k := range shown {
+		if k[0] == pal { // nur Hauptleisten; Panel-Leisten bleiben wie sie sind
+			return sortFKeys(shown, pal)
+		}
+	}
+	return shown
 }
 
 // fitFooter passt die Tastenzeile an schmale Fenster an. Eine Taste ohne
@@ -608,39 +685,52 @@ func (a *App) fitFooter(keys [][2]string) [][2]string {
 		out[i] = [2]string{strings.ReplaceAll(k[0], "Shift+", "⇧"), k[1]} // kürzer: ⇧F9
 	}
 	keep := func(k [2]string) bool { return k[0] == help || k[0] == explain }
-	width := func(ks [][2]string) int {
-		w := 0
-		for _, k := range ks {
-			w += lipgloss.Width(a.s.Key.Render(k[0]))
-			if k[1] != "" {
-				w += lipgloss.Width(a.s.KeyDesc.Render(k[1]))
-			}
+	// Breiten einmal messen und die Summe mitführen: lipgloss.Width über
+	// gerenderte Stile ist teuer, und die Schleifen unten fragten früher
+	// bei jedem Schritt die ganze Zeile neu ab (pro Bild Hunderte Mal).
+	kw, dw := make([]int, len(out)), make([]int, len(out))
+	total := 0
+	for i, k := range out {
+		kw[i] = lipgloss.Width(a.s.Key.Render(k[0]))
+		if k[1] != "" {
+			dw[i] = lipgloss.Width(a.s.KeyDesc.Render(k[1]))
 		}
-		return w
+		total += kw[i] + dw[i]
+	}
+	drop := func(i int) {
+		total -= kw[i] + dw[i]
+		out = append(out[:i], out[i+1:]...)
+		kw = append(kw[:i], kw[i+1:]...)
+		dw = append(dw[:i], dw[i+1:]...)
+	}
+	noDesc := func(i int) {
+		total -= dw[i]
+		dw[i] = 0
+		out[i][1] = ""
 	}
 	const minKeys = 4 // so viele beschriftete Tasten bleiben mindestens
 	// 1. ganze Tasten von hinten weglassen, Beschriftungen bleiben
-	for i := len(out) - 1; i >= 0 && width(out) > a.w && len(out) > minKeys; i-- {
+	for i := len(out) - 1; i >= 0 && total > a.w && len(out) > minKeys; i-- {
 		if !keep(out[i]) {
-			out = append(out[:i], out[i+1:]...)
+			drop(i)
 		}
 	}
 	// 2. Beschreibungen von hinten weglassen (nicht die der Hilfe)
-	for i := len(out) - 1; i >= 0 && width(out) > a.w; i-- {
+	for i := len(out) - 1; i >= 0 && total > a.w; i-- {
 		if out[i][0] != help {
-			out[i][1] = ""
+			noDesc(i)
 		}
 	}
 	// 3. weitere Tasten von hinten weglassen, nie die Hilfe
-	for i := len(out) - 1; i >= 0 && width(out) > a.w; i-- {
+	for i := len(out) - 1; i >= 0 && total > a.w; i-- {
 		if out[i][0] != help {
-			out = append(out[:i], out[i+1:]...)
+			drop(i)
 		}
 	}
 	// 4. zur Not auch „Hilfe“ nur als Taste
 	for i := range out {
-		if width(out) > a.w && out[i][0] == help {
-			out[i][1] = ""
+		if total > a.w && out[i][0] == help {
+			noDesc(i)
 		}
 	}
 	return out

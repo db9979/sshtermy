@@ -1,6 +1,6 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                   ▌● web-01
- PRODUKTIV  deploy@10.0.0.11:22                                                            ⇄ 0 Tunnel   ● ✦ qwen3-coder
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                     ╭──────────────────────────────────────────────╮
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ▌● web-01 ×  +
+ PRODUKTIV  deploy@10.0.0.11:22                                                            ↔ 0 Tunnel   ● ◆ qwen3-coder
+Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                     ┌──────────────────────────────────────────────┐
                                                                         │ ▤ Host-Übersicht                             │
 deploy@web-01:~$ systemctl status nginx --no-pager | head -3            │                                              │
 ● nginx.service - A high performance web server and a reverse proxy serv│ Noch keine Daten. r = abfragen               │
@@ -27,6 +27,6 @@ deploy@web-01:~$                                                        │     
                                                                         │                                              │
                                                                         │                                              │
                                                                         │                                              │
-                                                                        ╰──────────────────────────────────────────────╯
+                                                                        └──────────────────────────────────────────────┘
 
- r aktualisieren  Esc Terminal  F6 schließen
+ r aktualisieren  g Grenzwerte  Esc Terminal  F6 schließen

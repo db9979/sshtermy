@@ -78,7 +78,7 @@ func (a *App) sessionBar(s *session) string {
 		left.WriteString(lipgloss.NewStyle().Background(col).Foreground(st.T.Bg).Bold(true).Padding(0, 1).Render(envLabel(envKind(s.conn))))
 	}
 	if s.state == stConnected && s.rootNow() {
-		left.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("⚠ root")))
+		left.WriteString(st.ChipDanger.Bold(true).Render(i18n.T("▲ root")))
 	}
 	if s.recording() {
 		left.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
@@ -93,7 +93,7 @@ func (a *App) sessionBar(s *session) string {
 	// rechts: Leitung
 	var line []string
 	if s.state == stConnected && s.client != nil {
-		line = append(line, st.Badge.Foreground(st.T.Text).Render("⏱ "+fmtDuration(time.Since(s.connectedAt))))
+		line = append(line, st.Badge.Foreground(st.T.Text).Render("◷ "+fmtDuration(time.Since(s.connectedAt))))
 		if l := s.client.Latency(); l > 0 {
 			c := st.T.OK
 			switch {
@@ -103,9 +103,9 @@ func (a *App) sessionBar(s *session) string {
 				c = st.T.Warn
 			}
 			ms := l.Milliseconds()
-			txt := fmt.Sprintf("↯ %d ms", ms)
+			txt := fmt.Sprintf("∆ %d ms", ms)
 			if ms == 0 {
-				txt = "↯ <1 ms"
+				txt = "∆ <1 ms"
 			}
 			line = append(line, st.Badge.Foreground(c).Render(txt))
 		}
@@ -119,7 +119,7 @@ func (a *App) sessionBar(s *session) string {
 	}
 
 	if s.state == stConnected && s.client == nil && s.conn.Protocol.Raw() {
-		line = append(line, st.Badge.Foreground(st.T.Text).Render("⏱ "+fmtDuration(time.Since(s.connectedAt))), a.protoBadge(s))
+		line = append(line, st.Badge.Foreground(st.T.Text).Render("◷ "+fmtDuration(time.Since(s.connectedAt))), a.protoBadge(s))
 	}
 
 	nT := 0
@@ -129,16 +129,26 @@ func (a *App) sessionBar(s *session) string {
 	cfg := a.st.LLM()
 	// KI: Punkt = Zustand des Endpunkts (llmhealth.go), Klick = Erklärung
 	h := a.llmHealth()
-	ai := st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22))
-	if t := h.badgeText(); t != "" {
-		ai = st.BadgeAI.Render("✦ " + trunc(cfg.Model, 22) + " · " + t)
+	// KI-Anzeige in drei Breiten: Modell + Antwortzeit, nur Antwortzeit, nur Punkt
+	aiBadge := func(full, short bool) string {
+		txt := "◆ " + trunc(h.model(), 22)
+		if !full {
+			txt = "◆"
+		}
+		if t := h.badgeText(); t != "" && (full || short) {
+			txt += " · " + t
+		}
+		ai := st.BadgeAI.Render(txt)
+		if !cfg.SuggestEnabled {
+			ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("◆ Ghost aus"))
+			if !full {
+				ai = st.Badge.Foreground(st.T.Muted).Render("◆")
+			}
+		}
+		ai = st.Badge.Foreground(a.llmColor(h.level)).PaddingRight(0).Render(h.dot(a.lh.probing)) + ai
+		return a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
 	}
-	if !cfg.SuggestEnabled {
-		ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("✦ Ghost aus"))
-	}
-	ai = st.Badge.Foreground(a.llmColor(h.level)).PaddingRight(0).Render(h.dot(a.lh.probing)) + ai
-	ai = a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
-	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("⇄ "+plural(nT, i18n.Pick("Tunnel", "tunnel"), i18n.Pick("Tunnel", "tunnels"))))
+	tun := a.keyZone(a.keys.label(actTunnels), st.Badge.Render("↔ "+plural(nT, i18n.Pick("Tunnel", "tunnel"), i18n.Pick("Tunnel", "tunnels"))))
 	goal := ""
 	if s.goal.active {
 		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render(i18n.T("◎ Ziel aktiv")))
@@ -147,12 +157,28 @@ func (a *App) sessionBar(s *session) string {
 		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf(i18n.T("⇡ Verlauf −%d · Esc"), s.scroll)),
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
-	if hb := a.hostBadge(s); hb != "" {
-		tun = hb + " " + tun
-	}
-	right := strings.Join(line, "") + " " + goal + " " + tun + " " + ai
-	if lw := lipgloss.Width(left.String()); a.w-lw-lipgloss.Width(right) < 24 && len(line) > 0 {
-		right = goal + " " + tun + " " + ai // schmales Fenster: Leitung weglassen
+	hb := a.hostBadge(s)
+	// Schmales Fenster (z. B. uConsole mit großer Schrift): Teile von rechts
+	// nach Wichtigkeit weglassen statt mitten im Text abzuschneiden.
+	lw := lipgloss.Width(left.String())
+	var right string
+	for stage := 0; stage <= 5; stage++ {
+		parts := []string{}
+		if stage < 1 {
+			parts = append(parts, strings.Join(line, ""))
+		}
+		parts = append(parts, goal)
+		if hb != "" && stage < 3 {
+			parts = append(parts, hb)
+		}
+		if stage < 4 || nT > 0 {
+			parts = append(parts, tun)
+		}
+		parts = append(parts, aiBadge(stage < 2, stage < 5))
+		right = strings.Join(parts, " ")
+		if a.w-lw-lipgloss.Width(right) >= 24 {
+			break
+		}
 	}
 	l := left.String()
 	room := a.w - lipgloss.Width(l) - lipgloss.Width(right) - 3

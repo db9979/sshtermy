@@ -1,17 +1,17 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
  connections  0  / search        │
                                  │ How to read the list
                                  │   ◉  connected
-  ⌁  No connections yet          │   ●  reachable
+  ≈  No connections yet          │   ●  reachable
   Your servers, switches and     │   ●  not reachable
   firewalls will show up here,   │   ○  not checked yet or behind a jump host
   with color and online dot.     │
-                                 │   ❯  Linux
-   n  add a new connection       │   ⊞  Windows
-   i  import (PuTTY, MobaXterm…  │   ⌘  macOS
-   f  scan the network for SSH…  │   ▦  Switch
-   o  Create folder              │   ⊕  Router
-                                 │   ▤  Firewall
+                                 │   $  Linux
+   n  add a new connection       │   >  Windows
+   i  import (PuTTY, MobaXterm…  │   %  macOS
+   f  scan the network for SSH…  │   #  Switch
+   o  Create folder              │   @  Router
+                                 │   !  Firewall
                                  │
                                  │   ▌  Production (folder, tag or alias with “prod”)
                                  │   ▌  Test (test, dev, staging)
@@ -27,4 +27,4 @@
                                  │
                                  │
                                  │
- Ctrl+Space Palette  n new connection  i Import  f Scan  o Folder  s AI  F1 Help  ⇧F9 explain
+ Ctrl+Space Palette  F1 Help  ⇧F9 explain  n new connection  i Import  f Scan  o Folder  s AI

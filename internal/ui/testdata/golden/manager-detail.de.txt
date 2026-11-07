@@ -1,15 +1,15 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                         ● KI
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
  Verbindungen  6  / suchen  # Tags      │ web-01  Produktion / Web    ⏎ verbinden   e bearbeiten
                                         │
  ▾ Netzwerk                          1  │ Ziel                deploy@10.0.0.11:22
-   ○ ▦ switch-core      manager@192.1…  │ Status              ◌ wird geprüft …
+   ○ # switch-core      manager@192.1…  │ Status              ◌ wird geprüft …
  ▾ Produktion                        3  │ Farbe               ▌ PRODUKTIV
    ▾ Web                             2  │ Anmeldung           SSH-Agent
 ▌    ○ · web-01         deploy@10.0.0…  │ Tags                prod, nginx
 ▌    ○ · web-02         deploy@10.0.0…  │ System              wird beim ersten Verbinden erkannt
 ▌  ○ · db-01            postgres@10.0…  │
- ○ · nas               admin@nas.local  │ Tunnel  t = neuer Tunnel
- ○ · spark             dominik@spark.…  │  🌐 Grafana              -L 3000:localhost:3000
+ ○ · nas               admin@nas.local  │ Tunnel  t = neuer Tunnel · Klick = bearbeiten/löschen
+ ○ · spark             dominik@spark.…  │  @ Grafana              -L 3000:localhost:3000
                                         │
                                         │ KI-Copilot
                                         │  qwen3-coder @ http://spark.lan:8000/v1
@@ -29,4 +29,4 @@
                                         │
                                         │
                                         │
- Strg+Space Palette  ⏎ verbinden  n neu  e bearbeiten  d löschen  v verschieben  t Tunnel  F1 Hilfe  ⇧F9 erklären
+ Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ verbinden  n neu  e bearbeiten  d löschen  v verschieben  t Tunnel

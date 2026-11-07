@@ -335,10 +335,13 @@ func (a *App) connectTo(s *session, l link, viaJump bool) tea.Cmd {
 	}
 	if src.Auth == domain.AuthAgent || src.Auth == domain.AuthKeyFile {
 		c.Auth, c.KeyPath, c.KeyPEM, c.KeyPassphrase = src.Auth, src.KeyPath, src.KeyPEM, src.KeyPassphrase
+		if src.Keychain && !c.KeyPassphrase.IsSet() {
+			c.KeyPassphrase = domain.Secret(sshx.KeychainSecret(src.ID, sshx.SecretPassphrase))
+		}
 	}
 	if viaJump {
 		c.JumpHostID = src.ID
-		c.Alias = l.host + " ⤳"
+		c.Alias = l.host + " →"
 	}
 	return a.connect(c)
 }
@@ -398,9 +401,9 @@ func (a *App) onPingDone(m pingDoneMsg) {
 	var ee *exec.ExitError
 	switch {
 	case errors.As(m.err, &ee):
-		head = i18n.T("✗ nicht erreichbar")
+		head = i18n.T("× nicht erreichbar")
 	case m.err != nil:
-		head = i18n.T("✗ Ping nicht möglich")
+		head = i18n.T("× Ping nicht möglich")
 	}
 	a.modal = &modal{kind: mInfo, title: i18n.T("Ping ") + m.host + " · " + head, body: lastLines(body, 14)}
 }

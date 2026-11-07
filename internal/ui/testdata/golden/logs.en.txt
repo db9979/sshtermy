@@ -1,4 +1,4 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
  Session logs  0  / search       │
                                  │
   No logs yet.                   │

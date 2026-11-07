@@ -1,5 +1,5 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                     ● AI
- ⇩ Import connections
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
+ ↓ Import connections
 
  ~/.ssh/config       not found  /home/golden/.ssh/config
  PuTTY               not found  HKCU\Software\SimonTatham\PuTTY\Sessions

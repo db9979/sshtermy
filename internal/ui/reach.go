@@ -49,18 +49,30 @@ func (a *App) reachTick() tea.Cmd {
 	if a.scr != scrManager || a.intro != nil || !a.reachEnabled() || a.reach.running || time.Now().Before(a.reach.next) {
 		return nil
 	}
-	var todo []domain.Connection
+	var todo, via []domain.Connection
 	for _, c := range a.st.Connections() {
-		if c.JumpHostID == "" && c.Host != "" && !a.connected(c.ID) {
+		switch {
+		case a.connected(c.ID):
+		case c.ViaRelay():
+			via = append(via, c) // Online laut Vermittler (relay.go)
+		case c.JumpHostID == "" && c.Host != "":
 			todo = append(todo, c)
 		}
 	}
 	a.reach.next = time.Now().Add(reachEvery)
-	if len(todo) == 0 {
+	if len(todo) == 0 && len(via) == 0 {
 		return nil
 	}
 	a.reach.running = true
-	return func() tea.Msg { return reachMsg{checkReach(todo)} }
+	return func() tea.Msg {
+		res := checkReach(todo)
+		if len(via) > 0 {
+			for id, r := range a.relayReach(via) {
+				res[id] = r
+			}
+		}
+		return reachMsg{res}
+	}
 }
 
 func checkReach(conns []domain.Connection) map[string]reachResult {
@@ -187,11 +199,4 @@ func (a *App) toggleReach() tea.Cmd {
 		a.flash(i18n.T("Erreichbarkeit aus: sshTermy baut keine Prüfverbindungen mehr auf."))
 	}
 	return nil
-}
-
-func reachLabel(on bool) string {
-	if on {
-		return i18n.T("Erreichbarkeit der Hosts nicht mehr prüfen")
-	}
-	return i18n.T("Erreichbarkeit der Hosts prüfen (Online-Punkt)")
 }

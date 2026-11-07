@@ -1,5 +1,5 @@
- ◆ sshTermy  Idea: Dominik Bornhäußer                                ▌● web-01
- PRODUCTION  deploy@10.0.0.11:22                  ⇄ 0 tunnels   ● ✦ qwen3-coder
+ >_ sshTermy  Idea: Dominik Bornhäußer                           ▌● web-01 ×  +
+ PRODUCTION  deploy@10.0.0.11:22                  ↔ 0 tunnels   ● ◆ qwen3-coder
 Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64
 
 deploy@web-01:~$ systemctl status nginx --no-pager | head -3

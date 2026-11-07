@@ -7,12 +7,14 @@ import (
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
 	uv "github.com/charmbracelet/ultraviolet"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/termemu"
+	"github.com/db9979/sshtermy/internal/update"
 )
 
 // Maus
@@ -93,7 +95,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 			if isClick {
 				a.focusSession(a.indexOf(p))
 				s = p
-			} else if isWheel && a.inTermArea(p, m.X, m.Y) && !p.files.open {
+			} else if isWheel && a.inTermArea(p, m.X, m.Y) && !p.files.open && !p.detached() {
 				return a.termMouse(p, msg, 0)
 			}
 		}
@@ -101,7 +103,9 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil {
 		if s.search.open && s.search.list && !s.selecting && a.inTermArea(s, m.X, m.Y) && !isWheel {
 			// Fehlerliste: Zeilen sind Zonen
-		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open) {
+		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open && s.state == stConnected && !s.detached()) {
+			// ohne laufende Sitzung (Verbinden, Reconnect, beendet) zeigt die
+			// Fläche anklickbare Hinweise, die Klicks gehen an die Zonen
 			return a.termMouse(s, msg, clicks)
 		}
 	}
@@ -142,6 +146,11 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	// Ziehen im Manager: Verbindungen und Ordner umsortieren
 	if a.scr == scrManager && a.modal == nil && a.pal == nil && a.pick == nil && a.mgr.drag != nil && !isClick {
 		return a.mgrDragMouse(msg)
+	}
+	if isClick && (m.Button == tea.MouseRight || m.Button == tea.MouseMiddle) {
+		if act := a.z.atMenu(m.X, m.Y); act != nil {
+			return act.menu(m)
+		}
 	}
 	if !isClick || m.Button != tea.MouseLeft {
 		return nil
@@ -214,7 +223,7 @@ func keyFromLabel(label string) (tea.KeyPressMsg, bool) {
 	}
 	named := map[string]rune{
 		"⏎": tea.KeyEnter, "Enter": tea.KeyEnter, "Esc": tea.KeyEscape, "Tab": tea.KeyTab,
-		"Space": tea.KeySpace, "Leertaste": tea.KeySpace, "Entf": tea.KeyDelete, "⌫": tea.KeyBackspace,
+		"Space": tea.KeySpace, "Leertaste": tea.KeySpace, "Entf": tea.KeyDelete, "Bksp": tea.KeyBackspace,
 		"↑": tea.KeyUp, "↓": tea.KeyDown, "←": tea.KeyLeft, "→": tea.KeyRight,
 		"Bild↑": tea.KeyPgUp, "Bild↓": tea.KeyPgDown, "Pos1": tea.KeyHome, "Ende": tea.KeyEnd,
 		"Del": tea.KeyDelete, "PgUp": tea.KeyPgUp, "PgDn": tea.KeyPgDown, "Home": tea.KeyHome, "End": tea.KeyEnd,
@@ -296,6 +305,40 @@ func (a *App) keyChip(key, desc string) string {
 	return a.s.Key.Render(b.String()) + a.s.KeyDesc.Render(desc)
 }
 
+// hints: Hinweiszeile wie „⏎ neu verbinden · x Tab schließen“, in der jede
+// Taste samt Beschreibung anklickbar ist. Leere Taste = nur Text.
+func (a *App) hints(style lipgloss.Style, items ...[2]string) string {
+	return a.hintsIn(nil, style, items...)
+}
+
+// hintsIn: wie hints, aber für ein Seitenpanel. Ein Klick holt erst den
+// Fokus ins Panel, damit die Taste dort ankommt und nicht in der Shell.
+func (a *App) hintsIn(s *session, style lipgloss.Style, items ...[2]string) string {
+	var b strings.Builder
+	for i, it := range items {
+		if i > 0 {
+			b.WriteString(style.Render(" · "))
+		}
+		key, desc := i18n.T(it[0]), it[1]
+		text := desc
+		if key != "" {
+			text = key + " " + desc
+		}
+		r := style.Render(text)
+		if _, ok := keyFromLabel(key); !ok || key == "" {
+			b.WriteString(r)
+			continue
+		}
+		b.WriteString(a.z.click(r, func(tea.Mouse, bool) tea.Cmd {
+			if s != nil {
+				s.panelFocus = true
+			}
+			return a.pressKey(key)
+		}))
+	}
+	return b.String()
+}
+
 // button: anklickbarer Knopf für Dialoge.
 func (a *App) button(key, label string) string {
 	return a.keyZone(key, a.s.Key.Render(key)+a.s.KeyDesc.Render(label))
@@ -321,7 +364,7 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 	cols, rows := a.termSize(s)
 	r := a.termRect(s)
 	tx, ty := m.X-r.x, m.Y-r.y
-	if s.term == nil || s.state != stConnected {
+	if s.term == nil || s.state != stConnected || s.detached() {
 		return nil
 	}
 	_, isClick := msg.(tea.MouseClickMsg)
@@ -477,7 +520,7 @@ func (a *App) pasteClipboard(s *session) tea.Cmd {
 
 func (a *App) onPaste(m pasteMsg) tea.Cmd {
 	s := a.byID(m.sid)
-	if s == nil || s.term == nil || s.state != stConnected {
+	if s == nil || s.term == nil || s.state != stConnected || s.detached() {
 		return nil
 	}
 	if m.err != nil || m.text == "" {
@@ -500,26 +543,31 @@ func (a *App) modalKeys() [][2]string {
 	case mInput:
 		keys = [][2]string{{"⏎", i18n.T("übernehmen")}, {"Esc", i18n.T("abbrechen")}}
 	case mAbout:
-		if a.rel != nil {
+		if a.rel != nil && update.Managed() == "" {
 			keys = append(keys, [2]string{"u", i18n.T("aktualisieren")})
+		} else if a.rel != nil {
+			// Paketquelle: Befehl steht im Dialog, kein „u“.
 		} else if a.restartPending != "" {
 			keys = append(keys, [2]string{"r", i18n.T("neu starten")})
 		} else {
 			keys = append(keys, [2]string{"c", i18n.T("nach Updates suchen")})
 		}
-		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("☕ Kaffee spendieren")}, [2]string{"l", langTarget()}, [2]string{"Esc", i18n.T("schließen")})
+		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("♥ Kaffee spendieren")}, [2]string{"l", langTarget()}, [2]string{"Esc", i18n.T("schließen")})
 	case mChangelog:
-		keys = [][2]string{{"b", i18n.T("☕ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
+		keys = [][2]string{{"b", i18n.T("♥ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
 	case mHelp, mInfo:
 		keys = [][2]string{{"Esc", i18n.T("schließen")}}
 	case mCrash:
 		keys = [][2]string{{"g", i18n.T("als Issue melden")}, {"o", i18n.T("Bericht öffnen")}, {"Esc", i18n.T("schließen")}}
 	case mLLM:
-		keys = [][2]string{{"p", i18n.T("jetzt prüfen")}, {"e", i18n.T("Einstellungen")}, {"Esc", i18n.T("schließen")}}
+		keys = [][2]string{{"p", i18n.T("jetzt prüfen")}, {"e", i18n.T("Einstellungen")}, {"r", i18n.T("Ersatz-Anbieter")}, {"Esc", i18n.T("schließen")}}
 	case mTour:
 		keys = tourButtons(a.modal)
 	case mQuick:
 		keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"e", i18n.T("bearbeiten")}, {"Esc", i18n.T("schließen")}}
+		if a.modal.scroll >= maxQuick {
+			keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"a", i18n.T("als Schnellbefehl")}, {"x", i18n.T("nicht vorschlagen")}, {"Esc", i18n.T("schließen")}}
+		}
 	case mDanger:
 		keys = [][2]string{{yesKey(), i18n.T("trotzdem ausführen")}, {"Esc", i18n.T("abbrechen")}}
 	case mPaste:
@@ -530,13 +578,6 @@ func (a *App) modalKeys() [][2]string {
 		keys = append(keys, [2]string{"Esc", i18n.T("abbrechen")})
 	}
 	return keys
-}
-
-func mouseLabel(on bool) string {
-	if on {
-		return i18n.T("Maus aus (Terminalfenster markiert selbst)")
-	}
-	return i18n.T("Maus an (klicken, markieren, scrollen)")
 }
 
 // mouseHelp: Abschnitt für die Hilfe (F1).

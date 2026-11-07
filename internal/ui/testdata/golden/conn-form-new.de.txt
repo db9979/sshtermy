@@ -1,10 +1,9 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                     ● KI
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
 
 
 
 
-
-  ╭──────────────────────────────────────────────────────────────────────────────────────────────╮
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Neue Verbindung                                                                              │
   │                                                                                              │
   │ ▌ Alias                                                                                      │
@@ -19,11 +18,12 @@
   │   Farbe               ‹  automatisch  ›  1/9                                                 │
   │   Jump-Host           — direkt (ohne Jump-Host) ▾                                            │
   │   Gerätetyp            automatisch  Server  Netzwerkgerät                                    │
+  │   Feste Sitzung        aus  automatisch  tmux  screen                                        │
   │   System                                                                                     │
   │   Befehlssatz         ‹  automatisch  ›  1/15                                                │
   │   KI-Notizen                                                                                 │
   │                                                                                              │
-  ╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 

@@ -1,12 +1,12 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                               ▌● web-01
- PRODUKTIV  deploy@10.0.0.11:22                                        ⇄ 0 Tunnel   ● ✦ qwen3-coder
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                          ▌● web-01 ×  +
+ PRODUKTIV  deploy@10.0.0.11:22                                        ↔ 0 Tunnel   ● ◆ qwen3-coder
 
 
 
 
 
 
-     ╭─ ⚠ Unbekannter Host ─────────────────────────────────────────────────────────────── ✕ ─╮
+     ┌─ ▲ Unbekannter Host ─────────────────────────────────────────────────────────────── × ─┐
      │                                                                                        │
      │  Der Server web-01 (10.0.0.11:22) ist noch nicht bekannt.                              │
      │                                                                                        │
@@ -18,7 +18,7 @@
      │                                                                                        │
      │   j vertrauen    n abbrechen                                                           │
      │                                                                                        │
-     ╰────────────────────────────────────────────────────────────────────────────────────────╯
+     └────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 
@@ -27,4 +27,4 @@
 
 
 
- Strg+Space Palette  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  Strg+F Suche  ⇧F9 erklären
+ Strg+Space Palette  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  ⇧F9 erklären

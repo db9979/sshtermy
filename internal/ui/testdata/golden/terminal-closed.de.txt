@@ -1,5 +1,5 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                ▌○ db-01
- PRODUKTIV  postgres@10.0.1.5:2222                                     ⇄ 0 Tunnel   ● ✦ qwen3-coder
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                           ▌○ db-01 ×  +
+ PRODUKTIV  postgres@10.0.1.5:2222                                     ↔ 0 Tunnel   ● ◆ qwen3-coder
 
 
 
@@ -11,7 +11,7 @@
 
 
 
-                       ✗ dial tcp 10.0.1.5:2222: connect: connection refused
+                       × dial tcp 10.0.1.5:2222: connect: connection refused
 
                           ⏎ neu verbinden · x Tab schließen · F10 Manager
 
@@ -27,4 +27,4 @@
 
 
 
- Strg+Space Palette  ⏎ neu verbinden  x Tab schließen  F1 Hilfe  F10 Manager  ⇧F9 erklären
+ Strg+Space Palette  F1 Hilfe  F10 Manager  ⇧F9 erklären  ⏎ neu verbinden  x Tab schließen

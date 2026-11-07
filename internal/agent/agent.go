@@ -56,6 +56,11 @@ const (
 	maxCmd    = 300
 	maxReason = 160
 	maxPlan   = 8
+	// Rückfragen erklären oft die Lage („Priorität 1 ist schon vergeben …“)
+	// und sind deshalb länger als ein Grund; sie werden nur angezeigt, nie
+	// ausgeführt, also kürzen statt verwerfen.
+	maxQuestion = 600
+	maxOptions  = 4
 )
 
 // Agent kapselt den LLM-Client.
@@ -187,7 +192,9 @@ const sysGoal = "Du begleitest einen Admin auf einem Server oder Netzwerkgerät 
 	"mit befehl in einer Zeile (höchstens 300 Zeichen, nicht-interaktiv, z. B. apt-get -y), grund in einer Zeile " +
 	"(höchstens 160 Zeichen, was der Befehl tut und warum) und plan als 1 bis 8 kurze Stichpunkte der restlichen Schritte. " +
 	`Ist das Ziel erreicht: {"fertig": true, "grund": "…"}. Brauchst du eine Entscheidung des Menschen ` +
-	`(z. B. Domainname): {"frage": "…"}.` + guard
+	`(z. B. Domainname, oder ob etwas Bestehendes gelöscht werden darf): {"frage": "…", "optionen": ["…", "…"]} ` +
+	"mit frage in höchstens 300 Zeichen und optionen als 2 bis 4 kurze mögliche Antworten (z. B. Ja/Nein); " +
+	"optionen weglassen, wenn nur eine freie Antwort passt." + guard
 
 // Step ist die Antwort des Modells im Ziel-Modus.
 type Step struct {
@@ -195,6 +202,7 @@ type Step struct {
 	Plan     []string
 	Done     bool
 	Question string
+	Options  []string // Antwortvorschläge zur Rückfrage (höchstens maxOptions)
 }
 
 // Done-Schritt aus der bisherigen Historie (für den Prompt).
@@ -312,6 +320,12 @@ func ParseStep(out, osText string) (Step, error) { return parseStep(out, safety.
 func parseStep(out, kind string) (Step, error) {
 	var v map[string]json.RawMessage
 	if !strictJSON(out, &v) {
+		// Abgeschnittene Rückfrage (Token-Limit): eine Frage wird nur
+		// angezeigt, nie ausgeführt ⇒ das Lesbare retten. Ein abgeschnittener
+		// Befehl dagegen wird nie ergänzt.
+		if q, ok := salvageQuestion(out); ok {
+			return Step{Question: q}, nil
+		}
 		return Step{}, ErrUnreadable
 	}
 	str := func(k string) string {
@@ -328,8 +342,8 @@ func parseStep(out, kind string) (Step, error) {
 	if done {
 		return Step{Done: true, Suggestion: Suggestion{Reason: reason}}, nil
 	}
-	if q, ok := oneLine(str("frage"), maxReason); ok && q != "" {
-		return Step{Question: q}, nil
+	if q := flatText(str("frage"), maxQuestion); q != "" {
+		return Step{Question: q, Options: parseOptions(v["optionen"])}, nil
 	}
 	cmd, ok := oneLine(str("befehl"), maxCmd)
 	if !ok || cmd == "" {
@@ -347,6 +361,73 @@ func parseStep(out, kind string) (Step, error) {
 		}
 	}
 	return Step{Suggestion: annotate(cmd, reason, kind), Plan: plan}, nil
+}
+
+// flatText macht aus einem Anzeigetext eine Zeile (Umbrüche ⇒ Leerzeichen,
+// Steuerzeichen raus) und kürzt ihn auf n Zeichen.
+func flatText(s string, n int) string {
+	return short(strings.Join(strings.Fields(Clean(s)), " "), n)
+}
+
+func parseOptions(raw json.RawMessage) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var p []string
+	if json.Unmarshal(raw, &p) != nil {
+		return nil
+	}
+	var res []string
+	for _, x := range p {
+		if o := flatText(x, 60); o != "" && len(res) < maxOptions {
+			res = append(res, o)
+		}
+	}
+	return res
+}
+
+var questionStart = regexp.MustCompile(`"frage"\s*:\s*"`)
+
+// salvageQuestion liest den Text einer Rückfrage aus einer abgeschnittenen
+// Antwort wie {"frage": "Soll ich 172.31.5.10 entfernen und … (Ende).
+func salvageQuestion(out string) (string, bool) {
+	t := stripThink(out)
+	loc := questionStart.FindStringIndex(t)
+	if loc == nil {
+		return "", false
+	}
+	rest := t[loc[1]:]
+	var b strings.Builder
+	esc, closed := false, false
+	for _, r := range rest {
+		if esc {
+			switch r {
+			case 'n', 'r', 't':
+				b.WriteByte(' ')
+			default:
+				b.WriteRune(r)
+			}
+			esc = false
+			continue
+		}
+		if r == '\\' {
+			esc = true
+			continue
+		}
+		if r == '"' {
+			closed = true
+			break
+		}
+		b.WriteRune(r)
+	}
+	q := flatText(b.String(), maxQuestion)
+	if len([]rune(q)) < 10 {
+		return "", false
+	}
+	if !closed && !strings.HasSuffix(q, "…") {
+		q += " …"
+	}
+	return q, true
 }
 
 // ---------------------------------------------------------------- Befehl anpassen

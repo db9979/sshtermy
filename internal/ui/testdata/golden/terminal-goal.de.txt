@@ -1,6 +1,6 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                   ▌● web-01
- PRODUKTIV  deploy@10.0.0.11:22                                                            ⇄ 0 Tunnel   ● ✦ qwen3-coder
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                     ╭──────────────────────────────────────────────╮
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ▌● web-01 ×  +
+ PRODUKTIV  deploy@10.0.0.11:22                                                            ↔ 0 Tunnel   ● ◆ qwen3-coder
+Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                     ┌──────────────────────────────────────────────┐
                                                                         │ ◎ Ziel-Modus  KI-Agent                       │
 deploy@web-01:~$ systemctl status nginx --no-pager | head -3            │                                              │
 ● nginx.service - A high performance web server and a reverse proxy serv│ Was willst du auf web-01 erreichen?          │
@@ -27,6 +27,6 @@ deploy@web-01:~$                                                        │     
                                                                         │                                              │
                                                                         │                                              │
                                                                         │                                              │
-                                                                        ╰──────────────────────────────────────────────╯
+                                                                        └──────────────────────────────────────────────┘
 
  ⏎ Ziel starten  Esc Terminal  F2 schließen

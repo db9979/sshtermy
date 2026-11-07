@@ -1,11 +1,11 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                         ● KI
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
 
 
 
 
 
-     ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-     │ ⇉ Broadcast  ein Befehl oder Runbook parallel auf mehreren Hosts                                           │
+     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │ » Broadcast  ein Befehl oder Runbook parallel auf mehreren Hosts                                           │
      │                                                                                                            │
      │   Hosts               1 von 6 gewählt   Leertaste wählen · g Ordner · a alle                               │
      │     ALLGEMEIN                                                                                              │
@@ -23,7 +23,7 @@
      │ ▌ Befehl              Befehl, z. B. uptime · ⇧⏎ = weiterer Schritt                                         │
      │                       Tipp: {{name}} wird vor dem Start abgefragt, {{host}} pro Host eingesetzt            │
      │                                                                                                            │
-     ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+     └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 

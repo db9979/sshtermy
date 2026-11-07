@@ -1,0 +1,2 @@
+#!/bin/sh
+echo 'LISTEN 0  511  0.0.0.0:80  0.0.0.0:*  users:(("apache2",pid=912,fd=4))'

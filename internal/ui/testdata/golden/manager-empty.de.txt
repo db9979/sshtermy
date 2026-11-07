@@ -1,17 +1,17 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                     ● KI
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
  Verbindungen  0  / suchen       │
                                  │ So liest du die Liste
                                  │   ◉  verbunden
-  ⌁  Noch keine Verbindungen     │   ●  erreichbar
+  ≈  Noch keine Verbindungen     │   ●  erreichbar
   Hier stehen gleich deine       │   ●  nicht erreichbar
   Server, Switches und           │   ○  noch nicht geprüft oder hinter Jump-Host
   Firewalls, mit Farbe und       │
-  Online-Punkt.                  │   ❯  Linux
-                                 │   ⊞  Windows
-   n  neue Verbindung anlegen    │   ⌘  macOS
-   i  importieren (PuTTY, Moba…  │   ▦  Switch
-   f  im Netz nach SSH-Geräten…  │   ⊕  Router
-   o  Ordner anlegen             │   ▤  Firewall
+  Online-Punkt.                  │   $  Linux
+                                 │   >  Windows
+   n  neue Verbindung anlegen    │   %  macOS
+   i  importieren (PuTTY, Moba…  │   #  Switch
+   f  im Netz nach SSH-Geräten…  │   @  Router
+   o  Ordner anlegen             │   !  Firewall
                                  │
                                  │   ▌  Produktiv (Ordner, Tag oder Alias mit „prod“)
                                  │   ▌  Test (test, dev, staging)
@@ -27,4 +27,4 @@
                                  │
                                  │
                                  │
- Strg+Space Palette  n neue Verbindung  i Import  f Scan  o Ordner  s KI  F1 Hilfe  ⇧F9 erklären
+ Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  n neue Verbindung  i Import  f Scan  o Ordner  s KI

@@ -56,7 +56,7 @@ func (a *App) changelogModal(entries []changelog.Entry) *modal {
 		lines = []string{s.Muted.Render(i18n.T("Für diesen Build gibt es keinen Changelog."))}
 	}
 	// Nach einem Update (und im Changelog) dezent auf die Kaffee-Seite hinweisen.
-	lines = append(lines, "", s.Muted.Render(i18n.T("☕ Gefällt dir sshTermy? b öffnet "))+s.Accent.Render(version.Coffee))
+	lines = append(lines, "", s.Muted.Render(i18n.T("♥ Gefällt dir sshTermy? b öffnet "))+s.Accent.Render(version.Coffee))
 	return &modal{kind: mChangelog, title: title, lines: lines}
 }
 
@@ -78,7 +78,7 @@ func (m *modal) changelogView(s Styles, w, h int) string {
 	} else {
 		m.scroll = 0
 	}
-	return s.dialog(dialog{icon: "★", title: m.title, body: strings.Join(lines, "\n"), info: info, keys: keys, width: dialogInner(w)}, w)
+	return s.dialog(dialog{icon: "♦", title: m.title, body: strings.Join(lines, "\n"), info: info, keys: keys, width: dialogInner(w)}, w)
 }
 
 func (m *modal) changelogKey(key string, h int) (closeIt bool) {
@@ -148,8 +148,9 @@ func (a *App) askRestart() tea.Cmd {
 	if n := a.openSessions(); n > 0 {
 		a.modal = &modal{kind: mConfirm, title: i18n.T("Update installiert – jetzt neu starten?"),
 			body: "v" + v + i18n.T(" ist installiert und wird mit einem Neustart aktiv.\n\n") +
-				"⚠ " + plural(n, i18n.T("offene SSH-Sitzung wird"), i18n.T("offene SSH-Sitzungen werden")) + i18n.T(" dabei getrennt\n") +
-				i18n.T("  (laufende Befehle, Tunnel und Dateiübertragungen brechen ab).\n\n") +
+				"▲ " + plural(n, i18n.T("offene SSH-Sitzung wird"), i18n.T("offene SSH-Sitzungen werden")) + i18n.T(" dabei getrennt\n") +
+				i18n.T("  (laufende Befehle, Tunnel und Dateiübertragungen brechen ab).\n") +
+				i18n.T("  Die Tabs öffnen sich danach wieder, tmux/screen wird wieder angehängt.\n\n") +
 				i18n.T("j = jetzt neu starten · n = später (F12 oder Palette)"),
 			onYes: func() tea.Cmd { return a.doRestart() }}
 		return nil
@@ -159,6 +160,7 @@ func (a *App) askRestart() tea.Cmd {
 
 func (a *App) doRestart() tea.Cmd {
 	a.restart = true
+	a.saveRestore() // Tabs nach dem Neustart wieder öffnen (restore.go)
 	return a.quit()
 }
 

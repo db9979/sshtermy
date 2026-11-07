@@ -13,6 +13,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/devfake"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/hostinfo"
 )
 
 // openPTY: Pseudo-Terminal als virtuelle serielle Leitung.
@@ -69,7 +70,17 @@ func TestSerialSession(t *testing.T) {
 	if s.state != stConnected || !s.netDev() {
 		t.Fatal("nicht verbunden")
 	}
-	waitFor(t, func() bool { return strings.HasSuffix(strings.TrimSpace(s.term.CursorLine()), "#") })
+	// Der Prompt muss stehen bleiben: nach „Press any key“ kann ein zweiter
+	// Weck-Tastendruck noch eine Leerzeile und einen neuen Prompt auslösen,
+	// dazwischen ist die Cursorzeile kurz leer.
+	atPrompt := func() bool { return hostinfo.IsPrompt(s.term.CursorLine()) }
+	waitFor(t, func() bool {
+		if !atPrompt() {
+			return false
+		}
+		time.Sleep(150 * time.Millisecond)
+		return atPrompt()
+	})
 	cmd := a.hostNetCmd(s, true, false)
 	if cmd == nil {
 		t.Fatalf("keine Abfrage: %s", s.host.err)
@@ -78,7 +89,7 @@ func TestSerialSession(t *testing.T) {
 	if s.host.err != "" || s.host.sw == nil {
 		t.Fatalf("Übersicht über die Konsole: %q", s.host.err)
 	}
-	if v, _ := a.viewTerminal(); !strings.Contains(v, "⌁ pts/") {
+	if v, _ := a.viewTerminal(); !strings.Contains(v, "≈ pts/") {
 		t.Fatal("Konsolen-Plakette fehlt")
 	}
 	if cmd := a.sendBreak(s); cmd != nil {

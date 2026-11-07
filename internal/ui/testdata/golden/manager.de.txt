@@ -1,8 +1,8 @@
- ◆ sshTermy  vdev Idee: Dominik Bornhäußer                                                                         ● KI
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
  Verbindungen  6  / suchen  # Tags      │ ▾ Netzwerk
                                         │
  ▾ Netzwerk                          1  │ Pfad                Netzwerk
-   ○ ▦ switch-core      manager@192.1…  │ Inhalt              1 Verbindung
+   ○ # switch-core      manager@192.1…  │ Inhalt              1 Verbindung
  ▾ Produktion                        3  │
    ▾ Web                             2  │ Ordner
 ▌    ○ · web-01         deploy@10.0.0…  │  ⏎      auf-/zuklappen
@@ -29,4 +29,4 @@
                                         │
                                         │
                                         │
- Strg+Space Palette  ⏎ zuklappen  n neu hier  e umbenennen  d löschen  v verschieben  / suchen  F1 Hilfe  ⇧F9 erklären
+ Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e umbenennen  d löschen  v verschieben  / suchen

@@ -341,13 +341,13 @@ func (a *App) updateScan(msg tea.Msg) tea.Cmd {
 
 func (a *App) scanKeys() [][2]string {
 	if a.scan == nil || a.scan.phase == scSetup {
-		return [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("Scan starten")}, {"Esc", i18n.T("abbrechen")}, {"F1", i18n.T("Hilfe")}}
+		return [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("Scan starten")}, {"Esc", i18n.T("abbrechen")}, {a.keys.label(actHelp), i18n.T("Hilfe")}}
 	}
 	k := [][2]string{{"Space", i18n.T("wählen")}, {"a", i18n.T("alle")}, {"⏎", i18n.T("anlegen")}}
 	if a.scan.running {
 		k = append(k, [2]string{"x", i18n.T("stoppen")})
 	}
-	return append(k, [2]string{"r", i18n.T("neu scannen")}, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{"F1", i18n.T("Hilfe")})
+	return append(k, [2]string{"r", i18n.T("neu scannen")}, [2]string{"Esc", i18n.T("zum Manager")}, [2]string{a.keys.label(actHelp), i18n.T("Hilfe")})
 }
 
 func (a *App) viewScan() string {
@@ -364,12 +364,12 @@ func (a *App) viewScan() string {
 		if l := netscan.LocalSubnets(); len(l) > 1 {
 			o.WriteString(s.Muted.Render(i18n.T("Eigene Netze: ")+strings.Join(l, ", ")) + "\n")
 		}
-		o.WriteString("\n" + s.Muted.Render(i18n.T("Strg+S oder ⏎ im letzten Feld startet den Scan")))
+		o.WriteString("\n" + a.keyZone("Strg+S", s.Muted.Render(i18n.T("Strg+S oder ⏎ im letzten Feld startet den Scan"))))
 		return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, s.Panel.Width(w).Render(o.String()))
 	}
 
 	var o strings.Builder
-	o.WriteString(s.Accent.Render(i18n.T("⌕ Netzwerk-Scan ")) + s.Text.Render(trunc(sc.spec, 40)) + s.Muted.Render(fmt.Sprintf(i18n.T("  Port %d"), sc.f.num("port"))) + "\n")
+	o.WriteString(s.Accent.Render(i18n.T("/ Netzwerk-Scan ")) + s.Text.Render(trunc(sc.spec, 40)) + s.Muted.Render(fmt.Sprintf(i18n.T("  Port %d"), sc.f.num("port"))) + "\n")
 	// Fortschrittsbalken
 	barW := max(10, w-40)
 	frac := 0.0

@@ -1,7 +1,8 @@
 // Package sessionlog schreibt SSH-Sitzungen als Protokoll mit: Befehle, ihre
 // Ausgabe (Klartext aus dem Terminal), Zeitpunkt und ob sie fehlgeschlagen
-// sind. Die Protokolle liegen nur lokal (nie im Sync) und verschlüsselt, eine
-// Datei je Sitzung.
+// sind. Die Protokolle liegen verschlüsselt auf dem Rechner, eine Datei je
+// Sitzung. Mit dem Sync-Archiv (syncx/archive.go, zuschaltbar) kommen sie
+// zusätzlich verschlüsselt auf die anderen Rechner.
 //
 // # Sicherheit
 //
@@ -70,6 +71,7 @@ type Log struct {
 	Ended   time.Time `json:"ended,omitempty"`
 	Entries []Entry   `json:"entries"`
 	Summary string    `json:"summary,omitempty"` // KI-Zusammenfassung
+	Device  string    `json:"device,omitempty"`  // Rechner, von dem das Protokoll per Sync kam
 }
 
 // Failures zählt fehlgeschlagene Befehle.
@@ -259,6 +261,15 @@ func (b *Book) List() (logs []*Log, unreadable int, err error) {
 	return logs, unreadable, nil
 }
 
+// Has: gibt es das Protokoll auf diesem Rechner schon?
+func (b *Book) Has(id string) bool {
+	if !validID(id) {
+		return false
+	}
+	_, err := os.Stat(b.path(id))
+	return err == nil
+}
+
 // Delete entfernt ein Protokoll.
 func (b *Book) Delete(id string) error {
 	if !validID(id) {
@@ -334,7 +345,7 @@ func (l *Log) Markdown() string {
 	for i, e := range l.Entries {
 		mark := ""
 		if e.Failed {
-			mark = i18n.T(" ✗ fehlgeschlagen")
+			mark = i18n.T(" × fehlgeschlagen")
 			if e.Exit != nil {
 				mark += fmt.Sprintf(i18n.T(" (Exit %d)"), *e.Exit)
 			}
@@ -427,7 +438,7 @@ func (l *Log) Cast(idle time.Duration) []byte {
 			b.Out(strings.ReplaceAll(strings.ReplaceAll(out, "\r\n", "\n"), "\n", "\r\n") + "\r\n")
 		}
 		if e.Failed {
-			b.Out("\x1b[31m" + i18n.T("✗ fehlgeschlagen") + "\x1b[0m\r\n")
+			b.Out("\x1b[31m" + i18n.T("× fehlgeschlagen") + "\x1b[0m\r\n")
 		}
 		dur := time.Duration(e.Duration * float64(time.Second))
 		last = e.At.Add(dur)

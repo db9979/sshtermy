@@ -40,6 +40,7 @@ const (
 	actCheat     action = "cheat"
 	actQuickEdit action = "quick_edit"
 	actQuickMenu action = "quick_menu"
+	actSSHKey    action = "ssh_key"
 
 	// Ordner im Manager
 	actFolderNew action = "folder_new"
@@ -54,6 +55,10 @@ const (
 	actScan      action = "scan"
 	actSplit     action = "split"
 	actSearch    action = "search"
+	actDetach    action = "detach"
+	actNewTab    action = "new_tab"
+	actCloseTab  action = "close_tab"
+	actTabList   action = "tab_list"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -69,23 +74,20 @@ type actionDef struct {
 var actionDefs = []actionDef{
 	{actPalette, "Befehlspalette", "Überall", []string{"ctrl+space", "ctrl+@"}},
 	{actHelp, "Hilfe", "Überall", []string{"f1"}},
-	{actAbout, "Über & Update", "Überall", []string{"f12"}},
-	{actQuit, "Beenden", "Überall", []string{"ctrl+q"}},
 	{actManager, "Manager ↔ Terminal", "Überall", []string{"f10"}},
+	{actAbout, "Über & Update", "Überall", []string{"f12"}},
 	{actCheat, "Tastenzeile erklären an/aus", "Überall", []string{"shift+f9", "f21"}},
+	{actQuit, "Beenden", "Überall", []string{"ctrl+q"}},
 	{actGoal, "Ziel-Modus (Agent)", "Terminal", []string{"f2"}},
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
-	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
-	{actSplit, "Ansicht teilen (2 / 4)", "Terminal", []string{"ctrl+t"}},
 	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},
-	{actChip1, "Folgebefehl 1 einfügen", "Terminal", []string{"alt+1"}},
-	{actChip2, "Folgebefehl 2 einfügen", "Terminal", []string{"alt+2"}},
-	{actChip3, "Folgebefehl 3 einfügen", "Terminal", []string{"alt+3"}},
-	{actChip4, "Folgebefehl 4 einfügen", "Terminal", []string{"alt+4"}},
+	{actNewTab, "Neuer Tab", "Terminal", []string{"alt+n"}},
+	{actCloseTab, "Tab schließen", "Terminal", []string{"alt+w"}},
+	{actTabList, "Alle Tabs (Liste)", "Terminal", []string{"alt+t"}},
 	{actQuickMenu, "Schnellbefehle (Liste)", "Terminal", []string{"f9"}},
 	{actQuick[0], "Schnellbefehl 1", "Terminal", []string{"shift+f1", "f13"}},
 	{actQuick[1], "Schnellbefehl 2", "Terminal", []string{"shift+f2", "f14"}},
@@ -95,11 +97,19 @@ var actionDefs = []actionDef{
 	{actQuick[5], "Schnellbefehl 6", "Terminal", []string{"shift+f6", "f18"}},
 	{actQuick[6], "Schnellbefehl 7", "Terminal", []string{"shift+f7", "f19"}},
 	{actQuick[7], "Schnellbefehl 8", "Terminal", []string{"shift+f8", "f20"}},
+	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
+	{actSplit, "Ansicht teilen (2 / 4)", "Terminal", []string{"ctrl+t"}},
+	{actDetach, "Tab in eigenes Fenster / zurückholen", "Terminal", []string{"shift+f10", "f22"}},
+	{actChip1, "Folgebefehl 1 einfügen", "Terminal", []string{"alt+1"}},
+	{actChip2, "Folgebefehl 2 einfügen", "Terminal", []string{"alt+2"}},
+	{actChip3, "Folgebefehl 3 einfügen", "Terminal", []string{"alt+3"}},
+	{actChip4, "Folgebefehl 4 einfügen", "Terminal", []string{"alt+4"}},
 	{actNewline, "Neue Zeile in KI-Eingabe", "KI-Eingabe", []string{"shift+enter", "ctrl+j"}},
 	{actImport, "Verbindungen importieren", "Manager", []string{"i"}},
 	{actNextLook, "Aussehen wechseln", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},
 	{actQuickEdit, "Schnellbefehle bearbeiten", "Manager", []string{"q"}},
+	{actSSHKey, "SSH-Schlüssel erzeugen / übertragen", "Manager", []string{"c"}},
 	{actFolderNew, "Neuer Ordner", "Manager", []string{"o"}},
 	{actRename, "Ordner umbenennen", "Manager", []string{"r"}},
 	{actMoveTo, "In Ordner verschieben", "Manager", []string{"v"}},
@@ -211,7 +221,7 @@ func keyLabel(k string) string {
 		case p == "tab":
 			parts[i] = "Tab"
 		case p == "backspace":
-			parts[i] = "⌫"
+			parts[i] = "Bksp"
 		case p == "delete":
 			parts[i] = i18n.T("Entf")
 		case p == "@":

@@ -132,14 +132,14 @@ func (a *App) toastTick() tea.Cmd {
 // in den letzten Augenblicken blass.
 func (a *App) toastBox(t toastItem, w int, now time.Time) string {
 	st := a.s
-	icon, col := "ℹ", st.T.Accent
+	icon, col := "i", st.T.Accent
 	switch t.kind {
 	case toastOK:
 		icon, col = "✓", st.T.OK
 	case toastWarn:
-		icon, col = "⚠", st.T.Warn
+		icon, col = "▲", st.T.Warn
 	case toastErr:
-		icon, col = "✗", st.T.Danger
+		icon, col = "×", st.T.Danger
 	}
 	text := st.T.Text
 	if t.until.Sub(now) < toastFade {
@@ -161,7 +161,7 @@ func (a *App) toastBox(t toastItem, w int, now time.Time) string {
 			lines[i] = pad + lines[i]
 		}
 	}
-	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(col).
+	return lipgloss.NewStyle().Border(frameBorder).BorderForeground(col).
 		BorderBackground(st.T.Bg).Background(st.T.Surface).Padding(0, 1).
 		Render(strings.Join(lines, "\n"))
 }

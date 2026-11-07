@@ -38,6 +38,12 @@ type picker struct {
 	onPick  func(it pickItem) tea.Cmd
 	// extra: zusätzlicher Eintrag aus dem Suchtext (z. B. „Neuer Ordner …“)
 	extra func(q string) *pickItem
+	// Tab-Liste (tabs.go): eigene Tasten, eigene Hinweise, Rechtsklick und
+	// eine Liste, die sich nach jeder Aktion neu aufbaut.
+	onKey  func(key string, it *pickItem) (tea.Cmd, bool)
+	onMenu func(it pickItem, m tea.Mouse) tea.Cmd
+	reload func() []pickItem
+	keys   [][2]string
 }
 
 func newPicker(title, placeholder string, items []pickItem, current string, onPick func(pickItem) tea.Cmd) *picker {
@@ -62,7 +68,7 @@ func (p *picker) visible() []pickItem {
 	}
 	words := strings.Fields(q)
 	for _, it := range p.items {
-		hay := strings.ToLower(it.label + " " + it.detail + " " + it.hint + " " + it.search)
+		hay := strings.ToLower(ansi.Strip(it.label + " " + it.detail + " " + it.hint + " " + it.search))
 		ok := true
 		for _, w := range words {
 			if !strings.Contains(hay, w) {
@@ -98,6 +104,15 @@ func (a *App) pickerChoose(it pickItem) tea.Cmd {
 func (a *App) pickerKey(k tea.KeyPressMsg) tea.Cmd {
 	p := a.pick
 	vis := p.visible()
+	if p.onKey != nil {
+		var cur *pickItem
+		if p.sel >= 0 && p.sel < len(vis) {
+			cur = &vis[p.sel]
+		}
+		if cmd, ok := p.onKey(k.String(), cur); ok {
+			return cmd
+		}
+	}
 	switch k.String() {
 	case "esc":
 		a.pick = nil
@@ -164,7 +179,7 @@ func (a *App) viewPicker() string {
 		}
 		if it.disabled != "" {
 			left = mark + s.Muted.Render(name+"  "+it.detail)
-			hint = "⊘ " + trunc(it.disabled, 34)
+			hint = "ø " + trunc(it.disabled, 34)
 		}
 		room := w - 6 - lipgloss.Width(hint) - 1
 		left = ansi.Truncate(left, max(10, room), "…")
@@ -173,14 +188,21 @@ func (a *App) viewPicker() string {
 			line = s.Selected.Width(w - 4).Render(ansi.Strip(line))
 		}
 		i, it := i, it
-		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+		act := zoneAction{click: func(tea.Mouse, bool) tea.Cmd {
 			p.sel = i
 			return a.pickerChoose(it)
-		})
+		}}
+		if p.onMenu != nil {
+			act.menu = func(m tea.Mouse) tea.Cmd {
+				p.sel = i
+				return p.onMenu(it, m)
+			}
+		}
+		line = a.z.mark(line, act)
 		list.WriteString(line + "\n")
 	}
 	if len(vis) == 0 {
-		list.WriteString(s.Muted.Render(i18n.T("  nichts gefunden · Esc zurück, Rücktaste ändert die Suche")) + "\n")
+		list.WriteString(a.keyZone("Esc", s.Muted.Render(i18n.T("  nichts gefunden · Esc zurück, Rücktaste ändert die Suche"))) + "\n")
 	}
 	b.WriteString(a.z.mark(list.String(), zoneAction{wheel: func(up bool) tea.Cmd {
 		if up {
@@ -195,6 +217,9 @@ func (a *App) viewPicker() string {
 		more = strconv.Itoa(p.top+1) + "–" + strconv.Itoa(min(len(vis), p.top+rows)) + i18n.T(" von ") + strconv.Itoa(len(vis))
 	}
 	keys := [][2]string{{"⏎", i18n.T("übernehmen")}, {"Esc", i18n.T("abbrechen")}, {"", i18n.T("tippen filtert")}}
+	if p.keys != nil {
+		keys = p.keys
+	}
 	if p.help != "" {
 		keys = append(keys, [2]string{"", p.help})
 	}

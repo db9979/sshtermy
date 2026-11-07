@@ -12,6 +12,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/charmbracelet/x/vt v0.1.0
+	github.com/coder/websocket v1.8.15
 	github.com/pkg/sftp v1.13.12
 	go.bug.st/serial v1.8.0
 	golang.org/x/crypto v0.58.0
@@ -33,3 +34,5 @@ require (
 	github.com/xo/terminfo v1.0.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 )
+
+replace github.com/charmbracelet/x/vt => ./third_party/vt

@@ -340,7 +340,8 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 		if ps == nil {
 			body = lipgloss.Place(rc.w, rc.h-1, lipgloss.Center, lipgloss.Center,
 				st.Muted.Render(i18n.T("Leerer Bereich"))+"\n\n"+st.Muted.Render(i18n.T("Neue Verbindung landet hier:"))+"\n"+
-					st.Muted.Render(i18n.T("Strg+Space oder F10 → ⏎")))
+					a.keyZone("Strg+Space", st.Muted.Render(i18n.T("Strg+Space")))+st.Muted.Render(" "+i18n.T("oder")+" ")+
+					a.keyZone(a.keys.label(actManager), st.Muted.Render(a.keys.label(actManager)))+st.Muted.Render(" → ⏎"))
 		} else {
 			b, cc := a.paneBody(ps, ps == focus)
 			body = b
@@ -386,7 +387,7 @@ func (a *App) paneTitle(s *session, w int, focused bool) string {
 	left := " " + dot + " " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string
 	if s.search.open {
-		marks = append(marks, i18n.T("⌕ Suche"))
+		marks = append(marks, i18n.T("/ Suche"))
 	}
 	if s.goal.active {
 		marks = append(marks, i18n.T("◎ Ziel"))

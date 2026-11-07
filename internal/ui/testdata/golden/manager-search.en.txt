@@ -1,4 +1,4 @@
- ◆ sshTermy  vdev Idea: Dominik Bornhäußer                                                                         ● AI
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                        ● AI
  / web                                  │ ▾ Produktion
   2 matches · Esc shows all             │
  ▾ Produktion                        3  │ Path                Produktion
