@@ -28,6 +28,9 @@ type FileAction struct {
 type AutoInfo struct {
 	Dir   string       // Arbeitsordner auf dem Host (z. B. ~/.sshtermy-agent/a7f3); leer = keine Dateien
 	Files []FileAction // Vorlage-Dateien aus einem Runbook
+	// Approved: recipe ist ein vom Menschen freigegebener Plan (Plan-Modus),
+	// keine bloße Vorlage.
+	Approved bool
 }
 
 const (
@@ -65,14 +68,24 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 	} else {
 		b.WriteString("Dateien anlegen ist hier nicht möglich (kein \"datei\"), nur Befehle.\n")
 	}
-	if len(recipe) > 0 {
+	if len(recipe) > 0 && info.Approved {
+		b.WriteString("Vom Menschen freigegebener Plan: führe genau diese Schritte in dieser Reihenfolge aus. " +
+			"Weiche nur ab, wenn ein Schritt scheitert, und sag dann im grund, warum. Danach prüfen und fertig melden:\n")
+		for i, r := range recipe {
+			fmt.Fprintf(&b, "  %d) %s\n", i+1, strings.Join(strings.Fields(Redact(r)), " "))
+		}
+	} else if len(recipe) > 0 {
 		b.WriteString("Vorlage aus einem gespeicherten Runbook (so hat es früher geklappt; an die aktuelle Lage anpassen):\n")
 		for i, r := range recipe {
 			fmt.Fprintf(&b, "  %d) %s\n", i+1, strings.Join(strings.Fields(Redact(r)), " "))
 		}
 	}
 	for _, f := range info.Files {
-		fmt.Fprintf(&b, "Vorlage-Datei %s (bei Bedarf neu anlegen):\n%s\n", f.Name, block(Redact(f.Content)))
+		label := "Vorlage-Datei %s (bei Bedarf neu anlegen):\n%s\n"
+		if info.Approved {
+			label = "Datei %s aus dem freigegebenen Plan (genau so mit \"datei\" anlegen):\n%s\n"
+		}
+		fmt.Fprintf(&b, label, f.Name, block(Redact(f.Content)))
 	}
 	if len(hist) > 0 {
 		b.WriteString("Bisherige Schritte:\n")

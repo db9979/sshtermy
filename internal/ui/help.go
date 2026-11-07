@@ -127,6 +127,8 @@ var helpSections = []helpSection{
 		{"?", "Agent anweisen"},
 		{"v", "Skript des Agenten ansehen"},
 		{"r", "Skripte des Agenten löschen (am Ende)"},
+		{"Leertaste", "Plan: Schritt streichen"},
+		{"?", "Plan: neu planen lassen"},
 	}},
 	{hcAsk, "◆", "KI fragen", "F3", true, [][2]string{
 		{"⏎", "Frage senden"},
