@@ -48,6 +48,13 @@ func (a *App) dangerAll() bool { return a.st.Settings().DangerAll }
 // dangerGuardOn: wird auf dieser Verbindung beim Tippen geprüft?
 func (a *App) dangerGuardOn(c domain.Connection) bool { return isProduction(c) || a.dangerAll() }
 
+func dangerLabel(all bool) string {
+	if all {
+		return i18n.T("alle Hosts")
+	}
+	return i18n.T("nur Produktiv")
+}
+
 func (a *App) toggleDangerAll() tea.Cmd {
 	on := !a.dangerAll()
 	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.DangerAll = on }); err != nil {

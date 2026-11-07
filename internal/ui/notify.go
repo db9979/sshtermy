@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/atotto/clipboard"
 	tea "charm.land/bubbletea/v2"
+	"github.com/atotto/clipboard"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -51,6 +51,34 @@ func (a *App) toggleDesktopNotify() tea.Cmd {
 	on := !a.desktopNotifyOn()
 	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.NoDesktopNotify = !on })
 	if on {
+		a.sendDesktop(i18n.T("Desktop-Benachrichtigungen sind an"), i18n.T("So sieht eine Meldung aus, wenn ein langer Befehl fertig ist."))
+	}
+	return nil
+}
+
+// Meldung bei langen Befehlen in einem Durchschalt-Eintrag:
+// 0 = aus, 1 = nur in sshTermy, 2 = zusätzlich Desktop-Benachrichtigung.
+func (a *App) notifyLevel() int {
+	switch {
+	case !a.notifyOn():
+		return 0
+	case !a.desktopNotifyOn():
+		return 1
+	}
+	return 2
+}
+
+func notifyLabel(level int) string {
+	return [...]string{i18n.T("aus"), i18n.T("in sshTermy"), i18n.T("+ Desktop")}[level]
+}
+
+func (a *App) cycleNotify(dir int) tea.Cmd {
+	next := cycleIndex(a.notifyLevel(), 3, dir)
+	_ = a.st.UpdateSettings(func(s *domain.Settings) {
+		s.NoNotify = next == 0
+		s.NoDesktopNotify = next < 2
+	})
+	if next == 2 {
 		a.sendDesktop(i18n.T("Desktop-Benachrichtigungen sind an"), i18n.T("So sieht eine Meldung aus, wenn ein langer Befehl fertig ist."))
 	}
 	return nil

@@ -141,7 +141,7 @@ func TestCycleLockAfter(t *testing.T) {
 	a := dangerApp(t)
 	var got []int
 	for i := 0; i < 6; i++ {
-		a.cycleLockAfter()
+		a.cycleLockAfter(1)
 		got = append(got, a.st.Settings().LockAfterMin)
 	}
 	if fmt.Sprint(got) != "[5 15 30 60 0 5]" {

@@ -42,18 +42,36 @@ func lockLabel(min int) string {
 	return fmt.Sprintf(i18n.T("nach %d min"), min)
 }
 
-// cycleLockAfter: nächste Stufe der automatischen Sperre.
-func (a *App) cycleLockAfter() tea.Cmd {
+// cycleLockAfter: nächste (dir=1) oder vorige (dir=-1) Stufe der
+// automatischen Sperre, rundherum. Ein Wert zwischen den Stufen springt auf
+// die nächstgrößere bzw. nächstkleinere.
+func (a *App) cycleLockAfter(dir int) tea.Cmd {
 	cur := a.st.Settings().LockAfterMin
-	next := lockChoices[0]
+	n := len(lockChoices)
+	next := -1
 	for i, c := range lockChoices {
 		if c == cur {
-			next = lockChoices[(i+1)%len(lockChoices)]
+			next = lockChoices[cycleIndex(i, n, dir)]
 			break
 		}
-		if c > cur {
-			next = c
-			break
+	}
+	if next < 0 {
+		next = lockChoices[0]
+		if dir > 0 {
+			for _, c := range lockChoices {
+				if c > cur {
+					next = c
+					break
+				}
+			}
+		} else {
+			next = lockChoices[n-1]
+			for i := n - 1; i >= 0; i-- {
+				if lockChoices[i] < cur {
+					next = lockChoices[i]
+					break
+				}
+			}
 		}
 	}
 	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.LockAfterMin = next })
