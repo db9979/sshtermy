@@ -132,6 +132,9 @@ type App struct {
 	fx     fadeFx      // Ein-/Ausblenden der Popups (dialog.go)
 
 	crashTest string // sshtermy -crash-test (crash.go)
+
+	blurred bool       // Terminalfenster nicht im Vordergrund (Fokus-Meldungen)
+	lock    *lockState // Bildschirmsperre bei offenen Sitzungen (lock.go)
 }
 
 func New(st *store.Store) (*App, error) {
@@ -211,6 +214,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.toastTick()
 	}
 	m, cmd := a.update(msg)
+	a.clearNotices()
 	if c := a.trackFade(); c != nil {
 		cmd = tea.Batch(cmd, c)
 	}
@@ -245,11 +249,20 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case outputMsg:
+		var clip tea.Cmd
 		if s := a.byID(m.sid); s != nil {
 			s.pending.Store(false)
 			s.lastOutput = time.Now()
+			clip = a.takeClipboard(s)
 		}
-		return a, a.listen()
+		return a, tea.Batch(a.listen(), clip)
+	case tea.FocusMsg:
+		a.blurred = false
+		a.clearNotices()
+		return a, nil
+	case tea.BlurMsg:
+		a.blurred = true
+		return a, nil
 
 	case hostKeyAskMsg:
 		a.modal = hostKeyModal(m)
@@ -340,6 +353,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.listen()
 
 	case tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg, tea.MouseWheelMsg:
+		if a.lock != nil {
+			return a, nil
+		}
 		return a, a.mouse(msg.(tea.MouseMsg))
 	case pasteMsg:
 		return a, a.onPaste(m)
@@ -396,6 +412,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, cmd
 	}
 
+	if cmd, ok := a.lockMsg(msg); ok {
+		return a, cmd
+	}
 	if k, ok := msg.(tea.KeyPressMsg); ok {
 		a.lastKey = time.Now()
 		if a.scr == scrColors && a.colEd.editing && a.modal == nil {
@@ -491,14 +510,18 @@ func (a *App) quit() tea.Cmd {
 func (a *App) onTick() tea.Cmd {
 	var cmds []tea.Cmd
 	a.applyLook() // Theme/Tasten können per Sync von einem anderen Rechner kommen
-	// Auto-Sperre nur ohne offene Sitzungen (sonst würden Shells hängen bleiben).
-	if set := a.st.Settings(); set.LockAfterMin > 0 && a.scr != scrUnlock && len(a.sessions) == 0 &&
+	// Auto-Sperre: ohne offene Sitzungen wird der Store gesperrt; mit
+	// Sitzungen nur der Bildschirm (die Shells laufen weiter, lock.go).
+	if set := a.st.Settings(); set.LockAfterMin > 0 && a.scr != scrUnlock && a.lock == nil &&
 		time.Since(a.lastKey) > time.Duration(set.LockAfterMin)*time.Minute {
-		a.closeBook()
-		a.st.Lock()
-		a.unlock = newUnlock(a.st)
-		a.scr = scrUnlock
-		return nil
+		if len(a.sessions) == 0 {
+			a.closeBook()
+			a.st.Lock()
+			a.unlock = newUnlock(a.st)
+			a.scr = scrUnlock
+			return nil
+		}
+		cmds = append(cmds, a.lockScreen())
 	}
 	if c := a.syncTick(); c != nil {
 		cmds = append(cmds, c)
@@ -508,7 +531,10 @@ func (a *App) onTick() tea.Cmd {
 	}
 	for _, s := range a.sessions {
 		if s.term != nil && s.term.TakeBell() {
-			cmds = append(cmds, func() tea.Msg { return nil })
+			a.noticeBell(s)
+		}
+		if c := a.takeClipboard(s); c != nil {
+			cmds = append(cmds, c)
 		}
 		a.commandTick(s)
 		if c := a.followTick(s); c != nil {
@@ -573,7 +599,10 @@ func (a *App) View() tea.View {
 		body = a.frame(a.viewScan(), a.scanKeys())
 	}
 	body = a.z.scan(body, 0, 0)
-	if a.modal != nil {
+	if a.lock != nil {
+		a.z.reset() // gesperrt: nichts klickbar, nichts zu sehen
+		body, cur = a.viewLock(), nil
+	} else if a.modal != nil {
 		body = a.overlay(body, a.modalView())
 		cur = nil
 	} else if a.pick != nil {
@@ -589,7 +618,9 @@ func (a *App) View() tea.View {
 			body = c.Render()
 		}
 	}
-	body = a.withToasts(body)
+	if a.lock == nil {
+		body = a.withToasts(body)
+	}
 	if a.intro != nil && introFits(a.w, a.h) {
 		a.z.reset() // während der Animation ist nichts klickbar
 		body, cur = a.viewIntro(), nil
@@ -598,8 +629,9 @@ func (a *App) View() tea.View {
 	v.AltScreen = true
 	v.MouseMode = a.mouseMode()
 	v.Cursor = cur
+	v.ReportFocus = true // Fenster im Hintergrund? (Meldungen, notify.go)
 	v.WindowTitle = version.Name
-	if s := a.current(); a.scr == scrTerminal && s != nil {
+	if s := a.current(); a.scr == scrTerminal && s != nil && a.lock == nil {
 		v.WindowTitle = version.Name + " · " + s.conn.Alias
 	}
 	v.BackgroundColor = a.s.T.Bg

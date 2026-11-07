@@ -287,6 +287,7 @@ func (a *App) paletteItems() []palItem {
 			palItem{icon: ic("tabs"), label: i18n.T("Tab duplizieren"), hint: trunc(s.conn.Alias, 16), run: func() tea.Cmd { return a.duplicateTab(s) }},
 			palItem{icon: ic("close"), label: i18n.T("Tab schließen"), hint: a.keys.label(actCloseTab), run: func() tea.Cmd { return a.closeTabAsk(s, nil) }})
 	}
+	actions = append(actions, palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
 	for _, x := range actions {
 		x.group = pgAction
 		if match(x.label) {
@@ -363,6 +364,11 @@ func (a *App) palMenuItems() []palItem {
 		palToggle(ic("sesslog"), i18n.T("Sitzungsprotokoll schreiben"), a.logsEnabled(), "log protokoll", func() tea.Cmd { return a.toggleSessionLog() }),
 		palToggle(ic("paste"), i18n.T("Einfügeschutz: Vorschau bei mehreren Zeilen"), a.pasteGuardEnabled(), "paste einfügen", func() tea.Cmd { return a.togglePasteGuard() }),
 		palToggle(ic("danger"), i18n.T("Gefahren-Check auf allen Hosts (sonst nur Produktiv)"), a.dangerAll(), "danger gefahr", func() tea.Cmd { return a.toggleDangerAll() }),
+		palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() }),
+		palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() }),
+		palToggle(ic("paste"), i18n.T("Server darf in die Zwischenablage kopieren (OSC 52)"), a.osc52On(), "clipboard zwischenablage osc52 tmux vim", func() tea.Cmd { return a.toggleOSC52() }),
+		palItem{group: pgSetBehave, menu: "settings", icon: ic("sshkey"), label: i18n.T("Automatisch sperren bei Leerlauf"), hint: lockLabel(a.st.Settings().LockAfterMin),
+			keys: "lock sperren idle leerlauf", keep: true, run: func() tea.Cmd { return a.cycleLockAfter() }},
 		palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
 	}

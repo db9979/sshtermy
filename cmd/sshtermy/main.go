@@ -7,6 +7,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -89,6 +91,9 @@ func main() {
 	app.CrashTest(*crashTest)
 	// Absturzbericht: ab hier landen Paniken im crash-Ordner (internal/crash).
 	guard := crash.Start(st.Dir)
+	// Bibliotheken (z. B. der SSH-Agent bei der Weiterleitung) schreiben
+	// Meldungen mit log.Printf nach stderr: das würde das Bild zerreißen.
+	log.SetOutput(io.Discard)
 	_, err = tea.NewProgram(app).Run()
 	if errors.Is(err, tea.ErrProgramPanic) {
 		crashed(guard, st)

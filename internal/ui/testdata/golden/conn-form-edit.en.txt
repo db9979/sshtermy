@@ -18,13 +18,13 @@
   │   Color                automatic  none  Red  Orange  Yellow  Green  Cyan  Blue  Purple       │
   │   Jump host           — direct (no jump host) ▾                                              │
   │   Device type          automatic  Server  Network device                                     │
+  │   Forward agent       ○ off                                                                  │
   │   Persistent session   off  automatic  tmux  screen                                          │
   │   System                                                                                     │
   │   Command set         ‹  automatic  ›  1/15                                                  │
   │   AI notes                                                                                   │
   │                                                                                              │
   └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 

@@ -62,6 +62,9 @@ type session struct {
 	detach *detachState                // Tab läuft in eigenem Fenster (detach.go)
 	detOut atomic.Pointer[detach.Conn] // dorthin geht die Ausgabe mit
 
+	notice noticeKind // Markierung im Tab: Befehl fertig, Glocke (notify.go)
+	bellAt time.Time  // letzte gemeldete Glocke
+
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
 
@@ -221,7 +224,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 			dropped := err != nil && c.WaitDropped(1500*time.Millisecond)
 			ev <- shellClosedMsg{s.id, sh, err, dropped}
 		}()
-		return connectedMsg{sid: s.id, client: c, shell: sh}
+		return connectedMsg{sid: s.id, client: c, shell: sh, note: c.AgentNote()}
 	}
 }
 

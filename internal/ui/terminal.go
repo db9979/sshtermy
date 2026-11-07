@@ -743,6 +743,9 @@ func (a *App) tabStrip() string {
 		if x.detached() {
 			dot = st.AI.Render("↑") // läuft in eigenem Fenster
 		}
+		if g := a.noticeGlyph(x); g != "" {
+			dot = g // Befehl fertig / Glocke, solange der Tab verdeckt war
+		}
 		ts := st.Tab
 		if i == a.cur {
 			ts = st.TabActive

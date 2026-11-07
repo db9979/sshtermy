@@ -47,6 +47,11 @@ type Client struct {
 	answered atomic.Bool   // Gegenstelle beantwortet Keepalives
 	byUs     atomic.Bool   // Close() aufgerufen
 	dead     chan struct{} // geschlossen, sobald die Verbindung weg ist
+
+	// Agent-Weiterleitung (agentfwd.go)
+	fwdOnce  sync.Once
+	fwdErr   error
+	fwdAsked error // Server hat die Weiterleitung abgelehnt
 }
 
 // RemoteInfo: was wir über das Zielsystem wissen (Kontext fürs LLM).

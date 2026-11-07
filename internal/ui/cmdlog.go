@@ -99,6 +99,11 @@ func (a *App) finishCommand(s *session) {
 	if !failed && !r.interrupted && !r.private {
 		a.noteFavorite(s, r.cmd)
 	}
+	end := s.lastOutput // Prompt kam zuletzt; Befehle ohne Ausgabe: jetzt
+	if !end.After(r.at) {
+		end = time.Now()
+	}
+	a.noticeDone(s, r.cmd, end.Sub(r.at), failed, r.interrupted)
 	dur := 0.0
 	if s.lastOutput.After(r.at) {
 		dur = s.lastOutput.Sub(r.at).Seconds()

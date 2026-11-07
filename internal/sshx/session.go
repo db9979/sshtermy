@@ -51,6 +51,11 @@ func (c *Client) OpenShell(cols, rows int, out io.Writer) (*Shell, error) {
 	if !c.NetDevice {
 		_ = s.Setenv("COLORTERM", "truecolor") // viele Server verwerfen das (AcceptEnv), harmlos
 	}
+	if c.Conn.ForwardAgent && !c.NetDevice {
+		if err := c.forwardAgent(s); err != nil && c.fwdErr == nil {
+			c.fwdAsked = err
+		}
+	}
 	if err := s.Shell(); err != nil {
 		s.Close()
 		return nil, err

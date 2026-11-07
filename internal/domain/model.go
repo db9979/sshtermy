@@ -84,6 +84,14 @@ type Connection struct {
 	RelaySystem string     `json:"relay_system,omitempty"`
 	TunnelIDs   []string   `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
 	KeepAlive   int        `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
+
+	// ForwardAgent: den lokalen SSH-Agent an den Server weiterreichen (wie
+	// ssh -A). Dort funktionieren dann git, ssh und scp mit den eigenen
+	// Keys, ohne sie auf den Server zu kopieren. Nur für vertraute Server.
+	ForwardAgent bool `json:"forward_agent,omitempty"`
+	// CertPath: SSH-Zertifikat zum Key (von einer CA signiert, *-cert.pub).
+	// Leer = neben dem Keyfile suchen (<key>-cert.pub, wie OpenSSH).
+	CertPath string `json:"cert_path,omitempty"`
 	Device      DeviceKind `json:"device,omitempty"`      // Server oder Netzwerkgerät, leer = automatisch
 
 	// Persist: beim Verbinden immer in dieselbe tmux-/screen-Sitzung
@@ -427,6 +435,15 @@ type Settings struct {
 	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
 	// NoReachCheck: im Manager nicht prüfen, ob die Hosts erreichbar sind.
 	NoReachCheck bool `json:"no_reach_check,omitempty"`
+	// NoNotify: keine Meldung (Tab-Markierung, Einblendung), wenn ein langer
+	// Befehl in einem verdeckten Tab fertig ist oder dort die Glocke läutet.
+	NoNotify bool `json:"no_notify,omitempty"`
+	// NoDesktopNotify: dafür keine Benachrichtigung des Betriebssystems,
+	// wenn das sshTermy-Fenster nicht im Vordergrund ist.
+	NoDesktopNotify bool `json:"no_desktop_notify,omitempty"`
+	// NoOSC52: Programme auf dem Server (tmux, vim) dürfen nicht in die
+	// lokale Zwischenablage schreiben.
+	NoOSC52 bool `json:"no_osc52,omitempty"`
 	// Monitor: Warnschwellen der Host-Übersicht (F6) und wie oft Server
 	// automatisch nachgefragt werden.
 	Monitor MonitorConfig `json:"monitor,omitempty"`
