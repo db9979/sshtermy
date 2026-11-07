@@ -22,6 +22,17 @@ type syncBuf struct {
 func (s *syncBuf) Write(p []byte) (int, error) { s.mu.Lock(); defer s.mu.Unlock(); return s.b.Write(p) }
 func (s *syncBuf) String() string              { s.mu.Lock(); defer s.mu.Unlock(); return s.b.String() }
 
+// has wartet kurz, bis sub beim Server ankam (der Emulator schreibt asynchron).
+func (s *syncBuf) has(sub string) bool {
+	for i := 0; i < 100; i++ {
+		if strings.Contains(s.String(), sub) {
+			return true
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	return false
+}
+
 // sent: kam Enter beim Server an? (der Emulator schreibt asynchron)
 func (s *syncBuf) sent() bool {
 	for i := 0; i < 100; i++ {

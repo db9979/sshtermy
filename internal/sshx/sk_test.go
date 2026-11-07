@@ -112,3 +112,24 @@ func TestPrivateAgentWithAskpass(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// Falsche Passphrase: ssh-add darf nicht endlos nachfragen, sshTermy meldet es.
+func TestPrivateAgentWrongPassphrase(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows nutzt den Agent-Dienst")
+	}
+	for _, b := range []string{"ssh-agent", "ssh-add"} {
+		if _, err := exec.LookPath(b); err != nil {
+			t.Skip("OpenSSH fehlt:", b)
+		}
+	}
+	defer StopSKAgent()
+	k, err := GenerateKey(KeyEd25519, "t", []byte("geheim"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ask := func(string) (string, error) { return "falsch", nil }
+	if _, err := skSigner(k.PrivatePEM, "", "auch falsch", ask, "Passphrase", nil); err == nil {
+		t.Fatal("falsche Passphrase angenommen")
+	}
+}

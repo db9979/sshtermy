@@ -164,6 +164,9 @@ func dialSKAgent(sock string) (net.Conn, error) {
 const (
 	askpassEnv    = "SSHTERMY_ASKPASS"
 	askpassSecret = "SSHTERMY_ASKPASS_SECRET"
+	// askpassOnce: Merkdatei, damit die Passphrase nur einmal ausgegeben
+	// wird. Sonst fragt ssh-add bei falscher Passphrase endlos weiter.
+	askpassOnce = "SSHTERMY_ASKPASS_ONCE"
 )
 
 // AskpassMain: als SSH_ASKPASS gestartet? Dann Passphrase ausgeben und
@@ -173,6 +176,13 @@ func AskpassMain() bool {
 		return false
 	}
 	p := os.Getenv(askpassSecret)
+	if once := os.Getenv(askpassOnce); once != "" {
+		f, err := os.OpenFile(once, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err != nil {
+			os.Exit(1) // schon einmal geantwortet: ssh-add bricht ab
+		}
+		f.Close()
+	}
 	if p == "" {
 		os.Exit(1) // keine Passphrase bekannt: ssh-add bricht ab, sshTermy fragt
 	}
@@ -193,6 +203,11 @@ func sshAdd(sock, path, pass string) error {
 	if err != nil {
 		return err
 	}
+	onceDir, err := os.MkdirTemp("", "sshtermy-askpass-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(onceDir)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, path)
@@ -200,12 +215,14 @@ func sshAdd(sock, path, pass string) error {
 	if sock != "" {
 		env = append(env, "SSH_AUTH_SOCK="+sock)
 	}
-	env = append(env, "SSH_ASKPASS="+self, "SSH_ASKPASS_REQUIRE=force", "DISPLAY=:0", askpassEnv+"=1", askpassSecret+"="+pass)
+	env = append(env, "SSH_ASKPASS="+self, "SSH_ASKPASS_REQUIRE=force", "DISPLAY=:0", askpassEnv+"=1", askpassSecret+"="+pass, askpassOnce+"="+filepath.Join(onceDir, "used"))
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		msg := strings.TrimSpace(string(out))
-		if strings.Contains(strings.ToLower(msg), "passphrase") {
+		// ohne Ausgabe: unser Askpass hat keine (richtige) Passphrase
+		// geliefert und ssh-add hat still aufgegeben
+		if msg == "" || strings.Contains(strings.ToLower(msg), "passphrase") {
 			return errSKPassphrase
 		}
 		if msg == "" {
