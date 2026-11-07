@@ -1,30 +1,30 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
- Sitzungsprotokolle  0  / suchen │
-                                 │
-  Noch keine Protokolle.         │
-  Jede SSH-Sitzung wird ab dem   │
-  ersten Befehl mitgeschrieben.  │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
- ↑↓ wählen  / suchen  z KI-Zusammenfassung  Z alle Treffer zusammenfassen  x exportieren  d löschen
+ Sitzungsprotokolle  0  / suchen   Tab nach Host  │
+  Alle  Heute  7 Tage  Mit Fehlern                │
+                                                  │
+  Noch keine Protokolle.                          │
+  Jede SSH-Sitzung wird ab dem                    │
+  ersten Befehl mitgeschrieben.                   │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+                                                  │
+ ↑↓ wählen  ⏎ auf/zu  Tab nach Host  f Filter  / suchen  z KI-Zusammenfassung
