@@ -309,7 +309,7 @@ func Validate(c domain.Connection) error {
 	switch {
 	case strings.TrimSpace(c.Alias) == "":
 		return errors.New(i18n.T("Alias fehlt"))
-	case strings.TrimSpace(c.Host) == "" && c.Protocol != domain.ProtoSerial:
+	case strings.TrimSpace(c.Host) == "" && !c.Protocol.NoHost():
 		return errors.New(i18n.T("Host fehlt"))
 	case c.Port < 0 || c.Port > 65535:
 		return errors.New(i18n.T("Port ungültig"))

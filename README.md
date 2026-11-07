@@ -17,6 +17,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **a real SSH terminal** (xterm-256color, truecolor, vim/htop/tmux, scrollback, tabs, jump hosts)
 - **Auto-reconnect**: if the line drops (Wi-Fi, VPN, standby), sshTermy reconnects the session by itself, restarts running tunnels and reattaches tmux/screen (can be turned off in the palette)
 - **Persistent session** (idea: Dominik Bornhäußer): per connection, always land in the same tmux/screen session on connect, even from another computer. Other sessions already running? sshTermy asks which one. Same session name in two tabs or on two computers = mirrored screen; "view only" attaches tmux read-only. The palette opens a second watching tab or copies an `ssh … tmux attach -r` command for colleagues. Not on switches, Telnet or console.
+- **Local shell** (Alt+L): your own PowerShell (Windows, via ConPTY), zsh or bash (macOS/Linux) as a tab, with AI help, goal/agent/plan mode, split view, tabs and session log. Danger rules and agent levels apply on your own computer too; the agent drops its scripts in `~/.sshtermy-agent`. Or save it as a connection („Connect via: Local“) with its own shell (`pwsh`, `cmd`, `wsl`, `bash -l` …) and start folder
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
@@ -175,6 +176,7 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu) |
+| | Alt+L | local shell in a new tab (also in the manager; palette: `local`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | quick commands: list / run directly |
 | | F10 | back to the manager (sessions keep running) |
 | | ⇧F9 | key bar explains the keys of the current area |
@@ -245,6 +247,14 @@ sshTermy types them as soon as the device asks (and answers „Press any key to 
 `telnet 10.0.0.5`, `COM3` or `console /dev/ttyUSB0 115200` connects right away; palette → „Send break“ sends a serial
 break. Host overview (F6), config backup, quick commands and the AI work as with SSH; files, tunnels and broadcast
 need SSH. Linux: the user needs to be in the `dialout` group. Telnet is unencrypted, use it only in trusted networks.
+
+**Local shell:** Alt+L (or the first entry under Alt+N, or palette → „Open local shell“) opens the shell of your own
+computer in a tab: PowerShell 7 (`pwsh`), otherwise Windows PowerShell or cmd on Windows (ConPTY, Windows 10 1809 or
+newer), your login shell on macOS and `$SHELL` on Linux. Typing `pwsh`, `cmd`, `wsl -d Ubuntu` or `zsh` in the palette
+starts that one. As a saved connection („Connect via: Local (this computer)“) you can set the shell and a start folder;
+left empty, each computer uses its own default, so a synced entry works on Windows and Mac alike. The AI knows whether it
+is talking to PowerShell, cmd or a Unix shell; danger rules and the agent levels work as on a server. Files (F5),
+tunnels and broadcast need SSH.
 
 ## Screens
 

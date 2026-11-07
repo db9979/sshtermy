@@ -162,6 +162,9 @@ func (a *App) quickItems(q string) (items []palItem, strong bool) {
 	if rc, ok := parseQuickRaw(q); ok {
 		return a.quickRawItems(rc), true
 	}
+	if lc, ok := parseQuickLocal(q); ok {
+		return a.quickLocalItems(lc), true
+	}
 	c, strong, ok := parseQuick(q)
 	if !ok {
 		return nil, false

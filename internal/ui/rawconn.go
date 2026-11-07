@@ -13,6 +13,7 @@ import (
 	"github.com/db9979/sshtermy/internal/autologin"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/localsh"
 	"github.com/db9979/sshtermy/internal/serialx"
 	"github.com/db9979/sshtermy/internal/telnet"
 	"github.com/db9979/sshtermy/internal/termemu"
@@ -36,7 +37,7 @@ func (s *session) netDev() bool {
 	if s.client != nil {
 		return s.client.NetDevice
 	}
-	return s.conn.Protocol.Raw() && s.conn.Device != domain.DeviceServer
+	return s.conn.Protocol.Device() && s.conn.Device != domain.DeviceServer
 }
 
 // serialPorts ist austauschbar, damit Tests ohne Kabel auskommen.
@@ -70,6 +71,9 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 			}()
 		})
 		out := io.MultiWriter(outWriter{s, ev}, login)
+		if c.Protocol == domain.ProtoLocal {
+			out = outWriter{s, ev} // keine Anmeldung
+		}
 
 		var done <-chan error
 		note := ""
@@ -95,6 +99,12 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 			if guessed {
 				note = i18n.F("Konsolenkabel an %s gefunden (gespeichert: %s)", name, c.SerialPort)
 			}
+		case domain.ProtoLocal:
+			l, err := localsh.Start(c.LocalShell, c.LocalDir, cols, rows, out)
+			if err != nil {
+				return fail(errors.New(i18n.T("Lokale Shell startet nicht: ") + err.Error()))
+			}
+			st, done = l, l.Done
 		default:
 			return fail(errors.New("unknown protocol " + string(c.Protocol)))
 		}
@@ -105,7 +115,8 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 		}
 		go func() {
 			err := <-done
-			ev <- shellClosedMsg{s.id, st, err, err != nil}
+			// exit in der lokalen Shell ist ein gewolltes Ende, kein Abriss
+			ev <- shellClosedMsg{s.id, st, err, err != nil && c.Protocol != domain.ProtoLocal}
 		}()
 		return connectedMsg{sid: s.id, shell: st, note: note}
 	}
@@ -164,6 +175,8 @@ func (a *App) protoBadge(s *session) string {
 		}
 		name = strings.TrimPrefix(name, "/dev/")
 		return st.Badge.Foreground(st.T.Accent).Render("≈ " + name + " " + strconv.Itoa(s.conn.SerialBaud()))
+	case domain.ProtoLocal:
+		return st.Badge.Foreground(st.T.Accent).Render("$ " + s.localShellName() + " · " + i18n.T("lokal"))
 	}
 	return ""
 }
@@ -187,6 +200,8 @@ func shortTarget(c domain.Connection) string {
 			p = "USB"
 		}
 		return "≈ " + p
+	case domain.ProtoLocal:
+		return "$ " + localShellLabel(c.LocalShell) + " · " + i18n.T("lokal")
 	}
 	return t
 }
@@ -194,10 +209,12 @@ func shortTarget(c domain.Connection) string {
 // ---------------------------------------------------------------- Formular
 
 // protoLabels: Auswahl im Verbindungsformular.
-var protoLabels = []string{"SSH", "Telnet", "Seriell (Konsolenkabel)"}
+var protoLabels = []string{"SSH", "Telnet", "Seriell (Konsolenkabel)", "Lokal (dieser Rechner)"}
 
 func protoLabel(p domain.Protocol) string {
 	switch p {
+	case domain.ProtoLocal:
+		return protoLabels[3]
 	case domain.ProtoTelnet:
 		return protoLabels[1]
 	case domain.ProtoSerial:
@@ -212,6 +229,8 @@ func protoFromLabel(l string) domain.Protocol {
 		return domain.ProtoTelnet
 	case protoLabels[2]:
 		return domain.ProtoSerial
+	case protoLabels[3]:
+		return domain.ProtoLocal
 	}
 	return domain.ProtoSSH
 }
@@ -397,6 +416,9 @@ func (s *session) isSerial() bool { return s.conn.Protocol == domain.ProtoSerial
 func (s *session) remoteString() string {
 	if s.client != nil {
 		return s.client.Remote.String()
+	}
+	if s.isLocal() && localWindowsShell(s.prof) {
+		return "Windows " + s.profileSummary()
 	}
 	return s.profileSummary()
 }

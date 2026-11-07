@@ -456,6 +456,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs) {
 			return a, a.openPalette()
 		}
+		if a.keys.is(actLocal, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) && a.lock == nil {
+			return a, a.openLocal("")
+		}
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.modal != nil {
 		// Einfügen in einen offenen Dialog: nur das Eingabefeld nimmt es an.

@@ -9,7 +9,10 @@ package domain
 
 import (
 	"fmt"
+	"strings"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/i18n"
 )
 
 // Secret ist ein Geheimnis im Klartext, nur im Arbeitsspeicher. String() und
@@ -130,6 +133,12 @@ type Connection struct {
 	Baud       int      `json:"baud,omitempty"`        // 0 = 9600
 	Frame      string   `json:"frame,omitempty"`       // Datenbits, Parität, Stoppbits, leer = "8N1"
 
+	// Lokale Shell (Protocol "local"): Programm samt Argumenten, leer = Standard
+	// des jeweiligen Rechners (Windows: PowerShell, macOS/Linux: Login-Shell),
+	// damit der Eintrag nach dem Sync auf jedem Rechner passt. LocalDir: Startordner.
+	LocalShell string `json:"local_shell,omitempty"`
+	LocalDir   string `json:"local_dir,omitempty"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	LastUsed  time.Time `json:"last_used,omitempty"`
@@ -165,10 +174,17 @@ const (
 	ProtoSSH    Protocol = ""       // Standard
 	ProtoTelnet Protocol = "telnet" // unverschlüsselt, für ältere Switches
 	ProtoSerial Protocol = "serial" // serielle Konsole (USB-Konsolenkabel)
+	ProtoLocal  Protocol = "local"  // Shell auf diesem Rechner (PTY / ConPTY)
 )
 
 // Raw: kein SSH, also keine Exec-Abfragen, kein SFTP und keine Tunnel.
-func (p Protocol) Raw() bool { return p == ProtoTelnet || p == ProtoSerial }
+func (p Protocol) Raw() bool { return p == ProtoTelnet || p == ProtoSerial || p == ProtoLocal }
+
+// NoHost: Verbindung ohne Host-Angabe (Konsolenkabel, lokale Shell).
+func (p Protocol) NoHost() bool { return p == ProtoSerial || p == ProtoLocal }
+
+// Device: Gegenstelle ist ein Gerät mit eigener Anmeldung (Telnet, Konsole).
+func (p Protocol) Device() bool { return p == ProtoTelnet || p == ProtoSerial }
 
 // DefaultBaud: übliche Geschwindigkeit von Switch-Konsolen (Aruba, Cisco, HPE).
 const DefaultBaud = 9600
@@ -198,6 +214,9 @@ func (c Connection) DefaultPort() int {
 // Target: Anzeige des Ziels, z. B. „admin@10.0.0.1:22“ oder bei seriellen
 // Verbindungen „COM3 · 9600 8N1“.
 func (c Connection) Target() string {
+	if c.Protocol == ProtoLocal {
+		return c.Addr()
+	}
 	a := c.ShowAddr()
 	if c.Protocol != ProtoSerial && c.Username != "" {
 		a = c.Username + "@" + a
@@ -221,6 +240,13 @@ func (c Connection) Addr() string {
 			port = "USB"
 		}
 		return fmt.Sprintf("%s · %d %s", port, c.SerialBaud(), c.SerialFrame())
+	}
+	if c.Protocol == ProtoLocal {
+		sh := strings.TrimSpace(c.LocalShell)
+		if sh == "" {
+			sh = i18n.T("Standard-Shell")
+		}
+		return i18n.T("lokal") + " · " + sh
 	}
 	p := c.Port
 	if p == 0 {

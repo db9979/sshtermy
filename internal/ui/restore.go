@@ -52,6 +52,7 @@ func adhocCopy(c domain.Connection) *domain.Connection {
 		Alias: c.Alias, Host: c.Host, Port: c.Port, Username: c.Username, Auth: c.Auth,
 		KeyPath: c.KeyPath, JumpHostID: c.JumpHostID, RelayID: c.RelayID, RelaySystem: c.RelaySystem,
 		Device: c.Device, Protocol: c.Protocol, SerialPort: c.SerialPort, Baud: c.Baud, Frame: c.Frame,
+		LocalShell: c.LocalShell, LocalDir: c.LocalDir,
 		Persist: c.Persist, PersistName: c.PersistName, PersistView: c.PersistView,
 		ForwardAgent: c.ForwardAgent, ForwardX11: c.ForwardX11, CertPath: c.CertPath,
 	}
@@ -139,7 +140,7 @@ func (a *App) restoreTabs() tea.Cmd {
 				continue // inzwischen gelöscht (z. B. per Sync)
 			}
 			c = cc
-		case t.Adhoc != nil && (t.Adhoc.Host != "" || t.Adhoc.Protocol == domain.ProtoSerial):
+		case t.Adhoc != nil && (t.Adhoc.Host != "" || t.Adhoc.Protocol.NoHost()):
 			c = *t.Adhoc
 		default:
 			continue

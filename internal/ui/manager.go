@@ -562,7 +562,13 @@ func (a *App) viewManager() string {
 				auth = i18n.T("automatisch, sobald das Gerät fragt")
 			}
 		}
-		row(i18n.T("Anmeldung"), auth)
+		if c.Protocol == domain.ProtoLocal {
+			if c.LocalDir != "" {
+				row(i18n.T("Startordner"), c.LocalDir)
+			}
+		} else {
+			row(i18n.T("Anmeldung"), auth)
+		}
 		if c.JumpHostID != "" {
 			row(i18n.T("Jump-Host"), a.jumpChainText(c))
 		}
@@ -643,12 +649,16 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	}
 	f.section("s_conn", i18n.T("Verbindung"), func(t Theme) color.Color { return t.Accent })
 	f.text("alias", "Alias", c.Alias, i18n.T("Anzeigename, z. B. „DGX Spark“"))
-	f.choice("proto", i18n.T("Verbindungsart"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel")).value = protoLabel(c.Protocol)
+	f.choice("proto", i18n.T("Verbindungsart"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel · Lokal = Shell auf diesem Rechner")).value = protoLabel(c.Protocol)
 	isProto := func(p domain.Protocol) bool { return protoFromLabel(f.sel("proto")) == p }
 	raw := func(*form) bool { return protoFromLabel(f.sel("proto")).Raw() }
 	notSerial := func(*form) bool { return !isProto(domain.ProtoSerial) }
-	f.text("host", "Host", c.Host, i18n.T("Name oder IP")).hidden = func(*form) bool { return isProto(domain.ProtoSerial) }
-	f.number("port", "Port", c.Port, i18n.T("Standard 22 · Telnet 23")).hidden = func(*form) bool { return isProto(domain.ProtoSerial) }
+	notLocal := func(*form) bool { return !isProto(domain.ProtoLocal) }
+	noHost := func(*form) bool { return protoFromLabel(f.sel("proto")).NoHost() }
+	f.text("host", "Host", c.Host, i18n.T("Name oder IP")).hidden = noHost
+	f.number("port", "Port", c.Port, i18n.T("Standard 22 · Telnet 23")).hidden = noHost
+	f.text("lshell", "Shell", c.LocalShell, i18n.T("leer = Standard dieses Rechners (jetzt: ")+localShellLabel("")+i18n.T(") · z. B. pwsh, cmd, wsl, zsh, bash -l")).hidden = notLocal
+	f.text("ldir", i18n.T("Startordner"), c.LocalDir, i18n.T("leer = Benutzerordner · z. B. ~/projekte")).hidden = notLocal
 	sports, scur := serialPortOptions(c.SerialPort)
 	f.choice("sport", i18n.T("Schnittstelle"), sports, scur, serialPortHelp()).hidden = notSerial
 	f.choice("baud", "Baud", baudOpts(c.SerialBaud()), strconv.Itoa(c.SerialBaud()), i18n.T("Aruba/HPE/Cisco: 9600 · viele neuere Geräte: 115200")).hidden = notSerial
@@ -658,8 +668,10 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
 	a.addRelayField(f, c)
 
-	f.section("s_auth", i18n.T("Anmeldung"), func(t Theme) color.Color { return t.Warn })
-	f.text("user", i18n.T("Benutzer"), c.Username, "").help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt")
+	f.section("s_auth", i18n.T("Anmeldung"), func(t Theme) color.Color { return t.Warn }).hidden = func(*form) bool { return isProto(domain.ProtoLocal) }
+	uf := f.text("user", i18n.T("Benutzer"), c.Username, "")
+	uf.help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt")
+	uf.hidden = func(*form) bool { return isProto(domain.ProtoLocal) }
 	f.choice("auth", i18n.T("Verfahren"), []string{"agent", "keyfile", "password", "kerberos"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen) · kerberos = Ticket der Firmen-Domäne (Windows-Anmeldung oder kinit)")).hidden = raw
 	isAuth := func(v string) func(*form) bool {
 		return func(f *form) bool { return raw(f) || f.sel("auth") != v }
@@ -671,7 +683,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		pw, pp = a.formKC[0], a.formKC[1]
 	}
 	f.secret("password", i18n.T("Passwort"), pw, i18n.T("wird mit AES-256-GCM verschlüsselt gespeichert")).hidden = func(f *form) bool {
-		return !raw(f) && f.sel("auth") != "password"
+		return isProto(domain.ProtoLocal) || !raw(f) && f.sel("auth") != "password"
 	}
 	f.text("keypath", "Keyfile", c.KeyPath, i18n.T("z. B. ~/.ssh/id_ed25519 (leer lassen bei eingebettetem Key)")).hidden = isAuth("keyfile")
 	f.secret("keypass", "Passphrase", pp, i18n.T("optional; leer = beim Verbinden fragen")).hidden = isAuth("keyfile")
@@ -876,6 +888,14 @@ func (a *App) saveConn() error {
 	c.Alias, c.Host, c.Port, c.Username = f.str("alias"), f.str("host"), f.num("port"), f.str("user")
 	c.Protocol = protoFromLabel(f.sel("proto"))
 	c.SerialPort, c.Baud, c.Frame = "", 0, ""
+	c.LocalShell, c.LocalDir = "", ""
+	if c.Protocol == domain.ProtoLocal {
+		c.LocalShell, c.LocalDir = f.str("lshell"), f.str("ldir")
+		c.Host, c.Port, c.Username = "", 0, ""
+		if c.Alias == "" {
+			c.Alias = i18n.T("Lokal")
+		}
+	}
 	if c.Protocol == domain.ProtoSerial {
 		if p := f.sel("sport"); p != serialAuto {
 			c.SerialPort = p
@@ -890,7 +910,7 @@ func (a *App) saveConn() error {
 	if c.Protocol == domain.ProtoTelnet && c.Port == 22 && a.formBase.Protocol != domain.ProtoTelnet {
 		c.Port = 23 // Vorbelegung für SSH stehen gelassen
 	}
-	if c.Port == 0 && c.Protocol != domain.ProtoSerial {
+	if c.Port == 0 && !c.Protocol.NoHost() {
 		c.Port = c.DefaultPort()
 	}
 	c.Auth = domain.AuthMethod(f.sel("auth"))
@@ -900,7 +920,9 @@ func (a *App) saveConn() error {
 	}
 	switch c.Auth {
 	case domain.AuthPassword:
-		c.Password = domain.Secret(f.raw("password"))
+		if c.Protocol != domain.ProtoLocal {
+			c.Password = domain.Secret(f.raw("password"))
+		}
 	case domain.AuthKeyFile:
 		c.KeyPath, c.KeyPassphrase = f.str("keypath"), domain.Secret(f.raw("keypass"))
 		c.CertPath = f.str("certpath")

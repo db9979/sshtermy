@@ -135,6 +135,9 @@ func (a *App) reachDot(c domain.Connection) (string, color.Color) {
 	if a.connected(c.ID) {
 		return "◉", t.OK
 	}
+	if c.Protocol == domain.ProtoLocal {
+		return "●", t.OK
+	}
 	r, ok := a.reach.res[c.ID]
 	switch {
 	case !a.reachEnabled() || !ok:
@@ -156,6 +159,9 @@ func (a *App) reachText(c domain.Connection) string {
 	}
 	if c.Protocol == domain.ProtoSerial {
 		return s.Muted.Render(i18n.T("○ serielle Konsole, Kabel wird beim Verbinden gesucht"))
+	}
+	if c.Protocol == domain.ProtoLocal {
+		return s.OK.Render(i18n.T("● dieser Rechner")) + s.Muted.Render(" · "+localShellLabel(c.LocalShell))
 	}
 	if !a.reachEnabled() {
 		return s.Muted.Render(i18n.T("○ Prüfung aus (Befehlspalette)"))

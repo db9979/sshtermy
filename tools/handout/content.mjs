@@ -59,6 +59,7 @@ export const de = {
     { t: 'Tabs', ic: '▭', rows: [
       ['F7 / F8', 'Tab zurück / vor'],
       ['Alt+N / Alt+W', 'neuer Tab / Tab schließen'],
+      ['Alt+L', 'lokale Shell (PowerShell, zsh …)'],
       ['Alt+T', 'Tab-Liste: ⏎ springen, 1…9 direkt'],
       ['Strg+R', '(Liste) umbenennen'],
       ['Strg+D', '(Liste) duplizieren'],
@@ -241,6 +242,7 @@ export const en = {
     { t: 'Tabs', ic: '▭', rows: [
       ['F7 / F8', 'previous / next tab'],
       ['Alt+N / Alt+W', 'new tab / close tab'],
+      ['Alt+L', 'local shell (PowerShell, zsh …)'],
       ['Alt+T', 'tab list: ⏎ jump, 1…9 direct'],
       ['Ctrl+R', '(list) rename'],
       ['Ctrl+D', '(list) duplicate'],

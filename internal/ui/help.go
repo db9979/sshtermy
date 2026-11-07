@@ -107,6 +107,7 @@ var helpSections = []helpSection{
 		{"F7 / F8", "Tab wechseln"},
 		{"Alt+T", "alle Tabs (Liste)"},
 		{"Alt+N", "neuer Tab"},
+		{"Alt+L", "lokale Shell (neuer Tab)"},
 		{"Alt+W", "Tab schließen"},
 		{"F10", "zum Manager"},
 		{"Abbruch", "verbindet neu (⏎ / Esc)"},

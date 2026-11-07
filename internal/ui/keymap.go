@@ -60,6 +60,7 @@ const (
 	actNewTab     action = "new_tab"
 	actCloseTab   action = "close_tab"
 	actTabList    action = "tab_list"
+	actLocal      action = "local_shell"
 	actZoom       action = "zoom"
 	actGrowLeft   action = "pane_left"
 	actGrowRight  action = "pane_right"
@@ -86,6 +87,7 @@ var actionDefs = []actionDef{
 	{actAbout, "Über & Update", "Überall", []string{"f12"}},
 	{actCheat, "Tastenzeile erklären an/aus", "Überall", []string{"shift+f9", "f21"}},
 	{actQuit, "Beenden", "Überall", []string{"ctrl+q"}},
+	{actLocal, "Lokale Shell öffnen", "Überall", []string{"alt+l"}},
 	{actGoal, "Ziel-Modus (Agent)", "Terminal", []string{"f2"}},
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
