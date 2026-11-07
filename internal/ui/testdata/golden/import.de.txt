@@ -5,7 +5,8 @@
  PuTTY               nicht gefunden  HKCU\Software\SimonTatham\PuTTY\Sessions
  MobaXterm           nicht gefunden  /home/golden/Documents/MobaXterm/MobaXterm.ini
 
- Nichts gefunden. f = Datei laden (PuTTY-.reg-Export, MobaXterm.ini, .mxtsessions oder ssh_config).
+ Nichts gefunden. f = Datei laden (PuTTY-.reg-Export, MobaXterm.ini, .mxtsessions, ssh_config,
+Ansible-Inventar oder CSV, auch NetBox-Export).
  PuTTY exportieren: reg export HKCU\Software\SimonTatham\PuTTY putty.reg
 
 
@@ -26,5 +27,4 @@
 
 
 
-
- ⏎ 0 übernehmen  Space an/aus  a alle/keine  f Datei laden  Esc zurück
+ ⏎ 0 übernehmen  Space an/aus  a alle/keine  f Datei laden  e als CSV exportieren  Esc zurück

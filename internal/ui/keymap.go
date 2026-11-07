@@ -56,6 +56,7 @@ const (
 	actSplit     action = "split"
 	actSearch    action = "search"
 	actDetach    action = "detach"
+	actSyncInput action = "syncinput"
 	actNewTab    action = "new_tab"
 	actCloseTab  action = "close_tab"
 	actTabList   action = "tab_list"
@@ -100,6 +101,7 @@ var actionDefs = []actionDef{
 	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
 	{actSplit, "Ansicht teilen (2 / 4)", "Terminal", []string{"ctrl+t"}},
 	{actDetach, "Tab in eigenes Fenster / zurückholen", "Terminal", []string{"shift+f10", "f22"}},
+	{actSyncInput, "Eingabe an alle geteilten Bereiche", "Terminal", []string{"alt+i"}},
 	{actChip1, "Folgebefehl 1 einfügen", "Terminal", []string{"alt+1"}},
 	{actChip2, "Folgebefehl 2 einfügen", "Terminal", []string{"alt+2"}},
 	{actChip3, "Folgebefehl 3 einfügen", "Terminal", []string{"alt+3"}},

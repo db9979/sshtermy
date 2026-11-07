@@ -167,6 +167,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				return nil
 			}
 		}
+		if tg := a.syncTargets(s); len(tg) > 0 && s.state == stConnected && s.term != nil {
+			return a.syncPaste(s, tg, m.Content)
+		}
 		return a.guardedPaste(s, m.Content)
 	case tea.KeyPressMsg:
 		key := m.String()
@@ -239,6 +242,10 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if a.keys.is(actSplit, key) {
 			a.cycleSplit()
+			return nil
+		}
+		if a.keys.is(actSyncInput, key) {
+			a.toggleSyncInput()
 			return nil
 		}
 		if i, ok := a.quickIndex(key); ok {
@@ -323,6 +330,17 @@ func (a *App) visibleGhost(s *session) string {
 }
 
 func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
+	if s.trzKey(k.String()) {
+		return nil // Dateiübertragung läuft: nur Strg+C/Esc (bricht ab)
+	}
+	if tg := a.syncTargets(s); len(tg) > 0 {
+		return a.syncKey(s, tg, k)
+	}
+	return a.terminalKeyOne(s, k)
+}
+
+// terminalKeyOne: Taste für genau eine Sitzung.
+func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
 	key := k.String()
 	// Ghost-Text übernehmen
 	if g := a.visibleGhost(s); g != "" && (key == "tab" || key == "right" || key == "end") {

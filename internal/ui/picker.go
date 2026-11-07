@@ -243,6 +243,9 @@ func (a *App) inputKey(k tea.KeyPressMsg) tea.Cmd {
 	switch k.String() {
 	case "esc":
 		a.modal = nil
+		if m.onCancel != nil {
+			return m.onCancel()
+		}
 		return nil
 	case "enter":
 		a.modal = nil

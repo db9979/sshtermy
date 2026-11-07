@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -94,6 +95,14 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 		if err != nil {
 			return nil, err
 		}
+		cs, err := withCert(c, signer, time.Now())
+		if err != nil {
+			return nil, err
+		}
+		if cs != signer {
+			// Zertifikat zuerst, der nackte Key als Rückfall (Server ohne CA)
+			return []ssh.AuthMethod{ssh.PublicKeys(cs, signer)}, nil
+		}
 		return []ssh.AuthMethod{ssh.PublicKeys(signer)}, nil
 
 	case domain.AuthAgent:
@@ -129,6 +138,9 @@ func autoMethods(c domain.Connection, o Options) []ssh.AuthMethod {
 				continue
 			}
 			if s, err := ssh.ParsePrivateKey(b); err == nil {
+				if cs := defaultCert(home, n, s, time.Now()); cs != nil {
+					out = append(out, cs)
+				}
 				out = append(out, s)
 			}
 		}

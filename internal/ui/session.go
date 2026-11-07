@@ -65,6 +65,10 @@ type session struct {
 	notice noticeKind // Markierung im Tab: Befehl fertig, Glocke (notify.go)
 	bellAt time.Time  // letzte gemeldete Glocke
 
+	trz       atomic.Pointer[trzRun] // Dateiübertragung im Terminal (trzsz.go)
+	trzTail   []byte                 // Ende der letzten Ausgabe (Auslöser über zwei Blöcke)
+	trzLastID string                 // Auslöser schon behandelt
+
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
 
@@ -122,11 +126,15 @@ type outWriter struct {
 type outputMsg struct{ sid int }
 
 func (w outWriter) Write(p []byte) (int, error) {
+	full := len(p)
+	if p = w.s.trzScan(p, w.ev); len(p) == 0 {
+		return full, nil // geht an die Dateiübertragung (trzsz.go)
+	}
 	w.s.cap.feed(p)
 	if r := w.s.rec.Load(); r != nil {
 		r.Output(p)
 	}
-	n, err := w.s.term.Write(p)
+	_, err := w.s.term.Write(p)
 	if c := w.s.detOut.Load(); c != nil {
 		_, _ = c.Write(p)
 	}
@@ -137,7 +145,7 @@ func (w outWriter) Write(p []byte) (int, error) {
 			w.s.pending.Store(false)
 		}
 	}
-	return n, err
+	return full, err
 }
 
 type connectedMsg struct {

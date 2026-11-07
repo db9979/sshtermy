@@ -21,6 +21,9 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
 - **Clipboard from the server (OSC 52)**: what you copy in tmux or vim on the server lands in your local clipboard. The server can never read it
+- **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
+- **SSH certificates**: keys signed by a company CA (`id_ed25519-cert.pub` next to the key, or any path in the connection) are used automatically; an expired certificate is reported with its date
+- **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder, or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
 - **Screen lock**: palette „Lock now“ or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag „Produktion“, „prod“, „live“) get a red line
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
@@ -64,8 +67,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   „What did I do on host X?“) and Markdown export (`x`)
 - **Sync between computers**: connections, tunnels, runbooks and settings end-to-end encrypted via a cloud folder
   (OneDrive, Dropbox, iCloud, Syncthing) or directly via your NAS (Synology, QNAP, Nextcloud, any WebDAV server)
-- **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export) and MobaXterm
-  (`MobaXterm.ini`, `.mxtsessions`), with jump hosts and folders, one key press (i in the manager)
+- **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export), MobaXterm
+  (`MobaXterm.ini`, `.mxtsessions`), Ansible inventories (INI or YAML) and CSV (also the NetBox device export), with jump hosts and folders, one key press (i in the manager). `e` there exports all connections as CSV (without passwords)
 - **Themes** dark, light, high contrast, Matrix, Amber and Neon (a in the manager), **custom colours** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
 - **English and German**: switch the language in the palette („Language“/„Sprache“) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language

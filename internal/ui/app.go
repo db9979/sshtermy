@@ -90,6 +90,7 @@ type App struct {
 	cur      int
 	nextSID  int
 	split    splitMode // geteilte Ansicht (Strg+T)
+	syncIn   bool      // Eingabe an alle Bereiche (syncinput.go)
 	panes    []int     // Sitzungs-IDs je Bereich, 0 = leer
 
 	modal        *modal
@@ -382,6 +383,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.askRestart()
 	}
 
+	if cmd, ok := a.trzMsg(msg); ok {
+		return a, cmd
+	}
 	// Broadcast und Netzwerk-Scan (Fortschritt kommt über a.events)
 	if cmd, ok := a.bcMsg(msg); ok {
 		return a, cmd

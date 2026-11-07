@@ -3,8 +3,11 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
@@ -37,7 +40,7 @@ type importState struct {
 
 func (a *App) openImport() tea.Cmd {
 	a.imp = importState{path: newInput("", false)}
-	a.imp.path.Placeholder = i18n.T(`Pfad: ~/.ssh/config, putty.reg, MobaXterm.ini, *.mxtsessions`)
+	a.imp.path.Placeholder = i18n.T(`Pfad: ~/.ssh/config, putty.reg, MobaXterm.ini, Ansible-Inventar, *.csv`)
 	for _, r := range importer.Scan() {
 		a.addImport(r)
 	}
@@ -63,7 +66,7 @@ func (a *App) importKeys() [][2]string {
 	if a.imp.asking {
 		return [][2]string{{"⏎", i18n.T("Datei lesen")}, {"Esc", i18n.T("abbrechen")}}
 	}
-	return [][2]string{{"⏎", fmt.Sprintf(i18n.T("%d übernehmen"), a.importCount())}, {"Space", i18n.T("an/aus")}, {"a", i18n.T("alle/keine")}, {"f", i18n.T("Datei laden")}, {"Esc", i18n.T("zurück")}}
+	return [][2]string{{"⏎", fmt.Sprintf(i18n.T("%d übernehmen"), a.importCount())}, {"Space", i18n.T("an/aus")}, {"a", i18n.T("alle/keine")}, {"f", i18n.T("Datei laden")}, {"e", i18n.T("als CSV exportieren")}, {"Esc", i18n.T("zurück")}}
 }
 
 func (a *App) importCount() int {
@@ -131,6 +134,8 @@ func (a *App) updateImport(msg tea.Msg) tea.Cmd {
 		for i := range m.items {
 			m.items[i].on = on
 		}
+	case "e":
+		return a.exportConnsCSV()
 	case "f", "/":
 		m.asking = true
 		return m.path.Focus()
@@ -232,7 +237,7 @@ func (a *App) viewImport() string {
 		b.WriteString(" " + s.Danger.Render(m.err) + "\n\n")
 	}
 	if len(m.items) == 0 {
-		b.WriteString(s.Muted.Render(i18n.T(" Nichts gefunden. f = Datei laden (PuTTY-.reg-Export, MobaXterm.ini, .mxtsessions oder ssh_config).\n") +
+		b.WriteString(s.Muted.Render(i18n.T(" Nichts gefunden. f = Datei laden (PuTTY-.reg-Export, MobaXterm.ini, .mxtsessions, ssh_config, Ansible-Inventar oder CSV, auch NetBox-Export).\n") +
 			i18n.T(" PuTTY exportieren: reg export HKCU\\Software\\SimonTatham\\PuTTY putty.reg")))
 		return b.String()
 	}
@@ -300,4 +305,27 @@ func (a *App) viewImport() string {
 	}
 	b.WriteString("\n" + s.Muted.Render(i18n.T(" Passwörter werden nicht übernommen; sshTermy fragt beim ersten Verbinden danach.")))
 	return b.String()
+}
+
+// exportConnsCSV: alle Verbindungen als CSV in den Downloads-Ordner
+// (ohne Passwörter und Keys; mit f wieder einlesbar).
+func (a *App) exportConnsCSV() tea.Cmd {
+	conns := a.st.Connections()
+	if len(conns) == 0 {
+		a.flash(i18n.T("Keine Verbindungen zum Exportieren"))
+		return nil
+	}
+	data := importer.ExportCSV(conns, func(id string) string {
+		if c, ok := a.st.Connection(id); ok {
+			return c.Alias
+		}
+		return ""
+	})
+	p := filepath.Join(exportDir(), "sshtermy-verbindungen-"+time.Now().Format("2006-01-02")+".csv")
+	if err := os.WriteFile(p, data, 0o600); err != nil {
+		a.flashErr(i18n.T("Export fehlgeschlagen: ") + err.Error())
+		return nil
+	}
+	a.flashOK(fmt.Sprintf(i18n.T("%s exportiert (ohne Passwörter): "), plural(len(conns), i18n.T("Verbindung"), i18n.T("Verbindungen"))) + p)
+	return nil
 }
