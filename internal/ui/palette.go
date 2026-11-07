@@ -209,6 +209,18 @@ func (a *App) paletteItems() []palItem {
 			}
 			return nil
 		}},
+		{icon: ic("goal"), label: i18n.T("Agent-Modus öffnen (läuft selbstständig)"), run: func() tea.Cmd {
+			if inTerm {
+				withPanel(s, panelGoal)
+				a.resize(s)
+				cmd := a.panelOpened(s)
+				if !s.goal.active {
+					s.goal.auto = true
+				}
+				return cmd
+			}
+			return nil
+		}},
 		{icon: ic("tunnel"), label: i18n.T("Tunnel-Panel"), hint: a.keys.label(actTunnels), run: func() tea.Cmd {
 			if inTerm {
 				withPanel(s, panelTunnels)

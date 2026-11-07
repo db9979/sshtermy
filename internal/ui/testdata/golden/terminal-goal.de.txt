@@ -7,16 +7,16 @@ deploy@web-01:~$ systemctl status nginx --no-pager | head -3            │     
      Loaded: loaded (/lib/systemd/system/nginx.service; enabled)        │                                              │
      Active: active (running) since Mon 2026-11-02 08:15:00 UTC         │ › z. B. Installiere Docker und richte Nginx  │
 deploy@web-01:~$                                                        │                                              │
+                                                                        │ MODUS  Tab wechseln                          │
+                                                                        │ ● Schritt für Schritt                        │
+                                                                        │ ○ Agent · Vorsichtig                         │
+                                                                        │ ○ Agent · Normal                             │
+                                                                        │ ○ Agent · Voll                               │
+                                                                        │   du bestätigst jeden Befehl                 │
+                                                                        │                                              │
                                                                         │ Die KI zerlegt das Ziel in einzelne Befehle, │
                                                                         │ erklärt jeden kurz und wartet auf deine      │
                                                                         │ Bestätigung. Sie tippt nie selbst.           │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
                                                                         │                                              │
                                                                         │                                              │
                                                                         │                                              │

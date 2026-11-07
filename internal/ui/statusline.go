@@ -155,6 +155,13 @@ func (a *App) sessionBar(s *session) string {
 	goal := ""
 	if s.goal.active {
 		goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(st.T.AI).Render(i18n.T("◎ Ziel aktiv")))
+		if s.goal.auto {
+			label, fg := i18n.T("◆ AGENT LÄUFT"), st.T.AI
+			if s.goal.paused || (s.goal.cur != nil && s.goal.cur.Question != "") {
+				label, fg = i18n.T("◆ AGENT WARTET"), st.T.Warn
+			}
+			goal = a.keyZone(a.keys.label(actGoal), st.Badge.Foreground(fg).Bold(true).Render(label))
+		}
 	}
 	if s.scroll > 0 {
 		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf(i18n.T("⇡ Verlauf −%d · Esc"), s.scroll)),

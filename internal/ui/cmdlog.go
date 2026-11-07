@@ -31,6 +31,7 @@ type cmdRun struct {
 	private     bool   // Leerzeichen am Anfang: nicht protokollieren
 	interrupted bool   // Strg+C während der Befehl lief
 	learnFrom   string // korrigiert diesen KI-Befehl (learn.go)
+	agent       bool   // vom Agent-Modus ausgeführt
 }
 
 // beginCommand: Enter mit einem Befehl am Prompt.
@@ -86,6 +87,10 @@ func (a *App) finishCommand(s *session) {
 	} else if !r.interrupted {
 		failed, f.Reason = agent.LooksFailed(out)
 	}
+	// Ziel-/Agent-Modus: Ausgabe und Exit-Code gehen an das Modell
+	if g := &s.goal; g.active && len(g.steps) > 0 && strings.HasPrefix(r.cmd, g.steps[len(g.steps)-1].Command) {
+		g.steps[len(g.steps)-1].Output, g.steps[len(g.steps)-1].Exit = sessionlog.Clip(out), f.Exit
+	}
 	if failed && !r.interrupted {
 		s.fail = &f
 		// Ziel-Modus: der Agent erfährt, dass sein Schritt nicht geklappt hat
@@ -110,7 +115,7 @@ func (a *App) finishCommand(s *session) {
 	}
 	if s.log != nil && !r.private {
 		s.log.Add(sessionlog.Entry{At: r.at, Command: r.cmd, Output: out, Duration: dur,
-			Failed: failed, Exit: f.Exit, Reason: f.Reason})
+			Failed: failed, Exit: f.Exit, Reason: f.Reason, Agent: r.agent})
 		a.saveLog(s)
 	}
 }

@@ -202,7 +202,8 @@ type Step struct {
 	Plan     []string
 	Done     bool
 	Question string
-	Options  []string // Antwortvorschläge zur Rückfrage (höchstens maxOptions)
+	Options  []string    // Antwortvorschläge zur Rückfrage (höchstens maxOptions)
+	File     *FileAction // Agent-Modus: Datei anlegen statt Befehl
 }
 
 // Done-Schritt aus der bisherigen Historie (für den Prompt).
@@ -210,6 +211,10 @@ type DoneStep struct {
 	Command  string
 	Skipped  bool
 	ExitHint string // z. B. "Ausgabe endete mit Fehlermeldung" (heuristisch)
+	// Agent-Modus
+	Output string // Ausgabe des Befehls (gekürzt)
+	Exit   *int   // Exit-Code, wenn die Shell ihn meldet (OSC 133)
+	File   string // Name der angelegten Datei (dann ist Command nur eine Beschreibung)
 }
 
 var ErrUnreadable = errors.New("Antwort des Modells nicht lesbar")

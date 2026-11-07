@@ -661,17 +661,29 @@ func NewData() *Data {
 // als Vorlage mit, er passt sie an die aktuelle Lage an. Ausgeführt wird
 // trotzdem jeder Schritt erst nach Bestätigung.
 type Runbook struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	Goal         string    `json:"goal"`
-	Steps        []string  `json:"steps,omitempty"`
-	ConnectionID string    `json:"connection_id,omitempty"` // leer = für alle Verbindungen
-	OS           string    `json:"os,omitempty"`            // System beim Speichern, nur als Hinweis
-	CreatedAt    time.Time `json:"created_at"`
-	LastUsed     time.Time `json:"last_used,omitempty"`
-	Uses         int       `json:"uses,omitempty"`
-	UpdatedAt    time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync)
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	Goal         string        `json:"goal"`
+	Steps        []string      `json:"steps,omitempty"`
+	Files        []RunbookFile `json:"files,omitempty"`         // Skripte aus dem Agent-Modus
+	ConnectionID string        `json:"connection_id,omitempty"` // leer = für alle Verbindungen
+	OS           string        `json:"os,omitempty"`            // System beim Speichern, nur als Hinweis
+	CreatedAt    time.Time     `json:"created_at"`
+	LastUsed     time.Time     `json:"last_used,omitempty"`
+	Uses         int           `json:"uses,omitempty"`
+	UpdatedAt    time.Time     `json:"updated_at,omitempty"` // letzte Änderung (Sync)
 }
+
+// RunbookFile: eine Datei, die der Agent-Modus angelegt hat. Pfade in den
+// Schritten nennen den Arbeitsordner als AgentDirToken.
+type RunbookFile struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+}
+
+// AgentDirToken steht in gespeicherten Schritten für den Arbeitsordner des
+// Agenten (jeder Lauf hat einen eigenen).
+const AgentDirToken = "<ARBEITSORDNER>"
 
 // Rev: Zeitstempel für den Sync (alte Einträge zählen mit dem Anlagedatum).
 func (r Runbook) Rev() time.Time {

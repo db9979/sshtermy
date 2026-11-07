@@ -1,6 +1,6 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
  connections  6  / search        │ ▾ Netzwerk
-            ┌─ ◆ Command palette  18 entries ────────────────────────────────────── × ─┐
+            ┌─ ◆ Command palette  19 entries ────────────────────────────────────── × ─┐
  ▾ Netzwerk │ $ Goal, question, command, tunnel, connection or user@host:port …        │
    ○ # switc│ ──────────────────────────────────────────────────────────────────────── │
  ▾ Produktio│ // connections                                                           │
@@ -11,10 +11,11 @@
  ○ · nas    │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
  ○ · spark  │ [=] All 6 connections in the manager         type a name, folder or #tag │
             │ // actions                                                               │
+            │ [q] Edit quick commands                                             list │
             │ [=] Connection manager                                               F10 │
             │ [+] New connection                                                     n │
-            │ [k] Generate SSH key / copy it to the server                           c │
-            │ [*] Broadcast: command on several hosts                                m │r between
+            │ [k] Generate SSH key / copy it to the server                           c │r between
+            │ [*] Broadcast: command on several hosts                                m │
             │ [/] Network scan: find SSH devices                                     f │
             │ [&] Share with the team (encrypted, no passwords)                   Team │
             │ [&] Import team package                                             Team │
@@ -22,7 +23,6 @@
             │ [#] Search session logs                                                l │
             │ [k] Lock now                                             Master password │
             │ [:] Settings ›                               mouse, look, language, AI … │
-            │ [?] Help & info ›                               keys, tour, news, update │
             │                                                                          │
             │  ↑↓ select    ⏎ run    Esc close                                         │
             └──────────────────────────────────────────────────────────────────────────┘
