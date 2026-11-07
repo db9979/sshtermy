@@ -62,6 +62,10 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     and network devices every change asks. Limits: 25 steps, 15 minutes, 3 failures in a row. Esc or typing in the
     terminal pauses it, `?` gives it an instruction. At the end: summary, changed files, `s` saves the run as a runbook
     including its scripts, `r` deletes the scripts on the host. Every step is marked "Agent" in the session log.
+  - **Plan mode** (F2, Tab until "Plan first"): the AI first looks around with read-only commands only, then writes a
+    complete plan (steps, scripts, risks, checks). Remove steps (Space), change them (`e`), have it re-planned (`?`),
+    pick how it runs (Tab: step by step or agent level) and approve with ⏎. The agent then sticks to the approved plan:
+    a changing command or file that is not in the plan pauses it. Ctrl+S saves the plan as a runbook.
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
   - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z)

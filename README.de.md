@@ -62,6 +62,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     jede Änderung nach. Grenzen: 25 Schritte, 15 Minuten, 3 Fehler in Folge. Esc oder Tippen im Terminal hält ihn an,
     `?` gibt ihm eine Anweisung. Am Ende: Zusammenfassung, geänderte Dateien, `s` speichert den Lauf als Runbook samt
     Skripten, `r` löscht die Skripte auf dem Host. Jeder Schritt steht als „Agent“ im Sitzungsprotokoll.
+  - **Plan-Modus** (F2, Tab bis „Erst planen“): Die KI sieht sich erst nur mit lesenden Befehlen um und schreibt dann
+    einen vollständigen Plan (Schritte, Skripte, Risiken, Prüfung). Schritte streichen (Leertaste), ändern (`e`), neu
+    planen lassen (`?`), Ausführung wählen (Tab: Schritt für Schritt oder Agent-Stufe) und mit ⏎ freigeben. Der Agent
+    hält sich dann an den Plan: ein ändernder Befehl oder eine Datei, die nicht im Plan steht, hält ihn an.
+    Strg+S speichert den Plan als Runbook.
   - **Runbooks**: Ziele mit den ausgeführten Befehlen speichern (Strg+S) und wiederverwenden, der Agent nimmt sie als Vorlage
   - **Endpunkt-Test und Modellauswahl** in den KI-Einstellungen (Strg+T testet, Strg+L listet die Modelle von `/v1/models`)
   - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort als Karten mit Syntaxfarben: einfügen (⏎/1…9), ausführen (a), kopieren (c), Erklärung einklappbar (z)

@@ -204,6 +204,7 @@ type Step struct {
 	Question string
 	Options  []string    // Antwortvorschläge zur Rückfrage (höchstens maxOptions)
 	File     *FileAction // Agent-Modus: Datei anlegen statt Befehl
+	Full     *FullPlan   // Plan-Modus: fertiger Plan
 }
 
 // Done-Schritt aus der bisherigen Historie (für den Prompt).

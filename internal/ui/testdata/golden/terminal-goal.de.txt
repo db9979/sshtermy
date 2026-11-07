@@ -12,12 +12,12 @@ deploy@web-01:~$                                                        │     
                                                                         │ ○ Agent · Vorsichtig                         │
                                                                         │ ○ Agent · Normal                             │
                                                                         │ ○ Agent · Voll                               │
+                                                                        │ ○ Erst planen                                │
                                                                         │   du bestätigst jeden Befehl                 │
                                                                         │                                              │
                                                                         │ Die KI zerlegt das Ziel in einzelne Befehle, │
                                                                         │ erklärt jeden kurz und wartet auf deine      │
                                                                         │ Bestätigung. Sie tippt nie selbst.           │
-                                                                        │                                              │
                                                                         │                                              │
                                                                         │                                              │
                                                                         │                                              │
