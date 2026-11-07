@@ -147,6 +147,8 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | F5 | files (SFTP): Tab side, c copy (up/down), Space/a mark, drag copies, n folder, d delete, . hidden |
 | | F6 | host overview: r/⏎ query, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
+| | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
+| | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu) |
 | | F9 / ⇧F1…F8 | quick commands: list / run directly |
 | | F10 | back to the manager (sessions keep running) |
 | | ⇧F9 | key bar explains the keys of the current area |

@@ -56,6 +56,9 @@ const (
 	actSplit     action = "split"
 	actSearch    action = "search"
 	actDetach    action = "detach"
+	actNewTab    action = "new_tab"
+	actCloseTab  action = "close_tab"
+	actTabList   action = "tab_list"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -82,6 +85,9 @@ var actionDefs = []actionDef{
 	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},
+	{actNewTab, "Neuer Tab", "Terminal", []string{"alt+n"}},
+	{actCloseTab, "Tab schließen", "Terminal", []string{"alt+w"}},
+	{actTabList, "Alle Tabs (Liste)", "Terminal", []string{"alt+t"}},
 	{actQuickMenu, "Schnellbefehle (Liste)", "Terminal", []string{"f9"}},
 	{actQuick[0], "Schnellbefehl 1", "Terminal", []string{"shift+f1", "f13"}},
 	{actQuick[1], "Schnellbefehl 2", "Terminal", []string{"shift+f2", "f14"}},

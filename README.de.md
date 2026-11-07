@@ -147,6 +147,8 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), Leertaste/a markieren, Ziehen kopiert, n Ordner, d löschen, . versteckte |
 | | F6 | Host-Übersicht: r/⏎ abfragen, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
+| | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
+| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü) |
 | | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
 | | ⇧F9 | Tastenzeile erklärt die Tasten des Bereichs |

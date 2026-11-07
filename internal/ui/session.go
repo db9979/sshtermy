@@ -39,6 +39,7 @@ const (
 type session struct {
 	id      int
 	conn    domain.Connection
+	title   string // eigener Tab-Name (tabs.go), "" = Alias
 	client  *sshx.Client
 	shell   termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
 	term    *termemu.Term
