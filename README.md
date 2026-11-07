@@ -21,6 +21,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
 - **Clipboard from the server (OSC 52)**: what you copy in tmux or vim on the server lands in your local clipboard. The server can never read it
+- **Split view** (Ctrl+T): up to six sessions at once in seven layouts, resize with the mouse or Alt+⇧+arrow, zoom one pane (Alt+Z), swap panes by dragging their title, optionally dim the other panes. The layout survives updates; **workspaces** (w in the manager) save layout and connections to reopen in one go, “Last used” is remembered on quit, `g` on a folder opens all its connections as a grid
 - **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
 - **SSH certificates**: keys signed by a company CA (`id_ed25519-cert.pub` next to the key, or any path in the connection) are used automatically; an expired certificate is reported with its date
 - **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder, or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
@@ -167,7 +168,9 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | F10 | back to the manager (sessions keep running) |
 | | ⇧F9 | key bar explains the keys of the current area |
 | | ⇧F10 | move the tab to its own terminal window (Windows Terminal/console, Terminal.app/iTerm2, Linux terminals, tmux); the session stays open, closing the window or ⏎ brings it back. Own terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
-| | Ctrl+F / Ctrl+T | search the scrollback / split view (2 / 4) |
+| | Ctrl+F | search the scrollback |
+| | Ctrl+T | choose a layout: one, two side by side/stacked, large + two, three, four, six (keys 1…7); inside, ⇧+arrow resizes, `=` equal sizes, `z` zoom, `d` dim the others, `w` workspaces |
+| | Ctrl+arrow / Alt+⇧+arrow / Alt+Z | split view: switch pane / move divider / zoom the active pane. Mouse: drag a divider (double-click = equal sizes), drag a title onto another pane = swap, double-click a title = zoom |
 | | Tab or → | accept ghost text |
 | | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
 | | Alt+0 | after a failure: the AI explains the cause and suggests a fix |

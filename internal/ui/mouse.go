@@ -85,6 +85,11 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		clicks = c.count
 	}
 
+	// geteilte Ansicht: Trennlinien ziehen, Bereiche tauschen, zoomen
+	if cmd, ok := a.splitMouse(msg, clicks); ok {
+		return cmd
+	}
+
 	// Terminalfläche zuerst: Markieren und Weiterleiten dürfen nicht an
 	// Zonen hängen bleiben (z. B. beim Ziehen über den Rand hinaus).
 	s := a.current()
@@ -165,7 +170,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	case a.pal != nil:
 		a.pal = nil
 	case a.modal != nil:
-		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo || a.modal.kind == mLLM || a.modal.kind == mCrash {
+		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo || a.modal.kind == mLLM || a.modal.kind == mCrash || a.modal.kind == mLayout {
 			a.modal = nil
 		}
 	case a.scr == scrTerminal && s != nil && s.panel != panelNone && !s.files.open && a.inPanel(s, m.X, m.Y):

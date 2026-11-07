@@ -21,6 +21,7 @@
             │ [&] Import team package                                             Team │
             │ [&] Team folders (published / subscribed)                           Team │
             │ [#] Search session logs                                                l │
+            │ [|] Workspaces …                                                       w │
             │ [k] Lock now                                             Master password │
             │ [:] Settings ›                               mouse, look, language, AI … │
             │                                                                          │

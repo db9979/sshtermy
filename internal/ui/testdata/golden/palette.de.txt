@@ -21,6 +21,7 @@
             │ [&] Team-Paket übernehmen                                           Team │
             │ [&] Team-Ordner (veröffentlicht / abonniert)                        Team │
             │ [#] Sitzungsprotokolle durchsuchen                                     l │
+            │ [|] Arbeitsplätze …                                                    w │
             │ [k] Jetzt sperren                                        Master-Passwort │
             │ [:] Einstellungen ›                        Maus, Aussehen, Sprache, KI … │
             │                                                                          │

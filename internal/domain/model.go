@@ -464,9 +464,31 @@ type Settings struct {
 	// weil die Animation schon vor dem Entsperren läuft.
 	Intro string `json:"intro,omitempty"`
 
+	// DimPanes: in der geteilten Ansicht die nicht aktiven Bereiche abdunkeln.
+	DimPanes bool `json:"dim_panes,omitempty"`
+	// Workspaces: gespeicherte Arbeitsplätze (Aufteilung + Verbindungen),
+	// LastLayout: Aufteilung beim letzten Beenden (Eintrag „Zuletzt“).
+	// Arbeitsplätze gehen mit dem Sync, „Zuletzt“ bleibt auf dem Rechner.
+	Workspaces []Workspace `json:"workspaces,omitempty"`
+	LastLayout *Workspace  `json:"last_layout,omitempty"`
+
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`
+}
+
+// Workspace: geteilte Ansicht zum Wiederöffnen. Layout ist der Name der
+// Aufteilung ("cols", "rows", "grid", "main", "cols3", "grid6"), FracX/FracY
+// die Anteile der Spalten/Zeilen (leer = gleich groß), Conns die Verbindung
+// je Bereich ("" = leer). Folder statt Conns: alle Verbindungen im Ordner.
+type Workspace struct {
+	Name   string    `json:"name"`
+	Layout string    `json:"layout"`
+	FracX  []float64 `json:"frac_x,omitempty"`
+	FracY  []float64 `json:"frac_y,omitempty"`
+	Conns  []string  `json:"conns,omitempty"`
+	Folder string    `json:"folder,omitempty"`
+	Saved  time.Time `json:"saved"`
 }
 
 // IconsNow: der Symbolstil, der auf diesem Rechner wirklich gilt. Kam

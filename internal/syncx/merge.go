@@ -44,6 +44,8 @@ type SharedPrefs struct {
 	Monitor         domain.MonitorConfig `json:"monitor,omitempty"`
 	Icons           string               `json:"icons,omitempty"`
 	Intro           string               `json:"intro,omitempty"`
+	DimPanes        bool                 `json:"dim_panes,omitempty"`
+	Workspaces      []domain.Workspace   `json:"workspaces,omitempty"`
 }
 
 func sharedSettings(s domain.Settings) SharedSettings {
@@ -55,6 +57,7 @@ func sharedSettings(s domain.Settings) SharedSettings {
 			NoAutoReconnect: s.NoAutoReconnect, TourDone: s.TourDone, ExplainKeys: s.ExplainKeys,
 			NoReachCheck: s.NoReachCheck, NoNotify: s.NoNotify, NoDesktopNotify: s.NoDesktopNotify,
 			NoOSC52: s.NoOSC52, Monitor: s.Monitor, Icons: s.Icons, Intro: s.Intro,
+			DimPanes: s.DimPanes, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
 		},
 	}
 }
@@ -76,6 +79,7 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 	d.NoNotify, d.NoDesktopNotify, d.NoOSC52 = x.NoNotify, x.NoDesktopNotify, x.NoOSC52
 	d.TourDone = d.TourDone || x.TourDone
 	d.Monitor, d.Intro = x.Monitor, x.Intro
+	d.DimPanes, d.Workspaces = x.DimPanes, append([]domain.Workspace(nil), x.Workspaces...)
 	// Nerd-Font-Symbole von einem anderen Rechner: hier erst nach der Probe,
 	// sonst stünden in jedem Menü Kästchen.
 	if x.Icons == "nerd" && d.Icons != "nerd" && d.NerdFont != "ja" {

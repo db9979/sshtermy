@@ -43,23 +43,30 @@ const (
 	actSSHKey    action = "ssh_key"
 
 	// Ordner im Manager
-	actFolderNew action = "folder_new"
-	actRename    action = "rename"
-	actMoveTo    action = "move_to"
-	actMoveUp    action = "move_up"
-	actMoveDown  action = "move_down"
-	actTagFilter action = "tag_filter"
-	actFoldAll   action = "fold_all"
-	actUnfoldAll action = "unfold_all"
-	actBroadcast action = "broadcast"
-	actScan      action = "scan"
-	actSplit     action = "split"
-	actSearch    action = "search"
-	actDetach    action = "detach"
-	actSyncInput action = "syncinput"
-	actNewTab    action = "new_tab"
-	actCloseTab  action = "close_tab"
-	actTabList   action = "tab_list"
+	actFolderNew  action = "folder_new"
+	actRename     action = "rename"
+	actMoveTo     action = "move_to"
+	actMoveUp     action = "move_up"
+	actMoveDown   action = "move_down"
+	actTagFilter  action = "tag_filter"
+	actFoldAll    action = "fold_all"
+	actUnfoldAll  action = "unfold_all"
+	actBroadcast  action = "broadcast"
+	actScan       action = "scan"
+	actSplit      action = "split"
+	actSearch     action = "search"
+	actDetach     action = "detach"
+	actSyncInput  action = "syncinput"
+	actNewTab     action = "new_tab"
+	actCloseTab   action = "close_tab"
+	actTabList    action = "tab_list"
+	actZoom       action = "zoom"
+	actGrowLeft   action = "pane_left"
+	actGrowRight  action = "pane_right"
+	actGrowUp     action = "pane_up"
+	actGrowDown   action = "pane_down"
+	actWorkspace  action = "workspaces"
+	actFolderGrid action = "folder_grid"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -99,7 +106,12 @@ var actionDefs = []actionDef{
 	{actQuick[6], "Schnellbefehl 7", "Terminal", []string{"shift+f7", "f19"}},
 	{actQuick[7], "Schnellbefehl 8", "Terminal", []string{"shift+f8", "f20"}},
 	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
-	{actSplit, "Ansicht teilen (2 / 4)", "Terminal", []string{"ctrl+t"}},
+	{actSplit, "Ansicht teilen (Aufteilung wählen)", "Terminal", []string{"ctrl+t"}},
+	{actZoom, "Bereich zoomen / zurück", "Terminal", []string{"alt+z"}},
+	{actGrowLeft, "Trennlinie nach links", "Terminal", []string{"alt+shift+left"}},
+	{actGrowRight, "Trennlinie nach rechts", "Terminal", []string{"alt+shift+right"}},
+	{actGrowUp, "Trennlinie nach oben", "Terminal", []string{"alt+shift+up"}},
+	{actGrowDown, "Trennlinie nach unten", "Terminal", []string{"alt+shift+down"}},
 	{actDetach, "Tab in eigenes Fenster / zurückholen", "Terminal", []string{"shift+f10", "f22"}},
 	{actSyncInput, "Eingabe an alle geteilten Bereiche", "Terminal", []string{"alt+i"}},
 	{actChip1, "Folgebefehl 1 einfügen", "Terminal", []string{"alt+1"}},
@@ -122,6 +134,8 @@ var actionDefs = []actionDef{
 	{actUnfoldAll, "Alle Ordner aufklappen", "Manager", []string{"+"}},
 	{actBroadcast, "Broadcast an mehrere Hosts", "Manager", []string{"m"}},
 	{actScan, "Netzwerk-Scan", "Manager", []string{"f"}},
+	{actWorkspace, "Arbeitsplätze", "Manager", []string{"w"}},
+	{actFolderGrid, "Ordner als Raster öffnen", "Manager", []string{"g"}},
 }
 
 func defOf(id action) actionDef {

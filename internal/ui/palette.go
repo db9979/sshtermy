@@ -292,8 +292,10 @@ func (a *App) paletteItems() []palItem {
 				a.refreshSearch(s, true)
 				return cmd
 			}})
-		for _, m := range []splitMode{splitCols, splitRows, splitGrid, splitOff} {
-			if m == a.split || (m == splitOff && a.split == splitOff) {
+		actions = append(actions, palItem{icon: ic("split"), label: i18n.T("Aufteilung wählen …"), hint: a.keys.label(actSplit), keys: "split teilen layout",
+			run: func() tea.Cmd { return a.openLayout() }})
+		for _, m := range layoutOrder {
+			if m == a.split {
 				continue
 			}
 			m := m
@@ -303,6 +305,18 @@ func (a *App) paletteItems() []palItem {
 			}
 			actions = append(actions, palItem{icon: ic("split"), label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
+		if a.split != splitOff {
+			zl := i18n.T("Bereich zoomen (ganzes Fenster)")
+			if a.zoom {
+				zl = i18n.T("Zoom beenden (alle Bereiche zeigen)")
+			}
+			actions = append(actions,
+				palItem{icon: ic("split"), label: zl, hint: a.keys.label(actZoom), run: func() tea.Cmd { a.toggleZoom(); return nil }},
+				palItem{icon: ic("split"), label: i18n.T("Alle Bereiche gleich groß"), hint: "Strg+T =", run: func() tea.Cmd { a.equalize(); return nil }})
+		}
+		actions = append(actions,
+			palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }},
+			palItem{icon: ic("split"), label: i18n.T("Ansicht als Arbeitsplatz speichern"), keys: "workspace save", run: func() tea.Cmd { return a.saveWorkspaceAsk() }})
 		if a.split != splitOff {
 			label := i18n.T("Eingabe an alle geteilten Bereiche: einschalten")
 			if a.syncIn {
@@ -324,6 +338,9 @@ func (a *App) paletteItems() []palItem {
 			palItem{icon: ic("rename"), label: i18n.T("Tab umbenennen"), hint: trunc(s.tabName(), 16), run: func() tea.Cmd { return a.renameTab(s, nil) }},
 			palItem{icon: ic("tabs"), label: i18n.T("Tab duplizieren"), hint: trunc(s.conn.Alias, 16), run: func() tea.Cmd { return a.duplicateTab(s) }},
 			palItem{icon: ic("close"), label: i18n.T("Tab schließen"), hint: a.keys.label(actCloseTab), run: func() tea.Cmd { return a.closeTabAsk(s, nil) }})
+	}
+	if a.scr == scrManager {
+		actions = append(actions, palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }})
 	}
 	actions = append(actions, palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
 	for _, x := range actions {
@@ -467,6 +484,7 @@ func (a *App) palMenuItems() []palItem {
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
 		palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
+		palToggle(ic("split"), i18n.T("Geteilte Ansicht: andere Bereiche abdunkeln"), a.dimPanes(), "split dim abdunkeln", func() tea.Cmd { return a.toggleDimPanes() }),
 
 		// Sicherheit
 		safe(palToggle(ic("paste"), i18n.T("Einfügeschutz: Vorschau bei mehreren Zeilen"), a.pasteGuardEnabled(), "paste einfügen", func() tea.Cmd { return a.togglePasteGuard() })),

@@ -1,0 +1,36 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                           ▌● web-01   ▌● web-02   ▌● db-01 ×  +
+ PRODUCTION  postgres@10.0.1.5:2222                                                                           ↔ 0 tunnels   ● ◆ qwen3-coder
+▌● web-01  deploy@10.0.0.11                                               │▌● web-02  deploy@10.0.0.12          ┌─────────────────────────┐
+Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                       │Linux web-02 6.8.0-45-generic #45-Ubu│ i View: one large + two │
+                                                                          │                                     └─────────────────────────┘
+deploy@web-01:~$ systemctl status nginx --no-pager | head -3              │deploy@web-02:~$ systemctl status nginx --no-pager | head -3
+● nginx.service - A high performance web server and a reverse proxy se    │● nginx.service - A high performance web server and a reverse pro
+     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)          │     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)
+     Active: active (running) since Mon 2026-11-02 08:15:00 UTC           │     Active: active (running) since Mon 2026-11-02 08:15:00 UTC
+deploy@web-01:~$                                                          │deploy@web-02:~$
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │ ● db-01  postgres@10.0.1.5               Ctrl+arrow switches  ↕
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+                                                                          │
+
+ Ctrl+Space Palette  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  F5 Files  F6 Host  F7/F8 Tabs  F9 Quick commands  F10 Manager  ⇧F9 explain

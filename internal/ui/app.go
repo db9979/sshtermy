@@ -92,6 +92,11 @@ type App struct {
 	split    splitMode // geteilte Ansicht (Strg+T)
 	syncIn   bool      // Eingabe an alle Bereiche (syncinput.go)
 	panes    []int     // Sitzungs-IDs je Bereich, 0 = leer
+	fracX    []float64 // Spaltenanteile der geteilten Ansicht (nil = gleich)
+	fracY    []float64 // Zeilenanteile (nil = gleich)
+	zoom     bool      // aktiver Bereich aufs ganze Fenster (Alt+Z)
+	sdrag    *splitDrag
+	dropOn   int // Titel wird gezogen: Zielbereich+1
 
 	modal        *modal
 	pal          *palette
@@ -501,6 +506,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (a *App) quit() tea.Cmd {
+	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
 	for _, s := range a.sessions {
 		a.endLog(s)
 		a.stopRecording(s)

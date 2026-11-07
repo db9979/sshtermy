@@ -21,6 +21,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Fertig im Hintergrund**: Ein Befehl, der 10 s oder länger in einem verdeckten Tab lief, markiert den Tab (✓ / ×) und meldet sich mit einer Einblendung; ist das sshTermy-Fenster im Hintergrund, kommt zusätzlich eine Desktop-Benachrichtigung (Windows, macOS, Linux). Die Terminal-Glocke markiert den Tab ebenso. Beides ist in der Palette abschaltbar
 - **Agent-Weiterleitung** pro Verbindung (wie `ssh -A`): `git pull`, `ssh` und `scp` auf dem Server nutzen deine lokalen Keys aus ssh-agent, Pageant oder dem Windows-OpenSSH-Agent, die Keys verlassen deinen Rechner nie
 - **Zwischenablage vom Server (OSC 52)**: Was du in tmux oder vim auf dem Server kopierst, landet in deiner lokalen Zwischenablage. Lesen kann der Server sie nie
+- **Geteilte Ansicht** (Strg+T): bis zu sechs Sitzungen gleichzeitig in sieben Aufteilungen, Größe per Maus oder Alt+⇧+Pfeil, Zoom auf einen Bereich (Alt+Z), Bereiche per Titel tauschen, andere Bereiche auf Wunsch abdunkeln. Die Aufteilung übersteht Updates; **Arbeitsplätze** (w im Manager) speichern Aufteilung und Verbindungen zum Wiederöffnen mit einem Klick, „Zuletzt“ merkt sich sshTermy beim Beenden selbst, `g` auf einem Ordner öffnet alle Verbindungen darin als Raster
 - **Eingabe an alle geteilten Bereiche** (Alt+I in der geteilten Ansicht): Was du tippst, geht live an jeden sichtbaren Host, z. B. dieselbe Änderung auf vier Switches. Enter geht nur durch, wenn die Zeile auf keinem Host gefährlich ist
 - **SSH-Zertifikate**: Von einer Firmen-CA signierte Keys (`id_ed25519-cert.pub` neben dem Key oder ein eigener Pfad in der Verbindung) werden automatisch genutzt; ein abgelaufenes Zertifikat meldet sshTermy mit Datum
 - **Dateien direkt im Terminal (trzsz)**: `tsz datei` auf dem Server lädt in deinen Downloads-Ordner, `trz` lädt hoch; klappt auch nach `sudo su`, über mehrere Sprünge und auf Geräten ohne SFTP. ZMODEM (`sz`/`rz`) wird erkannt und mit Hinweis abgebrochen, statt zu hängen
@@ -167,7 +168,9 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
 | | ⇧F9 | Tastenzeile erklärt die Tasten des Bereichs |
 | | ⇧F10 | Tab in ein eigenes Terminalfenster abtrennen (Windows Terminal/Konsole, Terminal.app/iTerm2, Linux-Terminals, tmux); die Sitzung bleibt offen, Fenster schließen oder ⏎ holt sie zurück. Eigenes Terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
-| | Strg+F / Strg+T | im Verlauf suchen / Ansicht teilen (2 / 4) |
+| | Strg+F | im Verlauf suchen |
+| | Strg+T | Aufteilung wählen: eine, zwei nebeneinander/untereinander, groß + zwei, drei, vier, sechs (Tasten 1…7); im Fenster ⇧+Pfeil Größe, `=` gleich groß, `z` Zoom, `d` andere abdunkeln, `w` Arbeitsplätze |
+| | Strg+Pfeil / Alt+⇧+Pfeil / Alt+Z | geteilte Ansicht: Bereich wechseln / Trennlinie verschieben / aktiven Bereich zoomen. Maus: Trennlinie ziehen (Doppelklick = gleich groß), Titel auf anderen Bereich ziehen = tauschen, Doppelklick auf Titel = Zoom |
 | | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
 | | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |

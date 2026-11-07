@@ -1,0 +1,80 @@
+package i18n
+
+// Geteilte Ansicht: Aufteilungen, Größe, Zoom, Arbeitsplätze (ui/split.go,
+// ui/layout.go, ui/workspace.go). Eigene Datei gegen Merge-Konflikte.
+func init() {
+	for k, v := range enLayout {
+		en[k] = v
+	}
+}
+
+var enLayout = map[string]string{
+	" holt die anderen Bereiche zurück":                              " brings the other panes back",
+	" = als Raster":                                                  " = as grid",
+	" ↔ hier ablegen: tauscht mit ":                                  " ↔ drop here: swaps with ",
+	"%d Verbindungen gibt es nicht mehr, ihre Bereiche bleiben leer": "%d connections no longer exist, their panes stay empty",
+	"%d weitere Verbindungen als Tabs geöffnet (F7/F8)":              "%d more connections opened as tabs (F7/F8)",
+	"+ Aktuelle Ansicht speichern als „":                             "+ Save current view as “",
+	"Alle Bereiche gleich groß":                                      "All panes the same size",
+	"Alle Bereiche in voller Farbe":                                  "All panes in full colour",
+	"Andere Bereiche abdunkeln: ":                                    "Dim other panes: ",
+	"Ansicht als Arbeitsplatz speichern":                             "Save view as workspace",
+	"Arbeitsplatz umbenennen":                                        "Rename workspace",
+	"Arbeitsplatz „":                                                 "Workspace “",
+	"Arbeitsplätze":                                                  "Workspaces",
+	"Arbeitsplätze …":                                                "Workspaces …",
+	"Aufteilung":                                                     "Layout",
+	"⏎ öffnet Aufteilung und Verbindungen. Ordner im Manager: ":      "⏎ opens layout and connections. Folder in the manager: ",
+	"Aufteilung wählen …":                                            "Choose layout …",
+	"Bereich zoomen (ganzes Fenster)":                                "Zoom pane (whole window)",
+	"Die Verbindungen dieses Arbeitsplatzes gibt es nicht mehr":      "The connections of this workspace no longer exist",
+	"Erst Verbindungen öffnen, dann die Ansicht speichern":           "Open connections first, then save the view",
+	"Geteilte Ansicht: andere Bereiche abdunkeln":                    "Split view: dim the other panes",
+	"Größe":                               "size",
+	"Im Ordner liegen keine Verbindungen": "There are no connections in this folder",
+	"In dieser Aufteilung gibt es keine Linie in diese Richtung": "This layout has no divider in that direction",
+	"Name oder Verbindung": "Name or connection",
+	"Name, z. B. „Web-Cluster“. Gleicher Name ersetzt den alten.": "Name, e.g. “Web cluster”. The same name replaces the old one.",
+	"Nicht aktive Bereiche werden abgedunkelt":                    "Inactive panes are dimmed",
+	"Raster":                              "grid",
+	"Zoom":                                "zoom",
+	"Zoom beenden (alle Bereiche zeigen)": "End zoom (show all panes)",
+	"Zoom gibt es nur in der geteilten Ansicht (Strg+T)": "Zoom only works in the split view (Ctrl+T)",
+	"Zoom: ":                     "Zoom: ",
+	"abdunkeln":                  "dim",
+	"aktuelle Ansicht speichern": "save current view",
+	"als Raster öffnen":          "open as grid",
+	"drei nebeneinander":         "three side by side",
+	"einer groß + zwei":          "one large + two",
+	"gleich groß":                "same size",
+	"leerem Bereich":             "empty pane",
+	"sechs Bereiche":             "six panes",
+	"“ gelöscht":                 "” deleted",
+	"“ gespeichert":              "” saved",
+	"“, nehme „":                 "”, using “",
+	"■ Zoom · %d weitere verdeckt · %s zurück": "■ Zoom · %d more hidden · %s back",
+	"Zuletzt": "Last used",
+
+	"eine":          "one",
+	"nebeneinander": "side by side",
+	"untereinander": "stacked",
+	"groß + zwei":   "large + two",
+	"drei":          "three",
+	"vier":          "four",
+	"sechs":         "six",
+
+	"Aufteilung wählen (1…7)":               "choose layout (1…7)",
+	"Trennlinie verschieben (Maus: ziehen)": "move divider (mouse: drag)",
+	"Bereiche tauschen":                     "swap panes",
+	"Titel ziehen":                          "Drag title",
+	"Alt+⇧Pfeil":                            "Alt+⇧arrow",
+
+	// Tastenkürzel (keymap.go)
+	"Ansicht teilen (Aufteilung wählen)": "Split view (choose layout)",
+	"Bereich zoomen / zurück":            "Zoom pane / back",
+	"Trennlinie nach links":              "Move divider left",
+	"Trennlinie nach rechts":             "Move divider right",
+	"Trennlinie nach oben":               "Move divider up",
+	"Trennlinie nach unten":              "Move divider down",
+	"Ordner als Raster öffnen":           "Open folder as grid",
+}

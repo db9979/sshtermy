@@ -46,7 +46,7 @@ func TestSyncInputTypesEverywhere(t *testing.T) {
 	if outs[2].String() != "" {
 		t.Fatalf("verdeckter Tab tippt mit: %q", outs[2].String())
 	}
-	if !strings.Contains(a.paneTitle(ss[1], 80, false), "alle") {
+	if !strings.Contains(a.paneTitle(ss[1], 80, false, false), "alle") {
 		t.Fatal("Titelzeile ohne Hinweis")
 	}
 	a.Update(tea.PasteMsg{Content: "a\nb"})
