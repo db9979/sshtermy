@@ -50,7 +50,7 @@ func TestAgentPlanThenAuto(t *testing.T) {
 		t.Fatal("vor der Freigabe des Plans darf nichts laufen")
 	}
 	a.panelMsg(s, enterKey)
-	if !g.planOK || g.paused || !g.waiting || !strings.Contains(out.String(), "df -h /var\r") {
+	if !g.planOK || g.paused || !g.waiting || !out.has("df -h /var\r") {
 		t.Fatalf("⏎ muss den Agenten starten: %+v / %q", g, out.String())
 	}
 	if s.run == nil || !s.run.agent {
@@ -59,7 +59,7 @@ func TestAgentPlanThenAuto(t *testing.T) {
 	// nächster Schritt: ändert etwas, kein sudo ⇒ läuft in Normal allein
 	g.waiting = false
 	a.sessionMsg(stepMsg(s, cmdStep("mkdir -p /tmp/rot", "unix")))
-	if g.paused || !strings.Contains(out.String(), "mkdir -p /tmp/rot\r") {
+	if g.paused || !out.has("mkdir -p /tmp/rot\r") {
 		t.Fatalf("Normal: Änderung ohne sudo muss allein laufen: %+v", g)
 	}
 }
@@ -113,7 +113,7 @@ func TestAgentDangerNeedsTwoEnters(t *testing.T) {
 		t.Fatal("erstes ⏎ darf nur scharf schalten")
 	}
 	a.panelMsg(s, enterKey)
-	if !strings.Contains(out.String(), "rm -rf /tmp/rot/old\r") {
+	if !out.has("rm -rf /tmp/rot/old\r") {
 		t.Fatal("zweites ⏎ muss ausführen")
 	}
 }

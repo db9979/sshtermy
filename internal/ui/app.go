@@ -276,6 +276,11 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case secretAskMsg:
 		a.modal = secretModal(m)
 		return a, a.listen()
+	case connectNoticeMsg:
+		if s := a.byID(m.sid); s != nil {
+			s.connNote = m.text
+		}
+		return a, a.listen()
 	case sshKeyDoneMsg:
 		return a, a.sshKeyDone(m)
 	case relayMsg:
@@ -285,7 +290,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
-			s.client, s.shell, s.state = m.client, m.shell, stConnected
+			s.client, s.shell, s.state, s.connNote = m.client, m.shell, stConnected, ""
 			s.connectedAt = time.Now()
 			if m.client != nil {
 				s.tunnels = sshx.NewTunnelManager(m.client)
@@ -507,6 +512,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a *App) quit() tea.Cmd {
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
+	sshx.StopSKAgent() // eigener ssh-agent für Sicherheitsschlüssel
 	for _, s := range a.sessions {
 		a.endLog(s)
 		a.stopRecording(s)

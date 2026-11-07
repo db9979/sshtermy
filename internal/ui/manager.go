@@ -542,7 +542,7 @@ func (a *App) viewManager() string {
 			}
 			row(i18n.T("Farbe"), glyph("▌", acc, nil)+" "+lbl)
 		}
-		auth := map[domain.AuthMethod]string{domain.AuthPassword: i18n.T("Passwort (verschlüsselt)"), domain.AuthKeyFile: "Keyfile", domain.AuthAgent: i18n.T("SSH-Agent")}[c.Auth]
+		auth := map[domain.AuthMethod]string{domain.AuthPassword: i18n.T("Passwort (verschlüsselt)"), domain.AuthKeyFile: "Keyfile", domain.AuthAgent: i18n.T("SSH-Agent"), domain.AuthKerberos: "Kerberos"}[c.Auth]
 		if c.Auth == domain.AuthKeyFile {
 			if c.KeyPEM.IsSet() {
 				auth += i18n.T(" (eingebettet, verschlüsselt)")
@@ -652,7 +652,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.choice("baud", "Baud", baudOpts(c.SerialBaud()), strconv.Itoa(c.SerialBaud()), i18n.T("Aruba/HPE/Cisco: 9600 · viele neuere Geräte: 115200")).hidden = notSerial
 	f.choice("frame", i18n.T("Datenformat"), frameOpts(c.SerialFrame()), c.SerialFrame(), i18n.T("Datenbits, Parität, Stoppbits · fast immer 8N1")).hidden = notSerial
 	f.text("user", i18n.T("Benutzer"), c.Username, "").help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt")
-	f.choice("auth", i18n.T("Anmeldung"), []string{"agent", "keyfile", "password"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen)")).hidden = raw
+	f.choice("auth", i18n.T("Anmeldung"), []string{"agent", "keyfile", "password", "kerberos"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen) · kerberos = Ticket der Firmen-Domäne (Windows-Anmeldung oder kinit)")).hidden = raw
 	isAuth := func(v string) func(*form) bool {
 		return func(f *form) bool { return raw(f) || f.sel("auth") != v }
 	}
@@ -688,6 +688,10 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.choice("device", i18n.T("Gerätetyp"), deviceLabels, deviceLabel(c.Device), i18n.T("Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage"))
 	f.toggle("fwdagent", i18n.T("Agent weiterreichen"), c.ForwardAgent,
 		i18n.T("wie ssh -A: git, ssh, scp auf dem Server mit deinen lokalen Keys · nur bei vertrauten Servern")).hidden = func(f *form) bool {
+		return raw(f) || deviceFromLabel(f.sel("device")) == domain.DeviceNetwork
+	}
+	f.toggle("fwdx11", i18n.T("X11 weiterleiten"), c.ForwardX11,
+		i18n.T("wie ssh -X: grafische Programme vom Server hier zeigen · braucht lokal einen X-Server (XQuartz, VcXsrv, WSLg)")).hidden = func(f *form) bool {
 		return raw(f) || deviceFromLabel(f.sel("device")) == domain.DeviceNetwork
 	}
 	addPersistFields(f, c, raw)
@@ -877,6 +881,7 @@ func (a *App) saveConn() error {
 	c.Device = deviceFromLabel(f.sel("device"))
 	applyPersistFields(f, &c)
 	c.ForwardAgent = f.flag("fwdagent") && !c.Protocol.Raw() && c.Device != domain.DeviceNetwork
+	c.ForwardX11 = f.flag("fwdx11") && !c.Protocol.Raw() && c.Device != domain.DeviceNetwork
 	c.Profile = profileFromForm(f, a.formBase.Profile)
 	c.JumpHostID = f.val("jump")
 	if c.Protocol.Raw() {

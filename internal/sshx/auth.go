@@ -115,6 +115,19 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 
 	case domain.AuthAuto:
 		return autoMethods(c, o), nil
+
+	case domain.AuthKerberos:
+		// Kerberos zuerst; klappt es nicht (kein Ticket, Server ohne
+		// GSSAPI), wie „auto“ weiter: Agent, Standard-Keys, Passwort.
+		// Das erste Token entsteht schon hier: ohne Ticket fällt Kerberos
+		// leise weg (mitten in der Anmeldung würde ein Fehler alles abbrechen).
+		m := autoMethods(c, o)
+		if g, err := newGSSClient(KerberosSPN(c.Host)); err == nil {
+			m = append([]ssh.AuthMethod{ssh.GSSAPIWithMICAuthMethod(g, c.Host)}, m...)
+		} else if o.Notice != nil {
+			o.Notice(i18n.T("Kerberos: ") + err.Error())
+		}
+		return m, nil
 	}
 	return nil, fmt.Errorf(i18n.T("unbekannte Auth-Methode %q"), c.Auth)
 }
@@ -190,6 +203,15 @@ func loadSigner(c domain.Connection, o Options) (ssh.Signer, error) {
 			pem[i] = 0
 		}
 	}()
+	if IsSKKey(pem) {
+		// FIDO2-Token: signieren kann nur der Token selbst (sk.go)
+		touch := func() {
+			if o.Notice != nil {
+				o.Notice(i18n.T("Sicherheitsschlüssel berühren …"))
+			}
+		}
+		return skSigner(pem, "", c.KeyPassphrase.Reveal(), o.AskSecret, PassphraseLabel(c), touch)
+	}
 	signer, err := parseKey(pem, nil)
 	var missing *ssh.PassphraseMissingError
 	if errors.As(err, &missing) {

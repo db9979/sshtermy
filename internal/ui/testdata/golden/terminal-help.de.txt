@@ -3,29 +3,29 @@
 Li│                                                                                                                 │
   │  ◆ Überall                            ◎ Ziel-Modus F2                      ≡ Sitzungsprotokolle l               │
 de│   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   /           suchen (auch Ausgabe)   │
-● │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       z           KI-Zusammenfassung      │
-  │   F12         Über & Update            i           nur einfügen (Dry-Run)   Z           alle Treffer zusammen…  │
-  │   F12 w       Was ist neu              e           bearbeiten               x           Export: md · txt · ca…  │
-de│   F12 l       Sprache: Deutsch/Engl…   s           überspringen             d           löschen                 │
-  │   ⇧F9         Tastenzeile erklären     r           neu vorschlagen          a           Mitschreiben an/aus     │
-  │   Strg+Q      beenden                  x           Ziel beenden             ␣ Befehl    nicht protokollieren    │
-  │                                        ↑ ↓         Runbook wählen                                               │
-  │  ≡ Verbindungs-Manager F10             Strg+S      als Runbook speichern   » Broadcast m                        │
-  │   F10         zurück zum Terminal      Strg+D      Runbook löschen          Space / g / a Host / Ordner / alle  │
-  │   ⏎           verbinden                Tab         Schritt für Schritt o…   Tab         Hosts · Quelle · Befe…  │
-  │   n           neue Verbindung          Esc         Agent anhalten           ⇧⏎          weiterer Schritt        │
-  │   e           bearbeiten               ?           Agent anweisen           Strg+S      prüfen, dann ⏎          │
-  │   d           löschen                  v           Skript des Agenten an…   ← / →       Host-Spalte wählen      │
-  │   /           suchen (auch #tag)       r           Skripte des Agenten l…   ↑ ↓ Bild↑↓  Ausgabe blättern        │
-  │   o           neuer Ordner (A / B v…                                        z / c       groß / kopieren         │
-  │   r           Ordner umbenennen       ◆ KI fragen F3                        r / e / x   nochmal / ändern / St…  │
-  │   v           in Ordner verschieben    ⏎           Frage senden             {{name}}    Variable, wird abgefr…  │
-  │   Shift+↑     nach oben schieben (↓…   ⇧⏎ / Strg+J neue Zeile               {{host}}    je Host eingesetzt      │
-  │   ← / →       Ordner zu-/aufklappen    1…9         Befehl einfügen          Strg+R      als Runbook speichern   │
-  │   - / +       alle Ordner zu/auf       ↑ ↓         Befehlskarte wählen      e / Strg+D  ändern / löschen        │
-  │   #           nach Tag filtern         a           Befehl ausführen (rot…   k / a       KI prüft / übernehmen   │
-  │   t           Tunnel anlegen           c           Befehl kopieren                                              │
-  │   c           SSH-Schlüssel erzeuge…   z           Erklärung ein-/auskla…  / Netzwerk-Scan f                    │
+● │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       ⏎ / → ←     auf-/zuklappen          │
+  │   F12         Über & Update            i           nur einfügen (Dry-Run)   Tab         nach Zeit / nach Host   │
+  │   F12 w       Was ist neu              e           bearbeiten               f           Filter: heute · 7 Tag…  │
+de│   F12 l       Sprache: Deutsch/Engl…   s           überspringen             s           Hosts sortieren         │
+  │   ⇧F9         Tastenzeile erklären     r           neu vorschlagen          z           KI-Zusammenfassung      │
+  │   Strg+Q      beenden                  x           Ziel beenden             Z           alle Treffer zusammen…  │
+  │                                        ↑ ↓         Runbook wählen           x           Export: md · txt · ca…  │
+  │  ≡ Verbindungs-Manager F10             Strg+S      als Runbook speichern    d           löschen                 │
+  │   F10         zurück zum Terminal      Strg+D      Runbook löschen          a           Mitschreiben an/aus     │
+  │   ⏎           verbinden                Tab         Schritt für Schritt o…   ␣ Befehl    nicht protokollieren    │
+  │   n           neue Verbindung          Esc         Agent anhalten                                               │
+  │   e           bearbeiten               ?           Agent anweisen          » Broadcast m                        │
+  │   d           löschen                  v           Skript des Agenten an…   Space / g / a Host / Ordner / alle  │
+  │   /           suchen (auch #tag)       r           Skripte des Agenten l…   Tab         Hosts · Quelle · Befe…  │
+  │   o           neuer Ordner (A / B v…                                        ⇧⏎          weiterer Schritt        │
+  │   r           Ordner umbenennen       ◆ KI fragen F3                        Strg+S      prüfen, dann ⏎          │
+  │   v           in Ordner verschieben    ⏎           Frage senden             ← / →       Host-Spalte wählen      │
+  │   Shift+↑     nach oben schieben (↓…   ⇧⏎ / Strg+J neue Zeile               ↑ ↓ Bild↑↓  Ausgabe blättern        │
+  │   ← / →       Ordner zu-/aufklappen    1…9         Befehl einfügen          z / c       groß / kopieren         │
+  │   - / +       alle Ordner zu/auf       ↑ ↓         Befehlskarte wählen      r / e / x   nochmal / ändern / St…  │
+  │   #           nach Tag filtern         a           Befehl ausführen (rot…   {{name}}    Variable, wird abgefr…  │
+  │   t           Tunnel anlegen           c           Befehl kopieren          {{host}}    je Host eingesetzt      │
+  │   c           SSH-Schlüssel erzeuge…   z           Erklärung ein-/auskla…   Strg+R      als Runbook speichern   │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

@@ -537,8 +537,11 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	case s.detached():
 		body = a.detachedView(s, cols, rows)
 	case s.state == stConnecting:
-		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			st.AI.Render(i18n.T("⠿ Verbinde mit ")+s.conn.Alias+" ("+s.conn.ShowAddr()+") …"))
+		msg := st.AI.Render(i18n.T("⠿ Verbinde mit ") + s.conn.Alias + " (" + s.conn.ShowAddr() + ") …")
+		if s.connNote != "" {
+			msg += "\n\n" + st.Warn.Render(s.connNote)
+		}
+		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, msg)
 	case s.state == stReconnect:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.reconnectView(s))
 	case s.state == stClosed:
