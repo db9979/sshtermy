@@ -7,11 +7,13 @@
 package termemu
 
 import (
+	"encoding/base64"
 	"io"
 	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"unicode/utf8"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
@@ -33,6 +35,10 @@ type Term struct {
 	// Shell-Integration (OSC 133 / OSC 633): Exit-Code des letzten Befehls
 	exitSeq  int
 	exitCode int
+
+	// OSC 52: Text, den ein Programm auf dem Server in die Zwischenablage
+	// legen will (tmux, vim, neovim …). Die Oberfläche holt ihn ab.
+	clip string
 }
 
 // New erzeugt das Terminal. toHost bekommt alle Bytes, die zum Server sollen
@@ -72,6 +78,16 @@ func New(cols, rows int, toHost io.Writer) *Term {
 			return true // A/B/C (Prompt-Marker) still schlucken
 		})
 	}
+	// OSC 52 „Zwischenablage setzen“: "c;<base64>". Abfragen („?“) werden
+	// nie beantwortet, sonst könnte jeder Server die Zwischenablage lesen.
+	t.emu.RegisterOscHandler(52, func(data []byte) bool {
+		if txt, ok := parseClipboard(string(data)); ok {
+			t.mu.Lock()
+			t.clip = txt
+			t.mu.Unlock()
+		}
+		return true
+	})
 	go func() {
 		buf := make([]byte, 4096)
 		for {
@@ -118,6 +134,42 @@ func parseCommandDone(s string) (int, bool) {
 		}
 	}
 	return n, true
+}
+
+// MaxClipboard: größere OSC-52-Inhalte werden verworfen.
+const MaxClipboard = 1 << 20
+
+// parseClipboard liest "52;c;<base64>" (auch ohne Präfix). Ziel ist egal
+// (c, p, s …): es gibt hier nur eine Zwischenablage.
+func parseClipboard(s string) (string, bool) {
+	s = strings.TrimPrefix(s, "52;")
+	i := strings.IndexByte(s, ';')
+	if i < 0 {
+		return "", false
+	}
+	payload := s[i+1:]
+	if payload == "" || payload == "?" || len(payload) > MaxClipboard*4/3+4 {
+		return "", false
+	}
+	b, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		if b, err = base64.RawStdEncoding.DecodeString(strings.TrimRight(payload, "=")); err != nil {
+			return "", false
+		}
+	}
+	if len(b) == 0 || !utf8.Valid(b) {
+		return "", false
+	}
+	return string(b), true
+}
+
+// TakeClipboard: Text aus OSC 52 seit dem letzten Aufruf ("" = nichts).
+func (t *Term) TakeClipboard() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	c := t.clip
+	t.clip = ""
+	return c
 }
 
 // LastExit: Zähler und Exit-Code der letzten OSC-133-D-Meldung. Ändert sich

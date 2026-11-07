@@ -1,6 +1,6 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
  Verbindungen  6  / suchen       │ ▾ Netzwerk
-            ┌─ ◆ Befehlspalette  17 Einträge ────────────────────────────────────── × ─┐
+            ┌─ ◆ Befehlspalette  18 Einträge ────────────────────────────────────── × ─┐
  ▾ Netzwerk │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
    ○ # switc│ ──────────────────────────────────────────────────────────────────────── │
  ▾ Produktio│ // verbindungen                                                          │
@@ -20,11 +20,11 @@
             │ [&] Team-Paket übernehmen                                           Team │
             │ [&] Team-Ordner (veröffentlicht / abonniert)                        Team │
             │ [#] Sitzungsprotokolle durchsuchen                                     l │
+            │ [k] Jetzt sperren                                        Master-Passwort │
             │ [:] Einstellungen ›                        Maus, Aussehen, Sprache, KI … │
             │ [?] Hilfe & Info ›                           Tasten, Tour, Neues, Update │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘
-                                 │
                                  │
  Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e umbenennen  d löschen

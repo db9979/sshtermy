@@ -672,6 +672,10 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
 	a.addRelayField(f, c)
 	f.choice("device", i18n.T("Gerätetyp"), deviceLabels, deviceLabel(c.Device), i18n.T("Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage"))
+	f.toggle("fwdagent", i18n.T("Agent weiterreichen"), c.ForwardAgent,
+		i18n.T("wie ssh -A: git, ssh, scp auf dem Server mit deinen lokalen Keys · nur bei vertrauten Servern")).hidden = func(f *form) bool {
+		return raw(f) || deviceFromLabel(f.sel("device")) == domain.DeviceNetwork
+	}
 	addPersistFields(f, c, raw)
 	var pr domain.SystemProfile
 	if c.Profile != nil {
@@ -857,6 +861,7 @@ func (a *App) saveConn() error {
 	c.Color = accentFromLabel(f.sel("color"))
 	c.Device = deviceFromLabel(f.sel("device"))
 	applyPersistFields(f, &c)
+	c.ForwardAgent = f.flag("fwdagent") && !c.Protocol.Raw() && c.Device != domain.DeviceNetwork
 	c.Profile = profileFromForm(f, a.formBase.Profile)
 	c.JumpHostID = f.val("jump")
 	if c.Protocol.Raw() {

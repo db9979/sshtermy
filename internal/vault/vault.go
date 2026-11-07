@@ -236,6 +236,23 @@ func (v *Vault) UnlockPassword(password []byte) error {
 	return nil
 }
 
+// CheckPassword prüft das Master-Passwort, ohne den Zustand zu ändern
+// (Bildschirmsperre bei geöffnetem Store).
+func (v *Vault) CheckPassword(password []byte) error {
+	w := v.findWrap("password")
+	if w == nil || v.hdr.KDF == nil {
+		return ErrNoUnlockPath
+	}
+	kek := v.hdr.KDF.derive(password)
+	defer wipe(kek)
+	dek, err := gcmOpen(kek, w.Nonce, w.Blob, []byte(aadWrapPassword))
+	if err != nil || len(dek) != keyLen {
+		return ErrWrongPassword
+	}
+	wipe(dek)
+	return nil
+}
+
 // ChangePassword wickelt denselben DEK mit einem neuen Passwort (neues Salz).
 func (v *Vault) ChangePassword(oldPw, newPw []byte) error {
 	if err := v.UnlockPassword(oldPw); err != nil {

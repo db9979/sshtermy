@@ -85,3 +85,19 @@ func TestDeriveKey(t *testing.T) {
 		t.Fatal("DeriveKey nicht deterministisch oder ohne Domänentrennung")
 	}
 }
+
+func TestCheckPassword(t *testing.T) {
+	v, _ := Open(filepath.Join(t.TempDir(), "store.json"))
+	if err := v.Create([]byte("correct horse"), false); err != nil {
+		t.Fatal(err)
+	}
+	if err := v.CheckPassword([]byte("falsch!!")); err != ErrWrongPassword {
+		t.Fatalf("falsches Passwort: %v", err)
+	}
+	if err := v.CheckPassword([]byte("correct horse")); err != nil {
+		t.Fatal(err)
+	}
+	if !v.Unlocked() {
+		t.Fatal("Prüfen darf den Store nicht sperren")
+	}
+}
