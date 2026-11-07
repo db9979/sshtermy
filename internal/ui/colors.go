@@ -279,14 +279,13 @@ func ansiTrunc(s string, w int) string {
 	return ansi.Truncate(s, w, "…")
 }
 
-// toggleNerdIcons schaltet zwischen Text-Tags und Nerd-Font-Symbolen. Welche
-// Schrift das Terminal nutzt, kann ein Programm darin nicht erfahren; darum
-// zeigt das Einschalten erst eine Probezeile, und nur wer dort Symbole statt
-// Kästchen sieht, schaltet um.
-func (a *App) toggleNerdIcons() tea.Cmd {
-	if iconSet == iconNerd {
-		a.setIcons("")
-		a.flash(i18n.T("Text-Symbole an: [+] [k] [/] … laufen mit jeder Schrift"))
+// chooseIcons stellt den Symbolstil um. Welche Schrift das Terminal nutzt,
+// kann ein Programm darin nicht erfahren; darum zeigt der Nerd-Font-Stil erst
+// eine Probezeile, und nur wer dort Symbole statt Kästchen sieht, schaltet um.
+func (a *App) chooseIcons(id string) tea.Cmd {
+	if id != iconNerd || iconSet == iconNerd {
+		a.setIcons(id)
+		a.flash(i18n.T("Symbole: ") + i18n.T(iconStyleLabel(id)))
 		return nil
 	}
 	a.modal = confirmModal(i18n.T("Nerd-Font-Symbole einschalten?"), nerdProbe(), func() tea.Cmd {
@@ -295,6 +294,15 @@ func (a *App) toggleNerdIcons() tea.Cmd {
 		return nil
 	})
 	return nil
+}
+
+func iconStyleLabel(id string) string {
+	for _, st := range iconStyles {
+		if st.id == id {
+			return st.label
+		}
+	}
+	return iconStyles[0].label
 }
 
 func (a *App) setIcons(set string) {

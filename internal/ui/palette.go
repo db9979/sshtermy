@@ -383,10 +383,6 @@ func (a *App) palMenuItems() []palItem {
 	if cur == CustomName {
 		colHint = "✓ " + i18n.T("aktiv")
 	}
-	nerd := palOff
-	if iconSet == iconNerd {
-		nerd = palOn
-	}
 	lang := "Deutsch"
 	if i18n.English() {
 		lang = "English"
@@ -394,8 +390,17 @@ func (a *App) palMenuItems() []palItem {
 	items = append(items,
 		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farben anpassen (eigene Farben)"), hint: colHint,
 			keys: "theme farbe color colors eigene custom", run: func() tea.Cmd { return a.openColors() }},
-		palItem{group: pgSetLook, menu: "settings", icon: ic("icons"), label: i18n.T("Nerd-Font-Symbole (braucht z. B. Cascadia Mono NF)"), state: nerd,
-			keys: "icons symbole nerd font", keep: true, run: func() tea.Cmd { return a.toggleNerdIcons() }},
+	)
+	for _, st := range iconStyles {
+		st := st
+		hint := i18n.T(st.sample)
+		if iconSet == st.id {
+			hint = "✓ " + i18n.T("aktiv")
+		}
+		items = append(items, palItem{group: pgSetLook, menu: "settings", icon: ic("icons"), label: i18n.T("Symbole: ") + i18n.T(st.label), hint: hint,
+			keys: "icons symbole nerd font unicode minimal tags", keep: true, run: func() tea.Cmd { return a.chooseIcons(st.id) }})
+	}
+	items = append(items,
 		palItem{group: pgSetLook, menu: "settings", icon: ic("language"), label: "Sprache / Language", hint: lang, keys: "english deutsch german",
 			keep: true, run: func() tea.Cmd { return a.toggleLang() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("ai"), label: i18n.T("KI-Einstellungen"), hint: "s", keys: "ai llm", run: func() tea.Cmd { return a.openSettings() }},
