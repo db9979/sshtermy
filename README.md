@@ -51,6 +51,13 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   - **Ghost text** while typing (Tab accepts)
   - **Follow-up commands** after every Enter (Alt+1…4 inserts)
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
+  - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
+    sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
+    Levels: *Careful* (only read-only commands run on their own), *Normal* (everything except danger and sudo),
+    *Full* (sudo too). Dangerous commands, including every line of a script, always wait for you; on production hosts
+    and network devices every change asks. Limits: 25 steps, 15 minutes, 3 failures in a row. Esc or typing in the
+    terminal pauses it, `?` gives it an instruction. At the end: summary, changed files, `s` saves the run as a runbook
+    including its scripts, `r` deletes the scripts on the host. Every step is marked "Agent" in the session log.
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
   - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z)

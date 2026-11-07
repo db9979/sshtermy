@@ -80,10 +80,10 @@ type Connection struct {
 	// RelayID/RelaySystem: über einen Vermittler (eigener sshtermy
 	// vermittler oder Speech on DGX Spark) zum sshd eines Systems, das selbst
 	// die Verbindung zum Vermittler hält (Anker). Host ist dann nur Anzeige.
-	RelayID     string     `json:"relay_id,omitempty"`
-	RelaySystem string     `json:"relay_system,omitempty"`
-	TunnelIDs   []string   `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
-	KeepAlive   int        `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
+	RelayID     string   `json:"relay_id,omitempty"`
+	RelaySystem string   `json:"relay_system,omitempty"`
+	TunnelIDs   []string `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
+	KeepAlive   int      `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
 
 	// ForwardAgent: den lokalen SSH-Agent an den Server weiterreichen (wie
 	// ssh -A). Dort funktionieren dann git, ssh und scp mit den eigenen
@@ -91,8 +91,8 @@ type Connection struct {
 	ForwardAgent bool `json:"forward_agent,omitempty"`
 	// CertPath: SSH-Zertifikat zum Key (von einer CA signiert, *-cert.pub).
 	// Leer = neben dem Keyfile suchen (<key>-cert.pub, wie OpenSSH).
-	CertPath string `json:"cert_path,omitempty"`
-	Device      DeviceKind `json:"device,omitempty"`      // Server oder Netzwerkgerät, leer = automatisch
+	CertPath string     `json:"cert_path,omitempty"`
+	Device   DeviceKind `json:"device,omitempty"` // Server oder Netzwerkgerät, leer = automatisch
 
 	// Persist: beim Verbinden immer in dieselbe tmux-/screen-Sitzung
 	// ("auto", "tmux", "screen"; leer = aus). PersistName: Sitzungsname,
@@ -641,17 +641,29 @@ func NewData() *Data {
 // als Vorlage mit, er passt sie an die aktuelle Lage an. Ausgeführt wird
 // trotzdem jeder Schritt erst nach Bestätigung.
 type Runbook struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	Goal         string    `json:"goal"`
-	Steps        []string  `json:"steps,omitempty"`
-	ConnectionID string    `json:"connection_id,omitempty"` // leer = für alle Verbindungen
-	OS           string    `json:"os,omitempty"`            // System beim Speichern, nur als Hinweis
-	CreatedAt    time.Time `json:"created_at"`
-	LastUsed     time.Time `json:"last_used,omitempty"`
-	Uses         int       `json:"uses,omitempty"`
-	UpdatedAt    time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync)
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	Goal         string        `json:"goal"`
+	Steps        []string      `json:"steps,omitempty"`
+	Files        []RunbookFile `json:"files,omitempty"`         // Skripte aus dem Agent-Modus
+	ConnectionID string        `json:"connection_id,omitempty"` // leer = für alle Verbindungen
+	OS           string        `json:"os,omitempty"`            // System beim Speichern, nur als Hinweis
+	CreatedAt    time.Time     `json:"created_at"`
+	LastUsed     time.Time     `json:"last_used,omitempty"`
+	Uses         int           `json:"uses,omitempty"`
+	UpdatedAt    time.Time     `json:"updated_at,omitempty"` // letzte Änderung (Sync)
 }
+
+// RunbookFile: eine Datei, die der Agent-Modus angelegt hat. Pfade in den
+// Schritten nennen den Arbeitsordner als AgentDirToken.
+type RunbookFile struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+}
+
+// AgentDirToken steht in gespeicherten Schritten für den Arbeitsordner des
+// Agenten (jeder Lauf hat einen eigenen).
+const AgentDirToken = "<ARBEITSORDNER>"
 
 // Rev: Zeitstempel für den Sync (alte Einträge zählen mit dem Anlagedatum).
 func (r Runbook) Rev() time.Time {

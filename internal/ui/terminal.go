@@ -330,6 +330,7 @@ func (a *App) visibleGhost(s *session) string {
 }
 
 func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
+	a.agentTyped(s) // Tippen hält einen laufenden Agenten an
 	if s.trzKey(k.String()) {
 		return nil // Dateiübertragung läuft: nur Strg+C/Esc (bricht ab)
 	}
@@ -763,6 +764,12 @@ func (a *App) tabStrip() string {
 		}
 		if g := a.noticeGlyph(x); g != "" {
 			dot = g // Befehl fertig / Glocke, solange der Tab verdeckt war
+		}
+		if x.goal.auto && x.goal.active {
+			dot = st.AI.Render("◆") // Agent läuft
+			if x.goal.paused {
+				dot = st.Warn.Render("◆") // Agent wartet auf dich
+			}
 		}
 		ts := st.Tab
 		if i == a.cur {

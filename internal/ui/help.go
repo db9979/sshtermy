@@ -119,6 +119,11 @@ var helpSections = []helpSection{
 		{"↑ ↓", "Runbook wählen"},
 		{"Strg+S", "als Runbook speichern"},
 		{"Strg+D", "Runbook löschen"},
+		{"Tab", "Schritt für Schritt oder Agent (Stufe)"},
+		{"Esc", "Agent anhalten"},
+		{"?", "Agent anweisen"},
+		{"v", "Skript des Agenten ansehen"},
+		{"r", "Skripte des Agenten löschen (am Ende)"},
 	}},
 	{hcAsk, "◆", "KI fragen", "F3", true, [][2]string{
 		{"⏎", "Frage senden"},

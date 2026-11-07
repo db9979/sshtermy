@@ -1,6 +1,6 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
  Verbindungen  6  / suchen       │ ▾ Netzwerk
-            ┌─ ◆ Befehlspalette  18 Einträge ────────────────────────────────────── × ─┐
+            ┌─ ◆ Befehlspalette  19 Einträge ────────────────────────────────────── × ─┐
  ▾ Netzwerk │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
    ○ # switc│ ──────────────────────────────────────────────────────────────────────── │
  ▾ Produktio│ // verbindungen                                                          │
@@ -11,10 +11,11 @@
  ○ · nas    │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
  ○ · spark  │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │
             │ // aktionen                                                              │
+            │ [q] Schnellbefehle bearbeiten                                      Liste │
             │ [=] Verbindungs-Manager                                              F10 │
             │ [+] Neue Verbindung                                                    n │
-            │ [k] SSH-Schlüssel erzeugen / auf den Server übertragen                 c │
-            │ [*] Broadcast: Befehl auf mehreren Hosts                               m │ oder
+            │ [k] SSH-Schlüssel erzeugen / auf den Server übertragen                 c │ oder
+            │ [*] Broadcast: Befehl auf mehreren Hosts                               m │
             │ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
             │ [&] Mit dem Team teilen (verschlüsselt, ohne Passwörter)            Team │
             │ [&] Team-Paket übernehmen                                           Team │
@@ -22,7 +23,6 @@
             │ [#] Sitzungsprotokolle durchsuchen                                     l │
             │ [k] Jetzt sperren                                        Master-Passwort │
             │ [:] Einstellungen ›                        Maus, Aussehen, Sprache, KI … │
-            │ [?] Hilfe & Info ›                           Tasten, Tour, Neues, Update │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘

@@ -46,6 +46,21 @@ type goalState struct {
 	runbookID           string
 	rbSel               int // gewähltes Runbook in der Liste (-1 = keins)
 	optSel              int // gewählter Antwortvorschlag zur Rückfrage (-1 = keiner)
+
+	// Agent-Modus (agentmode.go)
+	auto, paused     bool
+	level            int
+	pauseWhy         string
+	started          time.Time
+	deadline         time.Time
+	maxSteps, fails  int
+	needStep         bool // Schritt fertig, wartet wegen Pause auf den nächsten
+	planOK           bool // erster Plan bestätigt
+	writing, cleaned bool
+	rateUntil        time.Time // Ratenlimit: nächster Schritt erst dann
+	runID            string
+	files            []agent.FileAction
+	recipeFiles      []agent.FileAction
 }
 
 func (g *goalState) cancel() {
@@ -84,6 +99,7 @@ type goalStepMsg struct {
 	step     agent.Step
 	err      error
 }
+type goalRetryMsg struct{ sid, seq int }
 type askDeltaMsg struct {
 	sid, seq int
 	text     string
@@ -100,6 +116,7 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 			s.goal.input = newAIInput(i18n.T("z. B. Installiere Docker und richte Nginx als Reverse Proxy ein"))
 			s.goal.edit, s.goal.answer = newCommandInput(), newAIInput("")
 			s.goal.inited, s.goal.rbSel = true, -1
+			s.goal.level = lvlNormal
 		}
 		if !s.goal.active {
 			return s.goal.input.Focus()
@@ -149,12 +166,19 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 		g.busy = false
 		if m.err != nil {
 			g.err = m.err.Error()
+			if g.auto {
+				a.agentPause(s, i18n.T("KI-Fehler, ⏎ versucht es erneut"))
+			}
 			return nil, true
 		}
 		g.err = ""
 		switch {
 		case m.step.Done:
 			g.done, g.active, g.doneReason, g.cur = true, false, m.step.Reason, nil
+			if g.auto {
+				a.agentFinished(s)
+				a.flash(i18n.T("Agent: Ziel erreicht"))
+			}
 		case m.step.Question != "":
 			st := m.step
 			g.cur, g.optSel = &st, -1
@@ -162,7 +186,7 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			return g.answer.Focus(), true
 		default:
 			st := m.step
-			if fix, ok := s.learnedFix(st.Command); ok {
+			if fix, ok := s.learnedFix(st.Command); ok && st.File == nil {
 				fresh := agent.ParseStepCommand(fix, a.safetyKind(s))
 				st.Command, st.Danger, st.Elevated = fix, fresh.Danger, fresh.Elevated
 				st.Reason = strings.TrimSpace(st.Reason + i18n.T(" (so hast du es hier korrigiert)"))
@@ -171,7 +195,20 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			if len(st.Plan) > 0 {
 				g.plan = st.Plan
 			}
+			if g.auto {
+				return a.agentAfterStep(s), true
+			}
 		}
+		return nil, true
+	case goalRetryMsg:
+		if s := a.byID(m.sid); s != nil && m.seq == s.goal.seq && s.goal.agentRunning() && !s.goal.busy {
+			return a.requestStep(s), true
+		}
+		return nil, true
+	case agentFileMsg:
+		return a.agentFileDone(m), true
+	case agentCleanMsg:
+		a.agentCleanDone(m)
 		return nil, true
 	case askDeltaMsg:
 		if s := a.byID(m.sid); s != nil && m.seq == s.ask.seq {
@@ -221,6 +258,16 @@ func (a *App) requestStep(s *session) tea.Cmd {
 		}
 	}
 	g.times = recent
+	if g.auto {
+		limit *= 2 // der Agent macht viele kurze, lesende Schritte
+	}
+	if len(recent) >= limit && g.auto && len(recent) > 0 {
+		// Agent: kurz warten statt anhalten
+		wait := time.Minute - now.Sub(recent[0]) + 100*time.Millisecond
+		g.rateUntil = now.Add(wait)
+		sid, seq := s.id, g.seq
+		return tea.Tick(wait, func(time.Time) tea.Msg { return goalRetryMsg{sid, seq} })
+	}
 	if len(recent) >= limit {
 		g.err = fmt.Sprintf(i18n.T("Ratenlimit: höchstens %d Schritte pro Minute. r = erneut versuchen"), limit)
 		return nil
@@ -235,6 +282,7 @@ func (a *App) requestStep(s *session) tea.Cmd {
 		return nil
 	}
 	g.times = append(g.times, now)
+	g.rateUntil = time.Time{}
 	g.cancel()
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	g.cancelFn = cancel
@@ -244,6 +292,17 @@ func (a *App) requestStep(s *session) tea.Cmd {
 	goal, hist, ans := g.goal, append([]agent.DoneStep(nil), g.steps...), append([]string(nil), g.answers...)
 	recipe := g.recipe
 	c := a.agentContext(s, true)
+	if g.auto {
+		info := agent.AutoInfo{Files: g.recipeFiles}
+		if a.agentFilesOK(s) {
+			info.Dir = g.agentDir()
+		}
+		return func() tea.Msg {
+			defer cancel()
+			st, err := ag.AutoStep(ctx, goal, recipe, hist, ans, info, c)
+			return goalStepMsg{sid, seq, st, err}
+		}
+	}
 	return func() tea.Msg {
 		defer cancel()
 		st, err := ag.NextStep(ctx, goal, recipe, hist, ans, c)
@@ -261,7 +320,13 @@ func (a *App) goalTick(s *session) tea.Cmd {
 	quiet := time.Since(s.lastOutput) > 1500*time.Millisecond && time.Since(g.waitSince) > time.Second
 	if quiet && s.term.AtIdlePrompt() {
 		g.waiting = false
+		if g.auto {
+			return a.agentStepFinished(s)
+		}
 		return a.requestStep(s)
+	}
+	if g.auto {
+		a.agentTick(s)
 	}
 	return nil
 }
@@ -287,6 +352,9 @@ func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 	if orig != cmd && s.run != nil && similarCmd(orig, cmd) {
 		s.run.learnFrom = orig // im Ziel-Modus bearbeitet (e)
 	}
+	if g.auto && s.run != nil {
+		s.run.agent = true
+	}
 	s.term.SendText(cmd + "\r")
 	s.noteAI(cmd, false)
 	a.profileCommand(s, cmd)
@@ -297,6 +365,10 @@ func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 
 func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 	k, isKey := msg.(tea.KeyPressMsg)
+	if isKey && k.String() == "esc" && s.panel == panelGoal && s.goal.agentRunning() {
+		a.agentPause(s, i18n.T("von dir angehalten (Esc)"))
+		return nil
+	}
 	if isKey && k.String() == "esc" {
 		s.panelFocus = false
 		if s.panel == panelTunnels || s.panel == panelHost || (s.panel == panelAsk && !s.ask.busy && s.ask.answer.Len() == 0) {
@@ -331,6 +403,13 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	}
 	if key == "ctrl+s" {
 		a.saveRunbook(s)
+		return nil
+	}
+	if cmd, ok := a.agentKey(s, key); ok {
+		return cmd
+	}
+	if key == "tab" && !g.active && !g.done {
+		g.cycleMode()
 		return nil
 	}
 	// 1) noch kein Ziel: Eingabe, darunter die gespeicherten Runbooks
@@ -571,6 +650,9 @@ func (a *App) toggleTunnelAuto(t domain.Tunnel) {
 func (a *App) panelKeys(s *session) [][2]string {
 	switch s.panel {
 	case panelGoal:
+		if k := a.agentPanelKeys(s); k != nil {
+			return k
+		}
 		g := s.goal
 		if !g.active {
 			if g.done {
@@ -663,13 +745,16 @@ func wrap(s string, w int) string { return lipgloss.NewStyle().Width(w).Render(s
 func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	st := a.s
 	g := &s.goal
-	b.WriteString(st.PanelTitle.Render(i18n.T("◎ Ziel-Modus")) + st.Muted.Render(i18n.T("  KI-Agent")) + "\n\n")
+	if g.auto {
+		b.WriteString(st.PanelTitle.Foreground(st.T.AI).Render(i18n.T("◆ Agent-Modus")) + st.Muted.Render(i18n.T("  arbeitet selbstständig")) + "\n\n")
+	} else {
+		b.WriteString(st.PanelTitle.Render(i18n.T("◎ Ziel-Modus")) + st.Muted.Render(i18n.T("  KI-Agent")) + "\n\n")
+	}
 	if !g.active && !g.done {
 		b.WriteString(st.Text.Render(i18n.T("Was willst du auf ")+s.conn.Alias+i18n.T(" erreichen?")) + "\n\n")
 		g.input.SetWidth(w - 2)
 		b.WriteString(promptBlock(st.Accent.Render("› "), g.input.View()) + "\n\n")
-		b.WriteString(wrap(st.Muted.Render(i18n.T("Die KI zerlegt das Ziel in einzelne Befehle, erklärt jeden kurz und wartet auf ")+
-			i18n.T("deine Bestätigung. Sie tippt nie selbst.")), w))
+		a.viewModeChoice(b, s, w)
 		if rbs := a.st.Runbooks(s.conn.ID); len(rbs) > 0 {
 			b.WriteString("\n\n" + st.Muted.Render(i18n.T("RUNBOOKS")+"  ") + a.hintsIn(s, st.Muted, [2]string{"↑↓", i18n.T("wählen")}, [2]string{"⏎", i18n.T("starten")}) + "\n")
 			for i, rb := range rbs {
@@ -705,12 +790,20 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	case g.runbookID != "":
 		b.WriteString(st.Badge.Foreground(st.T.AI).Render(i18n.T("▶ als Runbook gespeichert")) + "\n")
 	}
+	if g.auto {
+		a.viewAgentStatus(b, s, w)
+	}
 	b.WriteString(st.Muted.Render(i18n.T("Ziel")) + "\n" + wrap(st.Text.Bold(true).Render(g.goal), w) + "\n\n")
 	// Fortschritt
 	for _, d := range g.steps {
 		mark := st.OK.Render("✓ ")
-		if d.Skipped {
+		switch {
+		case d.Skipped:
 			mark = st.Muted.Render("» ")
+		case d.File != "" && d.ExitHint == "":
+			mark = st.AI.Render("▪ ")
+		case g.auto && d.ExitHint != "":
+			mark = st.Danger.Render("× ")
 		}
 		b.WriteString(mark + st.Muted.Render(trunc(d.Command, w-3)) + "\n")
 	}
@@ -728,11 +821,20 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	}
 	b.WriteString("\n")
 	switch {
+	case g.done && g.auto:
+		a.viewAgentDone(b, s, w)
+		if s.panelFocus {
+			g.active = false
+		}
 	case g.done:
 		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, [2]string{"Strg+S", i18n.T("als Runbook merken")}, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{a.keys.label(actGoal), i18n.T("schließen")}))
 		if s.panelFocus && g.done {
 			g.active = false
 		}
+	case g.writing:
+		b.WriteString(st.AI.Render(i18n.T("▪ legt Datei an …")))
+	case g.auto && time.Now().Before(g.rateUntil):
+		b.WriteString(st.Muted.Render(fmt.Sprintf(i18n.T("◌ kurze Pause (Ratenlimit), weiter in %ds"), int(time.Until(g.rateUntil).Seconds())+1)))
 	case g.busy:
 		b.WriteString(st.AI.Render(i18n.T("◆ denkt über den nächsten Schritt nach …")))
 	case g.err != "":
@@ -755,6 +857,8 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		}
 		g.answer.SetWidth(w - 2)
 		b.WriteString(promptBlock(st.Accent.Render("› "), g.answer.View()))
+	case g.cur != nil && g.cur.File != nil:
+		a.viewAgentFile(b, s, w)
 	case g.cur != nil:
 		c := g.cur
 		head := st.AI.Render(i18n.T("◆ Nächster Schritt"))
@@ -780,6 +884,9 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		}
 		if g.armed {
 			b.WriteString("\n" + st.Danger.Render(i18n.T("Nochmal ⏎ zum Ausführen. Esc/s zum Abbrechen.")) + "\n")
+		}
+		if g.auto && g.paused {
+			a.viewAgentPauseKeys(b, s, w)
 		}
 	}
 }
@@ -947,10 +1054,14 @@ func (a *App) startGoalWith(s *session, text string, rb *domain.Runbook) tea.Cmd
 	a.panelOpened(withPanel(s, panelGoal))
 	g := &s.goal
 	g.cancel()
+	auto, level := g.auto, g.level
 	*g = goalState{input: g.input, edit: g.edit, answer: g.answer, inited: true,
-		goal: strings.TrimSpace(text), active: true, rbSel: -1}
+		goal: strings.TrimSpace(text), active: true, rbSel: -1, auto: auto, level: level}
 	if rb != nil {
-		g.recipe, g.runbookID = rb.Steps, rb.ID
+		g.recipe, g.runbookID = append([]string(nil), rb.Steps...), rb.ID
+	}
+	if g.auto {
+		a.agentInit(s, rb)
 	}
 	g.input.SetValue(g.goal)
 	g.input.Blur()
@@ -1016,11 +1127,20 @@ func (a *App) saveRunbook(s *session) {
 		if !running {
 			break
 		}
-		if !d.Skipped {
-			steps = append(steps, d.Command)
+		if !d.Skipped && d.File == "" {
+			cmd := d.Command
+			if g.auto && g.runID != "" {
+				cmd = strings.ReplaceAll(cmd, g.agentDir(), domain.AgentDirToken)
+			}
+			steps = append(steps, cmd)
 		}
 	}
 	rb := domain.Runbook{Name: goal, Goal: goal, Steps: steps}
+	if running {
+		for _, f := range g.files {
+			rb.Files = append(rb.Files, domain.RunbookFile{Name: f.Name, Content: f.Content})
+		}
+	}
 	if s.client != nil {
 		rb.OS = s.client.Remote.OS
 	}
@@ -1032,6 +1152,9 @@ func (a *App) saveRunbook(s *session) {
 			}
 			if len(steps) == 0 {
 				rb.Steps = x.Steps
+			}
+			if len(rb.Files) == 0 {
+				rb.Files = x.Files
 			}
 			break
 		}

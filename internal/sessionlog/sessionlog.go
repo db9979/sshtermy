@@ -58,6 +58,7 @@ type Entry struct {
 	Failed   bool      `json:"failed,omitempty"`
 	Exit     *int      `json:"exit,omitempty"` // nur wenn die Shell ihn meldet (OSC 133)
 	Reason   string    `json:"reason,omitempty"`
+	Agent    bool      `json:"agent,omitempty"` // vom Agent-Modus ausgeführt
 }
 
 // Log ist eine Sitzung.
@@ -349,6 +350,9 @@ func (l *Log) Markdown() string {
 			if e.Exit != nil {
 				mark += fmt.Sprintf(i18n.T(" (Exit %d)"), *e.Exit)
 			}
+		}
+		if e.Agent {
+			mark = i18n.T(" · Agent") + mark
 		}
 		fmt.Fprintf(&b, "### %d. `%s`%s\n\n", i+1, strings.ReplaceAll(e.Command, "`", "'"), mark)
 		fmt.Fprintf(&b, "_%s", e.At.Format("15:04:05"))
