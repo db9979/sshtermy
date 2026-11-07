@@ -46,7 +46,7 @@ func TestGlyphsInCascadia(t *testing.T) {
 // [x] drei Spalten, Nerd Font eine.
 func TestPaletteIconColumn(t *testing.T) {
 	defer func() { iconSet = "" }()
-	for _, set := range []string{"", iconNerd} {
+	for _, set := range []string{"", iconUni, iconMin, iconNerd} {
 		a := newPaletteTestApp(t)
 		a.st.AddConnections([]domain.Connection{{Alias: "web-01", Host: "10.0.0.1", Port: 22, Username: "u", Auth: domain.AuthPassword}})
 		a.st.UpdateSettings(func(s *domain.Settings) { s.Icons = set })
@@ -70,30 +70,50 @@ func TestPaletteIconColumn(t *testing.T) {
 	}
 }
 
-func TestNerdToggle(t *testing.T) {
+func TestIconStyles(t *testing.T) {
 	defer func() { iconSet = "" }()
 	a := newPaletteTestApp(t)
 	if ic("settings") != "[:]" {
 		t.Fatalf("Standard sind Text-Tags, nicht %q", ic("settings"))
 	}
-	// Einschalten fragt erst mit einer Probezeile; Nein lässt die Tags.
-	a.toggleNerdIcons()
+	// Unicode und Minimal schalten sofort um.
+	a.chooseIcons(iconUni)
+	if a.modal != nil || a.st.Settings().Icons != iconUni || ic("settings") != "◈" || devGlyph(devLinux) != "❯" {
+		t.Fatalf("Unicode: %q %q", a.st.Settings().Icons, ic("settings"))
+	}
+	a.chooseIcons(iconMin)
+	if ic("settings") != "»" || ic("manager") != "▸" || ic("ai") != "◆" || devGlyph(devSwitch) != "■" {
+		t.Fatalf("Minimal: %q %q", ic("settings"), ic("manager"))
+	}
+	// Nerd Font fragt erst mit einer Probezeile; Nein lässt den Stil.
+	a.chooseIcons(iconNerd)
 	if a.modal == nil || a.modal.kind != mConfirm || !strings.Contains(a.modal.body, devNerd[devLinux]) || !strings.Contains(a.modal.body, "Nerd Font") {
 		t.Fatalf("keine Probe: %+v", a.modal)
 	}
 	a.modal = nil
-	if a.st.Settings().Icons != "" || ic("settings") != "[:]" {
+	if a.st.Settings().Icons != iconMin {
 		t.Fatal("ohne Ja darf nichts umschalten")
 	}
-	a.toggleNerdIcons()
+	a.chooseIcons(iconNerd)
 	a.modal.onYes()
 	a.modal = nil
-	if a.st.Settings().Icons != iconNerd || ic("settings") != "" {
+	if a.st.Settings().Icons != iconNerd || ic("settings") != "\uf013" {
 		t.Fatalf("Nerd an: %q %q", a.st.Settings().Icons, ic("settings"))
 	}
-	a.toggleNerdIcons()
+	a.chooseIcons("")
 	if a.st.Settings().Icons != "" || ic("settings") != "[:]" {
-		t.Fatal("Nerd aus")
+		t.Fatal("zurück zu Text-Tags")
+	}
+	// Die Palette zeigt alle vier Stile, der aktive mit Haken.
+	a.palEnter("settings")
+	n := 0
+	for _, it := range a.paletteItems() {
+		if strings.HasPrefix(it.label, "Symbole: ") {
+			n++
+		}
+	}
+	if n != len(iconStyles) {
+		t.Fatalf("%d Symbol-Stile in der Palette", n)
 	}
 }
 

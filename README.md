@@ -186,11 +186,13 @@ palette → Settings › "Appearance"). **Customise colours** in the same submen
 with ←/→ (hue), +/− (brightness) or as a hex value; the whole UI previews it live, a contrast check warns about hard to
 read colours, Ctrl+S saves (synced to your other computers).
 
-**Icons:** menus use text tags like `[+]` `[k]` `[/]`, the manager shows the system's prompt character (`$` Linux,
-`%` macOS, `>` Windows, `#` switch). They only use characters every terminal font has, so nothing looks misaligned.
-With a Nerd Font (e.g. "Cascadia Mono NF") switch on Settings › "Nerd Font icons" for real pictograms; the toggle is
-per computer. sshTermy first shows a test line: boxes or "?" there mean the terminal lacks the font (Mac:
-`brew install --cask font-caskaydia-mono-nerd-font`, then pick it in the terminal profile).
+**Icons:** Settings › "Icons: …" offers four styles, saved per computer. Three work with any terminal font because
+they only use characters Cascadia Mono, Menlo and co. have themselves: **text tags** (default) like `[+]` `[k]` `[/]`,
+with prompt characters in the manager (`$` Linux, `%` macOS, `>` Windows, `#` switch); **Unicode shapes** like
+`+ ¤ ◎ ◈ ¶`; **minimal** with `▸` for actions, `»` for submenus and `◆` for the AI. The fourth style, **Nerd Font**,
+shows real pictograms but needs a Nerd Font in the terminal (e.g. "Cascadia Mono NF"). sshTermy first shows a test
+line: boxes or "?" there mean the font is missing (Mac: `brew install --cask font-caskaydia-mono-nerd-font`, then pick
+it in the terminal profile).
 
 The font size belongs to the terminal window: Ctrl + plus/minus in Windows Terminal, ⌘ + / − on macOS.
 

@@ -185,12 +185,13 @@ Palette → Einstellungen › „Aussehen“). **Farben anpassen** im selben Unt
 ←/→ (Farbton), +/− (Helligkeit) oder als Hex-Wert ändern; die Oberfläche zeigt die Änderung sofort, ein Kontrast-Check
 warnt vor schlecht lesbaren Farben, Strg+S speichert (geht mit dem Sync mit).
 
-**Symbole:** Menüs zeigen Text-Tags wie `[+]` `[k]` `[/]`, im Manager stehen Prompt-Zeichen für das System (`$` Linux,
-`%` macOS, `>` Windows, `#` Switch). Sie bestehen nur aus Zeichen, die jede Terminalschrift hat, darum sieht nichts
-verrutscht aus. Wer eine Nerd Font nutzt (z. B. „Cascadia Mono NF“), schaltet unter Einstellungen ›
-„Nerd-Font-Symbole“ echte Bildsymbole ein; der Schalter gilt pro Rechner. Vorher zeigt sshTermy eine
-Probezeile: Erscheinen dort Kästchen oder „?“, fehlt dem Terminal die Schrift (Mac:
-`brew install --cask font-caskaydia-mono-nerd-font`, dann im Terminalprofil als Schrift wählen).
+**Symbole:** Einstellungen › „Symbole: …“ bietet vier Stile, gespeichert pro Rechner. Drei davon laufen mit jeder
+Terminalschrift, weil sie nur Zeichen nutzen, die Cascadia Mono, Menlo und Co. selbst haben:
+**Text-Tags** (Standard) wie `[+]` `[k]` `[/]`, im Manager mit Prompt-Zeichen (`$` Linux, `%` macOS, `>` Windows,
+`#` Switch); **Unicode-Formen** wie `+ ¤ ◎ ◈ ¶`; **Minimal** mit `▸` für Aktionen, `»` für Untermenüs und `◆` für
+die KI. Der vierte Stil **Nerd Font** zeigt echte Bildsymbole, braucht aber eine Nerd Font im Terminal (z. B.
+„Cascadia Mono NF“). Vorher zeigt sshTermy eine Probezeile: Erscheinen dort Kästchen oder „?“, fehlt die Schrift
+(Mac: `brew install --cask font-caskaydia-mono-nerd-font`, dann im Terminalprofil als Schrift wählen).
 
 Die Schriftgröße gehört dem Terminalfenster: Strg + Plus/Minus in Windows Terminal, ⌘ + / − unter macOS.
 
