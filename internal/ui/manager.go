@@ -63,7 +63,7 @@ func (a *App) managerKeys() [][2]string {
 			open = i18n.T("aufklappen")
 		}
 		k = append(k, [2]string{"⏎", open}, [2]string{"n", i18n.T("neu hier")}, [2]string{"e", i18n.T("umbenennen")}, [2]string{"d", i18n.T("löschen")},
-			[2]string{km.label(actMoveTo), i18n.T("verschieben")})
+			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{km.label(actFolderGrid), i18n.T("als Raster öffnen")})
 	case have:
 		k = append(k, [2]string{"⏎", i18n.T("verbinden")}, [2]string{"n", i18n.T("neu")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")},
 			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), i18n.T("Schnellbefehle")},
@@ -83,6 +83,9 @@ func (a *App) managerKeys() [][2]string {
 	k = append(k, [2]string{km.label(actFolderNew), i18n.T("Ordner")})
 	if a.hasTags() {
 		k = append(k, [2]string{km.label(actTagFilter), "Tags"})
+	}
+	if set := a.st.Settings(); len(set.Workspaces) > 0 || set.LastLayout != nil {
+		k = append(k, [2]string{km.label(actWorkspace), i18n.T("Arbeitsplätze")})
 	}
 	if have {
 		k = append(k, [2]string{km.label(actBroadcast), "Broadcast"}, [2]string{km.label(actScan), "Scan"}, [2]string{km.label(actImport), "Import"})
@@ -135,7 +138,17 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		cur = rows[m.sel]
 	}
 	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
-		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll) {
+		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll, actWorkspace, actFolderGrid) {
+	case actWorkspace:
+		return a.openWorkspaces()
+	case actFolderGrid:
+		if have && cur.isFolder() {
+			return a.openFolderGrid(cur.node.Path)
+		}
+		if have {
+			return a.openFolderGrid(cur.conn.Group)
+		}
+		return nil
 	case actCheat:
 		return a.toggleCheat()
 	case actQuickEdit:

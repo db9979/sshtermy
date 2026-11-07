@@ -35,6 +35,7 @@ const (
 	mLLM    // KI-Status (llmhealth.go)
 	mDanger // Gefahren-Check beim Tippen (dangerguard.go)
 	mCrash  // Absturzbericht der letzten Sitzung (crash.go)
+	mLayout // Auswahl der Aufteilung (layout.go)
 )
 
 type modal struct {
@@ -216,6 +217,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.menuKey(key)
 	case mLLM:
 		return a.llmStatusKey(key)
+	case mLayout:
+		return a.layoutKey(key)
 	case mCrash:
 		return a.crashKey(key)
 	case mInfo:
@@ -302,6 +305,8 @@ func (a *App) modalView() string {
 		return a.quickModalView(a.modal)
 	case mLLM:
 		return a.llmStatusView()
+	case mLayout:
+		return a.layoutView()
 	}
 	a.modal.hints = a.modalKeys()
 	return a.modal.view(a.s, a.w, a.h)

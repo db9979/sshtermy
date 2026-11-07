@@ -35,6 +35,12 @@ type restoreState struct {
 	Saved  time.Time    `json:"saved"`
 	Active int          `json:"active"`
 	Tabs   []restoreTab `json:"tabs"`
+	// geteilte Ansicht: Aufteilung, Größen, Tab-Nummer je Bereich (-1 = leer)
+	Split string    `json:"split,omitempty"`
+	FracX []float64 `json:"frac_x,omitempty"`
+	FracY []float64 `json:"frac_y,omitempty"`
+	Panes []int     `json:"panes,omitempty"`
+	Zoom  bool      `json:"zoom,omitempty"`
 }
 
 func restorePath(dir string) string { return filepath.Join(dir, restoreName) }
@@ -57,10 +63,12 @@ func (a *App) saveRestore() {
 		return
 	}
 	st := restoreState{Saved: time.Now()}
+	tabOf := map[int]int{} // Sitzungs-ID → Nummer in Tabs
 	for i, s := range a.sessions {
 		if s.state == stClosed {
 			continue
 		}
+		tabOf[s.id] = len(st.Tabs)
 		s.checkMuxGone()
 		t := restoreTab{Mux: s.mux.kind, MuxName: s.mux.name, Title: s.title}
 		if _, ok := a.st.Connection(s.conn.ID); ok && s.conn.ID != "" {
@@ -72,6 +80,16 @@ func (a *App) saveRestore() {
 			st.Active = len(st.Tabs)
 		}
 		st.Tabs = append(st.Tabs, t)
+	}
+	if a.split != splitOff {
+		st.Split, st.FracX, st.FracY, st.Zoom = a.split.id(), a.fracX, a.fracY, a.zoom
+		for _, id := range a.panes {
+			n, ok := tabOf[id]
+			if !ok {
+				n = -1
+			}
+			st.Panes = append(st.Panes, n)
+		}
 	}
 	p := restorePath(a.st.Dir)
 	if len(st.Tabs) == 0 {
@@ -111,7 +129,8 @@ func (a *App) restoreTabs() tea.Cmd {
 	}
 	var cmds []tea.Cmd
 	first := len(a.sessions)
-	for _, t := range st.Tabs {
+	made := make([]*session, len(st.Tabs)) // Tab-Nummer → neue Sitzung
+	for ti, t := range st.Tabs {
 		var c domain.Connection
 		switch {
 		case t.ConnID != "":
@@ -128,6 +147,7 @@ func (a *App) restoreTabs() tea.Cmd {
 		cmd := a.connect(c)
 		if s := a.current(); s != nil {
 			s.title = t.Title
+			made[ti] = s
 		}
 		// Feste Sitzung: hängt sich nach dem Verbinden selbst an (geteilt, ohne -d)
 		if s := a.current(); s != nil && (t.Mux == "tmux" || t.Mux == "screen") && !c.Protocol.Raw() && c.Persist == "" {
@@ -140,7 +160,27 @@ func (a *App) restoreTabs() tea.Cmd {
 		return nil
 	}
 	a.focusSession(first + min(max(st.Active, 0), n-1))
+	if m, ok := splitByID(st.Split); ok && m != splitOff && a.fits(m) {
+		a.restoreSplit(m, st, made)
+	}
 	a.scr = scrTerminal
 	a.flashOK(plural(n, i18n.T("Sitzung"), i18n.T("Sitzungen")) + i18n.T(" von vor dem Update wieder geöffnet"))
 	return tea.Batch(cmds...)
+}
+
+// restoreSplit stellt die geteilte Ansicht von vor dem Neustart wieder her.
+func (a *App) restoreSplit(m splitMode, st *restoreState, made []*session) {
+	cur := a.current()
+	a.split, a.fracX, a.fracY = m, st.FracX, st.FracY
+	a.panes = make([]int, m.slots())
+	for j, n := range st.Panes {
+		if j < len(a.panes) && n >= 0 && n < len(made) && made[n] != nil {
+			a.panes[j] = made[n].id
+		}
+	}
+	if a.slotOf(cur) < 0 {
+		a.fixFocus()
+	}
+	a.zoom = st.Zoom && a.slotOf(a.current()) >= 0
+	a.resizeAll()
 }

@@ -241,8 +241,17 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.toggleDetach(s)
 		}
 		if a.keys.is(actSplit, key) {
-			a.cycleSplit()
+			return a.openLayout()
+		}
+		switch a.keys.which(key, actZoom, actGrowLeft, actGrowRight, actGrowUp, actGrowDown) {
+		case actZoom:
+			a.toggleZoom()
 			return nil
+		case actGrowLeft, actGrowRight, actGrowUp, actGrowDown:
+			if a.split != splitOff {
+				a.resizeFocused(map[action]string{actGrowLeft: "left", actGrowRight: "right", actGrowUp: "up", actGrowDown: "down"}[a.keys.which(key, actGrowLeft, actGrowRight, actGrowUp, actGrowDown)])
+				return nil
+			}
 		}
 		if a.keys.is(actSyncInput, key) {
 			a.toggleSyncInput()

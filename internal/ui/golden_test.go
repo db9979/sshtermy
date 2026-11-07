@@ -364,7 +364,23 @@ var goldenCases = []goldenCase{
 	{name: "terminal-split", w: 140, h: 36, setup: func(g *gold) {
 		g.session("web-01", termOut)
 		g.session("web-02", strings.ReplaceAll(termOut, "web-01", "web-02"))
+		g.keys("ctrl+t", "2")
+	}},
+	{name: "terminal-layout", w: 120, h: 36, setup: func(g *gold) {
+		g.session("web-01", termOut)
+		g.session("web-02", strings.ReplaceAll(termOut, "web-01", "web-02"))
 		g.keys("ctrl+t")
+	}},
+	{name: "terminal-split-main", w: 140, h: 36, setup: func(g *gold) {
+		g.session("web-01", termOut)
+		g.session("web-02", strings.ReplaceAll(termOut, "web-01", "web-02"))
+		g.session("db-01", "")
+		g.keys("ctrl+t", "4", "alt+shift+right", "alt+shift+right")
+	}},
+	{name: "terminal-split-zoom", w: 140, h: 36, setup: func(g *gold) {
+		g.session("web-01", termOut)
+		g.session("web-02", strings.ReplaceAll(termOut, "web-01", "web-02"))
+		g.keys("ctrl+t", "2", "alt+z")
 	}},
 	{name: "terminal-closed", w: 100, h: 30, setup: func(g *gold) {
 		s := g.session("db-01", "")

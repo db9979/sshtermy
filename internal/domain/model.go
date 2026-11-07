@@ -80,10 +80,10 @@ type Connection struct {
 	// RelayID/RelaySystem: über einen Vermittler (eigener sshtermy
 	// vermittler oder Speech on DGX Spark) zum sshd eines Systems, das selbst
 	// die Verbindung zum Vermittler hält (Anker). Host ist dann nur Anzeige.
-	RelayID     string     `json:"relay_id,omitempty"`
-	RelaySystem string     `json:"relay_system,omitempty"`
-	TunnelIDs   []string   `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
-	KeepAlive   int        `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
+	RelayID     string   `json:"relay_id,omitempty"`
+	RelaySystem string   `json:"relay_system,omitempty"`
+	TunnelIDs   []string `json:"tunnel_ids,omitempty"`  // Tunnel, die mit dieser Verbindung starten
+	KeepAlive   int      `json:"keepalive_s,omitempty"` // Sekunden, 0 = Standard (30)
 
 	// ForwardAgent: den lokalen SSH-Agent an den Server weiterreichen (wie
 	// ssh -A). Dort funktionieren dann git, ssh und scp mit den eigenen
@@ -91,8 +91,8 @@ type Connection struct {
 	ForwardAgent bool `json:"forward_agent,omitempty"`
 	// CertPath: SSH-Zertifikat zum Key (von einer CA signiert, *-cert.pub).
 	// Leer = neben dem Keyfile suchen (<key>-cert.pub, wie OpenSSH).
-	CertPath string `json:"cert_path,omitempty"`
-	Device      DeviceKind `json:"device,omitempty"`      // Server oder Netzwerkgerät, leer = automatisch
+	CertPath string     `json:"cert_path,omitempty"`
+	Device   DeviceKind `json:"device,omitempty"` // Server oder Netzwerkgerät, leer = automatisch
 
 	// Persist: beim Verbinden immer in dieselbe tmux-/screen-Sitzung
 	// ("auto", "tmux", "screen"; leer = aus). PersistName: Sitzungsname,
@@ -454,9 +454,31 @@ type Settings struct {
 	// Schrift), "nerd" = Nerd-Font-Symbole. Gehört zum Rechner (Schrift), kein Sync.
 	Icons string `json:"icons,omitempty"`
 
+	// DimPanes: in der geteilten Ansicht die nicht aktiven Bereiche abdunkeln.
+	DimPanes bool `json:"dim_panes,omitempty"`
+	// Workspaces: gespeicherte Arbeitsplätze (Aufteilung + Verbindungen),
+	// LastLayout: Aufteilung beim letzten Beenden (Eintrag „Zuletzt“).
+	// Gehören zum Rechner, kein Sync.
+	Workspaces []Workspace `json:"workspaces,omitempty"`
+	LastLayout *Workspace  `json:"last_layout,omitempty"`
+
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`
+}
+
+// Workspace: geteilte Ansicht zum Wiederöffnen. Layout ist der Name der
+// Aufteilung ("cols", "rows", "grid", "main", "cols3", "grid6"), FracX/FracY
+// die Anteile der Spalten/Zeilen (leer = gleich groß), Conns die Verbindung
+// je Bereich ("" = leer). Folder statt Conns: alle Verbindungen im Ordner.
+type Workspace struct {
+	Name   string    `json:"name"`
+	Layout string    `json:"layout"`
+	FracX  []float64 `json:"frac_x,omitempty"`
+	FracY  []float64 `json:"frac_y,omitempty"`
+	Conns  []string  `json:"conns,omitempty"`
+	Folder string    `json:"folder,omitempty"`
+	Saved  time.Time `json:"saved"`
 }
 
 // CustomColors: eigene Farben als "#rrggbb". Base ist das Theme, von dem

@@ -29,4 +29,4 @@
                                         │
                                         │
                                         │
- Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e umbenennen  d löschen  v verschieben  / suchen
+ Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e umbenennen  d löschen  v verschieben
