@@ -1,6 +1,6 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
  connections  6  / search        │ ▾ Netzwerk
-            ┌─ ◆ Command palette  19 entries ────────────────────────────────────── × ─┐
+            ┌─ ◆ Command palette  20 entries ────────────────────────────────────── × ─┐
  ▾ Netzwerk │ $ Goal, question, command, tunnel, connection or user@host:port …        │
    ○ # switc│ ──────────────────────────────────────────────────────────────────────── │
  ▾ Produktio│ // connections                                                           │
@@ -23,7 +23,6 @@
             │ [#] Search session logs                                                l │
             │ [|] Workspaces …                                                       w │
             │ [k] Lock now                                             Master password │
-            │ [:] Settings ›                               mouse, look, language, AI … │
             │                                                                          │
             │  ↑↓ select    ⏎ run    Esc close                                         │
             └──────────────────────────────────────────────────────────────────────────┘
