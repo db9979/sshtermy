@@ -21,7 +21,7 @@
             │ [/] Netzwerk & Switches ›  Gerät finden, Topologie                     2 │
             │ [&] Team & Teilen ›  live teilen, Team-Ordner                          4 │
             │ [=] Verbindungen & Schlüssel ›  Manager, neu, SSH-Key, Protokolle      5 │
-            │ [:] Einstellungen ›  Maus, Aussehen, Sprache, KI …                    32 │
+            │ [:] Einstellungen ›  Maus, Aussehen, Sprache, KI …                    33 │
             │ [?] Hilfe & Info ›  Tasten, Tour, Neues, Update                        6 │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
