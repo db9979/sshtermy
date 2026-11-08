@@ -9,7 +9,9 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/relay"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -124,7 +126,11 @@ func (a *App) paletteItems() []palItem {
 	if quickFirst {
 		items = append(items, quick...) // user@host:port: Verbinden ist gemeint
 	}
-	if looksLikeAddr(q) && len(a.netDevices()) > 0 {
+	if relay.IsShareLink(q) {
+		items = append(items, palItem{group: pgConnect, icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen"), hint: i18n.T("Link"),
+			run: func() tea.Cmd { return a.watchLink(q) }})
+	}
+	if looksLikeAddr(q) && len(a.netDevices("")) > 0 {
 		items = append(items, palItem{icon: ic("scan"), label: i18n.T("Gerät finden: ") + q, hint: i18n.T("MAC/IP → Switch-Port"),
 			run: func() tea.Cmd { return a.netFind(q) }})
 	}
@@ -258,6 +264,8 @@ func (a *App) paletteItems() []palItem {
 		{icon: ic("broadcast"), label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
 		{icon: ic("scan"), label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
 		{icon: ic("runbook"), label: i18n.T("Zeitpläne: Broadcast/Runbook nach Uhrzeit"), hint: a.keys.label(actSchedule), run: func() tea.Cmd { return a.openSchedules() }},
+		{icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen …"), hint: i18n.T("Link"), hidden: true,
+			keys: "zusehen watch link teilen share live", run: func() tea.Cmd { return a.askWatch() }},
 		{icon: ic("scan"), label: i18n.T("Gerät finden: MAC/IP → Switch-Port …"), hint: i18n.T("Switches"),
 			keys: "mac ip port vlan switch finden suchen wo hängt locate find", run: func() tea.Cmd { return a.askNetFind() }},
 		{icon: ic("scan"), label: i18n.T("Netzwerk-Topologie (LLDP/CDP)"), hint: i18n.T("Switches"),
@@ -286,6 +294,16 @@ func (a *App) paletteItems() []palItem {
 		}})
 		if s.isSerial() && s.state == stConnected {
 			actions = append(actions, palItem{icon: ic("break"), label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
+		}
+		if o := s.share.Load(); o != nil {
+			actions = append(actions,
+				palItem{icon: ic("team"), label: fmt.Sprintf(i18n.T("Teilen beenden (%d Zuschauer)"), o.viewers), hint: i18n.T("live"),
+					keys: "teilen share live stop beenden", run: func() tea.Cmd { a.stopShare(s); return nil }},
+				palItem{icon: ic("team"), label: i18n.T("Link zum Zusehen anzeigen"), hint: i18n.T("live"),
+					keys: "teilen share link", run: func() tea.Cmd { a.showShareLink(s, o); return nil }})
+		} else if s.conn.Protocol != domain.ProtoWatch {
+			actions = append(actions, palItem{icon: ic("team"), label: i18n.T("Sitzung live teilen (Link zum Zusehen) …"), hint: i18n.T("Vermittler"),
+				keys: "teilen share live zuschauen zeigen kollege screen", run: func() tea.Cmd { return a.startShare(s) }})
 		}
 		if a.containersOK(s) {
 			actions = append(actions, palItem{icon: ic("host"), label: i18n.T("Container (Docker, Podman, Kubernetes)"), hint: i18n.T("F6 c"),
@@ -372,7 +390,10 @@ func (a *App) paletteItems() []palItem {
 	actions = append(actions, palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
 	for _, x := range actions {
 		x.group = pgAction
-		if match(x.label) {
+		if x.hidden && ql == "" {
+			continue
+		}
+		if x.matches(match) {
 			items = append(items, x)
 		}
 	}

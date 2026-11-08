@@ -142,6 +142,19 @@ Anker (eigener Vermittler):
 
 Ein Host-Key ändert sich beim Vermittler nur durch neues Koppeln, ein abweichendes „hallo“ wird nur protokolliert.
 
+Sitzung live teilen (nur eigener Vermittler):
+
+| Weg | Inhalt |
+|---|---|
+| `POST /v1/teilen` (Client-Schlüssel) | → `{id}` (32 hex). Höchstens 4 Freigaben je Gerät, 64 insgesamt |
+| `GET /v1/teilen/senden?id=ID` (WebSocket, Client-Schlüssel) | Gastgeber schickt Binärrahmen; Vermittler meldet `{"typ":"zuschauer","n"}` |
+| `GET /v1/teilen/ansehen?id=ID` (WebSocket, ohne Schlüssel) | Zuschauer bekommt dieselben Binärrahmen, höchstens 10 je Freigabe |
+
+Link zum Zusehen: `https://host[:port][/pfad]#teilen=ID&k=SCHLÜSSEL[&fp=SHA256]`. Jeder Rahmen ist
+XChaCha20-Poly1305 mit dem Schlüssel aus dem Link (32 Byte, base64url), Nonce vorne, `ID` als zusätzliche Daten;
+entschlüsselt beginnt er mit `d` (Ausgabe), `s` („Spalten Zeilen“) oder `e` (Ende). Der Schlüssel steht hinter `#`
+und erreicht den Vermittler nie. Zuschauer schicken nichts; was sie tippen, verwirft sshTermy.
+
 ## Sicherheit
 
 - TLS immer, http nur zwischen Reverse-Proxy und Vermittler auf 127.0.0.1.

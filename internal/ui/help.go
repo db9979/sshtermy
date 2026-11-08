@@ -230,6 +230,7 @@ var helpSections = []helpSection{
 		{"„farb“", "Farbregeln bearbeiten"},
 		{"MAC / IP", "Switch-Port finden"},
 		{"„topo“", "Netzwerk-Topologie"},
+		{"„teilen“ / Link", "live teilen / zusehen"},
 		{"Esc", "schließen"},
 	}},
 	{hcNone, "i", "Systemprofil", "", false, [][2]string{

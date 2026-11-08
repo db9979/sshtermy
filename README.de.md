@@ -29,6 +29,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   („Verification code“), holt sshTermy den TOTP-Code aus derselben Quelle, auch nach einer Anmeldung mit Key.
   Gespeichert wird nur der Verweis, nie das Passwort
 - **Kerberos/GSSAPI-Anmeldung** (Anmeldung `kerberos`): Nutzt das Ticket der Firmen-Domäne aus der Windows-Anmeldung oder `kinit`, ohne Passwort; ohne Ticket fragt sshTermy wie gewohnt nach dem Passwort
+- **Bilder im Terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), das kitty-Grafikprotokoll (`kitty +kitten icat`, `viu`, `timg`) und iTerm2-Bilder (`imgcat`) erscheinen als farbige Halbblöcke direkt im Text, in jedem Terminal mit 24-Bit-Farbe, im Verlauf und in der geteilten Ansicht. Zwei Pixel pro Zelle: Diagramme und Fotos sind erkennbar, nicht pixelgenau
 - **Zwischenablage vom Server (OSC 52)**: Was du in tmux oder vim auf dem Server kopierst, landet in deiner lokalen Zwischenablage. Lesen kann der Server sie nie
 - **Geteilte Ansicht** (Strg+T): bis zu sechs Sitzungen gleichzeitig in sieben Aufteilungen, Größe per Maus oder Alt+⇧+Pfeil, Zoom auf einen Bereich (Alt+Z), Bereiche per Titel tauschen, andere Bereiche auf Wunsch abdunkeln. Die Aufteilung übersteht Updates; **Arbeitsplätze** (w im Manager) speichern Aufteilung und Verbindungen zum Wiederöffnen mit einem Klick, „Zuletzt“ merkt sich sshTermy beim Beenden selbst, `g` auf einem Ordner öffnet alle Verbindungen darin als Raster
 - **Eingabe an alle geteilten Bereiche** (Alt+I in der geteilten Ansicht): Was du tippst, geht live an jeden sichtbaren Host, z. B. dieselbe Änderung auf vier Switches. Enter geht nur durch, wenn die Zeile auf keinem Host gefährlich ist
@@ -48,6 +49,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Gerät finden**: MAC (jede Schreibweise) oder IP in die Palette tippen, sshTermy fragt alle Switches nach MAC-,
   ARP- und LLDP-Tabellen und zeigt Switch, Port und VLAN, an dem das Gerät hängt. Uplinks erkennt es an den
   LLDP-Nachbarn und lässt sie hinten anstehen
+- **Mehrere Netze**: Liegen die Switches in verschiedenen Ordnern (je Kunde oder Standort), fragen Gerät finden
+  und Topologie erst, welcher Ordner abgefragt wird, oder alle; die letzte Wahl ist vorausgewählt
 - **Netzwerk-Topologie** (Palette „topo“): aus LLDP/CDP-Nachbarn aller Switches entsteht ein Baum (wer hängt an
   welchem Port von wem, APs und Telefone als Blätter), dazu ein Mermaid-Diagramm in Downloads für Doku, Wiki oder GitHub
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
@@ -74,6 +77,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL; pro Verbindung gespeichert, ein Klick schaltet an/aus, auf Wunsch startet ein Tunnel mit der Verbindung; läuft auch über Jump-Hosts
 - **Vermittler für Server hinter NAT/Firewall**: der Server baut selbst die Verbindung zu einem Vermittler auf (`sshtermy anker`), sshTermy erreicht sein sshd darüber, ohne offenen Port. SSH läuft Ende-zu-Ende, Dateien und Tunnel gehen wie gewohnt. Den Vermittler bringt sshTermy selbst mit (`sshtermy vermittler`), alternativ dient Speech on DGX Spark als Vermittler ([Anleitung](docs/vermittler.md))
+- **Sitzung live teilen** (Palette „teilen“): Über den eigenen Vermittler sehen Kollegen einen Tab live mit, der Link (in der Zwischenablage) genügt, eingefügt in ihre sshTermy-Palette. Zuschauer sehen nur zu, ihre Tasten gehen nirgendwo hin. Jedes Stück ist mit einem Schlüssel verschlüsselt, der allein im Link steht (hinter `#`), der Vermittler sieht nur Chiffrat. Bis zu 10 Zuschauer, wer dazukommt, bekommt zuerst den aktuellen Bildschirm
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
   - **Ghost-Text** beim Tippen (Tab übernimmt)

@@ -110,6 +110,8 @@ type Connection struct {
 	CertPath string     `json:"cert_path,omitempty"`
 	Device   DeviceKind `json:"device,omitempty"` // Server oder Netzwerkgerät, leer = automatisch
 
+	WatchLink string `json:"-"` // ProtoWatch: Link zum Zusehen (nur im Speicher)
+
 	// Persist: beim Verbinden immer in dieselbe tmux-/screen-Sitzung
 	// ("auto", "tmux", "screen"; leer = aus). PersistName: Sitzungsname,
 	// leer = "sshtermy". PersistView: nur zuschauen (tmux attach -r), z. B.
@@ -181,13 +183,16 @@ const (
 	ProtoTelnet Protocol = "telnet" // unverschlüsselt, für ältere Switches
 	ProtoSerial Protocol = "serial" // serielle Konsole (USB-Konsolenkabel)
 	ProtoLocal  Protocol = "local"  // Shell auf diesem Rechner (PTY / ConPTY)
+	ProtoWatch  Protocol = "watch"  // geteilte Sitzung ansehen (Link, nie gespeichert)
 )
 
 // Raw: kein SSH, also keine Exec-Abfragen, kein SFTP und keine Tunnel.
-func (p Protocol) Raw() bool { return p == ProtoTelnet || p == ProtoSerial || p == ProtoLocal }
+func (p Protocol) Raw() bool {
+	return p == ProtoTelnet || p == ProtoSerial || p == ProtoLocal || p == ProtoWatch
+}
 
 // NoHost: Verbindung ohne Host-Angabe (Konsolenkabel, lokale Shell).
-func (p Protocol) NoHost() bool { return p == ProtoSerial || p == ProtoLocal }
+func (p Protocol) NoHost() bool { return p == ProtoSerial || p == ProtoLocal || p == ProtoWatch }
 
 // Device: Gegenstelle ist ein Gerät mit eigener Anmeldung (Telnet, Konsole).
 func (p Protocol) Device() bool { return p == ProtoTelnet || p == ProtoSerial }

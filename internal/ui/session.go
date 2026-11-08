@@ -63,6 +63,9 @@ type session struct {
 
 	detach *detachState                // Tab läuft in eigenem Fenster (detach.go)
 	detOut atomic.Pointer[detach.Conn] // dorthin geht die Ausgabe mit
+	share  atomic.Pointer[shareOut]    // Sitzung live teilen (share.go)
+
+	fixedCols, fixedRows int // Zuschauer: Größe des Gastgebers (0 = Fenster)
 
 	notice noticeKind // Markierung im Tab: Befehl fertig, Glocke (notify.go)
 	bellAt time.Time  // letzte gemeldete Glocke
@@ -146,6 +149,9 @@ func (w outWriter) Write(p []byte) (int, error) {
 	_, err := w.s.term.Write(p)
 	if c := w.s.detOut.Load(); c != nil {
 		_, _ = c.Write(p)
+	}
+	if o := w.s.share.Load(); o != nil {
+		o.feed(p)
 	}
 	if w.s.pending.CompareAndSwap(false, true) {
 		select {
@@ -260,6 +266,9 @@ func (w shellWriter) Write(p []byte) (int, error) {
 }
 
 func (s *session) close() {
+	if o := s.share.Swap(nil); o != nil {
+		o.end()
+	}
 	s.endDetach(i18n.T("Sitzung in sshTermy beendet."))
 	if s.ghostCancel != nil {
 		s.ghostCancel()

@@ -120,6 +120,9 @@ func (a *App) resize(s *session) {
 		return
 	}
 	c, r := a.termSize(s)
+	if s.fixedCols > 0 {
+		c, r = s.fixedCols, s.fixedRows // Zuschauer: so groß wie beim Gastgeber
+	}
 	if cw, rh := s.term.Size(); cw == c && rh == r {
 		return
 	}
@@ -128,6 +131,7 @@ func (a *App) resize(s *session) {
 	if s.shell != nil {
 		_ = s.shell.Resize(c, r)
 	}
+	a.shareResized(s)
 }
 
 func (a *App) agentClient() (*agent.Agent, error) {
@@ -579,6 +583,9 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	}
 	if s.term != nil {
 		s.sbSeen = s.term.ScrollbackLen()
+	}
+	if s.fixedCols > 0 {
+		body = cropView(body, cols, rows)
 	}
 	if s.files.open {
 		body, cur = a.viewFiles(s, tr.w, rows), nil

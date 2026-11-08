@@ -39,6 +39,8 @@ type Term struct {
 	// OSC 52: Text, den ein Programm auf dem Server in die Zwischenablage
 	// legen will (tmux, vim, neovim …). Die Oberfläche holt ihn ab.
 	clip string
+
+	img imageFilter // Sixel, kitty, iTerm2 → Halbblöcke (images.go)
 }
 
 // New erzeugt das Terminal. toHost bekommt alle Bytes, die zum Server sollen
@@ -48,6 +50,13 @@ func New(cols, rows int, toHost io.Writer) *Term {
 	// Zeilen, die oben hinauslaufen, landen direkt im kompakten Verlauf
 	// (läuft innerhalb von Write, push kopiert die Zellen).
 	t.emu.SetScrollbackHook(t.sb.push)
+	t.img.size = func() (int, int) { return t.emu.Width(), t.emu.Height() }
+	t.img.col = func() int { return t.emu.CursorPosition().X }
+	t.img.reply = func(b []byte) {
+		if !t.muted.Load() {
+			_, _ = t.host.Write(b)
+		}
+	}
 	// ESC[3J löscht den Verlauf: auch unseren. Läuft innerhalb von Write
 	// (Emulator gesperrt), daher das ungesperrte IsAltScreen. false = der
 	// eingebaute Handler macht danach den Rest.
@@ -184,7 +193,15 @@ func (t *Term) LastExit() (seq, code int) {
 const ScrollbackLines = 5000
 
 // Write füttert Ausgabe des Servers in den Emulator.
-func (t *Term) Write(p []byte) (int, error) { return t.emu.Write(p) }
+func (t *Term) Write(p []byte) (int, error) {
+	q := t.img.filter(p)
+	if len(q) > 0 {
+		if _, err := t.emu.Write(q); err != nil {
+			return 0, err
+		}
+	}
+	return len(p), nil
+}
 
 func (t *Term) Resize(cols, rows int) {
 	if cols < 10 || rows < 3 {
