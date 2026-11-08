@@ -239,7 +239,7 @@ type overlayKey struct {
 
 func animEnabled() bool {
 	v := os.Getenv("SSHTERMY_NO_ANIM")
-	return v == "" || v == "0"
+	return (v == "" || v == "0") && !accessible
 }
 
 func fadeTick() tea.Cmd {

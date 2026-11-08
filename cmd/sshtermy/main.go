@@ -54,6 +54,7 @@ func main() {
 	showVersion := flag.Bool("version", false, i18n.T("Version anzeigen"))
 	noIntro := flag.Bool("no-intro", false, i18n.T("ohne Startanimation starten (dauerhaft: Palette „Startanimation aus“)"))
 	doUpdate := flag.Bool("update", false, i18n.T("auf die neueste Version aus GitHub aktualisieren und beenden"))
+	debug := flag.Bool("debug", false, i18n.T("Debug-Protokoll für diesen Start schreiben (debug.log im Datenordner)"))
 	crashTest := flag.String("crash-test", "", i18n.T("nur zum Ausprobieren des Absturzberichts: ui, cmd oder fatal"))
 	flag.Parse()
 
@@ -93,6 +94,9 @@ func main() {
 		app.SkipIntro()
 	}
 	app.CrashTest(*crashTest)
+	if *debug {
+		app.ForceDebug()
+	}
 	// Absturzbericht: ab hier landen Paniken im crash-Ordner (internal/crash).
 	guard := crash.Start(st.Dir)
 	// Bibliotheken (z. B. der SSH-Agent bei der Weiterleitung) schreiben

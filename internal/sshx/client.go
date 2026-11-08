@@ -18,6 +18,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
+	"github.com/db9979/sshtermy/internal/debuglog"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sysprof"
@@ -146,16 +147,21 @@ func Dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 	if o.AskSecret != nil {
 		o.AskSecret = rememberSecrets(o.AskSecret) // Neuverbindung fragt nicht doppelt
 	}
+	t0 := time.Now()
+	debuglog.Printf("ssh", "%s: verbinde (Auth=%s Gerät=%s Jump=%t Vermittler=%t)", c.Alias, c.Auth, c.Device, c.JumpHostID != "", c.ViaRelay())
 	cl, err := dialRetry(ctx, c, o, 2*time.Second)
 	if err != nil && c.Device != domain.DeviceServer && isNoCommonAlgo(err) {
+		debuglog.Printf("ssh", "%s: keine gemeinsamen Verfahren, versuche alte Verfahren (%v)", c.Alias, err)
 		// Alte Geräte können oft nur diffie-hellman-group14-sha1, aes-cbc
 		// oder ssh-rsa. Die Aushandlung bevorzugt trotzdem moderne Verfahren.
 		o.legacy = true
 		cl, err = dialRetry(ctx, c, o, 2*time.Second)
 	}
 	if err != nil {
+		debuglog.Printf("ssh", "%s: fehlgeschlagen nach %s: %v", c.Alias, time.Since(t0).Round(time.Millisecond), err)
 		return nil, err
 	}
+	debuglog.Printf("ssh", "%s: verbunden in %s (%s, Netzgerät=%t)", c.Alias, time.Since(t0).Round(time.Millisecond), cl.Profile.Banner, cl.NetDevice)
 	if cl.NetDevice || c.Device == domain.DeviceServer {
 		return cl, nil
 	}
@@ -167,6 +173,7 @@ func Dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 	// (sonst "handshake failed: EOF"), deshalb kurz warten und notfalls
 	// mehrmals versuchen.
 	cl.Close()
+	debuglog.Printf("ssh", "%s: Verbindung hat die Systemabfrage nicht überlebt → Netzwerkgerät, neuer Versuch", c.Alias)
 	o.forceNet = true
 	if err := sleepCtx(ctx, o.retryWait(1500*time.Millisecond)); err != nil {
 		return nil, err
@@ -189,6 +196,7 @@ func dialRetry(ctx context.Context, c domain.Connection, o Options, waits ...tim
 		if err == nil || i >= len(waits) || !isHangup(err) {
 			return cl, err
 		}
+		debuglog.Printf("ssh", "%s: Gegenstelle legt im Handshake auf (%v), Versuch %d", c.Alias, err, i+2)
 		if err := sleepCtx(ctx, o.retryWait(waits[i])); err != nil {
 			return nil, err
 		}

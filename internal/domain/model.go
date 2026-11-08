@@ -530,6 +530,14 @@ type Settings struct {
 	// Highlight: Farbregeln für die Ausgabe im Terminal (highlight-Paket).
 	Highlight HighlightConfig `json:"highlight,omitempty"`
 
+	// Accessible: barrierearm. Keine Animationen, Formen und Wörter statt
+	// nur Farbe (z. B. Online-Punkt). Geht mit dem Sync.
+	Accessible bool `json:"accessible,omitempty"`
+
+	// Debug: Debug-Protokoll (internal/debuglog) schreiben. Nur dieser
+	// Rechner, nie im Sync.
+	Debug bool `json:"debug,omitempty"`
+
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`

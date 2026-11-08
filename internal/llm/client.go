@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/db9979/sshtermy/internal/debuglog"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 )
@@ -421,7 +422,23 @@ func (c *conn) do(ctx context.Context, body any, stream bool) (*http.Response, e
 		cp.Timeout = 0 // Streams dürfen länger dauern; Abbruch über ctx
 		cl = &cp
 	}
-	return cl.Do(req)
+	t0 := time.Now()
+	resp, err := cl.Do(req)
+	if debuglog.On() {
+		st := 0
+		if resp != nil {
+			st = resp.StatusCode
+		}
+		debuglog.Printf("ki", "%s %s Modell=%s Stream=%t %d Bytes → HTTP %d nach %s %v", c.cfg.Provider, req.URL.Host, c.cfg.Model, stream, len(raw), st, time.Since(t0).Round(time.Millisecond), orNil(err))
+	}
+	return resp, err
+}
+
+func orNil(err error) any {
+	if err == nil {
+		return ""
+	}
+	return err
 }
 
 func (c *conn) post(ctx context.Context, body any) (int, []byte, error) {

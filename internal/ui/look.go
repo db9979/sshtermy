@@ -31,6 +31,7 @@ func (a *App) applyLook() {
 	a.applyLang()
 	set := a.st.Settings()
 	_ = syncIntroFile(a.st.Dir, set.Intro)
+	accessible = set.Accessible
 	sig, _ := json.Marshal([]any{set.Theme, set.Keys, set.Colors, set.Icons, set.NerdFont})
 	if string(sig) == a.lookSig {
 		return

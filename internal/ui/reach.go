@@ -144,6 +144,8 @@ func (a *App) reachDot(c domain.Connection) (string, color.Color) {
 		return "○", t.Muted
 	case r.ok:
 		return "●", t.OK
+	case accessible:
+		return "×", t.Danger // nicht nur die Farbe unterscheidet
 	}
 	return "●", t.Danger
 }

@@ -71,13 +71,14 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
-	inputLog *os.File // nur mit SSHTERMY_DEBUG=1
-	st       *store.Store
-	hostKeys *sshx.HostKeyStore
-	s        Styles
-	w, h     int
-	scr      screen
-	events   chan tea.Msg
+	inputLog    *os.File // nur mit SSHTERMY_DEBUG=1
+	debugForced bool     // --debug: Debug-Protokoll für diesen Start (debugreport.go)
+	st          *store.Store
+	hostKeys    *sshx.HostKeyStore
+	s           Styles
+	w, h        int
+	scr         screen
+	events      chan tea.Msg
 
 	unlock           unlockState
 	mgr              managerState
@@ -233,6 +234,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.liveToasts(time.Now())
 		return a, a.toastTick()
 	}
+	a.debugMsg(msg)
 	m, cmd := a.update(msg)
 	a.clearNotices()
 	if c := a.trackFade(); c != nil {
