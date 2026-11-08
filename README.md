@@ -68,8 +68,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   `Ctrl+D` deletes. Before the run `k` lets the AI check the steps against each host's system profile and suggest
   equivalents (`a` applies them). Whether something is dangerous is still decided by the fixed rules.
 - **Danger check:** on production hosts (folder, tag or alias with “prod”, tag “live”) sshTermy asks before risky
-  commands run (`rm -rf`, `reboot`, on switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …). Only `y` runs
-  them, Esc leaves the line in place. Palette “Danger check on all hosts” extends it to every host.
+  commands run (`rm -rf`, `reboot`, on switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …). Only `y` or holding ⏎
+  runs them (a bar fills up, a short ⏎ is not enough), Esc leaves the line in place. Palette “Danger check on all hosts” extends it to every host.
 - **Export recordings:** palette “Start recording” records the tab as an asciinema file (`.cast`, with colors and
   vim/htop), playable with `asciinema play`. Session logs (`l`, then `x`) export as Markdown, text or a rebuilt
   recording; “Export terminal history as text” saves the scrollback. Everything goes to your Downloads folder.
@@ -126,6 +126,11 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Accessible mode** (Settings › Appearance): no animations, shapes instead of color only (× for “unreachable”);
   together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
+- **Lively interface** (palette “Motion”: full, subtle, off): a spinner in the tab while connecting, tabs flash green
+  on success and red on errors, a pulsing dot shows new output in hidden tabs, hovering a tab shows a card with target,
+  duration and latency history. In the manager the online dots “breathe”, an outage blinks and is reported, and the
+  details show the reachability history and CPU/RAM/disk bars for connected servers. Redraws only happen while
+  something moves; accessible mode turns it all off
 - **MCP server** (`sshtermy mcp`): Claude and other AI clients can list your connections and run read-only commands, anything else only after you confirm in sshTermy
 - **Audit log** (Settings › Security): who did what and when, on which host: connections, commands (also from the
   agent mode and broadcast), file transfers, config backups, changed connections, master password, full backups and
@@ -228,7 +233,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | F6 | host overview: r/⏎ query, c containers, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
-| | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu) |
+| | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu, hover it for target, duration and latency) |
 | | Alt+L | local shell in a new tab (also in the manager; palette: `local`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | quick commands: list / run directly |
 | | F10 | back to the manager (sessions keep running) |

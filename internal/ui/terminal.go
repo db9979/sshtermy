@@ -770,9 +770,13 @@ func (a *App) tabStrip() string {
 	if from > 0 {
 		b.WriteString(st.Header.Foreground(st.T.Muted).Render("‹ "))
 	}
+	now := time.Now()
 	for i := from; i < to; i++ {
 		x := a.sessions[i]
-		dot := map[sessState]string{stConnecting: st.Warn.Render("◌"), stConnected: st.OK.Render("●"), stClosed: st.Danger.Render("○"), stReconnect: st.Warn.Render("◌")}[x.state]
+		if a.sessionVisible(x) {
+			x.unseen = false
+		}
+		dot := a.tabDot(x, now) // Spinner, Puls bei neuer Ausgabe (motion.go)
 		if x.detached() {
 			dot = st.AI.Render("↑") // läuft in eigenem Fenster
 		}
@@ -789,6 +793,10 @@ func (a *App) tabStrip() string {
 		if i == a.cur {
 			ts = st.TabActive
 		}
+		ts = ts.Background(tabFlashBg(x, ts.GetBackground(), now))
+		if bg := ts.GetBackground(); bg != nil {
+			dot = lipgloss.NewStyle().Background(bg).Render(dot) // Punkt auf dem Tab-Hintergrund
+		}
 		// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
 		stripe, text := "", label(i, fit)
 		if col := a.accentOf(x.conn); col != nil {
@@ -802,7 +810,7 @@ func (a *App) tabStrip() string {
 		if i == a.cur {
 			end = ""
 		}
-		tab := a.z.mark(ts.Render(stripe+dot+text+end), zoneAction{
+		tab := a.z.mark(ts.Render(stripe+dot+ts.UnsetPadding().Render(text+end)), zoneAction{
 			click: func(tea.Mouse, bool) tea.Cmd {
 				a.focusSession(i)
 				return nil
@@ -814,6 +822,7 @@ func (a *App) tabStrip() string {
 				a.modal = a.tabMenu(x, m.X, m.Y, nil)
 				return nil
 			},
+			tip: func() string { return a.tabTip(x) },
 		})
 		if i == a.cur {
 			// × schließt den aktiven Tab (bei laufender Verbindung mit Rückfrage)

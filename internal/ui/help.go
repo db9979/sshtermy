@@ -240,7 +240,7 @@ var helpSections = []helpSection{
 		{"KI-Befehl korrigiert", "Korrektur wird gemerkt"},
 	}},
 	{hcNone, "▲", "Gefahren & Aufnahme", "", false, [][2]string{
-		{"Produktiv", "riskanter Befehl: j"},
+		{"Produktiv", "riskanter Befehl: ⏎ halten / j"},
 		{"Palette", "„Gefahren-Check“"},
 		{"Palette", "„Aufnahme starten“"},
 		{"Palette", "„Verlauf als Text“"},
@@ -250,6 +250,7 @@ var helpSections = []helpSection{
 		{"b", "Tastenkürzel belegen"},
 		{"Strg +/−", "Schrift (Terminalfenster)"},
 		{"Palette", "„Startanimation aus“"},
+		{"Palette", "„Bewegung“: voll · dezent · aus"},
 	}},
 	{hcNone, "◦", "Maus", "", false, [][2]string{
 		{"Klick", "Tabs, Listen, Felder"},
@@ -259,6 +260,7 @@ var helpSections = []helpSection{
 		{"Rechtsklick Link", "Menü: Verbinden, Ping"},
 		{"Rechtsklick Tab", "Menü: umbenennen, schließen …"},
 		{"Mittelklick Tab", "Tab schließen"},
+		{"Maus auf Tab", "Karte: Ziel, Dauer, Latenz"},
 		{"Strg+Klick", "URL im Browser"},
 		{"Rad", "im Verlauf blättern"},
 		{"Shift+Ziehen", "markieren in htop/vim"},

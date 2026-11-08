@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"image/color"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -67,8 +68,13 @@ type session struct {
 
 	fixedCols, fixedRows int // Zuschauer: Größe des Gastgebers (0 = Fenster)
 
-	notice noticeKind // Markierung im Tab: Befehl fertig, Glocke (notify.go)
-	bellAt time.Time  // letzte gemeldete Glocke
+	notice   noticeKind  // Markierung im Tab: Befehl fertig, Glocke (notify.go)
+	unseen   bool        // neue Ausgabe, solange der Tab verdeckt war (motion.go)
+	flashAt  time.Time   // Tab leuchtet kurz auf (motion.go)
+	flashCol color.Color // … in dieser Farbe
+	latAt    time.Time   // Latenzverlauf für die Hover-Karte
+	latHist  []time.Duration
+	bellAt   time.Time // letzte gemeldete Glocke
 
 	editFS  *sshx.RemoteFS            // SFTP für Dateien im eigenen Editor (editor.go)
 	alerts  atomic.Pointer[alertScan] // Farbregeln mit „!“ (highlight.go)

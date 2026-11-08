@@ -177,7 +177,7 @@ export const de = {
     ]},
     { t: 'Sicherheit', ic: '▲', warn: true, rows: [
       ['⏎ ⏎', 'roter Befehl: zweimal bestätigen', 'warn'],
-      ['j', 'Produktiv-Host: riskanten Befehl zulassen', 'warn'],
+      ['j', 'Produktiv: riskant zulassen · oder ⏎ halten', 'warn'],
       ['␣befehl', 'führendes Leerzeichen: nicht protokolliert'],
       ['_Palette_', '„Jetzt sperren“ · „Master-Passwort“ · „Audit“ · „Gefahren-Check“'],
     ]},
@@ -363,7 +363,7 @@ export const en = {
     ]},
     { t: 'Safety', ic: '▲', warn: true, rows: [
       ['⏎ ⏎', 'red command: confirm twice', 'warn'],
-      ['y', 'production host: allow a risky command', 'warn'],
+      ['y', 'production: allow risky · or hold ⏎', 'warn'],
       ['␣command', 'leading space: not logged'],
       ['_palette_', '“Lock now” · “Master password” · “Audit” · “Danger check”'],
     ]},

@@ -624,6 +624,8 @@ func (a *App) palMenuItems() []palItem {
 	items = append(items,
 		look(palToggle(ic("intro"), i18n.T("Barrierearm: keine Animationen, Formen statt nur Farben"), accessible,
 			"barrierefrei barrierearm accessibility a11y screenreader farbenblind animation ruhig", func() tea.Cmd { return a.toggleAccessible() })),
+		palCycle(pgSetLook, ic("intro"), i18n.T("Bewegung"), motionLabel(motionSetting), "bewegung animation motion animiert spinner puls hover karte ruhig",
+			func(dir int) tea.Cmd { return a.cycleMotion(dir) }),
 		palCycle(pgSetLook, ic("language"), "Sprache / Language", lang, "english deutsch german", func(int) tea.Cmd { return a.toggleLang() }),
 
 		// Einrichten: Verwandtes in Unterordnern

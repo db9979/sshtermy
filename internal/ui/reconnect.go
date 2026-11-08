@@ -288,6 +288,7 @@ func (a *App) beginReconnect(s *session, cause string) {
 	}
 	s.rc.due = time.Now().Add(wait)
 	s.state = stReconnect
+	s.flashTab(a.s.T.Danger)
 	if s.term != nil {
 		// Programme der alten Sitzung (tmux, vim, htop) sind weg: Alt-Screen,
 		// Maus und Bracketed Paste zurücksetzen, dann eine Trennlinie.

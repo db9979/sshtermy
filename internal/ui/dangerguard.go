@@ -2,7 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"math"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -18,8 +20,9 @@ import (
 // Tag „live“) prüft sshTermy jede Zeile, bevor Enter an den Server geht. Trifft
 // eine der festen Gefahrenregeln (internal/safety, auch für Switches: reload,
 // erase, write erase, delete …), kommt erst ein roter Dialog. Ausführen nur mit
-// „j“, ⏎ allein reicht nicht (Gewohnheit). Esc lässt die Zeile stehen, damit
-// man sie korrigieren kann.
+// „j“ oder ⏎ gedrückt halten (1,2 s, ein Balken füllt sich); ein kurzes ⏎
+// reicht nicht (Gewohnheit). Esc lässt die Zeile stehen, damit man sie
+// korrigieren kann.
 //
 // Über die Palette lässt sich der Check auf alle Hosts ausweiten
 // (Settings.DangerAll). Auf Produktiv-Hosts ist er nicht abschaltbar.
@@ -31,7 +34,88 @@ type dangerAsk struct {
 	key     tea.KeyPressMsg // das zurückgehaltene Enter
 	prod    bool
 	root    bool
+	hold    holdState
+	opened  time.Time
 }
+
+// ---------------------------------------------------------------- ⏎ halten
+//
+// Terminals melden meist kein Loslassen, nur die Wiederholung einer
+// gehaltenen Taste (nach ~0,3–0,7 s, dann etwa 30-mal pro Sekunde). Gehalten
+// ist ⏎, solange Wiederholungen kommen; das Loslassen erkennt sshTermy an der
+// Pause (oder am Loslass-Ereignis, wo das Terminal es schickt). Wer schnell
+// mehrmals tippt, startet jedes Mal von vorn. Eine Taste, die schon beim
+// Öffnen des Dialogs gehalten war, zählt nicht.
+
+const (
+	holdFill     = 1200 * time.Millisecond // so lange halten
+	holdFirstGap = 750 * time.Millisecond  // Verzögerung bis zur ersten Wiederholung
+	holdGap      = 250 * time.Millisecond  // Abstand der Wiederholungen
+	holdFresh    = 150 * time.Millisecond  // so lange Ruhe vor einem neuen Druck
+)
+
+type holdState struct {
+	start, last time.Time // Beginn, letztes ⏎
+	held        bool      // ⏎ ist unten
+	rep         bool      // Wiederholungen kommen
+	relLevel    float64   // Stand beim Loslassen (läuft dann zurück)
+	relAt       time.Time
+}
+
+// press: ⏎ (auch Wiederholung). Ergebnis: voll = ausführen.
+func (h *holdState) press(now time.Time) bool {
+	gap := now.Sub(h.last)
+	h.last = now
+	if h.held && !h.within(gap) {
+		h.letGo(now.Add(-gap)) // Pause zu lang: war schon losgelassen
+	}
+	if !h.held {
+		if gap < holdFresh {
+			return false // Taste war schon beim Öffnen des Dialogs unten
+		}
+		h.held, h.rep, h.start, h.relLevel = true, false, now, 0
+		return false
+	}
+	h.rep = true
+	return h.level(now) >= 1
+}
+
+// within: kam das ⏎ noch als Wiederholung der gehaltenen Taste?
+func (h *holdState) within(gap time.Duration) bool {
+	if h.rep {
+		return gap <= holdGap
+	}
+	return gap <= holdFirstGap
+}
+
+func (h *holdState) letGo(at time.Time) {
+	if !h.held {
+		return
+	}
+	h.relLevel = math.Min(1, float64(at.Sub(h.start))/float64(holdFill))
+	h.relAt = at
+	h.held, h.rep = false, false
+}
+
+// release: Loslass-Ereignis vom Terminal.
+func (h *holdState) release(now time.Time) { h.letGo(now) }
+
+// update: Loslassen an der Pause erkennen.
+func (h *holdState) update(now time.Time) {
+	if h.held && !h.within(now.Sub(h.last)) {
+		h.letGo(h.last)
+	}
+}
+
+// level: Füllstand 0 … 1.
+func (h *holdState) level(now time.Time) float64 {
+	if h.held {
+		return math.Min(1, float64(now.Sub(h.start))/float64(holdFill))
+	}
+	return math.Max(0, h.relLevel-2*now.Sub(h.relAt).Seconds())
+}
+
+func (h *holdState) active(now time.Time) bool { return h.held || h.level(now) > 0 }
 
 // netDevice: Switch/Router (Verbindung, Systemprofil oder Erkennung beim Aufbau).
 func (s *session) netDevice() bool {
@@ -88,7 +172,8 @@ func (a *App) dangerCheck(s *session, k tea.KeyPressMsg) bool {
 	if len(f) == 0 {
 		return false
 	}
-	d := &dangerAsk{sid: s.id, cmd: cmd, key: k, prod: isProduction(s.conn), root: s.state == stConnected && s.rootNow()}
+	d := &dangerAsk{sid: s.id, cmd: cmd, key: k, prod: isProduction(s.conn), root: s.state == stConnected && s.rootNow(), opened: time.Now()}
+	d.hold.last = d.opened // das ⏎, das den Dialog geöffnet hat
 	for _, x := range f {
 		d.reasons = append(d.reasons, x.Reason)
 	}
@@ -101,19 +186,38 @@ func (a *App) dangerKey(k tea.KeyPressMsg) tea.Cmd {
 	yn := yesNo(k)
 	switch {
 	case yn == 1:
-		a.modal = nil
-		s := a.byID(d.sid)
-		if s == nil || s.term == nil || s.state != stConnected {
-			return nil
-		}
-		s.dangerOK = d.cmd
-		return a.terminalKey(s, d.key)
+		return a.dangerRun(d)
 	case yn == -1 || k.String() == "q":
 		a.modal = nil
 		a.flash(i18n.T("Nicht ausgeführt. Die Zeile steht noch am Prompt."))
 	case k.String() == "enter":
-		a.modal.body = "again" // Hinweis: j drücken
+		if d.hold.press(time.Now()) {
+			return a.dangerRun(d)
+		}
+		if !d.hold.held || !d.hold.rep {
+			a.modal.body = "again" // Hinweis: halten oder j
+		}
 	}
+	return nil
+}
+
+// dangerRun: bestätigt, die zurückgehaltene Zeile geht an den Server.
+func (a *App) dangerRun(d *dangerAsk) tea.Cmd {
+	a.modal = nil
+	s := a.byID(d.sid)
+	if s == nil || s.term == nil || s.state != stConnected {
+		return nil
+	}
+	s.dangerOK = d.cmd
+	return a.terminalKey(s, d.key)
+}
+
+// dangerHoldTick: Loslassen erkennen (Takt aus motion.go).
+func (a *App) dangerHoldTick() tea.Cmd {
+	if a.modal == nil || a.modal.kind != mDanger || a.modal.danger == nil {
+		return nil
+	}
+	a.modal.danger.hold.update(time.Now())
 	return nil
 }
 
@@ -138,9 +242,29 @@ func (a *App) dangerView(m *modal) string {
 	for _, r := range d.reasons {
 		b.WriteString(st.Danger.Render("▲ "+r) + "\n")
 	}
-	if m.body == "again" {
-		b.WriteString("\n" + st.Warn.Render(fmt.Sprintf(i18n.T("⏎ reicht hier nicht: %s drücken zum Ausführen."), yesKey())) + "\n")
+	// Balken: füllt sich, solange ⏎ gehalten wird
+	now := time.Now()
+	lvl := d.hold.level(now)
+	barW := max(10, min(w, 60))
+	fill := st.T.Danger
+	if motionLevel() > 0 {
+		fill = mixColor(st.T.Warn, st.T.Danger, lvl)
 	}
-	keys := [][2]string{{yesKey(), i18n.T("trotzdem ausführen")}, {"Esc", i18n.T("abbrechen (Zeile bleibt stehen)")}}
-	return st.dialog(dialog{icon: "▲", title: strings.TrimPrefix(m.title, "▲ "), tone: st.T.Danger, body: b.String(), keys: keys, width: w, maxW: 80}, a.w)
+	b.WriteString("\n" + smoothBar(lvl, barW, fill, st.T.Surface2) + "\n")
+	switch {
+	case d.hold.held:
+		b.WriteString(st.Warn.Bold(true).Render(i18n.T("weiter halten …")) + "\n")
+	case lvl > 0:
+		b.WriteString(st.Muted.Render(i18n.T("losgelassen · nichts passiert")) + "\n")
+	case m.body == "again":
+		b.WriteString(st.Warn.Render(fmt.Sprintf(i18n.T("Ein kurzes ⏎ reicht hier nicht: ⏎ gedrückt halten oder %s drücken."), yesKey())) + "\n")
+	default:
+		b.WriteString(st.Muted.Render(fmt.Sprintf(i18n.T("⏎ gedrückt halten oder %s drücken zum Ausführen"), yesKey())) + "\n")
+	}
+	tone := st.T.Danger
+	if motionLevel() == 2 {
+		tone = mixColor(mixColor(st.T.Border, st.T.Danger, 0.45), st.T.Danger, pulse(now, 1600*time.Millisecond))
+	}
+	keys := [][2]string{{i18n.T("⏎ halten"), i18n.T("ausführen")}, {yesKey(), i18n.T("trotzdem ausführen")}, {"Esc", i18n.T("abbrechen (Zeile bleibt stehen)")}}
+	return st.dialog(dialog{icon: "▲", title: strings.TrimPrefix(m.title, "▲ "), tone: tone, body: b.String(), keys: keys, width: w, maxW: 80}, a.w)
 }
