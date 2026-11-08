@@ -38,7 +38,7 @@ var enSSHKey = map[string]string{
 	"SSH-Schlüssel erzeugen / auf den Server übertragen":                    "Generate SSH key / copy it to the server",
 	"SSH-Schlüssel erzeugen / übertragen":                                   "Generate / copy SSH key",
 	"SSH-Schlüssel für ":                                                    "SSH key for ",
-	"SSH-Schlüssel für „":                                                   "SSH key for “",
+	"SSH-Schlüssel für „":                                                   "SSH key for ”",
 	"SSH-Schlüssel":                                                         "SSH key",
 	"Schlüssel erzeugt: ":                                                   "Key generated: ",
 	"Schlüssel":                                                             "Key",

@@ -28,6 +28,16 @@ jobs:
             CGO_ENABLED=0 GOARM=7 GOOS=${t%/*} GOARCH=${t#*/} go build -o /dev/null ./cmd/sshtermy
           done
 
+  # Datenrennen (Terminal-Emulator, Vermittler, SSH) früh finden
+  race:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go test -race ./...
+
   packaging:
     runs-on: ubuntu-latest
     steps:

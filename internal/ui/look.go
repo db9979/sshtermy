@@ -144,7 +144,7 @@ func (a *App) updateKeys(msg tea.Msg) tea.Cmd {
 		}
 		e.err = ""
 		if other, ok := a.keys.conflicts()[id]; ok {
-			e.err = i18n.T("Achtung: ") + keyLabel(key) + i18n.T(" ist auch „") + i18n.T(defOf(other).label) + "“"
+			e.err = i18n.T("Achtung: ") + keyLabel(key) + i18n.T(" ist auch „") + i18n.T(defOf(other).label) + i18n.T("“")
 		}
 		return nil
 	}
@@ -194,7 +194,7 @@ func (a *App) viewKeys() string {
 			mark = s.AI.Render(" ●") + s.Muted.Render(i18n.T(" Standard: ")+keyLabel(d.def[0]))
 		}
 		if o, ok := conf[d.id]; ok {
-			mark += s.Danger.Render(i18n.T(" ▲ auch „") + i18n.T(defOf(o).label) + "“")
+			mark += s.Danger.Render(i18n.T(" ▲ auch „") + i18n.T(defOf(o).label) + i18n.T("“"))
 		}
 		keyTxt := s.Key.Render(cur)
 		if i == e.sel && e.capturing {

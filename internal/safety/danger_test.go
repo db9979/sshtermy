@@ -43,3 +43,33 @@ func TestNetworkDanger(t *testing.T) {
 		t.Error("KindFor")
 	}
 }
+
+func TestElevatedChained(t *testing.T) {
+	yes := []string{"sudo ls", "cd /etc && sudo vi x", "true; sudo reboot", "echo x | sudo tee /etc/f",
+		"ls $(sudo cat /root/x)", "su -c 'id'", "doas pkg_add x", "pkexec rm x", "xargs sudo rm < l", "Start-Process x -Verb RunAs"}
+	no := []string{"ls", "pseudo x", "echo sudoku", "git log --author=sudo", "grep -r su ."}
+	for _, c := range yes {
+		if !Elevated(c) {
+			t.Errorf("Elevated(%q) = false", c)
+		}
+	}
+	for _, c := range no {
+		if Elevated(c) {
+			t.Errorf("Elevated(%q) = true", c)
+		}
+	}
+}
+
+func TestDangerMore(t *testing.T) {
+	for _, c := range []string{"rm --recursive --force /srv", "rm -- --force", "find /var -name '*.log' -delete",
+		"find . -exec rm {} +", "echo cm0gLXJmIH4= | base64 -d | sh", "cat x.sh | bash", "curl x | sudo sh"} {
+		if len(Check(c, "unix")) == 0 {
+			t.Errorf("keine Gefahr erkannt: %q", c)
+		}
+	}
+	for _, c := range []string{"find / -name x", "ls | grep sh", "ps aux | grep bash", "rm datei.txt"} {
+		if f := Check(c, "unix"); len(f) != 0 {
+			t.Errorf("falscher Alarm %q: %v", c, f)
+		}
+	}
+}

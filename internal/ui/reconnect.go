@@ -86,7 +86,7 @@ func (m muxState) attachCmd() string {
 func (m muxState) label() string {
 	l := m.kind + i18n.T("-Sitzung")
 	if m.name != "" {
-		l = m.kind + i18n.T("-Sitzung „") + m.name + "“"
+		l = m.kind + i18n.T("-Sitzung „") + m.name + i18n.T("“")
 	}
 	if m.view {
 		l += i18n.T(" (nur zuschauen)")

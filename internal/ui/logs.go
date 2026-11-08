@@ -566,7 +566,7 @@ func (a *App) viewLogs() string {
 	case m.group != "":
 		title := fmt.Sprintf(i18n.T("◆ Zusammenfassung über %s"), sessionsText(nLogsOf(rows, m.sel, nLogs, m.groupQ == m.search.Value())))
 		if m.groupQ != "" {
-			title += i18n.T(" zu „") + m.groupQ + "“"
+			title += i18n.T(" zu „") + m.groupQ + i18n.T("“")
 		}
 		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(title) + s.Muted.Render("  ") + a.hints(s.Muted, [2]string{"Esc", i18n.T("schließen")}) + "\n\n")
 		rb.WriteString(indent(wrap(s.Text.Render(m.group), w), " "))

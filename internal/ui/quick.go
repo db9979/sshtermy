@@ -246,7 +246,7 @@ func (a *App) quickModalView(m *modal) string {
 	cw := min(64, a.w-12)
 	sub := s.conn.Alias
 	if preset != "" {
-		sub += i18n.T(" · Vorbelegung „") + preset + "“"
+		sub += i18n.T(" · Vorbelegung „") + preset + i18n.T("“")
 	}
 	var lines []string
 	for i := 0; i < maxQuick; i++ {
@@ -353,7 +353,7 @@ func (a *App) openQuickForm(c domain.Connection, remote string) tea.Cmd {
 	help := i18n.T("eigene Liste")
 	if len(cur) == 0 {
 		cur = p.cmds
-		help = i18n.T("Vorbelegung „") + p.name + "“"
+		help = i18n.T("Vorbelegung „") + p.name + i18n.T("“")
 	}
 	f := &form{title: i18n.T("Schnellbefehle: ") + c.Alias + "  (" + help + ")"}
 	for i := 0; i < maxQuick; i++ {

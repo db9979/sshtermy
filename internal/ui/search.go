@@ -238,7 +238,7 @@ func (a *App) viewErrorList(s *session, w, h int) string {
 	if len(sr.matches) == 0 {
 		msg := i18n.T("Keine Fehlerzeilen im Verlauf")
 		if sr.in.Value() != "" {
-			msg = i18n.T("Keine Fehlerzeilen mit „") + sr.in.Value() + "“"
+			msg = i18n.T("Keine Fehlerzeilen mit „") + sr.in.Value() + i18n.T("“")
 		}
 		return fitBlock("\n "+st.OK.Render("✓ "+msg)+"\n\n "+a.hints(st.Muted, [2]string{"Tab", i18n.T("zeigt den Verlauf")}, [2]string{"Strg+E", i18n.T("Filter aus")}, [2]string{"Esc", i18n.T("schließen")}), w, h)
 	}

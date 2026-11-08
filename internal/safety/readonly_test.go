@@ -55,3 +55,26 @@ func TestReadOnly(t *testing.T) {
 		}
 	}
 }
+
+func TestReadOnlyWriters(t *testing.T) {
+	for _, c := range []string{"nvidia-smi -r", "nvidia-smi -pl 200", "nvidia-smi -i 0 -pm 1", "nvidia-smi --gpu-reset",
+		"sensors -s", "dmesg -n 1", "ss -K dst 1.2.3.4", "git diff --output=/etc/x", "find . -fprint0 /tmp/x"} {
+		if ReadOnly(c, "unix") {
+			t.Errorf("ReadOnly(%q) = true", c)
+		}
+	}
+	for _, c := range []string{"nvidia-smi", "nvidia-smi -L", "nvidia-smi --query-gpu=name,memory.used --format=csv", "nvidia-smi -i 0 -q -d MEMORY",
+		"sensors", "dmesg -T", "ss -tlnp", "git log --oneline"} {
+		if !ReadOnly(c, "unix") {
+			t.Errorf("ReadOnly(%q) = false", c)
+		}
+	}
+	for _, c := range []string{"Format-Volume -DriveLetter D", "format C:", "format"} {
+		if ReadOnly(c, "windows") {
+			t.Errorf("ReadOnly(%q, windows) = true", c)
+		}
+	}
+	if !ReadOnly("Get-Process | Format-Table", "windows") || !ReadOnly("Get-ChildItem | Sort-Object Name | Select-Object -First 3", "windows") {
+		t.Error("Format-Table/Sort-Object sollten nur lesen")
+	}
+}

@@ -158,7 +158,7 @@ func (a *App) startRelayPair() (tea.Cmd, error) {
 				a.flashErr(err.Error())
 				return nil
 			}
-			a.flash(i18n.T("Gekoppelt mit Vermittler „") + r.Name + "“")
+			a.flash(i18n.T("Gekoppelt mit Vermittler „") + r.Name + i18n.T("“"))
 			return a.openRelaySystems()
 		}}
 	}, nil
@@ -254,7 +254,7 @@ func (a *App) relayPicker(current string, onPick func(pickItem) tea.Cmd) *picker
 				hint = append(hint, i18n.T("○ offline"))
 			}
 			if c, ok := a.savedVia(r.ID, s.ID); ok {
-				hint = append(hint, i18n.T("gespeichert als „")+trunc(c.Alias, 20)+"“")
+				hint = append(hint, i18n.T("gespeichert als „")+trunc(c.Alias, 20)+i18n.T("“"))
 			}
 			it.hint = strings.Join(hint, " · ")
 			items = append(items, it)
@@ -459,7 +459,7 @@ func (a *App) testRelay(r domain.Relay) tea.Cmd {
 				lines = append(lines, i18n.T("✓ erreichbar, Zertifikat und Schlüssel gültig")+fmt.Sprintf(" (%d ms)", ms),
 					fmt.Sprintf(i18n.T("✓ %d Systeme, davon %d online"), len(l.Systems), on))
 			}
-			a.modal = &modal{kind: mInfo, title: i18n.T("Vermittler „") + r.Name + "“", body: strings.Join(lines, "\n")}
+			a.modal = &modal{kind: mInfo, title: i18n.T("Vermittler „") + r.Name + i18n.T("“"), body: strings.Join(lines, "\n")}
 			return nil
 		}}
 	}

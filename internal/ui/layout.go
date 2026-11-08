@@ -49,7 +49,7 @@ func (a *App) applyLayout(i int) {
 	m := layoutOrder[i]
 	if !a.fits(m) {
 		a.modal.sel = i
-		a.flash(i18n.T("Fenster zu klein für „") + m.label() + "“")
+		a.flash(i18n.T("Fenster zu klein für „") + m.label() + i18n.T("“"))
 		return
 	}
 	a.modal = nil

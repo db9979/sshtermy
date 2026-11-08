@@ -1,6 +1,7 @@
 package crash
 
 import (
+	"io"
 	"net/url"
 	"os"
 	"os/exec"
@@ -78,7 +79,10 @@ func TestUIPanicIsCaptured(t *testing.T) {
 	defer g.Close()
 	r, w, _ := os.Pipe()
 	defer w.Close()
-	_, err := tea.NewProgram(panicModel{}, tea.WithInput(r), tea.WithOutput(discard{}), tea.WithoutSignals()).Run()
+	// Nur io.Reader, kein *os.File: sonst nutzt bubbletea den epoll-Leser
+	// von cancelreader, dessen Close beim Panik-Abbau mit dem Lese-Goroutine
+	// um den Dateideskriptor rennt (Fehler in der Bibliothek, nicht hier).
+	_, err := tea.NewProgram(panicModel{}, tea.WithInput(struct{ io.Reader }{r}), tea.WithOutput(discard{}), tea.WithoutSignals()).Run()
 	if err == nil {
 		t.Fatal("Run ohne Fehler")
 	}

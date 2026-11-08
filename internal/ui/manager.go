@@ -389,7 +389,7 @@ func (a *App) viewManager() string {
 		if m.drag.from < len(rows) {
 			name = rows[m.drag.from].name()
 		}
-		lb.WriteString(" " + s.Warn.Render("↕ „"+trunc(name, 16)+"“ "+trunc(desc, leftW-24)) + "\n")
+		lb.WriteString(" " + s.Warn.Render("↕ "+i18n.T("„")+trunc(name, 16)+i18n.T("“")+" "+trunc(desc, leftW-24)) + "\n")
 	case m.searching || m.search.Value() != "":
 		m.search.SetWidth(leftW - 6)
 		lb.WriteString(" " + s.Accent.Render("/") + " " + m.search.View() + "\n")

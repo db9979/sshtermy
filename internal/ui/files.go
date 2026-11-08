@@ -312,7 +312,7 @@ func (a *App) startTransfer(s *session, srcFS sshx.FS, paths []string, dstFS ssh
 			}
 		}
 		if len(exist) > 0 {
-			what := "„" + exist[0] + "“"
+			what := i18n.T("„") + exist[0] + i18n.T("“")
 			if len(exist) > 1 {
 				what = fmt.Sprintf(i18n.T("%d Einträge (%s …)"), len(exist), exist[0])
 			}

@@ -329,8 +329,8 @@ func (t *Term) CursorLine() string {
 	var b strings.Builder
 	cx, _, _ := t.Cursor()
 	for x := 0; x < w && x < cx; x++ {
-		c := t.emu.CellAt(x, cy)
-		if c == nil || c.Content == "" {
+		c, ok := t.emu.CellCopy(x, cy)
+		if !ok || c.Content == "" {
 			b.WriteByte(' ')
 			continue
 		}

@@ -77,7 +77,7 @@ func (a *App) openConns(conns []domain.Connection, m splitMode, fx, fy []float64
 		// passt nicht: die größte Aufteilung, die passt
 		for _, alt := range []splitMode{splitGrid6, splitGrid, splitCols3, splitMain, splitCols, splitRows, splitOff} {
 			if alt.slots() <= m.slots() && a.fits(alt) {
-				a.flash(i18n.T("Fenster zu klein für „") + m.label() + i18n.T("“, nehme „") + alt.label() + "“")
+				a.flash(i18n.T("Fenster zu klein für „") + m.label() + i18n.T("“, nehme „") + alt.label() + i18n.T("“"))
 				m, fx, fy = alt, nil, nil
 				break
 			}
@@ -226,7 +226,7 @@ func (a *App) workspaceItems() []pickItem {
 	desc := func(w domain.Workspace) (string, string) {
 		m, _ := splitByID(w.Layout)
 		if w.Folder != "" {
-			return i18n.T("Ordner „") + w.Folder + "“", i18n.T("Raster")
+			return i18n.T("Ordner „") + w.Folder + i18n.T("“"), i18n.T("Raster")
 		}
 		var names []string
 		for _, id := range w.Conns {
@@ -322,7 +322,7 @@ func (a *App) openWorkspaces() tea.Cmd {
 			if strings.TrimSpace(q) == "" {
 				return nil
 			}
-			return &pickItem{value: "save:" + q, label: i18n.T("+ Aktuelle Ansicht speichern als „") + q + "“"}
+			return &pickItem{value: "save:" + q, label: i18n.T("+ Aktuelle Ansicht speichern als „") + q + i18n.T("“")}
 		}
 		inner := p.onPick
 		p.onPick = func(it pickItem) tea.Cmd {

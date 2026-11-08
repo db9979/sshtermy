@@ -67,7 +67,7 @@ type goalState struct {
 	fp, fpPrev          *agent.FullPlan // Plan zur Freigabe / beim Überarbeiten
 	planSel, explored   int
 	planOff             []bool
-	recipeFiles      []agent.FileAction
+	recipeFiles         []agent.FileAction
 }
 
 func (g *goalState) cancel() {

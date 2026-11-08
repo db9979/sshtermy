@@ -218,6 +218,28 @@ func Strip(c domain.Connection, o Options) domain.Connection {
 	return c
 }
 
+// safeIncoming: eine neue Verbindung aus einem fremden Paket darf auf diesem
+// Rechner nichts ausführen und nichts weiterreichen, bevor man sie selbst
+// eingestellt hat. Sonst könnte jeder mit Schreibrecht auf eine abonnierte
+// Team-Datei hier Befehle starten (cmd:-Passwortquelle, lokale Shell) oder
+// den eigenen SSH-Agent an einen fremden Server hängen.
+func safeIncoming(c domain.Connection) domain.Connection {
+	c.ForwardAgent, c.ForwardX11 = false, false
+	c.LocalShell, c.LocalDir = "", ""
+	for _, src := range []*string{&c.PassSource, &c.OTPSource} {
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(*src)), "cmd:") {
+			*src = ""
+		}
+	}
+	if !strings.HasPrefix(c.KeyPath, "~") {
+		c.KeyPath = ""
+	}
+	if !strings.HasPrefix(c.CertPath, "~") {
+		c.CertPath = ""
+	}
+	return c
+}
+
 // Stats: was die Übernahme geändert hat.
 type Stats struct {
 	Added, Updated   int
@@ -312,7 +334,7 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 			st.Updated++
 			continue
 		}
-		c := in
+		c := safeIncoming(in)
 		if c.Port == 0 {
 			c.Port = 22
 		}

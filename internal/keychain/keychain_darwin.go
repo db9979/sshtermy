@@ -75,5 +75,5 @@ func (system) Delete(account string) error {
 // Shell in einfachen Anführungszeichen). Anführungszeichen und Backslashes
 // fliegen raus: Dienst und Konto enthalten keine, der Name ist nur Anzeige.
 func quote(s string) string {
-	return "'" + strings.NewReplacer("'", "", `"`, "", `\`, "", "\n", " ").Replace(s) + "'"
+	return "'" + strings.NewReplacer("'", "", `"`, "", `\`, "", "\n", " ", "\r", " ").Replace(s) + "'"
 }

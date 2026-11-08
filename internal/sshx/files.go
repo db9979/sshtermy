@@ -242,6 +242,11 @@ func Copy(ctx context.Context, src FS, srcPath string, dst FS, dstDir string, pr
 	return copyAny(ctx, src, srcPath, dst, dst.Join(dstDir, name), pr)
 }
 
+// plainName: ein einzelner Name ohne Pfadanteile.
+func plainName(n string) bool {
+	return n != "" && n != "." && n != ".." && !strings.ContainsAny(n, "/\\\x00")
+}
+
 func copyAny(ctx context.Context, src FS, sp string, dst FS, dp string, pr *Progress) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
@@ -263,6 +268,11 @@ func copyAny(ctx context.Context, src FS, sp string, dst FS, dp string, pr *Prog
 	for _, c := range es {
 		if c.Link && c.IsDir {
 			continue
+		}
+		if !plainName(c.Name) {
+			// Ein bösartiger SFTP-Server könnte „../../.bashrc“ melden und
+			// so beim Herunterladen eines Ordners lokal überall schreiben.
+			return fmt.Errorf(i18n.T("ungültiger Dateiname vom Server: %q"), c.Name)
 		}
 		if err := copyAny(ctx, src, src.Join(sp, c.Name), dst, dst.Join(dp, c.Name), pr); err != nil {
 			return err
