@@ -199,3 +199,24 @@ func TestServerScriptRunsLocally(t *testing.T) {
 	}
 	t.Logf("%s\n%s", out, s.Summary())
 }
+
+func TestConfigRules(t *testing.T) {
+	cfg := "hostname \"sw1\"\nsnmp-server community \"public\" unrestricted\ntelnet-server\nntp server 10.0.0.1\n"
+	rules := ParseConfigRules([]string{"+^ntp server", "+^logging", "-telnet-server", "-community \"public\"", "", "# Kommentar"})
+	if len(rules) != 4 {
+		t.Fatalf("%d Regeln", len(rules))
+	}
+	v := CheckConfig(cfg, rules)
+	if len(v) != 3 {
+		t.Fatalf("%+v", v)
+	}
+	if v[0].Text() != "fehlt: ^logging" || v[1].Line != "telnet-server" || !strings.Contains(v[2].Line, "public") {
+		t.Errorf("%q %q %q", v[0].Text(), v[1].Line, v[2].Line)
+	}
+	if _, _, err := ParseConfigRule("ntp"); err == nil {
+		t.Error("ohne +/- sollte scheitern")
+	}
+	if _, _, err := ParseConfigRule("+(("); err == nil {
+		t.Error("kaputter Ausdruck sollte scheitern")
+	}
+}

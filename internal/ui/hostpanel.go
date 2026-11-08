@@ -45,6 +45,7 @@ type hostState struct {
 	backups   []store.Backup
 	sel       int
 	note      string           // Ergebnis der letzten Sicherung
+	viol      string           // verletzte Config-Regeln der letzten Sicherung
 	alerts    []hostinfo.Alert // Kennzahlen über der Warnschwelle
 	lastTry   time.Time        // letzte Server-Abfrage (auch fehlgeschlagene)
 }
@@ -120,6 +121,7 @@ type netResult struct {
 	added     int
 	removed   int
 	model     string // aus der Konfiguration (ProCurve)
+	viol      []hostinfo.Violation
 	err       error
 }
 
@@ -208,6 +210,9 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 	}
 	h.seq++
 	h.busy, h.err, h.note = true, "", ""
+	if backup {
+		h.viol = ""
+	}
 	h.step = i18n.T("Übersicht abfragen …")
 	if backup && !info {
 		h.step = i18n.T("show running-config sichern …")
@@ -221,6 +226,7 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 	}
 	st := a.st
 	connID := s.conn.ID
+	rules := a.configRules()
 	return func() tea.Msg {
 		defer cancel()
 		r := netResult{vendor: vendor, pagingOff: pagingOff}
@@ -273,6 +279,7 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 			}
 			cfg = strings.TrimRight(cfg, "\n") + "\n"
 			r.model = hostinfo.ModelFromConfig(cfg)
+			r.viol = hostinfo.CheckConfig(cfg, rules)
 			if list := st.Backups(connID); len(list) > 0 {
 				prev := list[0]
 				r.prev = &prev
@@ -400,7 +407,13 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		if r.backup != nil || r.unchanged {
 			h.backups, h.sel = a.st.Backups(s.conn.ID), 0
-			a.flash(s.conn.Alias + ": " + firstSentence(h.note))
+			h.viol = ""
+			if len(r.viol) > 0 {
+				h.viol = fmt.Sprintf(i18n.T("Regeln verletzt (%d): "), len(r.viol)) + violationText(r.viol)
+				a.pushToast(toastWarn, s.conn.Alias+": "+h.viol)
+			} else {
+				a.flash(s.conn.Alias + ": " + firstSentence(h.note))
+			}
 		}
 		return nil, true
 	}
@@ -706,6 +719,9 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 	b.WriteString("\n" + st.PanelTitle.Foreground(st.T.Accent).Render(i18n.T("▣ Config-Sicherung")) + "\n")
 	if h.note != "" {
 		b.WriteString(st.OK.Render(wrap(h.note, w)) + "\n")
+	}
+	if h.viol != "" {
+		b.WriteString(st.Warn.Render(wrap(h.viol, w)) + "\n")
 	}
 	if len(h.backups) == 0 {
 		b.WriteString(st.Muted.Render(wrap(i18n.T("Noch keine Sicherung. b sichert „show running-config“ verschlüsselt auf diesem Rechner."), w)) + "\n")

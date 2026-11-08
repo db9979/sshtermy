@@ -15,8 +15,8 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
-	"github.com/db9979/sshtermy/internal/pwsource"
 	"github.com/db9979/sshtermy/internal/keychain"
+	"github.com/db9979/sshtermy/internal/pwsource"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 )
@@ -885,6 +885,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveHighlight()
 	case scrScheduleForm:
 		err = a.saveScheduleForm()
+	case scrRulesForm:
+		err = a.saveConfigRules()
 	}
 	if err != nil {
 		a.form.err = err.Error()

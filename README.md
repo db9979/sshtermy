@@ -40,7 +40,15 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Server file in your own editor**: `e` in F5 (server side) or the palette entry „Open server file in your own editor“ with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › „Editor for server files“ (e.g. `code --new-window`)
 - **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules „color pattern“ (palette → „Color rules for output“); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
 - **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
-- **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice
+- **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
+  Nightly runs go through a schedule (`z`, type „Config backup“) for a whole folder. **Switch config rules**
+  (palette → Settings): `+^ntp server` must appear, `-telnet-server` must not; every backup is checked,
+  violations show in the F6 panel, as a toast and in the schedule result
+- **Find device**: type a MAC (any notation) or IP into the palette, sshTermy asks all switches for their MAC,
+  ARP and LLDP tables and shows the switch, port and VLAN the device is plugged into. Uplinks are recognized
+  by their LLDP neighbors and listed last
+- **Network topology** (palette „topo“): the LLDP/CDP neighbors of all switches become a tree (who is connected to
+  which port of whom, APs and phones as leaves), plus a Mermaid diagram in Downloads for docs, wiki or GitHub
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
   the results are shown side by side in columns. The danger rules apply here too: red needs ⏎ twice.
   Servers get every step via exec (with exit code), network devices get the commands typed into their shell („-- MORE --“ is paged automatically).
