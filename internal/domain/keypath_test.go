@@ -2,11 +2,15 @@ package domain
 
 import (
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
 func TestPortableKeyPath(t *testing.T) {
 	home := filepath.Join(string(filepath.Separator)+"home", "dom")
+	if runtime.GOOS == "windows" {
+		home = `C:\Users\dom` // ohne Laufwerk ist ein Pfad unter Windows nicht absolut
+	}
 	in := filepath.Join(home, ".ssh", "id_ed25519")
 	if got := PortableKeyPath(in, home); got != "~/.ssh/id_ed25519" {
 		t.Fatalf("PortableKeyPath = %q", got)

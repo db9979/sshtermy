@@ -33,7 +33,7 @@ fi
 if [ -r /proc/stat ]; then echo "stat1=$(head -n 1 /proc/stat)"; sleep 1; echo "stat2=$(head -n 1 /proc/stat)"
 else echo "cpu_top=$(top -l 2 -n 0 -s 1 2>/dev/null | grep 'CPU usage' | tail -n 1)"; fi
 df -Pk / 2>/dev/null | awk 'NR==2{print "disk_kb="$2" "$3" "$4}'
-if [ -r /proc/uptime ]; then echo "uptime_s=$(cut -d' ' -f1 /proc/uptime)"; else echo "boot=$(sysctl -n kern.boottime 2>/dev/null | sed 's/.*sec = \([0-9]*\).*/\1/')"; fi
+if [ -r /proc/uptime ]; then echo "uptime_s=$(cut -d' ' -f1 /proc/uptime)"; else echo "boot=$(sysctl -n kern.boottime 2>/dev/null | sed 's/^[^0-9]*sec = \([0-9]*\).*/\1/')"; fi
 echo "now=$(date +%s)"
 if command -v apt-get >/dev/null 2>&1; then
   u=$($T apt-get -s -o Debug::NoLocking=1 upgrade 2>/dev/null | grep '^Inst ')

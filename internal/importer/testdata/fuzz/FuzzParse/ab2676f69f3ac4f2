@@ -1,0 +1,2 @@
+go test fuzz v1
+string("Host web.\nHostName 1\nUser root\nJump jump\nInclude /*/h")

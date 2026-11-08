@@ -2,6 +2,7 @@ package hostinfo
 
 import (
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -183,6 +184,9 @@ func TestDiffAndSameConfig(t *testing.T) {
 
 // Das Skript läuft wirklich mit sh und liefert lesbare Werte.
 func TestServerScriptRunsLocally(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("das Skript läuft auf Linux/macOS-Servern, nicht unter Git-Bash")
+	}
 	sh, err := exec.LookPath("sh")
 	if err != nil {
 		t.Skip("kein sh")

@@ -505,6 +505,8 @@ make test         # go vet + Tests
 make bench        # Leistung: Terminal-Durchsatz, Speicher pro Tab, Manager mit 500 Verbindungen
 make build        # bin/sshtermy
 make dist         # alle Plattformen nach dist/ + checksums.txt
+make fuzz         # Fuzz-Tests für Parser von Daten fremder Geräte (FUZZTIME=5m für länger)
+make vuln         # bekannte Sicherheitslücken in Go und den Bibliotheken (govulncheck)
 make golden       # Bildschirm-Tests nach einer gewollten Änderung neu schreiben
 make handout      # Kurzreferenz zum Ausdrucken site/handout/*.pdf (Node + Playwright; Inhalt in tools/handout/content.mjs)
                   # TestHandoutKeysCurrent schlägt fehl, wenn sich Tasten oder Hilfe ändern, bis das neu gelaufen ist
@@ -516,6 +518,9 @@ Panels, geteilte Ansicht …) in fester Größe auf Deutsch und Englisch als Tex
 Änderung `make golden` ausführen und den Diff der `.txt`-Dateien ansehen, bevor du committest. Bei einem
 Merge-Konflikt in diesen Dateien nach dem Merge einfach `make golden` neu laufen lassen. Schlägt die CI fehl, steht
 im Artefakt `golden-actual` des Laufs, wie die Bildschirme jetzt aussehen. Neue Ansicht: eine Zeile in `goldenCases`.
+
+**CI** testet unter Linux, Windows und macOS, dazu Datenrennen-Prüfung, `govulncheck` und ein kurzer Fuzz-Lauf.
+Dependabot schlägt wöchentlich neue Bibliotheksversionen vor. Updates signieren (einmalig einrichten): [docs/signatur.md](docs/signatur.md).
 
 **Texte in der Oberfläche** stehen deutsch im Code und laufen durch `i18n.T("…")` (Formate: `i18n.F`, feste
 Fehler: `i18n.NewError`). Jeder neue Text braucht einen Eintrag in `internal/i18n/en.go`; `go test ./internal/i18n`

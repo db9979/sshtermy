@@ -11,7 +11,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          # neuester Patch von Go 1.26: Sicherheitskorrekturen der Standardbibliothek
+          go-version: "1.26.x"
+          check-latest: true
       - run: go vet ./... && go test ./...
       - name: Terminal-Emulator (eigene Kopie in third_party/vt)
         run: cd third_party/vt && go test ./...
@@ -35,8 +37,60 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          # neuester Patch von Go 1.26: Sicherheitskorrekturen der Standardbibliothek
+          go-version: "1.26.x"
+          check-latest: true
       - run: go test -race ./...
+
+  # Tests auch auf echtem Windows und macOS (ConPTY, DPAPI, Schlüsselbund, Pfade)
+  platforms:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          check-latest: true
+      - run: go test ./...
+      - run: cd third_party/vt && go test ./...
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: golden-actual-${{ matrix.os }}
+          path: internal/ui/testdata/golden-actual/
+          if-no-files-found: ignore
+
+  # Bekannte Sicherheitslücken in Go und allen Bibliotheken, die wirklich aufgerufen werden
+  vuln:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          check-latest: true
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  # Parser für Daten von fremden Geräten kurz mit Zufallsdaten beschießen
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          check-latest: true
+      - run: FUZZTIME=15s tools/fuzz/run.sh
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fuzz-funde
+          path: internal/**/testdata/fuzz/
+          if-no-files-found: ignore
 
   packaging:
     runs-on: ubuntu-latest

@@ -190,6 +190,7 @@ func TestKerberosFallsBackToPassword(t *testing.T) {
 	p, _ := strconv.Atoi(port)
 	t.Setenv("SSH_AUTH_SOCK", "")
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", t.TempDir())
 	hk, _ := NewHostKeyStore(filepath.Join(t.TempDir(), "known_hosts"))
 	c := domain.Connection{Alias: "srv", Host: host, Port: p, Username: "u", Auth: domain.AuthKerberos, Device: domain.DeviceNetwork}
 	asked := false

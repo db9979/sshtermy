@@ -15,6 +15,7 @@ import (
 func TestForeignKeyPathStaysForOtherComputer(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	t.Setenv("SSHTERMY_HOME", t.TempDir())
 	s, err := Open()
 	if err != nil {
@@ -75,6 +76,7 @@ func TestForeignKeyPathStaysForOtherComputer(t *testing.T) {
 func TestKeyPathUnderHomeBecomesPortable(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	t.Setenv("SSHTERMY_HOME", t.TempDir())
 	s, _ := Open()
 	if err := s.Init([]byte("correct horse"), false); err != nil {

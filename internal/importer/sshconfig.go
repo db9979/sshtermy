@@ -52,11 +52,11 @@ func ParseSSHConfig(txt, file string) ([]Entry, error) {
 				}
 				for _, pat := range args {
 					for _, f := range includeFiles(pat, file) {
-						if seen[f] {
+						if seen[f] || len(seen) >= maxIncludes {
 							continue
 						}
 						seen[f] = true
-						if b, err := os.ReadFile(f); err == nil {
+						if b, ok := readInclude(f); ok {
 							parse(decodeText(b), f, depth+1)
 						}
 					}
@@ -80,6 +80,22 @@ func ParseSSHConfig(txt, file string) ([]Entry, error) {
 		}
 	}
 	return out, nil
+}
+
+// Grenzen für Include: nur normale Dateien bis 1 MiB, höchstens 64 Stück.
+// Sonst hängt der Import bei „Include /dev/zero“ oder „Include /*/*/*“.
+const (
+	maxIncludes    = 64
+	maxIncludeSize = 1 << 20
+)
+
+func readInclude(f string) ([]byte, bool) {
+	st, err := os.Stat(f)
+	if err != nil || !st.Mode().IsRegular() || st.Size() > maxIncludeSize {
+		return nil, false
+	}
+	b, err := os.ReadFile(f)
+	return b, err == nil
 }
 
 func resolveSSH(alias string, blocks []*sshBlock) Entry {

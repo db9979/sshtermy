@@ -293,6 +293,9 @@ var sixelDefault = [16]color.NRGBA{
 }
 
 // decodeSixel: Inhalt nach ESC P (Parameter, q, Daten) ohne Terminator.
+// sixelMaxNum: größte Zahl in einer Sixel-Sequenz (weit über imgMaxPix).
+const sixelMaxNum = 1 << 20
+
 func decodeSixel(b []byte) image.Image {
 	q := bytes.IndexByte(b, 'q')
 	if q < 0 {
@@ -338,7 +341,9 @@ func decodeSixel(b []byte) image.Image {
 	num := func(i int) (int, int) {
 		v, k := 0, i
 		for k < len(data) && data[k] >= '0' && data[k] <= '9' {
-			v = v*10 + int(data[k]-'0')
+			// gedeckelt: sonst läuft die Zahl über (negativ) und „!“
+			// wiederholt eine Spalte Milliarden Mal (Fuzz-Fund)
+			v = min(v*10+int(data[k]-'0'), sixelMaxNum)
 			k++
 		}
 		return v, k

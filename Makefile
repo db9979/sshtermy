@@ -6,7 +6,7 @@ PKG     := github.com/db9979/sshtermy/internal/version
 LDFLAGS := -s -w -X $(PKG).Version=$(VERSION) -X $(PKG).Commit=$(COMMIT) -X $(PKG).Date=$(DATE) -X $(PKG).UpdatePubKey=$(UPDATE_PUBKEY)
 TARGETS := windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 linux/arm linux/riscv64
 
-.PHONY: build test bench dist clean run golden handout
+.PHONY: build test bench dist clean run golden handout fuzz vuln
 build:
 	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/sshtermy ./cmd/sshtermy
 
@@ -17,6 +17,15 @@ test:
 # Leistung: Terminal-Durchsatz, Speicher pro Tab, Manager mit 500 Verbindungen
 bench:
 	go test -run '^$$' -bench . -benchtime 2s ./internal/termemu ./internal/ui ./internal/store
+
+# Fuzz-Tests (Parser für Daten von fremden Geräten), je FUZZTIME lang
+FUZZTIME ?= 20s
+fuzz:
+	FUZZTIME=$(FUZZTIME) tools/fuzz/run.sh
+
+# Bekannte Sicherheitslücken in Go und den Bibliotheken
+vuln:
+	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
 # Bildschirm-Tests (internal/ui/testdata/golden) nach gewollten Änderungen neu schreiben
 golden:

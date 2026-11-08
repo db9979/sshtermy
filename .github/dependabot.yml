@@ -1,0 +1,22 @@
+# Wöchentlich: neue Versionen der Go-Bibliotheken und GitHub Actions als PR.
+# third_party/vt ist eine eigene Kopie und bleibt außen vor.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      go-bibliotheken:
+        patterns: ["*"]
+    commit-message:
+      prefix: "intern"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "intern"
