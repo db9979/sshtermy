@@ -8,10 +8,12 @@ und dieser Schlüssel liegt nur als Secret im Repository.
 
 ## Schritte (ca. 5 Minuten)
 
-1. Schlüsselpaar erzeugen (auf einem eigenen Rechner, im Repository-Ordner):
+1. Schlüsselpaar erzeugen (auf einem eigenen Rechner, braucht Go und git). Der Befehl muss im
+   Repository-Ordner laufen, sonst meldet Go „go.mod file not found“. Ohne vorhandenen Klon:
 
    ```
-   go run ./cmd/sshtermy-sign keygen
+   git clone --depth 1 https://github.com/db9979/sshtermy /tmp/sshtermy
+   cd /tmp/sshtermy && go run ./cmd/sshtermy-sign keygen
    ```
 
    Ausgegeben werden zwei Zeilen: der **öffentliche** Schlüssel (`UPDATE_PUBKEY`) und der
