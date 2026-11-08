@@ -440,6 +440,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.netMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.containerMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.editMsg(msg); ok {
 		return a, cmd
 	}

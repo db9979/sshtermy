@@ -153,6 +153,7 @@ var helpSections = []helpSection{
 	{hcHost, "▣", "Host-Übersicht", "F6", false, [][2]string{
 		{"r / ⏎", "abfragen"},
 		{"b", "Switch-Config sichern"},
+		{"c", "Container (Docker, Podman, k8s)"},
 		{"↑ ↓", "Sicherung wählen"},
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},

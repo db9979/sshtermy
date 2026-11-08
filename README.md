@@ -40,6 +40,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Server file in your own editor**: `e` in F5 (server side) or the palette entry „Open server file in your own editor“ with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › „Editor for server files“ (e.g. `code --new-window`)
 - **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules „color pattern“ (palette → „Color rules for output“); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
 - **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
+- **Containers** (`c` in F6 or palette „docker“): Docker and Podman containers and Kubernetes pods of the server in one list. ⏎ opens a shell in the container, Ctrl+L follows the logs, Ctrl+K lets the AI analyze the last 400 log lines. Restart and start/stop are only inserted at the prompt, ⏎ runs them. Uses `sudo -n` when docker needs root and sudo works without a password
 - **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
   Nightly runs go through a schedule (`z`, type „Config backup“) for a whole folder. **Switch config rules**
   (palette → Settings): `+^ntp server` must appear, `-telnet-server` must not; every backup is checked,
@@ -199,7 +200,7 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | F3 | ask AI |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
 | | F5 | files (SFTP): Tab side, c copy (up/down), e server file in your own editor, Space/a mark, drag copies, n folder, d delete, . hidden |
-| | F6 | host overview: r/⏎ query, b back up switch config, ↑↓ state, d diff, v view |
+| | F6 | host overview: r/⏎ query, c containers, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu) |

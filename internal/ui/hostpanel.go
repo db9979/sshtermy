@@ -489,6 +489,10 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		if !h.busy {
 			return a.openMonitorForm()
 		}
+	case "c":
+		if !net && a.containersOK(s) {
+			return a.openContainers(s)
+		}
 	case "b":
 		if net && !h.busy {
 			s.panelFocus = false
@@ -571,7 +575,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		}
 		return append(k, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 	}
-	return [][2]string{{"r", i18n.T("aktualisieren")}, {"g", i18n.T("Grenzwerte")}, {"Esc", "Terminal"}, {a.keys.label(actHost), i18n.T("schließen")}}
+	return [][2]string{{"r", i18n.T("aktualisieren")}, {"c", i18n.T("Container")}, {"g", i18n.T("Grenzwerte")}, {"Esc", "Terminal"}, {a.keys.label(actHost), i18n.T("schließen")}}
 }
 
 // ---------------------------------------------------------------- Ansicht

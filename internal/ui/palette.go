@@ -287,6 +287,10 @@ func (a *App) paletteItems() []palItem {
 		if s.isSerial() && s.state == stConnected {
 			actions = append(actions, palItem{icon: ic("break"), label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
 		}
+		if a.containersOK(s) {
+			actions = append(actions, palItem{icon: ic("host"), label: i18n.T("Container (Docker, Podman, Kubernetes)"), hint: i18n.T("F6 c"),
+				keys: "docker podman kubernetes k8s kubectl pods container logs", run: func() tea.Cmd { return a.openContainers(s) }})
+		}
 		if s.client != nil {
 			actions = append(actions, palItem{icon: ic("open"), label: i18n.T("Server-Datei im eigenen Editor öffnen …"), hint: i18n.T("F5 e"),
 				keys: "edit editor bearbeiten vscode notepad datei file", run: func() tea.Cmd { return a.askEditPath(s) }})
