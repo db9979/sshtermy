@@ -37,3 +37,16 @@ und dieser Schlüssel liegt nur als Secret im Repository.
 
 - Im Release `v…` gibt es die Datei `checksums.txt.sig`.
 - Im Lauf des Workflows **release** steht keine Warnung „Release unsigniert“ mehr.
+
+## Wenn der Schritt „Signieren“ fehlschlägt
+
+Die Meldung im Lauf nennt die Ursache, ohne den Schlüssel zu zeigen:
+
+- **64 Hex-Zeichen – das ist der öffentliche Schlüssel**: Im Secret steht die erste statt der
+  zweiten Zeile von `keygen`. Secret mit dem privaten Schlüssel (128 Zeichen) überschreiben.
+- **Hex-Folge mit … Zeichen, erwartet 128**: Beim Kopieren fehlt ein Stück. Zeilenumbrüche,
+  Leerzeichen und Anführungszeichen stören nicht, sie werden ignoriert.
+- **passt nicht zu UPDATE_PUBKEY**: Secret und Variable stammen aus zwei verschiedenen
+  `keygen`-Läufen. Einmal neu erzeugen und beide Werte ersetzen.
+
+Ein Secret lässt sich auf GitHub nicht anzeigen, nur überschreiben (*Update*).
