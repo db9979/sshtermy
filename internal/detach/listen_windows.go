@@ -17,7 +17,9 @@ func listen(dir string) (net.Listener, string, error) {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
 	p := `\\.\pipe\sshtermy-` + hex.EncodeToString(b)
-	ln, err := winio.ListenPipe(p, nil)
+	// Mit Puffer: ohne blockiert jedes Write, bis die Gegenseite liest
+	// (Tastendruck und Größenänderung kurz hintereinander hingen sonst).
+	ln, err := winio.ListenPipe(p, &winio.PipeConfig{InputBufferSize: 64 << 10, OutputBufferSize: 64 << 10})
 	if err != nil {
 		return nil, "", err
 	}
