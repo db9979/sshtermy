@@ -2,10 +2,12 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"runtime"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/audit"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/vault"
 )
@@ -49,9 +51,11 @@ func (a *App) saveMasterForm() error {
 	}
 	if err := a.st.ChangeMaster(old, nw, dpapi); err != nil {
 		if errors.Is(err, vault.ErrWrongPassword) {
+			a.auditAdd(audit.EvSettings, "", "Master-Passwort ändern: falsches Passwort")
 			return errors.New(i18n.T("Bisheriges Passwort stimmt nicht"))
 		}
 		return err
 	}
+	a.auditAdd(audit.EvSettings, "", fmt.Sprintf("Master-Passwort geändert=%t, Windows-Anmeldung=%t", len(nw) > 0, dpapi))
 	return nil
 }

@@ -40,9 +40,9 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen, mit der Maus auf die andere Seite ziehen, mehrere mit der Leertaste markieren. Dateien aus Explorer/Finder ins Fenster ziehen lädt sie hoch, auch direkt im Terminal
 - **Server-Datei im eigenen Editor**: `e` in F5 (Server-Seite) oder Palette „Server-Datei im eigenen Editor öffnen“ mit Pfad öffnet die Datei in VS Code, Notepad++, TextEdit … auf deinem Rechner; jedes Speichern lädt sie über dieselbe Verbindung zurück (Besitzer und Rechte bleiben). Editor einstellen: Palette → Einstellungen › „Editor für Server-Dateien“ (z. B. `code --new-window`)
 - **Farbregeln für die Ausgabe**: Text ohne eigene Farbe wird eingefärbt, Fehler rot, Warnungen gelb, ok/up grün, IP-Adressen blau, MAC-Adressen lila, Switch-Syslog (`%LINK-3-UPDOWN`) nach Schwere; nie in vim/htop. Eigene Regeln „farbe muster“ (Farben deutsch oder englisch; Palette → „Farbregeln für die Ausgabe“); mit `!` davor meldet sich sshTermy, wenn das Muster in einem verdeckten Tab auftaucht (Tab bekommt ein `!`, Einblendung, auf Wunsch Desktop-Meldung)
-- **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, Platte, Laufzeit und offene Updates. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
+- **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, Platte, Laufzeit und offene Updates. Switches, Router und Firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
 - **Container** (`c` in F6 oder Palette „docker“): Docker- und Podman-Container und Kubernetes-Pods des Servers in einer Liste. ⏎ öffnet eine Shell im Container, Strg+L verfolgt die Logs, Strg+K lässt die KI die letzten 400 Log-Zeilen auswerten. Neustart und Start/Stopp werden nur am Prompt eingefügt, ⏎ führt sie aus. Braucht docker root und geht sudo ohne Passwort, nimmt sshTermy `sudo -n`
-- **Config-Sicherung für Switches**: `b` sichert `show running-config` verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert.
+- **Config-Sicherung für Switches**: `b` sichert die laufende Konfiguration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`) verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert.
   Nächtlich geht es per Zeitplan (`z`, Art „Config-Sicherung“) für einen ganzen Ordner. **Regeln für Switch-Configs**
   (Palette → Einstellungen): `+^ntp server` muss vorkommen, `-telnet-server` darf nicht; jede Sicherung wird geprüft,
   Verstöße stehen im F6-Panel, als Einblendung und im Ergebnis des Zeitplans
@@ -127,6 +127,12 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Barrierearm** (Einstellungen › Aussehen): keine Animationen, Formen statt nur Farben (× für „nicht erreichbar“);
   dazu die **Farbenblind-Themes** (Blau/Gelb/Orange statt Grün/Rot, Okabe-Ito-Farben)
+- **Audit-Protokoll** (Einstellungen › Sicherheit): wer hat wann auf welchem Host was getan: Verbindungen, Befehle
+  (auch aus Agent-Modus und Broadcast), Dateiübertragungen, Config-Sicherungen, geänderte Verbindungen,
+  Master-Passwort, Gesamtsicherungen und KI-Anfragen (nur Host/Modell). Jede Zeile ist verkettet und mit einem
+  Schlüssel aus dem Store signiert; geänderte, gelöschte oder umsortierte Zeilen fallen auf. „Audit-Protokoll prüfen
+  und speichern“ legt Prüfergebnis und lesbare Fassung in Downloads. Befehle mit führendem Leerzeichen erscheinen nur
+  als „(privat)“
 - **Debug-Protokoll für Fehlerberichte** (Einstellungen oder `sshtermy --debug`): Verbindungsversuche, Abbrüche,
   Updates, KI-Anfragen und Sync als Ereignisse, nie Passwörter oder Bildschirminhalte. Hilfe › „Debug-Protokoll
   bereinigt speichern“ legt eine Kopie ohne Hosts, IPs und Benutzernamen in Downloads, fertig für ein GitHub-Issue

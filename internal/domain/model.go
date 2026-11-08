@@ -543,6 +543,10 @@ type Settings struct {
 	// Rechner, nie im Sync.
 	Debug bool `json:"debug,omitempty"`
 
+	// Audit: fälschungssicheres Audit-Protokoll (internal/audit) schreiben.
+	// Nur dieser Rechner: ein Sync soll es nirgends still abschalten.
+	Audit bool `json:"audit,omitempty"`
+
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`

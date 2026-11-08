@@ -336,6 +336,7 @@ func (a *App) bcStart(targets []domain.Connection, steps []string, per [][]strin
 	ctx, cancel := context.WithCancel(context.Background())
 	b.cancel, b.running, b.started = cancel, true, time.Now()
 	b.targets, b.steps, b.per = targets, steps, per
+	a.auditBroadcast(targets, steps)
 	b.results = make([]broadcast.Result, len(targets))
 	for i, c := range targets {
 		b.results[i] = broadcast.Result{ConnID: c.ID, Alias: c.Alias, Exit: -1}

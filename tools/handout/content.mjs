@@ -179,7 +179,7 @@ export const de = {
       ['⏎ ⏎', 'roter Befehl: zweimal bestätigen', 'warn'],
       ['j', 'Produktiv-Host: riskanten Befehl zulassen', 'warn'],
       ['␣befehl', 'führendes Leerzeichen: nicht protokolliert'],
-      ['_Palette_', '„Jetzt sperren“ · „Master-Passwort“ · „Gefahren-Check“'],
+      ['_Palette_', '„Jetzt sperren“ · „Master-Passwort“ · „Audit“ · „Gefahren-Check“'],
     ]},
     { t: 'Start & Tipps', ic: '$', rows: [
       ['--update · backup', 'Update · alles sichern'],
@@ -365,7 +365,7 @@ export const en = {
       ['⏎ ⏎', 'red command: confirm twice', 'warn'],
       ['y', 'production host: allow a risky command', 'warn'],
       ['␣command', 'leading space: not logged'],
-      ['_palette_', '“Lock now” · “Master password” · “Danger check”'],
+      ['_palette_', '“Lock now” · “Master password” · “Audit” · “Danger check”'],
     ]},
     { t: 'Start & tips', ic: '$', rows: [
       ['--update · backup', 'newest version · full backup'],

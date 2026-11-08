@@ -42,6 +42,14 @@ var (
 		"/interface print", "/ip address print", "/interface vlan print", "/ip route print",
 		"/log print", "/system resource print", "/export", "/system routerboard print",
 	}}
+	presetJunos = quickPreset{"Juniper", []string{
+		"show interfaces terse", "show vlans brief", "show lldp neighbors", "show ethernet-switching table",
+		"show log messages | last 50", "show chassis alarms", "show configuration | display set", "show version",
+	}}
+	presetFortiOS = quickPreset{"FortiGate", []string{
+		"get system status", "get system interface physical", "get router info routing-table all", "diagnose sys session stat",
+		"get system performance status", "get system arp", "show full-configuration", "get system ha status",
+	}}
 	presetComware = quickPreset{"HPE Comware / Huawei", []string{
 		"display interface brief", "display vlan", "display lldp neighbor-information list", "display mac-address",
 		"display logbuffer", "display device", "display current-configuration", "display version",
@@ -73,6 +81,10 @@ func quickPresetFor(c domain.Connection, remote string) quickPreset {
 		return presetCisco
 	case has("mikrotik", "rosssh"):
 		return presetMikroTik
+	case has("junos", "juniper"):
+		return presetJunos
+	case has("fortigate", "fortios", "fortissh"):
+		return presetFortiOS
 	case has("comware", "h3c", "huawei"):
 		return presetComware
 	case c.Device == domain.DeviceNetwork || has("netzwerkgerät", "aruba", "procurve"):

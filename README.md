@@ -40,9 +40,9 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
 - **Server file in your own editor**: `e` in F5 (server side) or the palette entry “Open server file in your own editor” with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › “Editor for server files” (e.g. `code --new-window`)
 - **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules “color pattern” (colors in English or German; palette → “Color rules for output”); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
-- **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
+- **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Containers** (`c` in F6 or palette “docker”): Docker and Podman containers and Kubernetes pods of the server in one list. ⏎ opens a shell in the container, Ctrl+L follows the logs, Ctrl+K lets the AI analyze the last 400 log lines. Restart and start/stop are only inserted at the prompt, ⏎ runs them. Uses `sudo -n` when docker needs root and sudo works without a password
-- **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
+- **Config backup for switches**: `b` saves the running configuration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`) encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
   Nightly runs go through a schedule (`z`, type “Config backup”) for a whole folder. **Switch config rules**
   (palette → Settings): `+^ntp server` must appear, `-telnet-server` must not; every backup is checked,
   violations show in the F6 panel, as a toast and in the schedule result
@@ -126,6 +126,11 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Accessible mode** (Settings › Appearance): no animations, shapes instead of color only (× for “unreachable”);
   together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
+- **Audit log** (Settings › Security): who did what and when, on which host: connections, commands (also from the
+  agent mode and broadcast), file transfers, config backups, changed connections, master password, full backups and
+  AI requests (host/model only). Each line is chained and signed with a key from the store, so changes, deleted or
+  reordered lines are detected. “Verify and save audit log” writes the check result and a readable copy to Downloads.
+  Commands with a leading space appear only as “(privat)”
 - **Debug log for bug reports** (Settings or `sshtermy --debug`): connection attempts, drops, updates, AI requests and
   sync as events, never passwords or screen content. Help › “Save cleaned debug log” writes a copy without hosts, IPs and
   user names to Downloads, ready to attach to a GitHub issue

@@ -317,7 +317,7 @@ func (a *App) paletteItems() []palItem {
 		actions = append(actions,
 			palItem{icon: ic("record"), label: recordLabel(s.recording()), hint: "asciinema", run: func() tea.Cmd { return a.toggleRecording(s) }},
 			palItem{icon: ic("export"), label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }})
-		if s.netDev() {
+		if s.netDevice() {
 			actions = append(actions, palItem{icon: ic("backup"), label: i18n.T("Switch-Config sichern und vergleichen"), hint: "b", run: func() tea.Cmd {
 				withPanel(s, panelHost)
 				s.panelFocus = false
@@ -557,6 +557,9 @@ func (a *App) palMenuItems() []palItem {
 			func(dir int) tea.Cmd { return a.cycleLockAfter(dir) }),
 		{group: pgSetSafe, menu: "settings", icon: ic("sshkey"), label: i18n.T("Master-Passwort ändern …"), hint: masterHint(a.st.V.HasDPAPI()),
 			keys: "master passwort password ändern change dpapi windows anmeldung", run: func() tea.Cmd { return a.openMasterForm() }},
+		safe(palToggle(ic("sesslog"), i18n.T("Audit-Protokoll (wer, wann, was; fälschungssicher)"), a.auditOn(), "audit protokoll revision compliance nachweis log", func() tea.Cmd { return a.toggleAudit() })),
+		{group: pgSetSafe, menu: "settings", icon: ic("export"), label: i18n.T("Audit-Protokoll prüfen und speichern"), hint: ".txt",
+			keys: "audit protokoll prüfen verify export revision", run: func() tea.Cmd { return a.exportAudit() }},
 	}
 
 	// Aussehen & Sprache: je ein Durchschalt-Eintrag, die Einzelwerte nur

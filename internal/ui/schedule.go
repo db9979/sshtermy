@@ -472,8 +472,7 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 	if sc.Kind == domain.ScheduleBackup {
 		backup = &schedBackup{st: a.st, rules: a.configRules()}
 		for _, c := range conns {
-			cmds := append(netmap.PagingOff(connVendor(c)), "show running-config")
-			job.PerHost = append(job.PerHost, cmds)
+			job.PerHost = append(job.PerHost, backupSteps(c))
 		}
 	} else if runbook.HasBuiltins(steps) {
 		for _, c := range conns {
@@ -614,8 +613,9 @@ func (b *schedBackup) apply(conns []domain.Connection, cmds [][]string, res []br
 			continue
 		}
 		sec, _ := netmap.Sections(r.Output, cmds[i])
-		cfg := strings.TrimSpace(sec["show running-config"])
-		if err := checkConfig(cfg); err != nil {
+		cfgCmd := cmds[i][len(cmds[i])-1]
+		cfg := strings.TrimSpace(sec[cfgCmd])
+		if err := checkConfig(cfg, cfgCmd); err != nil {
 			r.Output, r.Err = "", err.Error()
 			continue
 		}
@@ -649,4 +649,20 @@ func (b *schedBackup) save(connID, cfg string) (string, error) {
 		return "", err
 	}
 	return i18n.T("erste Sicherung gespeichert"), nil
+}
+
+// backupSteps: Blättern aus und Konfiguration ausgeben, passend zum
+// Hersteller aus dem Systemprofil (Juniper, MikroTik, Fortinet mit eigenen
+// Befehlen; sonst show running-config).
+func backupSteps(c domain.Connection) []string {
+	if c.Profile != nil {
+		if v := hostVendor(*c.Profile); v != hostinfo.VendorUnknown {
+			var cmds []string
+			if p := v.PagingOff(); p != "" {
+				cmds = append(cmds, p)
+			}
+			return append(cmds, v.ConfigCommand())
+		}
+	}
+	return append(netmap.PagingOff(connVendor(c)), "show running-config")
 }

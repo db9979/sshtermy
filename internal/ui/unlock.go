@@ -70,6 +70,7 @@ func (a *App) updateUnlock(msg tea.Msg) tea.Cmd {
 		a.lookSig = ""
 		a.applyLook()
 		a.startDebugLog()
+		a.startAudit()
 		a.mgr = newManager()
 		a.showWhatsNew(u.setup)
 		a.maybeTour(u.setup)

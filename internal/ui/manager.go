@@ -13,6 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/audit"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/keychain"
@@ -301,7 +302,10 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			a.modal = confirmModal(i18n.T("Verbindung löschen"), "„"+c.Alias+i18n.T("“ und ihre Tunnel wirklich löschen?"), func() tea.Cmd {
 				if err := a.st.DeleteConnection(c.ID); err != nil {
 					a.flashErr(err.Error())
-				} else if c.Keychain {
+					return nil
+				}
+				a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung gelöscht")
+				if c.Keychain {
 					sshx.ForgetKeychain(c.ID)
 				}
 				m.sel = max(0, m.sel-1)
@@ -997,6 +1001,11 @@ func (a *App) saveConn() error {
 		err = a.saveConnKeychain(saved, secret)
 	}
 	if err == nil {
+		what := "Verbindung geändert"
+		if a.formBase.ID == "" {
+			what = "Verbindung angelegt"
+		}
+		a.auditAdd(audit.EvSettings, auditConn(saved), what)
 		a.mgr.want = "c:" + saved.ID
 		a.expandTo(saved.Group)
 		// Offene Sitzungen arbeiten ab sofort mit dem bearbeiteten Profil

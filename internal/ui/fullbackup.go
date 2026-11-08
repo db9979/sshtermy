@@ -10,6 +10,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/audit"
 	"github.com/db9979/sshtermy/internal/debuglog"
 	"github.com/db9979/sshtermy/internal/fullbackup"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -67,6 +68,7 @@ func (a *App) saveBackupForm() (tea.Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
+	a.auditAdd(audit.EvBackup, "", "Gesamtsicherung gespeichert: "+file)
 	a.flashOK(fmt.Sprintf(i18n.T("Gesamtsicherung gespeichert: %s (%d Dateien)"), file, m.Files))
 	return nil, nil
 }
@@ -119,6 +121,7 @@ func (a *App) prepareRestore(file string, pw []byte) (tea.Cmd, error) {
 			a.flashErr(err.Error())
 			return nil
 		}
+		a.auditAdd(audit.EvBackup, "", "Gesamtsicherung eingespielt: "+file)
 		_ = debuglog.Set(false) // Windows: offene Datei verhindert das Umbenennen
 		return a.doRestart()
 	})

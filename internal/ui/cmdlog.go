@@ -113,6 +113,7 @@ func (a *App) finishCommand(s *session) {
 	if s.lastOutput.After(r.at) {
 		dur = s.lastOutput.Sub(r.at).Seconds()
 	}
+	a.auditCommand(s, r, failed, f.Exit)
 	if s.log != nil && !r.private {
 		s.log.Add(sessionlog.Entry{At: r.at, Command: r.cmd, Output: out, Duration: dur,
 			Failed: failed, Exit: f.Exit, Reason: f.Reason, Agent: r.agent})

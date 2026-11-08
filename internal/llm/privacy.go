@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
@@ -95,6 +96,18 @@ type Request struct {
 	Messages []Message
 }
 
+var onRequest atomic.Pointer[func(Request)]
+
+// OnRequest: fn wird bei jeder Anfrage aufgerufen (Audit-Protokoll), nil
+// schaltet ab. Läuft im Goroutine der Anfrage.
+func OnRequest(fn func(Request)) {
+	if fn == nil {
+		onRequest.Store(nil)
+		return
+	}
+	onRequest.Store(&fn)
+}
+
 var last struct {
 	mu  sync.Mutex
 	req *Request
@@ -126,7 +139,11 @@ func remember(cfg domain.LLMConfig, host string, raw []byte) {
 	if s, ok := b.System.(string); ok && s != "" {
 		msgs = append([]Message{{Role: "system", Content: s}}, msgs...)
 	}
+	r := &Request{At: time.Now(), Provider: cfg.Provider, Host: host, Model: cfg.Model, Messages: msgs}
 	last.mu.Lock()
-	last.req = &Request{At: time.Now(), Provider: cfg.Provider, Host: host, Model: cfg.Model, Messages: msgs}
+	last.req = r
 	last.mu.Unlock()
+	if fn := onRequest.Load(); fn != nil {
+		(*fn)(*r)
+	}
 }

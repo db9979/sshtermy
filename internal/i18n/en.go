@@ -1102,7 +1102,7 @@ var en = map[string]string{
 	"sessionlog: Schlüssel muss 32 Byte haben":           "sessionlog: key must be 32 bytes",
 	"sessionlog: unbekanntes Format":                     "sessionlog: unknown format",
 	"sessionlog: ungültige ID":                           "sessionlog: invalid ID",
-	"show running-config sichern …":                      "backing up show running-config …",
+	"Konfiguration sichern …":                            "backing up the configuration …",
 	"socks: Adresstyp":                                   "socks: address type",
 	"socks: kein unterstütztes Auth-Verfahren":           "socks: no supported auth method",
 	"socks: keine Version 5":                             "socks: not version 5",

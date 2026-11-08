@@ -111,7 +111,8 @@ func (a *App) profileTick(s *session) {
 // profileFromSwitch: Die Host-Übersicht hat „show version“ gelesen; was sie
 // dabei über Hersteller, Modell und Firmware erfahren hat, kommt ins Profil.
 func (a *App) profileFromSwitch(s *session, v hostinfo.Vendor, sw *hostinfo.Switch) {
-	dia := map[hostinfo.Vendor]string{hostinfo.VendorProCurve: "procurve", hostinfo.VendorArubaCX: "arubaos-cx", hostinfo.VendorCisco: "cisco-ios"}[v]
+	dia := map[hostinfo.Vendor]string{hostinfo.VendorProCurve: "procurve", hostinfo.VendorArubaCX: "arubaos-cx", hostinfo.VendorCisco: "cisco-ios",
+		hostinfo.VendorJunos: "junos", hostinfo.VendorMikroTik: "routeros", hostinfo.VendorFortiOS: "fortios"}[v]
 	if dia == "" {
 		return
 	}
@@ -135,6 +136,12 @@ func hostVendor(p domain.SystemProfile) hostinfo.Vendor {
 		return hostinfo.VendorArubaCX
 	case "cisco-ios":
 		return hostinfo.VendorCisco
+	case "junos":
+		return hostinfo.VendorJunos
+	case "routeros":
+		return hostinfo.VendorMikroTik
+	case "fortios":
+		return hostinfo.VendorFortiOS
 	}
 	return hostinfo.VendorUnknown
 }

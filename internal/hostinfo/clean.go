@@ -9,7 +9,7 @@ var (
 	csiRe  = regexp.MustCompile(`\x1b\[[0-?]*[ -/]*[@-~]`)
 	oscRe  = regexp.MustCompile(`\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)`)
 	escRe  = regexp.MustCompile(`\x1b[()][0-9A-Za-z]|\x1b[0-9=>A-DF-Za-z]`)
-	moreRe = regexp.MustCompile(`(?i)-+\s*more\s*-+(?:[^\n]*?control-c)?|--more--|<--- more --->`)
+	moreRe = regexp.MustCompile(`(?i)-+\s*more\s*-+(?:[^\n]*?control-c)?|--more--|<--- more --->|---\(more[^)\n]*\)---|-- \[Q quit\|D dump\|down\]`)
 )
 
 // Clean macht aus dem rohen PTY-Strom Klartextzeilen: ANSI-Sequenzen raus
@@ -88,8 +88,15 @@ func IsPrompt(line string) bool {
 		return false
 	}
 	end := l[len(l)-1]
-	return (end == '#' || end == '>') && !strings.ContainsAny(l[:len(l)-1], " \t#>")
+	if (end == '#' || end == '>') && !strings.ContainsAny(l[:len(l)-1], " \t#>") {
+		return true
+	}
+	// RouterOS „[admin@MikroTik] >“ / „[admin@MikroTik] /interface>“,
+	// FortiOS „FGT60F #“ / „FGT60F (root) #“
+	return vendorPrompt.MatchString(l)
 }
+
+var vendorPrompt = regexp.MustCompile(`^\[[\w.@-]+\]\s*(/[\w/-]*)?>$|^[\w.-]+(\s+\([\w.-]+\))?\s+#$`)
 
 // Output: Ausgabe eines Befehls ohne Echo der Befehlszeile und ohne den
 // abschließenden Prompt. done meldet, ob der Prompt schon wieder da ist.

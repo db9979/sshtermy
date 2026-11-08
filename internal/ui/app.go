@@ -30,6 +30,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/audit"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
@@ -72,9 +73,10 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
-	inputLog      *os.File // nur mit SSHTERMY_DEBUG=1
-	debugForced   bool     // --debug: Debug-Protokoll für diesen Start (debugreport.go)
-	startNotice   string   // Meldung nach dem Entsperren (fullbackup.go)
+	inputLog      *os.File   // nur mit SSHTERMY_DEBUG=1
+	audit         *audit.Log // audit.go
+	debugForced   bool       // --debug: Debug-Protokoll für diesen Start (debugreport.go)
+	startNotice   string     // Meldung nach dem Entsperren (fullbackup.go)
 	startNoticeOK bool
 	st            *store.Store
 	hostKeys      *sshx.HostKeyStore
@@ -238,6 +240,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.toastTick()
 	}
 	a.debugMsg(msg)
+	a.auditMsg(msg)
 	m, cmd := a.update(msg)
 	a.clearNotices()
 	if c := a.trackFade(); c != nil {
