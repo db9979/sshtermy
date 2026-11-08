@@ -166,6 +166,7 @@ func (r *RemoteFS) Create(p string, mode fs.FileMode) (io.WriteCloser, error) {
 	}
 	return f, err
 }
+
 // Rewrite überschreibt eine vorhandene Datei, ohne Rechte oder Besitzer
 // anzufassen (Bearbeiten im eigenen Editor).
 func (r *RemoteFS) Rewrite(p string, data []byte) error {
