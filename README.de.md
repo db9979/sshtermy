@@ -40,6 +40,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Server-Datei im eigenen Editor**: `e` in F5 (Server-Seite) oder Palette „Server-Datei im eigenen Editor öffnen“ mit Pfad öffnet die Datei in VS Code, Notepad++, TextEdit … auf deinem Rechner; jedes Speichern lädt sie über dieselbe Verbindung zurück (Besitzer und Rechte bleiben). Editor einstellen: Palette → Einstellungen › „Editor für Server-Dateien“ (z. B. `code --new-window`)
 - **Farbregeln für die Ausgabe**: Text ohne eigene Farbe wird eingefärbt, Fehler rot, Warnungen gelb, ok/up grün, IP-Adressen blau, MAC-Adressen lila, Switch-Syslog (`%LINK-3-UPDOWN`) nach Schwere; nie in vim/htop. Eigene Regeln „farbe muster“ (Palette → „Farbregeln für die Ausgabe“); mit `!` davor meldet sich sshTermy, wenn das Muster in einem verdeckten Tab auftaucht (Tab bekommt ein `!`, Einblendung, auf Wunsch Desktop-Meldung)
 - **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, Platte, Laufzeit und offene Updates. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
+- **Container** (`c` in F6 oder Palette „docker“): Docker- und Podman-Container und Kubernetes-Pods des Servers in einer Liste. ⏎ öffnet eine Shell im Container, Strg+L verfolgt die Logs, Strg+K lässt die KI die letzten 400 Log-Zeilen auswerten. Neustart und Start/Stopp werden nur am Prompt eingefügt, ⏎ führt sie aus. Braucht docker root und geht sudo ohne Passwort, nimmt sshTermy `sudo -n`
 - **Config-Sicherung für Switches**: `b` sichert `show running-config` verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert.
   Nächtlich geht es per Zeitplan (`z`, Art „Config-Sicherung“) für einen ganzen Ordner. **Regeln für Switch-Configs**
   (Palette → Einstellungen): `+^ntp server` muss vorkommen, `-telnet-server` darf nicht; jede Sicherung wird geprüft,
@@ -200,7 +201,7 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | | F3 | KI fragen |
 | | F4 | Tunnel an/aus (⏎ oder Klick), a mit Verbindung starten, Web-Service im Browser öffnen |
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), e Server-Datei im eigenen Editor, Leertaste/a markieren, Ziehen kopiert, n Ordner, d löschen, . versteckte |
-| | F6 | Host-Übersicht: r/⏎ abfragen, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
+| | F6 | Host-Übersicht: r/⏎ abfragen, c Container, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
 | | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü) |

@@ -41,6 +41,11 @@ func (a *App) startDiagnose(s *session) tea.Cmd {
 		a.flash(i18n.T("Nichts zum Auswerten im Verlauf"))
 		return nil
 	}
+	return a.diagnoseWith(s, text, what)
+}
+
+// diagnoseWith: text im Frage-Panel auswerten lassen (what steht in der Frage).
+func (a *App) diagnoseWith(s *session, text, what string) tea.Cmd {
 	a.panelOpened(withPanel(s, panelAsk))
 	a.resize(s)
 	q := &s.ask

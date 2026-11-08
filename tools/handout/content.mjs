@@ -153,7 +153,7 @@ export const de = {
       ['r / ⏎', 'abfragen (CPU, RAM, Platte, Ports)'],
       ['b', 'Config sichern + Regeln prüfen'],
       ['↑ / ↓ · d · v', 'Stand wählen · Diff · ansehen'],
-      ['g', 'Grenzwerte für Warnungen'],
+      ['c / g', 'Container / Grenzwerte'],
     ]},
     { t: 'Suche im Verlauf', ic: '/', key: 'Strg+F', rows: [
       ['⏎ / ⇧⏎', 'älterer / neuerer Treffer'],
@@ -338,7 +338,7 @@ export const en = {
       ['r / ⏎', 'query (CPU, RAM, disk, ports)'],
       ['b', 'back up switch config + check rules'],
       ['↑ / ↓ · d · v', 'pick state · diff · view'],
-      ['g', 'warning thresholds'],
+      ['c / g', 'containers / warning thresholds'],
     ]},
     { t: 'Scrollback search', ic: '/', key: 'Ctrl+F', rows: [
       ['⏎ / ⇧⏎', 'older / newer match'],
