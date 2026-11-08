@@ -547,6 +547,11 @@ type Settings struct {
 	// Nur dieser Rechner: ein Sync soll es nirgends still abschalten.
 	Audit bool `json:"audit,omitempty"`
 
+	// MCP: sshTermy als MCP-Server für KI-Clients (internal/mcp):
+	// "" aus, "lesen" nur lesende Befehle, "rueckfrage" andere nach
+	// Rückfrage. Nur dieser Rechner.
+	MCP string `json:"mcp,omitempty"`
+
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`

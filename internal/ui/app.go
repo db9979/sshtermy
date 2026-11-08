@@ -33,6 +33,7 @@ import (
 	"github.com/db9979/sshtermy/internal/audit"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/mcp"
 	"github.com/db9979/sshtermy/internal/netwatch"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
@@ -78,8 +79,9 @@ type App struct {
 	audit         *audit.Log        // audit.go
 	nw            *netwatch.Watcher // Ruhezustand/Netzwechsel (netwatch.go)
 	nwAt          time.Time
-	debugForced   bool   // --debug: Debug-Protokoll für diesen Start (debugreport.go)
-	startNotice   string // Meldung nach dem Entsperren (fullbackup.go)
+	mcpHost       *mcp.Host // mcp.go
+	debugForced   bool      // --debug: Debug-Protokoll für diesen Start (debugreport.go)
+	startNotice   string    // Meldung nach dem Entsperren (fullbackup.go)
 	startNoticeOK bool
 	st            *store.Store
 	hostKeys      *sshx.HostKeyStore
@@ -295,6 +297,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.blurred = true
 		return a, nil
 
+	case mcpCallMsg:
+		return a, tea.Batch(a.onMCP(m), a.listen())
 	case hostKeyAskMsg:
 		a.modal = hostKeyModal(m)
 		return a, a.listen()
@@ -566,6 +570,7 @@ func (a *App) quit() tea.Cmd {
 		s.close()
 	}
 	a.closeBook()
+	a.stopMCP()
 	a.st.Lock()
 	return tea.Quit
 }

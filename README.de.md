@@ -127,6 +127,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Barrierearm** (Einstellungen › Aussehen): keine Animationen, Formen statt nur Farben (× für „nicht erreichbar“);
   dazu die **Farbenblind-Themes** (Blau/Gelb/Orange statt Grün/Rot, Okabe-Ito-Farben)
+- **MCP-Server** (`sshtermy mcp`): Claude und andere KI-Clients können Verbindungen auflisten und lesende Befehle ausführen, alles andere erst nach deiner Bestätigung in sshTermy
 - **Audit-Protokoll** (Einstellungen › Sicherheit): wer hat wann auf welchem Host was getan: Verbindungen, Befehle
   (auch aus Agent-Modus und Broadcast), Dateiübertragungen, Config-Sicherungen, geänderte Verbindungen,
   Master-Passwort, Gesamtsicherungen und KI-Anfragen (nur Host/Modell). Jede Zeile ist verkettet und mit einem
@@ -199,6 +200,7 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 sshtermy --debug      # Debug-Protokoll für diesen Start (debug.log im Konfigurationsordner)
 sshtermy backup [datei]   # Gesamtsicherung aller Daten (fragt das Master-Passwort)
 sshtermy restore <datei>  # Gesamtsicherung einspielen (ersetzt alles, alter Ordner bleibt)
+sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „sshTermy als MCP-Server“
 ```
 
 ## Bedienung
@@ -459,6 +461,22 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   Einstellung gilt. Im selben Ordner zeigt „Letzte KI-Anfrage ansehen“ genau, was zuletzt an welchen Host und
   welches Modell ging.
 - Ratenlimit im Ziel-Modus (Standard 6 Schritte/min, max. 40 Schritte pro Ziel).
+
+### sshTermy als MCP-Server
+
+KI-Clients wie Claude Desktop oder Claude Code können deine gespeicherten Verbindungen über das Model Context
+Protocol nutzen. Einschalten unter Einstellungen › Sicherheit › „MCP-Zugriff für KI-Clients“: **nur lesen**
+(Verbindungen und offene Tabs auflisten, einen Tab lesen, lesende Befehle wie `df -h` oder `show interfaces`) oder
+**mit Rückfrage** (jeder andere Befehl läuft erst, wenn du in sshTermy `j` drückst; gefährliche sind rot markiert).
+sshTermy muss laufen und entsperrt sein; `sshtermy mcp` ist nur die Brücke und hält keine Daten. Verbindungen mit Tag
+`ki-aus`/`ki-lokal` oder KI-Datenschutz „KI aus“ tauchen nie auf. Geheimnisse in Ausgaben werden entfernt, jeder
+Aufruf steht im Audit-Protokoll.
+
+```
+claude mcp add sshtermy -- sshtermy mcp
+```
+
+Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"command": "sshtermy", "args": ["mcp"]}}}`
 
 ### KI-Anbieter und Ersatz
 
