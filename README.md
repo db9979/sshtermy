@@ -49,6 +49,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Find device**: type a MAC (any notation) or IP into the palette, sshTermy asks all switches for their MAC,
   ARP and LLDP tables and shows the switch, port and VLAN the device is plugged into. Uplinks are recognized
   by their LLDP neighbors and listed last
+- **Several networks**: if your switches sit in different folders (one per customer or site), find device and
+  topology first ask which folder to query, or all of them; the last choice is preselected
 - **Network topology** (palette „topo“): the LLDP/CDP neighbors of all switches become a tree (who is connected to
   which port of whom, APs and phones as leaves), plus a Mermaid diagram in Downloads for docs, wiki or GitHub
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),

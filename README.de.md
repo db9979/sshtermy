@@ -49,6 +49,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Gerät finden**: MAC (jede Schreibweise) oder IP in die Palette tippen, sshTermy fragt alle Switches nach MAC-,
   ARP- und LLDP-Tabellen und zeigt Switch, Port und VLAN, an dem das Gerät hängt. Uplinks erkennt es an den
   LLDP-Nachbarn und lässt sie hinten anstehen
+- **Mehrere Netze**: Liegen die Switches in verschiedenen Ordnern (je Kunde oder Standort), fragen Gerät finden
+  und Topologie erst, welcher Ordner abgefragt wird, oder alle; die letzte Wahl ist vorausgewählt
 - **Netzwerk-Topologie** (Palette „topo“): aus LLDP/CDP-Nachbarn aller Switches entsteht ein Baum (wer hängt an
   welchem Port von wem, APs und Telefone als Blätter), dazu ein Mermaid-Diagramm in Downloads für Doku, Wiki oder GitHub
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),

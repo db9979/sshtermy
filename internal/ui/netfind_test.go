@@ -81,8 +81,8 @@ func netTestApp(t *testing.T) *App {
 
 func TestNetFind(t *testing.T) {
 	a := netTestApp(t)
-	if len(a.netDevices()) != 2 {
-		t.Fatalf("%d Switches", len(a.netDevices()))
+	if len(a.netDevices("")) != 2 {
+		t.Fatalf("%d Switches", len(a.netDevices("")))
 	}
 	cmd := a.netFind("10.0.20.15")
 	if cmd == nil {
@@ -163,5 +163,42 @@ func TestScheduleBackupWithRules(t *testing.T) {
 	sc, _ = a.scheduleByID(sc.ID)
 	if len(a.st.Backups(core.ID)) != 1 || !strings.Contains(sc.LastText, "unverändert") {
 		t.Fatalf("%s", sc.LastText)
+	}
+}
+
+func TestNetScopePicker(t *testing.T) {
+	a := netTestApp(t)
+	t.Setenv("HOME", t.TempDir())
+	// zweite Infrastruktur in eigenem Ordner: erst fragen, welches Netz
+	if _, err := a.st.UpsertConnection(domain.Connection{Alias: "kunde-sw", Host: "kunde-sw", Username: "admin", Auth: domain.AuthAgent,
+		Device: domain.DeviceNetwork, Group: "Kunde B / Halle"}); err != nil {
+		t.Fatal(err)
+	}
+	if cmd := a.netTopology(); cmd == nil || a.pick == nil {
+		t.Fatal("keine Auswahl des Netzes")
+	}
+	var labels []string
+	for _, it := range a.pick.items {
+		labels = append(labels, it.label+" "+it.detail)
+	}
+	if got := strings.Join(labels, "|"); got != "Alle Netzwerke 3 Switches|Kunde B 1 Switches|Kunde B / Halle 1 Switches|Netz 2 Switches" {
+		t.Fatal(got)
+	}
+	cmd := a.pick.onPick(a.pick.items[3]) // nur „Netz“: kunde-sw wird nicht gefragt
+	a.pick = nil
+	a.netMsg(cmd())
+	if a.netData.scope != "Netz" || len(a.netData.devs) != 2 || len(a.netData.fails) != 0 || !strings.Contains(a.modal.title, "· Netz") {
+		t.Fatalf("%+v %q", a.netData, a.modal.title)
+	}
+	// gleiche Wahl ist vorausgewählt, Speicher gilt nur für dasselbe Netz
+	a.netTopology()
+	if a.pick == nil || a.pick.current != "Netz" {
+		t.Fatal("letzte Wahl nicht vorausgewählt")
+	}
+	if cmd := a.pick.onPick(pickItem{value: "Netz"}); cmd != nil {
+		t.Fatal("sollte den Speicher nutzen")
+	}
+	if cmd := a.pick.onPick(pickItem{value: ""}); cmd == nil {
+		t.Fatal("anderes Netz muss neu abfragen")
 	}
 }

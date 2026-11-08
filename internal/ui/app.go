@@ -122,6 +122,7 @@ type App struct {
 	schedRun   map[string]bool   // laufende Zeitpläne
 	netData    *netCache         // letzte Abfrage der Switches (netfind.go)
 	netBusy    bool
+	netScope   string // zuletzt gewähltes Netz (Ordner) für Gerät finden/Topologie
 
 	book *sessionlog.Book // Sitzungsprotokolle (Schlüssel nur bei entsperrtem Store)
 	logs logsState

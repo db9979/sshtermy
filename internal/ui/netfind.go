@@ -33,6 +33,7 @@ import (
 const netCacheFor = 3 * time.Minute
 
 type netCache struct {
+	scope string // Ordner, "" = alle
 	at    time.Time
 	lldp  bool
 	mac   bool
@@ -48,18 +49,63 @@ type netDataMsg struct {
 // netDialer: in Tests austauschbar.
 var netDialer = func(a *App) broadcast.Dialer { return a.bcDialer() }
 
-// netDevices: SSH-Verbindungen, die als Netzwerkgerät bekannt sind.
-func (a *App) netDevices() []domain.Connection {
+// netDevices: SSH-Verbindungen, die als Netzwerkgerät bekannt sind, im
+// Ordner scope samt Unterordnern ("" = alle).
+func (a *App) netDevices(scope string) []domain.Connection {
 	var out []domain.Connection
 	for _, c := range a.st.Connections() {
-		if c.Protocol.Raw() {
+		if c.Protocol.Raw() || !isNetConn(c) || !inFolder(c.Group, scope) {
 			continue
 		}
-		if isNetConn(c) {
-			out = append(out, c)
-		}
+		out = append(out, c)
 	}
 	return out
+}
+
+func inFolder(group, scope string) bool {
+	return scope == "" || group == scope || strings.HasPrefix(group, scope+" / ")
+}
+
+// netScopes: Ordner mit Switches (auch Oberordner), je mit Anzahl.
+func (a *App) netScopes() (paths []string, count map[string]int) {
+	count = map[string]int{}
+	for _, c := range a.netDevices("") {
+		g := domain.NormPath(c.Group)
+		if g == "" {
+			continue
+		}
+		parts := strings.Split(g, " / ")
+		for i := range parts {
+			count[strings.Join(parts[:i+1], " / ")]++
+		}
+	}
+	for p := range count {
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+	return paths, count
+}
+
+// pickNetScope: Betreut man mehrere Netze (Switches in verschiedenen
+// Ordnern), fragt sshTermy erst, welches. Ordner, die alle Switches
+// enthalten, bieten keine echte Wahl und fallen weg.
+func (a *App) pickNetScope(title string, then func(scope string) tea.Cmd) tea.Cmd {
+	all := len(a.netDevices(""))
+	paths, count := a.netScopes()
+	var items []pickItem
+	for _, p := range paths {
+		if count[p] < all {
+			items = append(items, pickItem{value: p, label: p, detail: fmt.Sprintf(i18n.T("%d Switches"), count[p])})
+		}
+	}
+	if len(items) == 0 {
+		return then("")
+	}
+	items = append([]pickItem{{value: "", label: i18n.T("Alle Netzwerke"), detail: fmt.Sprintf(i18n.T("%d Switches"), all)}}, items...)
+	return a.openPicker(newPicker(title, i18n.T("Ordner"), items, a.netScope, func(it pickItem) tea.Cmd {
+		a.netScope = it.value
+		return then(it.value)
+	}))
 }
 
 func isNetConn(c domain.Connection) bool {
@@ -112,28 +158,32 @@ func (a *App) netFind(q string) tea.Cmd {
 		a.flashErr(fmt.Sprintf(i18n.T("„%s“ ist weder MAC noch IP-Adresse"), q))
 		return nil
 	}
-	if c := a.netData; c != nil && c.mac && time.Since(c.at) < netCacheFor {
-		a.showNetFind(q, *c)
-		return nil
-	}
-	return a.netCollect(q, true)
+	return a.pickNetScope(i18n.T("Gerät finden: in welchem Netz?"), func(scope string) tea.Cmd {
+		if c := a.netData; c != nil && c.mac && c.scope == scope && time.Since(c.at) < netCacheFor {
+			a.showNetFind(q, *c)
+			return nil
+		}
+		return a.netCollect(q, scope, true)
+	})
 }
 
 func (a *App) netTopology() tea.Cmd {
-	if c := a.netData; c != nil && c.lldp && time.Since(c.at) < netCacheFor {
-		a.showTopology(*c)
-		return nil
-	}
-	return a.netCollect("", false)
+	return a.pickNetScope(i18n.T("Topologie: welches Netz?"), func(scope string) tea.Cmd {
+		if c := a.netData; c != nil && c.lldp && c.scope == scope && time.Since(c.at) < netCacheFor {
+			a.showTopology(*c)
+			return nil
+		}
+		return a.netCollect("", scope, false)
+	})
 }
 
 // netCollect fragt alle Switches ab; mac=false nur die Nachbarn.
-func (a *App) netCollect(query string, mac bool) tea.Cmd {
+func (a *App) netCollect(query, scope string, mac bool) tea.Cmd {
 	if a.netBusy {
 		a.flash(i18n.T("Abfrage läuft schon …"))
 		return nil
 	}
-	conns := a.netDevices()
+	conns := a.netDevices(scope)
 	if len(conns) == 0 {
 		a.flashErr(i18n.T("Keine Switches in sshTermy: Verbindung auf „Netzwerkgerät“ stellen oder einmal verbinden"))
 		return nil
@@ -152,7 +202,7 @@ func (a *App) netCollect(query string, mac bool) tea.Cmd {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		res := broadcast.Run(ctx, job, dial, func(int, broadcast.Result) {})
-		data := netCache{at: time.Now(), lldp: true, mac: mac}
+		data := netCache{scope: scope, at: time.Now(), lldp: true, mac: mac}
 		for i, r := range res {
 			if r.Err != "" && r.Output == "" {
 				data.fails = append(data.fails, "× "+r.Alias+": "+r.Err)
@@ -183,6 +233,9 @@ func (a *App) showNetFind(q string, d netCache) {
 	r, err := netmap.Locate(d.devs, q)
 	var lines []string
 	title := i18n.T("Gerät finden: ") + q
+	if d.scope != "" {
+		title += " · " + d.scope
+	}
 	if err != nil {
 		lines = append(lines, "× "+err.Error())
 	} else {
@@ -227,14 +280,18 @@ func (a *App) showTopology(d netCache) {
 	} else {
 		lines = append(lines, netmap.TreeLines(d.devs, links)...)
 		lines = append(lines, "", i18n.T("· = Nachbar, der nicht in sshTermy steht (AP, Telefon, fremder Switch)"))
-		if p, err := writeTopology(d.devs, links); err == nil {
+		if p, err := writeTopology(d.scope, d.devs, links); err == nil {
 			lines = append(lines, i18n.T("Diagramm (Mermaid): ")+p)
 		} else {
 			lines = append(lines, i18n.T("Diagramm nicht gespeichert: ")+err.Error())
 		}
 	}
 	lines = append(lines, a.netFooter(d)...)
-	a.modal = textModal(fmt.Sprintf(i18n.T("Netzwerk-Topologie · %d Switches"), len(d.devs)), lines)
+	title := fmt.Sprintf(i18n.T("Netzwerk-Topologie · %d Switches"), len(d.devs))
+	if d.scope != "" {
+		title += " · " + d.scope
+	}
+	a.modal = textModal(title, lines)
 }
 
 func (a *App) netFooter(d netCache) []string {
@@ -247,14 +304,22 @@ func (a *App) netFooter(d netCache) []string {
 	return out
 }
 
-func writeTopology(devs []netmap.Device, links []netmap.Link) (string, error) {
+func writeTopology(scope string, devs []netmap.Device, links []netmap.Link) (string, error) {
 	if len(links) == 0 {
 		return "", errors.New(i18n.T("keine Verbindungen"))
 	}
 	var b strings.Builder
-	b.WriteString("# " + i18n.T("Netzwerk-Topologie") + " " + time.Now().Format("2006-01-02 15:04") + "\n\n")
+	head := i18n.T("Netzwerk-Topologie")
+	if scope != "" {
+		head += " · " + scope
+	}
+	b.WriteString("# " + head + " " + time.Now().Format("2006-01-02 15:04") + "\n\n")
 	b.WriteString(netmap.Mermaid(links))
 	b.WriteString("\n```\n" + strings.Join(netmap.TreeLines(devs, links), "\n") + "\n```\n")
-	p := filepath.Join(exportDir(), "sshtermy-topologie-"+time.Now().Format("20060102-1504")+".md")
+	name := "sshtermy-topologie-"
+	if scope != "" {
+		name += keySlug(scope) + "-"
+	}
+	p := filepath.Join(exportDir(), name+time.Now().Format("20060102-1504")+".md")
 	return p, os.WriteFile(p, []byte(b.String()), 0o600)
 }

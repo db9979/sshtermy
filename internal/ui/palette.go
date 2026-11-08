@@ -130,7 +130,7 @@ func (a *App) paletteItems() []palItem {
 		items = append(items, palItem{group: pgConnect, icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen"), hint: i18n.T("Link"),
 			run: func() tea.Cmd { return a.watchLink(q) }})
 	}
-	if looksLikeAddr(q) && len(a.netDevices()) > 0 {
+	if looksLikeAddr(q) && len(a.netDevices("")) > 0 {
 		items = append(items, palItem{icon: ic("scan"), label: i18n.T("Gerät finden: ") + q, hint: i18n.T("MAC/IP → Switch-Port"),
 			run: func() tea.Cmd { return a.netFind(q) }})
 	}
