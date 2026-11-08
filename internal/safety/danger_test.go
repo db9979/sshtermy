@@ -73,3 +73,17 @@ func TestDangerMore(t *testing.T) {
 		}
 	}
 }
+
+func TestInlineCode(t *testing.T) {
+	for _, c := range []string{`python3 -c "import shutil; shutil.rmtree('/srv')"`, "perl -e 'unlink glob q(*)'", "bash -c 'rm x'",
+		"sudo sh -c 'echo 1 > /proc/x'", "eval $(cat x)", "x; eval y", "cat s.py | python3", "node -e 'x'", "powershell -Command Remove-Item x"} {
+		if !InlineCode(c) {
+			t.Errorf("InlineCode(%q) = false", c)
+		}
+	}
+	for _, c := range []string{"python3 script.py", "bash deploy.sh", "ls -c", "grep eval file", "echo evaluate", "ps -ef | grep python"} {
+		if InlineCode(c) {
+			t.Errorf("InlineCode(%q) = true", c)
+		}
+	}
+}

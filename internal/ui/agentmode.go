@@ -31,7 +31,7 @@ import (
 
 const (
 	lvlCareful = iota // nur Lesendes läuft allein
-	lvlNormal         // alles außer Gefahr und sudo
+	lvlNormal         // alles außer Gefahr, sudo und Inline-Code (python -c …)
 	lvlFull           // auch sudo; Gefahr fragt trotzdem
 )
 
@@ -62,7 +62,7 @@ func levelHint(l int) string {
 	case lvlFull:
 		return i18n.T("auch sudo; Gefahr fragt immer")
 	}
-	return i18n.T("alles außer Gefahr und sudo")
+	return i18n.T("alles außer Gefahr, sudo und Code in der Zeile")
 }
 
 // agentRunning: läuft gerade ein Agent (nicht angehalten)?
@@ -137,6 +137,8 @@ func (a *App) agentGate(s *session, st *agent.Step) (bool, string) {
 		return false, i18n.T("Produktiv-Host: Änderungen fragen nach")
 	case st.Elevated && g.level < lvlFull:
 		return false, i18n.T("braucht sudo")
+	case g.level < lvlFull && safety.InlineCode(st.Command):
+		return false, i18n.T("startet Code aus der Zeile (python -c, bash -c, eval …)")
 	}
 	return true, ""
 }

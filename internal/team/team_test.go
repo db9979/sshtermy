@@ -79,6 +79,11 @@ func TestApplyKeepsOwnCredentials(t *testing.T) {
 	if st.Added != 1 || st.Updated != 1 || st.Tunnels != 1 || st.Runbooks != 2 {
 		t.Fatalf("%+v", st)
 	}
+	// eigenes Passwort: neue Adresse erst nach Rückfrage
+	if len(st.AddrChanges) != 1 || st.AddrChanges[0].ID != "web" {
+		t.Fatalf("Adressänderung nicht gemeldet: %+v", st.AddrChanges)
+	}
+	AcceptAddr(d, st.AddrChanges, time.Now())
 	var web, jump domain.Connection
 	for _, c := range d.Connections {
 		switch c.ID {
@@ -240,5 +245,27 @@ func TestApplyDropsRiskyFields(t *testing.T) {
 	}
 	if c.OTPSource != "op://T/web/otp" || c.CertPath != "~/.ssh/id-cert.pub" {
 		t.Fatalf("harmlose Felder verloren: %+v", c)
+	}
+}
+
+func TestApplyAsksBeforeMovingSecrets(t *testing.T) {
+	d := &domain.Data{Connections: []domain.Connection{
+		{ID: "a", Alias: "web", Host: "10.0.0.1", Port: 22, Password: "geheim"},
+		{ID: "b", Alias: "db", Host: "10.0.0.2", Port: 22},
+	}}
+	p := &Package{Connections: []domain.Connection{
+		{ID: "a", Alias: "web", Host: "evil.example", Port: 22},
+		{ID: "b", Alias: "db", Host: "10.0.0.3", Port: 2222},
+	}}
+	st := Apply(d, p, nil, "", "", time.Now())
+	if d.Connections[0].Host != "10.0.0.1" || len(st.AddrChanges) != 1 || st.AddrChanges[0].New != "evil.example" {
+		t.Fatalf("Adresse mit Passwort still geändert: %+v %+v", d.Connections[0], st.AddrChanges)
+	}
+	if d.Connections[1].Host != "10.0.0.3" || d.Connections[1].Port != 2222 {
+		t.Fatalf("ohne Zugangsdaten nicht übernommen: %+v", d.Connections[1])
+	}
+	AcceptAddr(d, st.AddrChanges, time.Now())
+	if d.Connections[0].Host != "evil.example" {
+		t.Fatal("AcceptAddr wirkt nicht")
 	}
 }

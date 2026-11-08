@@ -122,3 +122,11 @@ func Elevated(cmd string) bool {
 }
 
 var elevatedRE = regexp.MustCompile(`(^|[;&|({` + "`" + `]|\$\(|\b(then|do|else|exec|xargs|nohup|env|time)\s)\s*(sudo|doas|pkexec|run0|su)(\s|$)`)
+
+// InlineCode: startet der Befehl Code, der direkt in der Zeile steht
+// (python -c, perl -e, bash -c, eval …)? Darin können die Gefahrenregeln
+// nicht hineinsehen; der Agent-Modus fragt in der Stufe „Normal“ deshalb nach.
+func InlineCode(cmd string) bool { return inlineRE.MatchString(cmd) }
+
+var inlineRE = regexp.MustCompile(`(?i)\b(python[0-9.]*|perl|ruby|node|nodejs|php|pwsh|powershell)(\.exe)?\s+(-\S+\s+)*-(c|e|E|r|command|encodedcommand)\b` +
+	`|\b(ba|z|da|k|fi)?sh\s+(-\S+\s+)*-[a-z]*c\b|(^|[;&|(]\s*)eval\b|\|\s*(python[0-9.]*|perl|ruby|node|php)(\s+-)?\s*($|[;&|])`)

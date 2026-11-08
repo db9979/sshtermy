@@ -871,6 +871,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		next, err = a.startSSHKey()
 	case scrRelayForm:
 		next, err = a.startRelayPair()
+	case scrMasterForm:
+		err = a.saveMasterForm()
 	case scrConnForm:
 		err = a.saveConn()
 	case scrTunnelForm:

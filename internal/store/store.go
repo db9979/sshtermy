@@ -110,6 +110,32 @@ func (s *Store) Init(password []byte, useDPAPI bool) error {
 	return s.save()
 }
 
+// ChangeMaster ändert das Master-Passwort (newPw leer = bleibt) und schaltet
+// das Entsperren per Windows-Anmeldung (DPAPI) ein oder aus. Beides nur mit
+// dem bisherigen Passwort.
+func (s *Store) ChangeMaster(oldPw, newPw []byte, dpapi bool) error {
+	if err := s.V.CheckPassword(oldPw); err != nil {
+		return err
+	}
+	if len(newPw) > 0 {
+		if err := s.V.ChangePassword(oldPw, newPw); err != nil {
+			return err
+		}
+	}
+	if dpapi != s.V.HasDPAPI() {
+		if err := s.V.SetDPAPI(dpapi); err != nil {
+			return err
+		}
+	}
+	s.mu.Lock()
+	if s.data != nil {
+		s.data.Settings.UseDPAPI = s.V.HasDPAPI()
+	}
+	s.mu.Unlock()
+	s.changed()
+	return s.save()
+}
+
 // AfterUnlock lädt die Daten, nachdem der Vault entsperrt wurde.
 func (s *Store) AfterUnlock() error {
 	d := domain.NewData()

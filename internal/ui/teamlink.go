@@ -160,9 +160,15 @@ func (a *App) pullLink(l domain.TeamLink, force bool) tea.Cmd {
 			if err := a.st.Update(func(d *domain.Data) { st, have = team.Pull(d, p, l, time.Now()) }); err != nil {
 				return nil
 			}
+			if len(st.AddrChanges) > 0 && a.modal != nil {
+				sum = l.LastSum // gerade ein anderer Dialog offen: beim nächsten Abgleich fragen
+			}
 			l.Have, l.LastSum, l.LastErr, l.LastRun = have, sum, "", time.Now().UTC()
 			a.saveLink(l)
 			a.flash(fmt.Sprintf(i18n.T("Team-Ordner „%s“: %d neu, %d aktualisiert, %d entfernt"), l.Name, st.Added, st.Updated, st.Removed))
+			if a.modal == nil {
+				a.askAddrChanges(st.AddrChanges)
+			}
 			return nil
 		}}
 	}

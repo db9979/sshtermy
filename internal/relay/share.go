@@ -433,6 +433,18 @@ func (s *Server) shareWatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := r.URL.Query().Get("id")
+	// Der Gastgeber ist evtl. gerade erst verbunden: sein Handler trägt die
+	// Leitung kurz nach dem Handshake ein. So lange kurz warten statt 404.
+	for i := 0; i < 20; i++ {
+		s.mu.Lock()
+		room := s.shareRooms()[id]
+		ready := room == nil || room.host != nil
+		s.mu.Unlock()
+		if ready {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 	s.mu.Lock()
 	room := s.shareRooms()[id]
 	var err error
