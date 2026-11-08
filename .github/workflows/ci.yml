@@ -8,8 +8,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           # neuester Patch von Go 1.26: Sicherheitskorrekturen der Standardbibliothek
           go-version: "1.26.x"
@@ -20,7 +20,7 @@ jobs:
       - name: Lasttest mit 1000 Hosts
         run: make loadtest
       # Bildschirm-Tests: abweichende Bilder zum Ansehen hochladen
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: golden-actual
@@ -36,8 +36,8 @@ jobs:
   race:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           # neuester Patch von Go 1.26: Sicherheitskorrekturen der Standardbibliothek
           go-version: "1.26.x"
@@ -52,14 +52,14 @@ jobs:
         os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26.x"
           check-latest: true
       - run: go test ./...
       - run: cd third_party/vt && go test ./...
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: golden-actual-${{ matrix.os }}
@@ -70,8 +70,8 @@ jobs:
   vuln:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26.x"
           check-latest: true
@@ -81,13 +81,13 @@ jobs:
   fuzz:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26.x"
           check-latest: true
       - run: FUZZTIME=15s tools/fuzz/run.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: fuzz-funde
@@ -97,6 +97,6 @@ jobs:
   packaging:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: sudo apt-get install -y -qq apt-utils python3-yaml >/dev/null
       - run: packaging/check.sh
