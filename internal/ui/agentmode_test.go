@@ -81,6 +81,10 @@ func TestAgentGates(t *testing.T) {
 		{"prod ändern voll", domain.Connection{Alias: "web-prod"}, lvlFull, "mkdir /tmp/x", false},
 		{"prod lesen", domain.Connection{Alias: "web-prod"}, lvlNormal, "df -h", true},
 		{"switch config", domain.Connection{Alias: "sw", Device: domain.DeviceNetwork}, lvlFull, "ntp server 10.0.0.1", false},
+		{"sudo verkettet normal", domain.Connection{Alias: "lab"}, lvlNormal, "cd /etc && sudo systemctl restart nginx", false},
+		{"inline normal", domain.Connection{Alias: "lab"}, lvlNormal, `python3 -c "import os; os.remove('x')"`, false},
+		{"inline voll", domain.Connection{Alias: "lab"}, lvlFull, "bash -c 'mkdir -p /tmp/x'", true},
+		{"skript normal", domain.Connection{Alias: "lab"}, lvlNormal, "bash /tmp/x.sh", true},
 		{"switch show", domain.Connection{Alias: "sw", Device: domain.DeviceNetwork}, lvlCareful, "show ntp status", true},
 	}
 	for _, c := range cases {

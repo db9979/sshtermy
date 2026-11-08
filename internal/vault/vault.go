@@ -255,6 +255,9 @@ func (v *Vault) CheckPassword(password []byte) error {
 
 // ChangePassword wickelt denselben DEK mit einem neuen Passwort (neues Salz).
 func (v *Vault) ChangePassword(oldPw, newPw []byte) error {
+	if len(newPw) < 8 {
+		return errors.New(i18n.T("vault: Master-Passwort braucht mindestens 8 Zeichen"))
+	}
 	if err := v.UnlockPassword(oldPw); err != nil {
 		return err
 	}
@@ -275,6 +278,35 @@ func (v *Vault) ChangePassword(oldPw, newPw []byte) error {
 		}
 	}
 	return nil // wirksam mit dem nächsten Save
+}
+
+// SetDPAPI legt den DPAPI-Wrap an (on) oder entfernt ihn. Der Store muss
+// entsperrt sein; wirksam mit dem nächsten Save. Der Passwort-Wrap bleibt
+// immer, damit es einen Weg auf anderen Rechnern gibt.
+func (v *Vault) SetDPAPI(on bool) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.dek == nil {
+		return ErrLocked
+	}
+	var keep []Wrap
+	for _, w := range v.hdr.Wraps {
+		if w.Kind != "dpapi" {
+			keep = append(keep, w)
+		}
+	}
+	if on {
+		if !DPAPIAvailable() {
+			return ErrDPAPI
+		}
+		blob, err := dpapiProtect(v.dek, []byte(dpapiEntropy))
+		if err != nil {
+			return fmt.Errorf(i18n.T("vault: DPAPI: %w"), err)
+		}
+		keep = append(keep, Wrap{Kind: "dpapi", Blob: blob})
+	}
+	v.hdr.Wraps = keep
+	return nil
 }
 
 // Lock nullt den DEK im Speicher.

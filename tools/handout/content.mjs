@@ -110,7 +110,7 @@ export const de = {
       ['v', 'Skript des Agenten ansehen'],
       ['⏎ ⏎', 'gefährlichen Schritt freigeben', 'warn'],
       ['s / r', '(am Ende) als Runbook speichern / Skripte löschen'],
-    ], note: '<b>Vorsichtig</b>: nur Lesendes läuft allein · <b>Normal</b>: alles außer Gefahr und sudo · <b>Voll</b>: auch sudo. Gefahr wartet immer. Grenzen: 25 Schritte, 15 min, 3 Fehler in Folge.' },
+    ], note: '<b>Vorsichtig</b>: nur Lesendes läuft allein · <b>Normal</b>: alles außer Gefahr, sudo, python -c · <b>Voll</b>: auch sudo. Gefahr wartet immer. Grenzen: 25 Schritte, 15 min, 3 Fehler in Folge.' },
     { t: 'Plan-Modus', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
       ['↑ / ↓', 'Schritt wählen'],
       ['Space', 'Schritt streichen / zurückholen'],
@@ -179,7 +179,7 @@ export const de = {
       ['⏎ ⏎', 'roter Befehl: zweimal bestätigen', 'warn'],
       ['j', 'Produktiv-Host: riskanten Befehl zulassen', 'warn'],
       ['␣befehl', 'führendes Leerzeichen: nicht protokolliert'],
-      ['_Palette_', '„Jetzt sperren“ · „Gefahren-Check“'],
+      ['_Palette_', '„Jetzt sperren“ · „Master-Passwort“ · „Gefahren-Check“'],
     ]},
     { t: 'Start & Tipps', ic: '$', rows: [
       ['sshtermy --update', 'auf neueste Version'],
@@ -296,7 +296,7 @@ export const en = {
       ['v', "view the agent's script"],
       ['⏎ ⏎', 'allow a dangerous step', 'warn'],
       ['s / r', '(at the end) save as runbook / delete scripts'],
-    ], note: '<b>Careful</b>: only read-only runs on its own · <b>Normal</b>: all but danger and sudo · <b>Full</b>: sudo too. Danger always waits. Limits: 25 steps, 15 min, 3 failures in a row.' },
+    ], note: '<b>Careful</b>: only read-only runs on its own · <b>Normal</b>: all but danger, sudo, python -c · <b>Full</b>: sudo too. Danger always waits. Limits: 25 steps, 15 min, 3 failures in a row.' },
     { t: 'Plan mode', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
       ['↑ / ↓', 'choose a step'],
       ['Space', 'remove / restore a step'],
@@ -365,7 +365,7 @@ export const en = {
       ['⏎ ⏎', 'red command: confirm twice', 'warn'],
       ['y', 'production host: allow a risky command', 'warn'],
       ['␣command', 'leading space: not logged'],
-      ['_palette_', '“Lock now” · “Danger check”'],
+      ['_palette_', '“Lock now” · “Master password” · “Danger check”'],
     ]},
     { t: 'Start & tips', ic: '$', rows: [
       ['sshtermy --update', 'update to the newest version'],

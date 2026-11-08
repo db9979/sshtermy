@@ -38,3 +38,33 @@ func TestDeleteLeavesTombstonesAndBumpsRev(t *testing.T) {
 		t.Fatalf("ApplySync: %v %v %d", changed, err, changes)
 	}
 }
+
+func TestChangeMaster(t *testing.T) {
+	t.Setenv("SSHTERMY_HOME", t.TempDir())
+	s, err := Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Init([]byte("correct horse"), false); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ChangeMaster([]byte("falsch!!"), []byte("battery staple"), false); err == nil {
+		t.Fatal("falsches altes Passwort angenommen")
+	}
+	if err := s.ChangeMaster([]byte("correct horse"), []byte("kurz"), false); err == nil {
+		t.Fatal("zu kurzes Passwort angenommen")
+	}
+	if err := s.ChangeMaster([]byte("correct horse"), []byte("battery staple"), false); err != nil {
+		t.Fatal(err)
+	}
+	s2, _ := Open()
+	if err := s2.V.UnlockPassword([]byte("correct horse")); err == nil {
+		t.Fatal("altes Passwort geht noch")
+	}
+	if err := s2.V.UnlockPassword([]byte("battery staple")); err != nil {
+		t.Fatal(err)
+	}
+	if err := s2.AfterUnlock(); err != nil {
+		t.Fatal(err)
+	}
+}

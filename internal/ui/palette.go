@@ -515,11 +515,20 @@ func cycleIndex(cur, n, dir int) int {
 	return ((cur+dir)%n + n) % n
 }
 
+// masterHint: wie sich der Store öffnet.
+func masterHint(dpapi bool) string {
+	if dpapi {
+		return i18n.T("+ Windows-Anmeldung")
+	}
+	return ""
+}
+
 // palMenuItems: Inhalt beider Untermenüs, in Anzeigereihenfolge.
 func (a *App) palMenuItems() []palItem {
 	set := a.st.Settings()
 	safe := func(it palItem) palItem { it.group = pgSetSafe; return it }
 	hide := func(it palItem) palItem { it.hidden = true; return it }
+	look := func(it palItem) palItem { it.group = pgSetLook; return it }
 	items := []palItem{
 		// Verhalten
 		palToggle(ic("mouse"), i18n.T("Maus: klicken, markieren, scrollen"), a.mouseEnabled(), "mouse", func() tea.Cmd { return a.toggleMouse() }),
@@ -541,6 +550,8 @@ func (a *App) palMenuItems() []palItem {
 		safe(palToggle(ic("paste"), i18n.T("Server darf in die Zwischenablage kopieren (OSC 52)"), a.osc52On(), "clipboard zwischenablage osc52 tmux vim", func() tea.Cmd { return a.toggleOSC52() })),
 		palCycle(pgSetSafe, ic("sshkey"), i18n.T("Automatisch sperren bei Leerlauf"), lockLabel(set.LockAfterMin), "lock sperren idle leerlauf",
 			func(dir int) tea.Cmd { return a.cycleLockAfter(dir) }),
+		{group: pgSetSafe, menu: "settings", icon: ic("sshkey"), label: i18n.T("Master-Passwort ändern …"), hint: masterHint(a.st.V.HasDPAPI()),
+			keys: "master passwort password ändern change dpapi windows anmeldung", run: func() tea.Cmd { return a.openMasterForm() }},
 	}
 
 	// Aussehen & Sprache: je ein Durchschalt-Eintrag, die Einzelwerte nur
@@ -575,7 +586,7 @@ func (a *App) palMenuItems() []palItem {
 			keys: "theme farbe color colors eigene custom", run: func() tea.Cmd { return a.openColors() }},
 		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farbregeln für die Ausgabe …"), hint: hlHint(a.highlightOn()),
 			keys: "highlight farbregeln einfärben fehler ip mac syslog regeln", run: func() tea.Cmd { return a.openHighlightForm() }},
-		hide(palToggle(ic("colors"), i18n.T("Farbregeln: Ausgabe einfärben"), a.highlightOn(), "highlight farbregeln einfärben", func() tea.Cmd { return a.toggleHighlight() })),
+		look(hide(palToggle(ic("colors"), i18n.T("Farbregeln: Ausgabe einfärben"), a.highlightOn(), "highlight farbregeln einfärben", func() tea.Cmd { return a.toggleHighlight() }))),
 		palItem{group: pgSetLook, menu: "settings", icon: ic("backup"), label: i18n.T("Regeln für Switch-Configs …"), hint: a.configRulesHint(),
 			keys: "config regeln rules compliance prüfen check ntp telnet snmp switch", run: func() tea.Cmd { return a.openConfigRulesForm() }},
 	)
@@ -614,10 +625,10 @@ func (a *App) palMenuItems() []palItem {
 
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Einstellungen"), hint: "s", keys: "ai llm", run: func() tea.Cmd { return a.openSettings() }},
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
-		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), hint: "llm",
+		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), keys: "ai llm status",
 			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
-		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},
-		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelayManage() }},
+		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},
+		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), keys: "relay", run: func() tea.Cmd { return a.openRelayManage() }},
 		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm, Ansible, CSV)"), hint: a.keys.label(actImport), keys: "import netbox", run: func() tea.Cmd { return a.openImport() }},
 		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("export"), label: i18n.T("Verbindungen als CSV exportieren (ohne Passwörter)"), hint: ".csv", keys: "export csv excel", run: func() tea.Cmd { return a.exportConnsCSV() }},
 

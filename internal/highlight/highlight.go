@@ -45,8 +45,12 @@ var colorNames = map[string]Color{
 	"grau": Grey, "grey": Grey, "gray": Grey,
 }
 
-// Name: Farbname zum Speichern (deutsch, wie in der Hilfe).
+// Name: Farbname in der Sprache der Oberfläche. Parse versteht beide
+// Sprachen, gespeicherte Regeln gelten also auf jedem Rechner.
 func (c Color) Name() string {
+	if i18n.English() {
+		return [...]string{"", "red", "yellow", "green", "blue", "purple", "gray"}[c]
+	}
 	return [...]string{"", "rot", "gelb", "grün", "blau", "lila", "grau"}[c]
 }
 

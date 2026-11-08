@@ -1,6 +1,10 @@
 package highlight
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/db9979/sshtermy/internal/i18n"
+)
 
 func colorAt(spans []Span, line, word string) Color {
 	for _, sp := range spans {
@@ -81,5 +85,21 @@ func TestParse(t *testing.T) {
 	s, err := New([]string{"rot ("}, false)
 	if err == nil || len(s.Rules()) != 0 {
 		t.Fatal("kaputte Regel muss gemeldet und übersprungen werden")
+	}
+}
+
+func TestNameFollowsLanguage(t *testing.T) {
+	defer i18n.Set(i18n.DE)
+	r, _, _ := Parse("!rot fehler")
+	i18n.Set(i18n.EN)
+	if r.String() != "!red fehler" {
+		t.Fatalf("englisch: %q", r.String())
+	}
+	if r2, ok, err := Parse(r.String()); !ok || err != nil || r2.Color != Red {
+		t.Fatal("englische Regel nicht lesbar")
+	}
+	i18n.Set(i18n.DE)
+	if r.String() != "!rot fehler" {
+		t.Fatalf("deutsch: %q", r.String())
 	}
 }

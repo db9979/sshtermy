@@ -35,11 +35,11 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
 - **SSH certificates**: keys signed by a company CA (`id_ed25519-cert.pub` next to the key, or any path in the connection) are used automatically; an expired certificate is reported with its date
 - **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder, or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
-- **Screen lock**: palette “Lock now” or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen
+- **Screen lock**: palette “Lock now” or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen. **Change master password** (palette → Settings › Security) also switches the Windows sign-in (DPAPI) on or off later
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag “Produktion”, “prod”, “live”) get a red line
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
 - **Server file in your own editor**: `e` in F5 (server side) or the palette entry “Open server file in your own editor” with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › “Editor for server files” (e.g. `code --new-window`)
-- **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules “color pattern” (palette → “Color rules for output”); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
+- **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules “color pattern” (colors in English or German; palette → “Color rules for output”); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
 - **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Containers** (`c` in F6 or palette “docker”): Docker and Podman containers and Kubernetes pods of the server in one list. ⏎ opens a shell in the container, Ctrl+L follows the logs, Ctrl+K lets the AI analyze the last 400 log lines. Restart and start/stop are only inserted at the prompt, ⏎ runs them. Uses `sudo -n` when docker needs root and sudo works without a password
 - **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
@@ -85,7 +85,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
-    Levels: *Careful* (only read-only commands run on their own), *Normal* (everything except danger and sudo),
+    Levels: *Careful* (only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`),
     *Full* (sudo too). Dangerous commands, including every line of a script, always wait for you; on production hosts
     and network devices every change asks. Limits: 25 steps, 15 minutes, 3 failures in a row. Esc or typing in the
     terminal pauses it, `?` gives it an instruction. At the end: summary, changed files, `s` saves the run as a runbook
@@ -401,7 +401,7 @@ Windows login ──DPAPI CryptProtectData────────────�
 - The **master password** is never stored; **Argon2id** (RFC 9106) derives the KEK from it, which wraps the DEK.
 - **DPAPI** (Windows only, `CryptProtectData` without `LOCAL_MACHINE`, with its own entropy value) binds a second
   copy of the DEK to your Windows account: after the Windows login sshTermy unlocks without input, but it stays
-  unreadable for other accounts and computers. The master password remains as recovery (moving, macOS).
+  unreadable for other accounts and computers. The master password remains as recovery (moving, macOS). Switch it on or off any time in “Change master password”.
 - File `store.vault` in `%APPDATA%\sshtermy` (macOS `~/Library/Application Support/sshtermy`, Linux
   `~/.config/sshtermy`), permissions 0600, written atomically. `SSHTERMY_HOME` for a portable installation.
 - Automatic lock after idle time (`LockAfterMin`), the DEK is zeroed when locking (best effort).
@@ -614,7 +614,7 @@ learned rejected suggestions, AI and sync settings. Leave the password empty and
 The colleague uses Ctrl+Space → “Import team package”: file, password, target folder (default “Team”). A
 preview shows new and updated entries. Importing the same package again updates the entries but keeps the
 colleague's own passwords, keys and user names. For safety, new entries arrive without agent or X11
-forwarding, without a local shell command and without a `cmd:` password source; turn those on yourself if needed.
+forwarding, without a local shell command and without a `cmd:` password source; turn those on yourself if needed. If the team changes the address of a connection that has your password, key or agent forwarding stored, sshTermy asks before using the new address.
 
 ### Team folders: kept up to date
 

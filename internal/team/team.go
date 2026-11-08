@@ -248,6 +248,42 @@ type Stats struct {
 	QuickCmds        int // Verbindungen mit eigenen Schnellbefehlen
 	NeedUser, NeedPw int // ohne Benutzername / mit Passwort-Anmeldung (fragt beim Verbinden)
 	Removed          int // Team-Ordner: beim Absender entfernt, hier gelöscht
+	// AddrChanges: neue Adresse für Verbindungen mit eigenen Zugangsdaten,
+	// noch nicht übernommen (erst nach Rückfrage, AcceptAddr).
+	AddrChanges []AddrChange
+}
+
+// AddrChange: das Paket will Host/Port/Jump-Host einer Verbindung ändern.
+type AddrChange struct {
+	ID, Alias, Old, New string
+	Host                string
+	Port                int
+	Jump                string
+}
+
+func addrOf(host string, port int) string {
+	if port == 0 || port == 22 {
+		return host
+	}
+	return fmt.Sprintf("%s:%d", host, port)
+}
+
+// holdsSecrets: hat die Verbindung hier etwas, das an eine fremde Adresse
+// nicht gehen soll?
+func holdsSecrets(c domain.Connection) bool {
+	return c.Password.IsSet() || c.KeyPEM.IsSet() || c.KeyPassphrase.IsSet() || c.Keychain || c.ForwardAgent || c.PassSource != ""
+}
+
+// AcceptAddr übernimmt die bestätigten Adressänderungen.
+func AcceptAddr(d *domain.Data, ch []AddrChange, now time.Time) {
+	for _, a := range ch {
+		for i := range d.Connections {
+			if d.Connections[i].ID == a.ID {
+				c := &d.Connections[i]
+				c.Host, c.Port, c.JumpHostID, c.UpdatedAt = a.Host, a.Port, a.Jump, now.UTC()
+			}
+		}
+	}
 }
 
 // Known: welche Verbindungen des Pakets es hier schon gibt (gleiche ID, also
@@ -310,6 +346,18 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 		}
 		if i, ok := idx[in.ID]; ok {
 			cur := d.Connections[i]
+			if in.Port == 0 {
+				in.Port = cur.Port
+			}
+			moved := cur.Host != in.Host || cur.Port != in.Port || cur.JumpHostID != in.JumpHostID
+			if moved && holdsSecrets(cur) {
+				// Mit gespeichertem Passwort, Key oder Agent-Weiterleitung nicht
+				// still umbiegen: sonst ginge das Passwort an eine Adresse, die
+				// jemand anderes in das Paket geschrieben hat. Die Oberfläche fragt.
+				st.AddrChanges = append(st.AddrChanges, AddrChange{ID: cur.ID, Alias: in.Alias,
+					Old: addrOf(cur.Host, cur.Port), New: addrOf(in.Host, in.Port), Host: in.Host, Port: in.Port, Jump: in.JumpHostID})
+				in.Host, in.Port, in.JumpHostID = cur.Host, cur.Port, cur.JumpHostID
+			}
 			cur.Alias, cur.Host, cur.Port = in.Alias, in.Host, in.Port
 			if cur.Group != in.Group {
 				cur.Group, cur.Order = in.Group, nextOrder(in.Group)

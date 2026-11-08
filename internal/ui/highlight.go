@@ -86,6 +86,9 @@ func (a *App) openHighlightForm() tea.Cmd {
 		v := ""
 		if i < len(c.Rules) {
 			v = c.Rules[i]
+			if r, ok, err := highlight.Parse(v); ok && err == nil {
+				v = r.String() // Farbname in der Sprache der Oberfläche
+			}
 		}
 		h := i18n.T("„farbe muster“ · Farben: rot gelb grün blau lila grau · ! davor = melden, wenn es in einem verdeckten Tab auftaucht")
 		if i == 0 {

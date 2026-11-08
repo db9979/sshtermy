@@ -317,6 +317,33 @@ func (a *App) commitTeamTake() {
 	}
 	a.scr = scrManager
 	a.flash(msg)
+	a.askAddrChanges(st.AddrChanges)
+}
+
+// askAddrChanges: das Team-Paket will die Adresse von Verbindungen ändern,
+// für die hier Zugangsdaten gespeichert sind. Erst nach Bestätigung.
+func (a *App) askAddrChanges(ch []team.AddrChange) {
+	if len(ch) == 0 {
+		return
+	}
+	var b strings.Builder
+	b.WriteString(i18n.T("Das Team-Paket ändert die Adresse von Verbindungen, für die hier Passwort, Key oder Agent-Weiterleitung gespeichert sind:") + "\n\n")
+	for i, c := range ch {
+		if i == 8 {
+			fmt.Fprintf(&b, i18n.T("  … und %d weitere")+"\n", len(ch)-i)
+			break
+		}
+		fmt.Fprintf(&b, "  %s: %s → %s\n", trunc(c.Alias, 24), c.Old, c.New)
+	}
+	b.WriteString("\n" + i18n.T("Übernehmen? Ohne Bestätigung bleibt die bisherige Adresse."))
+	a.modal = confirmModal(i18n.T("Neue Adresse vom Team"), b.String(), func() tea.Cmd {
+		if err := a.st.Update(func(d *domain.Data) { team.AcceptAddr(d, ch, time.Now()) }); err != nil {
+			a.flashErr(err.Error())
+			return nil
+		}
+		a.flashOK(fmt.Sprintf(i18n.T("Neue Adresse übernommen (%d)"), len(ch)))
+		return nil
+	})
 }
 
 // ---------------------------------------------------------------- Formular
