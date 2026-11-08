@@ -74,6 +74,7 @@ jobs:
       - name: Signieren (Ed25519)
         env:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          UPDATE_PUBKEY: ${{ vars.UPDATE_PUBKEY }}
         if: env.UPDATE_SIGNING_KEY != ''
         run: go run ./cmd/sshtermy-sign sign dist/checksums.txt
 
