@@ -24,8 +24,17 @@ import (
 const (
 	reachEvery   = time.Minute
 	reachTimeout = 2 * time.Second
-	reachPar     = 16
+	reachPar     = 16 // gleichzeitig, bei vielen Hosts mehr (reachParFor)
+	reachParMax  = 64
 )
+
+// reachParFor: bei 1000 Hosts dauert eine Runde mit 16 gleichzeitigen
+// Prüfungen und 2 s Zeitlimit sonst über zwei Minuten.
+func reachParFor(n int) int { return min(reachParMax, max(reachPar, n/16)) }
+
+// reachPause: Pause bis zur nächsten Runde, mindestens eine Minute, bei
+// langen Runden das Dreifache der Dauer (Netz und Firewalls nicht fluten).
+func reachPause(took time.Duration) time.Duration { return max(reachEvery, 3*took) }
 
 type reachResult struct {
 	ok  bool
@@ -38,6 +47,7 @@ type reachState struct {
 	res     map[string]reachResult // Connection.ID → letzte Prüfung
 	running bool
 	next    time.Time
+	started time.Time
 }
 
 type reachMsg struct{ res map[string]reachResult }
@@ -63,7 +73,7 @@ func (a *App) reachTick() tea.Cmd {
 	if len(todo) == 0 && len(via) == 0 {
 		return nil
 	}
-	a.reach.running = true
+	a.reach.running, a.reach.started = true, time.Now()
 	return func() tea.Msg {
 		res := checkReach(todo)
 		if len(via) > 0 {
@@ -77,10 +87,26 @@ func (a *App) reachTick() tea.Cmd {
 
 func checkReach(conns []domain.Connection) map[string]reachResult {
 	out := make(map[string]reachResult, len(conns))
+	// gleiche Adresse (mehrere Benutzer auf einem Host): nur einmal prüfen
+	byAddr := map[string][]string{}
+	var uniq []domain.Connection
+	for _, c := range conns {
+		if _, seen := byAddr[c.Addr()]; !seen {
+			uniq = append(uniq, c)
+		}
+		byAddr[c.Addr()] = append(byAddr[c.Addr()], c.ID)
+	}
+	defer func() {
+		for _, c := range uniq {
+			for _, id := range byAddr[c.Addr()][1:] {
+				out[id] = out[c.ID]
+			}
+		}
+	}()
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, reachPar)
-	for _, c := range conns {
+	sem := make(chan struct{}, reachParFor(len(uniq)))
+	for _, c := range uniq {
 		wg.Add(1)
 		sem <- struct{}{}
 		go func(c domain.Connection) {
@@ -120,6 +146,9 @@ func reachReason(err error) string {
 
 func (a *App) onReach(m reachMsg) {
 	a.reach.running = false
+	if !a.reach.started.IsZero() {
+		a.reach.next = time.Now().Add(reachPause(time.Since(a.reach.started)))
+	}
 	if a.reach.res == nil {
 		a.reach.res = map[string]reachResult{}
 	}

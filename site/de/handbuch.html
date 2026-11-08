@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sshTermy – Handbuch und FAQ</title>
+<meta name="description" content="Handbuch zu sshTermy: Einrichtung, Verbindungen, Terminal, KI, Netzwerkgeräte, Sicherheit, Sync, Umzug, MCP und häufige Fragen.">
+<link rel="alternate" hreflang="en" href="../manual.html">
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14' fill='%23bb9af7'>◆</text></svg>">
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="logo" href="./"><span>◆</span> sshTermy</a>
+    <nav>
+      <a href="./#installieren">Installation</a>
+      <a href="./#funktionen">Funktionen</a>
+      <a href="./#tasten">Tasten</a>
+      <a href="handbuch.html"><b>Handbuch</b></a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/db9979/sshtermy">GitHub</a>
+    </nav>
+    <div class="lang"><a href="../manual.html">EN</a> · <b>DE</b></div>
+  </div>
+</header>
+
+<main class="manual">
+<aside class="toc">
+  <a href="#start">Erste Schritte</a>
+  <a href="#verbindungen">Verbindungen</a>
+  <a href="#terminal">Terminal und Tabs</a>
+  <a href="#ki">KI-Copilot</a>
+  <a href="#agent">Ziel-, Agent- und Plan-Modus</a>
+  <a href="#netz">Switches, Router, Firewalls</a>
+  <a href="#mehrere">Mehrere Hosts</a>
+  <a href="#dateien">Dateien und Tunnel</a>
+  <a href="#sicherheit">Sicherheit</a>
+  <a href="#datenschutz">KI-Datenschutz</a>
+  <a href="#sync">Sync und Team</a>
+  <a href="#umzug">Sicherung und Umzug</a>
+  <a href="#mcp">MCP für KI-Clients</a>
+  <a href="#hilfe">Fehler melden</a>
+  <a href="#faq">FAQ</a>
+</aside>
+
+<article>
+<section id="start">
+  <h1>Handbuch</h1>
+  <p class="lead">Alles Wichtige zu sshTermy an einer Stelle. Zum Ausdrucken gibt es die <a href="../handout/sshtermy-kurzreferenz-de.pdf">Kurzreferenz (PDF)</a>; jede Taste lässt sich mit <kbd>F1</kbd> auch in der App nachschlagen.</p>
+  <h2>Erste Schritte</h2>
+  <ol>
+    <li><b>Installieren</b> – siehe <a href="./#installieren">Installation</a>. sshTermy ist eine einzige Datei für Windows, macOS und Linux.</li>
+    <li><b>Master-Passwort anlegen.</b> Beim ersten Start legst du ein Passwort für den verschlüsselten Store fest (Argon2id + AES-256-GCM). Es wird nie gespeichert. Unter Windows kann zusätzlich die Windows-Anmeldung entsperren (DPAPI).</li>
+    <li><b>Verbindungen holen:</b> <kbd>i</kbd> im Manager importiert aus <code>~/.ssh/config</code>, PuTTY, MobaXterm, Ansible-Inventaren oder CSV. Oder <kbd>n</kbd> für eine neue Verbindung.</li>
+    <li><b>KI einrichten</b> (optional): <kbd>s</kbd> im Manager. Anbieter wählen (eigener Server, Ollama, OpenAI, Claude), <kbd>Strg</kbd>+<kbd>T</kbd> testet.</li>
+    <li><b>Verbinden:</b> Verbindung wählen, <kbd>⏎</kbd>. <kbd>F10</kbd> bringt dich zurück in den Manager, die Sitzung läuft weiter.</li>
+  </ol>
+  <p class="tip">Fast alles findest du über die Befehlspalette <kbd>Strg</kbd>+<kbd>Leertaste</kbd>: tippen, was du suchst, z. B. „sperren“, „audit“ oder „matrix“.</p>
+</section>
+
+<section id="verbindungen">
+  <h2>Verbindungen</h2>
+  <p>Im Formular (<kbd>n</kbd>/<kbd>e</kbd>) stehen oben nur Name, Adresse, Benutzer und Anmeldung; „Erweitert“ öffnet Jump-Host, Tags, Ordner, Gerätetyp, Tastaturkürzel und mehr.</p>
+  <ul>
+    <li><b>Anmeldung:</b> Passwort (verschlüsselt im Store oder im Schlüsselbund des Systems), Schlüsseldatei (auch PuTTY <code>.ppk</code>), SSH-Agent, Sicherheitsschlüssel (FIDO), Zertifikate. <kbd>c</kbd> im Manager erzeugt einen Schlüssel und überträgt ihn auf den Server.</li>
+    <li><b>Ordner und Tags:</b> <kbd>o</kbd> legt Ordner an („Kunde / Standort“ verschachtelt), Ziehen mit der Maus sortiert. <code>#tag</code> in der Suche filtert.</li>
+    <li><b>Jump-Host:</b> Verbindung über einen anderen Server; sshTermy merkt sich, welcher Jump-Host für welches Netz passt.</li>
+    <li><b>Telnet, seriell, lokal:</b> „Verbindungsart“ wählt Telnet, ein USB-Konsolenkabel oder die Shell dieses Rechners (<kbd>Alt</kbd>+<kbd>L</kbd>).</li>
+    <li><b>Feste Sitzung:</b> pro Verbindung immer in derselben tmux/screen-Sitzung landen, auch von einem anderen Rechner.</li>
+  </ul>
+</section>
+
+<section id="terminal">
+  <h2>Terminal und Tabs</h2>
+  <ul>
+    <li><kbd>F7</kbd>/<kbd>F8</kbd> wechseln Tabs, <kbd>Alt</kbd>+<kbd>T</kbd> zeigt alle, <kbd>Alt</kbd>+<kbd>N</kbd>/<kbd>Alt</kbd>+<kbd>W</kbd> öffnen und schließen.</li>
+    <li><kbd>Strg</kbd>+<kbd>T</kbd> teilt die Ansicht (2 bis 6 Bereiche), <kbd>Alt</kbd>+<kbd>I</kbd> tippt in alle sichtbaren gleichzeitig.</li>
+    <li><kbd>⇧F10</kbd> verschiebt einen Tab in ein eigenes Terminalfenster.</li>
+    <li><kbd>Strg</kbd>+<kbd>F</kbd> durchsucht den Verlauf, <kbd>Strg</kbd>+<kbd>E</kbd> springt zu Fehlerzeilen.</li>
+    <li><kbd>F9</kbd> und <kbd>⇧F1</kbd>…<kbd>⇧F8</kbd>: Schnellbefehle, passend zum Gerät vorbelegt (Linux, Windows, Aruba, Cisco, Juniper, MikroTik, FortiGate …).</li>
+    <li><kbd>F6</kbd> Host-Übersicht: CPU, RAM, Platte, Updates bei Servern; Firmware, Ports und VLANs bei Netzwerkgeräten; <kbd>c</kbd> Container.</li>
+    <li>Reißt die Leitung ab (WLAN, VPN, Ruhezustand), verbindet sshTermy von selbst neu, startet Tunnel und hängt tmux/screen wieder an. Nach dem Aufwachen oder einem Netzwechsel werden alle Leitungen sofort geprüft.</li>
+  </ul>
+</section>
+
+<section id="ki">
+  <h2>KI-Copilot</h2>
+  <ul>
+    <li><b>Ghost-Text:</b> grauer Vorschlag beim Tippen, <kbd>Tab</kbd> oder <kbd>→</kbd> übernimmt.</li>
+    <li><b>Folgebefehle:</b> nach jedem Befehl bis zu vier Vorschläge, <kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd> fügt ein (ohne Enter).</li>
+    <li><b>Warum? &amp; Fix:</b> schlägt ein Befehl fehl, erklärt <kbd>Alt</kbd>+<kbd>0</kbd> die Ursache und schlägt eine Lösung vor.</li>
+    <li><b>KI fragen:</b> <kbd>F3</kbd>; die Antwort kennt Bildschirm, System und bisherige Befehle.</li>
+    <li><b>Ersatz-Anbieter:</b> fällt der erste aus, springt der nächste ein (Einstellungen › KI).</li>
+    <li><b>Lernen pro Gerät:</b> korrigierst du einen KI-Befehl, merkt sich sshTermy das für dieses Gerät.</li>
+  </ul>
+</section>
+
+<section id="agent">
+  <h2>Ziel-, Agent- und Plan-Modus</h2>
+  <p><kbd>F2</kbd> öffnet den Ziel-Modus: du beschreibst ein Ziel („nginx mit TLS einrichten“), die KI schlägt Schritt für Schritt einen Befehl vor, du bestätigst mit <kbd>⏎</kbd>. <kbd>Tab</kbd> schaltet auf den Agent-Modus:</p>
+  <table>
+    <tr><th>Stufe</th><th>Was ohne Rückfrage läuft</th></tr>
+    <tr><td>Vorsichtig</td><td>nur lesende Befehle</td></tr>
+    <tr><td>Normal</td><td>alles außer Gefährlichem, sudo und Inline-Code</td></tr>
+    <tr><td>Voll</td><td>alles außer Gefährlichem</td></tr>
+    <tr><td>Erst planen</td><td>die KI legt einen Plan vor, du bearbeitest und gibst frei</td></tr>
+  </table>
+  <p>Gefährliche Befehle (z. B. <code>rm -rf</code>, Formatieren, Switch-Neustart) laufen <b>nie</b> automatisch. Erfolgreiche Ziele lassen sich als Runbook speichern und später auf vielen Hosts ausführen.</p>
+</section>
+
+<section id="netz">
+  <h2>Switches, Router, Firewalls</h2>
+  <p>sshTermy erkennt ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, FortiGate, Comware und Huawei. Dort gibt es nie versteckte Exec-Kanäle: alle Abfragen laufen sichtbar am Prompt.</p>
+  <ul>
+    <li><kbd>F6</kbd> → <kbd>r</kbd>: Firmware, Modell, CPU/RAM, Ports und VLANs.</li>
+    <li><kbd>F6</kbd> → <kbd>b</kbd>: Konfiguration verschlüsselt sichern (<code>show running-config</code>, Junos <code>show configuration | display set</code>, RouterOS <code>/export</code>, FortiOS <code>show full-configuration</code>); <kbd>d</kbd> zeigt den Unterschied zum letzten Stand.</li>
+    <li><b>Regeln für Configs:</b> z. B. „ntp server muss gesetzt sein“; Verstöße erscheinen nach jeder Sicherung.</li>
+    <li><b>Gerät finden:</b> MAC oder IP eingeben, sshTermy fragt alle Switches nach MAC-, ARP- und LLDP-Tabellen und nennt Switch und Port.</li>
+    <li><b>Zeitplan</b> (<kbd>z</kbd>): z. B. nächtliche Sicherung aller Switches eines Ordners.</li>
+  </ul>
+</section>
+
+<section id="mehrere">
+  <h2>Mehrere Hosts</h2>
+  <ul>
+    <li><b>Broadcast</b> (<kbd>m</kbd>): Befehle oder ein Runbook auf vielen Hosts gleichzeitig; Ergebnisse nebeneinander, Gefahren-Check vorher.</li>
+    <li><b>Netzwerk-Scan</b> (<kbd>f</kbd>): findet SSH-Hosts in einem Netz und legt sie als Verbindungen an.</li>
+    <li><b>Arbeitsbereiche</b> (<kbd>w</kbd>): geteilte Ansichten speichern; <kbd>g</kbd> öffnet einen Ordner als Raster.</li>
+    <li>sshTermy ist mit 1000 Verbindungen getestet: Manager, Suche, Palette und Sync bleiben unter einigen Millisekunden pro Bild.</li>
+  </ul>
+</section>
+
+<section id="dateien">
+  <h2>Dateien und Tunnel</h2>
+  <ul>
+    <li><kbd>F5</kbd>: SFTP mit zwei Seiten, kopieren mit <kbd>c</kbd> oder Ziehen, <kbd>e</kbd> öffnet eine Server-Datei im eigenen Editor und lädt sie beim Speichern hoch.</li>
+    <li><code>tsz</code>/<code>trz</code> im Terminal übertragen Dateien auch durch Jump-Hosts (trzsz).</li>
+    <li><kbd>F4</kbd>: Tunnel (lokal, remote, SOCKS) an- und ausschalten; Web-Dienste öffnen sich im Browser.</li>
+  </ul>
+</section>
+
+<section id="sicherheit">
+  <h2>Sicherheit</h2>
+  <ul>
+    <li><b>Store:</b> alle Passwörter, Schlüssel und API-Keys verschlüsselt; ohne Master-Passwort unlesbar.</li>
+    <li><b>Gefahren-Check:</b> auf Produktiv-Hosts (oder überall) müssen riskante Befehle zweimal bestätigt werden; auch beim Einfügen.</li>
+    <li><b>Sperre:</b> sofort oder nach Leerlauf; Sitzungen laufen dahinter weiter.</li>
+    <li><b>Audit-Protokoll</b> (Einstellungen › Sicherheit): wer hat wann auf welchem Host was getan. Jede Zeile ist verkettet und signiert; „Audit-Protokoll prüfen und speichern“ meldet geänderte, gelöschte oder umsortierte Zeilen. Befehle mit führendem Leerzeichen erscheinen nur als „(privat)“.</li>
+    <li><b>Updates</b> sind mit Ed25519 signiert; ein Update ohne gültige Signatur wird abgelehnt.</li>
+  </ul>
+</section>
+
+<section id="datenschutz">
+  <h2>KI-Datenschutz</h2>
+  <p>Vor jedem Senden entfernt sshTermy Passwörter, Schlüssel und Tokens. Unter Einstellungen › KI › „KI-Datenschutz“ wählst du:</p>
+  <ul>
+    <li><b>alle Anbieter</b> – Standard.</li>
+    <li><b>nur lokale KI</b> – nur Endpunkte im eigenen Netz (localhost, private IPs, <code>.local</code>/<code>.lan</code>/<code>.internal</code>); Cloud-Anbieter werden übersprungen.</li>
+    <li><b>KI aus</b> – nichts geht hinaus.</li>
+  </ul>
+  <p>Pro Verbindung wirken die Tags <code>ki-lokal</code> und <code>ki-aus</code>, z. B. für Kundennetze; die strengere Einstellung gilt. „Letzte KI-Anfrage ansehen“ zeigt genau, was zuletzt an welchen Host und welches Modell ging.</p>
+</section>
+
+<section id="sync">
+  <h2>Sync und Team</h2>
+  <ul>
+    <li><b>Sync</b> (<kbd>y</kbd>): Verbindungen, Tunnel, Runbooks und Einstellungen Ende-zu-Ende verschlüsselt über einen Cloud-Ordner (OneDrive, Dropbox, iCloud, Syncthing) oder WebDAV (NAS, Nextcloud).</li>
+    <li><b>Team-Paket:</b> einen Ordner verschlüsselt als <code>.sshteam</code> weitergeben; Team-Ordner lassen sich abonnieren und bleiben aktuell.</li>
+    <li><b>Teilen:</b> einen Tab live zeigen; Zuschauer sehen mit, schreiben nur, wenn du es erlaubst.</li>
+    <li><b>Vermittler:</b> Server hinter NAT/Firewall über einen eigenen Vermittler erreichen.</li>
+  </ul>
+</section>
+
+<section id="umzug">
+  <h2>Sicherung und Umzug</h2>
+  <p>Einstellungen › Import / Export › „Gesamtsicherung speichern“ (oder <code>sshtermy backup</code>) packt den ganzen Datenordner in eine mit dem Master-Passwort verschlüsselte <code>.sshtbak</code>-Datei: Verbindungen, Schlüssel, Protokolle, Switch-Sicherungen, known_hosts und Einstellungen.</p>
+  <p>Auf dem neuen Rechner: sshTermy installieren, beim ersten Start ein beliebiges Passwort anlegen, dann „Gesamtsicherung einspielen“ (oder <code>sshtermy restore datei.sshtbak</code>). Nach Rückfrage startet sshTermy neu und arbeitet mit dem alten Master-Passwort. Der bisherige Stand bleibt als <code>….vorher-&lt;Datum&gt;</code> daneben.</p>
+</section>
+
+<section id="mcp">
+  <h2>MCP für KI-Clients</h2>
+  <p>Claude Desktop, Claude Code und andere MCP-Clients können sshTermy als Werkzeug nutzen. Einschalten unter Einstellungen › Sicherheit › „MCP-Zugriff für KI-Clients“:</p>
+  <ul>
+    <li><b>nur lesen</b>: Verbindungen und Tabs auflisten, einen Tab lesen, lesende Befehle (<code>df -h</code>, <code>show interfaces</code>) ausführen.</li>
+    <li><b>mit Rückfrage</b>: jeder andere Befehl läuft erst nach <kbd>j</kbd> in sshTermy.</li>
+  </ul>
+  <div class="cmd"><pre>claude mcp add sshtermy -- sshtermy mcp</pre></div>
+  <p>Claude Desktop: in <code>claude_desktop_config.json</code> den Server <code>{"command": "sshtermy", "args": ["mcp"]}</code> eintragen. sshTermy muss laufen und entsperrt sein. Der KI-Datenschutz gilt auch hier, und jeder Aufruf steht im Audit-Protokoll.</p>
+</section>
+
+<section id="hilfe">
+  <h2>Fehler melden</h2>
+  <ol>
+    <li>Einstellungen › „Debug-Protokoll für Fehlerberichte“ einschalten (oder <code>sshtermy --debug</code> starten).</li>
+    <li>Den Fehler nachstellen.</li>
+    <li>Hilfe › „Debug-Protokoll bereinigt speichern“: eine Kopie ohne Hosts, IPs, Benutzernamen und Passwörter landet in Downloads.</li>
+    <li>Ein <a href="https://github.com/db9979/sshtermy/issues/new">Issue auf GitHub</a> öffnen und die Datei anhängen.</li>
+  </ol>
+  <p>Stürzt sshTermy ab, bietet es beim nächsten Start einen bereinigten Absturzbericht an.</p>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <details><summary>Ich habe das Master-Passwort vergessen.</summary><p>Ohne Passwort lässt sich der Store nicht entschlüsseln, das ist Absicht. Unter Windows hilft die Windows-Anmeldung (DPAPI), falls eingeschaltet. Sonst den Datenordner umbenennen und neu anfangen; synchronisierte Verbindungen kommen mit dem Sync-Passwort zurück.</p></details>
+  <details><summary>Windows meldet „Der Computer wurde durch Windows geschützt“.</summary><p>Die <code>.exe</code> ist noch nicht codesigniert. „Weitere Informationen“ → „Trotzdem ausführen“. Mit winget erscheint die Warnung meist nicht.</p></details>
+  <details><summary>macOS sagt, die App „kann nicht geöffnet werden“.</summary><p>Über Homebrew oder den Einzeiler installieren, oder die Quarantäne entfernen: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
+  <details><summary>Wo liegen meine Daten?</summary><p>Windows <code>%APPDATA%\sshtermy</code>, macOS <code>~/Library/Application Support/sshtermy</code>, Linux <code>~/.config/sshtermy</code>. <code>SSHTERMY_HOME</code> verlegt den Ordner, z. B. auf einen USB-Stick.</p></details>
+  <details><summary>Die Verbindung zu einem Aruba-Switch bricht sofort ab.</summary><p>Manche Switches beenden die Sitzung bei einem zweiten Kanal. sshTermy erkennt Netzwerkgeräte und öffnet dort nur die Shell. Falls nicht: im Formular unter „Erweitert“ den Gerätetyp auf „Netzwerkgerät“ stellen.</p></details>
+  <details><summary>Die Funktionstasten tun nichts.</summary><p>Manche Terminals oder Laptops fangen F-Tasten ab (z. B. Helligkeit). Fn-Taste gedrückt halten oder Tasten unter <kbd>b</kbd> im Manager umbelegen. Auf dem uConsole entsprechen Fn+1…= den Tasten F1…F12.</p></details>
+  <details><summary>Die KI antwortet nicht.</summary><p>Der Punkt oben rechts zeigt den Zustand. <kbd>s</kbd> → <kbd>Strg</kbd>+<kbd>T</kbd> testet den Endpunkt. Ist der KI-Datenschutz auf „nur lokal“ oder „aus“, oder hat die Verbindung den Tag <code>ki-aus</code>, ist das gewollt.</p></details>
+  <details><summary>Werden meine Befehle irgendwohin geschickt?</summary><p>Nur an den KI-Anbieter, den du einrichtest, und nur bereinigt. sshTermy hat keine Telemetrie. Der Update-Check fragt nur GitHub nach der neuesten Version.</p></details>
+  <details><summary>Kann ich sshTermy ohne KI nutzen?</summary><p>Ja. Ohne eingerichteten Anbieter (oder mit „KI aus“) ist es ein vollwertiges SSH-Terminal mit Manager, SFTP, Tunneln, Broadcast und Sicherungen.</p></details>
+  <details><summary>Wie bekomme ich Updates?</summary><p>sshTermy prüft beim Start und zeigt neue Versionen an; <kbd>F12</kbd> → <kbd>u</kbd> installiert. Mit Homebrew, apt oder winget kommen Updates über den Paketmanager.</p></details>
+</section>
+</article>
+</main>
+
+<footer>
+  <div class="bar">
+    <span><b>sshTermy</b> · Idee: Dominik Bornhäußer</span>
+    <a href="https://github.com/db9979/sshtermy">GitHub</a>
+    <a href="../handout/sshtermy-kurzreferenz-de.pdf">Kurzreferenz (PDF)</a>
+    <a href="../manual.html">English</a>
+  </div>
+</footer>
+<script src="../site.js"></script>
+</body>
+</html>

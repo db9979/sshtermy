@@ -76,3 +76,14 @@ details p, details ul { color: var(--dim); }
 .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-top: 18px; }
 footer { border-top: 1px solid var(--line); color: var(--dim); font-size: 14px; }
 footer .bar { height: auto; padding: 22px 20px; flex-wrap: wrap; }
+
+/* Handbuch: Inhaltsverzeichnis links, Text rechts */
+.manual { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 36px; align-items: start; }
+.manual .toc { position: sticky; top: 72px; padding-top: 40px; font-size: 14.5px; }
+.manual .toc a { display: block; color: var(--dim); padding: 3px 0; }
+.manual .toc a:hover { color: var(--fg); text-decoration: none; }
+.manual article section { padding-top: 40px; }
+.manual article p, .manual article li { color: #b8c0cc; }
+.manual article h3 { color: var(--fg); }
+.tip { border-left: 3px solid var(--violet); background: var(--panel); padding: 8px 14px; border-radius: 0 8px 8px 0; color: var(--dim); }
+@media (max-width: 860px) { .manual { grid-template-columns: minmax(0, 1fr); } .manual .toc { position: static; padding-top: 20px; columns: 2; } }

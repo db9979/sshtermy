@@ -205,6 +205,8 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 
 ## Bedienung
 
+📖 **Handbuch & FAQ** (Einrichtung, KI-Datenschutz, Netzwerkgeräte, Umzug, MCP): [db9979.github.io/sshtermy/de/handbuch.html](https://db9979.github.io/sshtermy/de/handbuch.html) · Palette › Hilfe › „Handbuch & FAQ“
+
 🖨 **Kurzreferenz zum Ausdrucken** (A4, 2 Seiten): [Deutsch (PDF)](https://db9979.github.io/sshtermy/handout/sshtermy-kurzreferenz-de.pdf) · [English (PDF)](https://db9979.github.io/sshtermy/handout/sshtermy-quickref-en.pdf)
 
 | Wo | Taste | Wirkung |
@@ -544,6 +546,7 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
 ```
 make test         # go vet + Tests
 make bench        # Leistung: Terminal-Durchsatz, Speicher pro Tab, Manager mit 500 Verbindungen
+make loadtest     # Lasttest: 1000 Hosts (Store, Manager, Palette, Broadcast, Sync, MCP)
 make build        # bin/sshtermy
 make dist         # alle Plattformen nach dist/ + checksums.txt
 make fuzz         # Fuzz-Tests für Parser von Daten fremder Geräte (FUZZTIME=5m für länger)
