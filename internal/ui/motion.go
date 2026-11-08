@@ -98,6 +98,9 @@ func (a *App) animTick() tea.Cmd {
 	if d == 0 {
 		return nil
 	}
+	if a.perf.ema > 12*time.Millisecond {
+		d *= 2 // Bilder sind teuer: Bewegung halb so oft (perf.go)
+	}
 	a.animTicking = true
 	return tea.Tick(d, func(time.Time) tea.Msg { return animMsg{} })
 }

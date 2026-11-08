@@ -101,6 +101,7 @@ func TestDangerHoldRuns(t *testing.T) {
 	}
 	a.dangerKey(enter)
 	d.hold.start = time.Now().Add(-2 * time.Second) // 2 s gehalten
+	d.hold.last = time.Now()                        // Tastenwiederholung gerade eben (unter Last kann der Test sonst eine Pause sehen)
 	a.dangerKey(enter)
 	if a.modal != nil {
 		t.Fatal("Dialog nach dem Halten noch offen")

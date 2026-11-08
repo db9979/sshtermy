@@ -29,7 +29,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   (“Verification code”), sshTermy takes the TOTP code from the same source, also after a key login.
   Only the reference is stored, never the password
 - **Kerberos/GSSAPI login** (login `kerberos`): uses the company domain ticket from the Windows sign-in or `kinit`, no password needed; without a ticket it falls back to the password
-- **Images in the terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), the kitty graphics protocol (`kitty +kitten icat`, `viu`, `timg`) and iTerm2 inline images (`imgcat`) show up as colored half blocks right in the text, in every terminal with 24-bit color, in the scrollback and in split view. Two pixels per cell, so plots and photos are recognizable, not pixel-perfect
+- **Images in the terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), the kitty graphics protocol (`kitty +kitten icat`, `viu`, `timg`) and iTerm2 inline images (`imgcat`) show up as colored half blocks right in the text, in every terminal with 24-bit color, in the scrollback and in split view. Two pixels per cell, so plots and photos are recognizable, not pixel-perfect. In kitty and Ghostty the images show pixel-perfect instead (kitty graphics with Unicode placeholders, so they still scroll with the text; off with `SSHTERMY_NO_PIXELS=1`)
 - **Clipboard from the server (OSC 52)**: what you copy in tmux or vim on the server lands in your local clipboard. The server can never read it
 - **Split view** (Ctrl+T): up to six sessions at once in seven layouts, resize with the mouse or Alt+⇧+arrow, zoom one pane (Alt+Z), swap panes by dragging their title, optionally dim the other panes. The layout survives updates; **workspaces** (w in the manager) save layout and connections to reopen in one go, “Last used” is remembered on quit, `g` on a folder opens all its connections as a grid
 - **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
@@ -131,7 +131,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **English and German**: switch the language in the palette (“Language”/“Sprache”) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Window style** (palette “Window style”): dialogs, palette and pickers cast a shadow and the background dims a
-  little; optionally with round corners, or flat as before
+  little, and the header, logo and status bar carry a soft color gradient (the status bar in the connection's accent
+  color); optionally with round corners, or flat as before (no shadows, no gradients)
 - **Accessible mode** (Settings › Appearance): no animations, shapes instead of color only (× for “unreachable”);
   together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
 - **Lively interface** (palette “Motion”: full, subtle, off): a spinner in the tab while connecting, tabs flash green
@@ -152,7 +153,10 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   Commands with a leading space appear only as “(privat)”
 - **Debug log for bug reports** (Settings or `sshtermy --debug`): connection attempts, drops, updates, AI requests and
   sync as events, never passwords or screen content. Help › “Save cleaned debug log” writes a copy without hosts, IPs and
-  user names to Downloads, ready to attach to a GitHub issue
+  user names to Downloads, ready to attach to a GitHub issue. Very slow frames (over 50 ms) are logged there too
+- **Adaptive frame rate**: when a server floods output (`cat` on a big file), sshTermy draws only as often as a frame
+  allows instead of for every chunk; keys and mouse always draw at once. Palette “Performance display” shows frames per
+  second, draw time, output rate and a graph of the last frames
 - **Versioning and auto-update** from GitHub Releases (signed)
 
 The AI interaction concept (suggestions, goal mode, fixed danger rules) comes from the remote access assistant of

@@ -223,3 +223,106 @@ func TestGraphicsShots2(t *testing.T) {
 	a.activityBlock(&cal, logs, 70, dayStart(now.AddDate(0, 0, -4)), now)
 	write("kalender", cal.String())
 }
+
+func TestAdaptiveFrames(t *testing.T) {
+	a := dangerApp(t)
+	a.w, a.h, a.intro, a.scr = 100, 30, nil, scrManager
+	first := a.View()
+	if !a.perf.have || len(a.perf.durs) != 1 {
+		t.Fatal("Bild nicht gemessen")
+	}
+	// ruhige Ausgabe: jedes Bild wird gezeichnet
+	now := time.Now()
+	a.perf.noteOutput(now.Add(-time.Second))
+	outBytes.Add(100)
+	if cmd := a.onOutputFrame(now); cmd != nil || a.perf.skip {
+		t.Fatal("wenig Ausgabe darf nicht drosseln")
+	}
+	// Flut: 4 MB in 250 ms, letztes Bild gerade eben
+	a.perf.outAt = now.Add(-250 * time.Millisecond)
+	a.perf.outPrev = outBytes.Load()
+	outBytes.Add(4 << 20)
+	a.perf.last = now
+	cmd := a.onOutputFrame(now)
+	if cmd == nil || !a.perf.skip || !a.perf.heavy() {
+		t.Fatalf("Flut nicht gedrosselt: rate %.0f", a.perf.outRate)
+	}
+	a.flash("neu")
+	if v := a.View(); v.Content != first.Content || a.perf.skips != 1 {
+		t.Fatal("ausgelassenes Bild hätte das alte sein müssen")
+	}
+	// jede andere Nachricht zeichnet sofort
+	a.Update(perfRedrawMsg{})
+	if a.perf.redraw || a.perf.skip {
+		t.Fatal("Nachzeichnen nicht ausgeführt")
+	}
+	// Anzeige
+	a.togglePerf()
+	v := ansi.Strip(a.View().Content)
+	for _, want := range []string{"Leistung", "Bilder/s", "Zeichnen", "Ausgabe", "alle"} {
+		if !strings.Contains(v, want) {
+			t.Errorf("%q fehlt", want)
+		}
+	}
+}
+
+func TestHeaderGradient(t *testing.T) {
+	a := dangerApp(t)
+	a.w, a.h, a.intro = 120, 30, nil
+	on := a.header("")
+	if ansi.Strip(on) == "" || !strings.Contains(ansi.Strip(on), "sshTermy") || ansi.StringWidth(on) != 120 {
+		t.Fatalf("Kopfzeile: %q", ansi.Strip(on))
+	}
+	setFrames(framesFlach)
+	defer setFrames("")
+	off := a.header("")
+	if ansi.Strip(off) != ansi.Strip(on) {
+		t.Fatal("Text darf sich durch den Verlauf nicht ändern")
+	}
+	if strings.Count(on, "\x1b[") <= strings.Count(off, "\x1b[") {
+		t.Fatal("kein Verlauf zu sehen")
+	}
+}
+
+func TestPixelQueue(t *testing.T) {
+	a := dangerApp(t)
+	s := liveSession(a)
+	a.sessions = []*session{s}
+	if a.takePixels(s.id) != nil {
+		t.Fatal("leer")
+	}
+	s.pixQ = []byte("\x1b_Ga=T;AAAA\x1b\\")
+	if a.takePixels(s.id) == nil || s.pixQ != nil {
+		t.Fatal("Bild nicht weitergereicht")
+	}
+}
+
+// Bilder fürs Paket 3: SSHTERMY_MOTION_SHOTS=<dir> go test ./internal/ui -run TestGraphicsShots3
+func TestGraphicsShots3(t *testing.T) {
+	dir := os.Getenv("SSHTERMY_MOTION_SHOTS")
+	if dir == "" {
+		t.Skip()
+	}
+	strip := regexp.MustCompile(`\x1b\[\d+z`)
+	write := func(name, s string) {
+		_ = os.WriteFile(dir+"/"+name+".ansi", []byte(strip.ReplaceAllString(s, "")), 0o644)
+	}
+	a := dangerApp(t)
+	a.w, a.h, a.intro, a.scr = 130, 36, nil, scrManager
+	write("verlauf-manager", a.View().Content)
+	s := liveSession(a)
+	a.sessions = []*session{s}
+	a.scr = scrTerminal
+	a.resize(s)
+	// Leistungsanzeige mit erfundenen Messwerten
+	now := time.Now()
+	for i := 0; i < perfHistory; i++ {
+		d := time.Duration(1200+300*(i%7)) * time.Microsecond
+		if i > 70 && i < 78 {
+			d = 9 * time.Millisecond
+		}
+		a.perf.record(now.Add(time.Duration(i-perfHistory)*16*time.Millisecond), d)
+	}
+	a.perf.outRate, a.perf.skips, a.perf.on = 2.4*(1<<20), 312, true
+	write("verlauf-terminal-leistung", a.View().Content)
+}

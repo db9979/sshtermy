@@ -60,3 +60,18 @@ func init() {
 		en[k] = v
 	}
 }
+
+func init() {
+	for k, v := range map[string]string{
+		"sofort":                     "instant",
+		"alle %d ms":                 "every %d ms",
+		"Bilder/s":                   "frames/s",
+		"Zeichnen":                   "drawing",
+		"Ausgabe":                    "output",
+		"Spitze %s · %d ausgelassen": "peak %s · %d skipped",
+		"Leistung":                   "Performance",
+		"Leistungsanzeige (Bildrate, Zeichenzeit)": "Performance display (frame rate, draw time)",
+	} {
+		en[k] = v
+	}
+}
