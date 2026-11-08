@@ -9,6 +9,7 @@ package domain
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -81,6 +82,11 @@ type Connection struct {
 	// Eintrag; der Sync überträgt nur diesen Schalter. Fehlt der Eintrag,
 	// fragt sshTermy beim Verbinden und legt die Antwort dort ab.
 	Keychain bool `json:"keychain,omitempty"`
+	// PassSource / OTPSource: Passwort bzw. 2FA-Code aus einem
+	// Passwortmanager holen (pwsource-Schreibweise, z. B. "op://Tresor/web/password",
+	// "bw:web-01"). Gespeichert wird nur der Verweis, nie das Geheimnis.
+	PassSource string `json:"pass_source,omitempty"`
+	OTPSource  string `json:"otp_source,omitempty"`
 
 	JumpHostID string `json:"jump_host_id,omitempty"` // ProxyJump über eine andere Connection
 	// RelayID/RelaySystem: über einen Vermittler (eigener sshtermy
@@ -509,6 +515,9 @@ type Settings struct {
 	// Systems). Bleibt auf dem Rechner, nie im Sync.
 	Editor string `json:"editor,omitempty"`
 
+	// Schedules: Zeitpläne für Broadcast/Runbooks (nur dieser Rechner).
+	Schedules []Schedule `json:"schedules,omitempty"`
+
 	// Highlight: Farbregeln für die Ausgabe im Terminal (highlight-Paket).
 	Highlight HighlightConfig `json:"highlight,omitempty"`
 
@@ -762,4 +771,77 @@ func (r Runbook) Rev() time.Time {
 		return r.CreatedAt
 	}
 	return r.UpdatedAt
+}
+
+// Schedule: Zeitplan für einen Broadcast oder ein Runbook (schedule.go in
+// der Oberfläche). Läuft, solange sshTermy offen ist; wurde ein Termin
+// verpasst, holt sshTermy ihn innerhalb von ScheduleCatchUp nach. Bleibt auf
+// dem Rechner (nie im Sync), damit nicht zwei Rechner denselben Lauf starten.
+type Schedule struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	At        string    `json:"at"`             // "HH:MM" Ortszeit
+	Days      []int     `json:"days,omitempty"` // 0 = Sonntag … 6; leer = täglich
+	Folder    string    `json:"folder,omitempty"`
+	Conns     []string  `json:"conns,omitempty"`
+	RunbookID string    `json:"runbook_id,omitempty"`
+	Steps     []string  `json:"steps,omitempty"` // ohne Runbook
+	Off       bool      `json:"off,omitempty"`
+	LastRun   time.Time `json:"last_run,omitempty"`
+	LastOK    int       `json:"last_ok,omitempty"`
+	LastFail  int       `json:"last_fail,omitempty"`
+	LastText  string    `json:"last_text,omitempty"` // Ergebnis je Host, gekürzt
+}
+
+// ScheduleCatchUp: so lange nach dem Termin wird ein verpasster Lauf nachgeholt.
+const ScheduleCatchUp = 12 * time.Hour
+
+// DueAt: Termin des Tages von now (zero, wenn heute kein Lauftag ist oder
+// die Zeit unlesbar).
+func (s Schedule) DueAt(now time.Time) time.Time {
+	h, m, ok := ParseClock(s.At)
+	if !ok {
+		return time.Time{}
+	}
+	if len(s.Days) > 0 {
+		hit := false
+		for _, d := range s.Days {
+			if d == int(now.Weekday()) {
+				hit = true
+			}
+		}
+		if !hit {
+			return time.Time{}
+		}
+	}
+	y, mo, d := now.Date()
+	return time.Date(y, mo, d, h, m, 0, 0, now.Location())
+}
+
+// Due: jetzt laufen lassen?
+func (s Schedule) Due(now time.Time) bool {
+	if s.Off {
+		return false
+	}
+	t := s.DueAt(now)
+	return !t.IsZero() && !now.Before(t) && now.Sub(t) < ScheduleCatchUp && s.LastRun.Before(t)
+}
+
+// ParseClock liest "3:00", "03:00" oder "0300".
+func ParseClock(v string) (h, m int, ok bool) {
+	v = strings.TrimSpace(v)
+	if len(v) == 4 && !strings.Contains(v, ":") {
+		v = v[:2] + ":" + v[2:]
+	}
+	hs, ms, found := strings.Cut(v, ":")
+	if !found {
+		return 0, 0, false
+	}
+	var err1, err2 error
+	h, err1 = strconv.Atoi(hs)
+	m, err2 = strconv.Atoi(ms)
+	if err1 != nil || err2 != nil || h < 0 || h > 23 || m < 0 || m > 59 || len(ms) != 2 {
+		return 0, 0, false
+	}
+	return h, m, true
 }

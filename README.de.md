@@ -23,6 +23,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Agent-Weiterleitung** pro Verbindung (wie `ssh -A`): `git pull`, `ssh` und `scp` auf dem Server nutzen deine lokalen Keys aus ssh-agent, Pageant oder dem Windows-OpenSSH-Agent, die Keys verlassen deinen Rechner nie
 - **X11-Weiterleitung** pro Verbindung (wie `ssh -X`): Grafische Programme vom Server öffnen sich hier; braucht lokal einen X-Server (XQuartz, VcXsrv, WSLg), das X-Cookie verlässt deinen Rechner nie
 - **FIDO2-Sicherheitsschlüssel** (`id_ed25519_sk`, `id_ecdsa_sk`, z. B. YubiKey) werden direkt genutzt; sshTermy sagt dir, wann du den Schlüssel berühren musst (braucht OpenSSH ssh-agent/ssh-add)
+- **Passwortmanager statt gespeicherter Passwörter**: Im Verbindungsformular „Passwort aus“ und (unter Erweitert)
+  „2FA-Code aus“: `op://Tresor/Eintrag/password` (1Password CLI), `bw:Eintrag` (Bitwarden CLI), `keepassxc:Datei.kdbx:Eintrag`
+  (KeePassXC, fragt das Datenbank-Passwort), `pass:Name` oder `cmd:Befehl`. Fragt ein Server nach einem Einmalcode
+  („Verification code“), holt sshTermy den TOTP-Code aus derselben Quelle, auch nach einer Anmeldung mit Key.
+  Gespeichert wird nur der Verweis, nie das Passwort
 - **Kerberos/GSSAPI-Anmeldung** (Anmeldung `kerberos`): Nutzt das Ticket der Firmen-Domäne aus der Windows-Anmeldung oder `kinit`, ohne Passwort; ohne Ticket fragt sshTermy wie gewohnt nach dem Passwort
 - **Zwischenablage vom Server (OSC 52)**: Was du in tmux oder vim auf dem Server kopierst, landet in deiner lokalen Zwischenablage. Lesen kann der Server sie nie
 - **Geteilte Ansicht** (Strg+T): bis zu sechs Sitzungen gleichzeitig in sieben Aufteilungen, Größe per Maus oder Alt+⇧+Pfeil, Zoom auf einen Bereich (Alt+Z), Bereiche per Titel tauschen, andere Bereiche auf Wunsch abdunkeln. Die Aufteilung übersteht Updates; **Arbeitsplätze** (w im Manager) speichern Aufteilung und Verbindungen zum Wiederöffnen mit einem Klick, „Zuletzt“ merkt sich sshTermy beim Beenden selbst, `g` auf einem Ordner öffnet alle Verbindungen darin als Raster
@@ -39,6 +44,13 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
   die Ergebnisse stehen in Spalten nebeneinander. Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
   Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
+- **Zeitpläne** (z im Manager): Ein Broadcast oder Runbook läuft zu einer Uhrzeit auf einem Ordner oder einzelnen
+  Verbindungen, täglich, Mo–Fr, am Wochenende oder an einem Wochentag, z. B. „3:00 Mo–Fr `show running-config` auf
+  allen Switches“. Läuft, solange sshTermy offen ist (auch gesperrt), Verpasstes holt es innerhalb von 12 Stunden nach.
+  Ohne Aufsicht gibt es keine Rückfragen: unbekannte Host-Keys und fehlende Passwörter lassen den Host scheitern,
+  Gefährliches und Runbooks mit Variablen lassen sich gar nicht einplanen. Das Ergebnis je Host steht in der Liste
+  (⏎), dazu eine Einblendung bzw. Desktop-Meldung. Zeitpläne bleiben auf dem Rechner (kein Sync), damit nicht zwei
+  Rechner denselben Lauf starten
 - **Runbooks mit Variablen:** `{{vlan}}` oder `{{vlan=20}}` in einem Schritt wird vor dem Start abgefragt, `{{host}}`,
   `{{alias}}`, `{{user}}`, `{{port}}` setzt sshTermy pro Host ein. Im Broadcast lädt `e` ein Runbook zum Bearbeiten,
   `Strg+R` speichert, `Strg+D` löscht. Vor dem Start prüft die KI mit `k` gegen das Systemprofil jedes Hosts, ob die
@@ -167,7 +179,7 @@ sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimatio
 | Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
 | | i / a / b | Verbindungen importieren / Aussehen wechseln / Tastenkürzel anpassen |
 | | c / q | SSH-Schlüssel erzeugen oder übertragen / Schnellbefehle bearbeiten |
-| | m / f | Broadcast an mehrere Hosts / Netzwerk-Scan |
+| | m / f / z | Broadcast an mehrere Hosts / Netzwerk-Scan / Zeitpläne (Strg+N neu, Strg+E bearbeiten, Strg+R jetzt, Strg+O an/aus, ⏎ letztes Ergebnis) |
 | | w / g | Arbeitsplätze (gespeicherte Aufteilungen) / Ordner als Raster öffnen |
 | Ordner | o / r / v / d | Ordner anlegen („A / B“ verschachtelt) / umbenennen / verschieben / auflösen (Inhalt bleibt) |
 | | ← → Space / - + | Ordner zu-/aufklappen / alle zu bzw. auf |

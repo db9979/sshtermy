@@ -70,6 +70,7 @@ var helpSections = []helpSection{
 		{"q", "Schnellbefehle"},
 		{"m", "Broadcast an mehrere Hosts"},
 		{"f", "Netzwerk-Scan"},
+		{"z", "Zeitpläne"},
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
 		{"i", "Verbindungen importieren"},

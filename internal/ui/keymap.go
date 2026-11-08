@@ -68,6 +68,7 @@ const (
 	actGrowDown   action = "pane_down"
 	actWorkspace  action = "workspaces"
 	actFolderGrid action = "folder_grid"
+	actSchedule   action = "schedules"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -138,6 +139,7 @@ var actionDefs = []actionDef{
 	{actScan, "Netzwerk-Scan", "Manager", []string{"f"}},
 	{actWorkspace, "Arbeitsplätze", "Manager", []string{"w"}},
 	{actFolderGrid, "Ordner als Raster öffnen", "Manager", []string{"g"}},
+	{actSchedule, "Zeitpläne (Broadcast/Runbook nach Uhrzeit)", "Manager", []string{"z"}},
 }
 
 func defOf(id action) actionDef {

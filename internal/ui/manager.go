@@ -15,6 +15,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/pwsource"
 	"github.com/db9979/sshtermy/internal/keychain"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
@@ -139,7 +140,9 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		cur = rows[m.sel]
 	}
 	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
-		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll, actWorkspace, actFolderGrid) {
+		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll, actWorkspace, actFolderGrid, actSchedule) {
+	case actSchedule:
+		return a.openSchedules()
 	case actWorkspace:
 		return a.openWorkspaces()
 	case actFolderGrid:
@@ -694,6 +697,12 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		}
 	}
 
+	f.text("pwsrc", i18n.T("Passwort aus"), c.PassSource,
+		i18n.T("Passwortmanager statt gespeichertem Passwort: op://Tresor/Eintrag/password · bw:Eintrag · keepassxc:Datei.kdbx:Eintrag · pass:Name · cmd:Befehl")).hidden = func(f *form) bool {
+		return raw(f) || f.sel("auth") != "password"
+	}
+	f.get("pwsrc").in.Placeholder = i18n.T("leer = Passwort oben bzw. fragen")
+
 	f.section("s_org", i18n.T("Einordnung"), func(t Theme) color.Color { return t.OK })
 	f.pick("group", i18n.T("Ordner"), domain.NormPath(c.Group), func(v string) string {
 		if v == "" {
@@ -731,12 +740,15 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 
 	netDev := func(f *form) bool { return raw(f) || deviceFromLabel(f.sel("device")) == domain.DeviceNetwork }
 	f.folded("s_adv", i18n.T("Erweitert"), false, connAdvSummary,
-		i18n.T("Agent-/X11-Weiterleitung und feste tmux-/screen-Sitzung · ⏎ klappt auf"))
+		i18n.T("Agent-/X11-Weiterleitung, feste tmux-/screen-Sitzung und 2FA-Code · ⏎ klappt auf"))
 	f.toggle("fwdagent", i18n.T("Agent weiterreichen"), c.ForwardAgent,
 		i18n.T("wie ssh -A: git, ssh, scp auf dem Server mit deinen lokalen Keys · nur bei vertrauten Servern")).hidden = netDev
 	f.toggle("fwdx11", i18n.T("X11 weiterleiten"), c.ForwardX11,
 		i18n.T("wie ssh -X: grafische Programme vom Server hier zeigen · braucht lokal einen X-Server (XQuartz, VcXsrv, WSLg)")).hidden = netDev
 	addPersistFields(f, c, raw)
+	f.text("otpsrc", i18n.T("2FA-Code aus"), c.OTPSource,
+		i18n.T("für Server, die nach einem Einmalcode fragen · op://Tresor/Eintrag · bw:Eintrag · keepassxc:… · leer = nachfragen")).hidden = raw
+	f.get("otpsrc").in.Placeholder = i18n.T("leer = beim Verbinden fragen")
 	f.get("tags").in.Placeholder = i18n.T("keine")
 	f.get("p_os").in.Placeholder = i18n.T("noch nicht erkannt · wird beim Verbinden ermittelt")
 	f.get("p_notes").in.Placeholder = i18n.T("keine · z. B. „VLAN 99 = Management, nie reload“")
@@ -755,6 +767,9 @@ func connAdvSummary(f *form) string {
 	}
 	if fl := f.get("fwdx11"); fl.on && (fl.hidden == nil || !fl.hidden(f)) {
 		on = append(on, i18n.T("X11"))
+	}
+	if fl := f.get("otpsrc"); fl != nil && strings.TrimSpace(fl.in.Value()) != "" && (fl.hidden == nil || !fl.hidden(f)) {
+		on = append(on, i18n.T("2FA aus ")+orDefault(pwsource.Label(strings.TrimSpace(fl.in.Value())), "?"))
 	}
 	if fl := f.get("persist"); fl.options != nil && (fl.hidden == nil || !fl.hidden(f)) && persistFromLabel(f.sel("persist")) != "" {
 		on = append(on, i18n.T("Feste Sitzung: ")+i18n.T(f.sel("persist")))
@@ -868,6 +883,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveMonitor()
 	case scrHighlightForm:
 		err = a.saveHighlight()
+	case scrScheduleForm:
+		err = a.saveScheduleForm()
 	}
 	if err != nil {
 		a.form.err = err.Error()
@@ -929,6 +946,18 @@ func (a *App) saveConn() error {
 		c.KeyPath, c.KeyPassphrase = f.str("keypath"), domain.Secret(f.raw("keypass"))
 		c.CertPath = f.str("certpath")
 		c.KeyPEM = a.formBase.KeyPEM
+	}
+	c.PassSource, c.OTPSource = "", ""
+	if !c.Protocol.Raw() {
+		if c.Auth == domain.AuthPassword {
+			c.PassSource = f.str("pwsrc")
+		}
+		c.OTPSource = f.str("otpsrc")
+		for _, k := range []string{c.PassSource, c.OTPSource} {
+			if err := pwsource.Valid(k); err != nil {
+				return err
+			}
+		}
 	}
 	c.Group = f.val("group")
 	c.Tags = nil

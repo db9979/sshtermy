@@ -1,6 +1,6 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
  Verbindungen  6  / suchen       │ ▾ Netzwerk
-            ┌─ ◆ Befehlspalette  21 Einträge ────────────────────────────────────── × ─┐
+            ┌─ ◆ Befehlspalette  22 Einträge ────────────────────────────────────── × ─┐
  ▾ Netzwerk │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
    ○ # switc│ ──────────────────────────────────────────────────────────────────────── │
  ▾ Produktio│ // verbindungen                                                          │
@@ -17,12 +17,12 @@
             │ [k] SSH-Schlüssel erzeugen / auf den Server übertragen                 c │ oder
             │ [*] Broadcast: Befehl auf mehreren Hosts                               m │
             │ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
+            │ [>] Zeitpläne: Broadcast/Runbook nach Uhrzeit                          z │
             │ [&] Mit dem Team teilen (verschlüsselt, ohne Passwörter)            Team │
             │ [&] Team-Paket übernehmen                                           Team │
             │ [&] Team-Ordner (veröffentlicht / abonniert)                        Team │
             │ [#] Sitzungsprotokolle durchsuchen                                     l │
             │ [$] Lokale Shell öffnen                                            Alt+L │
-            │ [|] Arbeitsplätze …                                                    w │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘
