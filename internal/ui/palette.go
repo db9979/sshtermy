@@ -136,11 +136,11 @@ func (a *App) paletteItems() []palItem {
 	}
 	if q != "" && inTerm {
 		items = append(items,
-			palItem{group: pgAI, icon: ic("goal"), label: i18n.T("Als Ziel starten: „") + trunc(oneLine(q), 50) + "“", hint: "⏎",
+			palItem{group: pgAI, icon: ic("goal"), label: i18n.T("Als Ziel starten: „") + trunc(oneLine(q), 50) + i18n.T("“"), hint: "⏎",
 				run: func() tea.Cmd { return a.startGoal(s, q) }},
-			palItem{group: pgAI, icon: ic("ai"), label: i18n.T("KI fragen: „") + trunc(oneLine(q), 50) + "“", hint: "Tab",
+			palItem{group: pgAI, icon: ic("ai"), label: i18n.T("KI fragen: „") + trunc(oneLine(q), 50) + i18n.T("“"), hint: "Tab",
 				run: func() tea.Cmd { return a.startAsk(s, q) }},
-			palItem{group: pgAI, icon: ic("rewrite"), label: i18n.T("Für dieses System umschreiben: „") + trunc(oneLine(q), 40) + "“", hint: i18n.T("Befehl"),
+			palItem{group: pgAI, icon: ic("rewrite"), label: i18n.T("Für dieses System umschreiben: „") + trunc(oneLine(q), 40) + i18n.T("“"), hint: i18n.T("Befehl"),
 				run: func() tea.Cmd { return a.startAdapt(s, oneLine(q)) }})
 	}
 	if inTerm && s.fail != nil && match("fehler warum fix error why "+s.fail.Command) {
@@ -613,7 +613,7 @@ func (a *App) palMenuItems() []palItem {
 		a.palFolder("settings/io"),
 
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Einstellungen"), hint: "s", keys: "ai llm", run: func() tea.Cmd { return a.openSettings() }},
-		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), hint: "KI", keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
+		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), hint: "llm",
 			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
 		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), hint: i18n.T("Vermittler"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},

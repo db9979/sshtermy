@@ -274,7 +274,7 @@ export const en = {
       ['●', 'red: AI unreachable (click: details)', 'bad'],
       ['✓  ×  !', 'tab: long command done · ! = color rule'],
       ['PRODUCTION', 'red status line: careful, live system', 'warn'],
-      ['status nginx', 'grey ghost text: Tab accepts', 'ghost'],
+      ['status nginx', 'gray ghost text: Tab accepts', 'ghost'],
       ['rm -rf', 'red: dangerous, ⏎ twice', 'danger'],
     ]},
   ],

@@ -191,7 +191,9 @@ func (a *App) takeClipboard(s *session) tea.Cmd {
 		return nil
 	}
 	txt := s.term.TakeClipboard()
-	if txt == "" || !a.osc52On() {
+	// Zuschauer-Tab: ein fremder Gastgeber darf nichts in die eigene
+	// Zwischenablage legen (z. B. einen Befehl, den man dann einfügt).
+	if txt == "" || !a.osc52On() || s.conn.Protocol == domain.ProtoWatch {
 		return nil
 	}
 	go func() { _ = clipboard.WriteAll(txt) }()

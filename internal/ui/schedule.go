@@ -534,7 +534,7 @@ func (a *App) scheduleMsg(msg tea.Msg) (tea.Cmd, bool) {
 		a.updateSchedule(m.id, func(x *domain.Schedule) {
 			x.LastOK, x.LastFail, x.LastText = 0, 1, "× "+m.err.Error()
 		})
-		a.flashErr(i18n.T("Zeitplan „") + sc.Name + "“: " + m.err.Error())
+		a.flashErr(i18n.T("Zeitplan „") + sc.Name + i18n.T("“") + ": " + m.err.Error())
 		a.schedDesktop(sc.Name, m.err.Error())
 		return nil, true
 	}

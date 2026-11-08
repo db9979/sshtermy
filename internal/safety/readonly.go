@@ -49,8 +49,8 @@ var unixRead = set("ls", "ll", "cat", "head", "tail", "grep", "egrep", "fgrep", 
 	"echo", "printf", "printenv", "lsblk", "lsof", "ss", "netstat", "dig", "nslookup", "host", "sort",
 	"cut", "tr", "column", "getent", "lscpu", "lsmod", "lspci", "lsusb", "findmnt", "readlink", "realpath",
 	"basename", "dirname", "md5sum", "sha1sum", "sha256sum", "nproc", "last", "w", "who", "test", "[", "true", "pwd",
-	"diff", "cmp", "jq", "nl", "rev", "tac", "seq", "vmstat", "iostat", "mpstat", "dmesg", "journalctl", "nvidia-smi",
-	"sensors", "arch", "locale", "getconf", "apt-cache", "apt-config", "tty", "mount")
+	"diff", "cmp", "jq", "nl", "rev", "tac", "seq", "vmstat", "iostat", "mpstat", "dmesg", "journalctl",
+	"arch", "locale", "getconf", "apt-cache", "apt-config", "tty", "mount")
 
 // Befehle, die nur mit bestimmten Unterbefehlen lesen.
 var unixSub = map[string]map[string]bool{
@@ -76,6 +76,12 @@ var unixSub = map[string]map[string]bool{
 	"nft":         set("list"),
 }
 
+// nvidia-smi: Schalter, die nur lesen (alles andere fragt nach)
+var smiRead = set("-L", "--list-gpus", "-q", "--query", "-d", "--display", "-i", "--id", "-x", "--xml-format",
+	"--query-gpu", "--query-compute-apps", "--query-supported-clocks", "--query-retired-pages",
+	"--query-remapped-rows", "--query-accounted-apps", "--format", "-l", "--loop", "-lms", "--loop-ms",
+	"-m", "-s", "-u", "--unit", "-h", "--help")
+
 // ohne Argumente ebenfalls nur lesend
 var unixBare = set("timedatectl", "hostnamectl", "ip", "systemctl", "docker", "git")
 
@@ -95,7 +101,7 @@ func unixSegment(f []string) bool {
 	case "find":
 		for _, a := range args {
 			switch a {
-			case "-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprintf", "-fls":
+			case "-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprint0", "-fprintf", "-fls":
 				return false
 			}
 		}
@@ -130,11 +136,43 @@ func unixSegment(f []string) bool {
 			return len(args) == 0
 		}
 		for _, a := range args {
-			if a == "-c" || a == "-C" || a == "--clear" || a == "--read-clear" {
+			switch a {
+			case "-c", "-C", "--clear", "--read-clear", "-n", "-D", "-E", "--console-off", "--console-on":
+				return false
+			}
+			if strings.HasPrefix(a, "--console-level") || strings.HasPrefix(a, "-n") {
 				return false
 			}
 		}
 		return true
+	case "nvidia-smi":
+		// nur Abfragen; -r (GPU-Reset), -pl (Leistungsgrenze), -pm, -c … ändern etwas
+		for _, a := range args {
+			if strings.HasPrefix(a, "-") && !smiRead[strings.SplitN(a, "=", 2)[0]] {
+				return false
+			}
+		}
+		return true
+	case "sensors":
+		for _, a := range args {
+			if a == "-s" || a == "--set" {
+				return false
+			}
+		}
+		return true
+	case "ss":
+		for _, a := range args {
+			if a == "--kill" || (strings.HasPrefix(a, "-") && !strings.HasPrefix(a, "--") && strings.Contains(a, "K")) {
+				return false // ss -K beendet Verbindungen
+			}
+		}
+		return true
+	case "git":
+		for _, a := range args {
+			if strings.HasPrefix(a, "--output") || strings.HasPrefix(a, "--ext-diff") {
+				return false
+			}
+		}
 	case "ip":
 		for _, a := range args {
 			switch a {
@@ -172,7 +210,8 @@ func netReadOnly(cmd string) bool {
 	return netShow.MatchString(cmd) && !strings.Contains(strings.ToLower(cmd), " > ")
 }
 
-var winVerb = regexp.MustCompile(`(?i)^(get|test|select|format|where|sort|measure|resolve|out-string)(-|$)`)
+// Format-Table/List/Wide/Custom/Hex nur ausgeben; Format-Volume und „format C:“ formatieren!
+var winVerb = regexp.MustCompile(`(?i)^((get|test|select|where|sort|measure|resolve)(-|$)|out-string$|format-(table|list|wide|custom|hex)$)`)
 var winRead = set("dir", "ls", "type", "cat", "ipconfig", "systeminfo", "hostname", "whoami", "tasklist", "netstat",
 	"nslookup", "ver", "echo", "findstr", "where", "gci", "gc", "gps", "gsv", "select", "sort", "ft", "fl")
 

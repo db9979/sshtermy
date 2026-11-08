@@ -325,7 +325,7 @@ func (a *App) fixFocus() {
 // (gleich groß), Zoom endet.
 func (a *App) setSplit(m splitMode) {
 	if !a.fits(m) {
-		a.flash(i18n.T("Fenster zu klein für „") + m.label() + "“")
+		a.flash(i18n.T("Fenster zu klein für „") + m.label() + i18n.T("“"))
 		return
 	}
 	old := a.panes

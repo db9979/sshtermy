@@ -241,7 +241,7 @@ func (a *App) renameFolderDialog(path string) tea.Cmd {
 			return nil
 		}
 		a.mgr.want = "f:" + neu
-		a.flash(i18n.T("Ordner heißt jetzt „") + neu + "“")
+		a.flash(i18n.T("Ordner heißt jetzt „") + neu + i18n.T("“"))
 		return nil
 	})
 	return a.modal.in.Focus()
@@ -252,7 +252,7 @@ func (a *App) deleteFolderDialog(n *domain.TreeNode) {
 	parent := domain.PathParent(path)
 	where := i18n.T("die oberste Ebene")
 	if parent != "" {
-		where = "„" + parent + "“"
+		where = i18n.T("„") + parent + i18n.T("“")
 	}
 	body := i18n.T("Ordner „") + path + i18n.T("“ auflösen?")
 	if n.Total > 0 || len(n.Folders) > 0 {
@@ -294,7 +294,7 @@ func newFolderExtra(tree *domain.TreeNode) func(q string) *pickItem {
 		if p == "" || tree.Find(p) != nil {
 			return nil
 		}
-		return &pickItem{value: p, label: i18n.T("+ Neuer Ordner „") + p + "“", hint: i18n.T("⏎ anlegen")}
+		return &pickItem{value: p, label: i18n.T("+ Neuer Ordner „") + p + i18n.T("“"), hint: i18n.T("⏎ anlegen")}
 	}
 }
 
@@ -333,7 +333,7 @@ func (a *App) moveRowTo(r mgrRow, target string) {
 	a.expandTo(target) // Ziel aufklappen, damit man es sieht
 	where := i18n.T("oberste Ebene")
 	if target != "" {
-		where = "„" + target + "“"
+		where = i18n.T("„") + target + i18n.T("“")
 	}
 	a.flash("„" + r.name() + i18n.T("“ liegt jetzt in ") + where)
 }
@@ -449,7 +449,7 @@ func (a *App) dropPlan(rows []mgrRow, from, to int) (desc string, do func()) {
 			if after {
 				rel = i18n.T("nach")
 			}
-			return rel + " „" + dst.node.Name + "“", func() {
+			return rel + " " + i18n.T("„") + dst.node.Name + i18n.T("“"), func() {
 				a.mgr.want = src.key()
 				if err := a.st.OrderFolders(paths); err != nil {
 					a.flashErr(err.Error())
@@ -465,13 +465,13 @@ func (a *App) dropPlan(rows []mgrRow, from, to int) (desc string, do func()) {
 		if target == domain.PathParent(src.node.Path) {
 			return "", nil
 		}
-		return i18n.T("in „") + orDefault(target, i18n.T("oberste Ebene")) + "“", func() { a.moveRowTo(src, target) }
+		return i18n.T("in „") + orDefault(target, i18n.T("oberste Ebene")) + i18n.T("“"), func() { a.moveRowTo(src, target) }
 	}
 	if dst.isFolder() {
 		if dst.node.Path == src.conn.Group {
 			return "", nil
 		}
-		return i18n.T("in „") + dst.node.Path + "“", func() { a.moveRowTo(src, dst.node.Path) }
+		return i18n.T("in „") + dst.node.Path + i18n.T("“"), func() { a.moveRowTo(src, dst.node.Path) }
 	}
 	// Verbindung auf Verbindung: davor bzw. danach einsortieren
 	group := dst.conn.Group
@@ -493,9 +493,9 @@ func (a *App) dropPlan(rows []mgrRow, from, to int) (desc string, do func()) {
 	}
 	where := ""
 	if group != src.conn.Group {
-		where = i18n.T(" in „") + orDefault(group, i18n.T("oberste Ebene")) + "“"
+		where = i18n.T(" in „") + orDefault(group, i18n.T("oberste Ebene")) + i18n.T("“")
 	}
-	return rel + " „" + dst.conn.Alias + "“" + where, func() {
+	return rel + " " + i18n.T("„") + dst.conn.Alias + i18n.T("“") + where, func() {
 		a.mgr.want = src.key()
 		if err := a.st.PlaceConns(group, ids); err != nil {
 			a.flashErr(err.Error())

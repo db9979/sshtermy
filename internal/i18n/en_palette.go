@@ -21,7 +21,7 @@ var enPalette = map[string]string{
 	"Hilfe & Info":                                         "Help & info",
 	"Maus, Aussehen, Sprache, KI …":                        "mouse, look, language, AI …",
 	"Tasten, Tour, Neues, Update":                          "keys, tour, news, update",
-	"VERHALTEN":                                            "BEHAVIOUR",
+	"VERHALTEN":                                            "BEHAVIOR",
 	"AUSSEHEN & SPRACHE":                                   "LOOK & LANGUAGE",
 	"EINRICHTEN":                                           "SET UP",
 	"HILFE & INFO":                                         "HELP & INFO",

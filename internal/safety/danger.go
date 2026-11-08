@@ -28,7 +28,9 @@ func r(p, reason string) rule { return rule{regexp.MustCompile(`(?i)` + p), reas
 // Die Gründe stehen deutsch in den Regeln und werden bei Check übersetzt.
 
 var unixRules = []rule{
-	r(`\brm\s+(-[A-Za-z-]+\s+)*-[A-Za-z]*[rRf]`, "löscht Dateien"),
+	r(`\brm\s+(-[A-Za-z-]+\s+)*-[A-Za-z]*[rRf]|\brm\s+(\S+\s+)*--(recursive|force)\b`, "löscht Dateien"),
+	r(`\bfind\b[^|;&]*\s(-delete\b|-exec(dir)?\s+(sudo\s+)?rm\b)`, "löscht Dateien"),
+	r(`\|\s*(sudo\s+)?(ba|z|da|k)?sh(\s+-s?)?\s*($|[;&|])|\bbase64\s+(-d|--decode)\b[^;&]*\|\s*(sudo\s+)?\S*sh\b`, "führt unbekannten Text als Skript aus"),
 	r(`\bdd\s`, "schreibt roh auf ein Gerät"),
 	r(`\b(mkfs|wipefs|fdisk|sfdisk|parted|shred)\b`, "Datenträger formatieren oder löschen"),
 	r(`\b(chmod|chown)\s+(\S+\s+)*-[A-Za-z]*R[A-Za-z]*\s+(\S+\s+)*/(\s|\*|$)`, "Rechte des ganzen Systems ändern"),
@@ -113,9 +115,10 @@ func KindFor(osText string, netDevice bool) string {
 // nicht feststeht, z. B. ein Runbook vor dem Verbinden).
 var Kinds = []string{"unix", "windows", Network}
 
-// Elevated: läuft der Befehl mit erhöhten Rechten?
+// Elevated: läuft der Befehl mit erhöhten Rechten? Auch hinter && ; | oder
+// in $( … ), sonst liefe „cd /etc && sudo …“ im Agent-Modus ohne Rückfrage.
 func Elevated(cmd string) bool {
-	c := strings.TrimSpace(cmd)
-	return strings.HasPrefix(c, "sudo ") || strings.Contains(c, "| sudo ") || strings.HasPrefix(c, "doas ") ||
-		strings.Contains(strings.ToLower(c), "-verb runas")
+	return elevatedRE.MatchString(cmd) || strings.Contains(strings.ToLower(cmd), "-verb runas")
 }
+
+var elevatedRE = regexp.MustCompile(`(^|[;&|({` + "`" + `]|\$\(|\b(then|do|else|exec|xargs|nohup|env|time)\s)\s*(sudo|doas|pkexec|run0|su)(\s|$)`)

@@ -106,10 +106,7 @@ func (t *Term) cellAt(sb int, p Pos) (uv.Cell, bool) {
 	if p.Line < sb {
 		return t.sb.cell(p.Col, p.Line)
 	}
-	if c := t.emu.CellAt(p.Col, p.Line-sb); c != nil {
-		return *c, true
-	}
-	return uv.Cell{}, false
+	return t.emu.CellCopy(p.Col, p.Line-sb)
 }
 
 // Render zeichnet den Bildschirm, um offset Zeilen in den Scrollback

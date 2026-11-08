@@ -62,6 +62,24 @@ func (se *SafeEmulator) CellAt(x, y int) *uv.Cell {
 	return se.Emulator.CellAt(x, y)
 }
 
+// CellCopy liefert eine Kopie der Zelle (sshTermy). CellAt gibt einen Zeiger
+// in den Puffer zurück, den ein gleichzeitiges Write verändern kann.
+func (se *SafeEmulator) CellCopy(x, y int) (uv.Cell, bool) {
+	se.mu.RLock()
+	defer se.mu.RUnlock()
+	if c := se.Emulator.CellAt(x, y); c != nil {
+		return *c, true
+	}
+	return uv.Cell{}, false
+}
+
+// String liefert den Bildschirminhalt als Klartext (gesperrt, sshTermy).
+func (se *SafeEmulator) String() string {
+	se.mu.RLock()
+	defer se.mu.RUnlock()
+	return se.Emulator.String()
+}
+
 // SendKey sends a key event to the emulator in a concurrency-safe manner.
 func (se *SafeEmulator) SendKey(key uv.KeyEvent) {
 	se.mu.Lock()

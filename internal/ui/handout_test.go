@@ -13,8 +13,8 @@ import (
 // Tastenbelegung (actionDefs) und der Hilfe (helpSections). Ändert sich eins
 // davon, schlägt er fehl, bis die Kurzreferenz nachgezogen ist:
 //
-//	1. tools/handout/content.mjs anpassen (README-Tabellen und site/ Tasten auch)
-//	2. make handout   (schreibt die PDFs und den neuen Fingerabdruck)
+//  1. tools/handout/content.mjs anpassen (README-Tabellen und site/ Tasten auch)
+//  2. make handout   (schreibt die PDFs und den neuen Fingerabdruck)
 const handoutStamp = "../../tools/handout/keys.sha256"
 
 func handoutFingerprint() string {

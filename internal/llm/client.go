@@ -164,7 +164,18 @@ func httpClient(cfg domain.LLMConfig) *http.Client {
 	if t <= 0 {
 		t = 60
 	}
-	return &http.Client{Timeout: time.Duration(t) * time.Second, Transport: transport}
+	return &http.Client{Timeout: time.Duration(t) * time.Second, Transport: transport, CheckRedirect: sameHostRedirect}
+}
+
+// sameHostRedirect: Weiterleitungen nur zum selben Host und nie von https
+// auf http. Go entfernt beim Hostwechsel nur „Authorization“, nicht den
+// API-Schlüssel im Kopf „x-api-key“ (Anthropic).
+func sameHostRedirect(req *http.Request, via []*http.Request) error {
+	first := via[0].URL
+	if len(via) >= 5 || req.URL.Host != first.Host || (first.Scheme == "https" && req.URL.Scheme != "https") {
+		return fmt.Errorf(i18n.T("KI-Endpunkt leitet nach %s weiter, abgelehnt"), req.URL.Host)
+	}
+	return nil
 }
 
 func setAuth(req *http.Request, cfg domain.LLMConfig) {

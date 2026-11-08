@@ -43,7 +43,7 @@ var enFilesImport = map[string]string{
 	"als CSV exportieren":                                                                      "export as CSV",
 	"erst gültig ab %s":                                                                        "not valid before %s",
 	"optional, von einer CA signiert · leer = <Keyfile>-cert.pub, falls vorhanden":             "optional, signed by a CA · empty = <keyfile>-cert.pub if present",
-	"Übertragung abgebrochen":      "Transfer cancelled",
-	"Übertragung fehlgeschlagen: ": "Transfer failed: ",
-	"◈ alle":                       "◈ all",
+	"Übertragung abgebrochen":                                                                  "Transfer cancelled",
+	"Übertragung fehlgeschlagen: ":                                                             "Transfer failed: ",
+	"◈ alle":                                                                                   "◈ all",
 }

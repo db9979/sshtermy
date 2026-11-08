@@ -38,7 +38,7 @@ var enFeatures12 = map[string]string{
 	"Pfad auf dem Server, z. B. /etc/nginx/nginx.conf oder ~/.bashrc. Speichern im Editor lädt die Datei zurück.": "Path on the server, e.g. /etc/nginx/nginx.conf or ~/.bashrc. Saving in the editor uploads the file again.",
 	"Regel %d":     "Rule %d",
 	"Regel %d: %v": "Rule %d: %v",
-	"Regel: „farbe muster“, Farben: rot, gelb, grün, blau, lila, grau":    "Rule: “color pattern”, colors: red, yellow, green, blue, purple, grey",
+	"Regel: „farbe muster“, Farben: rot, gelb, grün, blau, lila, grau":    "Rule: “color pattern”, colors: red, yellow, green, blue, purple, gray",
 	"Server-Datei im eigenen Editor öffnen":                               "Open server file in your own editor",
 	"Server-Datei im eigenen Editor öffnen …":                             "Open server file in your own editor …",
 	"Tab geschlossen: Änderungen an ":                                     "Tab closed: changes to ",
@@ -58,7 +58,7 @@ var enFeatures12 = map[string]string{
 	"Änderungsbericht kopiert": "Change report copied",
 	"Änderungsbericht: ":       "Change report: ",
 	"Öffnen im Editor: ":       "Open in editor: ",
-	"„farbe muster“ · Farben: rot gelb grün blau lila grau · ! davor = melden, wenn es in einem verdeckten Tab auftaucht": "“color pattern” · colors: red yellow green blue purple grey · ! in front = notify when it shows up in a hidden tab",
+	"„farbe muster“ · Farben: rot gelb grün blau lila grau · ! davor = melden, wenn es in einem verdeckten Tab auftaucht": "“color pattern” · colors: red yellow green blue purple gray · ! in front = notify when it shows up in a hidden tab",
 	"◆ Änderungsbericht": "◆ Change report",
 
 	// Hilfe
@@ -104,7 +104,7 @@ var enFeatures12 = map[string]string{
 	"Zeitplan gelöscht: ":                                  "Schedule deleted: ",
 	"Zeitplan ist gelaufen":                                "A schedule ran",
 	"Zeitplan startet: ":                                   "Schedule starting: ",
-	"Zeitplan „":                                           "Schedule “",
+	"Zeitplan „":                                           "Schedule ”",
 	"Zeitplan „%s“ fertig: %d ok, %d Fehler":               "Schedule “%s” done: %d ok, %d failed",
 	"Zeitplan: ":                                           "Schedule: ",
 	"Zeitpläne":                                            "Schedules",

@@ -114,7 +114,7 @@ func (a *App) pickJumpField(self domain.Connection) tea.Cmd {
 	}
 	title := i18n.T("Jump-Host wählen")
 	if self.Alias != "" {
-		title += i18n.T(" für „") + self.Alias + "“"
+		title += i18n.T(" für „") + self.Alias + i18n.T("“")
 	}
 	p := newPicker(title, i18n.T("Name, Host, Ordner oder Tag"), items, fl.value, func(it pickItem) tea.Cmd {
 		fl.value = it.value

@@ -422,10 +422,10 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 ### KI
 
 - Die KI **tippt nie selbst**. Jeder Befehl ist ein Vorschlag; erst deine Bestätigung sendet ihn ans PTY.
-- **Feste Gefahrenregeln** (`internal/safety`), nie das Modell, entscheiden über Rot: `rm -rf`, `dd`, `mkfs`,
-  `curl | sh`, Neustart, Firewall leeren, Benutzer ändern, `git reset --hard`, Pakete entfernen, Docker prune,
+- **Feste Gefahrenregeln** (`internal/safety`), nie das Modell, entscheiden über Rot: `rm -rf`, `find -delete`, `dd`, `mkfs`,
+  `curl | sh`, `… | base64 -d | sh`, Neustart, Firewall leeren, Benutzer ändern, `git reset --hard`, Pakete entfernen, Docker prune,
   SSH-Dienst stoppen; für Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)` u. a.
-  Rote Befehle brauchen zwei Bestätigungen; bearbeitete Befehle werden neu geprüft. `sudo` wird markiert.
+  Rote Befehle brauchen zwei Bestätigungen; bearbeitete Befehle werden neu geprüft. `sudo` wird markiert, auch hinter `&&`, `;` oder `|`.
 - **Einfügeschutz:** Dieselben Regeln prüfen jede eingefügte Zeile. Ein Treffer zeigt die Vorschau mit der
   roten Zeile und braucht zwei Bestätigungen, auch wenn die Mehrzeilen-Vorschau abgeschaltet ist.
 - **Prompt Injection:** alles aus dem Terminal steht als Material in einem Block `<<< … >>>`, dessen Marker im
@@ -614,7 +614,8 @@ Wahl), gelernte abgelehnte Vorschläge, KI- und Sync-Einstellungen. Bleibt das P
 
 Der Kollege nimmt Strg+Leertaste → „Team-Paket übernehmen“: Datei, Passwort, Zielordner (Standard „Team“). Eine
 Vorschau zeigt neue und aktualisierte Einträge. Wer dasselbe Paket später erneut übernimmt, bekommt die Änderungen;
-eigene Passwörter, Keys und Benutzernamen bleiben erhalten.
+eigene Passwörter, Keys und Benutzernamen bleiben erhalten. Zur Sicherheit kommen neue Einträge ohne Agent- und
+X11-Weiterleitung, ohne Befehl für die lokale Shell und ohne `cmd:`-Passwortquelle an; das schaltet man bei Bedarf selbst ein.
 
 ### Team-Ordner: automatisch aktuell
 

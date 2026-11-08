@@ -95,7 +95,7 @@ func keySlug(s string) string {
 }
 
 func (a *App) openSSHKeyForm(c domain.Connection) tea.Cmd {
-	f := &form{title: i18n.T("SSH-Schlüssel für „") + c.Alias + "“ (" + c.Username + "@" + c.Host + ")"}
+	f := &form{title: i18n.T("SSH-Schlüssel für „") + c.Alias + i18n.T("“") + " (" + c.Username + "@" + c.Host + ")"}
 	f.choice("mode", i18n.T("Schlüssel"), []string{keyModeNew, keyModeOld}, keyModeNew, i18n.T("neu wie ssh-keygen, oder einen vorhandenen Key nehmen"))
 	notNew := func(f *form) bool { return f.sel("mode") != keyModeNew }
 	notOld := func(f *form) bool { return f.sel("mode") != keyModeOld }
