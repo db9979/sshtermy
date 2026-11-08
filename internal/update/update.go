@@ -56,35 +56,63 @@ var allowedHosts = map[string]bool{
 	"objects.githubusercontent.com": true, "release-assets.githubusercontent.com": true,
 }
 
+var errRedirect = errors.New("redirect")
+
+// httpClient: Tests setzen einen eigenen ein.
+var httpClient = client
+
 func client() *http.Client {
 	return &http.Client{
 		Timeout: 2 * time.Minute,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if req.URL.Scheme != "https" || !allowedHosts[req.URL.Hostname()] || len(via) > 5 {
-				return fmt.Errorf(i18n.T("update: Weiterleitung nach %s abgelehnt"), req.URL.Host)
+				return fmt.Errorf("%w: "+i18n.T("update: Weiterleitung nach %s abgelehnt"), errRedirect, req.URL.Host)
 			}
 			return nil
 		},
 	}
 }
 
+// retryWait: Pausen zwischen den Versuchen (Tests verkürzen sie).
+var retryWait = []time.Duration{2 * time.Second, 5 * time.Second, 10 * time.Second}
+
+// get lädt u. Vorübergehende Fehler (Netz, HTTP 429/5xx wie 502/503/504 von
+// GitHubs Download-Servern) werden bis zu dreimal wiederholt.
 func get(ctx context.Context, u string, limit int64) ([]byte, error) {
 	pu, err := url.Parse(u)
 	if err != nil || pu.Scheme != "https" || !allowedHosts[pu.Hostname()] {
 		return nil, fmt.Errorf(i18n.T("update: URL nicht erlaubt: %s"), u)
 	}
+	for i := 0; ; i++ {
+		b, retry, err := getOnce(ctx, u, limit)
+		if err == nil || !retry || i >= len(retryWait) {
+			return b, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, err
+		case <-time.After(retryWait[i]):
+		}
+	}
+}
+
+func getOnce(ctx context.Context, u string, limit int64) ([]byte, bool, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	req.Header.Set("User-Agent", version.Short())
 	req.Header.Set("Accept", "application/vnd.github+json, application/octet-stream")
-	resp, err := client().Do(req)
+	resp, err := httpClient().Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ctx.Err() == nil && !errors.Is(err, errRedirect), err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf(i18n.T("update: HTTP %d"), resp.StatusCode)
+		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
+			return nil, true, fmt.Errorf(i18n.T("update: GitHub antwortet gerade nicht (HTTP %d), bitte später noch einmal versuchen"), resp.StatusCode)
+		}
+		return nil, false, fmt.Errorf(i18n.T("update: HTTP %d"), resp.StatusCode)
 	}
-	return io.ReadAll(io.LimitReader(resp.Body, limit))
+	b, err := io.ReadAll(io.LimitReader(resp.Body, limit))
+	return b, err != nil && ctx.Err() == nil, err
 }
 
 // AssetName: sshtermy_windows_arm64.exe, sshtermy_darwin_arm64, …
