@@ -29,7 +29,7 @@ func (a *App) reportLogs(list []*sessionlog.Log, title string) tea.Cmd {
 	if len(list) == 0 {
 		return nil
 	}
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(a.logConns(list)...)
 	if err != nil {
 		a.flashErr("KI: " + err.Error())
 		return nil

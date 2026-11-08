@@ -118,6 +118,10 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   (OneDrive, Dropbox, iCloud, Syncthing) oder direkt über dein NAS (Synology, QNAP, Nextcloud, jeder WebDAV-Server)
 - **Import** bestehender Verbindungen aus `~/.ssh/config`, PuTTY (Registry oder `.reg`-Export), MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), Ansible-Inventaren (INI oder YAML) und CSV (auch der Geräte-Export von NetBox), mit Jump-Hosts und Ordnern, ein Tastendruck (i im Manager). `e` dort exportiert alle Verbindungen als CSV (ohne Passwörter)
+- **Gesamtsicherung / Umzug auf einen neuen Rechner** (Einstellungen › Import / Export oder `sshtermy backup`): der
+  ganze Datenordner (Verbindungen, Schlüssel, Protokolle, Switch-Sicherungen, known_hosts, Einstellungen) als eine
+  mit dem Master-Passwort verschlüsselte Datei (Argon2id + AES-256-GCM). Einspielen ersetzt nach Rückfrage und
+  Neustart alles; der bisherige Stand bleibt daneben als `….vorher-<Datum>`
 - **Themes** Dunkel, Hell, Hochkontrast, Farbenblind (dunkel und hell), Matrix, Bernstein und Neon (a im Manager), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
 - **Deutsch und Englisch**: Sprache in der Palette („Sprache“/„Language“) oder im Über-Dialog (F12 → `l`) umschalten;
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
@@ -187,6 +191,8 @@ sshtermy --version    # Version, Commit, Build-Datum
 sshtermy --update     # auf die neueste Version aktualisieren
 sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimation aus“)
 sshtermy --debug      # Debug-Protokoll für diesen Start (debug.log im Konfigurationsordner)
+sshtermy backup [datei]   # Gesamtsicherung aller Daten (fragt das Master-Passwort)
+sshtermy restore <datei>  # Gesamtsicherung einspielen (ersetzt alles, alter Ordner bleibt)
 ```
 
 ## Bedienung
@@ -441,6 +447,11 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 - **Geheimnisse** (Private Keys, AWS/GitHub/OpenAI-Keys, Bearer-Token, `password=…`, `user:pass@`) werden vor dem
   Senden entfernt; an einer Passwortabfrage gibt es keinen Ghost-Text.
 - API-Key geht nie per `http://` an einen fremden Host (außer bewusst erlaubt).
+- **KI-Datenschutz** (Einstellungen › KI): „alle Anbieter“, „nur lokale KI“ (nur Endpunkte im eigenen Netz:
+  localhost, private IPs, Namen auf `.local`/`.lan`/`.internal`; Cloud-Ersatz wird übersprungen) oder „KI aus“.
+  Pro Verbindung wirken die Tags `ki-lokal` bzw. `ki-aus` (auch `ai-local`, `no-ai`) genauso; die strengere
+  Einstellung gilt. Im selben Ordner zeigt „Letzte KI-Anfrage ansehen“ genau, was zuletzt an welchen Host und
+  welches Modell ging.
 - Ratenlimit im Ziel-Modus (Standard 6 Schritte/min, max. 40 Schritte pro Ziel).
 
 ### KI-Anbieter und Ersatz

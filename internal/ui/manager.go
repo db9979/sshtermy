@@ -863,7 +863,7 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	}
 	var err error
 	var next tea.Cmd
-	wasKey := a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm
+	wasKey := a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrBackupForm
 	switch a.scr {
 	case scrKeyForm:
 		next, err = a.saveKeyFix()
@@ -873,6 +873,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		next, err = a.startRelayPair()
 	case scrMasterForm:
 		err = a.saveMasterForm()
+	case scrBackupForm:
+		next, err = a.saveBackupForm()
 	case scrConnForm:
 		err = a.saveConn()
 	case scrTunnelForm:

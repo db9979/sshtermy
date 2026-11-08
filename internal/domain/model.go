@@ -427,6 +427,11 @@ type LLMConfig struct {
 	GoalStepsMin   int  `json:"goal_steps_min"` // Ratenlimit Ziel-Modus pro Minute
 	AllowInsecure  bool `json:"allow_insecure"` // http:// zu Nicht-Localhost erlauben
 
+	// Privacy: "" alle Anbieter, "lokal" nur Endpunkte im eigenen Netz,
+	// "aus" keine KI. Verbindungen können per Tag strenger sein
+	// (ki-lokal / ki-aus), nie lockerer.
+	Privacy string `json:"privacy,omitempty"`
+
 	// Fallbacks: der Reihe nach, wenn der Endpunkt oben nicht antwortet.
 	Fallbacks []LLMBackup `json:"fallbacks,omitempty"`
 }

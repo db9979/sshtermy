@@ -117,6 +117,10 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   (OneDrive, Dropbox, iCloud, Syncthing) or directly via your NAS (Synology, QNAP, Nextcloud, any WebDAV server)
 - **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export), MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), Ansible inventories (INI or YAML) and CSV (also the NetBox device export), with jump hosts and folders, one key press (i in the manager). `e` there exports all connections as CSV (without passwords)
+- **Full backup / move to a new computer** (Settings › Import / Export or `sshtermy backup`): the whole data folder
+  (connections, keys, logs, switch backups, known_hosts, settings) as one file encrypted with the master password
+  (Argon2id + AES-256-GCM). Restoring replaces everything after a confirmation and a restart; the previous state stays
+  next to it as `….vorher-<date>`
 - **Themes** dark, light, high contrast, color-blind (dark and light), Matrix, Amber and Neon (a in the manager), **custom colors** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
 - **English and German**: switch the language in the palette (“Language”/“Sprache”) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
@@ -186,6 +190,8 @@ sshtermy --version    # version, commit, build date
 sshtermy --update     # update to the newest version
 sshtermy --no-intro   # without the start animation (permanently: palette “Start animation off”)
 sshtermy --debug      # write a debug log for this run (debug.log in the config folder)
+sshtermy backup [file]   # full backup of all data (asks for the master password)
+sshtermy restore <file>  # restore a full backup (replaces all data, keeps the old folder)
 ```
 
 ## Usage
@@ -442,6 +448,10 @@ Windows login ──DPAPI CryptProtectData────────────�
 - **Secrets** (private keys, AWS/GitHub/OpenAI keys, bearer tokens, `password=…`, `user:pass@`) are removed before
   sending; there is no ghost text at a password prompt.
 - The API key is never sent via `http://` to a foreign host (unless explicitly allowed).
+- **AI privacy** (Settings › AI): “all providers”, “local AI only” (only endpoints on your own network: localhost,
+  private IPs, `.local`/`.lan`/`.internal` names; cloud fallbacks are skipped) or “AI off”. Per connection the tags
+  `ai-local` or `no-ai` (also `ki-lokal`, `ki-aus`) do the same; the stricter setting wins. In the same folder
+  “Show last AI request” shows exactly what was last sent, to which host and model.
 - Rate limit in goal mode (default 6 steps/min, at most 40 steps per goal).
 
 ### AI providers and fallback

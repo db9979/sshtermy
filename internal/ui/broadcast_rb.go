@@ -304,7 +304,7 @@ func hasProfile(c domain.Connection) bool {
 // bcReview startet die KI-Prüfung für alle gewählten Hosts.
 func (a *App) bcReview() tea.Cmd {
 	b := a.bc
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(b.chosen()...)
 	if err != nil {
 		a.flashErr(i18n.T("KI-Prüfung: ") + err.Error())
 		return nil
