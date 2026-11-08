@@ -88,8 +88,9 @@ func (a *App) connectCard(s *session, w int) string {
 	// Titel in die obere Rahmenlinie setzen
 	bl := strings.SplitN(box, "\n", 2)
 	if len(bl) == 2 {
-		top := lipgloss.NewStyle().Foreground(st.T.Accent).Background(st.T.Bg).Render("┌─") + title
-		top += lipgloss.NewStyle().Foreground(st.T.Accent).Background(st.T.Bg).Render(strings.Repeat("─", max(0, w-2-lipgloss.Width(title)-2)) + "┐")
+		tc, _ := frameCorners()
+		top := lipgloss.NewStyle().Foreground(st.T.Accent).Background(st.T.Bg).Render(string(tc[0])+"─") + title
+		top += lipgloss.NewStyle().Foreground(st.T.Accent).Background(st.T.Bg).Render(strings.Repeat("─", max(0, w-2-lipgloss.Width(title)-2)) + string(tc[1]))
 		box = top + "\n" + bl[1]
 	}
 	sub := st.Muted.Render(s.conn.Target())

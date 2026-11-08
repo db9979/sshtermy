@@ -4,6 +4,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -587,6 +588,7 @@ func (a *App) toggleZoom() {
 		a.flash(i18n.T("Zoom gibt es nur in der geteilten Ansicht (Strg+T)"))
 		return
 	}
+	a.zoomGlide(!a.zoom)
 	a.zoom = !a.zoom
 	a.resizeAll()
 	if a.zoom {
@@ -735,9 +737,14 @@ func (a *App) splitMouse(msg tea.MouseMsg, clicks int) (tea.Cmd, bool) {
 func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 	st := a.s
 	ar := a.areaRect()
+	now := time.Now()
 	if a.zoom {
 		b, cc := a.paneBody(focus, true)
-		return a.paneTitle(focus, ar.w, true, false) + "\n" + fitBlock(b, ar.w, ar.h-1), cc
+		out := a.paneTitle(focus, ar.w, true, false) + "\n" + fitBlock(b, ar.w, ar.h-1)
+		if gl := a.glideLayers(ar, now); gl != nil {
+			out = lipgloss.NewCompositor(append([]*lipgloss.Layer{lipgloss.NewLayer(out)}, gl...)...).Render()
+		}
+		return out, cc
 	}
 	dim := a.st != nil && a.st.Settings().DimPanes
 	rects := a.paneRects()
@@ -780,6 +787,7 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 		layers = append(layers, lipgloss.NewLayer(title+"\n"+fitBlock(body, rc.w, rc.h-1)).X(rc.x-ar.x).Y(rc.y-ar.y))
 	}
 	// senkrechte Trennlinien (beim Ziehen farbig, mit Anteilen)
+	fj := a.slotOf(focus)
 	c, _ := a.split.grid()
 	ws, _ := a.lens()
 	for i := 0; i < c-1; i++ {
@@ -790,6 +798,13 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 			col, ch = st.T.Accent, "█"
 		}
 		line := lipgloss.NewStyle().Foreground(col).Render(strings.TrimSuffix(strings.Repeat(ch+"\n", ar.h), "\n"))
+		if !drag && fj >= 0 && fj < len(rects) {
+			// Linie direkt neben dem aktiven Bereich leuchtet
+			fr := rects[fj]
+			if bx := fr.x - ar.x; bx == x+1 || bx+fr.w == x {
+				line = a.sepLine(ar.h, fr.y-ar.y, fr.y-ar.y+fr.h)
+			}
+		}
 		layers = append(layers, lipgloss.NewLayer(line).X(x).Y(0).Z(1))
 		if drag {
 			p := ws[i] * 100 / max(1, ws[i]+ws[i+1])
@@ -799,6 +814,7 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 			layers = append(layers, lipgloss.NewLayer(lbl).X(lx).Y(ar.h/2).Z(2))
 		}
 	}
+	layers = append(layers, a.glideLayers(ar, now)...)
 	return lipgloss.NewCompositor(layers...).Render(), cur
 }
 

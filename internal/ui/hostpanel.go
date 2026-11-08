@@ -49,6 +49,7 @@ type hostState struct {
 	viol      string           // verletzte Config-Regeln der letzten Sicherung
 	alerts    []hostinfo.Alert // Kennzahlen über der Warnschwelle
 	lastTry   time.Time        // letzte Server-Abfrage (auch fehlgeschlagene)
+	live      liveState        // Live-Graphen (hostlive.go)
 }
 
 func (h *hostState) cancel() {
@@ -357,6 +358,8 @@ func shellRun(ctx context.Context, s *session, prompt, cmd string, limit time.Du
 // hostMsg verarbeitet die Ergebnisse.
 func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 	switch m := msg.(type) {
+	case liveEventMsg:
+		return a.liveMsg(m), true
 	case hostSrvMsg:
 		s := a.byID(m.sid)
 		if s == nil || m.seq != s.host.seq {
@@ -461,10 +464,14 @@ func (a *App) hostOpened(s *session) tea.Cmd {
 	if !a.hostServerOK(s) {
 		return nil
 	}
-	if s.host.srv == nil && !s.host.busy {
-		return a.hostServerCmd(s, hostManual)
+	var live tea.Cmd
+	if a.liveWant(s) && s.host.live.cancel == nil {
+		live = a.liveStart(s)
 	}
-	return nil
+	if s.host.srv == nil && !s.host.busy {
+		return tea.Batch(a.hostServerCmd(s, hostManual), live)
+	}
+	return live
 }
 
 func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
@@ -491,6 +498,14 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	case "g":
 		if !h.busy {
 			return a.openMonitorForm()
+		}
+	case "z":
+		if !net && h.live.hasLive() {
+			h.live.wide = !h.live.wide
+		}
+	case "t":
+		if !net && h.live.hasLive() {
+			h.live.hour = !h.live.hour
 		}
 	case "c":
 		if !net && a.containersOK(s) {
@@ -578,7 +593,18 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		}
 		return append(k, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 	}
-	return [][2]string{{"r", i18n.T("aktualisieren")}, {"c", i18n.T("Container")}, {"g", i18n.T("Grenzwerte")}, {"Esc", "Terminal"}, {a.keys.label(actHost), i18n.T("schließen")}}
+	k := [][2]string{{"r", i18n.T("aktualisieren")}}
+	if s.host.live.hasLive() {
+		span, size := i18n.T("1 h"), i18n.T("groß")
+		if s.host.live.hour {
+			span = i18n.T("5 min")
+		}
+		if s.host.live.wide {
+			size = i18n.T("schmal")
+		}
+		k = append(k, [2]string{"t", span}, [2]string{"z", size})
+	}
+	return append(k, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -645,12 +671,19 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			cpu += fmt.Sprintf(i18n.T(" · Last %.2f %.2f %.2f"), srv.Load[0], srv.Load[1], srv.Load[2])
 		}
 		row("CPU", cpu)
-		if srv.CPUPct >= 0 {
+		live := h.live.hasLive()
+		if live && h.live.wide {
+			b.WriteString("\n")
+			a.viewLive(b, s, w)
+		}
+		if srv.CPUPct >= 0 && !live {
 			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.CPUPct, w-10, lim.CPU) + "\n")
 		}
 		if srv.MemTotal > 0 {
 			row("RAM", fmt.Sprintf("%s / %s", hostinfo.Bytes(srv.MemTotal-min(srv.MemFree, srv.MemTotal)), hostinfo.Bytes(srv.MemTotal)))
-			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.MemPct(), w-10, lim.RAM) + "\n")
+			if !live {
+				b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.MemPct(), w-10, lim.RAM) + "\n")
+			}
 		}
 		if srv.DiskTotal > 0 {
 			row(i18n.T("Platte /"), fmt.Sprintf("%s / %s", hostinfo.Bytes(srv.DiskUsed), hostinfo.Bytes(srv.DiskTotal)))
@@ -658,6 +691,15 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		}
 		if srv.Uptime > 0 {
 			row(i18n.T("Laufzeit"), hostinfo.Duration(srv.Uptime))
+		}
+		if !(live && h.live.wide) {
+			if live {
+				b.WriteString("\n")
+			}
+			a.viewLive(b, s, w)
+			if live {
+				b.WriteString("\n")
+			}
 		}
 		switch {
 		case srv.UpdateTool == "":

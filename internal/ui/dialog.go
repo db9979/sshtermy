@@ -160,7 +160,8 @@ func (s Styles) dialog(d dialog, w int) string {
 		titleR = ansi.Truncate(titleR, max(1, room), "…")
 	}
 	fill := max(0, full-3-lipgloss.Width(titleR)-closeW)
-	out.WriteString(bc.Render("┌─ ") + titleR + bc.Render(" "+strings.Repeat("─", fill)))
+	tc, bcn := frameCorners()
+	out.WriteString(bc.Render(string(tc[0])+"─ ") + titleR + bc.Render(" "+strings.Repeat("─", fill)))
 	if !d.noClose {
 		x := s.Muted.Render("×")
 		if s.zoneKey != nil {
@@ -168,7 +169,7 @@ func (s Styles) dialog(d dialog, w int) string {
 		}
 		out.WriteString(" " + x + bc.Render(" ─"))
 	}
-	out.WriteString(bc.Render("┐") + "\n")
+	out.WriteString(bc.Render(string(tc[1])) + "\n")
 
 	side := bc.Render("│")
 	padL, padR := strings.Repeat(" ", px), strings.Repeat(" ", px)
@@ -197,7 +198,7 @@ func (s Styles) dialog(d dialog, w int) string {
 	for i := 0; i < py; i++ {
 		row("")
 	}
-	out.WriteString(bc.Render("└" + strings.Repeat("─", full) + "┘"))
+	out.WriteString(bc.Render(string(bcn[0]) + strings.Repeat("─", full) + string(bcn[1])))
 	return out.String()
 }
 

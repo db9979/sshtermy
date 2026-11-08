@@ -110,6 +110,7 @@ type App struct {
 	fracX    []float64 // Spaltenanteile der geteilten Ansicht (nil = gleich)
 	fracY    []float64 // Zeilenanteile (nil = gleich)
 	zoom     bool      // aktiver Bereich aufs ganze Fenster (Alt+Z)
+	sfx      splitFx   // gleitender Rahmen (splitfx.go)
 	sdrag    *splitDrag
 	dropOn   int // Titel wird gezogen: Zielbereich+1
 
@@ -268,6 +269,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if t := a.toastTick(); t != nil {
 		cmd = tea.Batch(cmd, t)
+	}
+	if a.scr == scrTerminal && a.split != splitOff {
+		a.trackFocusGlide(a.current()) // Rahmen gleitet zum neuen Bereich (splitfx.go)
 	}
 	if t := a.animTick(); t != nil {
 		cmd = tea.Batch(cmd, t)
@@ -658,6 +662,9 @@ func (a *App) onTick() tea.Cmd {
 			cmds = append(cmds, c)
 		}
 		a.profileTick(s)
+		if c := a.liveTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
 		if c := a.monitorTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
@@ -903,7 +910,11 @@ func (a *App) overlay(base, box string) string {
 	}
 	a.z.rects = a.z.rects[:0]
 	box = a.z.scan(box, x, y)
-	c := lipgloss.NewCompositor(lipgloss.NewLayer(base), lipgloss.NewLayer(box).X(x).Y(y).Z(1))
+	layers := []*lipgloss.Layer{lipgloss.NewLayer(base)}
+	if shadowsOn() {
+		layers = a.shadowLayers(base, x, y, bw, bh) // frames.go
+	}
+	c := lipgloss.NewCompositor(append(layers, lipgloss.NewLayer(box).X(x).Y(y).Z(2))...)
 	return c.Render()
 }
 

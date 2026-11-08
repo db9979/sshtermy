@@ -158,6 +158,8 @@ var helpSections = []helpSection{
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},
 		{"g", "Grenzwerte für Warnungen"},
+		{"t", "Graphen: 5 min / 1 h"},
+		{"z", "Graphen groß"},
 		{"x", "Abfrage abbrechen"},
 	}},
 	{hcFiles, "▤", "Dateien", "F5", false, [][2]string{

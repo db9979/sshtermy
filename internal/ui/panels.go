@@ -769,7 +769,7 @@ func (a *App) viewPanel(s *session, w, h int) string {
 	}
 	content := lipgloss.NewStyle().Width(inner).Render(b.String())
 	lines := strings.Split(content, "\n")
-	if len(lines) > h-2 && s.panel == panelGoal && s.goal.planReview() {
+	if len(lines) > h-2 && ((s.panel == panelGoal && s.goal.planReview()) || (s.panel == panelHost && s.host.live.wide)) {
 		lines = lines[:h-2] // Plan: Anfang mit den Schritten sichtbar halten
 	} else if len(lines) > h-2 {
 		lines = lines[len(lines)-(h-2):] // Ende sichtbar halten

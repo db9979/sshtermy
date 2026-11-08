@@ -581,6 +581,8 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	}
 	if s.files.open {
 		body, cur = a.viewFiles(s, tr.w, rows), nil
+	} else if s.panel == panelHost && s.host.live.wide && s.host.live.hasLive() {
+		body, cur = a.viewPanel(s, tr.w, rows), nil // F6 groß: über dem Terminal, ohne dessen Größe zu ändern
 	} else if a.panelCollapsed(s) {
 		if s.panelFocus {
 			pw := a.panelShown(s)

@@ -1,31 +1,31 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
  V┌─ ? Tastenkürzel  sshTermy vdev ───────────────────────────────────────────────────────────────────────────── × ─┐
   │                                                                                                                 │
- ▾│  ◆ Überall                            ◎ Ziel-Modus F2                      » Broadcast m                        │
-  │   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   Space / g / a Host / Ordner / alle  │
- ▾│   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       Tab         Hosts · Quelle · Befe…  │
-  │   F12         Über & Update            i           nur einfügen (Dry-Run)   ⇧⏎          weiterer Schritt        │
-▌ │   F12 w       Was ist neu              e           bearbeiten               Strg+S      prüfen, dann ⏎          │
-▌ │   F12 l       Sprache: Deutsch/Engl…   s           überspringen             ← / →       Host-Spalte wählen      │
-▌ │   ⇧F9         Tastenzeile erklären     r           neu vorschlagen          ↑ ↓ Bild↑↓  Ausgabe blättern        │
- ○│   Strg+Q      beenden                  x           Ziel beenden             z / c       groß / kopieren         │
- ○│                                        ↑ ↓         Runbook wählen           r / e / x   nochmal / ändern / St…  │
-  │  ≡ Verbindungs-Manager F10  hier       Strg+S      als Runbook speichern    {{name}}    Variable, wird abgefr…  │
-  │   F10         zurück zum Terminal      Strg+D      Runbook löschen          {{host}}    je Host eingesetzt      │
-  │   ⏎           verbinden                Tab         Schritt für Schritt o…   Strg+R      als Runbook speichern   │
-  │   n           neue Verbindung          Esc         Agent anhalten           e / Strg+D  ändern / löschen        │
-  │   e           bearbeiten               ?           Agent anweisen           k / a       KI prüft / übernehmen   │
-  │   d           löschen                  v           Skript des Agenten an…                                       │
-  │   /           suchen (auch #tag)       r           Skripte des Agenten l…  / Netzwerk-Scan f                    │
-  │   o           neuer Ordner (A / B v…   Leertaste   Plan: Schritt streich…   Strg+S      Scan starten            │
-  │   r           Ordner umbenennen        ?           Plan: neu planen lass…   Space / a   Fund / alle wählen      │
-  │   v           in Ordner verschieben                                         ⏎           als Verbindungen anle…  │
-  │   Shift+↑     nach oben schieben (↓…  ◆ KI fragen F3                        x           Scan stoppen            │
-  │   ← / →       Ordner zu-/aufklappen    ⏎           Frage senden             r           neu scannen             │
-  │   - / +       alle Ordner zu/auf       ⇧⏎ / Strg+J neue Zeile                                                   │
-  │   #           nach Tag filtern         1…9         Befehl einfügen         ❯ Befehlspalette Strg+Space          │
-  │   t           Tunnel anlegen           ↑ ↓         Befehlskarte wählen      tippen      filtern / Ziel / Frage  │
-  │   c           SSH-Schlüssel erzeuge…   a           Befehl ausführen (rot…   user@host   schnell verbinden       │
+ ▾│  ◆ Überall                            ◎ Ziel-Modus F2                      ≡ Sitzungsprotokolle l               │
+  │   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   /           suchen (auch Ausgabe)   │
+ ▾│   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       ⏎ / → ←     auf-/zuklappen          │
+  │   F12         Über & Update            i           nur einfügen (Dry-Run)   Tab         nach Zeit / nach Host   │
+▌ │   F12 w       Was ist neu              e           bearbeiten               f           Filter: heute · 7 Tag…  │
+▌ │   F12 l       Sprache: Deutsch/Engl…   s           überspringen             s           Hosts sortieren         │
+▌ │   ⇧F9         Tastenzeile erklären     r           neu vorschlagen          z           KI-Zusammenfassung      │
+ ○│   Strg+Q      beenden                  x           Ziel beenden             Z           alle Treffer zusammen…  │
+ ○│                                        ↑ ↓         Runbook wählen           b           Änderungsbericht        │
+  │  ≡ Verbindungs-Manager F10  hier       Strg+S      als Runbook speichern    x           Export: md · txt · ca…  │
+  │   F10         zurück zum Terminal      Strg+D      Runbook löschen          d           löschen                 │
+  │   ⏎           verbinden                Tab         Schritt für Schritt o…   a           Mitschreiben an/aus     │
+  │   n           neue Verbindung          Esc         Agent anhalten           ␣ Befehl    nicht protokollieren    │
+  │   e           bearbeiten               ?           Agent anweisen                                               │
+  │   d           löschen                  v           Skript des Agenten an…  » Broadcast m                        │
+  │   /           suchen (auch #tag)       r           Skripte des Agenten l…   Space / g / a Host / Ordner / alle  │
+  │   o           neuer Ordner (A / B v…   Leertaste   Plan: Schritt streich…   Tab         Hosts · Quelle · Befe…  │
+  │   r           Ordner umbenennen        ?           Plan: neu planen lass…   ⇧⏎          weiterer Schritt        │
+  │   v           in Ordner verschieben                                         Strg+S      prüfen, dann ⏎          │
+  │   Shift+↑     nach oben schieben (↓…  ◆ KI fragen F3                        ← / →       Host-Spalte wählen      │
+  │   ← / →       Ordner zu-/aufklappen    ⏎           Frage senden             ↑ ↓ Bild↑↓  Ausgabe blättern        │
+  │   - / +       alle Ordner zu/auf       ⇧⏎ / Strg+J neue Zeile               z / c       groß / kopieren         │
+  │   #           nach Tag filtern         1…9         Befehl einfügen          r / e / x   nochmal / ändern / St…  │
+  │   t           Tunnel anlegen           ↑ ↓         Befehlskarte wählen      {{name}}    Variable, wird abgefr…  │
+  │   c           SSH-Schlüssel erzeuge…   a           Befehl ausführen (rot…   {{host}}    je Host eingesetzt      │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

@@ -106,11 +106,19 @@ func (a *App) sessionBar(s *session) string {
 				c = st.T.Warn
 			}
 			ms := l.Milliseconds()
-			txt := fmt.Sprintf("∆ %d ms", ms)
+			txt := fmt.Sprintf("%d ms", ms)
 			if ms == 0 {
-				txt = "∆ <1 ms"
+				txt = "<1 ms"
 			}
-			line = append(line, st.Badge.Foreground(c).Render(txt))
+			if l >= 250*time.Millisecond {
+				txt = i18n.T("▲ zäh · ") + txt
+			}
+			// Verlauf der letzten Messungen als Mini-Kurve (motion.go)
+			sp := ""
+			if motionLevel() > 0 && len(s.latHist) >= 3 {
+				sp = a.latSpark(s.latHist) + lipgloss.NewStyle().Background(st.T.Surface2).Render(" ")
+			}
+			line = append(line, st.Badge.Foreground(c).PaddingRight(0).Render("∆ ")+sp+st.Badge.Foreground(c).PaddingLeft(0).Render(txt))
 		}
 		if enc := s.client.Remote.Encoding(); enc != "" {
 			c := st.T.Muted

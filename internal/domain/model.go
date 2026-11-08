@@ -542,6 +542,10 @@ type Settings struct {
 	// Pulsieren, Atmen, Hover-Karten), "dezent" = nur kurze Übergänge,
 	// "aus" = keine. Barrierearm schaltet sie immer ab. Geht mit dem Sync.
 	Motion string `json:"motion,omitempty"`
+	// Frames: Fensterstil der Dialoge (ui/frames.go). "" = eckig mit
+	// Schatten, "rund" = runde Ecken mit Schatten, "flach" = eckig ohne
+	// Schatten (Stand bis v1.0.265). Geht mit dem Sync.
+	Frames string `json:"frames,omitempty"`
 
 	// Debug: Debug-Protokoll (internal/debuglog) schreiben. Nur dieser
 	// Rechner, nie im Sync.
