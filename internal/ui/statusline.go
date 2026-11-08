@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"strings"
 	"time"
 
@@ -204,6 +205,14 @@ func (a *App) sessionBar(s *session) string {
 	room := a.w - lipgloss.Width(l) - lipgloss.Width(right) - 3
 	text := " " + trunc(info, max(0, room))
 	gap := max(1, a.w-lipgloss.Width(l)-lipgloss.Width(text)-lipgloss.Width(right))
-	bar := l + bg.Render(text+strings.Repeat(" ", gap)) + right
+	fill := bg.Render(text + strings.Repeat(" ", gap))
+	if !prod { // Hauch der Umgebungsfarbe, läuft nach rechts aus (gradient.go)
+		var tint color.Color = st.T.Accent
+		if col := a.accentOf(s.conn); col != nil {
+			tint = col
+		}
+		fill = tintRun(text+strings.Repeat(" ", gap), lipgloss.Width(l), bg, barTint(tint, st.T.Surface, 0.38, max(24, a.w/3)))
+	}
+	bar := l + fill + right
 	return ansi.Truncate(bar, a.w, "")
 }

@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"image/color"
 	"os"
 	"strings"
 	"time"
@@ -120,6 +121,7 @@ type App struct {
 	lh           llmHealthState // KI-Status (llmhealth.go)
 	reach        reachState     // Online-Punkt im Manager (reach.go)
 	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
+	perf         perfState      // Bildrate und Leistungsanzeige (perf.go)
 	toastTicking bool
 	animTicking  bool       // Takt für Bewegung (motion.go)
 	hov          hoverState // Karte unter der Maus (motion.go)
@@ -236,7 +238,16 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	a.perf.skip = false // jede Nachricht außer Ausgabeflut zeichnet sofort (perf.go)
 	switch msg.(type) {
+	case perfRedrawMsg:
+		a.perf.redraw = false
+		return a, nil
+	case perfTickMsg:
+		if a.perf.on {
+			return a, a.perfTick()
+		}
+		return a, nil
 	case fadeMsg:
 		if a.fadeRunning() {
 			return a, fadeTick()
@@ -313,7 +324,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			clip = a.takeClipboard(s)
 		}
-		return a, tea.Batch(a.listen(), clip)
+		return a, tea.Batch(a.listen(), clip, a.onOutputFrame(time.Now()), a.takePixels(m.sid))
 	case tea.FocusMsg:
 		a.blurred = false
 		a.clearNotices()
@@ -677,7 +688,10 @@ func (a *App) onTick() tea.Cmd {
 
 // ---------------------------------------------------------------- Layout
 
-func (a *App) View() tea.View {
+// View: gemessen, bei Ausgabeflut gedrosselt (perf.go).
+func (a *App) View() tea.View { return a.view() }
+
+func (a *App) viewFrame() tea.View {
 	a.z.reset()
 	var body string
 	var cur *tea.Cursor
@@ -742,6 +756,7 @@ func (a *App) View() tea.View {
 	if a.lock == nil {
 		body = a.withHover(body)
 		body = a.withToasts(body)
+		body = a.withPerf(body)
 	}
 	if a.intro != nil && introFits(a.w, a.h) {
 		a.z.reset() // während der Animation ist nichts klickbar
@@ -765,10 +780,20 @@ func (a *App) View() tea.View {
 // headerLeft: Logo, Version und Credit. Im schmalen Fenster fällt zuerst die
 // Version weg (steht im Über-Dialog), der Credit bleibt immer sichtbar.
 func (a *App) headerLeft() string {
+	logo := a.logoChip(">_ " + version.Name) // gradient.go
+	x := lipgloss.Width(logo)
+	tint := a.headerTint()
 	if a.w < 90 {
-		return a.s.Logo.Render(">_ "+version.Name) + a.s.Credit.Render(" "+i18n.T(version.Idea)+" ")
+		return logo + tintRun(" "+i18n.T(version.Idea)+" ", x, a.s.Credit, tint)
 	}
-	return a.s.Logo.Render(">_ "+version.Name) + a.s.Version.Render("v"+version.Version) + a.s.Credit.Render(i18n.T(version.Idea)+"  ")
+	ver := " v" + version.Version + " "
+	return logo + tintRun(ver, x, a.s.Version, tint) + tintRun(i18n.T(version.Idea)+"  ", x+len([]rune(ver)), a.s.Credit, tint)
+}
+
+// headerTint: Kopfzeile links mit einem Hauch Akzent, der nach rechts
+// ausläuft (gradient.go).
+func (a *App) headerTint() func(int) color.Color {
+	return barTint(a.s.T.Accent, a.s.T.Surface, 0.38, max(24, a.w/3))
 }
 
 func (a *App) header(right string) string {
@@ -786,7 +811,7 @@ func (a *App) header(right string) string {
 		right = ansi.Truncate(right, max(0, a.w-lipgloss.Width(left)), "…")
 		gap = max(0, a.w-lipgloss.Width(left)-lipgloss.Width(right))
 	}
-	return left + a.s.Header.Render(strings.Repeat(" ", gap)) + right
+	return left + tintRun(strings.Repeat(" ", gap), lipgloss.Width(left), a.s.Header, a.headerTint()) + right
 }
 
 func (a *App) footer(keys [][2]string) string {

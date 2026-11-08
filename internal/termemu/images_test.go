@@ -108,3 +108,52 @@ func TestImageOtherSequencesUntouched(t *testing.T) {
 		t.Fatalf("%q", txt)
 	}
 }
+
+func TestImagePixelPassThrough(t *testing.T) {
+	tm := New(40, 10, &lockedBuf{})
+	var sent bytes.Buffer
+	tm.SetPixelImages(func(b []byte) { sent.Write(b) })
+	feed(tm, "vorher\r\n\x1b]1337;File=inline=1;width=4:"+redPNG(t, 36, 36)+"\x07nachher", 11)
+	out := sent.String()
+	if !strings.HasPrefix(out, "\x1b_Ga=T,U=1,f=100,q=2,i=") || !strings.Contains(out, ",c=4,r=2,") || !strings.HasSuffix(out, "\x1b\\") {
+		t.Fatalf("Übertragung: %.80q", out)
+	}
+	txt := tm.PlainLines(10)
+	if strings.Contains(txt, "▀") || !strings.Contains(txt, "vorher") || !strings.Contains(txt, "nachher") {
+		t.Fatalf("%q", txt)
+	}
+	// Zeile 1, Spalte 3 des Bildes: Platzhalter mit Akzenten für 0 und 2
+	want := string([]rune{0x10EEEE, kittyDiacritics[0], kittyDiacritics[2]})
+	if !strings.Contains(txt, want) {
+		t.Fatalf("Platzhalter fehlen: %q", txt)
+	}
+	// große Übertragungen kommen in Stücken
+	if big := kittyTransmit(1, bytes.Repeat([]byte{7}, 10000), 2, 2); strings.Count(string(big), "\x1b_G") < 3 || !strings.Contains(string(big), "m=0;") {
+		t.Fatalf("Stücke: %d", strings.Count(string(big), "\x1b_G"))
+	}
+}
+
+func TestPixelImagesSupported(t *testing.T) {
+	env := func(kv ...string) func(string) string {
+		m := map[string]string{}
+		for i := 0; i+1 < len(kv); i += 2 {
+			m[kv[i]] = kv[i+1]
+		}
+		return func(k string) string { return m[k] }
+	}
+	for _, c := range []struct {
+		env  func(string) string
+		want bool
+	}{
+		{env("TERM", "xterm-kitty"), true},
+		{env("TERM_PROGRAM", "ghostty"), true},
+		{env("TERM", "xterm-kitty", "TMUX", "/tmp/x"), false},
+		{env("TERM", "xterm-kitty", "SSHTERMY_NO_PIXELS", "1"), false},
+		{env("WT_SESSION", "1"), false},
+		{env(), false},
+	} {
+		if got := PixelImagesSupported(c.env); got != c.want {
+			t.Errorf("%v: %v", c.env("TERM"), got)
+		}
+	}
+}

@@ -29,7 +29,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   („Verification code“), holt sshTermy den TOTP-Code aus derselben Quelle, auch nach einer Anmeldung mit Key.
   Gespeichert wird nur der Verweis, nie das Passwort
 - **Kerberos/GSSAPI-Anmeldung** (Anmeldung `kerberos`): Nutzt das Ticket der Firmen-Domäne aus der Windows-Anmeldung oder `kinit`, ohne Passwort; ohne Ticket fragt sshTermy wie gewohnt nach dem Passwort
-- **Bilder im Terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), das kitty-Grafikprotokoll (`kitty +kitten icat`, `viu`, `timg`) und iTerm2-Bilder (`imgcat`) erscheinen als farbige Halbblöcke direkt im Text, in jedem Terminal mit 24-Bit-Farbe, im Verlauf und in der geteilten Ansicht. Zwei Pixel pro Zelle: Diagramme und Fotos sind erkennbar, nicht pixelgenau
+- **Bilder im Terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), das kitty-Grafikprotokoll (`kitty +kitten icat`, `viu`, `timg`) und iTerm2-Bilder (`imgcat`) erscheinen als farbige Halbblöcke direkt im Text, in jedem Terminal mit 24-Bit-Farbe, im Verlauf und in der geteilten Ansicht. Zwei Pixel pro Zelle: Diagramme und Fotos sind erkennbar, nicht pixelgenau. In kitty und Ghostty erscheinen die Bilder stattdessen pixelgenau (kitty-Grafik mit Unicode-Platzhaltern, sie wandern also weiter mit dem Text; aus mit `SSHTERMY_NO_PIXELS=1`)
 - **Zwischenablage vom Server (OSC 52)**: Was du in tmux oder vim auf dem Server kopierst, landet in deiner lokalen Zwischenablage. Lesen kann der Server sie nie
 - **Geteilte Ansicht** (Strg+T): bis zu sechs Sitzungen gleichzeitig in sieben Aufteilungen, Größe per Maus oder Alt+⇧+Pfeil, Zoom auf einen Bereich (Alt+Z), Bereiche per Titel tauschen, andere Bereiche auf Wunsch abdunkeln. Die Aufteilung übersteht Updates; **Arbeitsplätze** (w im Manager) speichern Aufteilung und Verbindungen zum Wiederöffnen mit einem Klick, „Zuletzt“ merkt sich sshTermy beim Beenden selbst, `g` auf einem Ordner öffnet alle Verbindungen darin als Raster
 - **Eingabe an alle geteilten Bereiche** (Alt+I in der geteilten Ansicht): Was du tippst, geht live an jeden sichtbaren Host, z. B. dieselbe Änderung auf vier Switches. Enter geht nur durch, wenn die Zeile auf keinem Host gefährlich ist
@@ -132,7 +132,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Deutsch und Englisch**: Sprache in der Palette („Sprache“/„Language“) oder im Über-Dialog (F12 → `l`) umschalten;
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Fensterstil** (Palette „Fensterstil“): Dialoge, Palette und Auswahl werfen einen Schatten, dahinter wird es etwas
-  dunkler; wahlweise mit runden Ecken oder ganz flach wie früher
+  dunkler, und Kopfzeile, Logo und Statusleiste tragen einen sanften Farbverlauf (die Statusleiste in der Akzentfarbe
+  der Verbindung); wahlweise mit runden Ecken oder ganz flach wie früher (ohne Schatten und Verläufe)
 - **Barrierearm** (Einstellungen › Aussehen): keine Animationen, Formen statt nur Farben (× für „nicht erreichbar“);
   dazu die **Farbenblind-Themes** (Blau/Gelb/Orange statt Grün/Rot, Okabe-Ito-Farben)
 - **Lebendige Oberfläche** (Palette „Bewegung“: voll, dezent, aus): Spinner im Tab beim Verbinden, Tabs leuchten bei
@@ -155,7 +156,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   als „(privat)“
 - **Debug-Protokoll für Fehlerberichte** (Einstellungen oder `sshtermy --debug`): Verbindungsversuche, Abbrüche,
   Updates, KI-Anfragen und Sync als Ereignisse, nie Passwörter oder Bildschirminhalte. Hilfe › „Debug-Protokoll
-  bereinigt speichern“ legt eine Kopie ohne Hosts, IPs und Benutzernamen in Downloads, fertig für ein GitHub-Issue
+  bereinigt speichern“ legt eine Kopie ohne Hosts, IPs und Benutzernamen in Downloads, fertig für ein GitHub-Issue.
+  Sehr langsame Bilder (über 50 ms) stehen dort auch
+- **Adaptive Bildrate**: Flutet ein Server die Ausgabe (`cat` auf eine große Datei), zeichnet sshTermy nur so oft, wie ein
+  Bild es zulässt, statt für jedes Stück; Tasten und Maus zeichnen immer sofort. Palette „Leistungsanzeige“ zeigt
+  Bilder pro Sekunde, Zeichenzeit, Ausgaberate und einen Graphen der letzten Bilder
 - **Versionierung und Auto-Update** aus GitHub Releases (signiert)
 
 Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt aus dem Fernzugang-Assistenten von

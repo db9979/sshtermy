@@ -53,6 +53,7 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 	return func() tea.Msg {
 		if !keepTerm || s.term == nil {
 			s.term = termemu.New(cols, rows, shellWriter{s})
+			s.pixelImages() // pixelgenaue Bilder, wenn das Terminal es kann (pixels.go)
 		}
 		fail := func(err error) tea.Msg {
 			if !keepTerm {

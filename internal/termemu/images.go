@@ -45,6 +45,11 @@ type imageFilter struct {
 	kitty   map[int]image.Image
 	order   []int
 	chunk   *kittyChunk // mehrteilige kitty-Übertragung
+
+	// pixels: das äußere Terminal kann kitty-Grafik mit Platzhaltern
+	// (kitty, Ghostty). Dann geht das Bild pixelgenau hinaus (kittypass.go).
+	pixels func(seq []byte)
+	nextID uint32
 }
 
 type kittyChunk struct {
@@ -197,7 +202,13 @@ func (f *imageFilter) render(kind string, body []byte) []byte {
 	if f.size != nil {
 		cols, rows = f.size()
 	}
-	out := halfBlocks(img, cols, rows, wantCols)
+	var out []byte
+	if f.pixels != nil {
+		out = f.passThrough(img, cols, rows, wantCols) // kittypass.go
+	}
+	if out == nil {
+		out = halfBlocks(img, cols, rows, wantCols)
+	}
 	if f.col != nil && f.col() > 0 {
 		out = append([]byte("\r\n"), out...) // Bild beginnt in einer eigenen Zeile
 	}
@@ -215,17 +226,7 @@ func halfBlocks(img image.Image, cols, rows, wantCols int) []byte {
 	if iw <= 0 || ih <= 0 {
 		return nil
 	}
-	w := wantCols
-	if w <= 0 {
-		w = (iw + imgCellW - 1) / imgCellW
-	}
-	w = max(1, min(w, cols-1))
-	h := (ih*w*imgCellW/iw + imgCellH - 1) / imgCellH // Zeilen bei gleichem Seitenverhältnis
-	if lim := max(1, int(float64(rows)*imgMaxRowsF)); h > lim && wantCols <= 0 {
-		w = max(1, w*lim/h)
-		h = lim
-	}
-	h = max(1, h)
+	w, h := imageCells(iw, ih, cols, rows, wantCols)
 	px := sample(img, w, h*2)
 	var out bytes.Buffer
 	for y := 0; y < h; y++ {
@@ -245,6 +246,22 @@ func halfBlocks(img image.Image, cols, rows, wantCols int) []byte {
 		out.WriteString("\x1b[0m\r\n")
 	}
 	return out.Bytes()
+}
+
+// imageCells: Größe in Zellen. wantCols > 0 = Breite in Zellen, sonst etwa
+// Originalgröße, höchstens so breit wie das Terminal und 80 % so hoch.
+func imageCells(iw, ih, cols, rows, wantCols int) (w, h int) {
+	w = wantCols
+	if w <= 0 {
+		w = (iw + imgCellW - 1) / imgCellW
+	}
+	w = max(1, min(w, cols-1))
+	h = (ih*w*imgCellW/iw + imgCellH - 1) / imgCellH // Zeilen bei gleichem Seitenverhältnis
+	if lim := max(1, int(float64(rows)*imgMaxRowsF)); h > lim && wantCols <= 0 {
+		w = max(1, w*lim/h)
+		h = lim
+	}
+	return w, max(1, h)
 }
 
 // sample verkleinert per Mittelwert über die Fläche (vergrößert per nächstem Pixel).

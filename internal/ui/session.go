@@ -4,6 +4,7 @@ import (
 	"context"
 	"image/color"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -134,6 +135,10 @@ type session struct {
 	sel       *termemu.Sel // Markierung
 	selecting bool         // linke Taste gedrückt, Markierung wächst
 	fwdHeld   bool         // Taste gedrückt, Ereignisse gehen an den Server
+
+	// Bilder fürs äußere Terminal (pixels.go)
+	pixMu sync.Mutex
+	pixQ  []byte
 }
 
 // writer für den PTY-Strom: füttert den Emulator und meldet der Oberfläche,
@@ -147,6 +152,7 @@ type outputMsg struct{ sid int }
 
 func (w outWriter) Write(p []byte) (int, error) {
 	full := len(p)
+	outBytes.Add(int64(full)) // Ausgaberate für die Bildrate (perf.go)
 	if p = w.s.trzScan(p, w.ev); len(p) == 0 {
 		return full, nil // geht an die Dateiübertragung (trzsz.go)
 	}
@@ -249,6 +255,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 		ev <- connectStepMsg{s.id, sshx.StepShell}
 		if !keepTerm {
 			s.term = termemu.New(cols, rows, shellWriter{s})
+			s.pixelImages() // pixelgenaue Bilder, wenn das Terminal es kann (pixels.go)
 		}
 		sh, err := c.OpenShell(cols, rows, outWriter{s, ev})
 		if err != nil {
