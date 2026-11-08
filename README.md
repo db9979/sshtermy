@@ -40,7 +40,10 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
 - **Server file in your own editor**: `e` in F5 (server side) or the palette entry “Open server file in your own editor” with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › “Editor for server files” (e.g. `code --new-window`)
 - **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules “color pattern” (colors in English or German; palette → “Color rules for output”); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
-- **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
+- **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect.
+  On Linux servers, while F6 is open, live Braille graphs show CPU, RAM, network and disk (every 2 s, `t` switches
+  5 min / 1 h, `z` shows them large over the terminal with the top processes; a small read-only script in its own
+  exec session, closing the panel ends it). Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Containers** (`c` in F6 or palette “docker”): Docker and Podman containers and Kubernetes pods of the server in one list. ⏎ opens a shell in the container, Ctrl+L follows the logs, Ctrl+K lets the AI analyze the last 400 log lines. Restart and start/stop are only inserted at the prompt, ⏎ runs them. Uses `sudo -n` when docker needs root and sudo works without a password
 - **Config backup for switches**: `b` saves the running configuration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`) encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
   Nightly runs go through a schedule (`z`, type “Config backup”) for a whole folder. **Switch config rules**
@@ -124,6 +127,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Themes** dark, light, high contrast, color-blind (dark and light), Matrix, Amber and Neon (a in the manager), **custom colors** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
 - **English and German**: switch the language in the palette (“Language”/“Sprache”) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
+- **Window style** (palette “Window style”): dialogs, palette and pickers cast a shadow and the background dims a
+  little; optionally with round corners, or flat as before
 - **Accessible mode** (Settings › Appearance): no animations, shapes instead of color only (× for “unreachable”);
   together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
 - **Lively interface** (palette “Motion”: full, subtle, off): a spinner in the tab while connecting, tabs flash green
@@ -132,7 +137,9 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   details show the reachability history and CPU/RAM/disk bars for connected servers. While connecting, a card shows
   the steps (connection, host key, login, shell) with timings and a progress bar with a light sweep, then the shell
   fades in from the top. The AI answer shimmers “thinking …” and types out smoothly, panels fade in. In the command
-  palette the matched letters light up, rows fade in one after another and the selection glides. Redraws only happen while
+  palette the matched letters light up, rows fade in one after another and the selection glides. The status line shows
+  the latency as a small curve (red and “▲ sluggish” on a bad line). In split view the divider next to the active pane
+  lights up, and a frame glides along when you switch panes or zoom (Alt+Z). Redraws only happen while
   something moves; accessible mode turns it all off
 - **MCP server** (`sshtermy mcp`): Claude and other AI clients can list your connections and run read-only commands, anything else only after you confirm in sshTermy
 - **Audit log** (Settings › Security): who did what and when, on which host: connections, commands (also from the
@@ -233,7 +240,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | F3 | ask AI |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
 | | F5 | files (SFTP): Tab side, c copy (up/down), e server file in your own editor, Space/a mark, drag copies, n folder, d delete, . hidden |
-| | F6 | host overview: r/⏎ query, c containers, b back up switch config, ↑↓ state, d diff, v view |
+| | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, c containers, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu, hover it for target, duration and latency) |

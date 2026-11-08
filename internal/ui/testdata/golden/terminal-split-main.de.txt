@@ -16,21 +16,21 @@ deploy@web-01:~$                                                          │dep
                                                                           │
                                                                           │
                                                                           │
-                                                                          │ ● db-01  postgres@10.0.1.5               Strg+Pfeil wechselt  ↕
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
-                                                                          │
+                                                                          ┃ ● db-01  postgres@10.0.1.5               Strg+Pfeil wechselt  ↕
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
+                                                                          ┃
 
  Strg+Space Palette  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  F7/F8 Tabs  F9 Schnellbefehle  ⇧F9 erklären

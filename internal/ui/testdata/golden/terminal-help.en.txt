@@ -1,31 +1,31 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ▌● web-01 ×  +
  P┌─ ? Keyboard shortcuts  sshTermy vdev ─────────────────────────────────────────────────────────────────────── × ─┐er
 Li│                                                                                                                 │
-  │  ◆ Everywhere                         ◎ Goal mode F2                       » Broadcast m                        │
-de│   Ctrl+Space  Command palette          ⏎           start goal / run         Space / g / a host / folder / all   │
-● │   F1          this help                ⇧⏎ / Ctrl+J new line in the goal     Tab         hosts · source · cmd    │
-  │   F12         About & update           i           only insert (dry run)    ⇧⏎          next step               │
-  │   F12 w       What's new               e           edit                     Ctrl+S      check, then ⏎           │
-de│   F12 l       Language / Sprache       s           skip                     ← / →       select host column      │
-  │   ⇧F9         explain key bar          r           suggest again            ↑ ↓ PgUp/Dn scroll output           │
-  │   Ctrl+Q      quit                     x           end goal                 z / c       enlarge / copy          │
-  │                                        ↑ ↓         choose runbook           r / e / x   again / change / stop   │
-  │  ≡ Connection manager F10              Ctrl+S      save as runbook          {{name}}    variable, asked first   │
-  │   F10         back to the terminal     Ctrl+D      Delete runbook           {{host}}    filled in per host      │
-  │   ⏎           connect                  Tab         step by step or agent…   Ctrl+R      save as runbook         │
-  │   n           new connection           Esc         pause agent              e / Ctrl+D  edit / delete           │
-  │   e           edit                     ?           Instruct agent           k / a       AI check / apply        │
-  │   d           delete                   v           view the agent's scri…                                       │
-  │   /           search (also #tag)       r           delete the agent's sc…  / Network scan f                     │
-  │   o           new folder (A / B nes…   Space       plan: remove step        Ctrl+S      start scan              │
-  │   r           Rename folder            ?           plan: re-plan            Space / a   select hit / all        │
-  │   v           move to folder                                                ⏎           create as connections   │
-  │   Shift+↑     move up (↓ down)        ◆ Ask AI F3                           x           stop scan               │
-  │   ← / →       collapse/expand folder   ⏎           send question            r           scan again              │
-  │   - / +       collapse/expand all      ⇧⏎ / Ctrl+J new line                                                     │
-  │   #           filter by tag            1…9         insert command          ❯ Command palette Ctrl+Space         │
-  │   t           add tunnel               ↑ ↓         choose command card      type        filter / goal / ask     │
-  │   c           Generate / copy SSH k…   a           run command (red ones…   user@host   quick connect           │
+  │  ◆ Everywhere                         ◎ Goal mode F2                       ≡ Session logs l                     │
+de│   Ctrl+Space  Command palette          ⏎           start goal / run         /           search (output too)     │
+● │   F1          this help                ⇧⏎ / Ctrl+J new line in the goal     ⏎ / → ←     expand/collapse         │
+  │   F12         About & update           i           only insert (dry run)    Tab         by time / by host       │
+  │   F12 w       What's new               e           edit                     f           filter: today · 7 day…  │
+de│   F12 l       Language / Sprache       s           skip                     s           sort hosts              │
+  │   ⇧F9         explain key bar          r           suggest again            z           AI summary              │
+  │   Ctrl+Q      quit                     x           end goal                 Z           summarize all matches   │
+  │                                        ↑ ↓         choose runbook           b           Change report           │
+  │  ≡ Connection manager F10              Ctrl+S      save as runbook          x           export: md · txt · ca…  │
+  │   F10         back to the terminal     Ctrl+D      Delete runbook           d           delete                  │
+  │   ⏎           connect                  Tab         step by step or agent…   a           recording on/off        │
+  │   n           new connection           Esc         pause agent              ␣ command   do not log              │
+  │   e           edit                     ?           Instruct agent                                               │
+  │   d           delete                   v           view the agent's scri…  » Broadcast m                        │
+  │   /           search (also #tag)       r           delete the agent's sc…   Space / g / a host / folder / all   │
+  │   o           new folder (A / B nes…   Space       plan: remove step        Tab         hosts · source · cmd    │
+  │   r           Rename folder            ?           plan: re-plan            ⇧⏎          next step               │
+  │   v           move to folder                                                Ctrl+S      check, then ⏎           │
+  │   Shift+↑     move up (↓ down)        ◆ Ask AI F3                           ← / →       select host column      │
+  │   ← / →       collapse/expand folder   ⏎           send question            ↑ ↓ PgUp/Dn scroll output           │
+  │   - / +       collapse/expand all      ⇧⏎ / Ctrl+J new line                 z / c       enlarge / copy          │
+  │   #           filter by tag            1…9         insert command           r / e / x   again / change / stop   │
+  │   t           add tunnel               ↑ ↓         choose command card      {{name}}    variable, asked first   │
+  │   c           Generate / copy SSH k…   a           run command (red ones…   {{host}}    filled in per host      │
   │                                                                                                                 │
   │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
   │  Esc leads back to the terminal from every panel.                                                               │

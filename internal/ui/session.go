@@ -290,6 +290,7 @@ func (s *session) close() {
 	s.goal.cancel()
 	s.ask.cancel()
 	s.host.cancel()
+	s.host.live.stop()
 	if s.tunnels != nil {
 		s.tunnels.StopAll()
 	}

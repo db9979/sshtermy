@@ -33,7 +33,8 @@ func (a *App) applyLook() {
 	_ = syncIntroFile(a.st.Dir, set.Intro)
 	accessible = set.Accessible
 	motionSetting = set.Motion
-	sig, _ := json.Marshal([]any{set.Theme, set.Keys, set.Colors, set.Icons, set.NerdFont})
+	setFrames(set.Frames)
+	sig, _ := json.Marshal([]any{set.Theme, set.Keys, set.Colors, set.Icons, set.NerdFont, set.Frames})
 	if string(sig) == a.lookSig {
 		return
 	}

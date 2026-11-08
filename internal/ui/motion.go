@@ -118,6 +118,9 @@ func (a *App) animNeed(now time.Time) time.Duration {
 	if a.pal != nil && a.pal.animating(now) {
 		return animFast
 	}
+	if a.scr == scrTerminal && a.gliding(now) {
+		return fadeFrame // Rahmen gleitet: ein paar flüssige Bilder
+	}
 	if a.scr == scrTerminal {
 		for _, s := range a.sessions {
 			if s.state == stConnecting || s.state == stReconnect || now.Sub(s.flashAt) < tabFlashDur ||
@@ -254,7 +257,32 @@ func (a *App) tabDot(x *session, now time.Time) string {
 	return st.OK.Render("●")
 }
 
-// recordLatency: Latenzverlauf für die Hover-Karte (alle 5 s ein Wert).
+// latSpark: Latenzverlauf für die Statuszeile, jede Säule in der Farbe
+// ihrer Stufe. Bezug mindestens 50 ms, damit Rauschen flach bleibt.
+func (a *App) latSpark(h []time.Duration) string {
+	const bars = "▁▂▃▄▅▆▇█"
+	r := []rune(bars)
+	hi := 50 * time.Millisecond
+	for _, l := range h {
+		hi = max(hi, l)
+	}
+	t := a.s.T
+	var b strings.Builder
+	for _, l := range h {
+		i := int(math.Round(float64(l) / float64(hi) * float64(len(r)-1)))
+		c := mixColor(t.OK, t.Accent, 0.3)
+		switch {
+		case l >= 250*time.Millisecond:
+			c = t.Danger
+		case l >= 80*time.Millisecond:
+			c = t.Warn
+		}
+		b.WriteString(lipgloss.NewStyle().Foreground(c).Background(t.Surface2).Render(string(r[max(0, min(len(r)-1, i))])))
+	}
+	return b.String()
+}
+
+// recordLatency: Latenzverlauf für Hover-Karte und Statuszeile (alle 5 s ein Wert).
 func (s *session) recordLatency(now time.Time) {
 	if s.client == nil || s.state != stConnected || now.Sub(s.latAt) < 5*time.Second {
 		return
