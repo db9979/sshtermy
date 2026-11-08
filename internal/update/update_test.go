@@ -42,12 +42,28 @@ func TestGetRetries(t *testing.T) {
 	oldClient := httpClient
 	httpClient = func() *http.Client { c := ts.Client(); return c }
 	defer func() { httpClient = oldClient }()
-	b, err := get(context.Background(), ts.URL, 100)
+	b, err := get(context.Background(), ts.URL, acceptBin, 100)
 	if err != nil || string(b) != "ok" || n != 3 {
 		t.Fatalf("%q %v %d", b, err, n)
 	}
-	n = -10 // immer 504
-	if _, err := get(context.Background(), ts.URL, 100); err == nil || !strings.Contains(err.Error(), "504") || n != -6 {
+	n = 0 // erste Adresse kaputt (immer 504), zweite gut
+	bad := ts.URL + "/kaputt"
+	ts.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Accept") != acceptBin {
+			t.Errorf("Accept %q", r.Header.Get("Accept"))
+		}
+		if r.URL.Path == "/kaputt" {
+			n++
+			w.WriteHeader(http.StatusGatewayTimeout)
+			return
+		}
+		_, _ = w.Write([]byte("ok"))
+	})
+	if b, err := download(context.Background(), []string{bad, ts.URL}, 100); err != nil || string(b) != "ok" || n != 4 {
+		t.Fatalf("download: %q %v %d", b, err, n)
+	}
+	n = 0
+	if _, err := download(context.Background(), []string{bad}, 100); err == nil || !strings.Contains(err.Error(), "504") || n != 4 {
 		t.Fatalf("%v %d", err, n)
 	}
 }
