@@ -40,10 +40,13 @@ const (
 	pgSetLook
 	pgSetSetup
 	pgHelp
+	pgTop   // Übersicht: häufige Aktionen
+	pgAreas // Übersicht: Ordner der Bereiche, Einstellungen, Hilfe
 )
 
 var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgQuick: "SCHNELLBEFEHLE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN", pgConns: "VERBINDUNGEN",
-	pgSetBehave: "VERHALTEN", pgSetSafe: "SICHERHEIT", pgSetLook: "AUSSEHEN & SPRACHE", pgSetSetup: "EINRICHTEN", pgHelp: "HILFE & INFO"}
+	pgSetBehave: "VERHALTEN", pgSetSafe: "SICHERHEIT", pgSetLook: "AUSSEHEN & SPRACHE", pgSetSetup: "EINRICHTEN", pgHelp: "HILFE & INFO",
+	pgTop: "HÄUFIG", pgAreas: "ALLE AKTIONEN"}
 
 type palItem struct {
 	group     palGroup
@@ -65,8 +68,13 @@ type palItem struct {
 	// hidden: nur bei getipptem Text sichtbar (Einzelwerte hinter einem
 	// Durchschalt-Eintrag, damit die Suche z. B. „Matrix“ direkt findet).
 	hidden bool
-	// open: Eintrag öffnet ein Unter-Untermenü (z. B. "settings/ki").
+	// open: Eintrag öffnet ein Untermenü (z. B. "settings/ki" oder "view").
 	open string
+	// area: Bereich der Übersicht (palAreas), in dessen Ordner der Eintrag
+	// steht; "" = direkt in der Übersicht.
+	area string
+	// top: zusätzlich oben unter „Häufig“.
+	top bool
 }
 
 // palState: Schalter zeigen rechts „an“ oder „aus“ statt eines Hinweises.
@@ -103,7 +111,7 @@ func (a *App) paletteItems() []palItem {
 	q := strings.TrimSpace(a.pal.in.Value())
 	ql := strings.ToLower(q)
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
-	if m := a.pal.menu; m != "" {
+	if m := a.pal.menu; m != "" && !palIsArea(m) {
 		// Ohne Text: nur die Einträge dieser Ebene. Mit Text: Treffer auch
 		// aus den Unterordnern und die Einzelwerte hinter Durchschalt-Einträgen.
 		var items []palItem
@@ -221,17 +229,26 @@ func (a *App) paletteItems() []palItem {
 		items = append(items, quick...)
 	}
 	items = append(items, a.palConnItems(q)...)
-	actions := []palItem{
-		{icon: ic("goal"), label: i18n.T("Ziel-Modus öffnen"), hint: a.keys.label(actGoal), run: func() tea.Cmd {
-			if inTerm {
+	// Aktionen: jede gehört zu einem Bereich (palAreas). Ohne Text zeigt die
+	// Übersicht nur die häufigen (top) und je Bereich einen Ordner; mit Text
+	// kommen alle Treffer direkt.
+	var actions []palItem
+	add := func(area string, its ...palItem) {
+		for _, it := range its {
+			if it.area == "" {
+				it.area = area
+			}
+			actions = append(actions, it)
+		}
+	}
+	if inTerm {
+		add("session",
+			palItem{icon: ic("goal"), label: i18n.T("Ziel-Modus öffnen"), hint: a.keys.label(actGoal), top: true, run: func() tea.Cmd {
 				withPanel(s, panelGoal)
 				a.resize(s)
 				return a.panelOpened(s)
-			}
-			return nil
-		}},
-		{icon: ic("goal"), label: i18n.T("Agent-Modus öffnen (läuft selbstständig)"), run: func() tea.Cmd {
-			if inTerm {
+			}},
+			palItem{icon: ic("goal"), label: i18n.T("Agent-Modus öffnen (läuft selbstständig)"), run: func() tea.Cmd {
 				withPanel(s, panelGoal)
 				a.resize(s)
 				cmd := a.panelOpened(s)
@@ -239,88 +256,89 @@ func (a *App) paletteItems() []palItem {
 					s.goal.auto = true
 				}
 				return cmd
-			}
-			return nil
-		}},
-		{icon: ic("tunnel"), label: i18n.T("Tunnel-Panel"), hint: a.keys.label(actTunnels), run: func() tea.Cmd {
-			if inTerm {
+			}},
+			palItem{icon: ic("host"), label: i18n.T("Host-Übersicht"), hint: a.keys.label(actHost), top: true, run: func() tea.Cmd {
+				withPanel(s, panelHost)
+				a.resize(s)
+				return a.panelOpened(s)
+			}})
+		add("quick",
+			palItem{icon: ic("tunnel"), label: i18n.T("Tunnel-Panel"), hint: a.keys.label(actTunnels), run: func() tea.Cmd {
 				withPanel(s, panelTunnels)
 				a.resize(s)
-			}
-			return nil
-		}},
-		{icon: ic("quick"), label: i18n.T("Schnellbefehle bearbeiten"), hint: i18n.T("Liste"), run: func() tea.Cmd {
-			if inTerm {
-				return a.editQuickFor(s)
-			}
-			return nil
-		}},
-		{icon: ic("manager"), label: i18n.T("Verbindungs-Manager"), hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
-		{icon: ic("new"), label: i18n.T("Neue Verbindung"), hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
-		{icon: ic("sshkey"), label: i18n.T("SSH-Schlüssel erzeugen / auf den Server übertragen"), hint: a.keys.label(actSSHKey), run: func() tea.Cmd {
+				return nil
+			}},
+			palItem{icon: ic("quick"), label: i18n.T("Schnellbefehle bearbeiten"), hint: i18n.T("Liste"), run: func() tea.Cmd { return a.editQuickFor(s) }})
+	}
+	if a.restartPending != "" {
+		add("", palItem{icon: ic("restart"), label: i18n.T("Neu starten (v") + a.restartPending + i18n.T(" aktivieren)"), hint: "Update", top: true, run: func() tea.Cmd { return a.askRestart() }})
+	}
+	inMgr := a.scr == scrManager
+	add("conns",
+		palItem{icon: ic("manager"), label: i18n.T("Verbindungs-Manager"), hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
+		palItem{icon: ic("new"), label: i18n.T("Neue Verbindung"), hint: "n", top: inMgr, run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		palItem{icon: ic("sshkey"), label: i18n.T("SSH-Schlüssel erzeugen / auf den Server übertragen"), hint: a.keys.label(actSSHKey), run: func() tea.Cmd {
 			if c, ok := a.sshKeyTarget(); ok {
 				return a.openSSHKeyForm(c)
 			}
 			a.flash(i18n.T("Erst eine Verbindung im Manager wählen oder verbinden"))
 			return nil
 		}},
-		{icon: ic("broadcast"), label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), run: func() tea.Cmd { return a.openBroadcast() }},
-		{icon: ic("scan"), label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), run: func() tea.Cmd { return a.openScan() }},
-		{icon: ic("runbook"), label: i18n.T("Zeitpläne: Broadcast/Runbook nach Uhrzeit"), hint: a.keys.label(actSchedule), run: func() tea.Cmd { return a.openSchedules() }},
-		{icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen …"), hint: i18n.T("Link"), hidden: true,
-			keys: "zusehen watch link teilen share live", run: func() tea.Cmd { return a.askWatch() }},
-		{icon: ic("scan"), label: i18n.T("Gerät finden: MAC/IP → Switch-Port …"), hint: i18n.T("Switches"),
-			keys: "mac ip port vlan switch finden suchen wo hängt locate find", run: func() tea.Cmd { return a.askNetFind() }},
-		{icon: ic("scan"), label: i18n.T("Netzwerk-Topologie (LLDP/CDP)"), hint: i18n.T("Switches"),
-			keys: "topologie topology lldp cdp nachbarn neighbors karte map plan", run: func() tea.Cmd { return a.netTopology() }},
-		{icon: ic("team"), label: i18n.T("Mit dem Team teilen (verschlüsselt, ohne Passwörter)"), hint: "Team", run: func() tea.Cmd { a.scr = scrManager; return a.openTeamShare() }},
-		{icon: ic("team"), label: i18n.T("Team-Paket übernehmen"), hint: "Team", run: func() tea.Cmd { return a.openTeamTake() }},
-		{icon: ic("team"), label: i18n.T("Team-Ordner (veröffentlicht / abonniert)"), hint: "Team", run: func() tea.Cmd { return a.openTeamLinks() }},
-		{icon: ic("logs"), label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: "l", run: func() tea.Cmd { return a.openLogs() }},
-	}
-	if a.restartPending != "" {
-		actions = append(actions, palItem{icon: ic("restart"), label: i18n.T("Neu starten (v") + a.restartPending + i18n.T(" aktivieren)"), hint: "Update", run: func() tea.Cmd { return a.askRestart() }})
+		palItem{icon: ic("logs"), label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: "l", top: inMgr, run: func() tea.Cmd { return a.openLogs() }})
+	if inMgr {
+		for _, it := range a.localPalette() {
+			it.top = true
+			add("conns", it)
+		}
 	}
 	if a.st.SyncConfig().Enabled() {
-		actions = append(actions, palItem{icon: ic("sync"), label: i18n.T("Jetzt synchronisieren"), hint: "Sync", run: func() tea.Cmd {
+		add("conns", palItem{icon: ic("sync"), label: i18n.T("Jetzt synchronisieren"), hint: "Sync", run: func() tea.Cmd {
 			a.flash(i18n.T("Sync läuft …"))
 			return a.runSync()
 		}})
 	}
-	if !inTerm {
-		actions = actions[3:]
-	} else {
-		actions = append(actions, palItem{icon: ic("host"), label: i18n.T("Host-Übersicht"), hint: a.keys.label(actHost), run: func() tea.Cmd {
-			withPanel(s, panelHost)
-			a.resize(s)
-			return a.panelOpened(s)
-		}})
+	add("multi",
+		palItem{icon: ic("broadcast"), label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), top: inMgr, run: func() tea.Cmd { return a.openBroadcast() }},
+		palItem{icon: ic("scan"), label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), top: inMgr, run: func() tea.Cmd { return a.openScan() }},
+		palItem{icon: ic("runbook"), label: i18n.T("Zeitpläne: Broadcast/Runbook nach Uhrzeit"), hint: a.keys.label(actSchedule), run: func() tea.Cmd { return a.openSchedules() }})
+	add("net",
+		palItem{icon: ic("scan"), label: i18n.T("Gerät finden: MAC/IP → Switch-Port …"), hint: i18n.T("Switches"),
+			keys: "mac ip port vlan switch finden suchen wo hängt locate find", run: func() tea.Cmd { return a.askNetFind() }},
+		palItem{icon: ic("scan"), label: i18n.T("Netzwerk-Topologie (LLDP/CDP)"), hint: i18n.T("Switches"),
+			keys: "topologie topology lldp cdp nachbarn neighbors karte map plan", run: func() tea.Cmd { return a.netTopology() }})
+	add("team",
+		palItem{icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen …"), hint: i18n.T("Link"),
+			keys: "zusehen watch link teilen share live", run: func() tea.Cmd { return a.askWatch() }},
+		palItem{icon: ic("team"), label: i18n.T("Mit dem Team teilen (verschlüsselt, ohne Passwörter)"), hint: "Team", run: func() tea.Cmd { a.scr = scrManager; return a.openTeamShare() }},
+		palItem{icon: ic("team"), label: i18n.T("Team-Paket übernehmen"), hint: "Team", run: func() tea.Cmd { return a.openTeamTake() }},
+		palItem{icon: ic("team"), label: i18n.T("Team-Ordner (veröffentlicht / abonniert)"), hint: "Team", run: func() tea.Cmd { return a.openTeamLinks() }})
+	if inTerm {
 		if s.isSerial() && s.state == stConnected {
-			actions = append(actions, palItem{icon: ic("break"), label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
+			add("session", palItem{icon: ic("break"), label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
 		}
 		if o := s.share.Load(); o != nil {
-			actions = append(actions,
+			add("team",
 				palItem{icon: ic("team"), label: fmt.Sprintf(i18n.T("Teilen beenden (%d Zuschauer)"), o.viewers), hint: i18n.T("live"),
 					keys: "teilen share live stop beenden", run: func() tea.Cmd { a.stopShare(s); return nil }},
 				palItem{icon: ic("team"), label: i18n.T("Link zum Zusehen anzeigen"), hint: i18n.T("live"),
 					keys: "teilen share link", run: func() tea.Cmd { a.showShareLink(s, o); return nil }})
 		} else if s.conn.Protocol != domain.ProtoWatch {
-			actions = append(actions, palItem{icon: ic("team"), label: i18n.T("Sitzung live teilen (Link zum Zusehen) …"), hint: i18n.T("Vermittler"),
+			add("team", palItem{icon: ic("team"), label: i18n.T("Sitzung live teilen (Link zum Zusehen) …"), hint: i18n.T("Vermittler"),
 				keys: "teilen share live zuschauen zeigen kollege screen", run: func() tea.Cmd { return a.startShare(s) }})
 		}
 		if a.containersOK(s) {
-			actions = append(actions, palItem{icon: ic("host"), label: i18n.T("Container (Docker, Podman, Kubernetes)"), hint: i18n.T("F6 c"),
+			add("session", palItem{icon: ic("host"), label: i18n.T("Container (Docker, Podman, Kubernetes)"), hint: i18n.T("F6 c"),
 				keys: "docker podman kubernetes k8s kubectl pods container logs", run: func() tea.Cmd { return a.openContainers(s) }})
 		}
 		if s.client != nil {
-			actions = append(actions, palItem{icon: ic("open"), label: i18n.T("Server-Datei im eigenen Editor öffnen …"), hint: i18n.T("F5 e"),
+			add("session", palItem{icon: ic("open"), label: i18n.T("Server-Datei im eigenen Editor öffnen …"), hint: i18n.T("F5 e"),
 				keys: "edit editor bearbeiten vscode notepad datei file", run: func() tea.Cmd { return a.askEditPath(s) }})
 		}
-		actions = append(actions,
+		add("session",
 			palItem{icon: ic("record"), label: recordLabel(s.recording()), hint: "asciinema", run: func() tea.Cmd { return a.toggleRecording(s) }},
 			palItem{icon: ic("export"), label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }})
 		if s.netDevice() {
-			actions = append(actions, palItem{icon: ic("backup"), label: i18n.T("Switch-Config sichern und vergleichen"), hint: "b", run: func() tea.Cmd {
+			add("net", palItem{icon: ic("backup"), label: i18n.T("Switch-Config sichern und vergleichen"), hint: "b", run: func() tea.Cmd {
 				withPanel(s, panelHost)
 				s.panelFocus = false
 				a.resize(s)
@@ -330,15 +348,15 @@ func (a *App) paletteItems() []palItem {
 		}
 	}
 	if a.scr == scrTerminal && s != nil {
-		actions = append(actions,
-			palItem{icon: ic("search"), label: i18n.T("Im Verlauf suchen"), hint: "Strg+F", run: func() tea.Cmd { return a.openSearch(s) }},
+		add("session",
+			palItem{icon: ic("search"), label: i18n.T("Im Verlauf suchen"), hint: "Strg+F", top: true, run: func() tea.Cmd { return a.openSearch(s) }},
 			palItem{icon: ic("errors"), label: i18n.T("Fehlerzeilen im Verlauf zeigen"), hint: i18n.T("Strg+F Strg+E"), run: func() tea.Cmd {
 				cmd := a.openSearch(s)
 				s.search.errors, s.search.list = true, true
 				a.refreshSearch(s, true)
 				return cmd
 			}})
-		actions = append(actions, palItem{icon: ic("split"), label: i18n.T("Aufteilung wählen …"), hint: a.keys.label(actSplit), keys: "split teilen layout",
+		add("view", palItem{icon: ic("split"), label: i18n.T("Aufteilung wählen …"), hint: a.keys.label(actSplit), keys: "split teilen layout", top: true,
 			run: func() tea.Cmd { return a.openLayout() }})
 		for _, m := range layoutOrder {
 			if m == a.split {
@@ -349,18 +367,18 @@ func (a *App) paletteItems() []palItem {
 			if m == splitOff {
 				label = i18n.T("Ansicht nicht mehr teilen")
 			}
-			actions = append(actions, palItem{icon: ic("split"), label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
+			add("view", palItem{icon: ic("split"), label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
 		if a.split != splitOff {
 			zl := i18n.T("Bereich zoomen (ganzes Fenster)")
 			if a.zoom {
 				zl = i18n.T("Zoom beenden (alle Bereiche zeigen)")
 			}
-			actions = append(actions,
+			add("view",
 				palItem{icon: ic("split"), label: zl, hint: a.keys.label(actZoom), run: func() tea.Cmd { a.toggleZoom(); return nil }},
 				palItem{icon: ic("split"), label: i18n.T("Alle Bereiche gleich groß"), hint: "Strg+T =", run: func() tea.Cmd { a.equalize(); return nil }})
 		}
-		actions = append(actions,
+		add("view",
 			palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }},
 			palItem{icon: ic("split"), label: i18n.T("Ansicht als Arbeitsplatz speichern"), keys: "workspace save", run: func() tea.Cmd { return a.saveWorkspaceAsk() }})
 		if a.split != splitOff {
@@ -368,54 +386,67 @@ func (a *App) paletteItems() []palItem {
 			if a.syncIn {
 				label = i18n.T("Eingabe an alle geteilten Bereiche: ausschalten")
 			}
-			actions = append(actions, palItem{icon: ic("broadcast"), label: label, hint: a.keys.label(actSyncInput), run: func() tea.Cmd { a.toggleSyncInput(); return nil }})
+			add("view", palItem{icon: ic("broadcast"), label: label, hint: a.keys.label(actSyncInput), run: func() tea.Cmd { a.toggleSyncInput(); return nil }})
 		}
-		actions = append(actions, a.persistPalette(s)...)
+		add("session", a.persistPalette(s)...)
 		if s.detached() {
-			actions = append(actions, palItem{icon: ic("attach"), label: i18n.T("Tab aus eigenem Fenster zurückholen"), hint: a.keys.label(actDetach),
+			add("tabs", palItem{icon: ic("attach"), label: i18n.T("Tab aus eigenem Fenster zurückholen"), hint: a.keys.label(actDetach),
 				run: func() tea.Cmd { return a.toggleDetach(s) }})
 		} else if s.state == stConnected {
-			actions = append(actions, palItem{icon: ic("detach"), label: i18n.T("Tab in eigenes Fenster abtrennen"), hint: a.keys.label(actDetach),
+			add("tabs", palItem{icon: ic("detach"), label: i18n.T("Tab in eigenes Fenster abtrennen"), hint: a.keys.label(actDetach),
 				run: func() tea.Cmd { return a.toggleDetach(s) }})
 		}
-		actions = append(actions,
+		add("tabs",
 			palItem{icon: ic("tabs"), label: i18n.T("Alle Tabs zeigen"), hint: a.keys.label(actTabList), run: func() tea.Cmd { return a.openTabList() }},
-			palItem{icon: ic("new"), label: i18n.T("Neuer Tab"), hint: a.keys.label(actNewTab), run: func() tea.Cmd { return a.openNewTab() }},
+			palItem{icon: ic("new"), label: i18n.T("Neuer Tab"), hint: a.keys.label(actNewTab), top: true, run: func() tea.Cmd { return a.openNewTab() }},
 			palItem{icon: ic("command"), label: i18n.T("Lokale Shell in neuem Tab"), hint: a.keys.label(actLocal), keys: "local lokal shell terminal powershell pwsh cmd zsh bash", run: func() tea.Cmd { return a.openLocal("") }},
 			palItem{icon: ic("rename"), label: i18n.T("Tab umbenennen"), hint: trunc(s.tabName(), 16), run: func() tea.Cmd { return a.renameTab(s, nil) }},
 			palItem{icon: ic("tabs"), label: i18n.T("Tab duplizieren"), hint: trunc(s.conn.Alias, 16), run: func() tea.Cmd { return a.duplicateTab(s) }},
 			palItem{icon: ic("close"), label: i18n.T("Tab schließen"), hint: a.keys.label(actCloseTab), run: func() tea.Cmd { return a.closeTabAsk(s, nil) }})
 	}
-	if a.scr == scrManager {
-		actions = append(actions, a.localPalette()...)
-		actions = append(actions, palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }})
+	if inMgr {
+		add("view", palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }})
 	}
-	actions = append(actions, palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
-	for _, x := range actions {
-		x.group = pgAction
-		if x.hidden && ql == "" {
-			continue
+	add("", palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
+	for i := range actions {
+		actions[i].group = pgAction
+	}
+	for i := range items {
+		if g := items[i].group; g == pgQuick || g == pgRunbook || g == pgTunnel {
+			items[i].area = "quick"
 		}
+	}
+	if area := a.pal.menu; area != "" {
+		// Ein Bereich ist offen: seine Einträge, gefiltert nach dem Text.
+		var out []palItem
+		for _, x := range append(items, actions...) {
+			if x.area == area && (!x.hidden || ql != "") && x.matches(match) {
+				x.top = false
+				out = append(out, x)
+			}
+		}
+		return out
+	}
+	if ql == "" {
+		return a.palOverview(items, actions)
+	}
+	for _, x := range actions {
 		if x.matches(match) {
 			items = append(items, x)
 		}
 	}
-	// Untermenüs: ohne Text als je ein Eintrag, mit Text direkt die Treffer
-	// daraus (mit dem Untermenü grau dahinter).
-	for _, m := range palMenus {
-		m := m
-		if ql == "" || match(i18n.T(m.label)+" "+m.keys) {
-			items = append(items, palItem{group: pgAction, icon: ic(m.icon), label: i18n.T(m.label) + " ›", hint: i18n.T(m.hint), keep: true,
-				run: func() tea.Cmd { a.palEnter(m.id); return nil }})
+	// Ordner (Bereiche, Einstellungen, Hilfe) mit passendem Namen, dazu die
+	// Treffer aus Einstellungen und Hilfe (mit dem Untermenü grau dahinter).
+	for _, f := range a.palFolders(append(items, actions...)) {
+		if match(f.label + " " + f.keys) {
+			items = append(items, f)
 		}
 	}
-	if ql != "" {
-		for _, x := range a.palMenuItems() {
-			if x.open == "" && x.matches(match) {
-				x.sub = "· " + palMenuPath(x.menu)
-				x.group = pgAction
-				items = append(items, x)
-			}
+	for _, x := range a.palMenuItems() {
+		if x.open == "" && x.matches(match) {
+			x.sub = "· " + palMenuPath(x.menu)
+			x.group = pgAction
+			items = append(items, x)
 		}
 	}
 	return items
@@ -430,6 +461,84 @@ type palMenu struct {
 var palMenus = []palMenu{
 	{"settings", "settings", "Einstellungen", "Maus, Aussehen, Sprache, KI …", "settings optionen schalter"},
 	{"help", "help", "Hilfe & Info", "Tasten, Tour, Neues, Update", "help hilfe info"},
+}
+
+// palAreas: Bereiche der Übersicht. Ohne Text steht je Bereich ein Ordner
+// in der Palette; die Einträge darin tragen palItem.area.
+var palAreas = []palMenu{
+	{"quick", "quick", "Schnellbefehle & Tunnel", "Befehle, Runbooks, Tunnel", "schnellbefehle quick runbook tunnel"},
+	{"session", "host", "Diese Sitzung", "Agent, Container, Aufnahme, Export", "sitzung session"},
+	{"tabs", "tabs", "Tabs & Fenster", "neu, lokal, umbenennen, abtrennen", "tabs fenster window"},
+	{"view", "split", "Ansicht & Aufteilung", "teilen, Zoom, Arbeitsplätze", "ansicht aufteilung split view layout"},
+	{"multi", "broadcast", "Mehrere Hosts", "Broadcast, Zeitpläne, Scan", "mehrere hosts broadcast multi"},
+	{"net", "scan", "Netzwerk & Switches", "Gerät finden, Topologie", "netzwerk network switch"},
+	{"team", "team", "Team & Teilen", "live teilen, Team-Ordner", "team teilen share"},
+	{"conns", "manager", "Verbindungen & Schlüssel", "Manager, neu, SSH-Key, Protokolle", "verbindungen connections schlüssel keys"},
+}
+
+func palIsArea(id string) bool {
+	for _, m := range palAreas {
+		if m.id == id {
+			return true
+		}
+	}
+	return false
+}
+
+// palOverview: Übersicht ohne Text. Oben was gerade passt (KI, Vorschläge),
+// dann „Häufig“, die Verbindungen und die Ordner.
+func (a *App) palOverview(items, actions []palItem) []palItem {
+	var out []palItem
+	for _, x := range items {
+		if x.area == "" && x.group != pgConns {
+			out = append(out, x)
+		}
+	}
+	for _, x := range actions {
+		if x.top {
+			x.group = pgTop
+			out = append(out, x)
+		}
+	}
+	for _, x := range items {
+		if x.group == pgConns {
+			out = append(out, x)
+		}
+	}
+	out = append(out, a.palFolders(append(items, actions...))...)
+	for _, x := range actions {
+		if x.area == "" && !x.top && !x.hidden {
+			x.group = pgAreas
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+// palFolders: je Bereich mit Einträgen ein Ordner, dazu Einstellungen und
+// Hilfe & Info; rechts die Zahl der Einträge.
+func (a *App) palFolders(all []palItem) []palItem {
+	n := map[string]int{}
+	for _, x := range all {
+		if x.area != "" && !x.hidden {
+			n[x.area]++
+		}
+	}
+	for _, x := range a.palMenuItems() {
+		if !x.hidden && palParent(x.menu) == "" {
+			n[x.menu]++
+		}
+	}
+	var out []palItem
+	for _, m := range append(palAreas[:len(palAreas):len(palAreas)], palMenus...) {
+		if n[m.id] == 0 {
+			continue
+		}
+		id := m.id
+		out = append(out, palItem{group: pgAreas, icon: ic(m.icon), label: i18n.T(m.label) + " ›", sub: i18n.T(m.hint),
+			hint: fmt.Sprint(n[id]), keys: m.keys, keep: true, open: id, run: func() tea.Cmd { a.palEnter(id); return nil }})
+	}
+	return out
 }
 
 // Unterordner der Einstellungen: nicht in der Übersicht, sondern als
@@ -460,7 +569,7 @@ func palMenuPath(id string) string {
 }
 
 func palMenuLabel(id string) string {
-	for _, m := range append(palMenus[:len(palMenus):len(palMenus)], palSubMenus...) {
+	for _, m := range append(append(palAreas[:len(palAreas):len(palAreas)], palMenus...), palSubMenus...) {
 		if m.id == id {
 			return m.label
 		}

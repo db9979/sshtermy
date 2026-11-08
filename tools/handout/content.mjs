@@ -130,10 +130,10 @@ export const de = {
     { t: 'Befehlspalette', ic: '❯', key: 'Strg+Space', rows: [
       ['_tippen_ ⏎ / Tab', 'filtern · als Ziel starten / KI fragen'],
       ['user@host', 'schnell verbinden (auch telnet, COM3)'],
-      ['→ / ←', '‹ Wert › weiter / zurück'],
+      ['→ / ←', 'Ordner › öffnen · ‹ Wert › weiter / zurück'],
       ['„log“ / „farb“', 'KI wertet Ausgabe aus / Farbregeln'],
       ['MAC, IP / „topo“', 'Switch-Port finden / Topologie'],
-      ['Esc', 'Untermenü zurück / schließen'],
+      ['Esc', 'Ordner zurück / schließen'],
     ]},
     { t: 'Dateien (SFTP)', ic: '▤', key: 'F5', rows: [
       ['Tab', 'Seite wechseln (lokal ↔ Server)'],
@@ -316,10 +316,10 @@ export const en = {
     { t: 'Command palette', ic: '❯', key: 'Ctrl+Space', rows: [
       ['_type_ ⏎ / Tab', 'filter · start as goal / ask AI'],
       ['user@host', 'quick connect (also telnet, COM3)'],
-      ['→ / ←', '‹ value › next / back'],
+      ['→ / ←', 'open folder › · ‹ value › next / back'],
       ['“log” / “color”', 'AI analyzes output / color rules'],
       ['MAC, IP / “topo”', 'find switch port / topology'],
-      ['Esc', 'back from submenu / close'],
+      ['Esc', 'back from folder / close'],
     ]},
     { t: 'Files (SFTP)', ic: '▤', key: 'F5', rows: [
       ['Tab', 'switch side (local ↔ server)'],

@@ -169,3 +169,40 @@ func TestPaletteSettingsCompact(t *testing.T) {
 		t.Fatalf("Suche im Unterordner: %+v", it)
 	}
 }
+
+// Übersicht ohne Text: häufige Aktionen und Ordner je Bereich statt einer
+// langen Liste; Ordner öffnen mit →, Esc führt zurück, Suche findet alles.
+func TestPaletteAreas(t *testing.T) {
+	a := newPaletteTestApp(t)
+	a.scr = scrManager
+	top := a.paletteItems()
+	if _, ok := hasLabel(top, "Team-Paket übernehmen"); ok {
+		t.Fatalf("Team-Aktionen gehören in den Ordner: %v", labels(top))
+	}
+	if it, ok := hasLabel(top, "Neue Verbindung"); !ok || it.group != pgTop {
+		t.Fatalf("Neue Verbindung fehlt unter Häufig: %v", labels(top))
+	}
+	for i, it := range top {
+		if strings.HasPrefix(it.label, "Team & Teilen ›") {
+			a.pal.sel = i
+		}
+	}
+	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyRight})
+	if a.pal.menu != "team" {
+		t.Fatalf("→ öffnet den Ordner nicht: %q", a.pal.menu)
+	}
+	if _, ok := hasLabel(a.paletteItems(), "Team-Paket übernehmen"); !ok {
+		t.Fatalf("Ordner Team: %v", labels(a.paletteItems()))
+	}
+	if !strings.Contains(ansiStrip(a.viewPalette()), "Befehlspalette › Team & Teilen") {
+		t.Error("Titel zeigt den Ordner nicht")
+	}
+	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if a.pal == nil || a.pal.menu != "" {
+		t.Fatal("Esc im Ordner muss zur Übersicht")
+	}
+	a.pal.in.SetValue("topologie")
+	if _, ok := hasLabel(a.paletteItems(), "Netzwerk-Topologie"); !ok {
+		t.Fatal("Suche findet Einträge aus Ordnern nicht")
+	}
+}
