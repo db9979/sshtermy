@@ -126,6 +126,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Accessible mode** (Settings › Appearance): no animations, shapes instead of color only (× for “unreachable”);
   together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
+- **MCP server** (`sshtermy mcp`): Claude and other AI clients can list your connections and run read-only commands, anything else only after you confirm in sshTermy
 - **Audit log** (Settings › Security): who did what and when, on which host: connections, commands (also from the
   agent mode and broadcast), file transfers, config backups, changed connections, master password, full backups and
   AI requests (host/model only). Each line is chained and signed with a key from the store, so changes, deleted or
@@ -197,6 +198,7 @@ sshtermy --no-intro   # without the start animation (permanently: palette “Sta
 sshtermy --debug      # write a debug log for this run (debug.log in the config folder)
 sshtermy backup [file]   # full backup of all data (asks for the master password)
 sshtermy restore <file>  # restore a full backup (replaces all data, keeps the old folder)
+sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshTermy as MCP server”
 ```
 
 ## Usage
@@ -458,6 +460,21 @@ Windows login ──DPAPI CryptProtectData────────────�
   `ai-local` or `no-ai` (also `ki-lokal`, `ki-aus`) do the same; the stricter setting wins. In the same folder
   “Show last AI request” shows exactly what was last sent, to which host and model.
 - Rate limit in goal mode (default 6 steps/min, at most 40 steps per goal).
+
+### sshTermy as MCP server
+
+AI clients such as Claude Desktop or Claude Code can use your saved connections through the Model Context Protocol.
+Turn it on in Settings › Security › “MCP access for AI clients”: **read only** (list connections and open tabs,
+read a tab, run read-only commands like `df -h` or `show interfaces`) or **with confirmation** (any other command
+runs only after you press `y` in sshTermy; dangerous commands are marked red). sshTermy must be running and unlocked;
+`sshtermy mcp` is only a bridge and holds no data. Connections tagged `no-ai`/`ai-local`, or AI privacy “AI off”, are
+never shown. Secrets in output are redacted, every call lands in the audit log.
+
+```
+claude mcp add sshtermy -- sshtermy mcp
+```
+
+Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"command": "sshtermy", "args": ["mcp"]}}}`
 
 ### AI providers and fallback
 

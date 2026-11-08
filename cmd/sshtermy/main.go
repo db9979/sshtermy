@@ -19,6 +19,7 @@ import (
 	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/fullbackup"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/mcp"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/ui"
@@ -37,7 +38,7 @@ func main() {
 	// Gesamtsicherung aus dem letzten Lauf einspielen, bevor irgendetwas
 	// den Datenordner öffnet (internal/fullbackup).
 	restoredFrom, restoreErr := "", error(nil)
-	if dir != "" {
+	if dir != "" && (len(os.Args) < 2 || os.Args[1] != "mcp") { // die MCP-Brücke läuft neben der App
 		restoredFrom, restoreErr = fullbackup.ApplyPending(dir)
 	}
 	i18n.Load(dir)
@@ -53,6 +54,12 @@ func main() {
 			os.Exit(runBackup(os.Args[2:]))
 		case "restore", "einspielen":
 			os.Exit(runRestore(os.Args[2:]))
+		case "mcp":
+			// MCP-Server für KI-Clients über stdin/stdout (internal/mcp)
+			if err := mcp.Serve(os.Stdin, os.Stdout, &mcp.Remote{DataDir: dir}); err != nil {
+				fail(err)
+			}
+			return
 		case "attach":
 			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach
 			if len(os.Args) != 3 {

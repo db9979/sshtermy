@@ -1,6 +1,6 @@
 //go:build !windows
 
-package detach
+package localsock
 
 import (
 	"net"

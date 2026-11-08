@@ -71,6 +71,7 @@ func (a *App) updateUnlock(msg tea.Msg) tea.Cmd {
 		a.applyLook()
 		a.startDebugLog()
 		a.startAudit()
+		a.startMCP()
 		a.mgr = newManager()
 		a.showWhatsNew(u.setup)
 		a.maybeTour(u.setup)

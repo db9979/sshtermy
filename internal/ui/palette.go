@@ -560,6 +560,8 @@ func (a *App) palMenuItems() []palItem {
 		safe(palToggle(ic("sesslog"), i18n.T("Audit-Protokoll (wer, wann, was; fälschungssicher)"), a.auditOn(), "audit protokoll revision compliance nachweis log", func() tea.Cmd { return a.toggleAudit() })),
 		{group: pgSetSafe, menu: "settings", icon: ic("export"), label: i18n.T("Audit-Protokoll prüfen und speichern"), hint: ".txt",
 			keys: "audit protokoll prüfen verify export revision", run: func() tea.Cmd { return a.exportAudit() }},
+		palCycle(pgSetSafe, ic("ai"), i18n.T("MCP-Zugriff für KI-Clients (Claude, …)"), mcpLabel(a.mcpLevel()),
+			"mcp claude model context protocol ki ai client server zugriff", func(dir int) tea.Cmd { return a.cycleMCP(dir) }),
 	}
 
 	// Aussehen & Sprache: je ein Durchschalt-Eintrag, die Einzelwerte nur

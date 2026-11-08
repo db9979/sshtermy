@@ -182,7 +182,7 @@ export const de = {
       ['_Palette_', '„Jetzt sperren“ · „Master-Passwort“ · „Audit“ · „Gefahren-Check“'],
     ]},
     { t: 'Start & Tipps', ic: '$', rows: [
-      ['--update · backup', 'Update · alles sichern'],
+      ['backup · mcp', 'alles sichern · KI-Clients'],
       ['--no-intro · --debug', 'ohne Startanimation · Debug-Protokoll'],
       ['tsz / trz', 'Datei vom / zum Server (trzsz)'],
       ['_Palette_', '„teilen“: Tab live zeigen'],
@@ -368,7 +368,7 @@ export const en = {
       ['_palette_', '“Lock now” · “Master password” · “Audit” · “Danger check”'],
     ]},
     { t: 'Start & tips', ic: '$', rows: [
-      ['--update · backup', 'newest version · full backup'],
+      ['backup · mcp', 'full backup · AI clients'],
       ['--no-intro · --debug', 'no start animation · debug log'],
       ['tsz / trz', 'file from / to the server (trzsz)'],
       ['_palette_', '“share”: show a tab live'],

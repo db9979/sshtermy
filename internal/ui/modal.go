@@ -179,6 +179,9 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 			}
 		case -1:
 			a.modal = nil
+			if m.onCancel != nil {
+				return m.onCancel()
+			}
 		}
 	case mAbout:
 		switch key {
