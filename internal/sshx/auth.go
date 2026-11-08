@@ -8,11 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/pwsource"
 )
 
 // SecretPrompt fragt ein fehlendes Geheimnis interaktiv ab (z. B. Passphrase).
@@ -55,6 +58,14 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 	switch c.Auth {
 	case domain.AuthPassword:
 		pw := c.Password.Reveal()
+		if pw == "" && c.PassSource != "" {
+			// aus dem Passwortmanager; klappt das nicht, wie gewohnt fragen
+			if v, err := pwsource.Get(context.Background(), c.PassSource, pwsource.Password, pwsource.Ask(o.AskSecret)); err == nil {
+				pw = v
+			} else if o.Notice != nil {
+				o.Notice(pwsource.Label(c.PassSource) + ": " + err.Error())
+			}
+		}
 		m := []ssh.AuthMethod{ssh.PasswordCallback(func() (string, error) {
 			if pw == "" && o.AskSecret != nil {
 				return o.AskSecret(PasswordLabel(c))
@@ -69,6 +80,12 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 				switch {
 				case pw != "" && isPass:
 					ans[i] = pw
+				case !isPass && c.OTPSource != "":
+					a, err := otpAnswer(c, o, q)
+					if err != nil {
+						return nil, err
+					}
+					ans[i] = a
 				case isPass && o.AskSecret != nil:
 					// gleiche Frage wie beim Passwort-Verfahren: nur einmal
 					// fragen, und die Oberfläche kann die Antwort merken
@@ -101,9 +118,9 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 		}
 		if cs != signer {
 			// Zertifikat zuerst, der nackte Key als Rückfall (Server ohne CA)
-			return []ssh.AuthMethod{ssh.PublicKeys(cs, signer)}, nil
+			return withOTP(c, o, ssh.PublicKeys(cs, signer)), nil
 		}
-		return []ssh.AuthMethod{ssh.PublicKeys(signer)}, nil
+		return withOTP(c, o, ssh.PublicKeys(signer)), nil
 
 	case domain.AuthAgent:
 		conn, err := dialAgent()
@@ -111,7 +128,7 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 			return nil, fmt.Errorf(i18n.T("SSH-Agent nicht erreichbar: %w"), err)
 		}
 		// Der Agent hält die Private Keys; sshtermy sieht sie nie.
-		return []ssh.AuthMethod{ssh.PublicKeysCallback(agent.NewClient(conn).Signers)}, nil
+		return withOTP(c, o, ssh.PublicKeysCallback(agent.NewClient(conn).Signers)), nil
 
 	case domain.AuthAuto:
 		return autoMethods(c, o), nil
@@ -130,6 +147,43 @@ func authMethods(c domain.Connection, o Options) ([]ssh.AuthMethod, error) {
 		return m, nil
 	}
 	return nil, fmt.Errorf(i18n.T("unbekannte Auth-Methode %q"), c.Auth)
+}
+
+// withOTP: Key plus Einmalcode (Server mit „AuthenticationMethods
+// publickey,keyboard-interactive“): Den Code holt sshTermy aus der
+// 2FA-Quelle, sonst wird gefragt.
+func withOTP(c domain.Connection, o Options, m ssh.AuthMethod) []ssh.AuthMethod {
+	if c.OTPSource == "" {
+		return []ssh.AuthMethod{m}
+	}
+	return []ssh.AuthMethod{m, ssh.KeyboardInteractive(func(_, _ string, qs []string, _ []bool) ([]string, error) {
+		ans := make([]string, len(qs))
+		for i, q := range qs {
+			a, err := otpAnswer(c, o, q)
+			if err != nil {
+				return nil, err
+			}
+			ans[i] = a
+		}
+		return ans, nil
+	})}
+}
+
+// otpAnswer: Antwort auf eine Frage, die kein Passwort ist.
+func otpAnswer(c domain.Connection, o Options, q string) (string, error) {
+	if c.OTPSource != "" && pwsource.IsOTPQuestion(q) {
+		v, err := pwsource.Get(context.Background(), c.OTPSource, pwsource.OTP, pwsource.Ask(o.AskSecret))
+		if err == nil {
+			return v, nil
+		}
+		if o.Notice != nil {
+			o.Notice(pwsource.Label(c.OTPSource) + ": " + err.Error())
+		}
+	}
+	if o.AskSecret == nil {
+		return "", nil
+	}
+	return o.AskSecret(strings.TrimSpace(q))
 }
 
 // autoMethods: Agent + unverschlüsselte Standard-Keys, danach Passwort und
@@ -175,6 +229,13 @@ func autoMethods(c domain.Connection, o Options) []ssh.AuthMethod {
 			label := strings.TrimSpace(q)
 			if strings.Contains(strings.ToLower(q), "pass") {
 				label = PasswordLabel(c) // gleiche Frage wie oben, nur einmal
+			} else if c.OTPSource != "" {
+				a, err := otpAnswer(c, o, q)
+				if err != nil {
+					return nil, err
+				}
+				ans[i] = a
+				continue
 			}
 			a, err := o.AskSecret(label)
 			if err != nil {

@@ -23,6 +23,11 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
 - **X11 forwarding** per connection (like `ssh -X`): graphical programs from the server open here; needs a local X server (XQuartz, VcXsrv, WSLg), the X cookie never leaves your computer
 - **FIDO2 security keys** (`id_ed25519_sk`, `id_ecdsa_sk`, e.g. YubiKey) are used directly; sshTermy asks you to touch the key (needs OpenSSH ssh-agent/ssh-add)
+- **Password manager instead of stored passwords**: in the connection form „Password from“ and (under Advanced)
+  „2FA code from“: `op://Vault/Item/password` (1Password CLI), `bw:Item` (Bitwarden CLI), `keepassxc:file.kdbx:Item`
+  (KeePassXC, asks for the database password), `pass:name` or `cmd:command`. When a server asks for a one-time code
+  („Verification code“), sshTermy takes the TOTP code from the same source, also after a key login.
+  Only the reference is stored, never the password
 - **Kerberos/GSSAPI login** (login `kerberos`): uses the company domain ticket from the Windows sign-in or `kinit`, no password needed; without a ticket it falls back to the password
 - **Clipboard from the server (OSC 52)**: what you copy in tmux or vim on the server lands in your local clipboard. The server can never read it
 - **Split view** (Ctrl+T): up to six sessions at once in seven layouts, resize with the mouse or Alt+⇧+arrow, zoom one pane (Alt+Z), swap panes by dragging their title, optionally dim the other panes. The layout survives updates; **workspaces** (w in the manager) save layout and connections to reopen in one go, “Last used” is remembered on quit, `g` on a folder opens all its connections as a grid
@@ -39,6 +44,13 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
   the results are shown side by side in columns. The danger rules apply here too: red needs ⏎ twice.
   Servers get every step via exec (with exit code), network devices get the commands typed into their shell („-- MORE --“ is paged automatically).
+- **Schedules** (z in the manager): a broadcast or runbook runs at a set time on a folder or single connections,
+  daily, Mon–Fri, on weekends or on one weekday, e.g. „3:00 Mon–Fri `show running-config` on all switches“.
+  Runs while sshTermy is open (also when locked), missed runs are caught up within 12 hours.
+  Unattended there are no questions: unknown host keys and missing passwords make that host fail,
+  dangerous steps and runbooks with variables cannot be scheduled at all. The result per host is in the list
+  (⏎), plus a toast or desktop notification. Schedules stay on this computer (no sync), so two computers never
+  start the same run
 - **Runbooks with variables:** `{{vlan}}` or `{{vlan=20}}` in a step is asked before the run, `{{host}}`, `{{alias}}`,
   `{{user}}`, `{{port}}` are filled in per host. In the broadcast `e` loads a runbook for editing, `Ctrl+R` saves,
   `Ctrl+D` deletes. Before the run `k` lets the AI check the steps against each host's system profile and suggest
@@ -166,7 +178,7 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | Manager | ⏎ / n / e / d / / / t / s / y / l | connect / new / edit / delete / search / tunnel / AI settings / sync / session logs |
 | | i / a / b | import connections / switch appearance / customize shortcuts |
 | | c / q | create or copy an SSH key / edit quick commands |
-| | m / f | broadcast to several hosts / network scan |
+| | m / f / z | broadcast to several hosts / network scan / schedules (Ctrl+N new, Ctrl+E edit, Ctrl+R now, Ctrl+O on/off, ⏎ last result) |
 | | w / g | workspaces (saved split layouts) / open a folder as a grid |
 | Folders | o / r / v / d | create folder („A / B“ nested) / rename / move / dissolve (content stays) |
 | | ← → Space / - + | collapse/expand folder / collapse or expand all |
