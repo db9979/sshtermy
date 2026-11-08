@@ -16,6 +16,7 @@ var enPPK = map[string]string{
 	"unvollständig":           "incomplete",
 	"PuTTY-Key: Verschlüsselung %s wird nicht unterstützt":                                     "PuTTY key: encryption %s is not supported",
 	"PuTTY-Key unlesbar (Argon2-Angaben fehlen)":                                               "PuTTY key unreadable (Argon2 parameters missing)",
+	"PuTTY-Key unlesbar (Argon2-Angaben zu groß)":                                              "PuTTY key unreadable (Argon2 parameters too large)",
 	"PuTTY-Key: Verfahren %s wird nicht unterstützt, bitte in PuTTYgen mit Argon2id speichern": "PuTTY key: %s is not supported, please save it with Argon2id in PuTTYgen",
 	"PuTTY-Key unlesbar (Länge)":                                                               "PuTTY key unreadable (length)",
 	"PuTTY-Key beschädigt (Prüfsumme falsch)":                                                  "PuTTY key damaged (checksum wrong)",

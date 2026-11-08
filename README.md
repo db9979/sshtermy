@@ -505,6 +505,8 @@ make test         # go vet + tests
 make bench        # performance: terminal throughput, memory per tab, manager with 500 connections
 make build        # bin/sshtermy
 make dist         # all platforms to dist/ + checksums.txt
+make fuzz         # fuzz tests for parsers of data from foreign devices (FUZZTIME=5m for longer)
+make vuln         # known vulnerabilities in Go and the libraries (govulncheck)
 make golden       # rewrite the screen tests after an intended UI change
 make handout      # printable quick reference site/handout/*.pdf (Node + Playwright; content in tools/handout/content.mjs)
                   # TestHandoutKeysCurrent fails when keys or help change until this has run again
@@ -516,6 +518,9 @@ split view …) at a fixed size in German and English, as plain text without col
 intended change run `make golden` and look at the diff of the `.txt` files before committing. On a merge
 conflict in these files simply run `make golden` again after the merge. If CI fails, the job artifact
 `golden-actual` contains the screens as they look now. New view: add a line to `goldenCases`.
+
+**CI** runs the tests on Linux, Windows and macOS, plus the race detector, `govulncheck` and a short fuzz run.
+Dependabot proposes library updates weekly. Signing updates (one-time setup): [docs/signatur.md](docs/signatur.md) (German).
 
 **Interface texts** are written in German in the code and go through `i18n.T("…")` (formats: `i18n.F`, fixed
 errors: `i18n.NewError`). Every new text needs an entry in `internal/i18n/en.go`; `go test ./internal/i18n`

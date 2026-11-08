@@ -29,7 +29,8 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: "1.26.x"
+          check-latest: true
 
       - name: Tests
         run: go vet ./... && go test ./...
@@ -75,6 +76,19 @@ jobs:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
         if: env.UPDATE_SIGNING_KEY != ''
         run: go run ./cmd/sshtermy-sign sign dist/checksums.txt
+
+      - name: Hinweis, wenn unsigniert
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          UPDATE_PUBKEY: ${{ vars.UPDATE_PUBKEY }}
+        if: env.UPDATE_SIGNING_KEY == '' || env.UPDATE_PUBKEY == ''
+        run: |
+          # Public Key ohne Secret: die neue App würde jedes spätere Update ablehnen
+          if [ -n "$UPDATE_PUBKEY" ]; then
+            echo "::error title=Signierschlüssel fehlt::UPDATE_PUBKEY ist gesetzt, das Secret UPDATE_SIGNING_KEY fehlt – docs/signatur.md"
+            exit 1
+          fi
+          echo "::warning title=Release unsigniert::UPDATE_PUBKEY und UPDATE_SIGNING_KEY fehlen – Anleitung in docs/signatur.md"
 
       - name: Release veröffentlichen
         env:

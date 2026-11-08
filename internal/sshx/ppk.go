@@ -36,6 +36,12 @@ import (
 const ppkMagic = "PuTTY-User-Key-File-"
 
 // IsPPK: beginnt die Datei wie ein PuTTY-Key?
+// Obergrenzen für Argon2 aus der Datei: 1 GiB Speicher, 1000 Durchläufe.
+const (
+	ppkMaxArgonMem    = 1 << 20 // KiB
+	ppkMaxArgonPasses = 1000
+)
+
 func IsPPK(b []byte) bool {
 	return bytes.HasPrefix(bytes.TrimLeft(b, "\ufeff \t\r\n"), []byte(ppkMagic))
 }
@@ -187,6 +193,11 @@ func parsePPK(b, pass []byte) (any, error) {
 		if encrypted {
 			if f.argMem == 0 || f.argPass == 0 || f.argPar == 0 || len(f.argSalt) == 0 {
 				return nil, errors.New(i18n.T("PuTTY-Key unlesbar (Argon2-Angaben fehlen)"))
+			}
+			// Eine präparierte Datei könnte sonst Terabytes Speicher oder
+			// Milliarden Durchläufe verlangen (PuTTYgen: 8 MiB, ~10–40 Durchläufe).
+			if f.argMem > ppkMaxArgonMem || f.argPass > ppkMaxArgonPasses {
+				return nil, errors.New(i18n.T("PuTTY-Key unlesbar (Argon2-Angaben zu groß)"))
 			}
 			var out []byte
 			switch f.kdf {
