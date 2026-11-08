@@ -443,6 +443,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.containerMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.shareMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.editMsg(msg); ok {
 		return a, cmd
 	}
@@ -587,6 +590,7 @@ func (a *App) onTick() tea.Cmd {
 			a.noticeBell(s)
 		}
 		a.alertTick(s)
+		a.shareTick(s)
 		if c := a.takeClipboard(s); c != nil {
 			cmds = append(cmds, c)
 		}

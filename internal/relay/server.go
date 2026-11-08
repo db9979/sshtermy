@@ -34,6 +34,7 @@ type Server struct {
 	anchors map[string]*anchorLink // Anker-ID → Steuerleitung
 	pending map[string]*pendingChan
 	active  map[string]*activeChan
+	shares  map[string]*shareRoom // Sitzung live teilen (share.go)
 	limit   *limiter
 }
 
@@ -85,6 +86,9 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("POST "+PathAnchorPair, s.pairAnchor)
 	m.HandleFunc("GET "+PathAnchor, s.anchorCtrl)
 	m.HandleFunc("GET "+PathAnchorChannel, s.anchorChannel)
+	m.HandleFunc("POST "+PathShare, s.shareCreate)
+	m.HandleFunc("GET "+PathShareSend, s.shareSend)
+	m.HandleFunc("GET "+PathShareWatch, s.shareWatch)
 	m.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = io.WriteString(w, "sshTermy-Vermittler (Protokoll v1)\n")

@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -71,7 +72,7 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 			}()
 		})
 		out := io.MultiWriter(outWriter{s, ev}, login)
-		if c.Protocol == domain.ProtoLocal {
+		if c.Protocol == domain.ProtoLocal || c.Protocol == domain.ProtoWatch {
 			out = outWriter{s, ev} // keine Anmeldung
 		}
 
@@ -105,6 +106,13 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 				return fail(errors.New(i18n.T("Lokale Shell startet nicht: ") + err.Error()))
 			}
 			st, done = l, l.Done
+		case domain.ProtoWatch:
+			w, d, err := dialWatch(s.id, c.WatchLink, out, ev)
+			if err != nil {
+				return fail(err)
+			}
+			st, done = w, d
+			note = i18n.T("Nur Zusehen: Tasten gehen nirgendwo hin")
 		default:
 			return fail(errors.New("unknown protocol " + string(c.Protocol)))
 		}
@@ -116,7 +124,7 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 		go func() {
 			err := <-done
 			// exit in der lokalen Shell ist ein gewolltes Ende, kein Abriss
-			ev <- shellClosedMsg{s.id, st, err, err != nil && c.Protocol != domain.ProtoLocal}
+			ev <- shellClosedMsg{s.id, st, err, err != nil && c.Protocol != domain.ProtoLocal && c.Protocol != domain.ProtoWatch}
 		}()
 		return connectedMsg{sid: s.id, shell: st, note: note}
 	}
@@ -177,6 +185,11 @@ func (a *App) protoBadge(s *session) string {
 		return st.Badge.Foreground(st.T.Accent).Render("≈ " + name + " " + strconv.Itoa(s.conn.SerialBaud()))
 	case domain.ProtoLocal:
 		return st.Badge.Foreground(st.T.Accent).Render("$ " + s.localShellName() + " · " + i18n.T("lokal"))
+	case domain.ProtoWatch:
+		return st.Badge.Foreground(st.T.AI).Render("◉ " + i18n.T("nur Zusehen"))
+	}
+	if o := s.share.Load(); o != nil {
+		return st.Badge.Foreground(st.T.AI).Render(fmt.Sprintf("◉ "+i18n.T("geteilt · %d"), o.viewers))
 	}
 	return ""
 }
@@ -202,6 +215,8 @@ func shortTarget(c domain.Connection) string {
 		return "≈ " + p
 	case domain.ProtoLocal:
 		return "$ " + localShellLabel(c.LocalShell) + " · " + i18n.T("lokal")
+	case domain.ProtoWatch:
+		return "◉ " + i18n.T("Zusehen")
 	}
 	return t
 }
