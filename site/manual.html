@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sshTermy – Manual and FAQ</title>
+<meta name="description" content="sshTermy manual: setup, connections, terminal, AI, network devices, security, sync, moving to a new computer, MCP and frequently asked questions.">
+<link rel="alternate" hreflang="de" href="de/handbuch.html">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14' fill='%23bb9af7'>◆</text></svg>">
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="logo" href="./"><span>◆</span> sshTermy</a>
+    <nav>
+      <a href="./#install">Install</a>
+      <a href="./#features">Features</a>
+      <a href="./#keys">Keys</a>
+      <a href="manual.html"><b>Manual</b></a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/db9979/sshtermy">GitHub</a>
+    </nav>
+    <div class="lang"><b>EN</b> · <a href="de/handbuch.html">DE</a></div>
+  </div>
+</header>
+
+<main class="manual">
+<aside class="toc">
+  <a href="#start">Getting started</a>
+  <a href="#connections">Connections</a>
+  <a href="#terminal">Terminal and tabs</a>
+  <a href="#ai">AI copilot</a>
+  <a href="#agent">Goal, agent and plan mode</a>
+  <a href="#network">Switches, routers, firewalls</a>
+  <a href="#many">Many hosts</a>
+  <a href="#files">Files and tunnels</a>
+  <a href="#security">Security</a>
+  <a href="#privacy">AI privacy</a>
+  <a href="#sync">Sync and team</a>
+  <a href="#move">Backup and moving</a>
+  <a href="#mcp">MCP for AI clients</a>
+  <a href="#bugs">Reporting bugs</a>
+  <a href="#faq">FAQ</a>
+</aside>
+
+<article>
+<section id="start">
+  <h1>Manual</h1>
+  <p class="lead">Everything important about sshTermy in one place. For printing there is the <a href="handout/sshtermy-quickref-en.pdf">quick reference (PDF)</a>; every key can also be looked up in the app with <kbd>F1</kbd>.</p>
+  <h2>Getting started</h2>
+  <ol>
+    <li><b>Install</b> – see <a href="./#install">Install</a>. sshTermy is a single file for Windows, macOS and Linux.</li>
+    <li><b>Create a master password.</b> On first start you choose a password for the encrypted store (Argon2id + AES-256-GCM). It is never saved. On Windows your Windows sign-in can unlock it as well (DPAPI).</li>
+    <li><b>Bring your connections:</b> <kbd>i</kbd> in the manager imports from <code>~/.ssh/config</code>, PuTTY, MobaXterm, Ansible inventories or CSV. Or press <kbd>n</kbd> for a new connection.</li>
+    <li><b>Set up AI</b> (optional): <kbd>s</kbd> in the manager. Pick a provider (your own server, Ollama, OpenAI, Claude); <kbd>Ctrl</kbd>+<kbd>T</kbd> tests it.</li>
+    <li><b>Connect:</b> pick a connection, <kbd>⏎</kbd>. <kbd>F10</kbd> takes you back to the manager while the session keeps running.</li>
+  </ol>
+  <p class="tip">Almost everything is in the command palette <kbd>Ctrl</kbd>+<kbd>Space</kbd>: type what you are looking for, e.g. “lock”, “audit” or “matrix”.</p>
+</section>
+
+<section id="connections">
+  <h2>Connections</h2>
+  <p>The form (<kbd>n</kbd>/<kbd>e</kbd>) shows only name, address, user and sign-in at the top; “Advanced” opens jump host, tags, folder, device type, shortcut and more.</p>
+  <ul>
+    <li><b>Sign-in:</b> password (encrypted in the store or in the system keychain), key file (PuTTY <code>.ppk</code> too), SSH agent, security key (FIDO), certificates. <kbd>c</kbd> in the manager creates a key and copies it to the server.</li>
+    <li><b>Folders and tags:</b> <kbd>o</kbd> creates folders (“Customer / Site” nests), drag with the mouse to reorder. <code>#tag</code> in the search filters.</li>
+    <li><b>Jump host:</b> connect through another server; sshTermy remembers which jump host fits which network.</li>
+    <li><b>Telnet, serial, local:</b> “Connection type” picks Telnet, a USB console cable or this computer's shell (<kbd>Alt</kbd>+<kbd>L</kbd>).</li>
+    <li><b>Persistent session:</b> always land in the same tmux/screen session for a connection, even from another computer.</li>
+  </ul>
+</section>
+
+<section id="terminal">
+  <h2>Terminal and tabs</h2>
+  <ul>
+    <li><kbd>F7</kbd>/<kbd>F8</kbd> switch tabs, <kbd>Alt</kbd>+<kbd>T</kbd> lists them all, <kbd>Alt</kbd>+<kbd>N</kbd>/<kbd>Alt</kbd>+<kbd>W</kbd> open and close.</li>
+    <li><kbd>Ctrl</kbd>+<kbd>T</kbd> splits the view (2 to 6 panes), <kbd>Alt</kbd>+<kbd>I</kbd> types into all visible panes at once.</li>
+    <li><kbd>⇧F10</kbd> moves a tab into its own terminal window.</li>
+    <li><kbd>Ctrl</kbd>+<kbd>F</kbd> searches the scrollback, <kbd>Ctrl</kbd>+<kbd>E</kbd> jumps to error lines.</li>
+    <li><kbd>F9</kbd> and <kbd>⇧F1</kbd>…<kbd>⇧F8</kbd>: quick commands, preset for the device (Linux, Windows, Aruba, Cisco, Juniper, MikroTik, FortiGate …).</li>
+    <li><kbd>F6</kbd> host overview: CPU, RAM, disk, updates on servers; firmware, ports and VLANs on network devices; <kbd>c</kbd> containers.</li>
+    <li>If the line drops (Wi-Fi, VPN, standby), sshTermy reconnects by itself, restarts tunnels and re-attaches tmux/screen. After waking up or a network change all connections are checked right away.</li>
+  </ul>
+</section>
+
+<section id="ai">
+  <h2>AI copilot</h2>
+  <ul>
+    <li><b>Ghost text:</b> a grey suggestion while you type, <kbd>Tab</kbd> or <kbd>→</kbd> accepts.</li>
+    <li><b>Next commands:</b> up to four suggestions after every command, <kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd> inserts (without Enter).</li>
+    <li><b>Why? &amp; fix:</b> when a command fails, <kbd>Alt</kbd>+<kbd>0</kbd> explains the cause and suggests a fix.</li>
+    <li><b>Ask AI:</b> <kbd>F3</kbd>; the answer knows the screen, the system and your previous commands.</li>
+    <li><b>Fallback providers:</b> if the first one fails, the next takes over (Settings › AI).</li>
+    <li><b>Learning per device:</b> correct an AI command and sshTermy remembers it for that device.</li>
+  </ul>
+</section>
+
+<section id="agent">
+  <h2>Goal, agent and plan mode</h2>
+  <p><kbd>F2</kbd> opens goal mode: describe a goal (“set up nginx with TLS”), the AI proposes one command per step, you confirm with <kbd>⏎</kbd>. <kbd>Tab</kbd> switches to agent mode:</p>
+  <table>
+    <tr><th>Level</th><th>What runs without asking</th></tr>
+    <tr><td>Careful</td><td>read-only commands only</td></tr>
+    <tr><td>Normal</td><td>everything except dangerous commands, sudo and inline code</td></tr>
+    <tr><td>Full</td><td>everything except dangerous commands</td></tr>
+    <tr><td>Plan first</td><td>the AI presents a plan, you edit and approve it</td></tr>
+  </table>
+  <p>Dangerous commands (e.g. <code>rm -rf</code>, formatting, switch reload) <b>never</b> run automatically. Successful goals can be saved as a runbook and later run on many hosts.</p>
+</section>
+
+<section id="network">
+  <h2>Switches, routers, firewalls</h2>
+  <p>sshTermy recognises ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, FortiGate, Comware and Huawei. On these devices there are never hidden exec channels: every query runs visibly at the prompt.</p>
+  <ul>
+    <li><kbd>F6</kbd> → <kbd>r</kbd>: firmware, model, CPU/RAM, ports and VLANs.</li>
+    <li><kbd>F6</kbd> → <kbd>b</kbd>: back up the configuration encrypted (<code>show running-config</code>, Junos <code>show configuration | display set</code>, RouterOS <code>/export</code>, FortiOS <code>show full-configuration</code>); <kbd>d</kbd> shows the diff to the previous one.</li>
+    <li><b>Config rules:</b> e.g. “ntp server must be set”; violations show up after every backup.</li>
+    <li><b>Find a device:</b> enter a MAC or IP, sshTermy asks all switches for their MAC, ARP and LLDP tables and names switch and port.</li>
+    <li><b>Schedule</b> (<kbd>z</kbd>): e.g. a nightly backup of all switches in a folder.</li>
+  </ul>
+</section>
+
+<section id="many">
+  <h2>Many hosts</h2>
+  <ul>
+    <li><b>Broadcast</b> (<kbd>m</kbd>): commands or a runbook on many hosts at once; results side by side, danger check first.</li>
+    <li><b>Network scan</b> (<kbd>f</kbd>): finds SSH hosts in a network and adds them as connections.</li>
+    <li><b>Workspaces</b> (<kbd>w</kbd>): save split views; <kbd>g</kbd> opens a folder as a grid.</li>
+    <li>sshTermy is tested with 1000 connections: manager, search, palette and sync stay within a few milliseconds per frame.</li>
+  </ul>
+</section>
+
+<section id="files">
+  <h2>Files and tunnels</h2>
+  <ul>
+    <li><kbd>F5</kbd>: two-sided SFTP, copy with <kbd>c</kbd> or by dragging, <kbd>e</kbd> opens a server file in your own editor and uploads it on save.</li>
+    <li><code>tsz</code>/<code>trz</code> in the terminal transfer files even through jump hosts (trzsz).</li>
+    <li><kbd>F4</kbd>: switch tunnels (local, remote, SOCKS) on and off; web services open in the browser.</li>
+  </ul>
+</section>
+
+<section id="security">
+  <h2>Security</h2>
+  <ul>
+    <li><b>Store:</b> all passwords, keys and API keys encrypted; unreadable without the master password.</li>
+    <li><b>Danger check:</b> on production hosts (or everywhere) risky commands need a second confirmation, also when pasted.</li>
+    <li><b>Lock:</b> immediately or after idle time; sessions keep running behind it.</li>
+    <li><b>Audit log</b> (Settings › Security): who did what on which host and when. Every line is chained and signed; “Verify and save audit log” reports changed, deleted or reordered lines. Commands with a leading space appear only as “(private)”.</li>
+    <li><b>Updates</b> are signed with Ed25519; an update without a valid signature is rejected.</li>
+  </ul>
+</section>
+
+<section id="privacy">
+  <h2>AI privacy</h2>
+  <p>Before anything is sent, sshTermy removes passwords, keys and tokens. Under Settings › AI › “AI privacy” you choose:</p>
+  <ul>
+    <li><b>all providers</b> – the default.</li>
+    <li><b>local AI only</b> – only endpoints in your own network (localhost, private IPs, <code>.local</code>/<code>.lan</code>/<code>.internal</code>); cloud providers are skipped.</li>
+    <li><b>AI off</b> – nothing leaves the computer.</li>
+  </ul>
+  <p>Per connection the tags <code>ki-lokal</code> and <code>ki-aus</code> apply, e.g. for customer networks; the stricter setting wins. “Show last AI request” shows exactly what was last sent to which host and model.</p>
+</section>
+
+<section id="sync">
+  <h2>Sync and team</h2>
+  <ul>
+    <li><b>Sync</b> (<kbd>y</kbd>): connections, tunnels, runbooks and settings end-to-end encrypted through a cloud folder (OneDrive, Dropbox, iCloud, Syncthing) or WebDAV (NAS, Nextcloud).</li>
+    <li><b>Team package:</b> share a folder encrypted as <code>.sshteam</code>; team folders can be subscribed to and stay current.</li>
+    <li><b>Share:</b> show a tab live; viewers watch along and type only if you allow it.</li>
+    <li><b>Relay:</b> reach servers behind NAT/firewalls through your own relay.</li>
+  </ul>
+</section>
+
+<section id="move">
+  <h2>Backup and moving to a new computer</h2>
+  <p>Settings › Import / export › “Save full backup” (or <code>sshtermy backup</code>) packs the whole data folder into a <code>.sshtbak</code> file encrypted with the master password: connections, keys, logs, switch backups, known_hosts and settings.</p>
+  <p>On the new computer: install sshTermy, create any password on first start, then “Restore full backup” (or <code>sshtermy restore file.sshtbak</code>). After confirming, sshTermy restarts and uses the old master password. The previous state stays next to it as <code>….vorher-&lt;date&gt;</code>.</p>
+</section>
+
+<section id="mcp">
+  <h2>MCP for AI clients</h2>
+  <p>Claude Desktop, Claude Code and other MCP clients can use sshTermy as a tool. Switch it on under Settings › Security › “MCP access for AI clients”:</p>
+  <ul>
+    <li><b>read only</b>: list connections and tabs, read a tab, run read-only commands (<code>df -h</code>, <code>show interfaces</code>).</li>
+    <li><b>with confirmation</b>: any other command runs only after <kbd>y</kbd> in sshTermy.</li>
+  </ul>
+  <div class="cmd"><pre>claude mcp add sshtermy -- sshtermy mcp</pre></div>
+  <p>Claude Desktop: add the server <code>{"command": "sshtermy", "args": ["mcp"]}</code> to <code>claude_desktop_config.json</code>. sshTermy must be running and unlocked. AI privacy applies here too, and every call is in the audit log.</p>
+</section>
+
+<section id="bugs">
+  <h2>Reporting bugs</h2>
+  <ol>
+    <li>Turn on Settings › “Debug log for bug reports” (or start <code>sshtermy --debug</code>).</li>
+    <li>Reproduce the problem.</li>
+    <li>Help › “Save cleaned debug log”: a copy without hosts, IPs, user names and passwords lands in Downloads.</li>
+    <li>Open an <a href="https://github.com/db9979/sshtermy/issues/new">issue on GitHub</a> and attach the file.</li>
+  </ol>
+  <p>If sshTermy crashes, it offers a cleaned crash report on the next start.</p>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <details><summary>I forgot my master password.</summary><p>Without the password the store cannot be decrypted; that is on purpose. On Windows the Windows sign-in (DPAPI) helps if it is switched on. Otherwise rename the data folder and start over; synced connections come back with the sync password.</p></details>
+  <details><summary>Windows says “Windows protected your PC”.</summary><p>The <code>.exe</code> is not code-signed yet. “More info” → “Run anyway”. With winget the warning usually does not appear.</p></details>
+  <details><summary>macOS says the app “cannot be opened”.</summary><p>Install through Homebrew or the one-liner, or remove the quarantine flag: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
+  <details><summary>Where is my data?</summary><p>Windows <code>%APPDATA%\sshtermy</code>, macOS <code>~/Library/Application Support/sshtermy</code>, Linux <code>~/.config/sshtermy</code>. <code>SSHTERMY_HOME</code> moves the folder, e.g. to a USB stick.</p></details>
+  <details><summary>The connection to an Aruba switch drops immediately.</summary><p>Some switches end the session when a second channel opens. sshTermy recognises network devices and opens only the shell there. If it does not: set the device type to “Network device” under “Advanced” in the form.</p></details>
+  <details><summary>The function keys do nothing.</summary><p>Some terminals or laptops grab F keys (e.g. for brightness). Hold the Fn key or remap keys under <kbd>b</kbd> in the manager. On the uConsole, Fn+1…= are F1…F12.</p></details>
+  <details><summary>The AI does not answer.</summary><p>The dot at the top right shows the status. <kbd>s</kbd> → <kbd>Ctrl</kbd>+<kbd>T</kbd> tests the endpoint. If AI privacy is set to “local AI only” or “AI off”, or the connection has the tag <code>ki-aus</code>, that is intended.</p></details>
+  <details><summary>Are my commands sent anywhere?</summary><p>Only to the AI provider you set up, and only cleaned. sshTermy has no telemetry. The update check only asks GitHub for the latest version.</p></details>
+  <details><summary>Can I use sshTermy without AI?</summary><p>Yes. Without a provider (or with “AI off”) it is a complete SSH terminal with manager, SFTP, tunnels, broadcast and backups.</p></details>
+  <details><summary>How do I get updates?</summary><p>sshTermy checks on start and shows new versions; <kbd>F12</kbd> → <kbd>u</kbd> installs. With Homebrew, apt or winget updates come through the package manager.</p></details>
+</section>
+</article>
+</main>
+
+<footer>
+  <div class="bar">
+    <span><b>sshTermy</b> · Idea: Dominik Bornhäußer</span>
+    <a href="https://github.com/db9979/sshtermy">GitHub</a>
+    <a href="handout/sshtermy-quickref-en.pdf">Quick reference (PDF)</a>
+    <a href="de/handbuch.html">Deutsch</a>
+  </div>
+</footer>
+<script src="site.js"></script>
+</body>
+</html>

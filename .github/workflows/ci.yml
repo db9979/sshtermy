@@ -17,6 +17,8 @@ jobs:
       - run: go vet ./... && go test ./...
       - name: Terminal-Emulator (eigene Kopie in third_party/vt)
         run: cd third_party/vt && go test ./...
+      - name: Lasttest mit 1000 Hosts
+        run: make loadtest
       # Bildschirm-Tests: abweichende Bilder zum Ansehen hochladen
       - uses: actions/upload-artifact@v4
         if: failure()

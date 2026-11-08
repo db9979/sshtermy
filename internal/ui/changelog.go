@@ -166,3 +166,13 @@ func (a *App) doRestart() tea.Cmd {
 
 // Restart: soll main nach dem Beenden die neue Version starten?
 func (a *App) Restart() bool { return a.restart }
+
+// manualURL: Handbuch auf der Webseite in der eingestellten Sprache.
+func manualURL() string {
+	if i18n.Lang() == "de" {
+		return "https://db9979.github.io/sshtermy/de/handbuch.html"
+	}
+	return "https://db9979.github.io/sshtermy/manual.html"
+}
+
+var openManual = func() { _ = sshx.OpenBrowser(manualURL()) }

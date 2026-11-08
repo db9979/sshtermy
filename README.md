@@ -203,6 +203,8 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 
 ## Usage
 
+📖 **Manual & FAQ** (setup, AI privacy, network devices, moving to a new computer, MCP): [db9979.github.io/sshtermy/manual.html](https://db9979.github.io/sshtermy/manual.html) · palette › Help › “Manual & FAQ”
+
 🖨 **Printable quick reference** (A4, 2 pages): [English PDF](https://db9979.github.io/sshtermy/handout/sshtermy-quickref-en.pdf) · [German PDF](https://db9979.github.io/sshtermy/handout/sshtermy-kurzreferenz-de.pdf)
 
 | Where | Key | Effect |
@@ -541,6 +543,7 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
 ```
 make test         # go vet + tests
 make bench        # performance: terminal throughput, memory per tab, manager with 500 connections
+make loadtest     # load test: 1000 hosts (store, manager, palette, broadcast, sync, MCP)
 make build        # bin/sshtermy
 make dist         # all platforms to dist/ + checksums.txt
 make fuzz         # fuzz tests for parsers of data from foreign devices (FUZZTIME=5m for longer)
