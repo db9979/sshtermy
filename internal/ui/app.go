@@ -240,6 +240,8 @@ func (a *App) byID(id int) *session {
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.perf.skip = false // jede Nachricht außer Ausgabeflut zeichnet sofort (perf.go)
 	switch msg.(type) {
+	case WindowClosedMsg:
+		return a, a.quit()
 	case perfRedrawMsg:
 		a.perf.redraw = false
 		return a, nil
@@ -611,6 +613,11 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	return a, nil
 }
+
+// WindowClosedMsg: Das eigene Fenster (internal/gui) wurde geschlossen.
+// sshTermy beendet sich dann wie mit Strg+Q: Sitzungen, Protokolle und
+// Aufzeichnungen werden sauber geschlossen.
+type WindowClosedMsg struct{}
 
 func (a *App) quit() tea.Cmd {
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)

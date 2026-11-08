@@ -54,14 +54,14 @@
       <p>With winget (Windows 11 and 10):</p>
       <div class="cmd"><pre>winget install db9979.sshTermy</pre></div>
       <p><small>Available as soon as the package is approved in the winget catalog.</small></p>
-      <p>Or download the <code>.exe</code> for your processor from the <a href="https://github.com/db9979/sshtermy/releases/latest">releases</a> and start it in <a href="https://aka.ms/terminal">Windows Terminal</a>.</p>
+      <p>Or download the <code>.exe</code> for your processor from the <a href="https://github.com/db9979/sshtermy/releases/latest">releases</a>: a double-click opens sshTermy in its own window. Started from <a href="https://aka.ms/terminal">Windows Terminal</a> it runs right there.</p>
     </div>
     <div class="card">
       <h3>macOS <span class="tag">Apple Silicon · Intel</span></h3>
       <p>With Homebrew:</p>
       <div class="cmd"><pre>brew tap db9979/sshtermy https://github.com/db9979/sshtermy
 brew install sshtermy</pre></div>
-      <p>Or with one line, which also creates <code>~/Applications/sshTermy.app</code>:</p>
+      <p>Or with one line, which also creates <code>~/Applications/sshTermy.app</code> (opens in its own window, no Terminal needed):</p>
       <div class="cmd"><pre>curl -fsSL https://raw.githubusercontent.com/db9979/sshtermy/main/install.sh | sh</pre></div>
     </div>
     <div class="card">
@@ -118,6 +118,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <h2>Features</h2>
   <div class="features">
     <div class="card"><h3>Connection manager</h3><p>Folders, tags, jump hosts, import from <code>~/.ssh/config</code>, PuTTY and MobaXterm.</p></div>
+    <div class="card"><h3>Own window</h3><p>No terminal needed: double-click the <code>.exe</code>, open the <code>.app</code> or run <code>sshtermy -window</code>. Font and Nerd Font symbols are built in, every key arrives (Alt+⏎, ⇧F-keys, Ctrl+Space). From a terminal it runs in the terminal as before.</p></div>
     <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback, tabs, split view, search.</p></div>
     <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen. After sleep or a network change every line is checked within seconds.</p></div>
     <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right. <kbd>e</kbd> opens a server file in VS Code, Notepad++ or TextEdit, saving uploads it back. While copying: percent, MB/s, time left and a speed curve.</p></div>
@@ -199,6 +200,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Session logs: AI change report</td></tr>
     <tr><td><kbd>z</kbd> (manager)</td><td>Schedules for broadcast and runbooks</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Move the tab to its own terminal window</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Own window: font size bigger / smaller / default (Mac: <kbd>⌘</kbd>)</td></tr>
     <tr><td><kbd>F10</kbd></td><td>Back to the manager (sessions keep running)</td></tr>
     <tr><td><kbd>F12</kbd></td><td>About and update</td></tr>
     <tr><td><kbd>Tab</kbd> / <kbd>→</kbd></td><td>Accept ghost text</td></tr>

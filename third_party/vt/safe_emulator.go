@@ -256,3 +256,26 @@ func (se *SafeEmulator) IsAltScreen() bool {
 	defer se.mu.RUnlock()
 	return se.Emulator.IsAltScreen()
 }
+
+// Snapshot kopiert den ganzen Bildschirm unter einer einzigen Sperre in dst
+// (wird bei Bedarf vergrößert) und liefert Breite und Höhe (sshTermy, eigenes
+// Fenster in internal/gui). Zeile y beginnt bei dst[y*w].
+func (se *SafeEmulator) Snapshot(dst []uv.Cell) ([]uv.Cell, int, int) {
+	se.mu.RLock()
+	defer se.mu.RUnlock()
+	w, h := se.Emulator.Width(), se.Emulator.Height()
+	if cap(dst) < w*h {
+		dst = make([]uv.Cell, w*h)
+	}
+	dst = dst[:w*h]
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if c := se.Emulator.CellAt(x, y); c != nil {
+				dst[y*w+x] = *c
+			} else {
+				dst[y*w+x] = uv.Cell{}
+			}
+		}
+	}
+	return dst, w, h
+}

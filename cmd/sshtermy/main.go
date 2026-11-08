@@ -18,6 +18,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/fullbackup"
+	"github.com/db9979/sshtermy/internal/gui"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/mcp"
 	"github.com/db9979/sshtermy/internal/sshx"
@@ -73,6 +74,8 @@ func main() {
 	noIntro := flag.Bool("no-intro", false, i18n.T("ohne Startanimation starten (dauerhaft: Palette „Startanimation aus“)"))
 	doUpdate := flag.Bool("update", false, i18n.T("auf die neueste Version aus GitHub aktualisieren und beenden"))
 	debug := flag.Bool("debug", false, i18n.T("Debug-Protokoll für diesen Start schreiben (debug.log im Datenordner)"))
+	forceWindow := flag.Bool("window", false, i18n.T("im eigenen Fenster starten statt im Terminal"))
+	forceTUI := flag.Bool("tui", false, i18n.T("im Terminal starten, auch ohne Terminal kein eigenes Fenster öffnen"))
 	crashTest := flag.String("crash-test", "", i18n.T("nur zum Ausprobieren des Absturzberichts: ui, cmd oder fatal"))
 	flag.Parse()
 
@@ -125,7 +128,12 @@ func main() {
 	// Bibliotheken (z. B. der SSH-Agent bei der Weiterleitung) schreiben
 	// Meldungen mit log.Printf nach stderr: das würde das Bild zerreißen.
 	log.SetOutput(io.Discard)
-	_, err = tea.NewProgram(app).Run()
+	if wantWindow(*forceWindow, *forceTUI) {
+		hideConsole()
+		_, err = gui.Run(app, gui.Options{Title: version.Name, CloseMsg: ui.WindowClosedMsg{}})
+	} else {
+		_, err = tea.NewProgram(app).Run()
+	}
 	if errors.Is(err, tea.ErrProgramPanic) {
 		crashed(guard, st)
 	}

@@ -17,6 +17,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
 - **Auto-Reconnect**: reißt die Leitung ab (WLAN, VPN, Standby), verbindet sshTermy die Sitzung von selbst neu, startet laufende Tunnel wieder und hängt tmux/screen wieder an (abschaltbar über die Palette). Nach **Ruhezustand oder Netzwechsel** (anderes WLAN, VPN an/aus) prüft sshTermy jede Leitung binnen Sekunden, statt auf den Keepalive-Ablauf zu warten; solange gar kein Netz da ist, wartet es, ohne Versuche zu verbrauchen
 - **Feste Sitzung** (Idee: Dominik Bornhäußer): pro Verbindung beim Verbinden immer in dieselbe tmux-/screen-Sitzung, auch von einem anderen Rechner aus. Laufen schon andere Sitzungen, fragt sshTermy, welche. Gleicher Sitzungsname in zwei Tabs oder auf zwei Rechnern = gespiegelter Bildschirm; „nur zuschauen“ hängt tmux schreibgeschützt an. Die Palette öffnet einen zweiten Tab zum Zuschauen oder kopiert einen `ssh … tmux attach -r`-Befehl für Kollegen. Nicht bei Switches, Telnet und Konsole.
+- **Eigenes Fenster** (ohne Terminal): Doppelklick auf `sshtermy.exe` im Explorer, `sshTermy.app` auf dem Mac oder `sshtermy -window`, und sshTermy öffnet ein eigenes Fenster mit eingebauter Cascadia Mono samt Nerd-Font-Symbolen. Alle Tasten kommen an (Alt+⏎, ⇧F1 … ⇧F12, Strg+Leertaste), Strg+⇧V oder ⇧Einfg fügen ein (Windows auch Strg+V, Mac ⌘V), Strg + / Strg − / Strg 0 oder Strg + Mausrad ändern die Schriftgröße. Im Terminal gestartet läuft sshTermy wie bisher im Terminal; `-tui` erzwingt das
 - **Lokale Shell** (Alt+L): deine eigene PowerShell (Windows, über ConPTY), zsh oder bash (macOS/Linux) als Tab, mit KI-Hilfe, Ziel-/Agent-/Plan-Modus, geteilter Ansicht, Tabs und Sitzungsprotokoll. Gefahren-Check und Agent-Stufen gelten auch auf dem eigenen Rechner; der Agent legt seine Skripte in `~/.sshtermy-agent` ab. Oder als Verbindung speichern („Verbindung über: Lokal“) mit eigener Shell (`pwsh`, `cmd`, `wsl`, `bash -l` …) und Startordner
 - **Schnellverbinden**: `user@host:port` oder `ssh -p 2222 user@host` in die Palette tippen, ohne die Verbindung anzulegen (Agent/Standard-Keys, sonst Passwort)
 - **Fertig im Hintergrund**: Ein Befehl, der 10 s oder länger in einem verdeckten Tab lief, markiert den Tab (✓ / ×) und meldet sich mit einer Einblendung; ist das sshTermy-Fenster im Hintergrund, kommt zusätzlich eine Desktop-Benachrichtigung (Windows, macOS, Linux). Die Terminal-Glocke markiert den Tab ebenso. Beides ist in der Palette abschaltbar
@@ -195,8 +196,9 @@ Oder lade die passende Datei aus den [Releases](https://github.com/db9979/sshter
 | Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` / `sshtermy_linux_arm` (32 Bit ARMv7) / `sshtermy_linux_riscv64` |
 
 **macOS (und Linux): eine Zeile im Terminal** installiert die neueste Version, prüft die Prüfsumme und legt
-`~/Applications/sshTermy.app` an (Doppelklick oder Spotlight „sshTermy“ öffnet sie im Terminal, bzw. in iTerm,
-falls installiert), dazu den Befehl `~/.local/bin/sshtermy`:
+`~/Applications/sshTermy.app` an (Doppelklick oder Spotlight „sshTermy“ öffnet sshTermy im eigenen Fenster, ganz
+ohne Terminal; eine `.app` von einem älteren Installer öffnet das Terminal, dann die Zeile einfach noch mal
+ausführen), dazu den Befehl `~/.local/bin/sshtermy`:
 
 ```
 curl -fsSL https://raw.githubusercontent.com/db9979/sshtermy/main/install.sh | sh
@@ -206,7 +208,8 @@ Eine im Browser geladene Datei markiert macOS als Quarantäne und blockt sie bei
 geöffnet werden“). Wer sie trotzdem nutzen will: `xattr -d com.apple.quarantine sshtermy_darwin_arm64 && chmod +x
 sshtermy_darwin_arm64`, dann im Terminal mit `./sshtermy_darwin_arm64` starten.
 
-Empfohlen unter Windows: **Windows Terminal** (Truecolor, F-Tasten, Unicode).
+Windows: Doppelklick auf die `.exe` öffnet sshTermy im eigenen Fenster. Aus PowerShell oder cmd gestartet bleibt es
+im Terminal; dort ist **Windows Terminal** empfohlen (Truecolor, F-Tasten, Unicode).
 
 **ClockworkPi uConsole** (und ähnliche Handhelds): apt und der Einzeiler wählen für jeden Kern das passende Programm
 (CM4/CM5 und A-06 mit 64-Bit-System: arm64, 32-Bit-Raspberry-Pi-OS: armhf, R-01: riscv64). Der 5"-Bildschirm reicht:
@@ -220,6 +223,8 @@ anklicken, und im Manager mit `b` jede Taste umlegen.
 sshtermy              # starten
 sshtermy --version    # Version, Commit, Build-Datum
 sshtermy --update     # auf die neueste Version aktualisieren
+sshtermy -window      # eigenes Fenster statt Terminal (automatisch, wenn ohne Terminal gestartet)
+sshtermy -tui         # immer im Terminal, nie ein eigenes Fenster
 sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimation aus“)
 sshtermy --debug      # Debug-Protokoll für diesen Start (debug.log im Konfigurationsordner)
 sshtermy backup [datei]   # Gesamtsicherung aller Daten (fragt das Master-Passwort)
@@ -282,6 +287,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | Überall | Strg+Leertaste | Befehlspalette: ⏎ als Ziel starten, Tab KI fragen, ↑↓ Vorschlag/Tunnel/Verbindung wählen; `log` = KI wertet Ausgabe aus, `farb` = Farbregeln |
 | | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden |
 | | F12 → l / F12 → w | Sprache wechseln (Deutsch ↔ Englisch) / Was ist neu |
+| Eigenes Fenster | Strg+⇧V · ⇧Einfg (Windows auch Strg+V, Mac ⌘V) / Strg + · Strg − · Strg 0 (Mac: ⌘) | einfügen / Schrift größer · kleiner · Standard (auch Strg + Mausrad); auf dem Mac wirkt ⌘ als Alt, ⌥ schreibt weiter @ [ ] { } \| ~ |
 
 Warum F-Tasten statt `Strg+A`? `Strg+A` ist in bash/zsh „Zeilenanfang“ und das Präfix von GNU screen. sshTermy
 belegt nur Tasten, die Shells und Vollbildprogramme praktisch nie brauchen.

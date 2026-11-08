@@ -5,7 +5,7 @@
 #
 # Lädt die neueste Version aus den GitHub Releases, prüft die SHA-256-Summe und
 # legt sie ab:
-#   macOS: ~/Applications/sshTermy.app (Doppelklick öffnet sshTermy im Terminal)
+#   macOS: ~/Applications/sshTermy.app (Doppelklick öffnet sshTermy im eigenen Fenster)
 #   beide: Befehl ~/.local/bin/sshtermy
 # Über curl geladene Dateien bekommen keine Quarantäne-Markierung, deshalb
 # blockt Gatekeeper die App nicht. Auto-Update funktioniert danach wie gewohnt.
@@ -63,12 +63,10 @@ if [ "$os" = darwin ]; then
 
 	cat >"$c/MacOS/sshTermy" <<'EOF'
 #!/bin/sh
-# Startet sshTermy in einem Terminalfenster (iTerm, falls installiert).
+# Startet sshTermy im eigenen Fenster (internal/gui), kein Terminal nötig.
+# Wer lieber im Terminal arbeitet: sshtermy dort direkt aufrufen.
 BIN="$(cd "$(dirname "$0")/../Resources" && pwd)/sshtermy"
-for t in "/Applications/iTerm.app" "$HOME/Applications/iTerm.app"; do
-	[ -d "$t" ] && exec open -a "$t" "$BIN"
-done
-exec open -a Terminal "$BIN"
+exec "$BIN" -window
 EOF
 	chmod 755 "$c/MacOS/sshTermy"
 

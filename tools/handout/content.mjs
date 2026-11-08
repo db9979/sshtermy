@@ -184,6 +184,7 @@ export const de = {
     { t: 'Start & Tipps', ic: '$', rows: [
       ['backup · mcp', 'alles sichern · KI-Clients'],
       ['--no-intro · --debug', 'ohne Startanimation · Debug-Protokoll'],
+      ['-window · -tui', 'eigenes Fenster · immer im Terminal'],
       ['tsz / trz', 'Datei vom / zum Server (trzsz)'],
       ['_Palette_', '„teilen“: Tab live zeigen'],
       ['Fn+1 … Fn+=', 'uConsole: F1 … F12'],
@@ -370,6 +371,7 @@ export const en = {
     { t: 'Start & tips', ic: '$', rows: [
       ['backup · mcp', 'full backup · AI clients'],
       ['--no-intro · --debug', 'no start animation · debug log'],
+      ['-window · -tui', 'own window · always in the terminal'],
       ['tsz / trz', 'file from / to the server (trzsz)'],
       ['_palette_', '“share”: show a tab live'],
       ['Fn+1 … Fn+=', 'uConsole: F1 … F12'],
