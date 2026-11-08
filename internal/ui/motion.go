@@ -118,6 +118,9 @@ func (a *App) animNeed(now time.Time) time.Duration {
 	if a.pal != nil && a.pal.animating(now) {
 		return animFast
 	}
+	if a.scr == scrBroadcast && a.bc != nil && a.bc.running && a.bc.phase == bcRun {
+		return animFast // Kacheln: Spinner und pulsierender Rahmen
+	}
 	if a.scr == scrTerminal && a.gliding(now) {
 		return fadeFrame // Rahmen gleitet: ein paar flüssige Bilder
 	}
@@ -132,6 +135,9 @@ func (a *App) animNeed(now time.Time) time.Duration {
 			}
 			if lvl == 2 && s.unseen {
 				slow = true
+			}
+			if s.panel == panelGoal && s.goal.waiting {
+				slow = true // Zeitleiste: laufender Schritt (timeline.go)
 			}
 		}
 	}

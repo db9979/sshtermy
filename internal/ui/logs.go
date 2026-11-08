@@ -728,6 +728,7 @@ func (a *App) logDetail(rb *strings.Builder, r logRow, w int, now time.Time) {
 	case r.kind == lrDay:
 		rb.WriteString(" " + s.Accent.Render(dayTitle(r.day, now)) + "   " + keys() + "\n")
 		rb.WriteString(" " + s.Muted.Render(trunc(sessionsText(len(r.logs))+" · "+hostsText(r.hosts)+" · "+stats(), w)) + "\n\n")
+		a.activityBlock(rb, a.logs.all, w, r.day, now) // activity.go
 		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.Accent).Render(i18n.T("Hosts")) + "\n")
 		a.logHostList(rb, r.logs, w)
 		return
@@ -750,6 +751,7 @@ func (a *App) logDetail(rb *strings.Builder, r logRow, w int, now time.Time) {
 		rb.WriteString(head + "   " + keys() + "\n")
 		first := r.logs[len(r.logs)-1].Started
 		rb.WriteString(" " + s.Muted.Render(trunc(sessionsText(len(r.logs))+i18n.T(" seit ")+first.Format("02.01.")+" · "+stats(), w)) + "\n\n")
+		a.activityBlock(rb, r.logs, w, time.Time{}, now)
 		if sum := a.logs.hostSum[r.key]; sum != "" {
 			rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(i18n.T("◆ KI-Zusammenfassung")) + "\n")
 			rb.WriteString(indent(wrap(s.Text.Render(sum), w), " ") + "\n\n")

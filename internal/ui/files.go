@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"charm.land/bubbles/v2/textinput"
@@ -48,6 +49,8 @@ type xfer struct {
 	pr     *sshx.Progress
 	cancel context.CancelFunc
 	start  time.Time
+	files  atomic.Int64 // Dateien insgesamt
+	speed  xferSpeed    // Tempo-Verlauf (xferview.go)
 }
 
 type filesState struct {
@@ -233,6 +236,7 @@ func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return nil, true
 	case filesTickMsg:
 		if s := a.byID(m.sid); s != nil && s.files.xfer != nil {
+			s.files.xfer.speed.sample(time.Now(), s.files.xfer.pr.Done.Load())
 			return filesTick(m.sid), true
 		}
 		return nil, true
@@ -336,14 +340,16 @@ func (a *App) startTransfer(s *session, srcFS sshx.FS, paths []string, dstFS ssh
 	sid := s.id
 	run := func() tea.Msg {
 		defer cancel()
-		var total int64
+		var total, nf int64
 		for _, p := range paths {
-			n, _, err := sshx.Size(ctx, srcFS, p)
+			n, c, err := sshx.Size(ctx, srcFS, p)
 			if err != nil {
 				return filesDoneMsg{sid, err}
 			}
 			total += n
+			nf += int64(c)
 		}
+		x.files.Store(nf)
 		x.pr.Total.Store(total)
 		for _, p := range paths {
 			if err := sshx.Copy(ctx, srcFS, p, dstFS, dstDir, x.pr); err != nil {
@@ -593,18 +599,7 @@ func (a *App) viewFiles(s *session, w, h int) string {
 		f.mkdir.SetWidth(w - 20)
 		status = st.Accent.Render(i18n.T(" Neuer Ordner: ")) + f.mkdir.View()
 	case f.xfer != nil:
-		x := f.xfer
-		done, total := x.pr.Done.Load(), x.pr.Total.Load()
-		pct := 0.0
-		if total > 0 {
-			pct = float64(done) / float64(total)
-		}
-		barW := max(10, w/3)
-		fill := int(pct * float64(barW))
-		bar := st.AI.Render(strings.Repeat("━", fill)) + st.Muted.Render(strings.Repeat("━", barW-fill))
-		rate := float64(done) / max(time.Since(x.start).Seconds(), 0.001)
-		status = " " + bar + fmt.Sprintf(" %3.0f%%  %s / %s  %s/s  ", pct*100, humanBytes(done), humanBytes(total), humanBytes(int64(rate))) +
-			st.Muted.Render(trunc(x.what, max(10, w-barW-40)))
+		status = a.xferStatus(f.xfer, w) // xferview.go, zwei Zeilen
 	case f.drag != nil && f.drag.moved:
 		if n, dir := f.dragTarget(); dir != "" {
 			status = st.Accent.Render(fmt.Sprintf(i18n.T(" Loslassen kopiert %d → %s"), n, dir))
@@ -616,7 +611,7 @@ func (a *App) viewFiles(s *session, w, h int) string {
 	default:
 		status = st.Muted.Render(i18n.T(" c oder Ziehen kopiert auf die andere Seite (Leertaste markiert mehrere). Dateien aus dem Explorer/Finder hier ablegen lädt hoch"))
 	}
-	ph := h - 2
+	ph := h - 1 - lipgloss.Height(status)
 	lw := (w - 1) / 2
 	rw := w - 1 - lw
 	sep := lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("│\n", ph-1) + "│")
