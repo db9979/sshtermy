@@ -866,6 +866,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveQuick()
 	case scrMonitorForm:
 		err = a.saveMonitor()
+	case scrHighlightForm:
+		err = a.saveHighlight()
 	}
 	if err != nil {
 		a.form.err = err.Error()

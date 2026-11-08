@@ -67,6 +67,10 @@ type session struct {
 	notice noticeKind // Markierung im Tab: Befehl fertig, Glocke (notify.go)
 	bellAt time.Time  // letzte gemeldete Glocke
 
+	editFS  *sshx.RemoteFS            // SFTP für Dateien im eigenen Editor (editor.go)
+	alerts  atomic.Pointer[alertScan] // Farbregeln mit „!“ (highlight.go)
+	alertAt time.Time                 // letzte Meldung einer Farbregel
+
 	trz       atomic.Pointer[trzRun] // Dateiübertragung im Terminal (trzsz.go)
 	trzTail   []byte                 // Ende der letzten Ausgabe (Auslöser über zwei Blöcke)
 	trzLastID string                 // Auslöser schon behandelt
@@ -133,6 +137,9 @@ func (w outWriter) Write(p []byte) (int, error) {
 		return full, nil // geht an die Dateiübertragung (trzsz.go)
 	}
 	w.s.cap.feed(p)
+	if sc := w.s.alerts.Load(); sc != nil {
+		sc.feed(p)
+	}
 	if r := w.s.rec.Load(); r != nil {
 		r.Output(p)
 	}
@@ -268,6 +275,9 @@ func (s *session) close() {
 	}
 	if s.files.remote != nil {
 		s.files.remote.Close()
+	}
+	if s.editFS != nil {
+		s.editFS.Close()
 	}
 	if s.shell != nil {
 		s.shell.Close()

@@ -9,23 +9,23 @@
 ▌ │   F12 l       Sprache: Deutsch/Engl…   s           überspringen             s           Hosts sortieren         │
 ▌ │   ⇧F9         Tastenzeile erklären     r           neu vorschlagen          z           KI-Zusammenfassung      │
  ○│   Strg+Q      beenden                  x           Ziel beenden             Z           alle Treffer zusammen…  │
- ○│                                        ↑ ↓         Runbook wählen           x           Export: md · txt · ca…  │
-  │  ≡ Verbindungs-Manager F10  hier       Strg+S      als Runbook speichern    d           löschen                 │
-  │   F10         zurück zum Terminal      Strg+D      Runbook löschen          a           Mitschreiben an/aus     │
-  │   ⏎           verbinden                Tab         Schritt für Schritt o…   ␣ Befehl    nicht protokollieren    │
-  │   n           neue Verbindung          Esc         Agent anhalten                                               │
-  │   e           bearbeiten               ?           Agent anweisen          » Broadcast m                        │
-  │   d           löschen                  v           Skript des Agenten an…   Space / g / a Host / Ordner / alle  │
-  │   /           suchen (auch #tag)       r           Skripte des Agenten l…   Tab         Hosts · Quelle · Befe…  │
-  │   o           neuer Ordner (A / B v…   Leertaste   Plan: Schritt streich…   ⇧⏎          weiterer Schritt        │
-  │   r           Ordner umbenennen        ?           Plan: neu planen lass…   Strg+S      prüfen, dann ⏎          │
-  │   v           in Ordner verschieben                                         ← / →       Host-Spalte wählen      │
-  │   Shift+↑     nach oben schieben (↓…  ◆ KI fragen F3                        ↑ ↓ Bild↑↓  Ausgabe blättern        │
-  │   ← / →       Ordner zu-/aufklappen    ⏎           Frage senden             z / c       groß / kopieren         │
-  │   - / +       alle Ordner zu/auf       ⇧⏎ / Strg+J neue Zeile               r / e / x   nochmal / ändern / St…  │
-  │   #           nach Tag filtern         1…9         Befehl einfügen          {{name}}    Variable, wird abgefr…  │
-  │   t           Tunnel anlegen           ↑ ↓         Befehlskarte wählen      {{host}}    je Host eingesetzt      │
-  │   c           SSH-Schlüssel erzeuge…   a           Befehl ausführen (rot…   Strg+R      als Runbook speichern   │
+ ○│                                        ↑ ↓         Runbook wählen           b           Änderungsbericht        │
+  │  ≡ Verbindungs-Manager F10  hier       Strg+S      als Runbook speichern    x           Export: md · txt · ca…  │
+  │   F10         zurück zum Terminal      Strg+D      Runbook löschen          d           löschen                 │
+  │   ⏎           verbinden                Tab         Schritt für Schritt o…   a           Mitschreiben an/aus     │
+  │   n           neue Verbindung          Esc         Agent anhalten           ␣ Befehl    nicht protokollieren    │
+  │   e           bearbeiten               ?           Agent anweisen                                               │
+  │   d           löschen                  v           Skript des Agenten an…  » Broadcast m                        │
+  │   /           suchen (auch #tag)       r           Skripte des Agenten l…   Space / g / a Host / Ordner / alle  │
+  │   o           neuer Ordner (A / B v…   Leertaste   Plan: Schritt streich…   Tab         Hosts · Quelle · Befe…  │
+  │   r           Ordner umbenennen        ?           Plan: neu planen lass…   ⇧⏎          weiterer Schritt        │
+  │   v           in Ordner verschieben                                         Strg+S      prüfen, dann ⏎          │
+  │   Shift+↑     nach oben schieben (↓…  ◆ KI fragen F3                        ← / →       Host-Spalte wählen      │
+  │   ← / →       Ordner zu-/aufklappen    ⏎           Frage senden             ↑ ↓ Bild↑↓  Ausgabe blättern        │
+  │   - / +       alle Ordner zu/auf       ⇧⏎ / Strg+J neue Zeile               z / c       groß / kopieren         │
+  │   #           nach Tag filtern         1…9         Befehl einfügen          r / e / x   nochmal / ändern / St…  │
+  │   t           Tunnel anlegen           ↑ ↓         Befehlskarte wählen      {{name}}    Variable, wird abgefr…  │
+  │   c           SSH-Schlüssel erzeuge…   a           Befehl ausführen (rot…   {{host}}    je Host eingesetzt      │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

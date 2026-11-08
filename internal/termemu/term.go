@@ -242,8 +242,19 @@ func (t *Term) Close() { _ = t.emu.Close() }
 // View rendert das Raster als ANSI-String mit genau Höhe Zeilen. ghost wird
 // (gedimmt) hinter dem Cursor eingeblendet, wenn dort nichts steht.
 func (t *Term) View(ghost string, ghostStyle func(string) string) string {
+	return t.ViewHL(ghost, ghostStyle, nil)
+}
+
+// ViewHL: wie View, zusätzlich mit Farbregeln (hl darf nil sein).
+func (t *Term) ViewHL(ghost string, ghostStyle func(string) string, hl *HL) string {
 	w, h := t.Size()
-	lines := strings.Split(strings.ReplaceAll(t.emu.Render(), "\r\n", "\n"), "\n")
+	var raw string
+	if hl != nil && !t.AltScreen() {
+		raw = t.render(0, nil, nil, hl)
+	} else {
+		raw = strings.ReplaceAll(t.emu.Render(), "\r\n", "\n")
+	}
+	lines := strings.Split(raw, "\n")
 	for len(lines) < h {
 		lines = append(lines, "")
 	}

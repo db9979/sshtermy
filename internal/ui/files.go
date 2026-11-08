@@ -519,6 +519,11 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		p.load(f.hidden)
 	case "c", "f6":
 		return a.startCopy(s, false)
+	case "e":
+		if f.side == 1 && p.sel > 0 && p.sel < len(p.entries) && !p.entries[p.sel].IsDir {
+			return a.editRemote(s, p.fs.Join(p.path, p.entries[p.sel].Name))
+		}
+		a.flash(i18n.T("e öffnet eine Datei auf der Server-Seite im eigenen Editor"))
 	case "space", "insert":
 		p.toggleMark(p.sel)
 		p.sel = min(len(p.entries)-1, p.sel+1)
@@ -560,7 +565,7 @@ func (a *App) filesKeys(s *session) [][2]string {
 	if s.files.mkdir != nil {
 		return [][2]string{{"⏎", i18n.T("anlegen")}, {"Esc", i18n.T("abbrechen")}}
 	}
-	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ↔")}, {"Space", i18n.T("markieren")}, {"n", i18n.T("Ordner")}, {"d", i18n.T("löschen")},
+	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ↔")}, {"e", i18n.T("im Editor")}, {"Space", i18n.T("markieren")}, {"n", i18n.T("Ordner")}, {"d", i18n.T("löschen")},
 		{".", i18n.T("versteckte")}, {"~", "Home"}, {"r", i18n.T("neu laden")}, {"Esc/F5", "Terminal"}}
 	if s.files.xfer != nil {
 		k = append([][2]string{{"x", i18n.T("abbrechen")}}, k...)

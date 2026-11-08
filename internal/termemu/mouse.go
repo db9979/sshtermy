@@ -1,6 +1,7 @@
 package termemu
 
 import (
+	"image/color"
 	"strings"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -113,18 +114,29 @@ func (t *Term) cellAt(sb int, p Pos) (uv.Cell, bool) {
 
 // Render zeichnet den Bildschirm, um offset Zeilen in den Scrollback
 // zurückversetzt, und hebt sel (falls gesetzt) invertiert hervor.
-func (t *Term) Render(offset int, sel *Sel) string { return t.render(offset, sel, nil) }
+func (t *Term) Render(offset int, sel *Sel) string { return t.render(offset, sel, nil, nil) }
 
-// render: hook darf jede Zelle vor dem Zeichnen verändern (Suchtreffer).
-func (t *Term) render(offset int, sel *Sel, hook func(line, x int, c *uv.Cell)) string {
+// RenderHL: wie Render, zusätzlich mit Farbregeln (hl darf nil sein).
+func (t *Term) RenderHL(offset int, sel *Sel, hl *HL) string { return t.render(offset, sel, nil, hl) }
+
+// render: hook darf jede Zelle vor dem Zeichnen verändern (Suchtreffer),
+// hl färbt nach Regeln (highlight.go).
+func (t *Term) render(offset int, sel *Sel, hook func(line, x int, c *uv.Cell), hl *HL) string {
 	w, h := t.Size()
 	sb := t.ScrollbackLen()
 	offset = max(0, min(offset, sb))
 	first := sb - offset
 	rows := make([]string, h)
 	line := make(uv.Line, w)
+	if hl != nil && t.AltScreen() {
+		hl = nil // vim, htop, less: die Programme färben selbst
+	}
 	for y := 0; y < h; y++ {
 		abs := first + y
+		var colors []color.Color
+		if hl != nil {
+			colors = hl.columns(t, sb, w, abs)
+		}
 		for x := 0; x < w; x++ {
 			if c, ok := t.cellAt(sb, Pos{abs, x}); ok {
 				line[x] = c
@@ -136,6 +148,9 @@ func (t *Term) render(offset int, sel *Sel, hook func(line, x int, c *uv.Cell)) 
 					line[x].Content, line[x].Width = " ", 1
 				}
 				line[x].Style.Attrs ^= uv.AttrReverse
+			}
+			if colors != nil && colors[x] != nil && line[x].Style.Fg == nil && line[x].Style.Bg == nil && !line[x].IsZero() {
+				line[x].Style.Fg = colors[x]
 			}
 			if hook != nil && !line[x].IsZero() {
 				hook(abs, x, &line[x])

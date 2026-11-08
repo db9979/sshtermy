@@ -558,9 +558,9 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 		}
 		s.scroll = min(s.scroll, s.term.ScrollbackLen())
 		if s.search.open {
-			body = s.term.RenderMarked(s.scroll, s.sel, a.searchMarks(s), a.markStyle())
+			body = s.term.RenderMarked(s.scroll, s.sel, a.searchMarks(s), a.markStyle(), a.termHL())
 		} else {
-			body = s.term.Render(s.scroll, s.sel)
+			body = s.term.RenderHL(s.scroll, s.sel, a.termHL())
 		}
 		if x, y, vis := s.term.Cursor(); vis && focused && !s.panelFocus && s.scroll == 0 && !s.search.open {
 			cur = tea.NewCursor(tr.x+x, tr.y+y)
@@ -571,7 +571,7 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 		if focused {
 			ghost = a.visibleGhost(s)
 		}
-		body = s.term.View(ghost, func(g string) string { return st.Ghost.Render(g) })
+		body = s.term.ViewHL(ghost, func(g string) string { return st.Ghost.Render(g) }, a.termHL())
 		if x, y, vis := s.term.Cursor(); vis && focused && !s.panelFocus {
 			cur = tea.NewCursor(tr.x+x, tr.y+y)
 			cur.Color = st.T.Accent

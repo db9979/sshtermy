@@ -1,0 +1,76 @@
+package i18n
+
+// Texte für Farbregeln, Editor, Log-Diagnose und Änderungsbericht (eigene
+// Datei, damit parallele Änderungen an en.go nicht kollidieren).
+var enFeatures12 = map[string]string{
+	" (+%d weitere)":                                             " (+%d more)",
+	" für den Editor …":                                          " for the editor …",
+	" gehen nicht mehr zurück":                                   " are no longer uploaded",
+	" · Palette „Editor für Server-Dateien“":                     " · palette “Editor for server files”",
+	" · Speichern lädt die Datei zurück auf ":                    " · saving uploads it back to ",
+	"%s nicht zurückgeschrieben: %v · Kopie: %s":                 "%s not written back: %v · copy: %s",
+	"Bearbeiten im eigenen Editor geht nur bei SSH-Verbindungen": "Editing in your own editor only works with SSH connections",
+	"Befehl, dem sshTermy den Dateinamen anhängt, z. B. code --new-window, notepad++, subl, gedit. Leer = Standard: ": "Command sshTermy appends the file name to, e.g. code --new-window, notepad++, subl, gedit. Empty = default: ",
+	"Das ist ein Ordner":                  "That is a folder",
+	"Datei ist größer als %s":             "File is larger than %s",
+	"Diagnose":                            "diagnosis",
+	"Editor für Server-Dateien":           "Editor for server files",
+	"Editor startet nicht: ":              "Editor does not start: ",
+	"Editor-Befehl „%s“ ist nicht lesbar": "Editor command “%s” cannot be parsed",
+	"Editor: ":                            "Editor: ",
+	"Eingebaute Regeln":                   "Built-in rules",
+	"Erstellt mit sshTermy am":            "Created with sshTermy on",
+	"Farbregel hat angeschlagen":          "A color rule matched",
+	"Farbregeln für die Ausgabe":          "Color rules for output",
+	"Farbregeln für die Ausgabe …":        "Color rules for output …",
+	"Farbregeln: Ausgabe einfärben":       "Color rules: color the output",
+	"Fehler rot, Warnungen gelb, ok/up grün, IP blau, MAC lila, %SYSLOG-Meldungen nach Schwere": "errors red, warnings yellow, ok/up green, IP blue, MAC purple, %SYSLOG messages by severity",
+	"Gespeichert auf ":          "Saved on ",
+	"Im Editor: ":               "In the editor: ",
+	"KI: Log/Ausgabe auswerten": "AI: analyze log/output",
+	"KI: Log/Ausgabe auswerten (letzte 400 Zeilen)": "AI: analyze log/output (last 400 lines)",
+	"KI: markierte Ausgabe auswerten":               "AI: analyze selected output",
+	"Lade ":                                         "Loading ",
+	"Log-Diagnose: ":                                "Log diagnosis: ",
+	"Muster „%s“ passt auf leeren Text":             "Pattern “%s” matches empty text",
+	"Muster „%s“: %v":                               "Pattern “%s”: %v",
+	"Nichts zum Auswerten im Verlauf":               "Nothing to analyze in the scrollback",
+	"Pfad auf dem Server, z. B. /etc/nginx/nginx.conf oder ~/.bashrc. Speichern im Editor lädt die Datei zurück.": "Path on the server, e.g. /etc/nginx/nginx.conf or ~/.bashrc. Saving in the editor uploads the file again.",
+	"Regel %d":     "Rule %d",
+	"Regel %d: %v": "Rule %d: %v",
+	"Regel: „farbe muster“, Farben: rot, gelb, grün, blau, lila, grau":    "Rule: “color pattern”, colors: red, yellow, green, blue, purple, grey",
+	"Server-Datei im eigenen Editor öffnen":                               "Open server file in your own editor",
+	"Server-Datei im eigenen Editor öffnen …":                             "Open server file in your own editor …",
+	"Tab geschlossen: Änderungen an ":                                     "Tab closed: changes to ",
+	"Terminal-Inhalt an die KI ist in den KI-Einstellungen ausgeschaltet": "Sending terminal content to the AI is turned off in the AI settings",
+	"an · bearbeiten":  "on · edit",
+	"aus · bearbeiten": "off · edit",
+	"bericht":          "report",
+	"e öffnet eine Datei auf der Server-Seite im eigenen Editor": "e opens a file on the server side in your own editor",
+	"im Editor":                 "in editor",
+	"kopiert und gespeichert: ": "copied and saved: ",
+	"markierte Zeile":           "selected line",
+	"markierte Zeilen":          "selected lines",
+	"vim, nano & Co. laufen im Terminal: dafür die Datei einfach im Terminal öffnen":                                           "vim, nano & co. run in the terminal: just open the file there",
+	"z. B. „!rot %LINK-3-UPDOWN“ oder „gelb \\bvlan ?\\d+“ · Muster = regulärer Ausdruck, Groß/Klein egal ohne Großbuchstaben": "e.g. “!red %LINK-3-UPDOWN” or “yellow \\bvlan ?\\d+” · pattern = regular expression, case-insensitive unless it has capitals",
+	"Änderungsbericht":         "Change report",
+	"Änderungsbericht für ":    "change report for ",
+	"Änderungsbericht kopiert": "Change report copied",
+	"Änderungsbericht: ":       "Change report: ",
+	"Öffnen im Editor: ":       "Open in editor: ",
+	"„farbe muster“ · Farben: rot gelb grün blau lila grau · ! davor = melden, wenn es in einem verdeckten Tab auftaucht": "“color pattern” · colors: red yellow green blue purple grey · ! in front = notify when it shows up in a hidden tab",
+	"◆ Änderungsbericht": "◆ Change report",
+
+	// Hilfe
+	"im eigenen Editor öffnen": "open in your own editor",
+	"KI wertet Ausgabe aus":    "AI analyzes output",
+	"Farbregeln bearbeiten":    "edit color rules",
+	"„log“":                    "“log”",
+	"„farb“":                   "“color”",
+}
+
+func init() {
+	for k, v := range enFeatures12 {
+		en[k] = v
+	}
+}

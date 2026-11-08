@@ -73,7 +73,7 @@ func TestRenderMarked(t *testing.T) {
 	}
 	plain := tm.Render(0, nil)
 	marked := tm.RenderMarked(0, nil, []Mark{{Line: m[0].Line, Col: m[0].Col, Len: m[0].Len, Current: true}},
-		MarkStyle{Current: uv.Style{Attrs: uv.AttrReverse}})
+		MarkStyle{Current: uv.Style{Attrs: uv.AttrReverse}}, nil)
 	if plain == marked {
 		t.Fatal("marked render should differ")
 	}

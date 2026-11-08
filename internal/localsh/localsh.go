@@ -192,6 +192,9 @@ func Command(shell string) ([]string, error) {
 	return argv, nil
 }
 
+// SplitArgs teilt eine Befehlszeile an Leerzeichen, "…" hält zusammen.
+func SplitArgs(s string) []string { return splitArgs(s) }
+
 func splitArgs(s string) []string {
 	var out []string
 	var cur strings.Builder
