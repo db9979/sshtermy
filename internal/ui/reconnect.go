@@ -315,6 +315,10 @@ func (s *session) suspend() {
 		s.files.remote.Close()
 		s.files.remote = nil
 	}
+	if s.editFS != nil {
+		s.editFS.Close()
+		s.editFS = nil
+	}
 	s.files.open, s.panelFocus = false, false
 	if s.shell != nil {
 		s.shell.Close()

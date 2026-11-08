@@ -32,6 +32,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Screen lock**: palette „Lock now“ or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag „Produktion“, „prod“, „live“) get a red line
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
+- **Server file in your own editor**: `e` in F5 (server side) or the palette entry „Open server file in your own editor“ with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › „Editor for server files“ (e.g. `code --new-window`)
+- **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules „color pattern“ (palette → „Color rules for output“); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
 - **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect. Switches (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Config backup for switches**: `b` saves `show running-config` encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
@@ -78,9 +80,14 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     „Rewrite for this system“ rewrites a command into the matching dialect.
   - **Explain errors**: when a command fails, the suggestion line offers „Why? & Fix“ (Alt+0). The AI gets the
     command, exit code and output and answers with the cause and commands you can insert
+  - **Log diagnosis**: palette „AI: analyze log/output“ (or select text first): the AI reads the selection or the last
+    400 lines (journalctl, `show logging`, dmesg …) and answers with the situation, what stands out with timestamps,
+    the likely cause and read-only commands to check, as cards
 - **Session log** (manager: `l`): every session is recorded locally and encrypted (commands, output,
   failures), searchable, with an AI summary of one session (`z`) or of all matches (`Z`, e.g. search for a host:
-  „What did I do on host X?“) and Markdown export (`x`)
+  „What did I do on host X?“) and Markdown export (`x`). **Change report** (`b`): the AI writes, for a day, a host or
+  one session, what was changed on which host (with commands, failures, open items), ready for a ticket or docs; it
+  lands in the clipboard right away and as a Markdown file in Downloads
 - **Sync between computers**: connections, tunnels, runbooks and settings end-to-end encrypted via a cloud folder
   (OneDrive, Dropbox, iCloud, Syncthing) or directly via your NAS (Synology, QNAP, Nextcloud, any WebDAV server)
 - **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export), MobaXterm
@@ -171,7 +178,7 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | Terminal | F2 | goal mode (agent) |
 | | F3 | ask AI |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
-| | F5 | files (SFTP): Tab side, c copy (up/down), Space/a mark, drag copies, n folder, d delete, . hidden |
+| | F5 | files (SFTP): Tab side, c copy (up/down), e server file in your own editor, Space/a mark, drag copies, n folder, d delete, . hidden |
 | | F6 | host overview: r/⏎ query, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
@@ -198,9 +205,9 @@ sshtermy --no-intro   # without the start animation (permanently: palette „Sta
 | | Tab / ⏎ / x | how it runs (step by step or agent level) / approve and run / discard; Ctrl+S saves the plan as a runbook |
 | AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |
 | Logs | / / Tab / f / s | search (output too) / by day or by host / filter today · 7 days · failures / sort hosts |
-| | z / Z / x / d / a | AI summary / summarize all matches / export (md, txt, cast) / delete / recording on/off |
+| | z / Z / b / x / d / a | AI summary / summarize all matches / change report / export (md, txt, cast) / delete / recording on/off |
 | AI settings | Ctrl+T / Ctrl+L | test endpoint / choose a model from the endpoint's list |
-| Everywhere | Ctrl+Space | command palette: ⏎ start as goal, Tab ask AI, ↑↓ choose suggestion/tunnel/connection |
+| Everywhere | Ctrl+Space | command palette: ⏎ start as goal, Tab ask AI, ↑↓ choose suggestion/tunnel/connection; `log` = AI analyzes output, `color` = color rules |
 | | F1 / F12 / Ctrl+Q | help / about + update / quit |
 | | F12 → l / F12 → w | switch language (English ↔ German) / what's new |
 

@@ -46,6 +46,8 @@ type SharedPrefs struct {
 	Intro           string               `json:"intro,omitempty"`
 	DimPanes        bool                 `json:"dim_panes,omitempty"`
 	Workspaces      []domain.Workspace   `json:"workspaces,omitempty"`
+	// Highlight: Farbregeln; nil = Stand einer älteren Version (lokale behalten).
+	Highlight *domain.HighlightConfig `json:"highlight,omitempty"`
 }
 
 func sharedSettings(s domain.Settings) SharedSettings {
@@ -58,6 +60,7 @@ func sharedSettings(s domain.Settings) SharedSettings {
 			NoReachCheck: s.NoReachCheck, NoNotify: s.NoNotify, NoDesktopNotify: s.NoDesktopNotify,
 			NoOSC52: s.NoOSC52, Monitor: s.Monitor, Icons: s.Icons, Intro: s.Intro,
 			DimPanes: s.DimPanes, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
+			Highlight: copyHighlight(s.Highlight),
 		},
 	}
 }
@@ -80,12 +83,20 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 	d.TourDone = d.TourDone || x.TourDone
 	d.Monitor, d.Intro = x.Monitor, x.Intro
 	d.DimPanes, d.Workspaces = x.DimPanes, append([]domain.Workspace(nil), x.Workspaces...)
+	if x.Highlight != nil {
+		d.Highlight = *copyHighlight(*x.Highlight)
+	}
 	// Nerd-Font-Symbole von einem anderen Rechner: hier erst nach der Probe,
 	// sonst stünden in jedem Menü Kästchen.
 	if x.Icons == "nerd" && d.Icons != "nerd" && d.NerdFont != "ja" {
 		d.NerdFont = "nein"
 	}
 	d.Icons = x.Icons
+}
+
+func copyHighlight(h domain.HighlightConfig) *domain.HighlightConfig {
+	h.Rules = append([]string(nil), h.Rules...)
+	return &h
 }
 
 // Payload ist der entschlüsselte Inhalt der Sync-Datei.

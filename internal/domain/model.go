@@ -505,9 +505,25 @@ type Settings struct {
 	Workspaces []Workspace `json:"workspaces,omitempty"`
 	LastLayout *Workspace  `json:"last_layout,omitempty"`
 
+	// Editor: Befehl für Server-Dateien im eigenen Editor ("" = Standard des
+	// Systems). Bleibt auf dem Rechner, nie im Sync.
+	Editor string `json:"editor,omitempty"`
+
+	// Highlight: Farbregeln für die Ausgabe im Terminal (highlight-Paket).
+	Highlight HighlightConfig `json:"highlight,omitempty"`
+
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`
+}
+
+// HighlightConfig: Farbregeln. Off schaltet das Einfärben ab, NoDefaults
+// lässt die eingebauten Regeln weg, Rules sind eigene Zeilen „[!]farbe muster“
+// (stehen vor den eingebauten und gewinnen bei Überschneidung).
+type HighlightConfig struct {
+	Off        bool     `json:"off,omitempty"`
+	NoDefaults bool     `json:"no_defaults,omitempty"`
+	Rules      []string `json:"rules,omitempty"`
 }
 
 // Workspace: geteilte Ansicht zum Wiederöffnen. Layout ist der Name der

@@ -147,9 +147,9 @@ type Mark struct {
 type MarkStyle struct{ Hit, Current uv.Style }
 
 // RenderMarked zeichnet wie Render und hebt zusätzlich die Treffer hervor.
-func (t *Term) RenderMarked(offset int, sel *Sel, marks []Mark, ms MarkStyle) string {
+func (t *Term) RenderMarked(offset int, sel *Sel, marks []Mark, ms MarkStyle, hl *HL) string {
 	if len(marks) == 0 {
-		return t.Render(offset, sel)
+		return t.RenderHL(offset, sel, hl)
 	}
 	return t.render(offset, sel, func(l, x int, c *uv.Cell) {
 		for _, m := range marks {
@@ -166,5 +166,5 @@ func (t *Term) RenderMarked(offset int, sel *Sel, marks []Mark, ms MarkStyle) st
 				return
 			}
 		}
-	})
+	}, hl)
 }

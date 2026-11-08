@@ -57,12 +57,13 @@ const (
 	scrKeys
 	scrBroadcast
 	scrScan
-	scrKeyForm    // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
-	scrSSHKeyForm // SSH-Schlüssel erzeugen / übertragen (sshkey.go)
-	scrRelayForm  // Vermittler koppeln (relay.go)
-	scrColors     // Farben anpassen (colors.go)
-	scrTeam       // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
-	scrTeamForm   // Team-Freigabe: Passwort, Datei, Optionen
+	scrKeyForm       // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
+	scrSSHKeyForm    // SSH-Schlüssel erzeugen / übertragen (sshkey.go)
+	scrRelayForm     // Vermittler koppeln (relay.go)
+	scrColors        // Farben anpassen (colors.go)
+	scrTeam          // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
+	scrTeamForm      // Team-Freigabe: Passwort, Datei, Optionen
+	scrHighlightForm // Farbregeln (highlight.go)
 )
 
 // App ist das Wurzel-Modell.
@@ -110,6 +111,9 @@ type App struct {
 	restartPending string
 	restart        bool // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
+
+	hl    hlState       // Farbregeln (highlight.go)
+	edits []*remoteEdit // Server-Dateien im eigenen Editor (editor.go)
 
 	book *sessionlog.Book // Sitzungsprotokolle (Schlüssel nur bei entsperrtem Store)
 	logs logsState
@@ -416,7 +420,13 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.llmMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.reportMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.logsMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.editMsg(msg); ok {
 		return a, cmd
 	}
 	if cmd, ok := a.filesMsg(msg); ok {
@@ -446,7 +456,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pick != nil {
 			return a, a.pickerKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrHighlightForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -487,7 +497,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrKeyForm, scrSSHKeyForm, scrRelayForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrHighlightForm, scrKeyForm, scrSSHKeyForm, scrRelayForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -515,6 +525,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a *App) quit() tea.Cmd {
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
+	a.cleanupEdits()
 	sshx.StopSKAgent() // eigener ssh-agent für Sicherheitsschlüssel
 	for _, s := range a.sessions {
 		a.endLog(s)
@@ -542,6 +553,9 @@ func (a *App) onTick() tea.Cmd {
 		}
 		cmds = append(cmds, a.lockScreen())
 	}
+	if c := a.editTick(); c != nil {
+		cmds = append(cmds, c)
+	}
 	if c := a.syncTick(); c != nil {
 		cmds = append(cmds, c)
 	}
@@ -552,6 +566,7 @@ func (a *App) onTick() tea.Cmd {
 		if s.term != nil && s.term.TakeBell() {
 			a.noticeBell(s)
 		}
+		a.alertTick(s)
 		if c := a.takeClipboard(s); c != nil {
 			cmds = append(cmds, c)
 		}
@@ -590,7 +605,7 @@ func (a *App) View() tea.View {
 			k = append(k, [2]string{"Strg+D", i18n.T("löschen")})
 		}
 		body = a.frame(a.viewForm(), append(k, [2]string{"Esc", i18n.T("abbrechen")}))
-	case scrConnForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMonitorForm:
+	case scrConnForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMonitorForm, scrHighlightForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})

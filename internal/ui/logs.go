@@ -45,6 +45,8 @@ type logsState struct {
 	filter     logFilter       // Alle / Heute / 7 Tage / Mit Fehlern
 	open       map[string]bool // auf-/zugeklappt (überschreibt die Vorgabe)
 	hostSum    map[string]string
+	report     string // Änderungsbericht (report.go), "" = keiner offen
+	reportFile string
 }
 
 type logSummaryMsg struct {
@@ -139,7 +141,7 @@ func (a *App) setLogOpen(r logRow, open bool) {
 }
 
 func (a *App) selectLog(i int) {
-	a.logs.sel, a.logs.scroll, a.logs.group = i, 0, ""
+	a.logs.sel, a.logs.scroll, a.logs.group, a.logs.report = i, 0, "", ""
 }
 
 func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
@@ -231,6 +233,10 @@ func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
 			key = cur.key
 		}
 		return a.summarizeLogs(cur.logs, "", a.rowTitle(*cur), key)
+	case "b":
+		if cur != nil && m.busy == "" {
+			return a.reportLogs(cur.logs, a.rowTitle(*cur))
+		}
 	case "Z":
 		if list := a.filteredLogs(); len(list) > 0 && m.busy == "" {
 			return a.summarizeLogs(list, "", m.search.Value(), "")
@@ -253,8 +259,8 @@ func (a *App) updateLogs(msg tea.Msg) tea.Cmd {
 	case "r":
 		a.reloadLogs()
 	case "esc", "q", "f10":
-		if m.group != "" {
-			m.group = ""
+		if m.group != "" || m.report != "" {
+			m.group, m.report = "", ""
 			return nil
 		}
 		a.scr = m.back
@@ -425,7 +431,7 @@ func (a *App) logsKeys() [][2]string {
 		view = i18n.T("nach Zeit")
 	}
 	return [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("auf/zu")}, {"Tab", view}, {"f", i18n.T("Filter")}, {"/", i18n.T("suchen")},
-		{"z", i18n.T("KI-Zusammenfassung")}, {"Z", i18n.T("alle Treffer zusammenfassen")},
+		{"z", i18n.T("KI-Zusammenfassung")}, {"Z", i18n.T("alle Treffer zusammenfassen")}, {"b", i18n.T("Änderungsbericht")},
 		{"x", i18n.T("exportieren")}, {"d", i18n.T("löschen")}, {"PgDn", i18n.T("blättern")}, {"a", i18n.T("Mitschreiben ") + onOff}, {"Esc", i18n.T("zurück")}}
 }
 
@@ -553,6 +559,10 @@ func (a *App) viewLogs() string {
 		rb.WriteString(" " + s.AI.Render(i18n.T("◆ KI fasst zusammen: ")+m.busy+" …") + "\n\n")
 	}
 	switch {
+	case m.report != "":
+		rb.WriteString(" " + s.PanelTitle.Foreground(s.T.AI).Render(i18n.T("◆ Änderungsbericht")) + s.Muted.Render("  ") + a.hints(s.Muted, [2]string{"Esc", i18n.T("schließen")}) + "\n")
+		rb.WriteString(" " + s.Muted.Render(trunc(i18n.T("kopiert und gespeichert: ")+m.reportFile, w)) + "\n\n")
+		rb.WriteString(indent(wrap(s.Text.Render(m.report), w), " "))
 	case m.group != "":
 		title := fmt.Sprintf(i18n.T("◆ Zusammenfassung über %s"), sessionsText(nLogsOf(rows, m.sel, nLogs, m.groupQ == m.search.Value())))
 		if m.groupQ != "" {
@@ -708,7 +718,8 @@ func (a *App) logDetail(rb *strings.Builder, r logRow, w int, now time.Time) {
 		return info
 	}
 	keys := func() string {
-		return a.keyZone("z", s.Key.Render("z")+s.KeyDesc.Render(i18n.T("zusammenfassen")))
+		return a.keyZone("z", s.Key.Render("z")+s.KeyDesc.Render(i18n.T("zusammenfassen"))) + "  " +
+			a.keyZone("b", s.Key.Render("b")+s.KeyDesc.Render(i18n.T("Änderungsbericht")))
 	}
 	switch {
 	case r.kind == lrItem && len(r.logs) == 1:

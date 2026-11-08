@@ -35,6 +35,7 @@ const (
 	noticeOK
 	noticeFail
 	noticeBell
+	noticeAlert // Farbregel mit „!“ hat angeschlagen (highlight.go)
 )
 
 func (a *App) notifyOn() bool        { return !a.st.Settings().NoNotify }
@@ -178,6 +179,8 @@ func (a *App) noticeGlyph(s *session) string {
 		return a.s.Danger.Render("×")
 	case noticeBell:
 		return a.s.Warn.Render("•")
+	case noticeAlert:
+		return a.s.Warn.Render("!")
 	}
 	return ""
 }

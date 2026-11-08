@@ -137,6 +137,14 @@ func (a *App) paletteItems() []palItem {
 		items = append(items, palItem{group: pgAI, icon: ic("fix"), label: i18n.T("Warum ist „") + trunc(oneLine(s.fail.Command), 40) + i18n.T("“ fehlgeschlagen? Fix vorschlagen"), hint: "Alt+0",
 			run: func() tea.Cmd { return a.explainFailure(s) }})
 	}
+	if hasSel := inTerm && s.sel != nil && !s.sel.Empty(); hasSel || (inTerm && q != "" && match(i18n.T("KI: Log/Ausgabe auswerten")+" log diagnose journalctl syslog analyse auswerten")) {
+		label := i18n.T("KI: Log/Ausgabe auswerten (letzte 400 Zeilen)")
+		if hasSel {
+			label = i18n.T("KI: markierte Ausgabe auswerten")
+		}
+		items = append(items, palItem{group: pgAI, icon: ic("ai"), label: label, hint: i18n.T("Diagnose"),
+			run: func() tea.Cmd { return a.startDiagnose(s) }})
+	}
 	if inTerm {
 		for _, c := range s.chips {
 			c := c
@@ -269,6 +277,10 @@ func (a *App) paletteItems() []palItem {
 		}})
 		if s.isSerial() && s.state == stConnected {
 			actions = append(actions, palItem{icon: ic("break"), label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
+		}
+		if s.client != nil {
+			actions = append(actions, palItem{icon: ic("open"), label: i18n.T("Server-Datei im eigenen Editor öffnen …"), hint: i18n.T("F5 e"),
+				keys: "edit editor bearbeiten vscode notepad datei file", run: func() tea.Cmd { return a.askEditPath(s) }})
 		}
 		actions = append(actions,
 			palItem{icon: ic("record"), label: recordLabel(s.recording()), hint: "asciinema", run: func() tea.Cmd { return a.toggleRecording(s) }},
@@ -527,6 +539,9 @@ func (a *App) palMenuItems() []palItem {
 	items = append(items,
 		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farben anpassen (eigene Farben)"), hint: colHint,
 			keys: "theme farbe color colors eigene custom", run: func() tea.Cmd { return a.openColors() }},
+		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farbregeln für die Ausgabe …"), hint: hlHint(a.highlightOn()),
+			keys: "highlight farbregeln einfärben fehler ip mac syslog regeln", run: func() tea.Cmd { return a.openHighlightForm() }},
+		hide(palToggle(ic("colors"), i18n.T("Farbregeln: Ausgabe einfärben"), a.highlightOn(), "highlight farbregeln einfärben", func() tea.Cmd { return a.toggleHighlight() })),
 	)
 	iconIdx := -1
 	for i, st := range iconStyles {
@@ -555,6 +570,8 @@ func (a *App) palMenuItems() []palItem {
 		// Einrichten: Verwandtes in Unterordnern
 		a.palFolder("settings/ki"),
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("keys"), label: i18n.T("Tastenkürzel anpassen"), hint: a.keys.label(actKeys), keys: "keys", run: func() tea.Cmd { return a.openKeys() }},
+		palItem{group: pgSetSetup, menu: "settings", icon: ic("open"), label: i18n.T("Editor für Server-Dateien"), hint: trunc(orDefault(a.editorSetting(), i18n.T("Standard")), 18),
+			keys: "editor vscode code notepad bearbeiten", run: func() tea.Cmd { return a.askEditor() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("sync"), label: i18n.T("Sync zwischen Rechnern einrichten"), hint: "y", keys: "sync", run: func() tea.Cmd { return a.openSync() }},
 		a.palFolder("settings/relay"),
 		a.palFolder("settings/io"),
