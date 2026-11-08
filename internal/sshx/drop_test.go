@@ -173,3 +173,30 @@ func TestIsHangupWindowsReset(t *testing.T) {
 		t.Fatal("Anmeldefehler als Auflegen gewertet")
 	}
 }
+
+// Nach Ruhezustand/Netzwechsel: Check trennt eine stumme Leitung sofort.
+func TestCheckAfterResume(t *testing.T) {
+	s := startStallServer(t, 1)
+	cl := dialStall(t, s)
+	defer cl.Close()
+	deadline := time.Now().Add(3 * time.Second)
+	for !cl.answered.Load() && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if cl.Check(200 * time.Millisecond) {
+		t.Fatal("stumme Leitung gilt als lebendig")
+	}
+	if !cl.WaitDropped(time.Second) {
+		t.Fatal("nicht als Abbruch geschlossen")
+	}
+
+	ok := startStallServer(t, 100)
+	cl2 := dialStall(t, ok)
+	defer cl2.Close()
+	for !cl2.answered.Load() && time.Now().Before(deadline.Add(3*time.Second)) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !cl2.Check(2 * time.Second) {
+		t.Fatal("gesunde Leitung getrennt")
+	}
+}

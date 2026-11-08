@@ -337,6 +337,9 @@ func (a *App) reconnectTick(s *session) tea.Cmd {
 	if s.state != stReconnect || s.rc.dialing || time.Now().Before(s.rc.due) {
 		return nil
 	}
+	if a.offlineWait(s) {
+		return nil
+	}
 	s.rc.dialing = true
 	s.rc.attempts++
 	return a.connectCmd(s)

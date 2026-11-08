@@ -429,6 +429,30 @@ func (c *Client) alive() bool {
 	}
 }
 
+// Check prüft nach Ruhezustand oder Netzwechsel sofort, ob die Leitung
+// noch steht: bleibt die Keepalive-Antwort länger als d aus, wird die
+// Verbindung als abgerissen geschlossen (→ Auto-Reconnect). Geräte, die nie
+// auf Keepalives antworten, bleiben unangetastet. Rückgabe: noch da?
+func (c *Client) Check(d time.Duration) bool {
+	if !c.answered.Load() {
+		return true
+	}
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := c.SendRequest("keepalive@openssh.com", true, nil)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		return err == nil
+	case <-c.dead:
+		return false
+	case <-time.After(d):
+		_ = c.Client.Close() // nicht byUs: zählt als Abbruch
+		return false
+	}
+}
+
 // networkBanners: Teile der SSH-Kennung typischer Switches/Router/Firewalls.
 // Geräte mit OpenSSH (z. B. ArubaOS-CX, Junos) erkennt das nicht; dort greift
 // der Rückfall in Dial oder der Gerätetyp in der Verbindung.

@@ -33,6 +33,7 @@ import (
 	"github.com/db9979/sshtermy/internal/audit"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/netwatch"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
@@ -73,10 +74,12 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
-	inputLog      *os.File   // nur mit SSHTERMY_DEBUG=1
-	audit         *audit.Log // audit.go
-	debugForced   bool       // --debug: Debug-Protokoll für diesen Start (debugreport.go)
-	startNotice   string     // Meldung nach dem Entsperren (fullbackup.go)
+	inputLog      *os.File          // nur mit SSHTERMY_DEBUG=1
+	audit         *audit.Log        // audit.go
+	nw            *netwatch.Watcher // Ruhezustand/Netzwechsel (netwatch.go)
+	nwAt          time.Time
+	debugForced   bool   // --debug: Debug-Protokoll für diesen Start (debugreport.go)
+	startNotice   string // Meldung nach dem Entsperren (fullbackup.go)
 	startNoticeOK bool
 	st            *store.Store
 	hostKeys      *sshx.HostKeyStore
@@ -266,7 +269,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case tickMsg:
-		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick(), a.crashTestTick())
+		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick(), a.crashTestTick(), a.netWatchTick())
 	case crashTestMsg:
 		panic("sshTermy crash test (ui) password=hunter2")
 	case llmProbeMsg:
