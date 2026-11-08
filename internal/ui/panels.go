@@ -91,6 +91,7 @@ type askState struct {
 	sel       int  // gewählte Befehlskarte (aicards.go)
 	armed     int  // Karte, deren gefährlicher Befehl auf den zweiten Druck wartet (-1 = keine)
 	collapsed bool // Erklärung eingeklappt
+	shown     int  // so viele Zeichen der Antwort sind schon „getippt“ (motion2.go)
 }
 
 func (q *askState) cancel() {
@@ -747,6 +748,9 @@ func (a *App) panelKeys(s *session) [][2]string {
 
 func (a *App) viewPanel(s *session, w, h int) string {
 	st := a.s
+	if s.panel != s.panelSeen {
+		s.panelSeen, s.panelAt = s.panel, time.Now()
+	}
 	inner := w - 4
 	var b strings.Builder
 	switch s.panel {
@@ -770,7 +774,11 @@ func (a *App) viewPanel(s *session, w, h int) string {
 	} else if len(lines) > h-2 {
 		lines = lines[len(lines)-(h-2):] // Ende sichtbar halten
 	}
-	return style.Width(w).Height(h).MaxHeight(h).Render(strings.Join(lines, "\n"))
+	out := style.Width(w).Height(h).MaxHeight(h).Render(strings.Join(lines, "\n"))
+	if d := time.Since(s.panelAt); motionLevel() > 0 && d < fadeInDur*2 {
+		out = fadeANSI(out, st.T, easeOut(float64(d)/float64(fadeInDur*2))) // Panel blendet ein
+	}
+	return out
 }
 
 func wrap(s string, w int) string { return lipgloss.NewStyle().Width(w).Render(s) }
@@ -942,15 +950,20 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	} else {
 		b.WriteString(st.Muted.Render(i18n.T("Frage")) + "\n" + wrap(st.Text.Bold(true).Render(q.question), w) + "\n\n")
 	}
-	ans := agent.VisibleAnswer(q.answer.String())
-	if ans == "" && q.busy && q.answer.Len() > 0 {
-		b.WriteString(st.Muted.Render(i18n.T("denkt nach …")) + "\n")
+	ans := q.visibleAsk() // Schreibmaschine (motion2.go)
+	now := time.Now()
+	if ans == "" && q.busy {
+		b.WriteString(a.shimmer(i18n.T("denkt nach …"), st.T.Muted, st.T.AI, now) + "\n")
 	}
 	if ans != "" {
 		a.viewAnswer(b, s, ans, w) // Erklärung + Befehlskarten (aicards.go)
 	}
-	if q.busy {
-		b.WriteString(st.AI.Render("▍"))
+	if q.busy || q.typing() {
+		cur := st.T.AI
+		if motionLevel() == 2 {
+			cur = mixColor(st.T.Surface, st.T.AI, 0.35+0.65*pulse(now, 900*time.Millisecond))
+		}
+		b.WriteString(glyph("▍", cur, nil))
 	}
 	if q.err != "" {
 		b.WriteString("\n" + wrap(st.Danger.Render("× "+q.err), w))
@@ -1132,6 +1145,7 @@ func (a *App) startAsk(s *session, text string) tea.Cmd {
 	q.question = strings.TrimSpace(text)
 	q.input.SetValue(q.question)
 	q.answer.Reset()
+	q.shown = 0
 	q.err, q.busy = "", true
 	q.sel, q.armed = 0, -1
 	q.seq++

@@ -247,6 +247,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.toastTick()
 	case animMsg:
 		a.animTicking = false
+		for _, s := range a.sessions {
+			s.ask.typeOn(time.Now())
+		}
 		return a, tea.Batch(a.dangerHoldTick(), a.animTick())
 	}
 	if _, ok := msg.(tea.KeyPressMsg); ok {
@@ -323,6 +326,17 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case secretAskMsg:
 		a.modal = secretModal(m)
 		return a, a.listen()
+	case connectStepMsg:
+		if s := a.byID(m.sid); s != nil && m.step >= 0 && m.step < len(s.connStepAt) {
+			s.connStep = m.step
+			if m.step == sshx.StepConnect {
+				s.connStepAt = [4]time.Time{} // neuer Versuch
+			}
+			if s.connStepAt[m.step].IsZero() {
+				s.connStepAt[m.step] = time.Now()
+			}
+		}
+		return a, a.listen()
 	case connectNoticeMsg:
 		if s := a.byID(m.sid); s != nil {
 			s.connNote = m.text
@@ -340,6 +354,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.client, s.shell, s.state, s.connNote = m.client, m.shell, stConnected, ""
 			s.connectedAt = time.Now()
 			s.flashTab(a.s.T.OK)
+			if !s.rc.active {
+				s.revealAt = s.connectedAt // Zeilen blenden ein (motion2.go)
+			}
 			if m.client != nil {
 				s.tunnels = sshx.NewTunnelManager(m.client)
 			}

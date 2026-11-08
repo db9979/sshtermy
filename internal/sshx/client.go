@@ -124,6 +124,7 @@ type Options struct {
 	Relay     RelayDialer  // für Verbindungen über einen Vermittler (optional)
 	AskSecret SecretPrompt // fehlende Passwörter/Passphrasen erfragen (optional)
 	Notice    func(string) // Hinweis während des Verbindens, z. B. „Schlüssel berühren“ (optional)
+	Step      func(int)    // Fortschritt: StepConnect, StepHostKey, StepAuth (optional, nur fürs Ziel, nicht für Jump-Hosts)
 	Timeout   time.Duration
 
 	forceNet  bool     // intern: zweiter Versuch nach abgebrochener Systemabfrage
@@ -131,6 +132,14 @@ type Options struct {
 	waitScale float64  // intern: Wartezeiten zwischen Versuchen skalieren (Tests)
 	hops      []string // intern: bisherige Stationen der Jump-Kette (Schleifenschutz)
 }
+
+// Schritte des Verbindungsaufbaus (Options.Step).
+const (
+	StepConnect = iota // TCP, Vermittler oder Jump-Host
+	StepHostKey        // Handshake und Host-Schlüssel prüfen
+	StepAuth           // Anmelden
+	StepShell          // Shell öffnen (meldet die Oberfläche selbst)
+)
 
 // maxJumpHops: mehr Stationen ergeben praktisch nie Sinn, schützt vor Schleifen.
 const maxJumpHops = 8
@@ -325,6 +334,22 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		cfg.HostKeyAlgorithms = algosFor(relayKey.Type())
 	}
 
+	step := func(n int) {
+		if o.Step != nil {
+			o.Step(n)
+		}
+	}
+	if cb := cfg.HostKeyCallback; cb != nil && o.Step != nil {
+		cfg.HostKeyCallback = func(host string, remote net.Addr, key ssh.PublicKey) error {
+			step(StepHostKey)
+			err := cb(host, remote, key)
+			if err == nil {
+				step(StepAuth)
+			}
+			return err
+		}
+	}
+	step(StepConnect)
 	if c.ViaRelay() {
 		// raw kommt schon vom Vermittler
 	} else if c.JumpHostID != "" {
@@ -345,7 +370,7 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 			return nil, fmt.Errorf(i18n.T("Jump-Host-Kette zu lang (mehr als %d Stationen)"), maxJumpHops)
 		}
 		jo := o
-		jo.forceNet, jo.legacy, jo.hops = false, false, hops
+		jo.forceNet, jo.legacy, jo.hops, jo.Step = false, false, hops, nil
 		jump, err = Dial(ctx, jc, jo)
 		if err != nil {
 			return nil, fmt.Errorf(i18n.T("Jump-Host %s: %w"), jc.Alias, err)

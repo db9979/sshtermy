@@ -536,11 +536,7 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	case s.detached():
 		body = a.detachedView(s, cols, rows)
 	case s.state == stConnecting:
-		msg := st.AI.Render(i18n.T("⠿ Verbinde mit ") + s.conn.Alias + " (" + s.conn.ShowAddr() + ") …")
-		if s.connNote != "" {
-			msg += "\n\n" + st.Warn.Render(s.connNote)
-		}
-		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, msg)
+		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.connectCard(s, cols-4)) // motion2.go
 	case s.state == stReconnect:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.reconnectView(s))
 	case s.state == stClosed:
@@ -571,6 +567,7 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 			ghost = a.visibleGhost(s)
 		}
 		body = s.term.ViewHL(ghost, func(g string) string { return st.Ghost.Render(g) }, a.termHL())
+		body = revealLines(s, body, rows, time.Now())
 		if x, y, vis := s.term.Cursor(); vis && focused && !s.panelFocus {
 			cur = tea.NewCursor(tr.x+x, tr.y+y)
 			cur.Color = st.T.Accent

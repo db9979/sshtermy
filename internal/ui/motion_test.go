@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
@@ -219,6 +220,30 @@ func TestMotionShots(t *testing.T) {
 		dump("gefahr")
 	}
 	a.modal = nil
+	// Verbinden: Karte mit Schritten
+	t0 := time.Now().Add(-900 * time.Millisecond)
+	s2.connStep, s2.connStepAt = 2, [4]time.Time{t0, t0.Add(11 * time.Millisecond), t0.Add(140 * time.Millisecond)}
+	a.cur = 1
+	dump("verbinden")
+	// KI fragen: denkt nach, dann halb getippte Antwort
+	a.cur = 0
+	s1.panel, s1.panelSeen = panelAsk, panelAsk
+	s1.ask.input = newAIInput("")
+	s1.ask.question, s1.ask.busy = "warum ist das so langsam?", true
+	a.resize(s1)
+	dump("ki-denkt")
+	s1.ask.answer.WriteString("Auf orders fehlt ein Index für created_at, die Tabelle hat 48 Mio. Zeilen. Ein Index hilft:\n\n```sql\nCREATE INDEX CONCURRENTLY idx_orders_created ON orders(created_at);\n```\n")
+	s1.ask.shown = 60
+	dump("ki-tippt")
+	s1.panel = panelNone
+	a.resize(s1)
+	// Palette: Treffer leuchten
+	a.openPalette()
+	a.pal.in.SetValue("web")
+	a.View()
+	a.pal.mo.queryAt = time.Now().Add(-100 * time.Millisecond)
+	dump("palette")
+	a.pal = nil
 	// Manager: Verlauf, atmende Punkte, Lastbalken der verbundenen Verbindung
 	saved, err := a.st.AddConnections([]domain.Connection{
 		{Alias: "web-prod", Host: "10.0.1.11", Username: "deploy", Port: 22, Group: "produktiv"},
@@ -246,3 +271,64 @@ func TestMotionShots(t *testing.T) {
 	a.mgr.sel, a.mgr.selSeen = 4, 4
 	dump("manager-web")
 }
+
+func TestFuzzyHits(t *testing.T) {
+	if h := fuzzyHits("web", "Handbuch (Webseite)"); len(h) != 3 || h[0] != 10 {
+		t.Fatalf("Treffer %v", h)
+	}
+	if h := fuzzyHits("xyz", "web-01"); h != nil {
+		t.Fatalf("falscher Treffer %v", h)
+	}
+	got := ansi.Strip(hitLabel("web-01", fuzzyHits("w0", "web-01"), lipglossPlain(), lipglossPlain(), nil))
+	if got != "web-01" {
+		t.Fatalf("Beschriftung verändert: %q", got)
+	}
+}
+
+func TestTypeOnAndReveal(t *testing.T) {
+	defer func(m string, acc bool) { motionSetting, accessible = m, acc }(motionSetting, accessible)
+	t.Setenv("SSHTERMY_NO_ANIM", "")
+	motionSetting, accessible = motionVoll, false
+	var q askState
+	q.answer.WriteString(strings.Repeat("Wort ", 40))
+	q.typeOn(time.Now())
+	if q.shown == 0 || q.shown >= 200 || !q.typing() {
+		t.Fatalf("Schreibmaschine: %d von 200", q.shown)
+	}
+	for i := 0; i < 100 && q.typing(); i++ {
+		q.typeOn(time.Now())
+	}
+	if q.typing() || q.visibleAsk() != strings.TrimSpace(q.answer.String()) && !strings.HasPrefix(q.answer.String(), q.visibleAsk()) {
+		t.Fatalf("Antwort nicht vollständig: %d", q.shown)
+	}
+	s := &session{revealAt: time.Now()}
+	body := "a\nb\nc\nd\ne\nf\ng\nh"
+	if got := revealLines(s, body, 8, time.Now()); strings.Count(got, "\n") != 7 || got == body {
+		t.Fatalf("Einblenden: %q", got)
+	}
+	if got := revealLines(s, body, 8, time.Now().Add(time.Second)); got != body {
+		t.Fatal("nach dem Einblenden fehlt etwas")
+	}
+	motionSetting = motionAus
+	q2 := askState{}
+	q2.answer.WriteString("fertig")
+	q2.typeOn(time.Now())
+	if q2.typing() || q2.visibleAsk() != "fertig" {
+		t.Fatal("ohne Bewegung nicht sofort vollständig")
+	}
+}
+
+func TestConnectCardSteps(t *testing.T) {
+	a := dangerApp(t)
+	t0 := time.Now().Add(-time.Second)
+	s := &session{conn: domain.Connection{Alias: "db-01", Host: "10.0.1.20", Username: "pg"}, state: stConnecting,
+		connStep: 2, connStepAt: [4]time.Time{t0, t0.Add(11 * time.Millisecond), t0.Add(140 * time.Millisecond)}}
+	card := ansi.Strip(a.connectCard(s, 60))
+	for _, want := range []string{"db-01", "✓ Verbindung aufbauen", "11 ms", "✓ Host-Schlüssel prüfen", "Anmelden", "○ Shell öffnen"} {
+		if !strings.Contains(card, want) {
+			t.Fatalf("Karte ohne %q:\n%s", want, card)
+		}
+	}
+}
+
+func lipglossPlain() lipgloss.Style { return lipgloss.NewStyle() }
