@@ -29,6 +29,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   („Verification code“), sshTermy takes the TOTP code from the same source, also after a key login.
   Only the reference is stored, never the password
 - **Kerberos/GSSAPI login** (login `kerberos`): uses the company domain ticket from the Windows sign-in or `kinit`, no password needed; without a ticket it falls back to the password
+- **Images in the terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), the kitty graphics protocol (`kitty +kitten icat`, `viu`, `timg`) and iTerm2 inline images (`imgcat`) show up as colored half blocks right in the text, in every terminal with 24-bit color, in the scrollback and in split view. Two pixels per cell, so plots and photos are recognizable, not pixel-perfect
 - **Clipboard from the server (OSC 52)**: what you copy in tmux or vim on the server lands in your local clipboard. The server can never read it
 - **Split view** (Ctrl+T): up to six sessions at once in seven layouts, resize with the mouse or Alt+⇧+arrow, zoom one pane (Alt+Z), swap panes by dragging their title, optionally dim the other panes. The layout survives updates; **workspaces** (w in the manager) save layout and connections to reopen in one go, “Last used” is remembered on quit, `g` on a folder opens all its connections as a grid
 - **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
