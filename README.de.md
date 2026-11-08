@@ -118,9 +118,14 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   (OneDrive, Dropbox, iCloud, Syncthing) oder direkt über dein NAS (Synology, QNAP, Nextcloud, jeder WebDAV-Server)
 - **Import** bestehender Verbindungen aus `~/.ssh/config`, PuTTY (Registry oder `.reg`-Export), MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), Ansible-Inventaren (INI oder YAML) und CSV (auch der Geräte-Export von NetBox), mit Jump-Hosts und Ordnern, ein Tastendruck (i im Manager). `e` dort exportiert alle Verbindungen als CSV (ohne Passwörter)
-- **Themes** Dunkel, Hell, Hochkontrast, Matrix, Bernstein und Neon (a im Manager), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
+- **Themes** Dunkel, Hell, Hochkontrast, Farbenblind (dunkel und hell), Matrix, Bernstein und Neon (a im Manager), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
 - **Deutsch und Englisch**: Sprache in der Palette („Sprache“/„Language“) oder im Über-Dialog (F12 → `l`) umschalten;
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
+- **Barrierearm** (Einstellungen › Aussehen): keine Animationen, Formen statt nur Farben (× für „nicht erreichbar“);
+  dazu die **Farbenblind-Themes** (Blau/Gelb/Orange statt Grün/Rot, Okabe-Ito-Farben)
+- **Debug-Protokoll für Fehlerberichte** (Einstellungen oder `sshtermy --debug`): Verbindungsversuche, Abbrüche,
+  Updates, KI-Anfragen und Sync als Ereignisse, nie Passwörter oder Bildschirminhalte. Hilfe › „Debug-Protokoll
+  bereinigt speichern“ legt eine Kopie ohne Hosts, IPs und Benutzernamen in Downloads, fertig für ein GitHub-Issue
 - **Versionierung und Auto-Update** aus GitHub Releases (signiert)
 
 Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt aus dem Fernzugang-Assistenten von
@@ -181,6 +186,7 @@ sshtermy              # starten
 sshtermy --version    # Version, Commit, Build-Datum
 sshtermy --update     # auf die neueste Version aktualisieren
 sshtermy --no-intro   # ohne Startanimation (dauerhaft: Palette „Startanimation aus“)
+sshtermy --debug      # Debug-Protokoll für diesen Start (debug.log im Konfigurationsordner)
 ```
 
 ## Bedienung
@@ -250,7 +256,7 @@ unverschlüsselt in der Datei `language` im Konfigurationsordner, damit schon de
 Ohne diese Datei entscheidet die Systemsprache (`LANG`/`LC_ALL`, unter Windows die Anzeigesprache): Deutsch bei
 einem deutschen System, sonst Englisch. Die Hinweise an die KI bleiben deutsch; bei Englisch antwortet sie englisch.
 
-**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast → Matrix (grün) → Bernstein (Retro) → Neon (oder
+**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast (dunkel/hell) → Farbenblind (dunkel/hell) → Matrix (grün) → Bernstein (Retro) → Neon (oder
 Palette → Einstellungen › „Aussehen“). **Farben anpassen** im selben Untermenü: Vorlage wählen, dann jede Farbe mit
 ←/→ (Farbton), +/− (Helligkeit) oder als Hex-Wert ändern; die Oberfläche zeigt die Änderung sofort, ein Kontrast-Check
 warnt vor schlecht lesbaren Farben, Strg+S speichert (geht mit dem Sync mit).

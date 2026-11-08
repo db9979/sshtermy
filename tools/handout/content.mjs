@@ -183,7 +183,7 @@ export const de = {
     ]},
     { t: 'Start & Tipps', ic: '$', rows: [
       ['sshtermy --update', 'auf neueste Version'],
-      ['sshtermy --no-intro', 'ohne Startanimation'],
+      ['--no-intro · --debug', 'ohne Startanimation · Debug-Protokoll'],
       ['tsz / trz', 'Datei vom / zum Server (trzsz)'],
       ['_Palette_', '„teilen“: Tab live zeigen'],
       ['Fn+1 … Fn+=', 'uConsole: F1 … F12'],
@@ -369,7 +369,7 @@ export const en = {
     ]},
     { t: 'Start & tips', ic: '$', rows: [
       ['sshtermy --update', 'update to the newest version'],
-      ['sshtermy --no-intro', 'without the start animation'],
+      ['--no-intro · --debug', 'no start animation · debug log'],
       ['tsz / trz', 'file from / to the server (trzsz)'],
       ['_palette_', '“share”: show a tab live'],
       ['Fn+1 … Fn+=', 'uConsole: F1 … F12'],

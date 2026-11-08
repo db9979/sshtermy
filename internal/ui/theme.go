@@ -138,8 +138,41 @@ var Neon = Theme{
 	Danger:   lipgloss.Color("#ff3860"),
 }
 
+// Farbenblind: Okabe-Ito-Farben, für Rot-Grün-Schwäche (Deuteranopie,
+// Protanopie) unterscheidbar: OK blau, Warnung gelb, Gefahr orange.
+var Farbenblind = Theme{
+	Name: "farbenblind", Label: "Farbenblind (dunkel)", Dark: true,
+	Bg:       lipgloss.Color("#16181d"),
+	Surface:  lipgloss.Color("#1e2128"),
+	Surface2: lipgloss.Color("#2a2e38"),
+	Border:   lipgloss.Color("#4a5060"),
+	Text:     lipgloss.Color("#e8e8e8"),
+	Muted:    lipgloss.Color("#9a9fab"),
+	Accent:   lipgloss.Color("#56b4e9"),
+	AI:       lipgloss.Color("#cc79a7"),
+	OK:       lipgloss.Color("#56b4e9"),
+	Warn:     lipgloss.Color("#f0e442"),
+	Danger:   lipgloss.Color("#e69f00"),
+}
+
+// FarbenblindHell: dieselbe Idee auf hellem Grund.
+var FarbenblindHell = Theme{
+	Name: "farbenblindhell", Label: "Farbenblind (hell)", Dark: false,
+	Bg:       lipgloss.Color("#fafafa"),
+	Surface:  lipgloss.Color("#eceef2"),
+	Surface2: lipgloss.Color("#dcdfe6"),
+	Border:   lipgloss.Color("#9aa0ad"),
+	Text:     lipgloss.Color("#1a1a1a"),
+	Muted:    lipgloss.Color("#555a66"),
+	Accent:   lipgloss.Color("#005a8c"),
+	AI:       lipgloss.Color("#8c3d6a"),
+	OK:       lipgloss.Color("#005a8c"),
+	Warn:     lipgloss.Color("#6e5a00"),
+	Danger:   lipgloss.Color("#a33d00"),
+}
+
 // Themes in der Reihenfolge der Auswahl.
-var Themes = []Theme{Nacht, Hell, Kontrast, KontrastHell, Matrix, Bernstein, Neon}
+var Themes = []Theme{Nacht, Hell, Kontrast, KontrastHell, Farbenblind, FarbenblindHell, Matrix, Bernstein, Neon}
 
 // CustomName: Theme aus eigenen Farben („Farben anpassen“).
 const CustomName = "eigene"

@@ -45,6 +45,7 @@ type SharedPrefs struct {
 	Icons           string               `json:"icons,omitempty"`
 	Intro           string               `json:"intro,omitempty"`
 	DimPanes        bool                 `json:"dim_panes,omitempty"`
+	Accessible      bool                 `json:"accessible,omitempty"`
 	Workspaces      []domain.Workspace   `json:"workspaces,omitempty"`
 	// Highlight: Farbregeln; nil = Stand einer älteren Version (lokale behalten).
 	Highlight *domain.HighlightConfig `json:"highlight,omitempty"`
@@ -59,7 +60,7 @@ func sharedSettings(s domain.Settings) SharedSettings {
 			NoAutoReconnect: s.NoAutoReconnect, TourDone: s.TourDone, ExplainKeys: s.ExplainKeys,
 			NoReachCheck: s.NoReachCheck, NoNotify: s.NoNotify, NoDesktopNotify: s.NoDesktopNotify,
 			NoOSC52: s.NoOSC52, Monitor: s.Monitor, Icons: s.Icons, Intro: s.Intro,
-			DimPanes: s.DimPanes, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
+			DimPanes: s.DimPanes, Accessible: s.Accessible, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
 			Highlight: copyHighlight(s.Highlight),
 		},
 	}
@@ -82,6 +83,7 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 	d.NoNotify, d.NoDesktopNotify, d.NoOSC52 = x.NoNotify, x.NoDesktopNotify, x.NoOSC52
 	d.TourDone = d.TourDone || x.TourDone
 	d.Monitor, d.Intro = x.Monitor, x.Intro
+	d.Accessible = x.Accessible
 	d.DimPanes, d.Workspaces = x.DimPanes, append([]domain.Workspace(nil), x.Workspaces...)
 	if x.Highlight != nil {
 		d.Highlight = *copyHighlight(*x.Highlight)

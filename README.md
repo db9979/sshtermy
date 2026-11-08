@@ -117,9 +117,14 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   (OneDrive, Dropbox, iCloud, Syncthing) or directly via your NAS (Synology, QNAP, Nextcloud, any WebDAV server)
 - **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export), MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), Ansible inventories (INI or YAML) and CSV (also the NetBox device export), with jump hosts and folders, one key press (i in the manager). `e` there exports all connections as CSV (without passwords)
-- **Themes** dark, light, high contrast, Matrix, Amber and Neon (a in the manager), **custom colors** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
+- **Themes** dark, light, high contrast, color-blind (dark and light), Matrix, Amber and Neon (a in the manager), **custom colors** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
 - **English and German**: switch the language in the palette (“Language”/“Sprache”) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
+- **Accessible mode** (Settings › Appearance): no animations, shapes instead of color only (× for “unreachable”);
+  together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
+- **Debug log for bug reports** (Settings or `sshtermy --debug`): connection attempts, drops, updates, AI requests and
+  sync as events, never passwords or screen content. Help › “Save cleaned debug log” writes a copy without hosts, IPs and
+  user names to Downloads, ready to attach to a GitHub issue
 - **Versioning and auto-update** from GitHub Releases (signed)
 
 The AI interaction concept (suggestions, goal mode, fixed danger rules) comes from the remote access assistant of
@@ -180,6 +185,7 @@ sshtermy              # start
 sshtermy --version    # version, commit, build date
 sshtermy --update     # update to the newest version
 sshtermy --no-intro   # without the start animation (permanently: palette “Start animation off”)
+sshtermy --debug      # write a debug log for this run (debug.log in the config folder)
 ```
 
 ## Usage
@@ -249,7 +255,7 @@ in the file `language` in the config folder so that the unlock screen already kn
 language decides (`LANG`/`LC_ALL`, on Windows the display language): German on a German system, otherwise English.
 The instructions to the AI stay in German internally; with English selected, the AI answers in English.
 
-**Appearance:** a in the manager switches dark → light → high contrast → Matrix (green) → Amber (retro) → Neon (or
+**Appearance:** a in the manager switches dark → light → high contrast (dark/light) → color-blind (dark/light) → Matrix (green) → Amber (retro) → Neon (or
 palette → Settings › "Appearance"). **Customize colors** in the same submenu: pick a template, then change each color
 with ←/→ (hue), +/− (brightness) or as a hex value; the whole UI previews it live, a contrast check warns about hard to
 read colors, Ctrl+S saves (synced to your other computers).
