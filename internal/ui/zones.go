@@ -27,6 +27,7 @@ type zoneAction struct {
 	block bool                                   // rechteckiger Block (Box), sonst Fließtext
 	row   int                                    // Manager: Zeile+1 als Ziel beim Ziehen (0 = keins); Dateien: Eintrag+1
 	pane  int                                    // Dateien: Seite+1 (0 = keine)
+	tip   func() string                          // Karte beim Verweilen der Maus (motion.go)
 }
 
 type zoneRect struct {
@@ -143,6 +144,22 @@ func (z *zones) at(x, y int, wheel bool) *zoneAction {
 		}
 	}
 	return best
+}
+
+// tipAt: die innerste Zone unter x/y mit Hover-Karte.
+func (z *zones) tipAt(x, y int) (*zoneAction, zoneRect) {
+	var best *zoneAction
+	var br zoneRect
+	bestArea := math.MaxInt
+	for _, r := range z.rects {
+		if !r.contains(x, y) || z.acts[r.id].tip == nil {
+			continue
+		}
+		if area := (r.y1-r.y0+1)*4096 + (r.x1 - r.x0); area <= bestArea {
+			best, br, bestArea = &z.acts[r.id], r, area
+		}
+	}
+	return best, br
 }
 
 // atMenu: die innerste Zone unter x/y mit Rechtsklick-Aktion (Tabs).

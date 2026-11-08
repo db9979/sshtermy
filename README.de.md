@@ -69,7 +69,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   Schritte dort laufen, und schlägt Entsprechungen vor (`a` übernimmt sie). Gefährlich oder nicht entscheiden weiter die festen Regeln.
 - **Gefahren-Check:** Auf Produktiv-Hosts (Ordner, Tag oder Alias mit „prod“, Tag „live“) fragt sshTermy bei riskanten
   Befehlen vor dem Enter nach (`rm -rf`, `reboot`, auf Switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …).
-  Ausführen nur mit `j`, Esc lässt die Zeile stehen. Palette „Gefahren-Check auf allen Hosts“ weitet das auf alle aus.
+  Ausführen nur mit `j` oder ⏎ gedrückt halten (ein Balken füllt sich, ein kurzes ⏎ reicht nicht), Esc lässt die Zeile stehen. Palette „Gefahren-Check auf allen Hosts“ weitet das auf alle aus.
 - **Aufzeichnung exportieren:** Palette „Aufnahme starten“ nimmt den Tab als asciinema-Datei (`.cast`, mit Farben und
   vim/htop) auf, abspielbar mit `asciinema play`. Protokolle (`l`, dann `x`) gehen als Markdown, Text oder nachgebaute
   Aufnahme raus; „Terminal-Verlauf als Text exportieren“ speichert den Verlauf. Alles landet im Download-Ordner.
@@ -127,6 +127,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Barrierearm** (Einstellungen › Aussehen): keine Animationen, Formen statt nur Farben (× für „nicht erreichbar“);
   dazu die **Farbenblind-Themes** (Blau/Gelb/Orange statt Grün/Rot, Okabe-Ito-Farben)
+- **Lebendige Oberfläche** (Palette „Bewegung“: voll, dezent, aus): Spinner im Tab beim Verbinden, Tabs leuchten bei
+  Erfolg grün und bei Fehlern rot auf, ein pulsierender Punkt zeigt neue Ausgabe in verdeckten Tabs, Maus auf einem Tab
+  zeigt eine Karte mit Ziel, Dauer und Latenzverlauf. Im Manager „atmen“ die Online-Punkte, ein Ausfall blinkt und meldet
+  sich, die Details zeigen den Verlauf der Erreichbarkeit und bei verbundenen Servern CPU/RAM/Platte als Balken.
+  Gezeichnet wird nur, solange sich etwas bewegt; Barrierearm schaltet alles ab
 - **MCP-Server** (`sshtermy mcp`): Claude und andere KI-Clients können Verbindungen auflisten und lesende Befehle ausführen, alles andere erst nach deiner Bestätigung in sshTermy
 - **Audit-Protokoll** (Einstellungen › Sicherheit): wer hat wann auf welchem Host was getan: Verbindungen, Befehle
   (auch aus Agent-Modus und Broadcast), Dateiübertragungen, Config-Sicherungen, geänderte Verbindungen,
@@ -230,7 +235,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | F6 | Host-Übersicht: r/⏎ abfragen, c Container, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
-| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü) |
+| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
 | | Alt+L | lokale Shell in neuem Tab (auch im Manager; Palette: `lokal`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |

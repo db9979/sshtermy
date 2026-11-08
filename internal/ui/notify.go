@@ -136,6 +136,9 @@ func (a *App) noticeDone(s *session, cmd string, dur time.Duration, failed, inte
 	}
 	if !a.sessionVisible(s) {
 		s.notice = kind
+		if failed {
+			s.flashTab(a.s.T.Danger)
+		}
 	}
 	msg := fmt.Sprintf("%s: %s %s (%s)", s.tabName(), trunc(cmd, 40), word, fmtDur(dur))
 	if failed {

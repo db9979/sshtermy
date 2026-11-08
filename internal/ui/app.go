@@ -120,6 +120,8 @@ type App struct {
 	reach        reachState     // Online-Punkt im Manager (reach.go)
 	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
 	toastTicking bool
+	animTicking  bool       // Takt für Bewegung (motion.go)
+	hov          hoverState // Karte unter der Maus (motion.go)
 	rel          *update.Release
 	// restartPending: installierte, noch nicht gestartete Version.
 	restartPending string
@@ -243,6 +245,16 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.toastTicking = false
 		a.liveToasts(time.Now())
 		return a, a.toastTick()
+	case animMsg:
+		a.animTicking = false
+		return a, tea.Batch(a.dangerHoldTick(), a.animTick())
+	}
+	if _, ok := msg.(tea.KeyPressMsg); ok {
+		a.hov = hoverState{} // Karte weg, sobald getippt wird
+	}
+	if k, ok := msg.(tea.KeyReleaseMsg); ok && a.modal != nil && a.modal.kind == mDanger && k.String() == "enter" {
+		a.modal.danger.hold.release(time.Now())
+		return a, a.animTick()
 	}
 	a.debugMsg(msg)
 	a.auditMsg(msg)
@@ -252,6 +264,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = tea.Batch(cmd, c)
 	}
 	if t := a.toastTick(); t != nil {
+		cmd = tea.Batch(cmd, t)
+	}
+	if t := a.animTick(); t != nil {
 		cmd = tea.Batch(cmd, t)
 	}
 	return m, cmd
@@ -286,6 +301,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if s := a.byID(m.sid); s != nil {
 			s.pending.Store(false)
 			s.lastOutput = time.Now()
+			if !a.sessionVisible(s) {
+				s.unseen = true
+			}
 			clip = a.takeClipboard(s)
 		}
 		return a, tea.Batch(a.listen(), clip)
@@ -321,6 +339,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if s := a.byID(m.sid); s != nil {
 			s.client, s.shell, s.state, s.connNote = m.client, m.shell, stConnected, ""
 			s.connectedAt = time.Now()
+			s.flashTab(a.s.T.OK)
 			if m.client != nil {
 				s.tunnels = sshx.NewTunnelManager(m.client)
 			}
@@ -367,6 +386,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.onReconnectErr(s, m.err)
 			} else {
 				s.state, s.err = stClosed, m.err.Error()
+				s.flashTab(a.s.T.Danger)
 				var km *sshx.KeyMissingError
 				if errors.As(m.err, &km) && a.form == nil && a.modal == nil && a.pick == nil && a.pal == nil && a.scr == scrTerminal {
 					return a, a.openKeyFix(s.id, km)
@@ -608,6 +628,7 @@ func (a *App) onTick() tea.Cmd {
 			a.noticeBell(s)
 		}
 		a.alertTick(s)
+		s.recordLatency(time.Now())
 		a.shareTick(s)
 		if c := a.takeClipboard(s); c != nil {
 			cmds = append(cmds, c)
@@ -695,6 +716,7 @@ func (a *App) View() tea.View {
 		}
 	}
 	if a.lock == nil {
+		body = a.withHover(body)
 		body = a.withToasts(body)
 	}
 	if a.intro != nil && introFits(a.w, a.h) {

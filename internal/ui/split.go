@@ -262,6 +262,7 @@ func (a *App) focusSession(i int) {
 	}
 	prev := a.current()
 	a.cur = i
+	a.sessions[i].unseen = false
 	if a.split != splitOff {
 		a.prunePanes()
 		s := a.sessions[i]

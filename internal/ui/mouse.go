@@ -64,6 +64,9 @@ func (a *App) mouseMode() tea.MouseMode {
 		s.term.MouseTracking() == termemu.MouseAny {
 		return tea.MouseModeAllMotion
 	}
+	if motionLevel() == 2 && a.modal == nil && a.pal == nil && a.pick == nil && a.scr == scrTerminal {
+		return tea.MouseModeAllMotion // Hover-Karten (motion.go)
+	}
 	return tea.MouseModeCellMotion
 }
 
@@ -72,6 +75,16 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	m := msg.Mouse()
 	_, isClick := msg.(tea.MouseClickMsg)
 	_, isWheel := msg.(tea.MouseWheelMsg)
+	if _, isMotion := msg.(tea.MouseMotionMsg); isMotion && m.Button == tea.MouseNone {
+		// Bewegung ohne Taste kommt nur bei voller Bewegung (Hover-Karten)
+		// oder wenn ein Programm im Terminal sie will.
+		a.trackHover(m)
+		if !a.remoteWantsMotion() {
+			return nil
+		}
+	} else {
+		a.hov = hoverState{}
+	}
 
 	clicks := 0
 	if isClick {

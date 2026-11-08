@@ -15,6 +15,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/audit"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/keychain"
 	"github.com/db9979/sshtermy/internal/pwsource"
@@ -33,6 +34,8 @@ type managerState struct {
 	drag      *mgrDrag
 	rows      []mgrRow // Zeilen des letzten Aufrufs von mgrRows
 	tree      *domain.TreeNode
+	selAt     time.Time // Auswahl zuletzt gewechselt (Einblenden, Balken)
+	selSeen   int       // Auswahl im letzten Bild
 }
 
 func newManager() managerState {
@@ -431,6 +434,14 @@ func (a *App) viewManager() string {
 		m.top = m.sel - listH + 1
 	}
 	m.top = clamp(m.top, 0, max(0, len(rows)-listH))
+	now := time.Now()
+	if m.sel != m.selSeen {
+		m.selSeen, m.selAt = m.sel, now // Auswahl blendet ein, Balken füllen sich
+	}
+	selK := 1.0
+	if motionLevel() > 0 {
+		selK = easeOut(float64(now.Sub(m.selAt)) / float64(selFadeDur))
+	}
 	if len(rows) > listH {
 		info += s.Muted.Render(fmt.Sprintf(i18n.T("  %d–%d von %d"), m.top+1, min(len(rows), m.top+listH), len(rows)))
 	}
@@ -470,8 +481,8 @@ func (a *App) viewManager() string {
 			if i == m.sel {
 				// Auswahl: Hintergrund über die ganze Zeile, Punkt und
 				// Symbol behalten ihre Farbe (rot = nicht erreichbar).
-				bg := s.T.Surface2
-				sel := s.Selected
+				bg := mixColor(s.T.Bg, s.T.Surface2, selK)
+				sel := s.Selected.Background(bg)
 				stripeSel, _ := a.stripe(c, bg)
 				body := sel.Render(indent) + glyph(pdot, dotC, bg) + sel.Render(" ") + glyph(picon, iconC, bg) + sel.Render(" "+alias+" "+target)
 				styled = stripeSel + body + sel.Render(strings.Repeat(" ", max(0, leftW-2-lipgloss.Width(body))))
@@ -539,6 +550,10 @@ func (a *App) viewManager() string {
 		}
 		row(i18n.T("Ziel"), c.Target())
 		row(i18n.T("Status"), a.reachText(c))
+		if sp := a.reachSpark(c.ID); sp != "" && !a.connected(c.ID) {
+			row(i18n.T("Verlauf"), sp+s.Muted.Render(i18n.T("  je Minute")))
+		}
+		a.mgrLoad(&rb, c, rightW, now)
 		if d := deviceClass(c); d != devUnknown {
 			ic, col := a.devIcon(c)
 			row(i18n.T("Gerät"), glyph(ic, col, nil)+" "+devName(d))
@@ -634,6 +649,50 @@ func (a *App) viewManager() string {
 	}
 	right := lipgloss.NewStyle().Width(rightW).Height(h).Render(clipLines(rb.String(), rightW))
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, sep, right)
+}
+
+// mgrLoad: Auslastung einer verbundenen Verbindung (aus der Host-Übersicht
+// F6), Balken füllen sich beim Auswählen.
+func (a *App) mgrLoad(rb *strings.Builder, c domain.Connection, w int, now time.Time) {
+	var srv *hostinfo.Server
+	for _, x := range a.sessions {
+		if x.conn.ID == c.ID && x.host.srv != nil {
+			srv = x.host.srv
+			break
+		}
+	}
+	if srv == nil {
+		return
+	}
+	st := a.s
+	k := 1.0
+	if motionLevel() > 0 {
+		k = easeOut(float64(now.Sub(a.mgr.selAt)) / float64(barFillDur))
+	}
+	cpuL, ramL, diskL := a.monLimits().CPU, a.monLimits().RAM, a.monLimits().Disk
+	label := detailLabel(st, w)
+	barW := max(8, min(30, w-label.GetWidth()-10))
+	line := func(name string, pct, limit int) {
+		if pct < 0 {
+			return
+		}
+		col := st.T.OK
+		switch {
+		case limit > 0 && pct >= limit:
+			col = st.T.Danger
+		case limit > 0 && pct >= limit*8/10:
+			col = st.T.Warn
+		}
+		rb.WriteString(" " + label.Render(name) + smoothBar(float64(pct)/100*k, barW, col, st.T.Surface2) +
+			lipgloss.NewStyle().Foreground(col).Bold(true).Render(fmt.Sprintf(" %3d %%", int(float64(pct)*k+0.5))) + "\n")
+	}
+	line("CPU", srv.CPUPct, cpuL)
+	if srv.MemTotal > 0 {
+		line("RAM", srv.MemPct(), ramL)
+	}
+	if srv.DiskTotal > 0 {
+		line(i18n.T("Platte"), srv.DiskPct(), diskL)
+	}
 }
 
 func trunc(s string, n int) string {

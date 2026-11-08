@@ -196,6 +196,7 @@ func (a *App) alertTick(s *session) {
 	}
 	if !a.sessionVisible(s) {
 		s.notice = noticeAlert
+		s.flashTab(a.s.T.Warn)
 	}
 	if time.Since(s.alertAt) < 20*time.Second {
 		return // ein Gerät, das dauernd meldet, nicht jedes Mal

@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"image/color"
+	"math"
 	"net"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,7 +47,9 @@ type reachResult struct {
 }
 
 type reachState struct {
-	res     map[string]reachResult // Connection.ID → letzte Prüfung
+	res     map[string]reachResult     // Connection.ID → letzte Prüfung
+	hist    map[string][]time.Duration // Antwortzeiten der letzten Prüfungen (Verlauf)
+	downAt  map[string]time.Time       // gerade ausgefallen (Punkt blinkt)
 	running bool
 	next    time.Time
 	started time.Time
@@ -151,10 +156,64 @@ func (a *App) onReach(m reachMsg) {
 	}
 	if a.reach.res == nil {
 		a.reach.res = map[string]reachResult{}
+		a.reach.hist = map[string][]time.Duration{}
+		a.reach.downAt = map[string]time.Time{}
 	}
+	var down []string
 	for id, r := range m.res {
+		if old, ok := a.reach.res[id]; ok && old.ok && !r.ok {
+			a.reach.downAt[id] = time.Now()
+			if c, ok := a.st.Connection(id); ok {
+				down = append(down, c.Alias)
+			}
+		}
 		a.reach.res[id] = r
+		h := a.reach.hist[id]
+		if r.ok {
+			h = append(h, r.rtt)
+		} else {
+			h = append(h, -1) // Lücke im Verlauf
+		}
+		if len(h) > reachHist {
+			h = h[len(h)-reachHist:]
+		}
+		a.reach.hist[id] = h
 	}
+	// war erreichbar, jetzt nicht mehr: einmal melden (nur, solange der
+	// Manager offen ist, dort laufen die Prüfungen)
+	if len(down) > 0 {
+		sort.Strings(down)
+		names := strings.Join(down[:min(3, len(down))], ", ")
+		if len(down) > 3 {
+			names += i18n.F(" und %d weitere", len(down)-3)
+		}
+		a.flashErr(i18n.T("Antwortet nicht mehr: ") + names)
+	}
+}
+
+// reachHist: so viele Prüfungen zeigt der Verlauf (eine pro Minute).
+const reachHist = 20
+
+// reachSpark: Verlauf der Antwortzeiten, Ausfälle als ×.
+func (a *App) reachSpark(id string) string {
+	h := a.reach.hist[id]
+	if len(h) < 2 {
+		return ""
+	}
+	vals := make([]float64, 0, len(h))
+	for _, d := range h {
+		vals = append(vals, math.Max(0, float64(d.Microseconds())))
+	}
+	sp := []rune(sparkline(vals))
+	var b strings.Builder
+	for i, d := range h {
+		if d < 0 {
+			b.WriteString(a.s.Danger.Render("×"))
+		} else {
+			b.WriteString(a.s.Accent.Render(string(sp[i])))
+		}
+	}
+	return b.String()
 }
 
 // reachDot: Punkt vor der Verbindung. ◉ verbunden, ● grün erreichbar,
@@ -172,9 +231,23 @@ func (a *App) reachDot(c domain.Connection) (string, color.Color) {
 	case !a.reachEnabled() || !ok:
 		return "○", t.Muted
 	case r.ok:
+		if motionLevel() == 2 {
+			// „atmet“ leicht, jeder Host etwas versetzt
+			h := 0
+			for _, ch := range c.ID {
+				h = (h*31 + int(ch)) % 2400
+			}
+			ph := time.Duration(h) * time.Millisecond
+			return "●", mixColor(mixColor(t.OK, t.Bg, 0.45), t.OK, pulse(time.Now().Add(ph), 2400*time.Millisecond))
+		}
 		return "●", t.OK
 	case accessible:
 		return "×", t.Danger // nicht nur die Farbe unterscheidet
+	}
+	if at, ok := a.reach.downAt[c.ID]; ok && motionLevel() > 0 && time.Since(at) < downBlink {
+		if (time.Since(at)/(300*time.Millisecond))%2 == 0 {
+			return "×", t.Danger // gerade ausgefallen: blinkt kurz
+		}
 	}
 	return "●", t.Danger
 }
