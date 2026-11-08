@@ -795,95 +795,50 @@ func (a *App) viewBcRun() string {
 	top := " " + s.Accent.Render("» ") + s.Code.Render(trunc(cmdText, max(10, a.w-30))) + "   " + sum
 	lines := []string{top, ""}
 
-	cols := max(1, min(n, a.w/32))
-	if b.zoom {
-		cols = 1
-	}
+	// Kacheln: so viele Spalten, dass jede mindestens 40 breit ist, und so
+	// viele Zeilen, dass jede Kachel mindestens 8 hoch ist (bcgrid.go).
+	cols, rows := bcGrid(n, a.w, h-3, b.zoom)
+	per := cols * rows
 	if b.sel < b.first {
-		b.first = b.sel
+		b.first = b.sel - b.sel%per
 	}
-	if b.sel >= b.first+cols {
-		b.first = b.sel - cols + 1
+	if b.sel >= b.first+per {
+		b.first = b.sel - b.sel%per
 	}
-	b.first = clamp(b.first, 0, max(0, n-cols))
-	colW := (a.w - (cols - 1)) / cols
-	bodyH := max(1, h-len(lines)-3)
+	b.first = clamp(b.first, 0, max(0, n-1))
+	tileW := (a.w - (cols - 1)) / cols
+	tileH := max(5, (h-3)/rows)
+	bodyH := tileH - 2
 
-	// Ausgabe pro Spalte umbrechen, Blättern gilt für alle Spalten gemeinsam.
-	wrapped := make([][]string, cols)
 	maxLen := 0
-	for c := 0; c < cols && b.first+c < n; c++ {
-		r := b.results[b.first+c]
-		out := strings.ReplaceAll(strings.ReplaceAll(r.Output, "\t", "    "), "\r", "")
-		if r.State == broadcast.Failed && r.Err != "" {
-			out = strings.TrimRight(out, "\n")
-			if out != "" {
-				out += "\n\n"
+	var grid []string
+	for r := 0; r < rows; r++ {
+		var row []string
+		for c := 0; c < cols; c++ {
+			i := b.first + r*cols + c
+			if i >= n {
+				row = append(row, strings.Repeat(" ", tileW))
+				continue
 			}
-			out += i18n.T("Fehler: ") + r.Err
-		} else if out == "" && r.Finished() {
-			out = i18n.T("(keine Ausgabe)")
+			tile, l := a.bcTile(i, tileW, tileH, bodyH)
+			maxLen = max(maxLen, l)
+			row = append(row, tile)
 		}
-		wrapped[c] = strings.Split(ansi.Hardwrap(ansi.Strip(out), colW-1, true), "\n")
-		maxLen = max(maxLen, len(wrapped[c]))
+		grid = append(grid, lipgloss.JoinHorizontal(lipgloss.Top, intersperse(row, " ")...))
 	}
-	b.scroll = clamp(b.scroll, 0, max(0, maxLen-bodyH))
-
-	var colViews []string
-	for c := 0; c < cols && b.first+c < n; c++ {
-		i := b.first + c
-		r := b.results[i]
-		nsteps := len(b.steps)
-		if i < len(b.per) && len(b.per[i]) > 0 {
-			nsteps = len(b.per[i])
-		}
-		icon, txt, st := a.bcStatus(r, nsteps)
-		title := st.Render(icon) + " " + s.Text.Bold(true).Render(trunc(r.Alias, colW-4))
-		if i == b.sel {
-			title = s.Selected.Width(colW).Render(ansi.Strip(title))
-		}
-		var cb strings.Builder
-		cb.WriteString(title + "\n" + st.Render(trunc(txt, colW-1)) + "\n")
-		cb.WriteString(lipgloss.NewStyle().Foreground(s.T.Border).Render(strings.Repeat("─", colW)) + "\n")
-		wl := wrapped[c]
-		for j := b.scroll; j < len(wl) && j < b.scroll+bodyH; j++ {
-			cb.WriteString(s.Text.Render(wl[j]) + "\n")
-		}
-		i2 := i
-		view := lipgloss.NewStyle().Width(colW).Height(bodyH + 3).MaxHeight(bodyH + 3).Render(cb.String())
-		view = a.z.mark(view, zoneAction{
-			block: true,
-			click: func(_ tea.Mouse, double bool) tea.Cmd {
-				b.sel = i2
-				if double {
-					b.zoom = !b.zoom
-				}
-				return nil
-			},
-			wheel: func(up bool) tea.Cmd {
-				if up {
-					b.scroll = max(0, b.scroll-3)
-				} else {
-					b.scroll += 3
-				}
-				return nil
-			},
-		})
-		colViews = append(colViews, view)
-		if c < cols-1 && i < n-1 {
-			colViews = append(colViews, lipgloss.NewStyle().Foreground(s.T.Border).Render(strings.Repeat("│\n", bodyH+2)+"│"))
-		}
-	}
-	lines = append(lines, lipgloss.JoinHorizontal(lipgloss.Top, colViews...))
+	lines = append(lines, strings.Join(grid, "\n"))
 	more := ""
-	if n > cols {
-		more = fmt.Sprintf(i18n.T("Host %d–%d von %d · ←/→ weitere"), b.first+1, min(n, b.first+cols), n)
+	if n > per {
+		more = fmt.Sprintf(i18n.T("Host %d–%d von %d · ←/→ weitere"), b.first+1, min(n, b.first+per), n)
 	}
-	if maxLen > bodyH {
+	if b.zoom && maxLen > bodyH {
 		if more != "" {
 			more += " · "
 		}
 		more += fmt.Sprintf(i18n.T("Zeile %d–%d von %d"), b.scroll+1, min(maxLen, b.scroll+bodyH), maxLen)
+	}
+	if !b.running && n > 0 {
+		more = strings.TrimPrefix(more+" · "+bcSummaryText(ok, failed, n-ok-failed), " · ")
 	}
 	lines = append(lines, " "+s.Muted.Render(more))
 	return strings.Join(lines, "\n")

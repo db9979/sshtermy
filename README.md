@@ -37,7 +37,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder, or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
 - **Screen lock**: palette “Lock now” or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen. **Change master password** (palette → Settings › Security) also switches the Windows sign-in (DPAPI) on or off later
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag “Produktion”, “prod”, “live”) get a red line
-- **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal
+- **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal. While copying, a bar shows percent, MB/s, time left and “file 2 of 5”, with a small speed curve
 - **Server file in your own editor**: `e` in F5 (server side) or the palette entry “Open server file in your own editor” with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › “Editor for server files” (e.g. `code --new-window`)
 - **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules “color pattern” (colors in English or German; palette → “Color rules for output”); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
 - **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect.
@@ -54,10 +54,10 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   by their LLDP neighbors and listed last
 - **Several networks**: if your switches sit in different folders (one per customer or site), find device and
   topology first ask which folder to query, or all of them; the last choice is preselected
-- **Network topology** (palette “topo”): the LLDP/CDP neighbors of all switches become a tree (who is connected to
-  which port of whom, APs and phones as leaves), plus a Mermaid diagram in Downloads for docs, wiki or GitHub
+- **Network topology** (palette “topo”): the LLDP/CDP neighbors of all switches become a picture with boxes and lines (who is connected to
+  which port of whom, APs and phones listed dimmed inside the switch box, ring links below; a plain tree if it does not fit), plus a Mermaid diagram in Downloads for docs, wiki or GitHub
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
-  the results are shown side by side in columns. The danger rules apply here too: red needs ⏎ twice.
+  every host gets its own tile (framed green when done, red on failure, pulsing while running; `z` enlarges one). The danger rules apply here too: red needs ⏎ twice.
   Servers get every step via exec (with exit code), network devices get the commands typed into their shell (“-- MORE --” is paged automatically).
 - **Schedules** (z in the manager): a broadcast or runbook runs at a set time on a folder or single connections,
   daily, Mon–Fri, on weekends or on one weekday, e.g. “3:00 Mon–Fri `show running-config` on all switches”.
@@ -97,6 +97,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     complete plan (steps, scripts, risks, checks). Remove steps (Space), change them (`e`), have it re-planned (`?`),
     pick how it runs (Tab: step by step or agent level) and approve with ⏎. The agent then sticks to the approved plan:
     a changing command or file that is not in the plan pauses it. Ctrl+S saves the plan as a runbook.
+    Goal, agent and plan mode show their progress as a timeline: done steps with ✓ and duration plus the last output
+    line, the running step with a moving bar, planned steps as ○.
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
   - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z)
@@ -113,7 +115,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     the likely cause and read-only commands to check, as cards
 - **Session log** (manager: `l`): every session is recorded locally and encrypted (commands, output,
   failures), searchable, with an AI summary of one session (`z`) or of all matches (`Z`, e.g. search for a host:
-  “What did I do on host X?”) and Markdown export (`x`). **Change report** (`b`): the AI writes, for a day, a host or
+  “What did I do on host X?”) and Markdown export (`x`). A day or host shows an activity calendar (one square per day,
+  brighter = more commands, click jumps to that day) and the time of day you worked. **Change report** (`b`): the AI writes, for a day, a host or
   one session, what was changed on which host (with commands, failures, open items), ready for a ticket or docs; it
   lands in the clipboard right away and as a Markdown file in Downloads
 - **Sync between computers**: connections, tunnels, runbooks and settings end-to-end encrypted via a cloud folder

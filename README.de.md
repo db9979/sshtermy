@@ -37,7 +37,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Dateien direkt im Terminal (trzsz)**: `tsz datei` auf dem Server lädt in deinen Downloads-Ordner, `trz` lädt hoch; klappt auch nach `sudo su`, über mehrere Sprünge und auf Geräten ohne SFTP. ZMODEM (`sz`/`rz`) wird erkannt und mit Hinweis abgebrochen, statt zu hängen
 - **Bildschirmsperre**: Palette „Jetzt sperren“ oder automatisch bei Leerlauf (5/15/30/60 min). Offene Sitzungen laufen hinter der Sperre weiter, nur das Master-Passwort entsperrt. **Master-Passwort ändern** (Palette → Einstellungen › Sicherheit) schaltet auch die Windows-Anmeldung (DPAPI) nachträglich ein oder aus
 - **Statuszeile pro Sitzung**: Verbindungsdauer, Latenz, Zeichensatz, Warnung bei root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) bekommen eine rote Zeile
-- **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen, mit der Maus auf die andere Seite ziehen, mehrere mit der Leertaste markieren. Dateien aus Explorer/Finder ins Fenster ziehen lädt sie hoch, auch direkt im Terminal
+- **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen, mit der Maus auf die andere Seite ziehen, mehrere mit der Leertaste markieren. Dateien aus Explorer/Finder ins Fenster ziehen lädt sie hoch, auch direkt im Terminal. Beim Kopieren zeigt ein Balken Prozent, MB/s, Restzeit und „Datei 2 von 5“, dazu eine kleine Tempo-Kurve
 - **Server-Datei im eigenen Editor**: `e` in F5 (Server-Seite) oder Palette „Server-Datei im eigenen Editor öffnen“ mit Pfad öffnet die Datei in VS Code, Notepad++, TextEdit … auf deinem Rechner; jedes Speichern lädt sie über dieselbe Verbindung zurück (Besitzer und Rechte bleiben). Editor einstellen: Palette → Einstellungen › „Editor für Server-Dateien“ (z. B. `code --new-window`)
 - **Farbregeln für die Ausgabe**: Text ohne eigene Farbe wird eingefärbt, Fehler rot, Warnungen gelb, ok/up grün, IP-Adressen blau, MAC-Adressen lila, Switch-Syslog (`%LINK-3-UPDOWN`) nach Schwere; nie in vim/htop. Eigene Regeln „farbe muster“ (Farben deutsch oder englisch; Palette → „Farbregeln für die Ausgabe“); mit `!` davor meldet sich sshTermy, wenn das Muster in einem verdeckten Tab auftaucht (Tab bekommt ein `!`, Einblendung, auf Wunsch Desktop-Meldung)
 - **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, Platte, Laufzeit und offene Updates.
@@ -54,10 +54,10 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   LLDP-Nachbarn und lässt sie hinten anstehen
 - **Mehrere Netze**: Liegen die Switches in verschiedenen Ordnern (je Kunde oder Standort), fragen Gerät finden
   und Topologie erst, welcher Ordner abgefragt wird, oder alle; die letzte Wahl ist vorausgewählt
-- **Netzwerk-Topologie** (Palette „topo“): aus LLDP/CDP-Nachbarn aller Switches entsteht ein Baum (wer hängt an
-  welchem Port von wem, APs und Telefone als Blätter), dazu ein Mermaid-Diagramm in Downloads für Doku, Wiki oder GitHub
+- **Netzwerk-Topologie** (Palette „topo“): aus LLDP/CDP-Nachbarn aller Switches entsteht ein Bild mit Kästen und Linien (wer hängt an
+  welchem Port von wem, APs und Telefone gedimmt im Switch-Kasten, Ringverbindungen darunter; passt es nicht, ein Baum), dazu ein Mermaid-Diagramm in Downloads für Doku, Wiki oder GitHub
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
-  die Ergebnisse stehen in Spalten nebeneinander. Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
+  jeder Host bekommt eine eigene Kachel (grün umrandet wenn fertig, rot bei Fehler, pulsierend solange er läuft; `z` vergrößert eine). Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
   Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
 - **Zeitpläne** (z im Manager): Ein Broadcast oder Runbook läuft zu einer Uhrzeit auf einem Ordner oder einzelnen
   Verbindungen, täglich, Mo–Fr, am Wochenende oder an einem Wochentag, z. B. „3:00 Mo–Fr `show running-config` auf
@@ -98,6 +98,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     planen lassen (`?`), Ausführung wählen (Tab: Schritt für Schritt oder Agent-Stufe) und mit ⏎ freigeben. Der Agent
     hält sich dann an den Plan: ein ändernder Befehl oder eine Datei, die nicht im Plan steht, hält ihn an.
     Strg+S speichert den Plan als Runbook.
+    Ziel-, Agent- und Plan-Modus zeigen den Fortschritt als Zeitleiste: erledigte Schritte mit ✓ und Dauer samt letzter
+    Ausgabezeile, der laufende Schritt mit Lichtlauf, geplante Schritte als ○.
   - **Runbooks**: Ziele mit den ausgeführten Befehlen speichern (Strg+S) und wiederverwenden, der Agent nimmt sie als Vorlage
   - **Endpunkt-Test und Modellauswahl** in den KI-Einstellungen (Strg+T testet, Strg+L listet die Modelle von `/v1/models`)
   - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort als Karten mit Syntaxfarben: einfügen (⏎/1…9), ausführen (a), kopieren (c), Erklärung einklappbar (z)
@@ -114,7 +116,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     wahrscheinlicher Ursache und lesenden Prüfbefehlen als Karten
 - **Sitzungsprotokoll** (Manager: `l`): jede Sitzung wird lokal und verschlüsselt mitgeschrieben (Befehle, Ausgabe,
   Fehlschläge), durchsuchbar, mit KI-Zusammenfassung einer Sitzung (`z`) oder aller Treffer (`Z`, z. B. nach einem Host
-  suchen: „Was habe ich auf Host X gemacht?“) und Markdown-Export (`x`). **Änderungsbericht** (`b`): Die KI schreibt aus
+  suchen: „Was habe ich auf Host X gemacht?“) und Markdown-Export (`x`). Ein Tag oder Host zeigt einen Aktivitätskalender (ein Kästchen
+  je Tag, heller = mehr Befehle, Klick springt zum Tag) und zu welcher Tageszeit gearbeitet wurde. **Änderungsbericht** (`b`): Die KI schreibt aus
   einem Tag, einem Host oder einer Sitzung, was auf welchem Host geändert wurde (mit Befehlen, Fehlschlägen, Offenem),
   fertig für Ticket oder Doku; er liegt sofort in der Zwischenablage und als Markdown-Datei in Downloads
 - **Sync zwischen Rechnern**: Verbindungen, Tunnel, Runbooks und Einstellungen Ende-zu-Ende verschlüsselt über einen Cloud-Ordner

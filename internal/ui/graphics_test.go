@@ -12,6 +12,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
+	"github.com/db9979/sshtermy/internal/netmap"
 )
 
 func TestBrailleGraph(t *testing.T) {
@@ -242,4 +243,32 @@ func TestGraphicsShots(t *testing.T) {
 	a.pal.mo.queryAt = time.Now().Add(-time.Second)
 	a.fx = fadeFx{}
 	dump(a, "palette-rund")
+}
+
+func TestTopologyPicture(t *testing.T) {
+	a := dangerApp(t)
+	nb := func(local, name, remote string) netmap.Neighbor {
+		return netmap.Neighbor{LocalPort: local, RemoteName: name, RemotePort: remote}
+	}
+	devs := []netmap.Device{
+		{Alias: "core", Host: "10.0.0.1", Neigh: []netmap.Neighbor{nb("1/1/47", "etage1", "49"), nb("1/1/48", "etage2", "49"), nb("1/1/46", "etage3", "50")}},
+		{Alias: "etage1", Host: "10.0.0.11", Neigh: []netmap.Neighbor{nb("49", "core", "1/1/47"), nb("12", "ap-01", "eth0"), nb("50", "etage3", "51")}},
+		{Alias: "etage2", Host: "10.0.0.12", Neigh: []netmap.Neighbor{nb("3", "ap-02", ""), nb("4", "ap-03", ""), nb("5", "phone-7", ""), nb("6", "ap-04", ""), nb("7", "ap-05", "")}},
+		{Alias: "etage3", Host: "10.0.0.13"},
+	}
+	links := netmap.Topology(devs)
+	pic := a.topoLines(devs, links, 120)
+	if pic == nil {
+		t.Fatal("kein Bild")
+	}
+	plain := ansi.Strip(strings.Join(pic, "\n"))
+	t.Log("\n" + plain)
+	for _, want := range []string{"core", "etage1", "etage2", "etage3", "1/1/48 – 49", "· ap-01", "+2 weitere", "Weitere Verbindungen", "etage1 50"} {
+		if !strings.Contains(plain, want) {
+			t.Errorf("%q fehlt", want)
+		}
+	}
+	if a.topoLines(devs, links, 20) != nil {
+		t.Fatal("zu schmal: Baum statt Bild erwartet")
+	}
 }

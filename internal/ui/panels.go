@@ -36,7 +36,8 @@ type goalState struct {
 	origStep            *agent.Step // zu welchem Vorschlag origCmd gehört
 	waiting             bool        // Befehl läuft, wir warten auf den Prompt
 	waitSince           time.Time
-	manualPending       bool // "i": eingefügt, wartet auf Enter des Nutzers
+	stepAt              []time.Time // wann jeder Schritt fertig war (timeline.go)
+	manualPending       bool        // "i": eingefügt, wartet auf Enter des Nutzers
 	busy                bool
 	seq                 int
 	cancelFn            context.CancelFunc
@@ -843,31 +844,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		a.viewAgentStatus(b, s, w)
 	}
 	b.WriteString(st.Muted.Render(i18n.T("Ziel")) + "\n" + wrap(st.Text.Bold(true).Render(g.goal), w) + "\n\n")
-	// Fortschritt
-	for _, d := range g.steps {
-		mark := st.OK.Render("✓ ")
-		switch {
-		case d.Skipped:
-			mark = st.Muted.Render("» ")
-		case d.File != "" && d.ExitHint == "":
-			mark = st.AI.Render("▪ ")
-		case g.auto && d.ExitHint != "":
-			mark = st.Danger.Render("× ")
-		}
-		b.WriteString(mark + st.Muted.Render(trunc(d.Command, w-3)) + "\n")
-	}
-	if g.waiting {
-		b.WriteString(st.Warn.Render(i18n.T("◌ läuft … ")) + st.Muted.Render(fmt.Sprintf("%ds", int(time.Since(g.waitSince).Seconds()))) + "\n")
-	}
-	if g.manualPending {
-		b.WriteString(st.Warn.Render(i18n.T("◌ eingefügt, drück im Terminal ⏎")) + "\n")
-	}
-	if len(g.plan) > 0 && !g.done {
-		b.WriteString("\n" + st.Muted.Render("Plan") + "\n")
-		for _, p := range g.plan {
-			b.WriteString(st.Muted.Render("○ ") + st.Text.Render(trunc(p, w-3)) + "\n")
-		}
-	}
+	a.viewTimeline(b, s, w) // Fortschritt als Zeitleiste (timeline.go)
 	b.WriteString("\n")
 	switch {
 	case g.done && g.auto:

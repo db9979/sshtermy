@@ -275,10 +275,16 @@ func (a *App) showNetFind(q string, d netCache) {
 func (a *App) showTopology(d netCache) {
 	links := netmap.Topology(d.devs)
 	var lines []string
+	styled := false
 	if len(links) == 0 {
 		lines = append(lines, i18n.T("Keine LLDP/CDP-Nachbarn gefunden (LLDP auf den Switches aus?)"))
 	} else {
-		lines = append(lines, netmap.TreeLines(d.devs, links)...)
+		if pic := a.topoLines(d.devs, links, dialog{maxW: 200}.innerMax(a.w)); pic != nil {
+			lines = append(lines, pic...)
+			styled = true
+		} else {
+			lines = append(lines, netmap.TreeLines(d.devs, links)...)
+		}
 		lines = append(lines, "", i18n.T("· = Nachbar, der nicht in sshTermy steht (AP, Telefon, fremder Switch)"))
 		if p, err := writeTopology(d.scope, d.devs, links); err == nil {
 			lines = append(lines, i18n.T("Diagramm (Mermaid): ")+p)
@@ -292,6 +298,7 @@ func (a *App) showTopology(d netCache) {
 		title += " · " + d.scope
 	}
 	a.modal = textModal(title, lines)
+	a.modal.styled = styled
 }
 
 func (a *App) netFooter(d netCache) []string {

@@ -53,6 +53,7 @@ type modal struct {
 	quickSID int                  // nur Schnellbefehle: Sitzung
 	armed    int                  // nur Schnellbefehle: roter Befehl nach dem ersten ⏎
 	lines    []string             // Changelog/Text: fertig gestaltete Zeilen
+	styled   bool                 // Text: Zeilen tragen schon Farben (ANSI)
 
 	paste    *pasteCheck // nur Einfügeschutz
 	danger   *dangerAsk  // nur Gefahren-Check

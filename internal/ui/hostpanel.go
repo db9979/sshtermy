@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/charmbracelet/x/ansi"
 	"strings"
 	"sync"
 	"time"
@@ -851,6 +852,10 @@ func (m *modal) textView(s Styles, w, h int) string {
 	end := min(total, m.scroll+maxBody)
 	var body []string
 	for _, l := range m.lines[m.scroll:end] {
+		if m.styled {
+			body = append(body, ansi.Truncate(l, width, "…"))
+			continue
+		}
 		body = append(body, trunc(l, width))
 	}
 	keys := [][2]string{{"Esc", i18n.T("schließen")}}
