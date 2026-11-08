@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -81,7 +82,8 @@ type palette struct {
 	in    aiInput
 	sel   int
 	armed int
-	menu  string // offenes Untermenü, "" = Übersicht
+	menu  string    // offenes Untermenü, "" = Übersicht
+	mo    palMotion // Übergänge (motion2.go)
 }
 
 func isPaletteKey(k string) bool { return activeKeys.is(actPalette, k) }
@@ -762,6 +764,13 @@ func (a *App) viewPalette() string {
 		p.sel = max(0, len(items)-1)
 	}
 	p.in.SetWidth(w - 8)
+	now := time.Now()
+	p.track(now)
+	query := p.in.Value()
+	var glow color.Color
+	if since := now.Sub(p.mo.queryAt); motionLevel() > 0 && since < palHitGlow && query != "" {
+		glow = mixColor(st.T.Surface, st.T.Accent, 0.4*(1-easeOut(float64(since)/float64(palHitGlow))))
+	}
 	var b strings.Builder
 	b.WriteString(promptBlock(st.Accent.Render("$ "), p.in.View()) + "\n")
 	b.WriteString(lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w-4)) + "\n")
@@ -826,9 +835,19 @@ func (a *App) viewPalette() string {
 		if it.more {
 			labelStyle = st.Muted
 		}
-		line := iconStyle.Render(it.icon) + " " + labelStyle.Render(label) + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
+		hits := fuzzyHits(query, label) // getroffene Buchstaben leuchten (motion2.go)
+		line := iconStyle.Render(it.icon) + " " + hitLabel(label, hits, labelStyle, st.Accent.Bold(true), glow) + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
 		if i == p.sel {
-			line = st.Selected.Width(w - 4).Render(it.icon + " " + label + sub + strings.Repeat(" ", gap) + ansiPlain(hint))
+			sel := st.Selected
+			if motionLevel() > 0 {
+				if k := easeOut(float64(now.Sub(p.mo.selAt)) / float64(selFadeDur)); k < 1 {
+					sel = sel.Background(mixColor(st.T.Surface, st.Selected.GetBackground(), k))
+				}
+			}
+			line = sel.Width(w - 4).Render(it.icon + " " + label + sub + strings.Repeat(" ", gap) + ansiPlain(hint))
+		}
+		if k := p.rowK(rows, now); k < 1 {
+			line = fadeANSI(line, st.T, k) // Zeilen blenden nacheinander ein
 		}
 		i, it := i, it
 		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd {

@@ -115,9 +115,16 @@ func (a *App) animNeed(now time.Time) time.Duration {
 	if m := a.modal; m != nil && m.kind == mDanger && lvl == 2 {
 		slow = true // Rahmen pulsiert
 	}
+	if a.pal != nil && a.pal.animating(now) {
+		return animFast
+	}
 	if a.scr == scrTerminal {
 		for _, s := range a.sessions {
-			if s.state == stConnecting || s.state == stReconnect || now.Sub(s.flashAt) < tabFlashDur {
+			if s.state == stConnecting || s.state == stReconnect || now.Sub(s.flashAt) < tabFlashDur ||
+				now.Sub(s.revealAt) < revealDur || now.Sub(s.panelAt) < fadeInDur*2 {
+				return animFast
+			}
+			if s.panel == panelAsk && (s.ask.busy || s.ask.typing()) {
 				return animFast
 			}
 			if lvl == 2 && s.unseen {

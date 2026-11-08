@@ -39,17 +39,22 @@ const (
 
 // session ist eine offene SSH-Sitzung (ein Tab).
 type session struct {
-	connNote string // Hinweis während des Verbindens (z. B. Sicherheitsschlüssel berühren)
-	id       int
-	conn     domain.Connection
-	title    string // eigener Tab-Name (tabs.go), "" = Alias
-	client   *sshx.Client
-	shell    termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
-	term     *termemu.Term
-	tunnels  *sshx.TunnelManager
-	state    sessState
-	err      string
-	started  time.Time
+	connNote   string       // Hinweis während des Verbindens (z. B. Sicherheitsschlüssel berühren)
+	connStep   int          // Schritt beim Verbinden (sshx.Step…), Karte in motion2.go
+	connStepAt [4]time.Time // Beginn jedes Schritts
+	revealAt   time.Time    // Shell erscheint: Zeilen blenden von oben ein
+	panelSeen  panelKind    // Panel im letzten Bild (blendet beim Wechsel ein)
+	panelAt    time.Time
+	id         int
+	conn       domain.Connection
+	title      string // eigener Tab-Name (tabs.go), "" = Alias
+	client     *sshx.Client
+	shell      termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
+	term       *termemu.Term
+	tunnels    *sshx.TunnelManager
+	state      sessState
+	err        string
+	started    time.Time
 
 	connectedAt time.Time                // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
 	quitAt      time.Time                // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
@@ -206,6 +211,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 	}
 	sc := s.secrets
 	keepTerm := s.term != nil && s.rc.active // Auto-Reconnect: Verlauf bleibt stehen
+	s.connStep, s.connStepAt = sshx.StepConnect, [4]time.Time{time.Now()}
 	if s.conn.Protocol.Raw() {
 		return a.connectRawCmd(s, cols, rows, keepTerm)
 	}
@@ -220,6 +226,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 				return <-r
 			},
 			Notice: func(text string) { ev <- connectNoticeMsg{s.id, text} },
+			Step:   func(n int) { ev <- connectStepMsg{s.id, n} },
 			AskSecret: sc.wrap(func(label string) (string, error) {
 				r := make(chan string, 1)
 				ev <- secretAskMsg{label, r}
@@ -239,6 +246,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 			}
 			return connectErrMsg{s.id, err}
 		}
+		ev <- connectStepMsg{s.id, sshx.StepShell}
 		if !keepTerm {
 			s.term = termemu.New(cols, rows, shellWriter{s})
 		}
@@ -367,6 +375,8 @@ func joinNotes(ns ...string) string {
 }
 
 // connectNoticeMsg: Hinweis beim Verbinden (Kerberos, Sicherheitsschlüssel).
+type connectStepMsg struct{ sid, step int }
+
 type connectNoticeMsg struct {
 	sid  int
 	text string
