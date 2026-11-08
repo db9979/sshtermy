@@ -1,6 +1,6 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
  connections  6  / search        │ ▾ Netzwerk
-            ┌─ ◆ Command palette  22 entries ────────────────────────────────────── × ─┐
+            ┌─ ◆ Command palette  24 entries ────────────────────────────────────── × ─┐
  ▾ Netzwerk │ $ Goal, question, command, tunnel, connection or user@host:port …        │
    ○ # switc│ ──────────────────────────────────────────────────────────────────────── │
  ▾ Produktio│ // connections                                                           │
@@ -18,11 +18,11 @@
             │ [*] Broadcast: command on several hosts                                m │
             │ [/] Network scan: find SSH devices                                     f │
             │ [>] Schedules: broadcast/runbook at a set time                         z │
+            │ [/] Find device: MAC/IP → switch port …                         switches │
+            │ [/] Network topology (LLDP/CDP)                                 switches │
             │ [&] Share with the team (encrypted, no passwords)                   Team │
             │ [&] Import team package                                             Team │
             │ [&] Team folders (published / subscribed)                           Team │
-            │ [#] Search session logs                                                l │
-            │ [$] Open local shell                                               Alt+L │
             │                                                                          │
             │  ↑↓ select    ⏎ run    Esc close                                         │
             └──────────────────────────────────────────────────────────────────────────┘

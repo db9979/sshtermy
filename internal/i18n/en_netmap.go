@@ -1,0 +1,62 @@
+package i18n
+
+// Texte für Gerät finden, Topologie und Config-Regeln.
+var enNetmap = map[string]string{
+	"  (%d MACs am Port)": "  (%d MACs on the port)",
+	"%d Regeln":           "%d rules",
+	"%s steht in keiner ARP-Tabelle; den Router oder Core-Switch mit in die Suche nehmen": "%s is in no ARP table; add the router or core switch to sshTermy",
+	"%s steht in keiner MAC-Tabelle (Gerät aus oder länger still?)":                       "%s is in no MAC table (device off or quiet for a while?)",
+	"+muster muss vorkommen, -muster darf nicht · regulärer Ausdruck, zeilenweise":        "+pattern must appear, -pattern must not · regular expression, per line",
+	"Abfrage läuft schon …":       "Query already running …",
+	"Befehle oder Runbook":        "Commands or runbook",
+	"Config-Sicherung (Switches)": "Config backup (switches)",
+	"Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert, mit den Regeln für Switch-Configs geprüft": "Config backup: show running-config per switch, stored encrypted, checked against the switch config rules",
+	"Das Gerät hängt an %s, Port %s.":                                           "The device is connected to %s, port %s.",
+	"Diagramm (Mermaid): ":                                                      "Diagram (Mermaid): ",
+	"Diagramm nicht gespeichert: ":                                              "Diagram not saved: ",
+	"Frage %d Switches ab (show-Befehle) …":                                     "Querying %d switches (show commands) …",
+	"Gerät finden: ":                                                            "Find device: ",
+	"Gerät finden: MAC/IP → Switch-Port":                                        "Find device: MAC/IP → switch port",
+	"Gerät finden: MAC/IP → Switch-Port …":                                      "Find device: MAC/IP → switch port …",
+	"Kein Switch im Ziel (Server werden bei der Config-Sicherung übersprungen)": "No switch in the target (servers are skipped by the config backup)",
+	"Keine LLDP/CDP-Nachbarn gefunden (LLDP auf den Switches aus?)":             "No LLDP/CDP neighbors found (LLDP switched off on the switches?)",
+	"Keine Switches in sshTermy: Verbindung auf „Netzwerkgerät“ stellen oder einmal verbinden":                                    "No switches in sshTermy: set the connection to “Network device” or connect once",
+	"MAC (jede Schreibweise) oder IP-Adresse. sshTermy fragt alle Switches nach MAC-, ARP- und LLDP-Tabellen (nur show-Befehle).": "MAC (any notation) or IP address. sshTermy asks all switches for their MAC, ARP and LLDP tables (show commands only).",
+	"MAC/IP → Switch-Port": "MAC/IP → switch port",
+	"Muster fehlt":         "Pattern missing",
+	"Muster ist kein gültiger regulärer Ausdruck: %v": "Pattern is not a valid regular expression: %v",
+	"Netzwerk-Topologie":               "Network topology",
+	"Netzwerk-Topologie (LLDP/CDP)":    "Network topology (LLDP/CDP)",
+	"Netzwerk-Topologie · %d Switches": "Network topology · %d switches",
+	"Nur auf Uplinks gesehen: der Zugangs-Switch ist nicht in sshTermy oder antwortet nicht.": "Only seen on uplinks: the access switch is not in sshTermy or does not answer.",
+	"Port":                        "port",
+	"Regeln für Switch-Configs":   "Switch config rules",
+	"Regeln für Switch-Configs …": "Switch config rules …",
+	"Regeln verletzt (%d): ":      "Rules violated (%d): ",
+	"Stand %s · %d Switches abgefragt · neue Abfrage nach 3 Minuten": "As of %s · %d switches queried · new query after 3 minutes",
+	"Switch-Configs sichern":      "Back up switch configs",
+	"Switch-Port finden":          "find switch port",
+	"„topo“":                      "“topo”",
+	"MAC / IP":                    "MAC / IP",
+	"Switches":                    "switches",
+	"Uplink zu ":                  "uplink to ",
+	"erste Sicherung gespeichert": "first backup saved",
+	"fehlt: %s":                   "missing: %s",
+	"gesichert, +%d −%d Zeilen (F6 d zeigt den Diff)": "saved, +%d −%d lines (F6 d shows the diff)",
+	"hinter ":                          "behind ",
+	"kein Netzwerkgerät, übersprungen": "not a network device, skipped",
+	"keine Verbindungen":               "no links",
+	"mit + (muss vorkommen) oder - (darf nicht vorkommen) beginnen": "start with + (must appear) or - (must not appear)",
+	"schon oben":        "see above",
+	"unverändert seit ": "unchanged since ",
+	"verboten: %s":      "forbidden: %s",
+	"z. B. „+^ntp server“, „+^logging“, „-telnet-server“, „-community \"public\"“ · geprüft bei jeder Sicherung (F6 b, Zeitplan)": "e.g. “+^ntp server”, “+^logging”, “-telnet-server”, “-community \"public\"” · checked on every backup (F6 b, schedule)",
+	"· = Nachbar, der nicht in sshTermy steht (AP, Telefon, fremder Switch)":                                                      "· = neighbor that is not in sshTermy (AP, phone, foreign switch)",
+	"„%s“ ist weder MAC noch IP-Adresse": "“%s” is neither a MAC nor an IP address",
+}
+
+func init() {
+	for k, v := range enNetmap {
+		en[k] = v
+	}
+}

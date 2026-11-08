@@ -128,11 +128,11 @@ export const de = {
       ['z / n', 'Erklärung auf/zu / neue Frage'],
     ]},
     { t: 'Befehlspalette', ic: '❯', key: 'Strg+Space', rows: [
-      ['_tippen_', 'filtern · Text wird Ziel oder Frage'],
-      ['⏎ / Tab', 'als Ziel starten / KI fragen'],
+      ['_tippen_ ⏎ / Tab', 'filtern · als Ziel starten / KI fragen'],
       ['user@host', 'schnell verbinden (auch telnet, COM3)'],
       ['→ / ←', '‹ Wert › weiter / zurück'],
       ['„log“ / „farb“', 'KI wertet Ausgabe aus / Farbregeln'],
+      ['MAC, IP / „topo“', 'Switch-Port finden / Topologie'],
       ['Esc', 'Untermenü zurück / schließen'],
     ]},
     { t: 'Dateien (SFTP)', ic: '▤', key: 'F5', rows: [
@@ -151,7 +151,7 @@ export const de = {
     ]},
     { t: 'Host-Übersicht', ic: '▣', key: 'F6', rows: [
       ['r / ⏎', 'abfragen (CPU, RAM, Platte, Ports)'],
-      ['b', 'Switch-Config sichern'],
+      ['b', 'Config sichern + Regeln prüfen'],
       ['↑ / ↓ · d · v', 'Stand wählen · Diff · ansehen'],
       ['g', 'Grenzwerte für Warnungen'],
     ]},
@@ -313,11 +313,11 @@ export const en = {
       ['z / n', 'explanation on/off / new question'],
     ]},
     { t: 'Command palette', ic: '❯', key: 'Ctrl+Space', rows: [
-      ['_type_', 'filter · text becomes goal or question'],
-      ['⏎ / Tab', 'start as goal / ask AI'],
+      ['_type_ ⏎ / Tab', 'filter · start as goal / ask AI'],
       ['user@host', 'quick connect (also telnet, COM3)'],
       ['→ / ←', '‹ value › next / back'],
       ['“log” / “color”', 'AI analyzes output / color rules'],
+      ['MAC, IP / “topo”', 'find switch port / topology'],
       ['Esc', 'back from submenu / close'],
     ]},
     { t: 'Files (SFTP)', ic: '▤', key: 'F5', rows: [
@@ -336,7 +336,7 @@ export const en = {
     ]},
     { t: 'Host overview', ic: '▣', key: 'F6', rows: [
       ['r / ⏎', 'query (CPU, RAM, disk, ports)'],
-      ['b', 'back up switch config'],
+      ['b', 'back up switch config + check rules'],
       ['↑ / ↓ · d · v', 'pick state · diff · view'],
       ['g', 'warning thresholds'],
     ]},

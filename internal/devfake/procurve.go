@@ -233,6 +233,12 @@ func (sw *Switch) run(cmd string) string {
 			fmt.Fprintf(&b, "  %-7d %-32s | Port-based No    No\n", v, vlanName(v))
 		}
 		return b.String()
+	case "show mac-address":
+		return " Status and Counters - Port Address Table\n\n  MAC Address   Port  VLAN\n  ------------- ----- ----\n  001122-aabbcc 4     1\n  941882-000001 25    1\n  941882-000002 25    1\n"
+	case "show arp":
+		return " IP ARP table\n\n  IP Address       MAC Address       Type    Port\n  ---------------  ----------------- ------- ----\n  192.168.1.20     001122-aabbcc     dynamic 4\n"
+	case "show lldp info remote-device":
+		return " LLDP Remote Devices Information\n\n  LocalPort | ChassisId                 PortId PortDescr SysName\n  --------- + ------------------------- ------ --------- ----------\n  25        | 94 18 82 00 00 01         1/1/48 1/1/48    core\n"
 	case "show running-config":
 		var b strings.Builder
 		b.WriteString("\nRunning configuration:\n\n; J9773A Configuration Editor; Created on release #YA.16.10.0009\n; Ver #14:01.4f.f8.1d.9b.3f.bf.bb.ef.7c.59.fc.6b.fb.9f.fc.ff.ff.37.ef:05\nhostname \"sw-buero\"\nmodule 1 type j9773a\nsnmp-server community \"public\" unrestricted\noobm\n   ip address dhcp-bootp\n   exit\n")

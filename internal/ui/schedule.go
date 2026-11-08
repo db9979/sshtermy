@@ -11,9 +11,12 @@ import (
 
 	"github.com/db9979/sshtermy/internal/broadcast"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/netmap"
 	"github.com/db9979/sshtermy/internal/runbook"
 	"github.com/db9979/sshtermy/internal/sshx"
+	"github.com/db9979/sshtermy/internal/store"
 )
 
 // Zeitpläne (Manager: z, Palette „Zeitpläne“)
@@ -203,6 +206,13 @@ func (a *App) openScheduleForm(sc domain.Schedule) tea.Cmd {
 	}
 	f := &form{title: title}
 	f.text("name", "Name", sc.Name, i18n.T("z. B. „Switch-Configs sichern“"))
+	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)")}
+	kindCur := kinds[0]
+	if sc.Kind == domain.ScheduleBackup {
+		kindCur = kinds[1]
+	}
+	f.choice("kind", i18n.T("Art"), kinds, kindCur, i18n.T("Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert, mit den Regeln für Switch-Configs geprüft"))
+	isBackup := func(f *form) bool { return f.sel("kind") == kinds[1] }
 	f.text("at", i18n.T("Uhrzeit"), sc.At, i18n.T("HH:MM, Ortszeit dieses Rechners"))
 	var days []string
 	for _, d := range dayChoices {
@@ -244,9 +254,9 @@ func (a *App) openScheduleForm(sc domain.Schedule) tea.Cmd {
 		}
 	}
 	a.schedRBIDs = rbIDs
-	f.choice("runbook", "Runbook", rbs, rbCur, i18n.T("Runbooks ohne Variablen und ohne Skripte"))
+	f.choice("runbook", "Runbook", rbs, rbCur, i18n.T("Runbooks ohne Variablen und ohne Skripte")).hidden = isBackup
 	f.text("steps", i18n.T("Befehle"), strings.Join(sc.Steps, " "+schedStepSep+" "), i18n.T("mehrere Schritte mit ;; trennen · {{host}} {{alias}} werden je Host eingesetzt · Gefährliches geht nie")).hidden = func(f *form) bool {
-		return f.sel("runbook") != rbs[0]
+		return isBackup(f) || f.sel("runbook") != rbs[0]
 	}
 	f.get("conns").in.Placeholder = "sw-core, sw-etage1"
 	f.get("steps").in.Placeholder = "show running-config ;; show vlan"
@@ -282,18 +292,30 @@ func (a *App) saveScheduleForm() error {
 			sc.Conns = append(sc.Conns, c.ID)
 		}
 	}
+	sc.Kind = ""
+	if f.sel("kind") == i18n.T("Config-Sicherung (Switches)") {
+		sc.Kind = domain.ScheduleBackup
+	}
 	sc.RunbookID, sc.Steps = a.schedRBIDs[f.sel("runbook")], nil
-	if sc.RunbookID == "" {
+	if sc.Kind == domain.ScheduleBackup {
+		sc.RunbookID = ""
+	} else if sc.RunbookID == "" {
 		for _, st := range strings.Split(f.str("steps"), schedStepSep) {
 			if st = strings.TrimSpace(st); st != "" {
 				sc.Steps = append(sc.Steps, st)
 			}
 		}
 	}
+	if sc.Name == "" && sc.Kind == domain.ScheduleBackup {
+		sc.Name = i18n.T("Switch-Configs sichern")
+	}
 	if sc.Name == "" {
 		sc.Name = orDefault(firstOf(sc.Steps), i18n.T("Zeitplan"))
 	}
 	if len(a.schedConns(sc)) == 0 {
+		if sc.Kind == domain.ScheduleBackup {
+			return errors.New(i18n.T("Kein Switch im Ziel (Server werden bei der Config-Sicherung übersprungen)"))
+		}
 		return errors.New(i18n.T("Kein Ziel: Ordner wählen oder Verbindungen eintragen"))
 	}
 	if _, err := a.schedSteps(sc); err != nil {
@@ -350,15 +372,33 @@ func (a *App) schedConns(sc domain.Schedule) []domain.Connection {
 	}
 	out := list[:0]
 	for _, c := range list {
-		if !c.Protocol.Raw() {
-			out = append(out, c)
+		if c.Protocol.Raw() {
+			continue
 		}
+		if sc.Kind == domain.ScheduleBackup && !maybeNetConn(c) {
+			continue
+		}
+		out = append(out, c)
 	}
 	return out
 }
 
+// maybeNetConn: kein bekannter Server (für die Config-Sicherung).
+func maybeNetConn(c domain.Connection) bool {
+	if isNetConn(c) {
+		return true
+	}
+	if c.Device == domain.DeviceServer {
+		return false
+	}
+	return c.Profile == nil || c.Profile.Family == ""
+}
+
 // schedSteps: die Schritte, geprüft für einen Lauf ohne Aufsicht.
 func (a *App) schedSteps(sc domain.Schedule) ([]string, error) {
+	if sc.Kind == domain.ScheduleBackup {
+		return []string{"show running-config"}, nil
+	}
 	steps := sc.Steps
 	if sc.RunbookID != "" {
 		var found bool
@@ -428,7 +468,14 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 	}
 	a.schedRun[sc.ID] = true
 	job := broadcast.Job{Conns: conns, Steps: steps}
-	if runbook.HasBuiltins(steps) {
+	var backup *schedBackup
+	if sc.Kind == domain.ScheduleBackup {
+		backup = &schedBackup{st: a.st, rules: a.configRules()}
+		for _, c := range conns {
+			cmds := append(netmap.PagingOff(connVendor(c)), "show running-config")
+			job.PerHost = append(job.PerHost, cmds)
+		}
+	} else if runbook.HasBuiltins(steps) {
 		for _, c := range conns {
 			job.PerHost = append(job.PerHost, runbook.Fill(steps, nil, c))
 		}
@@ -440,6 +487,9 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
 		res := broadcast.Run(ctx, job, dial, func(int, broadcast.Result) {})
+		if backup != nil {
+			backup.apply(conns, job.PerHost, res)
+		}
 		return schedDoneMsg{id: id, results: res}
 	}
 }
@@ -541,4 +591,62 @@ func scheduleReport(rs []broadcast.Result) string {
 		}
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// ---------------------------------------------------------------- Config-Sicherung
+
+// schedBackup: nach dem Lauf die running-config jedes Switches sichern
+// (nur wenn sie sich geändert hat) und gegen die Regeln prüfen. Die Ausgabe
+// im Ergebnis wird durch eine Zeile Zusammenfassung ersetzt.
+type schedBackup struct {
+	st    *store.Store
+	rules []hostinfo.ConfigRule
+}
+
+func (b *schedBackup) apply(conns []domain.Connection, cmds [][]string, res []broadcast.Result) {
+	for i := range res {
+		r := &res[i]
+		if r.State != broadcast.Done || r.Err != "" {
+			continue
+		}
+		if !r.Net {
+			r.Output, r.Err = "", i18n.T("kein Netzwerkgerät, übersprungen")
+			continue
+		}
+		sec, _ := netmap.Sections(r.Output, cmds[i])
+		cfg := strings.TrimSpace(sec["show running-config"])
+		if err := checkConfig(cfg); err != nil {
+			r.Output, r.Err = "", err.Error()
+			continue
+		}
+		cfg += "\n"
+		note, err := b.save(conns[i].ID, cfg)
+		if err != nil {
+			r.Output, r.Err = "", err.Error()
+			continue
+		}
+		r.Output = note
+		if vs := hostinfo.CheckConfig(cfg, b.rules); len(vs) > 0 {
+			r.Err = fmt.Sprintf(i18n.T("Regeln verletzt (%d): "), len(vs)) + violationText(vs)
+		}
+	}
+}
+
+func (b *schedBackup) save(connID, cfg string) (string, error) {
+	if list := b.st.Backups(connID); len(list) > 0 {
+		if old, err := b.st.LoadBackup(connID, list[0].ID); err == nil {
+			if hostinfo.SameConfig(old, cfg) {
+				return i18n.T("unverändert seit ") + localTime(list[0].Taken), nil
+			}
+			_, add, rem := hostinfo.Diff(hostinfo.ConfigLines(old), hostinfo.ConfigLines(cfg), 0)
+			if _, err := b.st.SaveBackup(connID, cfg); err != nil {
+				return "", err
+			}
+			return fmt.Sprintf(i18n.T("gesichert, +%d −%d Zeilen (F6 d zeigt den Diff)"), add, rem), nil
+		}
+	}
+	if _, err := b.st.SaveBackup(connID, cfg); err != nil {
+		return "", err
+	}
+	return i18n.T("erste Sicherung gespeichert"), nil
 }

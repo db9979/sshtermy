@@ -227,6 +227,8 @@ var helpSections = []helpSection{
 		{"↓ „umschreiben“", "Befehl fürs System anpassen"},
 		{"„log“", "KI wertet Ausgabe aus"},
 		{"„farb“", "Farbregeln bearbeiten"},
+		{"MAC / IP", "Switch-Port finden"},
+		{"„topo“", "Netzwerk-Topologie"},
 		{"Esc", "schließen"},
 	}},
 	{hcNone, "i", "Systemprofil", "", false, [][2]string{
