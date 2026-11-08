@@ -17,6 +17,7 @@ import (
 	"github.com/charmbracelet/x/term"
 
 	"github.com/db9979/sshtermy/internal/crash"
+	"github.com/db9979/sshtermy/internal/fullbackup"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
@@ -33,6 +34,12 @@ func main() {
 	// Sprache vor allem anderen: auch Hilfe zu den Schaltern und der
 	// Entsperr-Bildschirm sollen sie schon haben.
 	dir, _ := store.Dir()
+	// Gesamtsicherung aus dem letzten Lauf einspielen, bevor irgendetwas
+	// den Datenordner öffnet (internal/fullbackup).
+	restoredFrom, restoreErr := "", error(nil)
+	if dir != "" {
+		restoredFrom, restoreErr = fullbackup.ApplyPending(dir)
+	}
 	i18n.Load(dir)
 
 	// Unterbefehle ohne Oberfläche (eigener Vermittler, Anker auf Servern)
@@ -42,6 +49,10 @@ func main() {
 			os.Exit(runRelay(os.Args[2:]))
 		case "anker", "anchor":
 			os.Exit(runAnchor(os.Args[2:]))
+		case "backup", "sicherung":
+			os.Exit(runBackup(os.Args[2:]))
+		case "restore", "einspielen":
+			os.Exit(runRestore(os.Args[2:]))
 		case "attach":
 			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach
 			if len(os.Args) != 3 {
@@ -92,6 +103,11 @@ func main() {
 	}
 	if *noIntro {
 		app.SkipIntro()
+	}
+	if restoreErr != nil {
+		app.StartNotice(false, i18n.T("Gesamtsicherung nicht eingespielt: ")+restoreErr.Error())
+	} else if restoredFrom != "" {
+		app.StartNotice(true, i18n.T("Gesamtsicherung eingespielt. Bisheriger Stand: ")+restoredFrom)
 	}
 	app.CrashTest(*crashTest)
 	if *debug {

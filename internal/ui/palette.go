@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/fullbackup"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/relay"
 	"github.com/db9979/sshtermy/internal/sshx"
@@ -434,7 +435,7 @@ var palMenus = []palMenu{
 var palSubMenus = []palMenu{
 	{"settings/ki", "ai", "KI", "Endpunkt, Ersatz-Anbieter, Status", "ai llm ki"},
 	{"settings/relay", "relay", "Vermittler", "Server hinter NAT/Firewall", "relay vermittler"},
-	{"settings/io", "import", "Import / Export", "ssh-config, PuTTY, Ansible, CSV", "import export csv"},
+	{"settings/io", "import", "Import / Export", "ssh-config, PuTTY, Ansible, CSV, Gesamtsicherung", "import export csv backup sicherung umzug"},
 }
 
 // palParent: übergeordnetes Menü ("settings/ki" → "settings", "settings" → "").
@@ -502,6 +503,9 @@ func (a *App) palFolder(id string) palItem {
 	}
 	return palItem{}
 }
+
+// inMenu: Eintrag in ein anderes Untermenü legen.
+func inMenu(menu string, it palItem) palItem { it.menu = menu; return it }
 
 // cycleIndex: Position von cur in n Werten, um dir verschoben (rundherum).
 // Unbekannter Wert: vorwärts beim ersten, rückwärts beim letzten beginnen.
@@ -628,12 +632,18 @@ func (a *App) palMenuItems() []palItem {
 
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Einstellungen"), hint: "s", keys: "ai llm", run: func() tea.Cmd { return a.openSettings() }},
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
+		inMenu("settings/ki", palCycle(pgSetSetup, ic("ai"), i18n.T("KI-Datenschutz"), privacyLabel(a.st.LLM().Privacy),
+			"ki ai datenschutz privacy lokal local cloud aus off kunde", func(dir int) tea.Cmd { return a.cyclePrivacy(dir) })),
+		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Letzte KI-Anfrage ansehen"), hint: i18n.T("was ging hinaus"),
+			keys: "ki ai datenschutz privacy anfrage request prompt gesendet", run: func() tea.Cmd { a.modal = a.lastRequestModal(); return nil }},
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), keys: "ai llm status",
 			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
 		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},
 		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), keys: "relay", run: func() tea.Cmd { return a.openRelayManage() }},
 		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm, Ansible, CSV)"), hint: a.keys.label(actImport), keys: "import netbox", run: func() tea.Cmd { return a.openImport() }},
 		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("export"), label: i18n.T("Verbindungen als CSV exportieren (ohne Passwörter)"), hint: ".csv", keys: "export csv excel", run: func() tea.Cmd { return a.exportConnsCSV() }},
+		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("export"), label: i18n.T("Gesamtsicherung speichern (für Umzug/Sicherung) …"), hint: i18n.T("alles, verschlüsselt"), keys: "backup sicherung umzug neuer rechner migrate", run: func() tea.Cmd { return a.openBackupForm(false) }},
+		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("import"), label: i18n.T("Gesamtsicherung einspielen …"), hint: fullbackup.Ext, keys: "restore backup sicherung umzug wiederherstellen migrate", run: func() tea.Cmd { return a.openBackupForm(true) }},
 
 		palItem{group: pgHelp, menu: "help", icon: ic("help"), label: i18n.T("Tastenkürzel anzeigen"), hint: a.keys.label(actHelp), keys: "help keys", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		palItem{group: pgHelp, menu: "help", icon: ic("tour"), label: i18n.T("Einführungstour"), hint: i18n.T("5 Schritte"), keys: "tour", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},

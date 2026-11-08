@@ -422,6 +422,7 @@ func (c *conn) do(ctx context.Context, body any, stream bool) (*http.Response, e
 		cp.Timeout = 0 // Streams dürfen länger dauern; Abbruch über ctx
 		cl = &cp
 	}
+	remember(c.cfg, req.URL.Host, raw)
 	t0 := time.Now()
 	resp, err := cl.Do(req)
 	if debuglog.On() {

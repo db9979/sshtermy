@@ -286,7 +286,7 @@ func (a *App) requestStep(s *session) tea.Cmd {
 		g.err = i18n.T("Maximal 40 Schritte pro Ziel. Ziel neu setzen (x).")
 		return nil
 	}
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
 		g.err = err.Error()
 		return nil
@@ -1123,7 +1123,7 @@ func (a *App) startAsk(s *session, text string) tea.Cmd {
 	a.panelOpened(withPanel(s, panelAsk))
 	a.resize(s)
 	q := &s.ask
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
 		q.err = err.Error()
 		return nil

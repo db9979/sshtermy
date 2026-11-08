@@ -182,7 +182,7 @@ export const de = {
       ['_Palette_', '„Jetzt sperren“ · „Master-Passwort“ · „Gefahren-Check“'],
     ]},
     { t: 'Start & Tipps', ic: '$', rows: [
-      ['sshtermy --update', 'auf neueste Version'],
+      ['--update · backup', 'Update · alles sichern'],
       ['--no-intro · --debug', 'ohne Startanimation · Debug-Protokoll'],
       ['tsz / trz', 'Datei vom / zum Server (trzsz)'],
       ['_Palette_', '„teilen“: Tab live zeigen'],
@@ -368,7 +368,7 @@ export const en = {
       ['_palette_', '“Lock now” · “Master password” · “Danger check”'],
     ]},
     { t: 'Start & tips', ic: '$', rows: [
-      ['sshtermy --update', 'update to the newest version'],
+      ['--update · backup', 'newest version · full backup'],
       ['--no-intro · --debug', 'no start animation · debug log'],
       ['tsz / trz', 'file from / to the server (trzsz)'],
       ['_palette_', '“share”: show a tab live'],

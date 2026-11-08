@@ -334,7 +334,7 @@ func (a *App) toggleSessionLog() tea.Cmd {
 }
 
 func (a *App) summarizeLogs(list []*sessionlog.Log, id, title, key string) tea.Cmd {
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(a.logConns(list)...)
 	if err != nil {
 		a.flashErr("KI: " + err.Error())
 		return nil

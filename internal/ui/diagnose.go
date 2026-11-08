@@ -49,7 +49,7 @@ func (a *App) diagnoseWith(s *session, text, what string) tea.Cmd {
 	a.panelOpened(withPanel(s, panelAsk))
 	a.resize(s)
 	q := &s.ask
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
 		q.err = err.Error()
 		return nil

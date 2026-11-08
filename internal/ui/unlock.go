@@ -74,6 +74,7 @@ func (a *App) updateUnlock(msg tea.Msg) tea.Cmd {
 		a.showWhatsNew(u.setup)
 		a.maybeTour(u.setup)
 		a.checkCrash()
+		a.showStartNotice()
 		return tea.Batch(checkUpdate(), a.runSync(), a.restoreTabs())
 	case tea.KeyPressMsg:
 		if u.busy {

@@ -160,7 +160,7 @@ type adaptMsg struct {
 
 // startAdapt lässt die KI einen Befehl für das System dieser Sitzung umschreiben.
 func (a *App) startAdapt(s *session, cmd string) tea.Cmd {
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
 		a.flashErr("KI: " + err.Error())
 		return nil

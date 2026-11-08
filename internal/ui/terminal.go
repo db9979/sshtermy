@@ -134,13 +134,8 @@ func (a *App) resize(s *session) {
 	a.shareResized(s)
 }
 
-func (a *App) agentClient() (*agent.Agent, error) {
-	c, err := llm.New(a.st.LLM())
-	if err != nil {
-		return nil, err
-	}
-	return &agent.Agent{C: c}, nil
-}
+// agentClient: KI ohne Bezug zu einer Verbindung (nur die Einstellung zählt).
+func (a *App) agentClient() (*agent.Agent, error) { return a.agentClientFor() }
 
 // ---------------------------------------------------------------- Tasten
 
@@ -453,7 +448,7 @@ func (a *App) fireGhost(s *session, seq int) tea.Cmd {
 	if !ok || len(strings.TrimSpace(typed)) < 2 || agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
 		return nil
 	}
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
 		return nil
 	}
@@ -486,7 +481,7 @@ func (a *App) followTick(s *session) tea.Cmd {
 	if time.Since(s.lastFollow) < 5*time.Second {
 		return nil
 	}
-	ag, err := a.agentClient()
+	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
 		return nil
 	}
