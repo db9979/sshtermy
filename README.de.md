@@ -82,7 +82,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Vermittler für Server hinter NAT/Firewall**: der Server baut selbst die Verbindung zu einem Vermittler auf (`sshtermy anker`), sshTermy erreicht sein sshd darüber, ohne offenen Port. SSH läuft Ende-zu-Ende, Dateien und Tunnel gehen wie gewohnt. Den Vermittler bringt sshTermy selbst mit (`sshtermy vermittler`), alternativ dient Speech on DGX Spark als Vermittler ([Anleitung](docs/vermittler.md))
 - **Sitzung live teilen** (Palette „teilen“): Über den eigenen Vermittler sehen Kollegen einen Tab live mit, der Link (in der Zwischenablage) genügt, eingefügt in ihre sshTermy-Palette. Zuschauer sehen nur zu, ihre Tasten gehen nirgendwo hin. Jedes Stück ist mit einem Schlüssel verschlüsselt, der allein im Link steht (hinter `#`), der Vermittler sieht nur Chiffrat. Bis zu 10 Zuschauer, wer dazukommt, bekommt zuerst den aktuellen Bildschirm
 - **KI-Copilot** für jeden OpenAI-kompatiblen Endpunkt (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
-  - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage, dazu Vorschläge, Tunnel, Verbindungen und Aktionen
+  - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage; ohne Text nur Häufiges, Verbindungen und Ordner je Bereich (Sitzung, Tabs, Ansicht, Netzwerk, Team …), Tippen findet alles direkt
   - **Ghost-Text** beim Tippen (Tab übernimmt)
   - **Folgebefehle** nach jedem Enter (Alt+1…4 fügt ein)
   - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst
@@ -341,7 +341,7 @@ Agent-Stufen arbeiten wie auf einem Server. Dateien (F5), Tunnel und Broadcast b
 | **KI fragen** | **Tunnel & Web-Services** |
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
-**Befehlspalette (Strg+Leertaste):** ein Feld für alles, Text wird zum Ziel oder zur Frage, darunter Vorschläge, Tunnel, Verbindungen und Aktionen.
+**Befehlspalette (Strg+Leertaste):** ein Feld für alles, Text wird zum Ziel oder zur Frage. Ohne Text bleibt sie kurz: oben **Häufig** (im Terminal Ziel-Modus, Host-Übersicht, Suche, Aufteilung, neuer Tab), dann die zuletzt benutzten Verbindungen und darunter je Bereich ein Ordner: **Schnellbefehle & Tunnel ›, Diese Sitzung ›, Tabs & Fenster ›, Ansicht & Aufteilung ›, Mehrere Hosts ›, Netzwerk & Switches ›, Team & Teilen ›, Verbindungen & Schlüssel ›** (rechts die Zahl der Einträge). ⏎ oder → öffnet einen Ordner, Esc oder ← führt zurück. Wer tippt, bekommt alle Treffer aus allen Ordnern direkt.
 Schalter, Aussehen, Sprache und Einrichtung liegen im Untermenü **[:] Einstellungen ›** (rechts steht „an“/„aus“, die Palette bleibt beim Umschalten offen), Tastenkürzel, Tour, Neuigkeiten und Update unter **[?] Hilfe & Info ›**. Einträge mit mehreren Werten zeigen sie als ‹ Wert ›: ⏎, → oder Klick schaltet weiter, ← zurück. KI, Vermittler und Import haben eigene Unterordner. Wer tippt, findet auch die Punkte aus den Untermenüs direkt, sogar Einzelwerte wie „Matrix“; Esc oder ← führt zurück.
 
 ![Befehlspalette](docs/bilder/09-palette.png)

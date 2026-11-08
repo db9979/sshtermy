@@ -82,7 +82,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Relay for servers behind NAT/firewall**: the server itself connects out to a relay (`sshtermy anker`), sshTermy reaches its sshd through it without an open port. SSH runs end to end, files and tunnels work as usual. sshTermy brings its own relay (`sshtermy relay`, also `sshtermy vermittler`); Speech on DGX Spark can serve as a relay too ([guide, German](docs/vermittler.md))
 - **Share a session live** (palette “share”): over your own relay a tab becomes visible to colleagues, the link (in the clipboard) is all they need, pasted into their sshTermy palette. Viewers only watch, their keys go nowhere. Every piece is encrypted with a key that is only in the link (after `#`), the relay sees nothing but ciphertext. Up to 10 viewers, a newcomer gets the current screen first
 - **AI copilot** for any OpenAI-compatible endpoint (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
-  - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question, plus suggestions, tunnels, connections and actions
+  - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question; without text only frequent actions, connections and one folder per area (session, tabs, view, network, team …), typing finds everything directly
   - **Ghost text** while typing (Tab accepts)
   - **Follow-up commands** after every Enter (Alt+1…4 inserts)
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
@@ -339,7 +339,7 @@ The screenshots show the German interface; the English one looks the same.
 | **Ask AI** | **Tunnels & web services** |
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
-**Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question, below it suggestions, tunnels, connections and actions.
+**Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question. Without text it stays short: **Frequent** on top (in the terminal goal mode, host overview, search, split, new tab), then the recently used connections and one folder per area: **Quick commands & tunnels ›, This session ›, Tabs & windows ›, View & split ›, Several hosts ›, Network & switches ›, Team & sharing ›, Connections & keys ›** (the number of entries on the right). ⏎ or → opens a folder, Esc or ← goes back. Typing shows matches from all folders directly.
 Toggles, look, language and setup live in the **[:] Settings ›** submenu (each toggle shows "on"/"off" and the palette stays open while you flip them); shortcuts, tour, news and update are under **[?] Help & info ›**. Entries with several values show them as ‹ value ›: ⏎, → or a click moves to the next one, ← back. AI, relay and import have their own subfolders. Typing still finds items inside the submenus directly, even single values like “Matrix”; Esc or ← goes back.
 
 ![Command palette](docs/bilder/09-palette.png)
