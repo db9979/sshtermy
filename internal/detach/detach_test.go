@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -36,7 +37,7 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	if fi, err := os.Stat(s.Dir()); err != nil || fi.Mode().Perm()&0o077 != 0 {
+	if fi, err := os.Stat(s.Dir()); err != nil || (runtime.GOOS != "windows" && fi.Mode().Perm()&0o077 != 0) {
 		t.Fatalf("Ordner muss privat sein: %v %v", fi.Mode(), err)
 	}
 	tok, _ := os.ReadFile(filepath.Join(s.Dir(), tokenFile))

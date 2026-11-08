@@ -15,6 +15,8 @@ import (
 
 func TestCleanRemovesSecrets(t *testing.T) {
 	t.Setenv("HOME", "/home/dominik")
+	t.Setenv("USERPROFILE", "/home/dominik")
+	t.Setenv("USERPROFILE", "/home/dominik")
 	raw := "panic: dial web-01.example.com (10.1.2.3:22) as dominik with pw S3cr3t!pw failed\n" +
 		"password=hunter2 token: abcdefgh Bearer abcdefghijklmnopqrstuvwxyz\n" +
 		"open /home/dominik/.config/sshtermy/store.vault\n" +

@@ -112,6 +112,7 @@ func TestNetFind(t *testing.T) {
 func TestNetTopology(t *testing.T) {
 	a := netTestApp(t)
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", t.TempDir())
 	cmd := a.netTopology()
 	a.netMsg(cmd())
 	text := strings.Join(a.modal.lines, "\n")
@@ -169,6 +170,7 @@ func TestScheduleBackupWithRules(t *testing.T) {
 func TestNetScopePicker(t *testing.T) {
 	a := netTestApp(t)
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", t.TempDir())
 	// zweite Infrastruktur in eigenem Ordner: erst fragen, welches Netz
 	if _, err := a.st.UpsertConnection(domain.Connection{Alias: "kunde-sw", Host: "kunde-sw", Username: "admin", Auth: domain.AuthAgent,
 		Device: domain.DeviceNetwork, Group: "Kunde B / Halle"}); err != nil {

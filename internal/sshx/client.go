@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -198,9 +199,21 @@ func isHangup(err error) bool {
 	if errors.Is(err, io.EOF) {
 		return true
 	}
+	// Windows meldet einen Reset als WSAECONNRESET mit Text in der
+	// Systemsprache („Eine vorhandene Verbindung wurde … geschlossen“).
+	var en syscall.Errno
+	if errors.As(err, &en) && (en == syscall.ECONNRESET || en == wsaECONNRESET || en == wsaECONNABORTED) {
+		return true
+	}
 	m := err.Error()
 	return strings.Contains(m, "connection reset") || strings.HasSuffix(m, ": EOF")
 }
+
+// Windows-Socket-Fehler (winerror.h), auf anderen Systemen nie gesetzt.
+const (
+	wsaECONNABORTED syscall.Errno = 10053
+	wsaECONNRESET   syscall.Errno = 10054
+)
 
 func sleepCtx(ctx context.Context, d time.Duration) error {
 	t := time.NewTimer(d)
@@ -532,7 +545,9 @@ func (c *Client) keepAliveLoop(ctx context.Context, ping, deadAfter time.Duratio
 			if err != nil {
 				return // Leitung schon zu, Wait() meldet das
 			}
-			c.latency.Store(int64(time.Since(sent)))
+			// mindestens 1 ns: 0 heißt „noch nicht gemessen“, und unter
+			// Windows ist eine Rundreise über localhost schneller als die Uhr
+			c.latency.Store(max(int64(time.Since(sent)), 1))
 			c.answered.Store(true)
 		case <-t.C:
 			if !inflight {

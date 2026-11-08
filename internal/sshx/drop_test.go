@@ -4,7 +4,10 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"errors"
+	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync/atomic"
@@ -155,5 +158,18 @@ func TestPlainName(t *testing.T) {
 		if plainName(n) {
 			t.Errorf("plainName(%q) = true", n)
 		}
+	}
+}
+
+// Windows meldet einen Reset als WSAECONNRESET mit deutschem oder
+// englischem Text: zählt trotzdem als „Switch legt auf“ (neuer Versuch).
+func TestIsHangupWindowsReset(t *testing.T) {
+	op := &net.OpError{Op: "read", Net: "tcp", Err: os.NewSyscallError("wsarecv", wsaECONNRESET)}
+	err := fmt.Errorf("ssh: handshake failed: %w", op)
+	if !isHangup(err) {
+		t.Fatalf("nicht erkannt: %v", err)
+	}
+	if isHangup(errors.New("ssh: unable to authenticate")) {
+		t.Fatal("Anmeldefehler als Auflegen gewertet")
 	}
 }

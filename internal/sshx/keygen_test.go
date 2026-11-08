@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -45,7 +46,7 @@ func TestWriteKeyFilesNoOverwrite(t *testing.T) {
 	if err := WriteKeyFiles(p, k); err != nil {
 		t.Fatal(err)
 	}
-	if st, _ := os.Stat(p); st.Mode().Perm() != 0o600 {
+	if st, _ := os.Stat(p); runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 { // Windows: keine Unix-Rechte
 		t.Errorf("Rechte %v", st.Mode().Perm())
 	}
 	if b, _ := os.ReadFile(p + ".pub"); strings.TrimSpace(string(b)) != k.PublicLine {
@@ -93,7 +94,7 @@ func TestInstallScript(t *testing.T) {
 	if string(b) != want {
 		t.Fatalf("authorized_keys = %q", b)
 	}
-	if st, _ := os.Stat(filepath.Join(home, ".ssh")); st.Mode().Perm() != 0o700 {
+	if st, _ := os.Stat(filepath.Join(home, ".ssh")); runtime.GOOS != "windows" && st.Mode().Perm() != 0o700 {
 		t.Errorf(".ssh Rechte %v", st.Mode().Perm())
 	}
 	if _, err := InstallScript("ssh-ed25519 AAAA'; rm -rf / #"); err == nil {

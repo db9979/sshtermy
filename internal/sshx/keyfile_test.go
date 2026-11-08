@@ -17,6 +17,7 @@ import (
 func TestKeyFileFallbackAndMissing(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	_, priv, _ := ed25519.GenerateKey(rand.Reader)
 	blk, err := ssh.MarshalPrivateKey(priv, "")
 	if err != nil {
