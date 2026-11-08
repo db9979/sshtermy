@@ -25,6 +25,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/db9979/sshtermy/internal/audit"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -135,7 +136,7 @@ type hostNetMsg struct {
 // hostOnConnect: nach dem Verbinden. Server werden sofort abgefragt,
 // bei Netzwerkgeräten nur die vorhandenen Sicherungen gelistet.
 func (a *App) hostOnConnect(s *session) tea.Cmd {
-	if s.netDev() {
+	if s.netDevice() {
 		s.host.backups = a.st.Backups(s.conn.ID)
 		return nil
 	}
@@ -212,10 +213,11 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 	h.busy, h.err, h.note = true, "", ""
 	if backup {
 		h.viol = ""
+		a.auditAdd(audit.EvConfig, auditConn(s.conn), "Konfiguration sichern")
 	}
 	h.step = i18n.T("Übersicht abfragen …")
 	if backup && !info {
-		h.step = i18n.T("show running-config sichern …")
+		h.step = i18n.T("Konfiguration sichern …")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	h.cancelFn = cancel
@@ -238,7 +240,7 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 
 		var ver string
 		if info || r.vendor == hostinfo.VendorUnknown {
-			out, err := run("show version", 20*time.Second)
+			out, err := run(r.vendor.VersionCommand(), 20*time.Second)
 			if err != nil {
 				return fail(err)
 			}
@@ -270,11 +272,12 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 			r.sw = &sw
 		}
 		if backup {
-			cfg, err := run("show running-config", 2*time.Minute)
+			cfgCmd := r.vendor.ConfigCommand()
+			cfg, err := run(cfgCmd, 2*time.Minute)
 			if err != nil {
 				return fail(err)
 			}
-			if err := checkConfig(cfg); err != nil {
+			if err := checkConfig(cfg, cfgCmd); err != nil {
 				return fail(err)
 			}
 			cfg = strings.TrimRight(cfg, "\n") + "\n"
@@ -302,13 +305,13 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 }
 
 // checkConfig: hat das Gerät wirklich eine Konfiguration geliefert?
-func checkConfig(cfg string) error {
+func checkConfig(cfg, cmd string) error {
 	l := strings.ToLower(cfg)
 	switch {
 	case strings.Count(cfg, "\n") < 2:
 		return errors.New(i18n.T("keine Konfiguration erhalten"))
 	case strings.Contains(l, "invalid input") || strings.Contains(l, "unknown command") || strings.Contains(l, "invalid command"):
-		return errors.New(i18n.T("Gerät kennt „show running-config“ nicht"))
+		return fmt.Errorf(i18n.T("Gerät kennt „%s“ nicht"), cmd)
 	}
 	return nil
 }
@@ -451,7 +454,7 @@ func localTime(t time.Time) string {
 // ---------------------------------------------------------------- Tasten
 
 func (a *App) hostOpened(s *session) tea.Cmd {
-	if s.netDev() {
+	if s.netDevice() {
 		s.host.backups = a.st.Backups(s.conn.ID)
 		return nil
 	}
@@ -466,7 +469,7 @@ func (a *App) hostOpened(s *session) tea.Cmd {
 
 func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	h := &s.host
-	net := s.netDev()
+	net := s.netDevice() // auch Junos u. a. hinter OpenSSH, wenn das Profil sie erkannt hat
 	switch k.String() {
 	case "x":
 		if h.busy {
@@ -565,7 +568,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 	if s.host.busy {
 		return [][2]string{{"x", i18n.T("abbrechen")}, {"Esc", "Terminal"}, {a.keys.label(actHost), i18n.T("schließen")}}
 	}
-	if s.netDev() {
+	if s.netDevice() {
 		k := [][2]string{{"⏎", i18n.T("abfragen")}, {"b", i18n.T("Config sichern")}}
 		if len(s.host.backups) > 1 {
 			k = append(k, [2]string{"d", "Diff"})
@@ -592,7 +595,7 @@ func (a *App) hostBadge(s *session) string {
 		txt = "▤ " + h.srv.Summary()
 	case h.sw != nil:
 		txt = "▤ " + h.sw.Summary()
-	case s.netDev():
+	case s.netDevice():
 		txt = i18n.T("▤ F6 Übersicht")
 	default:
 		return ""
@@ -612,7 +615,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 	row := func(k, v string) {
 		b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", k)) + st.Text.Render(trunc(v, w-10)) + "\n")
 	}
-	net := s.netDev()
+	net := s.netDevice()
 
 	if h.busy {
 		b.WriteString(st.Warn.Render("◌ "+h.step) + "\n")

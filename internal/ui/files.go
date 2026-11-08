@@ -325,6 +325,7 @@ func (a *App) startTransfer(s *session, srcFS sshx.FS, paths []string, dstFS ssh
 	if up {
 		arrow = "↑"
 	}
+	a.auditTransfer(s, paths, dstDir, up)
 	name := baseName(srcFS, paths[0])
 	if len(paths) > 1 {
 		name = fmt.Sprintf(i18n.T("%d Einträge"), len(paths))

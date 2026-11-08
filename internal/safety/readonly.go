@@ -202,12 +202,18 @@ func unixSegment(f []string) bool {
 
 var netShow = regexp.MustCompile(`(?i)^(show|sh|display|dis|ping|traceroute|tracert|dir)\b`)
 
+// FortiOS „get …“, RouterOS „/… print“ und „/export“
+var netVendorRead = regexp.MustCompile(`(?i)^(get\s+\S|/[\w/ -]*\bprint\b|/export\b)`)
+
+// Junos „| save datei“, RouterOS „file=…“ schreiben eine Datei auf das Gerät.
+var netWrites = regexp.MustCompile(`(?i)\|\s*save\b|\bfile=`)
+
 func netReadOnly(cmd string) bool {
-	if strings.ContainsAny(cmd, ";\n") {
+	if strings.ContainsAny(cmd, ";\n") || netWrites.MatchString(cmd) {
 		return false
 	}
 	// show … | include x ist auf Switches üblich und harmlos
-	return netShow.MatchString(cmd) && !strings.Contains(strings.ToLower(cmd), " > ")
+	return (netShow.MatchString(cmd) || netVendorRead.MatchString(cmd)) && !strings.Contains(strings.ToLower(cmd), " > ")
 }
 
 // Format-Table/List/Wide/Custom/Hex nur ausgeben; Format-Volume und „format C:“ formatieren!

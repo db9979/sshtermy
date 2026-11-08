@@ -50,3 +50,22 @@ var enBackup = map[string]string{
 	"nur lokale KI":                                                      "local AI only",
 	"was ging hinaus":                                                    "what was sent",
 }
+
+// Audit-Protokoll (internal/audit, ui/audit.go) und Herstellerprofile.
+func init() {
+	for k, v := range map[string]string{
+		"Audit-Protokoll (wer, wann, was; fälschungssicher)": "Audit log (who, when, what; tamper-evident)",
+		"Audit-Protokoll an: ":                               "Audit log on: ",
+		"Audit-Protokoll aus":                                "Audit log off",
+		"Audit-Protokoll geprüft (%d Einträge, unverändert) und gespeichert: %s": "Audit log verified (%d entries, unchanged) and saved: %s",
+		"Audit-Protokoll ist aus (Einstellungen › Sicherheit)":                   "Audit log is off (Settings › Security)",
+		"Audit-Protokoll prüfen und speichern":                                   "Verify and save audit log",
+		"Audit-Protokoll: ":                                                      "Audit log: ",
+		"Audit-Protokoll: %d Auffälligkeiten! Bericht: %s":                       "Audit log: %d problems found! Report: %s",
+		"Gerät kennt „%s“ nicht":                                                 "Device does not know “%s”",
+		"Prüfung: %d Auffälligkeiten":                                            "Check: %d problems",
+		"Prüfung: %d Einträge, Kette lückenlos und unverändert":                  "Check: %d entries, chain complete and unchanged",
+	} {
+		en[k] = v
+	}
+}

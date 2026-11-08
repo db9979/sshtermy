@@ -19,6 +19,9 @@ const (
 	VendorProCurve Vendor = "procurve" // ArubaOS-Switch / HP ProCurve
 	VendorArubaCX  Vendor = "aruba-cx" // ArubaOS-CX
 	VendorCisco    Vendor = "cisco"    // IOS / IOS-XE
+	VendorJunos    Vendor = "junos"    // Juniper EX/SRX/MX
+	VendorMikroTik Vendor = "routeros" // MikroTik RouterOS
+	VendorFortiOS  Vendor = "fortios"  // Fortinet FortiGate
 )
 
 // Name für die Anzeige.
@@ -30,6 +33,12 @@ func (v Vendor) Name() string {
 		return "ArubaOS-CX"
 	case VendorCisco:
 		return "Cisco IOS"
+	case VendorJunos:
+		return "Juniper Junos"
+	case VendorMikroTik:
+		return "MikroTik RouterOS"
+	case VendorFortiOS:
+		return "FortiOS"
 	}
 	return "unbekannt"
 }
@@ -42,6 +51,12 @@ func DetectVendor(showVersion string) Vendor {
 		return VendorArubaCX
 	case strings.Contains(l, "cisco ios") || strings.Contains(l, "cisco internetwork"):
 		return VendorCisco
+	case strings.Contains(l, "junos"):
+		return VendorJunos
+	case strings.Contains(l, "routeros") || strings.Contains(l, "mikrotik") || strings.Contains(l, "board-name:"):
+		return VendorMikroTik
+	case strings.Contains(l, "fortigate") || strings.Contains(l, "fortios") || strings.Contains(l, "fortiswitch"):
+		return VendorFortiOS
 	case strings.Contains(l, "image stamp") || strings.Contains(l, "boot image") || procurveRev.MatchString(showVersion):
 		return VendorProCurve
 	}
@@ -56,8 +71,38 @@ func (v Vendor) PagingOff() string {
 		return "no page"
 	case VendorCisco:
 		return "terminal length 0"
+	case VendorJunos:
+		return "set cli screen-length 0"
 	}
+	// RouterOS blättert bei „print terse“ nicht; FortiOS ginge nur über
+	// eine Konfigurationsänderung (config system console) – dort beantwortet
+	// shellRun „--More--“ selbst.
 	return ""
+}
+
+// VersionCommand: Befehl, der Modell und Firmware nennt.
+func (v Vendor) VersionCommand() string {
+	switch v {
+	case VendorMikroTik:
+		return "/system resource print"
+	case VendorFortiOS:
+		return "get system status"
+	}
+	return "show version"
+}
+
+// ConfigCommand: Befehl, der die laufende Konfiguration ausgibt (für die
+// Konfigurationssicherung). Ändert nichts am Gerät.
+func (v Vendor) ConfigCommand() string {
+	switch v {
+	case VendorJunos:
+		return "show configuration | display set"
+	case VendorMikroTik:
+		return "/export"
+	case VendorFortiOS:
+		return "show full-configuration"
+	}
+	return "show running-config"
 }
 
 // InfoCommands: show-Befehle für die Übersicht (nach "show version").
@@ -69,6 +114,12 @@ func (v Vendor) InfoCommands() (system, ports, vlans string) {
 		return "show system", "show interface brief", "show vlan"
 	case VendorCisco:
 		return "show processes cpu | include CPU utilization", "show interfaces status", "show vlan brief"
+	case VendorJunos:
+		return "show chassis routing-engine", "show interfaces terse", "show vlans brief"
+	case VendorMikroTik:
+		return "/system identity print", "/interface ethernet print terse", "/interface vlan print terse"
+	case VendorFortiOS:
+		return "get system performance status", "get system interface physical", ""
 	}
 	return "", "", ""
 }
@@ -173,6 +224,17 @@ func ParseSwitch(v Vendor, version, system, ports, vlans string) Switch {
 		s.Name = cleanField(m[1])
 	} else if m := ciscoName.FindStringSubmatch(version); m != nil {
 		s.Name = m[1]
+	}
+	switch v {
+	case VendorJunos:
+		parseJunos(&s, version, system, ports, vlans)
+		return s
+	case VendorMikroTik:
+		parseRouterOS(&s, version, system, ports, vlans)
+		return s
+	case VendorFortiOS:
+		parseFortiOS(&s, version, system, ports)
+		return s
 	}
 	s.PortsUp, s.PortsDown = countPorts(ports)
 	s.VLANs = parseVLANs(vlans)
