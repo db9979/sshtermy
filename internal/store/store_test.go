@@ -68,3 +68,30 @@ func TestChangeMaster(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// Rein lokale Einstellungen (z. B. die Aufteilung beim Beenden) machen den
+// gemeinsamen Teil nicht „neuer“; sonst überschriebe der Sync eine
+// Änderung, die ein anderer Rechner inzwischen gemacht hat.
+func TestLocalSettingsKeepSyncTimestamp(t *testing.T) {
+	t.Setenv("SSHTERMY_HOME", t.TempDir())
+	s, err := Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Init([]byte("correct horse"), false); err != nil {
+		t.Fatal(err)
+	}
+	_ = s.UpdateSettings(func(x *domain.Settings) { x.Theme = "hell" })
+	d, _, _ := s.Snapshot()
+	at := d.SettingsUpdatedAt
+	_ = s.UpdateSettings(func(x *domain.Settings) {
+		x.LastLayout, x.LastVersion = &domain.Workspace{Layout: "cols"}, "9.9.9"
+	})
+	if d, _, _ = s.Snapshot(); !d.SettingsUpdatedAt.Equal(at) {
+		t.Fatal("lokale Einstellung hat den Sync-Zeitstempel verändert")
+	}
+	_ = s.UpdateSettings(func(x *domain.Settings) { x.Theme = "matrix" })
+	if d, _, _ = s.Snapshot(); d.SettingsUpdatedAt.Equal(at) {
+		t.Fatal("gemeinsame Einstellung ohne neuen Zeitstempel")
+	}
+}

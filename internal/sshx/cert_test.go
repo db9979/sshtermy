@@ -131,3 +131,18 @@ func mustRead(t *testing.T, p string) []byte {
 	}
 	return b
 }
+
+// Ein Zertifikatspfad von einem anderen Rechner (C:\Users\…) wird unter dem
+// eigenen Home gesucht, wie beim Key.
+func TestCertCandidatesForeignHome(t *testing.T) {
+	c := domain.Connection{CertPath: `C:\Users\db9\.ssh\id_ed25519-cert.pub`}
+	got := certCandidates(c, "/home/x")
+	want := filepath.Join("/home/x", ".ssh", "id_ed25519-cert.pub")
+	found := false
+	for _, p := range got {
+		found = found || p == want
+	}
+	if !found {
+		t.Fatalf("%v", got)
+	}
+}

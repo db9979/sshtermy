@@ -568,6 +568,7 @@ type Settings struct {
 
 	// ConfigRules: Regeln für gesicherte Switch-Configs, eine pro Zeile:
 	// "+muster" muss vorkommen, "-muster" darf nicht (regulärer Ausdruck).
+	// Geht mit dem Sync.
 	ConfigRules []string `json:"config_rules,omitempty"`
 
 	// Highlight: Farbregeln für die Ausgabe im Terminal (highlight-Paket).
@@ -624,6 +625,18 @@ type Workspace struct {
 	Conns  []string  `json:"conns,omitempty"`
 	Folder string    `json:"folder,omitempty"`
 	Saved  time.Time `json:"saved"`
+}
+
+// SyncedPart: die Einstellungen ohne die rein lokalen Felder (DPAPI, Maus,
+// Version, Nerd-Font-Probe, letzte Aufteilung, Editor, Zeitpläne, Debug,
+// Audit, MCP). Nur eine Änderung hier macht die Einstellungen für den Sync
+// „neuer“; sonst gewänne z. B. das Merken der Aufteilung beim Beenden gegen
+// ein Theme, das auf einem anderen Rechner gerade umgestellt wurde.
+func (s Settings) SyncedPart() Settings {
+	s.UseDPAPI, s.NoMouse, s.LastVersion, s.NerdFont = false, false, "", ""
+	s.LastLayout, s.Editor, s.Schedules = nil, "", nil
+	s.Debug, s.Audit, s.MCP = false, false, ""
+	return s
 }
 
 // IconsNow: der Symbolstil, der auf diesem Rechner wirklich gilt. Kam
