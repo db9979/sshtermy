@@ -2,7 +2,10 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/x/term"
 
@@ -33,4 +36,26 @@ func wantWindow(forceWindow, forceTUI bool) bool {
 		return os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != ""
 	}
 	return true
+}
+
+// fontFile: Schriftgröße des eigenen Fensters, je Rechner (nie im Sync:
+// Bildschirme sind verschieden). Eine Datei statt des Stores, weil das
+// Fenster schon vor dem Entsperren aufgeht.
+const fontFile = "window-font"
+
+// withFont: gemerkte Schriftgröße setzen und Änderungen merken.
+func withFont(dir string, o gui.Options) gui.Options {
+	if dir == "" {
+		return o
+	}
+	p := filepath.Join(dir, fontFile)
+	if b, err := os.ReadFile(p); err == nil {
+		if v, err := strconv.ParseFloat(strings.TrimSpace(string(b)), 64); err == nil && v >= 8 && v <= 40 {
+			o.FontSize = v
+		}
+	}
+	o.OnFontSize = func(v float64) {
+		_ = os.WriteFile(p, []byte(strconv.FormatFloat(v, 'f', -1, 64)+"\n"), 0o600)
+	}
+	return o
 }

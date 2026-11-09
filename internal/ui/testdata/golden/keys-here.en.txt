@@ -1,0 +1,34 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ● AI
+ ▪ Customize shortcuts   ◆ new keys apply to this computer only · l = all computers again
+
+ EVERYWHERE
+ Command palette               Ctrl+Space / Ctrl+@
+ Help                          F1
+ Manager ↔ terminal            F10
+ About & update                F12
+▶Explain key bar on/off        Alt+M  ◆ here only default: Shift+F9
+ Quit                          Ctrl+Q
+ Open local shell              Alt+L
+ TERMINAL
+ Goal mode (agent)             F2
+ Ask AI                        F3
+ AI companion: change level    Alt+K
+ Companion sidebar             Alt+J
+ Tunnel                        F4
+ Files (SFTP)                  F5
+ Host overview                 F6
+ previous tab                  F7
+ next tab                      F8
+ New tab                       Alt+N
+ close tab                     Alt+W
+ All tabs (list)               Alt+T
+ Quick commands (list)         F9
+ Quick command 1               Shift+F1 / F13
+ Quick command 2               Shift+F2 / F14
+ Quick command 3               Shift+F3 / F15
+ Quick command 4               Shift+F4 / F16
+
+ Alt+⏎ is blocked: Windows Terminal uses it for full screen.
+ Font size: Ctrl + plus/minus in the terminal window (macOS: ⌘ + / −)
+
+ ⏎ rebind  Del Default  l all computers  r reset all  Esc back

@@ -420,6 +420,7 @@ func (w *window) keyboard() {
 		case shortcut && (k == ebiten.KeyDigit0 || k == ebiten.KeyNumpad0):
 			w.fontSize = defaultFontSize
 			w.setFaces(w.scale)
+			w.fontChanged()
 			return
 		}
 	}
@@ -510,6 +511,13 @@ func (w *window) zoom(d float64) {
 	w.fontSize = math.Max(8, math.Min(40, w.fontSize+d))
 	w.setFaces(w.scale)
 	w.cols, w.rows = 0, 0 // nächstes Layout rechnet die Größe neu
+	w.fontChanged()
+}
+
+func (w *window) fontChanged() {
+	if w.opts.OnFontSize != nil {
+		w.opts.OnFontSize(w.fontSize)
+	}
 }
 
 func (w *window) cellAt(px, py int) (int, int) {

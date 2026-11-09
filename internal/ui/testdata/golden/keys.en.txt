@@ -1,5 +1,5 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ● AI
- ▪ Customize shortcuts   ⏎ or double-click rebinds · synced to other computers
+ ▪ Customize shortcuts   ⏎/double-click rebinds · applies on all computers · l = here only
 
  EVERYWHERE
 ▶Command palette               Ctrl+Space / Ctrl+@
@@ -31,4 +31,4 @@
  Alt+⏎ is blocked: Windows Terminal uses it for full screen.
  Font size: Ctrl + plus/minus in the terminal window (macOS: ⌘ + / −)
 
- ⏎ rebind  Del Default  r reset all  Esc back
+ ⏎ rebind  Del Default  l this computer only  r reset all  Esc back

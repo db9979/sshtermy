@@ -73,6 +73,9 @@ func newGold(t *testing.T, lang string, w, h int, seed bool) *gold {
 	t.Setenv("SSHTERMY_NO_ANIM", "1") // Ein-/Ausblenden hinge an der Uhr
 	t.Setenv("USER", "golden")        // Vorbelegung im Netzwerk-Scan
 	t.Setenv("USERNAME", "golden")
+	dn := deviceName
+	deviceName = func() string { return "golden-pc" } // Rechnername steht im Sync-Assistenten
+	t.Cleanup(func() { deviceName = dn })
 	subnets := netscan.LocalSubnets // eigene Netzwerkkarten, je Rechner anders
 	netscan.LocalSubnets = func() []string { return []string{"192.168.1.0/24", "10.8.0.0/24"} }
 	t.Cleanup(func() { netscan.LocalSubnets = subnets })
@@ -333,9 +336,17 @@ var goldenCases = []goldenCase{
 	{name: "quick-form", w: 100, h: 30, setup: func(g *gold) { g.keys("down", "down", "down", "down", "q") }},
 	{name: "import", w: 100, h: 30, setup: func(g *gold) { g.keys("i") }},
 	{name: "keys", w: 110, h: 34, setup: func(g *gold) { g.keys("b") }},
+	{name: "keys-here", w: 110, h: 34, setup: func(g *gold) { g.keys("b", "l", "down", "down", "down", "down", "enter", "alt+m") }},
 	{name: "broadcast", w: 120, h: 32, setup: func(g *gold) { g.keys("m") }},
 	{name: "scan", w: 100, h: 30, setup: func(g *gold) { g.keys("f") }},
 	{name: "sync", w: 100, h: 30, setup: func(g *gold) { g.keys("y") }},
+	{name: "sync-devices", w: 100, h: 40, setup: func(g *gold) {
+		now := time.Now()
+		cfg := domain.SyncConfig{Backend: domain.SyncFolder, Folder: "~/OneDrive/sshtermy", Key: "schluessel", Auto: true,
+			Devices: map[string]time.Time{"golden-pc": now.Add(-90 * time.Second), "macbook": now.Add(-3*time.Minute - 10*time.Second), "uconsole": now.Add(-2*time.Hour - 5*time.Minute)}}
+		_ = g.a.st.SetSyncConfig(cfg)
+		g.keys("y")
+	}},
 	{name: "logs", w: 100, h: 30, setup: func(g *gold) { g.keys("l") }},
 	{name: "help-manager", w: 120, h: 36, setup: func(g *gold) { g.keys("f1") }},
 	{name: "about", w: 100, h: 30, setup: func(g *gold) { g.keys("f12") }},
