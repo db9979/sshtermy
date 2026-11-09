@@ -112,6 +112,7 @@ const startCols, startRows = 120, 34
 // newWindow: Schrift laden, Emulator anlegen. in bekommt Tasten und
 // Antworten des Emulators.
 func newWindow(opts Options, in io.Writer) (*window, error) {
+	in = newQueueWriter(in)
 	src, err := text.NewGoTextFaceSource(bytes.NewReader(fontData))
 	if err != nil {
 		return nil, err
@@ -342,14 +343,8 @@ func (w *window) Update() error {
 	return nil
 }
 
-func (w *window) send(b []byte) {
-	if len(b) == 0 {
-		return
-	}
-	go func() { _, _ = w.in.Write(b) }()
-}
-
-// sendOrdered schreibt synchron: Tasten müssen in Reihenfolge ankommen.
+// sendOrdered: w.in ist eine Warteschlange (queue.go), die Reihenfolge
+// bleibt, und das Fenster wartet nie auf das Programm.
 func (w *window) sendOrdered(b []byte) {
 	if len(b) > 0 {
 		_, _ = w.in.Write(b)
