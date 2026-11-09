@@ -269,12 +269,28 @@ func (a *App) perfBars(durs []time.Duration, w int) []string {
 	pad := strings.Repeat(" ", w-len(durs))
 	top.WriteString(pad)
 	bot.WriteString(pad)
+	// gleiche Farbe am Stück in einem Render (je Balken eins war spürbar teuer)
+	var runT, runB []rune
+	var runC lipgloss.Style
+	runG := ""
+	flush := func() {
+		if len(runT) > 0 {
+			top.WriteString(runC.Render(string(runT)))
+			bot.WriteString(runC.Render(string(runB)))
+			runT, runB = runT[:0], runB[:0]
+		}
+	}
 	for _, d := range durs {
 		lv := max(1, min(16, int(math.Ceil(float64(d)/full*16))))
-		_, c := a.perfGrade(d)
-		top.WriteString(c.Render(string(r[max(0, lv-8)])))
-		bot.WriteString(c.Render(string(r[min(8, lv)])))
+		g, c := a.perfGrade(d)
+		if g != runG {
+			flush()
+			runG, runC = g, c
+		}
+		runT = append(runT, r[max(0, lv-8)])
+		runB = append(runB, r[min(8, lv)])
 	}
+	flush()
 	return []string{top.String(), bot.String()}
 }
 

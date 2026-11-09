@@ -73,6 +73,25 @@ func (se *SafeEmulator) CellCopy(x, y int) (uv.Cell, bool) {
 	return uv.Cell{}, false
 }
 
+// LineCopy kopiert Zeile y unter einer einzigen Sperre nach dst (sshTermy):
+// Zelle für Zelle mit CellCopy kostete das Sperren mehr als das Kopieren.
+// Fehlende Zellen werden zur leeren Zelle. false = keine solche Zeile.
+func (se *SafeEmulator) LineCopy(y int, dst []uv.Cell) bool {
+	se.mu.RLock()
+	defer se.mu.RUnlock()
+	if y < 0 || y >= se.Emulator.Height() {
+		return false
+	}
+	for x := range dst {
+		if c := se.Emulator.CellAt(x, y); c != nil {
+			dst[x] = *c
+		} else {
+			dst[x] = uv.EmptyCell
+		}
+	}
+	return true
+}
+
 // String liefert den Bildschirminhalt als Klartext (gesperrt, sshTermy).
 func (se *SafeEmulator) String() string {
 	se.mu.RLock()

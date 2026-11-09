@@ -29,13 +29,19 @@ func (t *Term) Lines() int {
 // lineText liefert den Klartext einer Zeile und zu jedem Byte des Textes
 // die Spalte, in der das Zeichen steht.
 func (t *Term) lineText(sb, w, l int) (string, []int) {
+	line := make(uv.Line, w)
+	t.lineCells(sb, l, line)
+	return cellsText(line)
+}
+
+// cellsText: Klartext einer Zeile aus Zellen, dazu je Byte die Spalte.
+func cellsText(line uv.Line) (string, []int) {
 	var b strings.Builder
-	cols := make([]int, 0, w)
-	for x := 0; x < w; x++ {
-		c, ok := t.cellAt(sb, Pos{l, x})
+	cols := make([]int, 0, len(line))
+	for x := range line {
+		c := &line[x]
 		s := " "
 		switch {
-		case !ok:
 		case c.IsZero():
 			continue // zweite Hälfte eines breiten Zeichens
 		case c.Content != "":

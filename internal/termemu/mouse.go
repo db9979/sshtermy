@@ -102,6 +102,27 @@ func (t *Term) ScrollbackLen() int {
 
 // cellAt liefert die Zelle im Gesamtpuffer; ok = false, wenn dort keine
 // ist (hinter dem Zeilenende im Verlauf, außerhalb des Bildschirms).
+// lineCells füllt dst (Länge = Breite) mit Zeile l des Gesamtpuffers, unter
+// einer Sperre statt einer je Zelle. Fehlendes wird zur leeren Zelle.
+func (t *Term) lineCells(sb, l int, dst uv.Line) {
+	if l < sb {
+		src := t.sb.line(l)
+		for x := range dst {
+			if x < len(src) {
+				dst[x] = src[x]
+			} else {
+				dst[x] = uv.EmptyCell
+			}
+		}
+		return
+	}
+	if !t.emu.LineCopy(l-sb, dst) {
+		for x := range dst {
+			dst[x] = uv.EmptyCell
+		}
+	}
+}
+
 func (t *Term) cellAt(sb int, p Pos) (uv.Cell, bool) {
 	if p.Line < sb {
 		return t.sb.cell(p.Col, p.Line)
@@ -130,16 +151,12 @@ func (t *Term) render(offset int, sel *Sel, hook func(line, x int, c *uv.Cell), 
 	}
 	for y := 0; y < h; y++ {
 		abs := first + y
+		t.lineCells(sb, abs, line)
 		var colors []color.Color
 		if hl != nil {
-			colors = hl.columns(t, sb, w, abs)
+			colors = hl.columnsOf(line)
 		}
 		for x := 0; x < w; x++ {
-			if c, ok := t.cellAt(sb, Pos{abs, x}); ok {
-				line[x] = c
-			} else {
-				line[x] = uv.EmptyCell
-			}
 			if sel != nil && !line[x].IsZero() && sel.Contains(Pos{abs, x}) {
 				if line[x].Content == "" {
 					line[x].Content, line[x].Width = " ", 1
