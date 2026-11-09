@@ -21,6 +21,9 @@ type Theme struct {
 	Name, Label                                                              string
 	Dark                                                                     bool
 	Bg, Surface, Surface2, Border, Text, Muted, Accent, AI, OK, Warn, Danger color.Color
+	// Orange und Cyan: Zusatzfarben für Verbindungen (accent.go); nil heißt
+	// Standardton passend zu hell/dunkel.
+	Orange, Cyan color.Color
 }
 
 var Nacht = Theme{
@@ -171,8 +174,25 @@ var FarbenblindHell = Theme{
 	Danger:   lipgloss.Color("#a33d00"),
 }
 
-// Themes in der Reihenfolge der Auswahl.
-var Themes = []Theme{Nacht, Hell, Kontrast, KontrastHell, Farbenblind, FarbenblindHell, Matrix, Bernstein, Neon}
+// Themes in der Reihenfolge der Auswahl: dunkle, helle, barrierefreie
+// (siehe themeGroup).
+var Themes = []Theme{
+	Nacht, Polar, Tiefsee, Graphit, Vampir, Kirschbluete, Abendrot, Neon, Tusche,
+	Wald, Kreide, Lagune, Solar, Lagerfeuer, Bernstein, Matrix,
+	Hell, Papier, Frost, Sand, Morgenrot, Minze,
+	Kontrast, KontrastHell, Farbenblind, FarbenblindHell,
+}
+
+// themeGroup: Abschnitt in der Theme-Auswahl.
+func themeGroup(t Theme) string {
+	switch {
+	case strings.HasPrefix(t.Name, "kontrast"), strings.HasPrefix(t.Name, "farbenblind"):
+		return "Barrierefrei"
+	case t.Dark:
+		return "Dunkel"
+	}
+	return "Hell"
+}
 
 // CustomName: Theme aus eigenen Farben („Farben anpassen“).
 const CustomName = "eigene"
@@ -216,7 +236,9 @@ func CustomTheme(c domain.CustomColors) Theme {
 	set(&t.Danger, c.Danger)
 	if _, ok := parseHex(c.Bg); ok {
 		t.Surface, t.Surface2 = mixColor(t.Bg, t.Text, 0.05), mixColor(t.Bg, t.Text, 0.13)
-		t.Dark = luminance(rgbOf(t.Bg)) < 0.4
+		if dark := luminance(rgbOf(t.Bg)) < 0.4; dark != t.Dark {
+			t.Dark, t.Orange, t.Cyan = dark, nil, nil // Zusatzfarben der Vorlage passen nicht mehr
+		}
 	}
 	return t
 }

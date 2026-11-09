@@ -1,0 +1,36 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                        ● AI
+ [c] Choose color scheme   26 themes · live preview, ⏎ applies · synced to your other computers
+
+ // dark                                Preview: Deep sea
+ Dark (night)         ■■■■■ Aa  ✓      ┌────────────────────────────────────────────────────────────────┐
+ Polar night          ■■■■■ Aa         │  >_ sshTermy                                             v1.0  │
+▸Deep sea             ■■■■■ Aa         │                                                                │
+ Graphite             ■■■■■ Aa         │ // production                                                  │
+ Vampire (purple)     ■■■■■ Aa         │ ▌ ● [$] web-01      deploy@10.0.1.11                           │
+ Cherry blossom       ■■■■■ Aa         │ ▌ ● [$] db-01       postgres@10.0.2.5                          │
+ Sunset (synthwave)   ■■■■■ Aa         │ ▌ ● [#] core-sw-01  manager@10.0.0.2                           │
+ Neon (cyber)         ■■■■■ Aa         │ ▌ ● [>] build-win   ci@10.0.3.20                               │
+ Ink                  ■■■■■ Aa         │                                                                │
+ Forest               ■■■■■ Aa         │ deploy@web-01:~$ systemctl status nginx                        │
+ Chalk (board)        ■■■■■ Aa         │ ◆ AI: nginx is running, no errors in the log                   │
+ Lagoon               ■■■■■ Aa         │ ▲ disk almost full  ▲ rm -rf / blocked                         │
+ Solar (dark)         ■■■■■ Aa         │ ✓ Backup done                                                  │
+ Campfire             ■■■■■ Aa         │                                                                │
+ Amber (retro)        ■■■■■ Aa         │  AI   prod   lab   ● online                                    │
+ Matrix (green)       ■■■■■ Aa         │                                                                │
+                                       │  ⏎ connect  F1 Help                                            │
+ // light                              │                                                                │
+ Light                ■■■■■ Aa         │ Connection colors ■■■■■■■                                      │
+ Paper (light)        ■■■■■ Aa         │ ✓ Contrast check: all colors readable                          │
+ Frost (light)        ■■■■■ Aa         └────────────────────────────────────────────────────────────────┘
+ Sand (light)         ■■■■■ Aa
+ Dawn (light)         ■■■■■ Aa
+ Mint (light)         ■■■■■ Aa
+
+ // accessible
+ High contrast        ■■■■■ Aa
+ High contrast light  ■■■■■ Aa
+   ↓ more
+
+
+ ↑↓ Color scheme  ⏎ accept  e Customize colors  Esc back

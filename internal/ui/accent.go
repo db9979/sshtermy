@@ -75,19 +75,23 @@ func accentColor(t Theme, id string) color.Color {
 	case "purple":
 		return t.AI
 	case "orange":
-		switch t.Name {
-		case "hell":
-			return lipgloss.Color("#b34700")
-		case "kontrast":
+		switch {
+		case t.Orange != nil:
+			return t.Orange
+		case t.Name == "kontrast":
 			return lipgloss.Color("#ff9000")
+		case !t.Dark:
+			return lipgloss.Color("#b34700")
 		}
 		return lipgloss.Color("#ff9e64")
 	case "cyan":
-		switch t.Name {
-		case "hell":
-			return lipgloss.Color("#00727f")
-		case "kontrast":
+		switch {
+		case t.Cyan != nil:
+			return t.Cyan
+		case t.Name == "kontrast":
 			return lipgloss.Color("#00ffff")
+		case !t.Dark:
+			return lipgloss.Color("#00727f")
 		}
 		return lipgloss.Color("#7dcfff")
 	}

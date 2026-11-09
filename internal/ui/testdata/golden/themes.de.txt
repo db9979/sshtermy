@@ -1,0 +1,36 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
+ [c] Farbschema wählen   26 Themes · Vorschau sofort, ⏎ übernimmt · geht mit dem Sync mit
+
+ // dunkel                              Vorschau: Tiefsee
+ Dunkel (Nacht)       ■■■■■ Aa  ✓      ┌────────────────────────────────────────────────────────────────┐
+ Polarnacht           ■■■■■ Aa         │  >_ sshTermy                                             v1.0  │
+▸Tiefsee              ■■■■■ Aa         │                                                                │
+ Graphit              ■■■■■ Aa         │ // produktion                                                  │
+ Vampir (lila)        ■■■■■ Aa         │ ▌ ● [$] web-01      deploy@10.0.1.11                           │
+ Kirschblüte          ■■■■■ Aa         │ ▌ ● [$] db-01       postgres@10.0.2.5                          │
+ Abendrot (Synthwave) ■■■■■ Aa         │ ▌ ● [#] core-sw-01  manager@10.0.0.2                           │
+ Neon (Cyber)         ■■■■■ Aa         │ ▌ ● [>] build-win   ci@10.0.3.20                               │
+ Tusche               ■■■■■ Aa         │                                                                │
+ Wald                 ■■■■■ Aa         │ deploy@web-01:~$ systemctl status nginx                        │
+ Kreide (Tafel)       ■■■■■ Aa         │ ◆ KI: nginx läuft, keine Fehler im Log                         │
+ Lagune               ■■■■■ Aa         │ ▲ Platte fast voll  ▲ rm -rf / blockiert                       │
+ Solar (dunkel)       ■■■■■ Aa         │ ✓ Sicherung fertig                                             │
+ Lagerfeuer           ■■■■■ Aa         │                                                                │
+ Bernstein (Retro)    ■■■■■ Aa         │  KI   prod   lab   ● online                                    │
+ Matrix (grün)        ■■■■■ Aa         │                                                                │
+                                       │  ⏎ verbinden  F1 Hilfe                                         │
+ // hell                               │                                                                │
+ Hell                 ■■■■■ Aa         │ Verbindungsfarben ■■■■■■■                                      │
+ Papier (hell)        ■■■■■ Aa         │ ✓ Kontrast-Check: alle Farben gut lesbar                       │
+ Frost (hell)         ■■■■■ Aa         └────────────────────────────────────────────────────────────────┘
+ Sand (hell)          ■■■■■ Aa
+ Morgenrot (hell)     ■■■■■ Aa
+ Minze (hell)         ■■■■■ Aa
+
+ // barrierefrei
+ Hochkontrast         ■■■■■ Aa
+ Hochkontrast hell    ■■■■■ Aa
+   ↓ mehr
+
+
+ ↑↓ Farbschema  ⏎ übernehmen  e Farben anpassen  Esc zurück

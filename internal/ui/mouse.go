@@ -143,7 +143,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 			return nil
 		}
 		switch a.scr {
-		case scrManager:
+		case scrManager, scrThemes:
 			return a.pressKey(wheelKey(up))
 		case scrTerminal:
 			if s != nil && s.panel != panelNone && !s.files.open {

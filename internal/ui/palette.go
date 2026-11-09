@@ -696,8 +696,9 @@ func (a *App) palMenuItems() []palItem {
 			themeIdx, themeVal = i, i18n.T(t.Label)
 		}
 	}
-	items = append(items, palCycle(pgSetLook, ic("theme"), i18n.T("Farbschema"), themeVal, "theme farbe color aussehen",
-		func(dir int) tea.Cmd { return a.setTheme(Themes[cycleIndex(themeIdx, len(Themes), dir)].Name) }))
+	// Sichtbar ist die Auswahl mit Vorschau; Durchschalten nur über die Suche.
+	items = append(items, hide(palCycle(pgSetLook, ic("theme"), i18n.T("Farbschema"), themeVal, "theme farbe color aussehen",
+		func(dir int) tea.Cmd { return a.setTheme(Themes[cycleIndex(themeIdx, len(Themes), dir)].Name) })))
 	for _, t := range Themes {
 		t := t
 		hint := ""
@@ -707,6 +708,9 @@ func (a *App) palMenuItems() []palItem {
 		items = append(items, palItem{group: pgSetLook, menu: "settings", icon: ic("theme"), label: i18n.T("Aussehen: ") + i18n.T(t.Label), hint: hint,
 			keys: "theme farbe color", keep: true, hidden: true, run: func() tea.Cmd { return a.setTheme(t.Name) }})
 	}
+	items = append(items, palItem{group: pgSetLook, menu: "settings", icon: ic("theme"), label: i18n.T("Farbschema wählen …"),
+		hint: themeVal, keys: "theme farbe color aussehen vorschau preview schema",
+		run: func() tea.Cmd { return a.openThemes() }})
 	colHint := i18n.T("Editor")
 	if cur == CustomName {
 		colHint = "✓ " + i18n.T("aktiv")

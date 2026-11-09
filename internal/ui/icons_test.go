@@ -176,9 +176,9 @@ func TestColorEditor(t *testing.T) {
 			a.Update(m)
 		}
 	}
-	// Vorlage wechseln: Nacht → Hell, Vorschau gilt sofort.
+	// Vorlage wechseln: Nacht → nächstes Theme, Vorschau gilt sofort.
 	press("up", "right")
-	if a.colEd.c.Base != "hell" || hexOf(a.s.T.Bg) != hexOf(Hell.Bg) {
+	if a.colEd.c.Base != Themes[1].Name || hexOf(a.s.T.Bg) != hexOf(Themes[1].Bg) {
 		t.Fatalf("Vorlage %q, Bg %s", a.colEd.c.Base, hexOf(a.s.T.Bg))
 	}
 	// Esc ohne Speichern: altes Aussehen zurück.
