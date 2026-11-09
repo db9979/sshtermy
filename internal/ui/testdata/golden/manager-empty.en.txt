@@ -27,4 +27,4 @@
                                  │
                                  │
                                  │
- Ctrl+Space Palette  F1 Help  ⇧F9 explain  n new connection  i Import  f Scan  o Folder  s AI
+ Ctrl+Space Commands  F1 Help  ⇧F9 explain  n new connection  i Import  f Scan  o Folder  s AI

@@ -662,7 +662,7 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		return append(k, [2]string{"Esc", i18n.T("Suche schließen")})
 	}
 	k := a.keys
-	keys := [][2]string{{k.label(actPalette), "Palette"}}
+	keys := [][2]string{{k.label(actPalette), i18n.T("Befehle")}}
 	switch {
 	case s.state == stClosed:
 		keys = append(keys, [2]string{"⏎", i18n.T("neu verbinden")}, [2]string{"x", i18n.T("Tab schließen")})

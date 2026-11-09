@@ -58,7 +58,7 @@ func (a *App) managerKeys() [][2]string {
 	if have {
 		cur = rows[m.sel]
 	}
-	k := [][2]string{{km.label(actPalette), "Palette"}}
+	k := [][2]string{{km.label(actPalette), i18n.T("Befehle")}}
 	if len(a.sessions) > 0 {
 		k = append(k, [2]string{km.label(actManager), i18n.T("zum Terminal")})
 	}

@@ -27,4 +27,4 @@
 
 
 
- Strg+Space Palette  F1 Hilfe  F10 Manager  ⇧F9 erklären  ⏎ neu verbinden  x Tab schließen
+ Strg+Space Befehle  F1 Hilfe  F10 Manager  ⇧F9 erklären  ⏎ neu verbinden  x Tab schließen

@@ -402,7 +402,7 @@ func (w *window) keyboard() {
 		mod |= uv.ModAlt
 	}
 	// Windows: AltGr kommt als Strg+Alt an und liefert Text
-	chars := ebiten.AppendInputChars(nil)
+	chars := modChars(ebiten.AppendInputChars(nil), mod)
 
 	// Fenster-Tasten: Einfügen, Schriftgröße
 	shortcut := ctrl
@@ -463,6 +463,24 @@ func (w *window) keyboard() {
 	if len(buf) > 0 {
 		w.sendOrdered(buf)
 	}
+}
+
+// modChars wirft das Leerzeichen weg, das Windows bei Strg+Leertaste (und
+// Alt+Leertaste) zusätzlich als Text meldet. Sonst ginge statt Strg+Space
+// eine nackte Leertaste an die Oberfläche: Der Manager klappt dann den
+// Ordner auf und zu, statt die Palette zu öffnen. AltGr-Text (@, €, {)
+// bleibt erhalten.
+func modChars(chars []rune, mod uv.KeyMod) []rune {
+	if mod&(uv.ModCtrl|uv.ModAlt) == 0 {
+		return chars
+	}
+	out := chars[:0]
+	for _, r := range chars {
+		if r != ' ' {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 func keyName(k ebiten.Key) string { return ebiten.KeyName(k) }

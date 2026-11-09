@@ -29,4 +29,4 @@
                                         │
                                         │
                                         │
- Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ verbinden  n neu  e bearbeiten  d löschen  v verschieben  t Tunnel
+ Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  ⏎ verbinden  n neu  e bearbeiten  d löschen  v verschieben  t Tunnel

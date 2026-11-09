@@ -97,7 +97,7 @@ func TestSortFKeys(t *testing.T) {
 
 func TestFooterFitsNarrowWindow(t *testing.T) {
 	a := &App{keys: newKeymap(nil), s: NewStyles(Nacht)}
-	keys := [][2]string{{"Strg+Space", "Palette"}, {"F1", "Hilfe"}, {"F2", "Ziel"}, {"F3", "KI fragen"}, {"F4", "Tunnel"},
+	keys := [][2]string{{"Strg+Space", "Befehle"}, {"F1", "Hilfe"}, {"F2", "Ziel"}, {"F3", "KI fragen"}, {"F4", "Tunnel"},
 		{"F5", "Dateien"}, {"F6", "Host"}, {"F9", "Schnellbefehle"}, {"F10", "Manager"}, {"Shift+F9", "erklären"}, {"Strg+Q", "beenden"}}
 	for _, w := range []int{200, 120, 90, 60, 40, 20} {
 		a.w = w

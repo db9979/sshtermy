@@ -33,4 +33,4 @@ deploy@web-01:~$                                                          │dep
                                                                           ┃
                                                                           ┃
 
- Ctrl+Space Palette  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  F5 Files  F6 Host  F7/F8 Tabs  F9 Quick commands  F10 Manager  ⇧F9 explain
+ Ctrl+Space Commands  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  F5 Files  F6 Host  F7/F8 Tabs  F9 Quick commands  F10 Manager  ⇧F9 explain

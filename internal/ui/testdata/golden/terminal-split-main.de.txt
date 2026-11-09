@@ -33,4 +33,4 @@ deploy@web-01:~$                                                          │dep
                                                                           ┃
                                                                           ┃
 
- Strg+Space Palette  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  F7/F8 Tabs  F9 Schnellbefehle  ⇧F9 erklären
+ Strg+Space Befehle  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  F7/F8 Tabs  F9 Schnellbefehle  ⇧F9 erklären

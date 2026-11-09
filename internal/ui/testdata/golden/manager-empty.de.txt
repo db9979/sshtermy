@@ -27,4 +27,4 @@
                                  │
                                  │
                                  │
- Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  n neue Verbindung  i Import  f Scan  o Ordner  s KI
+ Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  n neue Verbindung  i Import  f Scan  o Ordner  s KI

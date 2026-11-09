@@ -27,4 +27,4 @@
 
 
 
- Ctrl+Space Palette  F1 Help  F10 Manager  ⇧F9 explain  ⏎ reconnect  x close tab  Ctrl+Q quit
+ Ctrl+Space Commands  F1 Help  F10 Manager  ⇧F9 explain  ⏎ reconnect  x close tab  Ctrl+Q quit

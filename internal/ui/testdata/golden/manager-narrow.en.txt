@@ -21,4 +21,4 @@
                                 │  not set up · y = wizard
                                 │
                                 │
- Ctrl+Space Palette  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e rename
+ Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e rename
