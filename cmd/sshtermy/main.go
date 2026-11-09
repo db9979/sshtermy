@@ -16,6 +16,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 
+	"github.com/db9979/sshtermy/assets/icon"
 	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/fullbackup"
 	"github.com/db9979/sshtermy/internal/gui"
@@ -65,7 +66,7 @@ func main() {
 			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach;
 			// „-window“: aus dem eigenen Fenster heraus, also wieder ein eigenes
 			if len(os.Args) == 4 && os.Args[3] == "-window" && gui.Available() {
-				os.Exit(gui.RunAttach(os.Args[2], gui.Options{Title: version.Name}))
+				os.Exit(gui.RunAttach(os.Args[2], gui.Options{Title: version.Name, Icon: icon.Window()}))
 			}
 			if len(os.Args) != 3 {
 				fail(fmt.Errorf("attach <ordner> [-window]"))
@@ -82,6 +83,7 @@ func main() {
 	forceTUI := flag.Bool("tui", false, i18n.T("im Terminal starten, auch ohne Terminal kein eigenes Fenster öffnen"))
 	crashTest := flag.String("crash-test", "", i18n.T("nur zum Ausprobieren des Absturzberichts: ui, cmd oder fatal"))
 	flag.Parse()
+	fixMacAppIcon() // auch bei -version: so legt install.sh das Icon in die .app
 
 	if *showVersion {
 		fmt.Println(version.Long())
@@ -139,7 +141,7 @@ func main() {
 	log.SetOutput(io.Discard)
 	if windowed {
 		app.SetWindowed()
-		_, err = gui.Run(app, gui.Options{Title: version.Name, CloseMsg: ui.WindowClosedMsg{}})
+		_, err = gui.Run(app, gui.Options{Title: version.Name, Icon: icon.Window(), CloseMsg: ui.WindowClosedMsg{}})
 	} else {
 		_, err = tea.NewProgram(app).Run()
 	}

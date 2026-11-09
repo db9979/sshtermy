@@ -1,4 +1,4 @@
-# sshTermy
+# <img src="assets/icon/sshtermy-128.png" alt="sshTermy icon" width="48" height="48" align="top"> sshTermy
 
 🇬🇧 English · 🇩🇪 [Deutsche Version](README.de.md)
 

@@ -16,7 +16,8 @@ kbd { background: #1f2430; border: 1px solid var(--line); border-bottom-width: 2
 header { position: sticky; top: 0; z-index: 10; background: rgba(13,17,23,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .bar { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 22px; }
 .logo { font-family: var(--mono); font-weight: 700; color: var(--fg); font-size: 18px; }
-.logo span { color: var(--violet); }
+.logo { display: inline-flex; align-items: center; gap: 8px; }
+.logo img { display: block; border-radius: 6px; }
 nav { display: flex; gap: 18px; flex: 1; overflow-x: auto; white-space: nowrap; }
 nav a { color: var(--dim); font-size: 15px; }
 nav a:hover { color: var(--fg); text-decoration: none; }
