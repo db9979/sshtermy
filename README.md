@@ -98,6 +98,19 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     complete plan (steps, scripts, risks, checks). Remove steps (Space), change them (`e`), have it re-planned (`?`),
     pick how it runs (Tab: step by step or agent level) and approve with ⏎. The agent then sticks to the approved plan:
     a changing command or file that is not in the plan pauses it. Ctrl+S saves the plan as a runbook.
+  - **AI companion** (Alt+K picks the level, Alt+J opens its sidebar): the AI reads along and speaks up on its own.
+    Fixed rules decide *when*, the AI only decides *what* to say (and may stay quiet). *Quiet*: a line under the terminal
+    only when a command fails, a typed line is risky before you press ⏎ (`chmod 777`, `rm -rf`, `ufw disable` …; Alt+1
+    replaces the line with the safer variant) or the same command repeats. *Chatty*: a comment on every command
+    (bundled, at most every 20 s, replaces the follow-up commands). *Coach*: also spots what you are working towards
+    (“set up HTTPS for shop.example.de”) and offers to hand the rest to plan mode (`p`) or the agent “Careful” (`g`); when
+    you close the tab it shows a recap, saves facts to the system profile and the session as a runbook.
+    Limits: requests per hour and an estimated daily token budget. Nothing is sent during password prompts, in full-screen
+    programs (vim, less, top), for private commands (leading space) or while goal/agent/plan runs; tag `begleiter-aus`
+    (`companion-off`) turns it off per connection. *Companion only with your own AI* restricts it to your own endpoints,
+    *Filters off with your own AI* skips secret removal, but only while every request goes to your own AI.
+  - **Your own AI servers** (settings › AI): register hosts such as `llm.example.com` that run outside your network
+    (reached via API); they count like local endpoints for “own AI only” and the companion's filter switch.
     Goal, agent and plan mode show their progress as a timeline: done steps with ✓ and duration plus the last output
     line, the running step with a moving bar, planned steps as ○.
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
@@ -267,6 +280,10 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Tab or → | accept ghost text |
 | | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
 | | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
+| | Alt+K / Alt+J | AI companion: level off · quiet · chatty · coach / companion sidebar |
+| Companion sidebar | ↑↓ / ⏎ / a / c | choose suggestion / insert / run (dangerous ones twice) / copy |
+| | m / l / s / ? / r | mute topic / remember fact / level / last request sent / recap |
+| | p / g / n / x | spotted intent: plan / agent takes over / do it myself / don't ask again |
 | | Ctrl+click / right-click | open URL in the browser / menu for a link, IP or host: connect (directly or via the server), ping from the server or from here, copy |
 | | Paste | multi-line shows a preview first (⏎ paste, o without the last Enter, Esc cancel); palette “Paste guard off” |
 | Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |

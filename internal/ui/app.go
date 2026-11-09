@@ -76,6 +76,8 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
+	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
 	inputLog      *os.File          // nur mit SSHTERMY_DEBUG=1
 	audit         *audit.Log        // audit.go
@@ -494,6 +496,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// Nachrichten der Sitzungen (KI, Ziel, Frage)
+	if cmd, ok := a.companionMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.sessionMsg(msg); ok {
 		return a, cmd
 	}
@@ -678,6 +683,9 @@ func (a *App) onTick() tea.Cmd {
 			cmds = append(cmds, c)
 		}
 		if c := a.goalTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
+		if c := a.companionTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
 		a.profileTick(s)

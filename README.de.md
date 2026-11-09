@@ -101,6 +101,20 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     Strg+S speichert den Plan als Runbook.
     Ziel-, Agent- und Plan-Modus zeigen den Fortschritt als Zeitleiste: erledigte Schritte mit ✓ und Dauer samt letzter
     Ausgabezeile, der laufende Schritt mit Lichtlauf, geplante Schritte als ○.
+  - **KI-Begleiter** (Alt+K wählt die Stufe, Alt+J öffnet seine Leiste): Die KI liest mit und meldet sich von selbst.
+    Feste Regeln entscheiden, *wann*; die KI nur, *was* sie sagt (sie darf auch still bleiben). *Leise*: eine Zeile unter
+    dem Terminal nur, wenn ein Befehl fehlschlägt, eine getippte Zeile vor ⏎ riskant ist (`chmod 777`, `rm -rf`,
+    `ufw disable` …; Alt+1 ersetzt die Zeile durch die sicherere Variante) oder sich derselbe Befehl wiederholt.
+    *Gesprächig*: ein Kommentar zu jedem Befehl (gebündelt, höchstens alle 20 s, ersetzt die Folgebefehle). *Coach*:
+    erkennt dazu, worauf du hinarbeitest („HTTPS für shop.example.de einrichten“), und bietet an, den Rest an den
+    Plan-Modus (`p`) oder den Agenten „Vorsichtig“ (`g`) zu geben; beim Schließen des Tabs gibt es einen Rückblick, der
+    Tatsachen ins Systemprofil übernimmt und die Sitzung als Runbook speichert. Grenzen: Anfragen pro Stunde und ein
+    geschätztes Tagesbudget in Tokens. Nichts geht hinaus bei Passwortabfragen, in Vollbild-Programmen (vim, less, top),
+    bei privaten Befehlen (Leerzeichen am Anfang) oder solange Ziel/Agent/Plan läuft; Tag `begleiter-aus` schaltet ihn
+    pro Verbindung ab. *Begleiter nur mit eigener KI* beschränkt ihn auf eigene Endpunkte, *Filter aus bei eigener KI*
+    lässt das Entfernen von Geheimnissen weg, aber nur, solange jede Anfrage an eine eigene KI geht.
+  - **Eigene KI-Server** (Einstellungen › KI): Hosts wie `llm.firma.de`, die außerhalb des eigenen Netzes stehen (per
+    API erreichbar), zählen dann wie lokale Endpunkte für „nur eigene KI“ und den Filter-Schalter des Begleiters.
   - **Runbooks**: Ziele mit den ausgeführten Befehlen speichern (Strg+S) und wiederverwenden, der Agent nimmt sie als Vorlage
   - **Endpunkt-Test und Modellauswahl** in den KI-Einstellungen (Strg+T testet, Strg+L listet die Modelle von `/v1/models`)
   - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort als Karten mit Syntaxfarben: einfügen (⏎/1…9), ausführen (a), kopieren (c), Erklärung einklappbar (z)
@@ -272,6 +286,10 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
 | | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
+| | Alt+K / Alt+J | KI-Begleiter: Stufe Aus · Leise · Gesprächig · Coach / Begleiter-Leiste |
+| Begleiter-Leiste | ↑↓ / ⏎ / a / c | Vorschlag wählen / einfügen / ausführen (gefährliche zweimal) / kopieren |
+| | m / l / s / ? / r | Thema stumm / Tatsache merken / Stufe / zuletzt gesendet / Rückblick |
+| | p / g / n / x | erkannte Absicht: Plan / Agent übernimmt / selbst machen / nicht mehr fragen |
 | | Strg+Klick / Rechtsklick | URL im Browser öffnen / Menü zu Link, IP oder Host: verbinden (direkt oder über den Server), Ping vom Server oder von hier, kopieren |
 | | Einfügen | mehrzeilig erst Vorschau (⏎ einfügen, o ohne letztes Enter, Esc abbrechen); Palette „Einfügeschutz aus“ |
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |

@@ -29,6 +29,7 @@ var failPatterns = []struct {
 	{regexp.MustCompile(`(?i)^(E|Err):\s|unable to locate package|could not resolve|temporary failure in name resolution`), "Paketverwaltung/Netz meldet Fehler"},
 	{regexp.MustCompile(`(?i)^(fatal|error|fehler|critical)(\[[^\]]*\])?:|^\s*\[?error\]?\s|\bERROR\b:|^\S+: error:`), "Fehlermeldung"},
 	{regexp.MustCompile(`(?i)Job for \S+ failed|failed to (start|connect|open|load)|\bfailed with\b|\bexit (code|status) [1-9]`), "Dienst/Befehl fehlgeschlagen"},
+	{regexp.MustCompile(`(?i)^\s*Active: failed\b|status=[1-9]\d*/FAILURE|\[(emerg|crit|alert)\]|configuration file \S+ test failed`), "Dienst/Befehl fehlgeschlagen"},
 	{regexp.MustCompile(`(?i)syntax error|unexpected token|invalid option|unrecognized option|unknown option|usage: `), "Aufruf falsch"},
 	{regexp.MustCompile(`(?i)connection refused|connection timed out|no route to host|network is unreachable`), "Verbindung fehlgeschlagen"},
 	{regexp.MustCompile(`Traceback \(most recent call last\)|Segmentation fault|core dumped|panic: `), "Programm abgestürzt"},

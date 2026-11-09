@@ -77,7 +77,7 @@ func (a *App) logConns(list []*sessionlog.Log) []domain.Connection {
 func privacyLabel(level string) string {
 	switch level {
 	case llm.PrivacyLocal:
-		return i18n.T("nur lokale KI")
+		return i18n.T("nur eigene KI")
 	case llm.PrivacyOff:
 		return i18n.T("KI aus")
 	}
@@ -109,9 +109,12 @@ func (a *App) lastRequestModal() *modal {
 	if r == nil {
 		return textModal(i18n.T("Letzte KI-Anfrage"), []string{i18n.T("Seit dem Start ging noch nichts an eine KI.")})
 	}
-	where := i18n.T("im eigenen Netz")
-	if !llm.IsLocalEndpoint("http://" + r.Host) {
-		where = i18n.T("außerhalb des eigenen Netzes")
+	where := i18n.T("außerhalb des eigenen Netzes")
+	switch {
+	case llm.IsLocalEndpoint("http://" + r.Host):
+		where = i18n.T("im eigenen Netz")
+	case llm.IsOwnEndpoint("http://"+r.Host, a.st.LLM().OwnHosts):
+		where = i18n.T("eigener KI-Server")
 	}
 	lines := []string{
 		fmt.Sprintf("%s · %s · %s (%s)", r.At.Format("15:04:05"), r.Model, r.Host, where),

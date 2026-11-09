@@ -38,3 +38,27 @@ func TestNoThinkFallback(t *testing.T) {
 		t.Fatalf("llama: %v %v", err, seen)
 	}
 }
+
+func TestOwnEndpoint(t *testing.T) {
+	own := []string{"llm.firma.de", "https://ki.example.org/v1"}
+	cases := map[string]bool{
+		"http://localhost:11434/v1":     true,
+		"https://llm.firma.de/v1":       true,
+		"https://a.llm.firma.de/v1":     true,
+		"https://ki.example.org":        true,
+		"https://evilllm.firma.de.x.io": false,
+		"https://api.openai.com/v1":     false,
+	}
+	for u, want := range cases {
+		if got := IsOwnEndpoint(u, own); got != want {
+			t.Errorf("%s: %v, erwartet %v", u, got, want)
+		}
+	}
+	c, err := NewWithPrivacy(domain.LLMConfig{BaseURL: "https://llm.firma.de/v1", Model: "m", OwnHosts: own}, PrivacyLocal)
+	if err != nil || !c.AllOwn() {
+		t.Fatalf("eigener Server bei „nur eigene KI“ abgelehnt: %v", err)
+	}
+	if _, err := NewWithPrivacy(domain.LLMConfig{BaseURL: "https://api.openai.com/v1", Model: "m", OwnHosts: own}, PrivacyLocal); err == nil {
+		t.Fatal("fremder Anbieter bei „nur eigene KI“ erlaubt")
+	}
+}

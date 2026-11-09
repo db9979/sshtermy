@@ -43,32 +43,34 @@ const (
 	actSSHKey    action = "ssh_key"
 
 	// Ordner im Manager
-	actFolderNew  action = "folder_new"
-	actRename     action = "rename"
-	actMoveTo     action = "move_to"
-	actMoveUp     action = "move_up"
-	actMoveDown   action = "move_down"
-	actTagFilter  action = "tag_filter"
-	actFoldAll    action = "fold_all"
-	actUnfoldAll  action = "unfold_all"
-	actBroadcast  action = "broadcast"
-	actScan       action = "scan"
-	actSplit      action = "split"
-	actSearch     action = "search"
-	actDetach     action = "detach"
-	actSyncInput  action = "syncinput"
-	actNewTab     action = "new_tab"
-	actCloseTab   action = "close_tab"
-	actTabList    action = "tab_list"
-	actLocal      action = "local_shell"
-	actZoom       action = "zoom"
-	actGrowLeft   action = "pane_left"
-	actGrowRight  action = "pane_right"
-	actGrowUp     action = "pane_up"
-	actGrowDown   action = "pane_down"
-	actWorkspace  action = "workspaces"
-	actFolderGrid action = "folder_grid"
-	actSchedule   action = "schedules"
+	actFolderNew    action = "folder_new"
+	actRename       action = "rename"
+	actMoveTo       action = "move_to"
+	actMoveUp       action = "move_up"
+	actMoveDown     action = "move_down"
+	actTagFilter    action = "tag_filter"
+	actFoldAll      action = "fold_all"
+	actUnfoldAll    action = "unfold_all"
+	actBroadcast    action = "broadcast"
+	actScan         action = "scan"
+	actSplit        action = "split"
+	actSearch       action = "search"
+	actDetach       action = "detach"
+	actSyncInput    action = "syncinput"
+	actNewTab       action = "new_tab"
+	actCloseTab     action = "close_tab"
+	actTabList      action = "tab_list"
+	actLocal        action = "local_shell"
+	actZoom         action = "zoom"
+	actGrowLeft     action = "pane_left"
+	actGrowRight    action = "pane_right"
+	actGrowUp       action = "pane_up"
+	actGrowDown     action = "pane_down"
+	actWorkspace    action = "workspaces"
+	actFolderGrid   action = "folder_grid"
+	actSchedule     action = "schedules"
+	actCompanion    action = "companion"
+	actCompanionBar action = "companion_bar"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -91,6 +93,8 @@ var actionDefs = []actionDef{
 	{actLocal, "Lokale Shell öffnen", "Überall", []string{"alt+l"}},
 	{actGoal, "Ziel-Modus (Agent)", "Terminal", []string{"f2"}},
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
+	{actCompanion, "KI-Begleiter: Stufe wechseln", "Terminal", []string{"alt+k"}},
+	{actCompanionBar, "Begleiter-Leiste", "Terminal", []string{"alt+j"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
 	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},

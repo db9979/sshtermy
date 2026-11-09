@@ -47,6 +47,9 @@ type Context struct {
 	Commands []string // eigene letzte Befehle, neuester zuletzt
 	Screen   string   // letzte N Zeilen des Terminals (bereits Klartext)
 	Net      bool     // Netzwerkgerät: Gefahrenregeln für Switches/Router
+	// Raw: Geheimnisse nicht entfernen. Nur für Anfragen, die sicher an eine
+	// eigene KI gehen (Begleiter, Schalter „Filter aus bei eigener KI“).
+	Raw bool
 }
 
 // kind: Regelgruppe der festen Gefahrenregeln für dieses System.
@@ -87,7 +90,10 @@ func material(c Context) string {
 		b.WriteString("Terminal, letzte Zeilen:\n")
 		b.WriteString(c.Screen)
 	}
-	body := Redact(b.String())
+	body := b.String()
+	if !c.Raw {
+		body = Redact(body)
+	}
 	// Marker im Inhalt entschärfen, damit niemand den Datenblock "schließen" kann.
 	body = strings.NewReplacer("<<<", "‹‹‹", ">>>", "›››").Replace(body)
 	return "<<<\n" + body + "\n>>>"

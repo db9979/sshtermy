@@ -42,6 +42,9 @@ func (a *App) closeTabAsk(s *session, after func()) tea.Cmd {
 	if s.state != stConnected {
 		return done()
 	}
+	if a.wantsRecap(s) { // Begleiter „Coach“: erst Rückblick, dann schließen
+		return a.openRecap(s, true, func() { done() })
+	}
 	a.modal = confirmModal(i18n.T("Tab schließen?"),
 		i18n.F("Die Verbindung zu %s wird getrennt.", s.tabName())+"\n"+i18n.T("Läuft dort noch etwas, bleibt es nur in tmux oder screen erhalten."), done)
 	return nil

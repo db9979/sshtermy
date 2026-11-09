@@ -31,6 +31,7 @@ const (
 	hcBroadcast
 	hcScan
 	hcHost
+	hcCompanion
 )
 
 type helpSection struct {
@@ -95,6 +96,8 @@ var helpSections = []helpSection{
 		{"F9 → a", "häufigen Befehl übernehmen"},
 		{"F2", "Ziel-Modus (Agent)"},
 		{"F3", "KI fragen"},
+		{"Alt+K", "KI-Begleiter: Aus/Leise/Gesprächig/Coach"},
+		{"Alt+J", "Begleiter-Leiste"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
 		{"Strg+T", "Aufteilung wählen (1…7)"},
@@ -141,6 +144,16 @@ var helpSections = []helpSection{
 		{"c", "Befehl kopieren"},
 		{"z", "Erklärung ein-/ausklappen"},
 		{"n", "neue Frage"},
+	}},
+	{hcCompanion, "◇", "KI-Begleiter", "Alt+J", true, [][2]string{
+		{"Alt+K", "Stufe: Aus/Leise/Gesprächig/Coach"},
+		{"Alt+1…4", "Vorschlag einfügen"},
+		{"⏎ / a", "einfügen / ausführen"},
+		{"m", "Thema stumm"},
+		{"l", "Tatsache merken"},
+		{"p / g", "Absicht: Plan / Agent übernimmt"},
+		{"r", "Rückblick (merken, Runbook)"},
+		{"?", "zuletzt gesendet"},
 	}},
 	{hcTunnel, "↔", "Tunnel", "F4", false, [][2]string{
 		{"⏎ / Klick", "starten / stoppen"},
@@ -312,6 +325,8 @@ func (a *App) helpContext() helpCtx {
 				return hcTunnel
 			case panelHost:
 				return hcHost
+			case panelCompanion:
+				return hcCompanion
 			}
 		}
 		return hcTerminal
