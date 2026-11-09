@@ -78,6 +78,10 @@ type connCache struct {
 // changed macht den Zwischenspeicher ungültig.
 func (s *Store) changed() { s.gen.Add(1) }
 
+// Gen: Stand der Daten; ändert sich bei jedem Speichern. Die Oberfläche
+// merkt sich darauf aufbauende Ergebnisse (Manager-Baum), solange er gleich bleibt.
+func (s *Store) Gen() uint64 { return s.gen.Load() }
+
 // Open öffnet (oder bereitet vor) den Store im Standardordner.
 func Open() (*Store, error) {
 	dir, err := Dir()

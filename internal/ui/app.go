@@ -935,7 +935,7 @@ func (a *App) fitFooter(keys [][2]string) [][2]string {
 
 func (a *App) frame(content string, keys [][2]string) string {
 	h := max(1, a.h-2)
-	box := lipgloss.NewStyle().Width(a.w).Height(h).MaxHeight(h).Render(content)
+	box := frameBlock(content, a.w, h) // stamp.go
 	return lipgloss.JoinVertical(lipgloss.Left, a.header(""), box, a.footer(keys))
 }
 

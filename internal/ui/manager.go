@@ -34,6 +34,7 @@ type managerState struct {
 	drag      *mgrDrag
 	rows      []mgrRow // Zeilen des letzten Aufrufs von mgrRows
 	tree      *domain.TreeNode
+	memo      mgrMemo   // mgrtree.go: Zeilen, solange Daten und Filter gleich sind
 	selAt     time.Time // Auswahl zuletzt gewechselt (Einblenden, Balken)
 	selSeen   int       // Auswahl im letzten Bild
 }
@@ -526,7 +527,7 @@ func (a *App) viewManager() string {
 	}})
 	lb.Reset()
 	lb.WriteString(listBox)
-	left := lipgloss.NewStyle().Width(leftW).Height(h).Render(clipLines(lb.String(), leftW))
+	left := frameBlock(clipLines(lb.String(), leftW), leftW, h) // stamp.go: ohne lipgloss-Umbruch
 	sep := lipgloss.NewStyle().Foreground(s.T.Border).Render(strings.Repeat("│\n", max(0, h-1)) + "│")
 
 	// rechte Spalte: Details
@@ -647,8 +648,8 @@ func (a *App) viewManager() string {
 	if len(rows) > 0 || a.st.SyncConfig().Enabled() {
 		rb.WriteString("\n " + s.PanelTitle.Render("Sync") + "\n  " + a.syncStatus() + "\n")
 	}
-	right := lipgloss.NewStyle().Width(rightW).Height(h).Render(clipLines(rb.String(), rightW))
-	return lipgloss.JoinHorizontal(lipgloss.Top, left, sep, right)
+	right := frameBlock(clipLines(rb.String(), rightW), rightW, h)
+	return beside(beside(left, leftW, sep), leftW+1, right) // perf.go
 }
 
 // mgrLoad: Auslastung einer verbundenen Verbindung (aus der Host-Übersicht
