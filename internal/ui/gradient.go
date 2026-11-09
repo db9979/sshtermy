@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // gradientsOn: Verläufe zeichnen?
@@ -20,25 +21,28 @@ func gradientsOn() bool { return shadowsOn() }
 // Farben nebeneinander werden zusammengefasst.
 func tintRun(s string, x0 int, st lipgloss.Style, bgAt func(x int) color.Color) string {
 	st = st.UnsetPadding()
+	// Hintergrund je Lauf als eigene Sequenz in einen einzigen Render: je Lauf
+	// ein eigenes Style.Render kostete in Kopf- und Sitzungszeile ~10 % eines Bildes.
 	var b strings.Builder
-	var run []rune
 	var runBg color.Color
-	flush := func() {
-		if len(run) > 0 {
-			b.WriteString(st.Background(runBg).Render(string(run)))
-			run = run[:0]
-		}
-	}
+	runs, start := 0, true
 	for i, ch := range []rune(s) {
 		bg := bgAt(x0 + i)
-		if !sameColor(bg, runBg) {
-			flush()
-			runBg = bg
+		if start || !sameColor(bg, runBg) {
+			runBg, start = bg, false
+			runs++
+			if bg == nil {
+				b.WriteString("\x1b[49m")
+			} else {
+				b.WriteString(ansi.Style{}.BackgroundColor(bg).String())
+			}
 		}
-		run = append(run, ch)
+		b.WriteRune(ch)
 	}
-	flush()
-	return b.String()
+	if runs <= 1 {
+		return st.Background(runBg).Render(s)
+	}
+	return st.Render(b.String())
 }
 
 // barTint: Hintergrund einer Leiste, links ein Hauch von tint, nach fade

@@ -125,6 +125,7 @@ type App struct {
 	reach        reachState     // Online-Punkt im Manager (reach.go)
 	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
 	perf         perfState      // Bildrate und Leistungsanzeige (perf.go)
+	styleGen     int            // zählt Theme-Wechsel (termView)
 	toastTicking bool
 	animTicking  bool       // Takt für Bewegung (motion.go)
 	hov          hoverState // Karte unter der Maus (motion.go)
@@ -765,8 +766,7 @@ func (a *App) viewFrame() tea.View {
 	} else if a.fx.out && a.fx.ghost != "" {
 		// gerade geschlossenes Popup blendet aus (nicht mehr klickbar)
 		if k, run := a.fadeLevel(); run {
-			c := lipgloss.NewCompositor(lipgloss.NewLayer(body), lipgloss.NewLayer(fadeANSI(a.fx.ghost, a.s.T, k)).X(a.fx.x).Y(a.fx.y).Z(1))
-			body = c.Render()
+			body = stamp(body, fadeANSI(a.fx.ghost, a.s.T, k), a.fx.x, a.fx.y, a.w)
 		}
 	}
 	if a.lock == nil {

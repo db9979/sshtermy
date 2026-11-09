@@ -41,7 +41,13 @@ type Term struct {
 	clip string
 
 	img imageFilter // Sixel, kitty, iTerm2 → Halbblöcke (images.go)
+
+	gen atomic.Uint64 // zählt jede Änderung am Bild (Gen)
 }
+
+// Gen: Stand des Bildes. Bleibt er gleich, sieht View genauso aus wie beim
+// letzten Mal; die Oberfläche spart sich dann das Neuzeichnen.
+func (t *Term) Gen() uint64 { return t.gen.Load() }
 
 // New erzeugt das Terminal. toHost bekommt alle Bytes, die zum Server sollen
 // (kodierte Tasten, Paste, Antworten auf Abfragen).
@@ -196,7 +202,9 @@ const ScrollbackLines = 5000
 func (t *Term) Write(p []byte) (int, error) {
 	q := t.img.filter(p)
 	if len(q) > 0 {
-		if _, err := t.emu.Write(q); err != nil {
+		_, err := t.emu.Write(q)
+		t.gen.Add(1)
+		if err != nil {
 			return 0, err
 		}
 	}
@@ -208,6 +216,7 @@ func (t *Term) Resize(cols, rows int) {
 		return
 	}
 	t.emu.Resize(cols, rows)
+	t.gen.Add(1)
 }
 
 func (t *Term) Size() (int, int) { return t.emu.Width(), t.emu.Height() }
@@ -266,8 +275,9 @@ func (t *Term) View(ghost string, ghostStyle func(string) string) string {
 func (t *Term) ViewHL(ghost string, ghostStyle func(string) string, hl *HL) string {
 	w, h := t.Size()
 	var raw string
+	padded := false // render liefert jede Zeile schon genau w breit
 	if hl != nil && !t.AltScreen() {
-		raw = t.render(0, nil, nil, hl)
+		raw, padded = t.render(0, nil, nil, hl), true
 	} else {
 		raw = strings.ReplaceAll(t.emu.Render(), "\r\n", "\n")
 	}
@@ -277,6 +287,7 @@ func (t *Term) ViewHL(ghost string, ghostStyle func(string) string, hl *HL) stri
 	}
 	lines = lines[:h]
 	cx, cy, _ := t.Cursor()
+	ghostRow := -1
 	if ghost != "" && cy >= 0 && cy < h && !t.AltScreen() {
 		row := lines[cy]
 		plain := ansi.Strip(row)
@@ -288,9 +299,13 @@ func (t *Term) ViewHL(ghost string, ghostStyle func(string) string, hl *HL) stri
 			room := w - cx
 			g := ansi.Truncate(ghost, room, "…")
 			lines[cy] = ansi.Truncate(row, cx, "") + strings.Repeat(" ", max(0, cx-ansi.StringWidth(ansi.Truncate(row, cx, "")))) + ghostStyle(g)
+			ghostRow = cy
 		}
 	}
 	for i, l := range lines {
+		if padded && i != ghostRow && l != "" {
+			continue
+		}
 		if lw := ansi.StringWidth(l); lw < w {
 			lines[i] = l + strings.Repeat(" ", w-lw)
 		} else if lw > w {

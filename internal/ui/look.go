@@ -24,6 +24,7 @@ func fontHint() string {
 func (a *App) setStyles(t Theme) {
 	a.s = NewStyles(t)
 	a.s.zoneKey = a.keyZone
+	a.styleGen++ // gemerkte Terminalbilder (termView) sind veraltet
 }
 
 // applyLook übernimmt Theme und Tasten aus den Einstellungen.

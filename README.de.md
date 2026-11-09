@@ -174,8 +174,10 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   bereinigt speichern“ legt eine Kopie ohne Hosts, IPs und Benutzernamen in Downloads, fertig für ein GitHub-Issue.
   Sehr langsame Bilder (über 50 ms) stehen dort auch
 - **Adaptive Bildrate**: Flutet ein Server die Ausgabe (`cat` auf eine große Datei), zeichnet sshTermy nur so oft, wie ein
-  Bild es zulässt, statt für jedes Stück; Tasten und Maus zeichnen immer sofort. Palette „Leistungsanzeige“ zeigt
-  Bilder pro Sekunde, Zeichenzeit, Ausgaberate und einen Graphen der letzten Bilder
+  Bild es zulässt, statt für jedes Stück; Tasten und Maus zeichnen immer sofort. Unveränderter Terminalinhalt wird nicht
+  für jedes Bild neu aufgebaut. Palette „Leistungsanzeige“ bewertet die Zeichenzeit in Worten (flüssig/gut/etwas
+  träge/ruckelt), zeigt je Bild einen Balken, Bilder pro Sekunde (1 im Leerlauf ist normal: gezeichnet wird nur bei
+  Änderung), die mögliche Bildrate und die Ausgaberate; im Terminal steht sie links neben der F6-Leiste
 - **Versionierung und Auto-Update** aus GitHub Releases (signiert)
 
 Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt aus dem Fernzugang-Assistenten von
