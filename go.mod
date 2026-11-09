@@ -56,3 +56,5 @@ require (
 )
 
 replace github.com/charmbracelet/x/vt => ./third_party/vt
+
+replace github.com/charmbracelet/x/ansi => ./third_party/ansi

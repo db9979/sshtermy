@@ -777,22 +777,45 @@ func (a *App) viewPanel(s *session, w, h int) string {
 	case panelCompanion:
 		a.viewCompanion(&b, s, inner)
 	}
-	style := st.Panel
-	if s.panelFocus {
-		style = st.PanelFocus
+	// Rahmen und Umbruch kosten bei jedem Bild; meist ändert sich der Inhalt
+	// nur einmal je Sekunde (Live-Werte), also das Ergebnis merken.
+	raw := b.String()
+	top := (s.panel == panelGoal && s.goal.planReview()) || (s.panel == panelHost && s.host.live.wide)
+	m := &s.panelMemo
+	var out string
+	if m.ok && m.raw == raw && m.w == w && m.h == h && m.focus == s.panelFocus && m.style == a.styleGen && m.kind == s.panel && m.top == top {
+		out = m.out
+	} else {
+		style := st.Panel
+		if s.panelFocus {
+			style = st.PanelFocus
+		}
+		content := lipgloss.NewStyle().Width(inner).Render(raw)
+		lines := strings.Split(content, "\n")
+		if len(lines) > h-2 && top {
+			lines = lines[:h-2] // Plan: Anfang mit den Schritten sichtbar halten
+		} else if len(lines) > h-2 {
+			lines = lines[len(lines)-(h-2):] // Ende sichtbar halten
+		}
+		out = style.Width(w).Height(h).MaxHeight(h).Render(strings.Join(lines, "\n"))
+		*m = panelMemo{raw: raw, w: w, h: h, focus: s.panelFocus, style: a.styleGen, kind: s.panel, top: top, out: out, ok: true}
 	}
-	content := lipgloss.NewStyle().Width(inner).Render(b.String())
-	lines := strings.Split(content, "\n")
-	if len(lines) > h-2 && ((s.panel == panelGoal && s.goal.planReview()) || (s.panel == panelHost && s.host.live.wide)) {
-		lines = lines[:h-2] // Plan: Anfang mit den Schritten sichtbar halten
-	} else if len(lines) > h-2 {
-		lines = lines[len(lines)-(h-2):] // Ende sichtbar halten
-	}
-	out := style.Width(w).Height(h).MaxHeight(h).Render(strings.Join(lines, "\n"))
 	if d := time.Since(s.panelAt); motionLevel() > 0 && d < fadeInDur*2 {
 		out = fadeANSI(out, st.T, easeOut(float64(d)/float64(fadeInDur*2))) // Panel blendet ein
 	}
 	return out
+}
+
+// panelMemo: zuletzt gezeichnete Seitenleiste einer Sitzung (viewPanel).
+type panelMemo struct {
+	raw   string
+	w, h  int
+	focus bool
+	style int
+	kind  panelKind
+	top   bool
+	out   string
+	ok    bool
 }
 
 func wrap(s string, w int) string { return lipgloss.NewStyle().Width(w).Render(s) }

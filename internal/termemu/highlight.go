@@ -3,6 +3,8 @@ package termemu
 import (
 	"image/color"
 
+	uv "github.com/charmbracelet/ultraviolet"
+
 	"github.com/db9979/sshtermy/internal/highlight"
 )
 
@@ -18,7 +20,18 @@ func (hl *HL) columns(t *Term, sb, w, l int) []color.Color {
 	if hl == nil || hl.Set == nil {
 		return nil
 	}
-	text, cols := t.lineText(sb, w, l)
+	line := make(uv.Line, w)
+	t.lineCells(sb, l, line)
+	return hl.columnsOf(line)
+}
+
+// columnsOf: wie columns, für eine schon geholte Zeile.
+func (hl *HL) columnsOf(line uv.Line) []color.Color {
+	if hl == nil || hl.Set == nil {
+		return nil
+	}
+	w := len(line)
+	text, cols := cellsText(line)
 	spans := hl.Set.Spans(text)
 	if len(spans) == 0 {
 		return nil
@@ -35,7 +48,7 @@ func (hl *HL) columns(t *Term, sb, w, l int) []color.Color {
 			out[x] = c
 		}
 		// breites letztes Zeichen: auch die zweite Zelle
-		if to+1 < w && cellWidthAt(sb, t, l, to) > 1 {
+		if to+1 < w && line[to].Width > 1 {
 			out[to+1] = c
 		}
 	}
