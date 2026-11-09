@@ -102,7 +102,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>Agent-Modus: das Ziel selbstständig erreichen</h3>
-      <p>Im Ziel-Modus (<kbd>F2</kbd>) schaltet <kbd>Tab</kbd> auf den Agenten. Er führt Befehle aus, liest die Ausgabe, legt Skripte per SFTP an und startet sie, zuerst als Probelauf. Du wählst die Stufe: <em>Vorsichtig</em> (nur Lesendes allein), <em>Normal</em> oder <em>Voll</em> (auch sudo). Gefährliche Befehle warten immer auf dich, <kbd>Esc</kbd> hält an, <kbd>?</kbd> gibt eine Anweisung. Mit <em>Erst planen</em> sieht er sich nur lesend um, schreibt einen vollständigen Plan, und du streichst oder änderst Schritte, bevor du mit <kbd>⏎</kbd> freigibst.</p>
+      <p>Im Ziel-Modus (<kbd>F2</kbd>) schaltet <kbd>Tab</kbd> auf den Agenten. Er führt Befehle aus, liest die Ausgabe, legt Skripte per SFTP an und startet sie, zuerst als Probelauf. Du wählst die Stufe: <em>Vorsichtig</em> (nur Lesendes allein), <em>Normal</em> oder <em>Voll</em> (auch sudo). Gefährliche Befehle warten immer auf dich, <kbd>Esc</kbd> hält an, <kbd>?</kbd> gibt eine Anweisung. Am Ende steht die vollständige Zusammenfassung: blättern, mit <kbd>c</kbd> kopieren oder mit <kbd>l</kbd> ganz lesen. Mit <em>Erst planen</em> sieht er sich nur lesend um, schreibt einen vollständigen Plan, und du streichst oder änderst Schritte, bevor du mit <kbd>⏎</kbd> freigibst.</p>
     </div>
     <figure><img src="../bilder/16-agent.png" alt="Agent-Modus komprimiert alte Logs: rechts der Plan, ein Skript lief als Probelauf" loading="lazy"></figure>
   </div>
@@ -198,6 +198,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd></td><td>Folgebefehl einfügen</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>Nach einem Fehler: Ursache und Fix</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Ziel-Modus (Agent)</td></tr>
+    <tr><td><kbd>F2</kbd> → <kbd>c</kbd> / <kbd>l</kbd></td><td>Agent fertig: Ergebnis kopieren / ganz lesen; <kbd>Bild↑</kbd>/<kbd>Bild↓</kbd> oder Mausrad blättern im Panel</td></tr>
     <tr><td><kbd>F3</kbd></td><td>KI fragen, mit Terminal-Kontext; <kbd>Esc</kbd> bricht die Antwort ab, <kbd>n</kbd> neue Frage, <kbd>f</kbd> Folgefrage</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>K</kbd> / <kbd>Alt</kbd>+<kbd>J</kbd></td><td>KI-Begleiter: Stufe (aus, leise, gesprächig, Coach) / Begleiter-Leiste</td></tr>
     <tr><td><kbd>F4</kbd> / <kbd>F5</kbd> / <kbd>F6</kbd></td><td>Tunnel / Dateien (SFTP) / Host-Übersicht</td></tr>

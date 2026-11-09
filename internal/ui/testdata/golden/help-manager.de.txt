@@ -17,15 +17,15 @@
   │   e           bearbeiten               ?           Agent anweisen                                               │
   │   d           löschen                  v           Skript des Agenten an…  » Broadcast m                        │
   │   /           suchen (auch #tag)       r           Skripte des Agenten l…   Space / g / a Host / Ordner / alle  │
-  │   o           neuer Ordner (A / B v…   Leertaste   Plan: Schritt streich…   Tab         Hosts · Quelle · Befe…  │
-  │   r           Ordner bearbeiten        ?           Plan: neu planen lass…   ⇧⏎          weiterer Schritt        │
-  │   v           in Ordner verschieben                                         Strg+S      prüfen, dann ⏎          │
-  │   Shift+↑     nach oben schieben (↓…  ◆ KI fragen F3                        ← / →       Host-Spalte wählen      │
-  │   ← / →       Ordner zu-/aufklappen    ⏎           Frage senden             ↑ ↓ Bild↑↓  Ausgabe blättern        │
-  │   - / +       alle Ordner zu/auf       ⇧⏎ / Strg+J neue Zeile               z / c       groß / kopieren         │
-  │   #           nach Tag filtern         1…9         Befehl einfügen          r / e / x   nochmal / ändern / St…  │
-  │   t           Tunnel anlegen           ↑ ↓         Befehlskarte wählen      {{name}}    Variable, wird abgefr…  │
-  │   c           SSH-Schlüssel erzeuge…   a           Befehl ausführen (rot…   {{host}}    je Host eingesetzt      │
+  │   o           neuer Ordner (A / B v…   c / l       Ergebnis kopieren / g…   Tab         Hosts · Quelle · Befe…  │
+  │   r           Ordner bearbeiten        Bild↑ Bild↓ im Panel blättern (au…   ⇧⏎          weiterer Schritt        │
+  │   v           in Ordner verschieben    Leertaste   Plan: Schritt streich…   Strg+S      prüfen, dann ⏎          │
+  │   Shift+↑     nach oben schieben (↓…   ?           Plan: neu planen lass…   ← / →       Host-Spalte wählen      │
+  │   ← / →       Ordner zu-/aufklappen                                         ↑ ↓ Bild↑↓  Ausgabe blättern        │
+  │   - / +       alle Ordner zu/auf      ◆ KI fragen F3                        z / c       groß / kopieren         │
+  │   #           nach Tag filtern         ⏎           Frage senden             r / e / x   nochmal / ändern / St…  │
+  │   t           Tunnel anlegen           ⇧⏎ / Strg+J neue Zeile               {{name}}    Variable, wird abgefr…  │
+  │   c           SSH-Schlüssel erzeuge…   1…9         Befehl einfügen          {{host}}    je Host eingesetzt      │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

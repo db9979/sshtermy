@@ -171,7 +171,7 @@ func (a *App) viewAgentDone(b *strings.Builder, s *session, w int) {
 		}
 		b.WriteString("\n")
 	}
-	keys := [][2]string{{"s", i18n.T("als Runbook speichern")}}
+	keys := [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"s", i18n.T("als Runbook speichern")}}
 	if len(g.files) > 0 && !g.cleaned {
 		keys = append(keys, [2]string{"r", i18n.T("Skripte auf dem Host löschen")}, [2]string{"v", i18n.T("Skript ansehen")})
 	}
@@ -186,7 +186,7 @@ func (a *App) agentPanelKeys(s *session) [][2]string {
 	case !g.auto:
 		return nil
 	case !g.active && g.done:
-		k := [][2]string{{"s", "Runbook"}}
+		k := [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"s", "Runbook"}}
 		if len(g.files) > 0 && !g.cleaned {
 			k = append(k, [2]string{"r", i18n.T("aufräumen")}, [2]string{"v", i18n.T("Skript ansehen")})
 		}

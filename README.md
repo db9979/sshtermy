@@ -93,7 +93,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     Levels: *Careful* (only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`),
     *Full* (sudo too). Dangerous commands, including every line of a script, always wait for you; on production hosts
     and network devices every change asks. Limits: 25 steps, 15 minutes, 3 failures in a row. Esc or typing in the
-    terminal pauses it, `?` gives it an instruction. At the end: summary, changed files, `s` saves the run as a runbook
+    terminal pauses it, `?` gives it an instruction. At the end: the full summary (scroll with PgUp/PgDn or the mouse wheel,
+    `c` copies it, `l` opens it in full), changed files, `s` saves the run as a runbook
     including its scripts, `r` deletes the scripts on the host. Every step is marked "Agent" in the session log.
   - **Plan mode** (F2, Tab until "Plan first"): the AI first looks around with read-only commands only, then writes a
     complete plan (steps, scripts, risks, checks). Remove steps (Space), change them (`e`), have it re-planned (`?`),
@@ -293,7 +294,8 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |
 | | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |
 | | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
-| Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host |
+| Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host, `c` copy the result, `l` read it in full |
+| Goal/agent/plan panel, Ask AI | PgUp / PgDn, mouse wheel | scroll long content (summary, plan, answer) |
 | Plan mode | ↑↓ / Space / e / v / ? | choose step / remove or restore / edit / view script / re-plan |
 | | Tab / ⏎ / x | how it runs (step by step or agent level) / approve and run / discard; Ctrl+S saves the plan as a runbook |
 | AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |

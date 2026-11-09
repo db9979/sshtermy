@@ -109,7 +109,7 @@ export const de = {
       ['?', 'Agent eine Anweisung geben'],
       ['v', 'Skript des Agenten ansehen'],
       ['⏎ ⏎', 'gefährlichen Schritt freigeben', 'warn'],
-      ['s / r', '(am Ende) als Runbook speichern / Skripte löschen'],
+      ['s r c l', 'Ende: Runbook · Skripte weg · kopieren · lesen'],
     ], note: '<b>Vorsichtig</b>: nur Lesendes läuft allein · <b>Normal</b>: alles außer Gefahr, sudo, python -c · <b>Voll</b>: auch sudo. Gefahr wartet immer. Grenzen: 25 Schritte, 15 min, 3 Fehler in Folge.' },
     { t: 'Plan-Modus', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
       ['↑ / ↓', 'Schritt wählen'],
@@ -303,7 +303,8 @@ export const en = {
       ['v', "view the agent's script"],
       ['⏎ ⏎', 'allow a dangerous step', 'warn'],
       ['s / r', '(at the end) save as runbook / delete scripts'],
-    ], note: '<b>Careful</b>: only read-only runs on its own · <b>Normal</b>: all but danger, sudo, python -c · <b>Full</b>: sudo too. Danger always waits. Limits: 25 steps, 15 min, 3 failures in a row.' },
+      ['c / l', 'copy result / read all'],
+    ], note: '<b>Careful</b>: only read-only runs on its own · <b>Normal</b>: all but danger, sudo, python -c · <b>Full</b>: sudo too. Danger always waits. Limits: 25 steps, 15 min, 3 failures in a row. PgUp/PgDn/wheel scroll the panel.' },
     { t: 'Plan mode', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
       ['↑ / ↓', 'choose a step'],
       ['Space', 'remove / restore a step'],
