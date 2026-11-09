@@ -131,6 +131,22 @@ func TestRealPowerShell(t *testing.T) {
 	slow("Wert")
 
 	// Tab-Ergänzung über TabExpansion2
+	idle := func() {
+		t.Helper()
+		dl := time.Now().Add(30 * time.Second)
+		for time.Now().Before(dl) {
+			s.mu.Lock()
+			r := s.ready
+			s.mu.Unlock()
+			if r {
+				return
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		t.Fatal("kein Prompt")
+	}
+	slow("a       1")
+	idle() // Tab gilt nur am Prompt
 	h.typ("Get-ChildIte\t")
 	slow("Get-ChildItem")
 	h.typ("\x15")
