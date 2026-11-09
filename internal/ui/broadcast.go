@@ -617,7 +617,7 @@ func (a *App) viewBcSetup() string {
 		}
 		i, id := i, c.ID
 		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
-			b.cur, b.picked[id] = i, !b.picked[id]
+			b.cur, b.picked[id], b.err = i, !b.picked[id], ""
 			return b.setFocus(bcFocusHosts)
 		})
 		o.WriteString(line + "\n")

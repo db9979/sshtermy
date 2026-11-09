@@ -886,6 +886,22 @@ func (a *App) openSettings() tea.Cmd {
 	return f.setFocus(0)
 }
 
+// formChanged zieht abhängige Felder nach, wenn sich eine Auswahl geändert
+// hat (Verbindungsart → Port, KI-Anbieter → Adresse/Modell). Läuft nach
+// jeder Taste und nach jedem Mausklick, damit Klick und Pfeiltaste
+// dasselbe bewirken.
+func (a *App) formChanged() {
+	if a.form == nil {
+		return
+	}
+	switch a.scr {
+	case scrSettings:
+		a.applyProviderDefaults()
+	case scrConnForm:
+		syncProtoPort(a.form)
+	}
+}
+
 func orDefault(s, d string) string {
 	if s == "" {
 		return d
@@ -915,12 +931,7 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		return nil
 	}
 	submit, cmd := a.form.update(msg)
-	if a.scr == scrSettings && a.form != nil {
-		a.applyProviderDefaults()
-	}
-	if a.scr == scrConnForm {
-		syncProtoPort(a.form)
-	}
+	a.formChanged()
 	if !submit {
 		return cmd
 	}
