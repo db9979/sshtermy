@@ -2,6 +2,7 @@ package store
 
 import (
 	"testing"
+	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
 )
@@ -81,17 +82,18 @@ func TestLocalSettingsKeepSyncTimestamp(t *testing.T) {
 	if err := s.Init([]byte("correct horse"), false); err != nil {
 		t.Fatal(err)
 	}
-	_ = s.UpdateSettings(func(x *domain.Settings) { x.Theme = "hell" })
-	d, _, _ := s.Snapshot()
-	at := d.SettingsUpdatedAt
+	// Zeitstempel in die Vergangenheit legen: Windows-Uhren sind zu grob,
+	// um zwei Änderungen direkt hintereinander zu unterscheiden.
+	at := time.Now().UTC().Add(-time.Hour)
+	_ = s.Update(func(d *domain.Data) { d.SettingsUpdatedAt = at })
 	_ = s.UpdateSettings(func(x *domain.Settings) {
 		x.LastLayout, x.LastVersion = &domain.Workspace{Layout: "cols"}, "9.9.9"
 	})
-	if d, _, _ = s.Snapshot(); !d.SettingsUpdatedAt.Equal(at) {
+	if d, _, _ := s.Snapshot(); !d.SettingsUpdatedAt.Equal(at) {
 		t.Fatal("lokale Einstellung hat den Sync-Zeitstempel verändert")
 	}
 	_ = s.UpdateSettings(func(x *domain.Settings) { x.Theme = "matrix" })
-	if d, _, _ = s.Snapshot(); d.SettingsUpdatedAt.Equal(at) {
+	if d, _, _ := s.Snapshot(); !d.SettingsUpdatedAt.After(at) {
 		t.Fatal("gemeinsame Einstellung ohne neuen Zeitstempel")
 	}
 }
