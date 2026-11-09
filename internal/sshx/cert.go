@@ -26,7 +26,9 @@ var ErrCertExpired = errors.New("certificate not valid")
 // certCandidates: wo das Zertifikat liegen könnte.
 func certCandidates(c domain.Connection, home string) []string {
 	if p := strings.TrimSpace(c.CertPath); p != "" {
-		return []string{domain.ExpandKeyPath(p, home)}
+		// wie beim Key: auch derselbe Pfad unter dem eigenen Home und
+		// ~/.ssh/<Name>, falls die Verbindung von einem anderen Rechner kommt
+		return domain.KeyPathCandidates(p, home)
 	}
 	if c.KeyPath == "" {
 		return nil
@@ -44,11 +46,12 @@ func certCandidates(c domain.Connection, home string) []string {
 func withCert(c domain.Connection, signer ssh.Signer, now time.Time) (ssh.Signer, error) {
 	home, _ := os.UserHomeDir()
 	explicit := strings.TrimSpace(c.CertPath) != ""
+	var firstErr error
 	for _, p := range certCandidates(c, home) {
 		b, err := os.ReadFile(p)
 		if err != nil {
-			if explicit {
-				return nil, fmt.Errorf(i18n.T("Zertifikat: %w"), err)
+			if firstErr == nil {
+				firstErr = err
 			}
 			continue
 		}
@@ -67,6 +70,9 @@ func withCert(c domain.Connection, signer ssh.Signer, now time.Time) (ssh.Signer
 			return nil, fmt.Errorf(i18n.T("Zertifikat passt nicht zum Key: %w"), err)
 		}
 		return cs, nil
+	}
+	if explicit && firstErr != nil {
+		return nil, fmt.Errorf(i18n.T("Zertifikat: %w"), firstErr)
 	}
 	return signer, nil
 }
