@@ -63,6 +63,46 @@ func IsLocalEndpoint(baseURL string) bool {
 	return false
 }
 
+// IsOwnEndpoint: lokal (IsLocalEndpoint) oder vom Nutzer als eigener
+// KI-Server eingetragen (LLMConfig.OwnHosts, auch extern).
+func IsOwnEndpoint(baseURL string, own []string) bool {
+	if IsLocalEndpoint(baseURL) {
+		return true
+	}
+	u, err := url.Parse(strings.TrimSpace(baseURL))
+	if err != nil {
+		return false
+	}
+	h := strings.ToLower(strings.TrimSuffix(u.Hostname(), "."))
+	if h == "" {
+		return false
+	}
+	for _, o := range own {
+		o = strings.ToLower(strings.TrimSpace(o))
+		if p, err := url.Parse(o); err == nil && p.Hostname() != "" {
+			o = p.Hostname() // ganze URL eingetragen
+		}
+		o = strings.TrimSuffix(strings.TrimPrefix(o, "*."), ".")
+		if o != "" && (h == o || strings.HasSuffix(h, "."+o)) {
+			return true
+		}
+	}
+	return false
+}
+
+// AllOwn: geht jede Anfrage dieses Clients an eine eigene KI?
+func (c *Client) AllOwn() bool {
+	if c == nil || len(c.conns) == 0 {
+		return false
+	}
+	for _, k := range c.conns {
+		if !IsOwnEndpoint(baseURL(k.cfg), k.cfg.OwnHosts) {
+			return false
+		}
+	}
+	return true
+}
+
 // NewWithPrivacy wie New, behält aber nur Endpunkte, die die Stufe erlaubt.
 func NewWithPrivacy(cfg domain.LLMConfig, level string) (*Client, error) {
 	if level == PrivacyOff {
@@ -74,12 +114,12 @@ func NewWithPrivacy(cfg domain.LLMConfig, level string) (*Client, error) {
 	}
 	var keep []*conn
 	for _, k := range c.conns {
-		if IsLocalEndpoint(baseURL(k.cfg)) {
+		if IsOwnEndpoint(baseURL(k.cfg), k.cfg.OwnHosts) {
 			keep = append(keep, k)
 		}
 	}
 	if len(keep) == 0 {
-		return nil, errors.New(i18n.T("Nur lokale KI erlaubt, aber kein Endpunkt im eigenen Netz eingerichtet (z. B. Ollama auf localhost)"))
+		return nil, errors.New(i18n.T("Nur eigene KI erlaubt, aber kein Endpunkt im eigenen Netz oder als eigener KI-Server eingetragen (z. B. Ollama auf localhost)"))
 	}
 	c.conns = keep
 	return c, nil

@@ -87,3 +87,19 @@ func TestInlineCode(t *testing.T) {
 		}
 	}
 }
+
+func TestRisky(t *testing.T) {
+	for _, c := range []string{"sudo chmod -R 777 /var/www/shop", "chmod o+w x", "sudo ufw disable", "curl -k https://x", "git push --force origin main"} {
+		if len(Risky(c, "unix")) == 0 {
+			t.Errorf("nicht erkannt: %s", c)
+		}
+	}
+	for _, c := range []string{"chmod 755 x", "ls -la", "git push origin main"} {
+		if len(Risky(c, "unix")) != 0 {
+			t.Errorf("fälschlich riskant: %s", c)
+		}
+	}
+	if len(Check("sudo chmod -R 777 /var/www/shop", "unix")) != 0 {
+		t.Error("Risky darf Check nicht verändern")
+	}
+}

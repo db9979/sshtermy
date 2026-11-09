@@ -156,8 +156,8 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		return nil, true
 	case followMsg:
-		if s := a.byID(m.sid); s != nil && m.seq == s.chipSeq {
-			s.chips, s.chipArmed = m.chips, -1
+		if s := a.byID(m.sid); s != nil && m.seq == s.chipSeq && !s.compChips {
+			s.chips, s.chipArmed, s.chipReplace = m.chips, -1, false
 			for i, c := range s.chips { // was der Admin hier korrigiert hat, gleich richtig
 				if fix, ok := s.learnedFix(c.Command); ok {
 					fresh := agent.ParseStepCommand(fix, a.safetyKind(s))
@@ -416,6 +416,10 @@ func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 	case panelHost:
 		if isKey {
 			return a.hostKey(s, k)
+		}
+	case panelCompanion:
+		if isKey {
+			return a.companionKey(s, k.String())
 		}
 	}
 	return nil
@@ -741,6 +745,8 @@ func (a *App) panelKeys(s *session) [][2]string {
 		return append(k, [2]string{"n", i18n.T("neu")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")}, [2]string{"Esc", i18n.T("zurück")})
 	case panelHost:
 		return a.hostPanelKeys(s)
+	case panelCompanion:
+		return a.companionPanelKeys(s)
 	}
 	return nil
 }
@@ -763,6 +769,8 @@ func (a *App) viewPanel(s *session, w, h int) string {
 		a.viewTunnels(&b, s, inner)
 	case panelHost:
 		a.viewHost(&b, s, inner)
+	case panelCompanion:
+		a.viewCompanion(&b, s, inner)
 	}
 	style := st.Panel
 	if s.panelFocus {

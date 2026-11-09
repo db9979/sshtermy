@@ -64,6 +64,7 @@ type modal struct {
 	hints    [][2]string // Tastenhinweise (setzt modalView aus modalKeys)
 
 	crash *crash.Report // nur Absturzbericht
+	recap bool          // Menü ist der Rückblick des Begleiters (companion.go)
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {

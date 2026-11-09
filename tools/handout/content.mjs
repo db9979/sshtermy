@@ -96,13 +96,13 @@ export const de = {
     { t: 'Ziel-Modus', ic: '◎', key: 'F2', ai: true, rows: [
       ['⏎', 'Ziel starten / Schritt ausführen'],
       ['i', 'nur einfügen (Dry-Run)'],
-      ['e / s / r', 'bearbeiten / überspringen / neu vorschlagen'],
+      ['e / s / r', 'ändern / überspringen / neu vorschlagen'],
       ['x', 'Ziel beenden'],
       ['↑ / ↓', 'Runbook wählen'],
       ['Strg+S', 'als Runbook speichern'],
       ['Strg+D', 'Runbook löschen'],
       ['⇧⏎ / Strg+J', 'neue Zeile im Ziel'],
-      ['Tab', 'Modus: Schritt für Schritt → Agent → Erst planen'],
+      ['Tab', 'Modus: Schritt → Agent → Erst planen'],
     ]},
     { t: 'Agent-Modus', ic: '◆', key: 'F2 → Tab', ai: true, rows: [
       ['Esc', 'anhalten (auch: ins Terminal tippen)'],
@@ -126,6 +126,11 @@ export const de = {
       ['1 … 9', 'Befehl einfügen'],
       ['a / c', 'ausführen / kopieren'],
       ['z / n', 'Erklärung auf/zu / neue Frage'],
+    ]},
+    { t: 'KI-Begleiter', ic: '◇', key: 'Alt+J', ai: true, rows: [
+      ['Alt+K', 'Stufe: Aus · Leise · Gesprächig · Coach'],
+      ['m / l / r', 'stumm / merken / Rückblick'],
+      ['p / g', 'Absicht: Plan / Agent übernimmt'],
     ]},
     { t: 'Befehlspalette', ic: '❯', key: 'Strg+Space', rows: [
       ['_tippen_ ⏎ / Tab', 'filtern · als Ziel starten / KI fragen'],
@@ -183,7 +188,7 @@ export const de = {
     ]},
     { t: 'Start & Tipps', ic: '$', rows: [
       ['backup · mcp', 'alles sichern · KI-Clients'],
-      ['--no-intro · --debug', 'ohne Startanimation · Debug-Protokoll'],
+      ['--no-intro', 'ohne Startanimation (--debug: Protokoll)'],
       ['-window · -tui', 'eigenes Fenster · immer im Terminal'],
       ['tsz / trz', 'Datei vom / zum Server (trzsz)'],
       ['_Palette_', '„teilen“: Tab live zeigen'],
@@ -313,6 +318,11 @@ export const en = {
       ['1 … 9', 'insert command'],
       ['a / c', 'run / copy'],
       ['z / n', 'explanation on/off / new question'],
+    ]},
+    { t: 'AI companion', ic: '◇', key: 'Alt+J', ai: true, rows: [
+      ['Alt+K', 'level: off · quiet · chatty · coach'],
+      ['m / l / r', 'mute topic / remember / recap'],
+      ['p / g', 'intent: plan / agent takes over'],
     ]},
     { t: 'Command palette', ic: '❯', key: 'Ctrl+Space', rows: [
       ['_type_ ⏎ / Tab', 'filter · start as goal / ask AI'],

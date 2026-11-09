@@ -108,6 +108,13 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   </div>
   <div class="demo">
     <div class="text">
+      <h3>AI companion: reads along, speaks up</h3>
+      <p><kbd>Alt</kbd>+<kbd>K</kbd> picks the level. <em>Quiet</em> only speaks up when a command fails, a typed line is risky before you press Enter (<kbd>Alt</kbd>+<kbd>1</kbd> swaps in the safer variant) or a command repeats. <em>Chatty</em> comments on every command in the sidebar (<kbd>Alt</kbd>+<kbd>J</kbd>). <em>Coach</em> spots what you are working towards and hands the rest to plan mode or the agent, and recaps the session when you close the tab. Limits per hour and per day, nothing sent at password prompts, and with your own AI the filters can be turned off.</p>
+    </div>
+    <figure><img src="bilder/20-begleiter.png" alt="The companion spotted the intent “set up HTTPS for shop.example.de” and offers the missing steps, plan or agent" loading="lazy"></figure>
+  </div>
+  <div class="demo">
+    <div class="text">
       <h3>Split view, tabs and workspaces</h3>
       <p><kbd>Ctrl</kbd>+<kbd>T</kbd> shows up to six sessions in seven layouts. Drag dividers with the mouse, zoom a pane with <kbd>Alt</kbd>+<kbd>Z</kbd>, swap panes by dragging their title, and <kbd>Alt</kbd>+<kbd>I</kbd> types into all of them at once. <kbd>w</kbd> in the manager saves the whole arrangement as a workspace.</p>
     </div>
@@ -140,6 +147,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>AI log diagnosis</h3><p>A selection or the last 400 lines (journalctl, <code>show logging</code>): situation, what stands out with timestamps, cause, commands to check.</p></div>
     <div class="card"><h3>Sync</h3><p>End-to-end encrypted via OneDrive, Dropbox, iCloud, Syncthing or WebDAV (Synology, Nextcloud).</p></div>
     <div class="card"><h3>System profile</h3><p>Knows Linux distributions, macOS, Windows and network OS dialects (Aruba, Cisco, Juniper, MikroTik, FortiGate, UniFi …), so the AI suggests matching commands.</p></div>
+    <div class="card"><h3>AI companion</h3><p>Reads along and comments on its own: quiet (errors, risky lines before Enter, repeats), chatty (every command) or coach (spots your goal, recap with runbook). Your own AI servers, also external, can be registered.</p></div>
     <div class="card"><h3>Agent &amp; plan mode</h3><p>The AI works towards a goal on its own, writes and runs scripts; three levels, dangerous steps always wait for you. Plan first: review and approve the whole plan.</p></div>
     <div class="card"><h3>Split view &amp; tabs</h3><p>Seven layouts with up to six sessions, zoom, swap, type into all; tab bar with <code>+</code>, <code>×</code>, right-click menu and tab list (<kbd>Alt</kbd>+<kbd>T</kbd>).</p></div>
     <div class="card"><h3>Telnet &amp; serial</h3><p>Telnet and USB console cables (e.g. Aruba switches), cable picked automatically, login typed for you.</p></div>
@@ -187,6 +195,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F1</kbd></td><td>Help</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Goal mode (agent)</td></tr>
     <tr><td><kbd>F3</kbd></td><td>Ask AI with terminal context</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>K</kbd> / <kbd>Alt</kbd>+<kbd>J</kbd></td><td>AI companion: level (off, quiet, chatty, coach) / companion sidebar</td></tr>
     <tr><td><kbd>F4</kbd> / <kbd>F5</kbd> / <kbd>F6</kbd></td><td>Tunnels / files (SFTP) / host overview</td></tr>
     <tr><td><kbd>F7</kbd> / <kbd>F8</kbd></td><td>Previous / next tab</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>T</kbd> / <kbd>Alt</kbd>+<kbd>N</kbd> / <kbd>Alt</kbd>+<kbd>W</kbd></td><td>Tab list / new tab / close tab</td></tr>

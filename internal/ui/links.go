@@ -423,8 +423,16 @@ func (a *App) menuView(m *modal) string {
 	for _, it := range m.items {
 		w = max(w, lipgloss.Width(it.label)+lipgloss.Width(it.hint)+6)
 	}
+	if m.body != "" {
+		for _, l := range strings.Split(m.body, "\n") {
+			w = max(w, lipgloss.Width(l)+2)
+		}
+	}
 	w = min(w, max(20, a.w-6))
 	var b strings.Builder
+	if m.body != "" {
+		b.WriteString(lipgloss.NewStyle().Width(w).Render(m.body) + "\n\n")
+	}
 	for i, it := range m.items {
 		label := fmt.Sprintf("%d %s", i+1, it.label)
 		gap := max(1, w-lipgloss.Width(label)-lipgloss.Width(it.hint))

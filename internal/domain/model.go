@@ -431,6 +431,11 @@ type LLMConfig struct {
 	// "aus" keine KI. Verbindungen können per Tag strenger sein
 	// (ki-lokal / ki-aus), nie lockerer.
 	Privacy string `json:"privacy,omitempty"`
+	// OwnHosts: eigene KI-Server, die auch außerhalb des eigenen Netzes
+	// stehen (z. B. https://llm.firma.de per API). Sie zählen wie lokale
+	// Endpunkte („nur eigene KI“, Filter-Schalter des Begleiters). Ein
+	// Eintrag gilt für den Namen selbst und alle Unternamen.
+	OwnHosts []string `json:"own_hosts,omitempty"`
 
 	// Fallbacks: der Reihe nach, wenn der Endpunkt oben nicht antwortet.
 	Fallbacks []LLMBackup `json:"fallbacks,omitempty"`
@@ -496,6 +501,9 @@ type Settings struct {
 	// Monitor: Warnschwellen der Host-Übersicht (F6) und wie oft Server
 	// automatisch nachgefragt werden.
 	Monitor MonitorConfig `json:"monitor,omitempty"`
+	// Companion: der KI-Begleiter liest im Terminal mit und kommentiert
+	// (Stufe, Grenzen, Datenschutz). Geht mit dem Sync.
+	Companion CompanionConfig `json:"companion,omitempty"`
 
 	// Colors: eigene Farben (Theme "eigene"), wird mit dem Sync übertragen.
 	Colors *CustomColors `json:"colors,omitempty"`
@@ -622,6 +630,46 @@ type MonitorConfig struct {
 	RAM      int `json:"ram,omitempty"`
 	Disk     int `json:"disk,omitempty"`
 	EveryMin int `json:"every_min,omitempty"`
+}
+
+// CompanionConfig: KI-Begleiter. Level 0 = aus, 1 = leise (nur bei Fehler,
+// Gefahr, Wiederholung), 2 = gesprächig (nach jedem Befehl), 3 = Coach
+// (dazu Absicht erkennen und Rückblick beim Schließen).
+type CompanionConfig struct {
+	Level     int  `json:"level,omitempty"`
+	PerHour   int  `json:"per_hour,omitempty"`   // höchstens so viele KI-Anfragen pro Stunde (0 = Standard)
+	DayKTok   int  `json:"day_ktok,omitempty"`   // Tagesbudget in 1000 Tokens (geschätzt, 0 = Standard)
+	OnlyLocal bool `json:"only_local,omitempty"` // nur KI im eigenen Netz
+	// Raw: Filter aus (Geheimnisse nicht entfernen, Bildschirm immer
+	// mitschicken). Wirkt nur zusammen mit OnlyLocal, also nur, wenn die
+	// Anfrage sicher an eine eigene KI geht.
+	Raw     bool `json:"raw,omitempty"`
+	NoRecap bool `json:"no_recap,omitempty"` // Coach: kein Rückblick beim Schließen
+}
+
+// Standardwerte des Begleiters.
+const (
+	CompanionOff            = 0
+	CompanionQuiet          = 1
+	CompanionChatty         = 2
+	CompanionCoach          = 3
+	DefaultCompanionPerHour = 30
+	DefaultCompanionDayKTok = 150
+)
+
+// Hour/Day: Grenzen mit Standardwerten.
+func (c CompanionConfig) Hour() int {
+	if c.PerHour <= 0 {
+		return DefaultCompanionPerHour
+	}
+	return c.PerHour
+}
+
+func (c CompanionConfig) DayTokens() int {
+	if c.DayKTok <= 0 {
+		return DefaultCompanionDayKTok * 1000
+	}
+	return c.DayKTok * 1000
 }
 
 // Standardwerte der Überwachung.

@@ -72,6 +72,8 @@ func (a *App) panelRail(s *session, h int) string {
 		icon, act = "↔", actTunnels
 	case panelHost:
 		icon, act = "▤", actHost
+	case panelCompanion:
+		icon, act = "◇", actCompanionBar
 	}
 	// Zustand: KI arbeitet (◌) oder ein Vorschlag wartet auf dich (●)
 	state := ""
@@ -259,6 +261,12 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if i, ok := a.quickIndex(key); ok {
 			return a.runQuick(s, i)
 		}
+		switch a.keys.which(key, actCompanion, actCompanionBar) {
+		case actCompanion:
+			return a.cycleCompanion(1)
+		case actCompanionBar:
+			return a.toggleCompanionBar(s)
+		}
 		switch id := a.keys.which(key, actGoal, actAsk, actTunnels, actHost); id {
 		case actGoal, actAsk, actTunnels, actHost:
 			if id == actTunnels && s.conn.Protocol.Raw() {
@@ -372,6 +380,10 @@ func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
 				return nil
 			}
 			s.chipArmed = -1
+			if s.chipReplace {
+				s.term.SendText("\x15") // Strg+U: getippte Zeile durch den Vorschlag ersetzen
+				s.chipReplace = false
+			}
 			s.term.SendText(c.Command)
 			s.noteAI(c.Command, true)
 			s.chips = nil
@@ -400,8 +412,9 @@ func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
 			}
 			s.followDue = time.Now().Add(1200 * time.Millisecond)
 		}
-		s.chips, s.chipArmed = nil, -1
+		s.chips, s.chipArmed, s.chipReplace, s.compChips = nil, -1, false, false
 		s.ghost = ""
+		s.comp.typedSeen, s.comp.remark = "", nil // Bemerkung galt dem vorigen Befehl
 		if s.goal.active && s.goal.manualPending {
 			s.goal.manualPending = false
 			s.goal.startWait()
@@ -414,7 +427,7 @@ func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
 	if key == "enter" || key == "ctrl+c" {
 		return nil
 	}
-	return a.scheduleGhost(s)
+	return tea.Batch(a.scheduleGhost(s), a.companionTyped(s))
 }
 
 // ---------------------------------------------------------------- Ghost-Text
@@ -474,6 +487,10 @@ func (a *App) followTick(s *session) tea.Cmd {
 	if s.followDue.IsZero() || time.Now().Before(s.followDue) || s.term == nil || s.goal.active {
 		return nil
 	}
+	if a.compLevel() >= domain.CompanionChatty && a.companionOff(s) == "" {
+		s.followDue = time.Time{}
+		return nil // der Begleiter kommentiert ohnehin jeden Befehl und bringt Vorschläge mit
+	}
 	if time.Since(s.lastOutput) < 800*time.Millisecond || !s.term.AtIdlePrompt() {
 		return nil
 	}
@@ -517,6 +534,9 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	bottom := a.chipBar(s)
 	if s.search.open {
 		bottom = a.searchBar(s)
+	}
+	if line := a.companionLine(s); line != "" {
+		bottom = line + "\n" + bottom
 	}
 	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, bottom, a.footer(a.terminalKeys(s))), cur
 }

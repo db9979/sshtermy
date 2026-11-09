@@ -121,7 +121,7 @@ func (r rect) has(x, y int) bool { return x >= r.x && x < r.x+r.w && y >= r.y &&
 
 // areaRect: Fläche zwischen Sitzungszeile und Vorschlagszeile.
 func (a *App) areaRect() rect {
-	return rect{0, topRows, a.w, max(5, a.h-topRows-bottomRows)}
+	return rect{0, topRows, a.w, max(5, a.h-topRows-bottomRows-a.companionRows())}
 }
 
 // splitLen teilt total in n gleiche Stücke mit sep Trennbreite dazwischen.

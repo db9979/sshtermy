@@ -261,7 +261,13 @@ func (a *App) paletteItems() []palItem {
 				withPanel(s, panelHost)
 				a.resize(s)
 				return a.panelOpened(s)
-			}})
+			}},
+			palItem{icon: ic("ai"), label: i18n.T("KI-Begleiter: Stufe wechseln"), hint: companionLevelLabel(a.compLevel()) + " · " + a.keys.label(actCompanion),
+				keys: "begleiter companion mitlesen kommentar coach", run: func() tea.Cmd { return a.cycleCompanion(1) }},
+			palItem{icon: ic("ai"), label: i18n.T("Begleiter-Leiste"), hint: a.keys.label(actCompanionBar),
+				keys: "begleiter companion leiste feed", run: func() tea.Cmd { return a.toggleCompanionBar(s) }},
+			palItem{icon: ic("ai"), label: i18n.T("Begleiter: Rückblick dieser Sitzung"), hint: i18n.T("merken, Runbook"),
+				keys: "begleiter companion rückblick recap zusammenfassung runbook", run: func() tea.Cmd { return a.openRecap(s, false, nil) }})
 		add("quick",
 			palItem{icon: ic("tunnel"), label: i18n.T("Tunnel-Panel"), hint: a.keys.label(actTunnels), run: func() tea.Cmd {
 				withPanel(s, panelTunnels)
@@ -544,7 +550,8 @@ func (a *App) palFolders(all []palItem) []palItem {
 // Unterordner der Einstellungen: nicht in der Übersicht, sondern als
 // Eintrag mit „›“ im Untermenü (palFolder).
 var palSubMenus = []palMenu{
-	{"settings/ki", "ai", "KI", "Endpunkt, Ersatz-Anbieter, Status", "ai llm ki"},
+	{"settings/ki", "ai", "KI", "Endpunkt, Ersatz-Anbieter, Begleiter, Status", "ai llm ki"},
+	{"settings/ki/begleiter", "ai", "KI-Begleiter", "liest mit und kommentiert: Stufe, Grenzen, Datenschutz", "begleiter companion mitlesen kommentar coach"},
 	{"settings/relay", "relay", "Vermittler", "Server hinter NAT/Firewall", "relay vermittler"},
 	{"settings/io", "import", "Import / Export", "ssh-config, PuTTY, Ansible, CSV, Gesamtsicherung", "import export csv backup sicherung umzug"},
 }
@@ -755,6 +762,24 @@ func (a *App) palMenuItems() []palItem {
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
 		inMenu("settings/ki", palCycle(pgSetSetup, ic("ai"), i18n.T("KI-Datenschutz"), privacyLabel(a.st.LLM().Privacy),
 			"ki ai datenschutz privacy lokal local cloud aus off kunde", func(dir int) tea.Cmd { return a.cyclePrivacy(dir) })),
+		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Eigene KI-Server (auch extern, per API) …"), hint: ownHostsHint(a.st.LLM().OwnHosts),
+			keys: "ki ai eigene own server privat private extern api datenschutz privacy lokal", run: func() tea.Cmd { return a.askOwnHosts() }},
+		a.palFolder("settings/ki/begleiter"),
+		inMenu("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Begleiter-Stufe"), companionLevelLabel(a.compLevel()),
+			"begleiter companion stufe aus leise gesprächig coach", func(dir int) tea.Cmd { return a.cycleCompanion(dir) })),
+		inMenu("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Höchstens KI-Anfragen pro Stunde"), fmt.Sprint(a.compCfg().Hour()),
+			"begleiter companion grenze limit stunde rate kosten", func(dir int) tea.Cmd { return a.cycleCompanionHour(dir) })),
+		inMenu("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Tagesbudget (geschätzte Tokens)"), kTok(a.compCfg().DayTokens()),
+			"begleiter companion budget tokens kosten tag", func(dir int) tea.Cmd { return a.cycleCompanionBudget(dir) })),
+		inMenu("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Begleiter nur mit eigener KI"), a.compCfg().OnlyLocal || a.compCfg().Raw,
+			"begleiter companion lokal eigene datenschutz privacy", func() tea.Cmd { return a.toggleCompanionLocal() })),
+		inMenu("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Filter aus bei eigener KI (Geheimnisse nicht entfernen)"), a.compCfg().Raw,
+			"begleiter companion filter datenschutz privacy roh raw geheimnisse eigene", func() tea.Cmd { return a.toggleCompanionRaw() })),
+		inMenu("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Coach: Rückblick beim Schließen des Tabs"), !a.compCfg().NoRecap,
+			"begleiter companion coach rückblick recap runbook merken", func() tea.Cmd {
+				a.setCompanion(func(c *domain.CompanionConfig) { c.NoRecap = !c.NoRecap })
+				return nil
+			})),
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Letzte KI-Anfrage ansehen"), hint: i18n.T("was ging hinaus"),
 			keys: "ki ai datenschutz privacy anfrage request prompt gesendet", run: func() tea.Cmd { a.modal = a.lastRequestModal(); return nil }},
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), keys: "ai llm status",

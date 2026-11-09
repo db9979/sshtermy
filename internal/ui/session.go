@@ -36,6 +36,7 @@ const (
 	panelAsk
 	panelTunnels
 	panelHost
+	panelCompanion // Begleiter-Leiste (companion_view.go)
 )
 
 // session ist eine offene SSH-Sitzung (ein Tab).
@@ -99,14 +100,17 @@ type session struct {
 	ghostCancel     context.CancelFunc
 
 	// eigene Befehle und Folgebefehle
-	history    []string
-	chips      []agent.Suggestion
-	aiPend     *aiPending // zuletzt eingefügter/ausgeführter KI-Befehl (learn.go)
-	chipSeq    int
-	chipArmed  int // Index eines roten Chips nach dem ersten Druck, sonst -1
-	quickArmed int // dasselbe für Schnellbefehle (⇧F1 …)
-	lastFollow time.Time
-	followDue  time.Time
+	history     []string
+	chips       []agent.Suggestion
+	aiPend      *aiPending // zuletzt eingefügter/ausgeführter KI-Befehl (learn.go)
+	chipSeq     int
+	chipArmed   int            // Index eines roten Chips nach dem ersten Druck, sonst -1
+	chipReplace bool           // Chips ersetzen die getippte Zeile (Begleiter: sicherere Variante)
+	compChips   bool           // Chips stammen vom Begleiter (Folgebefehle überschreiben sie nicht)
+	comp        companionState // KI-Begleiter (companion.go)
+	quickArmed  int            // dasselbe für Schnellbefehle (⇧F1 …)
+	lastFollow  time.Time
+	followDue   time.Time
 
 	// Systemprofil (siehe profile.go)
 	prof    domain.SystemProfile
