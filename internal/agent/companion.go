@@ -96,12 +96,11 @@ func (a *Agent) Comment(ctx context.Context, ev CompanionEvent, c Context) (Rema
 	if out := strings.TrimSpace(ev.Output); out != "" {
 		c.Screen = "$ " + ev.Command + "\n" + tail(out, 4000)
 	}
-	b.WriteString("\n" + material(c))
-	msg := b.String()
+	msg := material(c) + "\n\n" + b.String()
 	res, err := a.C.CompleteResult(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysCompanion)},
+		{Role: "system", Content: a.sys(sysCompanion)},
 		{Role: "user", Content: msg},
-	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.2, NoThink: true})
+	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.2, NoThink: true, Fast: true, Task: TaskCompanion})
 	r := Remark{Tokens: estTokens(sysCompanion, msg, res.Content)}
 	if err != nil {
 		return r, err
@@ -161,11 +160,11 @@ const sysIntent = "Du schaust einem Admin über die Schulter. Erkenne aus seinen
 
 // GuessIntent fragt das Modell nach der Absicht hinter den letzten Befehlen.
 func (a *Agent) GuessIntent(ctx context.Context, c Context) (Intent, error) {
-	msg := "Was hat der Admin vor?\n" + material(c)
+	msg := material(c) + "\n\nWas hat der Admin vor?"
 	res, err := a.C.CompleteResult(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysIntent)},
+		{Role: "system", Content: a.sys(sysIntent)},
 		{Role: "user", Content: msg},
-	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.2, NoThink: true})
+	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.2, NoThink: true, Task: TaskCompanion})
 	in := Intent{Tokens: estTokens(sysIntent, msg, res.Content)}
 	if err != nil {
 		return in, err
@@ -231,9 +230,9 @@ func (a *Agent) RecapSession(ctx context.Context, log string, c Context) (Recap,
 	body = strings.NewReplacer("<<<", "‹‹‹", ">>>", "›››").Replace(tail(body, 12000))
 	msg := "Sitzung:\n<<<\n" + body + "\n>>>\n" + material(c)
 	res, err := a.C.CompleteResult(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysRecap)},
+		{Role: "system", Content: a.sys(sysRecap)},
 		{Role: "user", Content: msg},
-	}, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true})
+	}, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskRecap})
 	r := Recap{Tokens: estTokens(sysRecap, msg, res.Content)}
 	if err != nil {
 		return r, err

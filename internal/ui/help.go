@@ -60,7 +60,7 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{"/", "suchen (auch #tag)"},
 		{"o", "neuer Ordner (A / B verschachtelt)"},
-		{"r", "Ordner umbenennen"},
+		{"r", "Ordner bearbeiten"},
 		{"v", "in Ordner verschieben"},
 		{"Shift+↑", "nach oben schieben (↓ runter)"},
 		{"← / →", "Ordner zu-/aufklappen"},

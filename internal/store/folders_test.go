@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/db9979/sshtermy/internal/domain"
@@ -107,5 +108,31 @@ func TestReorder(t *testing.T) {
 	d, _, _ := s.Snapshot()
 	if len(d.Folders) != 2 {
 		t.Fatalf("Ordner-Einträge im Snapshot: %d", len(d.Folders))
+	}
+}
+
+// KI-Hausregeln: gelten vom obersten Ordner abwärts und wandern beim
+// Umbenennen mit.
+func TestFolderRules(t *testing.T) {
+	s := openTest(t)
+	add(t, s, "sw1", "Kunde/Switche")
+	if err := s.SetFolderRules("Kunde", "Debian 12"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetFolderRules("Kunde/Switche", "Aruba 2930F"); err != nil {
+		t.Fatal(err)
+	}
+	got := s.FolderRules("Kunde/Switche")
+	if len(got) != 2 || got[0] != "Kunde: Debian 12" || !strings.HasSuffix(got[1], "Switche: Aruba 2930F") {
+		t.Fatalf("%q", got)
+	}
+	if err := s.MoveFolder("Kunde", "Firma"); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.FolderRules("Firma/Switche"); len(got) != 2 || got[0] != "Firma: Debian 12" {
+		t.Fatalf("nach Umbenennen: %q", got)
+	}
+	if err := s.SetFolderRules("Gibtsnicht", ""); err != nil || len(s.Folders()) != 2 {
+		t.Fatalf("leere Regeln legen keinen Ordner an: %v %d", err, len(s.Folders()))
 	}
 }

@@ -98,6 +98,7 @@ type session struct {
 	ghost, ghostFor string
 	ghostSeq        int
 	ghostCancel     context.CancelFunc
+	ghostMemo       map[string]ghostMemo // letzte Antworten je Eingabe (ghost.go)
 
 	// eigene Befehle und Folgebefehle
 	history     []string

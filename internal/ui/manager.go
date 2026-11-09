@@ -68,7 +68,7 @@ func (a *App) managerKeys() [][2]string {
 		if cur.node.Collapsed {
 			open = i18n.T("aufklappen")
 		}
-		k = append(k, [2]string{"⏎", open}, [2]string{"n", i18n.T("neu hier")}, [2]string{"e", i18n.T("umbenennen")}, [2]string{"d", i18n.T("löschen")},
+		k = append(k, [2]string{"⏎", open}, [2]string{"n", i18n.T("neu hier")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")},
 			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{km.label(actFolderGrid), i18n.T("als Raster öffnen")})
 	case have:
 		k = append(k, [2]string{"⏎", i18n.T("verbinden")}, [2]string{"n", i18n.T("neu")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")},
@@ -194,7 +194,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		return a.newFolderDialog()
 	case actRename:
 		if have && cur.isFolder() {
-			return a.renameFolderDialog(cur.node.Path)
+			return a.openFolderForm(cur.node.Path)
 		}
 		if have {
 			return a.openConnForm(cur.conn)
@@ -290,7 +290,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		return a.openConnForm(c)
 	case "e":
 		if have && cur.isFolder() {
-			return a.renameFolderDialog(cur.node.Path)
+			return a.openFolderForm(cur.node.Path)
 		}
 		if have {
 			return a.openConnForm(cur.conn)
@@ -869,6 +869,7 @@ func (a *App) openSettings() tea.Cmd {
 	f.text("base", i18n.T("Base-URL"), c.BaseURL, i18n.T("z. B. http://dgx-spark:8000/v1 · Ollama: http://localhost:11434/v1"))
 	f.secret("key", i18n.T("API-Key"), c.APIKey.Reveal(), i18n.T("verschlüsselt gespeichert; leer für lokale Server"))
 	f.text("model", i18n.T("Modell"), c.Model, i18n.T("Strg+L: Liste vom Endpunkt · Strg+T: Verbindung testen"))
+	f.text("fast", i18n.T("Schnelles Modell"), c.FastModel, i18n.T("optional, selber Endpunkt: übernimmt Ghost-Text, Folgebefehle und Begleiter"))
 	f.number("tokens", i18n.T("Max-Tokens"), c.MaxTokens, "")
 	f.text("temp", i18n.T("Temperatur"), fmt.Sprintf("%.2f", c.Temperature), i18n.T("0.0–1.0; für Befehle niedrig (0.1–0.3)"))
 	f.number("timeout", i18n.T("Timeout (s)"), c.TimeoutSec, "")
@@ -878,6 +879,7 @@ func (a *App) openSettings() tea.Cmd {
 	f.number("lines", i18n.T("Kontext-Zeilen"), c.ContextLines, "")
 	f.number("steps", i18n.T("Ziel: Schritte/min"), c.GoalStepsMin, i18n.T("Ratenlimit im Ziel-Modus"))
 	f.toggle("insecure", i18n.T("http mit API-Key"), c.AllowInsecure, i18n.T("nur wenn du weißt, was du tust"))
+	f.text("rules", i18n.T("Hausregeln"), c.Rules, i18n.T("gelten für jede KI-Aufgabe, z. B. „Debian 12, nie reboot vorschlagen“; Ordner: e im Manager"))
 	f.pick("fallbacks", i18n.T("Ersatz-Anbieter"), "", func(string) string { return a.fallbackSummary(a.st.LLM()) },
 		func() tea.Cmd { return a.settingsToFallbacks() }, i18n.T("⏎ öffnet: springen ein, wenn der Endpunkt nicht antwortet"))
 	a.form, a.scr = f, scrSettings
@@ -959,6 +961,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveQuick()
 	case scrMonitorForm:
 		err = a.saveMonitor()
+	case scrFolderForm:
+		err = a.saveFolderForm()
 	case scrHighlightForm:
 		err = a.saveHighlight()
 	case scrScheduleForm:

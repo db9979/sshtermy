@@ -132,7 +132,7 @@ var actionDefs = []actionDef{
 	{actQuickEdit, "Schnellbefehle bearbeiten", "Manager", []string{"q"}},
 	{actSSHKey, "SSH-Schlüssel erzeugen / übertragen", "Manager", []string{"c"}},
 	{actFolderNew, "Neuer Ordner", "Manager", []string{"o"}},
-	{actRename, "Ordner umbenennen", "Manager", []string{"r"}},
+	{actRename, "Ordner bearbeiten", "Manager", []string{"r"}},
 	{actMoveTo, "In Ordner verschieben", "Manager", []string{"v"}},
 	{actMoveUp, "Nach oben schieben", "Manager", []string{"shift+up", "alt+up"}},
 	{actMoveDown, "Nach unten schieben", "Manager", []string{"shift+down", "alt+down"}},

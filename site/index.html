@@ -183,7 +183,9 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <li>Enter the URL, e.g. <code>http://localhost:11434/v1</code> for Ollama, and an API key if the endpoint needs one (stored encrypted).</li>
     <li><kbd>Ctrl</kbd>+<kbd>T</kbd> tests the endpoint, <kbd>Ctrl</kbd>+<kbd>L</kbd> lists the models to pick from.</li>
     <li>Optional: up to three fallback providers, tried in order when the first one does not answer.</li>
+    <li>Optional: a <em>fast model</em> on the same endpoint for ghost text, follow-ups and the companion, and <em>house rules</em> (e.g. “Debian 12, never suggest reboot”) that go along with every AI task; folders can add their own (<kbd>e</kbd> on a folder).</li>
   </ol>
+  <p>Every function has its own role and prompt. Requests are built so that local servers can reuse their prefix cache, ghost text sends only the last lines and answers repeated input from memory, reasoning models are asked to keep short answers short, and your own model is kept loaded while tabs are open. The AI status shows the response time per task.</p>
   <p>The dot in the top right shows whether the AI is reachable (green, yellow when slow, red on error). Step by step, the AI only suggests and you decide what runs. In agent mode it runs commands within the level you chose; dangerous ones, and every change on production hosts and network devices, still wait for you. Passwords and secrets are removed from the context before it is sent.</p>
 </section>
 

@@ -182,7 +182,9 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <li>URL eintragen, z. B. <code>http://localhost:11434/v1</code> für Ollama, und einen API-Schlüssel, falls der Endpunkt einen braucht (wird verschlüsselt gespeichert).</li>
     <li><kbd>Strg</kbd>+<kbd>T</kbd> testet den Endpunkt, <kbd>Strg</kbd>+<kbd>L</kbd> listet die Modelle zur Auswahl.</li>
     <li>Auf Wunsch bis zu drei Ersatz-Anbieter, die der Reihe nach einspringen, wenn der erste nicht antwortet.</li>
+    <li>Auf Wunsch ein <em>schnelles Modell</em> am selben Endpunkt für Ghost-Text, Folgebefehle und Begleiter, dazu <em>Hausregeln</em> (z. B. „Debian 12, nie reboot vorschlagen“), die bei jeder KI-Aufgabe mitgehen; Ordner können eigene dazulegen (<kbd>e</kbd> auf einem Ordner).</li>
   </ol>
+  <p>Jede Funktion hat ihre eigene Rolle und ihren eigenen Prompt. Die Anfragen sind so gebaut, dass lokale Server ihren Prefix-Cache nutzen können, der Ghost-Text schickt nur die letzten Zeilen und beantwortet wiederholte Eingaben aus dem Speicher, Denkmodelle werden bei kurzen Antworten gebremst, und das eigene Modell bleibt geladen, solange Tabs offen sind. Der KI-Status zeigt die Antwortzeit je Aufgabe.</p>
   <p>Der Punkt oben rechts zeigt, ob die KI erreichbar ist (grün, gelb bei langsamer Antwort, rot bei Fehler). Schritt für Schritt schlägt die KI nur vor, und du entscheidest, was läuft. Im Agent-Modus führt sie Befehle im Rahmen der gewählten Stufe aus; gefährliche Befehle und jede Änderung auf Produktiv-Hosts und Netzwerkgeräten warten trotzdem auf dich. Passwörter und Geheimnisse werden vor dem Senden aus dem Kontext entfernt.</p>
 </section>
 

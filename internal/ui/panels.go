@@ -151,8 +151,13 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		return nil, true
 	case ghostMsg:
-		if s := a.byID(m.sid); s != nil && m.seq == s.ghostSeq {
-			s.ghost, s.ghostFor = m.rest, m.typed
+		if s := a.byID(m.sid); s != nil {
+			if m.ok {
+				s.ghostRemember(m.typed, m.rest, time.Now())
+			}
+			if m.seq == s.ghostSeq {
+				s.ghost, s.ghostFor = m.rest, m.typed
+			}
 		}
 		return nil, true
 	case followMsg:

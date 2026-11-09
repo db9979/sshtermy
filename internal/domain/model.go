@@ -411,13 +411,17 @@ type LLMBackup struct {
 // LLMConfig: der eigentliche KI-Endpunkt (Standard: OpenAI-kompatibel, z. B.
 // der Spark mit vLLM) plus Ersatz-Anbieter in fester Reihenfolge.
 type LLMConfig struct {
-	Provider    LLMProvider `json:"provider,omitempty"`
-	BaseURL     string      `json:"base_url"` // z. B. http://dgx-spark:8000/v1
-	APIKey      Secret      `json:"api_key,omitempty"`
-	Model       string      `json:"model"`
-	MaxTokens   int         `json:"max_tokens"`
-	Temperature float64     `json:"temperature"`
-	TimeoutSec  int         `json:"timeout_s"`
+	Provider LLMProvider `json:"provider,omitempty"`
+	BaseURL  string      `json:"base_url"` // z. B. http://dgx-spark:8000/v1
+	APIKey   Secret      `json:"api_key,omitempty"`
+	Model    string      `json:"model"`
+	// FastModel: optional ein zweites, kleines Modell am selben Endpunkt für
+	// die kurzen, häufigen Aufgaben (Ghost-Text, Folgebefehle, Begleiter).
+	// Leer = alles mit Model.
+	FastModel   string  `json:"fast_model,omitempty"`
+	MaxTokens   int     `json:"max_tokens"`
+	Temperature float64 `json:"temperature"`
+	TimeoutSec  int     `json:"timeout_s"`
 
 	// Feineinstellungen der Assistenz
 	SuggestEnabled bool `json:"suggest_enabled"` // Ghost-Text beim Tippen
@@ -436,6 +440,11 @@ type LLMConfig struct {
 	// Endpunkte („nur eigene KI“, Filter-Schalter des Begleiters). Ein
 	// Eintrag gilt für den Namen selbst und alle Unternamen.
 	OwnHosts []string `json:"own_hosts,omitempty"`
+
+	// Rules: Hausregeln des Admins, an jeden Systemprompt angehängt (z. B.
+	// „bei uns Debian 12, nie reboot vorschlagen“). Ordner können eigene
+	// dazulegen (Folder.AIRules).
+	Rules string `json:"rules,omitempty"`
 
 	// Fallbacks: der Reihe nach, wenn der Endpunkt oben nicht antwortet.
 	Fallbacks []LLMBackup `json:"fallbacks,omitempty"`

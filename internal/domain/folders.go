@@ -20,10 +20,13 @@ const PathSep = " / "
 
 // Folder: Ordner im Verbindungs-Manager.
 type Folder struct {
-	ID        string    `json:"id"`
-	Path      string    `json:"path"`            // normalisiert, siehe NormPath
-	Order     float64   `json:"order,omitempty"` // unter Geschwistern, 0 = alphabetisch
-	Collapsed bool      `json:"collapsed,omitempty"`
+	ID        string  `json:"id"`
+	Path      string  `json:"path"`            // normalisiert, siehe NormPath
+	Order     float64 `json:"order,omitempty"` // unter Geschwistern, 0 = alphabetisch
+	Collapsed bool    `json:"collapsed,omitempty"`
+	// AIRules: Hausregeln für die KI, gelten für alle Verbindungen in diesem
+	// Ordner und seinen Unterordnern (zusätzlich zu LLMConfig.Rules).
+	AIRules   string    `json:"ai_rules,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }

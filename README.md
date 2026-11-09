@@ -253,7 +253,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | c / q | create or copy an SSH key / edit quick commands |
 | | m / f / z | broadcast to several hosts / network scan / schedules (Ctrl+N new, Ctrl+E edit, Ctrl+R now, Ctrl+O on/off, ⏎ last result) |
 | | w / g | workspaces (saved split layouts) / open a folder as a grid |
-| Folders | o / r / v / d | create folder (“A / B” nested) / rename / move / dissolve (content stays) |
+| Folders | o / r / v / d | create folder (“A / B” nested) / edit (name, AI house rules) / move / dissolve (content stays) |
 | | ← → Space / - + | collapse/expand folder / collapse or expand all |
 | | Shift+↑↓ (Alt+↑↓), drag with the mouse | change the order, drag into a folder |
 | | # , /#tag | filter by tag, search by name, host, folder, tags |
@@ -531,6 +531,24 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
   when the endpoint does not answer. A failed endpoint is skipped for 5 minutes or until the background check
   reaches it again. The status dot turns yellow and shows “fallback: Claude” while a fallback answers.
 - Cloud providers always need an API key; keys are stored encrypted like passwords.
+
+### Faster and more focused AI
+
+- **Every function has its own role:** ghost text, follow-up commands, goal mode, agent, plan, companion, explain,
+  log diagnosis, report and “adapt for all” each send their own system prompt with their own token limit and temperature.
+- **House rules** (AI settings → “House rules”, and per folder with `e` in the manager → “AI house rules”): free text
+  that goes along with every AI task, e.g. “Debian 12, never suggest reboot”. Folder rules apply to the subfolders too.
+  They never override the safety rules.
+- **Fast model** (AI settings): optionally a second, small model on the same endpoint for ghost text, follow-up commands
+  and the companion; goal mode, agent, plan and diagnosis stay on the main model. If the fast model fails, the main model
+  answers and the fast one is skipped for 5 minutes.
+- **Quicker answers:** the fixed part of the request (system profile, recent commands, screen) comes first and what you
+  just typed comes last, so vLLM, SGLang and Ollama can reuse their prefix cache. Ghost text sends only the last 25 screen
+  lines, follow-ups 40. No new request while the shown suggestion still fits, and the same input within 3 minutes is answered
+  from memory. Short answers ask reasoning models not to think long (Qwen, gpt-oss, OpenAI o/gpt-5, Ollama thinking models).
+- **Kept warm:** while tabs are open, a one-token request every 4 minutes keeps your own model loaded (Ollama unloads
+  after 5 minutes). Cloud providers are not pinged.
+- **AI status** (click the dot) shows the response time per task (average and last), so you see what is slow.
 
 ### Error detection and session log
 

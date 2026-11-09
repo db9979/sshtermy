@@ -67,15 +67,49 @@ func failed(ctx context.Context, err error) bool {
 	return err != nil && ctx.Err() == nil && !errors.Is(err, context.Canceled)
 }
 
+// fast: der eingestellte Endpunkt mit dem schnellen Modell, falls eins
+// eingetragen ist und die Aufgabe es erlaubt (sonst nil). Antwortet es
+// nicht, geht es mit der normalen Reihenfolge weiter.
+func (c *Client) fast(o Opts) *conn {
+	if !o.Fast || len(c.conns) == 0 || c.conns[0].idx != 0 {
+		return nil
+	}
+	m := c.conns[0]
+	if m.cfg.FastModel == "" || m.cfg.FastModel == m.cfg.Model || isDown(m.sig()) {
+		return nil
+	}
+	k := *m
+	k.cfg.Model = k.cfg.FastModel
+	if isDown(k.sig()) { // eben ausgefallen: erst mal das Hauptmodell
+		return nil
+	}
+	return &k
+}
+
 // CompleteResult wie Complete, aber mit finish_reason und Reasoning.
 func (c *Client) CompleteResult(ctx context.Context, msgs []Message, o Opts) (Result, error) {
 	var first error
+	if k := c.fast(o); k != nil {
+		t0 := time.Now()
+		r, err := k.completeResult(ctx, msgs, o)
+		k.observe(t0, err, false)
+		if err == nil {
+			recordTask(o.Task, k.cfg.Model, time.Since(t0))
+			return r, nil
+		}
+		if !failed(ctx, err) {
+			return r, err
+		}
+		markDown(k.sig())
+		first = err
+	}
 	for _, k := range c.order() {
 		t0 := time.Now()
 		r, err := k.completeResult(ctx, msgs, o)
 		k.observe(t0, err, false)
 		if err == nil {
 			markUp(k.sig())
+			recordTask(o.Task, k.cfg.Model, time.Since(t0))
 			return r, nil
 		}
 		if !failed(ctx, err) {
@@ -102,7 +136,14 @@ func (c *Client) Stream(ctx context.Context, msgs []Message, o Opts, onDelta fun
 		k.observe(t0, err, true) // Kopfzeilen da: der Server antwortet
 		if err == nil {
 			markUp(k.sig())
-			return k.readStream(resp, onDelta)
+			once := false
+			return k.readStream(resp, func(d string) {
+				if !once && d != "" {
+					once = true
+					recordTask(o.Task, k.cfg.Model, time.Since(t0))
+				}
+				onDelta(d)
+			})
 		}
 		if !failed(ctx, err) {
 			return err

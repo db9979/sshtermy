@@ -83,9 +83,9 @@ func (a *Agent) Review(ctx context.Context, steps []string, c Context) (Review, 
 		fmt.Fprintf(&b, "%d. %s\n", i+1, Redact(s))
 	}
 	out, err := a.C.Complete(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysReview)},
-		{Role: "user", Content: "Schritte:\n" + strings.NewReplacer("<<<", "‹‹‹", ">>>", "›››").Replace(b.String()) + "\n" + material(c)},
-	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.1, NoThink: true})
+		{Role: "system", Content: a.sys(sysReview)},
+		{Role: "user", Content: material(c) + "\n\nSchritte:\n" + strings.NewReplacer("<<<", "‹‹‹", ">>>", "›››").Replace(b.String())},
+	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.1, NoThink: true, Task: TaskReview})
 	if err != nil {
 		return Review{}, err
 	}

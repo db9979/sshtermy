@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -230,21 +231,35 @@ func (a *App) expandTo(path string) {
 	}
 }
 
-func (a *App) renameFolderDialog(path string) tea.Cmd {
-	a.modal = inputModal(i18n.T("Ordner umbenennen"), i18n.T("Neuer Name. Der ganze Pfad lässt sich ändern, so wandert der Ordner samt Inhalt woanders hin."), path, func(neu string) tea.Cmd {
-		neu = domain.NormPath(neu)
-		if neu == "" || neu == path {
-			return nil
+// openFolderForm: Ordner bearbeiten, also Name (der ganze Pfad lässt sich
+// ändern) und KI-Hausregeln für alle Verbindungen darin.
+func (a *App) openFolderForm(path string) tea.Cmd {
+	rules := ""
+	for _, f := range a.st.Folders() {
+		if f.Path == path {
+			rules = f.AIRules
 		}
+	}
+	f := &form{title: i18n.T("Ordner bearbeiten")}
+	f.text("name", i18n.T("Name"), path, i18n.T("Der ganze Pfad lässt sich ändern, so wandert der Ordner samt Inhalt woanders hin."))
+	f.text("rules", i18n.T("KI-Hausregeln"), rules, i18n.T("gelten für alle Verbindungen hier und in Unterordnern, z. B. „Aruba 2930F, nur lesen ohne Rückfrage“"))
+	a.form, a.formFolder, a.scr = f, path, scrFolderForm
+	return f.setFocus(0)
+}
+
+func (a *App) saveFolderForm() error {
+	path := a.formFolder
+	neu := domain.NormPath(a.form.str("name"))
+	if neu == "" {
+		return errors.New(i18n.T("Name fehlt"))
+	}
+	if neu != path {
 		if err := a.st.MoveFolder(path, neu); err != nil {
-			a.flashErr(err.Error())
-			return nil
+			return err
 		}
 		a.mgr.want = "f:" + neu
-		a.flash(i18n.T("Ordner heißt jetzt „") + neu + i18n.T("“"))
-		return nil
-	})
-	return a.modal.in.Focus()
+	}
+	return a.st.SetFolderRules(neu, a.form.str("rules"))
 }
 
 func (a *App) deleteFolderDialog(n *domain.TreeNode) {

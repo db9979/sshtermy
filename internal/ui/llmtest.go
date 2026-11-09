@@ -63,6 +63,7 @@ func (a *App) formLLM() domain.LLMConfig {
 	}
 	c.Provider = providerFromLabel(f.sel("prov"))
 	c.BaseURL, c.APIKey, c.Model = f.str("base"), domain.Secret(f.raw("key")), f.str("model")
+	c.FastModel, c.Rules = f.str("fast"), f.str("rules")
 	c.MaxTokens, c.TimeoutSec = f.num("tokens"), f.num("timeout")
 	fmt.Sscanf(f.str("temp"), "%f", &c.Temperature)
 	c.SuggestEnabled, c.SuggestDelayMS = f.flag("suggest"), f.num("delay")

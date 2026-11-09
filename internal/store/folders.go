@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/db9979/sshtermy/internal/domain"
@@ -285,4 +286,51 @@ func (s *Store) MoveConns(group string, ids ...string) error {
 	}
 	s.mu.Unlock()
 	return s.save()
+}
+
+// SetFolderRules setzt die KI-Hausregeln eines Ordners (leer = keine).
+func (s *Store) SetFolderRules(path, rules string) error {
+	path = domain.NormPath(path)
+	if path == "" {
+		return errors.New(i18n.T("kein Ordner gewählt"))
+	}
+	if err := s.lockData(); err != nil {
+		return err
+	}
+	now := time.Now().UTC()
+	if rules == "" && s.folderIdx(path) < 0 {
+		s.mu.Unlock()
+		return nil
+	}
+	i := s.ensureFolder(path, now)
+	if s.data.Folders[i].AIRules == rules {
+		s.mu.Unlock()
+		return nil
+	}
+	s.data.Folders[i].AIRules, s.data.Folders[i].UpdatedAt = rules, now
+	s.mu.Unlock()
+	return s.save()
+}
+
+// FolderRules: die KI-Hausregeln, die für eine Verbindung im Ordner group
+// gelten, vom obersten Ordner abwärts (Unterordner ergänzen).
+func (s *Store) FolderRules(group string) []string {
+	group = domain.NormPath(group)
+	if group == "" {
+		return nil
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data == nil {
+		return nil
+	}
+	var out []string
+	for p := group; p != ""; p = domain.PathParent(p) {
+		if i := s.folderIdx(p); i >= 0 {
+			if r := strings.TrimSpace(s.data.Folders[i].AIRules); r != "" {
+				out = append([]string{p + ": " + r}, out...)
+			}
+		}
+	}
+	return out
 }
