@@ -174,7 +174,9 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		return nil
 	}
 	if act := a.z.at(m.X, m.Y, false); act != nil {
-		return act.click(m, clicks >= 2)
+		cmd := act.click(m, clicks >= 2)
+		a.formChanged() // Klick auf eine Auswahl wirkt wie ←/→
+		return cmd
 	}
 	// Klick ins Leere
 	switch {

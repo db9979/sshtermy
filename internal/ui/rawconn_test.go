@@ -7,8 +7,12 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
+
 	"github.com/db9979/sshtermy/internal/devfake"
 	"github.com/db9979/sshtermy/internal/domain"
+	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/store"
 )
 
@@ -211,5 +215,40 @@ func TestParseQuickLocal(t *testing.T) {
 	}
 	if err := store.Validate(domain.Connection{Alias: "x", Protocol: domain.ProtoLocal}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Mausklick auf eine Verbindungsart zieht den Port nach wie ←/→ (Dominik,
+// 2026-11-09: Klick auf „Telnet“ ließ Port 22 stehen).
+func TestConnFormProtoClickSyncsPort(t *testing.T) {
+	a, _ := rawTestApp(t)
+	a.intro = nil
+	a.openConnForm(newConnDefaults())
+	f := a.form
+	clickWord := func(word string) {
+		t.Helper()
+		lines := strings.Split(ansi.Strip(a.View().Content), "\n")
+		for y, l := range lines {
+			if i := strings.Index(l, word); i >= 0 {
+				a.mouse(tea.MouseClickMsg{X: ansi.StringWidth(l[:i]) + 1, Y: y, Button: tea.MouseLeft})
+				return
+			}
+		}
+		t.Fatalf("%q nicht gefunden:\n%s", word, strings.Join(lines, "\n"))
+	}
+	if got := f.str("port"); got != "22" {
+		t.Fatalf("Vorbelegung Port %q", got)
+	}
+	clickWord(i18n.T("Verbindungsart")) // Fokus: Optionen werden sichtbar
+	clickWord("Telnet")
+	if f.sel("proto") != "Telnet" {
+		t.Fatalf("Klick wählt nicht Telnet: %q", f.sel("proto"))
+	}
+	if got := f.str("port"); got != "23" {
+		t.Fatalf("Port nach Klick auf Telnet %q, erwartet 23", got)
+	}
+	clickWord("SSH")
+	if got := f.str("port"); got != "22" {
+		t.Fatalf("Port nach Klick zurück auf SSH %q, erwartet 22", got)
 	}
 }
