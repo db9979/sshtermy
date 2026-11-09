@@ -160,8 +160,8 @@ func (w *window) run() error {
 	// Bild bleibt stehen; Draw zeichnet nur neu, wenn sich etwas geändert hat
 	// (Akku, GPU).
 	ebiten.SetScreenClearedEveryFrame(false)
-	if icon := w.opts.Icon; icon != nil {
-		ebiten.SetWindowIcon([]image.Image{icon})
+	if len(w.opts.Icon) > 0 {
+		ebiten.SetWindowIcon(w.opts.Icon)
 	}
 	return ebiten.RunGameWithOptions(w, &ebiten.RunGameOptions{InitUnfocused: false})
 }
