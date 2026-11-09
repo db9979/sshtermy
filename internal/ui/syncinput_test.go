@@ -39,7 +39,7 @@ func TestSyncInputTypesEverywhere(t *testing.T) {
 	}
 	a.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	for i := 0; i < 2; i++ {
-		if !strings.Contains(outs[i].String(), "show vlan\r") {
+		if !outs[i].has("show vlan\r") { // Emulator schreibt asynchron
 			t.Fatalf("Bereich %d bekam %q", i, outs[i].String())
 		}
 	}
