@@ -345,6 +345,10 @@ func Validate(c domain.Connection) error {
 		return errors.New(i18n.T("Port ungültig"))
 	case c.Protocol == domain.ProtoSerial && (c.Baud < 0 || c.Baud > 4000000):
 		return errors.New(i18n.T("Baudrate ungültig"))
+	case c.Protocol == domain.ProtoWinRM && strings.TrimSpace(c.Username) == "":
+		return errors.New(i18n.T("Benutzer fehlt"))
+	case c.Protocol == domain.ProtoWinRM && c.WinRMAuth == "basic" && !c.WinRMHTTPS:
+		return errors.New(i18n.T("Basic-Anmeldung nur über HTTPS (sonst geht das Passwort lesbar übers Netz)"))
 	case c.Protocol.Raw(): // Telnet/Konsole: Anmeldung optional, am Gerät
 	case strings.TrimSpace(c.Username) == "":
 		return errors.New(i18n.T("Benutzer fehlt"))

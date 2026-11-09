@@ -73,7 +73,7 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 			}()
 		})
 		out := io.MultiWriter(outWriter{s, ev}, login)
-		if c.Protocol == domain.ProtoLocal || c.Protocol == domain.ProtoWatch {
+		if c.Protocol == domain.ProtoLocal || c.Protocol == domain.ProtoWatch || c.Protocol == domain.ProtoWinRM {
 			out = outWriter{s, ev} // keine Anmeldung
 		}
 
@@ -107,6 +107,12 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 				return fail(errors.New(i18n.T("Lokale Shell startet nicht: ") + err.Error()))
 			}
 			st, done = l, l.Done
+		case domain.ProtoWinRM:
+			w, err := a.dialWinRM(s, c, cols, out)
+			if err != nil {
+				return fail(err)
+			}
+			st, done = w, w.Done
 		case domain.ProtoWatch:
 			w, d, err := dialWatch(s.id, c.WatchLink, out, ev)
 			if err != nil {
@@ -188,6 +194,8 @@ func (a *App) protoBadge(s *session) string {
 		return st.Badge.Foreground(st.T.Accent).Render("$ " + s.localShellName() + " · " + i18n.T("lokal"))
 	case domain.ProtoWatch:
 		return st.Badge.Foreground(st.T.AI).Render("◉ " + i18n.T("nur Zusehen"))
+	case domain.ProtoWinRM:
+		return a.winrmBadge(s)
 	}
 	if o := s.share.Load(); o != nil {
 		return st.Badge.Foreground(st.T.AI).Render(fmt.Sprintf("◉ "+i18n.T("geteilt · %d"), o.viewers))
@@ -218,6 +226,8 @@ func shortTarget(c domain.Connection) string {
 		return "$ " + localShellLabel(c.LocalShell) + " · " + i18n.T("lokal")
 	case domain.ProtoWatch:
 		return "◉ " + i18n.T("Zusehen")
+	case domain.ProtoWinRM:
+		return "PS " + t
 	}
 	return t
 }
@@ -225,10 +235,12 @@ func shortTarget(c domain.Connection) string {
 // ---------------------------------------------------------------- Formular
 
 // protoLabels: Auswahl im Verbindungsformular.
-var protoLabels = []string{"SSH", "Telnet", "Seriell (Konsolenkabel)", "Lokal (dieser Rechner)"}
+var protoLabels = []string{"SSH", "Telnet", "Seriell (Konsolenkabel)", "Lokal", "PowerShell"}
 
 func protoLabel(p domain.Protocol) string {
 	switch p {
+	case domain.ProtoWinRM:
+		return protoLabels[4]
 	case domain.ProtoLocal:
 		return protoLabels[3]
 	case domain.ProtoTelnet:
@@ -247,6 +259,8 @@ func protoFromLabel(l string) domain.Protocol {
 		return domain.ProtoSerial
 	case protoLabels[3]:
 		return domain.ProtoLocal
+	case protoLabels[4]:
+		return domain.ProtoWinRM
 	}
 	return domain.ProtoSSH
 }
@@ -433,7 +447,7 @@ func (s *session) remoteString() string {
 	if s.client != nil {
 		return s.client.Remote.String()
 	}
-	if s.isLocal() && localWindowsShell(s.prof) {
+	if s.isLocal() && localWindowsShell(s.prof) || s.isWinRM() {
 		return "Windows " + s.profileSummary()
 	}
 	return s.profileSummary()
@@ -456,14 +470,21 @@ func syncProtoPort(f *form) {
 	pc.value = now
 	pf := f.get("port")
 	cur := strings.TrimSpace(pf.in.Value())
+	std := cur == "" || cur == "22" || cur == "23" || cur == "5985" || cur == "5986"
+	if !std {
+		return // eigener Port bleibt
+	}
 	switch protoFromLabel(now) {
 	case domain.ProtoTelnet:
-		if cur == "22" {
-			pf.in.SetValue("23")
-		}
+		pf.in.SetValue("23")
 	case domain.ProtoSSH:
-		if cur == "23" {
+		if cur != "" {
 			pf.in.SetValue("22")
+		}
+	case domain.ProtoWinRM:
+		pf.in.SetValue("5985")
+		if fl := f.get("winrm_https"); fl != nil && fl.on {
+			pf.in.SetValue("5986")
 		}
 	}
 }

@@ -19,6 +19,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Persistent session** (idea: Dominik Bornhäußer): per connection, always land in the same tmux/screen session on connect, even from another computer. Other sessions already running? sshTermy asks which one. Same session name in two tabs or on two computers = mirrored screen; "view only" attaches tmux read-only. The palette opens a second watching tab or copies an `ssh … tmux attach -r` command for colleagues. Not on switches, Telnet or console.
 - **Own window** (no terminal needed): double-click `sshtermy.exe` in Explorer, open `sshTermy.app` on the Mac or run `sshtermy -window`, and sshTermy opens its own window with Cascadia Mono, Nerd Font symbols and emoji built in. Images from the server show pixel-perfect, files dragged onto the window are offered for upload, ⇧F10 moves a tab into a second window of its own. All keys arrive (Alt+⏎, ⇧F1 … ⇧F12, Ctrl+Space), Ctrl+⇧V or ⇧Insert paste (Windows also Ctrl+V, Mac ⌘V), Ctrl + / Ctrl − / Ctrl 0 or Ctrl + mouse wheel change the font size. Started from a terminal, sshTermy runs in that terminal as before; `-tui` forces it
 - **Local shell** (Alt+L): your own PowerShell (Windows, via ConPTY), zsh or bash (macOS/Linux) as a tab, with AI help, goal/agent/plan mode, split view, tabs and session log. Danger rules and agent levels apply on your own computer too; the agent drops its scripts in `~/.sshtermy-agent`. Or save it as a connection (“Connect via: Local”) with its own shell (`pwsh`, `cmd`, `wsl`, `bash -l` …) and start folder
+- **Remote PowerShell (WinRM)**: log into Windows servers like `Enter-PSSession`, without SSH on the server (“Connection type: PowerShell”, ports 5985/5986). NTLM also for domain accounts, messages encrypted over HTTP, or HTTPS; own input line with history, Tab completion via the server and multi-line input. The AI suggests PowerShell commands, danger rules for Windows apply. Palette: `Enter-PSSession srv01` or `winrm admin@srv01`
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
@@ -350,10 +351,23 @@ need SSH. Linux: the user needs to be in the `dialout` group. Telnet is unencryp
 **Local shell:** Alt+L (or the first entry under Alt+N, or palette → “Open local shell”) opens the shell of your own
 computer in a tab: PowerShell 7 (`pwsh`), otherwise Windows PowerShell or cmd on Windows (ConPTY, Windows 10 1809 or
 newer), your login shell on macOS and `$SHELL` on Linux. Typing `pwsh`, `cmd`, `wsl -d Ubuntu` or `zsh` in the palette
-starts that one. As a saved connection (“Connect via: Local (this computer)”) you can set the shell and a start folder;
+starts that one. As a saved connection (“Connection type: Local”) you can set the shell and a start folder;
 left empty, each computer uses its own default, so a synced entry works on Windows and Mac alike. The AI knows whether it
 is talking to PowerShell, cmd or a Unix shell; danger rules and the agent levels work as on a server. Files (F5),
 tunnels and broadcast need SSH.
+
+**Remote PowerShell (WinRM):** for Windows servers without SSH. In the connection form choose “Connection type:
+PowerShell”, enter host, user (`DOMAIN\name` or `name@domain`) and password (or keychain/password manager). Port 5985
+(HTTP) is the default; NTLM then encrypts every message. With “HTTPS” sshTermy uses 5986; “Don't check certificate”
+is only meant for self-signed certificates in your own network. “basic” works only over HTTPS. In the palette,
+`Enter-PSSession srv01`, `Enter-PSSession -ComputerName srv01 -Credential FIRMA\admin -UseSSL`, `etsn srv01` or
+`winrm admin@srv01` connects right away. The session feels like `Enter-PSSession`: prompt `[SRV01]: PS C:\…>`,
+↑/↓ history, Tab/⇧Tab cycles through completions from the server, `function … {` continues on the next line (`>>`),
+`Read-Host` and confirmation prompts get your answer. Variables and the current folder persist. Ctrl+C cancels a
+running command by restarting PowerShell in the same folder (variables are lost then). Without a console on the
+server, full-screen programs (`edit`, `vim`) do not work. On the server (as administrator): `Enable-PSRemoting -Force`.
+Pure Go (WinRS); Kerberos-only servers are not supported yet, Negotiate/NTLM works with domain accounts.
+Alternatively, Windows OpenSSH works over plain SSH (PowerShell as `DefaultShell`), including files and tunnels.
 
 ## Screens
 

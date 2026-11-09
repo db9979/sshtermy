@@ -134,7 +134,7 @@ export const de = {
     ]},
     { t: 'Befehlspalette', ic: '❯', key: 'Strg+Space', rows: [
       ['_tippen_ ⏎ / Tab', 'filtern · als Ziel starten / KI fragen'],
-      ['user@host', 'schnell verbinden (auch telnet, COM3)'],
+      ['user@host', 'schnell verbinden (auch telnet, COM3, winrm)'],
       ['→ / ←', 'Ordner › öffnen · ‹ Wert › weiter / zurück'],
       ['„log“ / „farb“', 'KI wertet Ausgabe aus / Farbregeln'],
       ['MAC, IP / „topo“', 'Switch-Port finden / Topologie'],
@@ -326,7 +326,7 @@ export const en = {
     ]},
     { t: 'Command palette', ic: '❯', key: 'Ctrl+Space', rows: [
       ['_type_ ⏎ / Tab', 'filter · start as goal / ask AI'],
-      ['user@host', 'quick connect (also telnet, COM3)'],
+      ['user@host', 'quick connect (also telnet, COM3, winrm)'],
       ['→ / ←', 'open folder › · ‹ value › next / back'],
       ['“log” / “color”', 'AI analyzes output / color rules'],
       ['MAC, IP / “topo”', 'find switch port / topology'],

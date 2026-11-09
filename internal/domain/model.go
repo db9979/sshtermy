@@ -147,6 +147,14 @@ type Connection struct {
 	LocalShell string `json:"local_shell,omitempty"`
 	LocalDir   string `json:"local_dir,omitempty"`
 
+	// PowerShell über WinRM (Protocol "winrm", wie Enter-PSSession):
+	// WinRMHTTPS = Port 5986 mit TLS statt 5985 (dort verschlüsselt NTLM die
+	// Nachrichten), WinRMInsecure = Zertifikat nicht prüfen (selbst
+	// signiert), WinRMAuth = "" Negotiate/NTLM oder "basic" (nur HTTPS).
+	WinRMHTTPS    bool   `json:"winrm_https,omitempty"`
+	WinRMInsecure bool   `json:"winrm_insecure,omitempty"`
+	WinRMAuth     string `json:"winrm_auth,omitempty"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	LastUsed  time.Time `json:"last_used,omitempty"`
@@ -183,12 +191,13 @@ const (
 	ProtoTelnet Protocol = "telnet" // unverschlüsselt, für ältere Switches
 	ProtoSerial Protocol = "serial" // serielle Konsole (USB-Konsolenkabel)
 	ProtoLocal  Protocol = "local"  // Shell auf diesem Rechner (PTY / ConPTY)
+	ProtoWinRM  Protocol = "winrm"  // PowerShell-Fernzugriff (WinRM, wie Enter-PSSession)
 	ProtoWatch  Protocol = "watch"  // geteilte Sitzung ansehen (Link, nie gespeichert)
 )
 
 // Raw: kein SSH, also keine Exec-Abfragen, kein SFTP und keine Tunnel.
 func (p Protocol) Raw() bool {
-	return p == ProtoTelnet || p == ProtoSerial || p == ProtoLocal || p == ProtoWatch
+	return p == ProtoTelnet || p == ProtoSerial || p == ProtoLocal || p == ProtoWatch || p == ProtoWinRM
 }
 
 // NoHost: Verbindung ohne Host-Angabe (Konsolenkabel, lokale Shell).
@@ -214,10 +223,16 @@ func (c Connection) SerialFrame() string {
 	return c.Frame
 }
 
-// DefaultPort: 22 für SSH, 23 für Telnet.
+// DefaultPort: 22 für SSH, 23 für Telnet, 5985/5986 für WinRM.
 func (c Connection) DefaultPort() int {
-	if c.Protocol == ProtoTelnet {
+	switch c.Protocol {
+	case ProtoTelnet:
 		return 23
+	case ProtoWinRM:
+		if c.WinRMHTTPS {
+			return 5986
+		}
+		return 5985
 	}
 	return 22
 }
@@ -232,8 +247,11 @@ func (c Connection) Target() string {
 	if c.Protocol != ProtoSerial && c.Username != "" {
 		a = c.Username + "@" + a
 	}
-	if c.Protocol == ProtoTelnet {
+	switch c.Protocol {
+	case ProtoTelnet:
 		a = "telnet://" + a
+	case ProtoWinRM:
+		a = "PowerShell " + a
 	}
 	return a
 }
