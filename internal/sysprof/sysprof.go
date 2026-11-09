@@ -70,6 +70,10 @@ func FromProbe(out string) domain.SystemProfile {
 		}
 		return ""
 	}
+	if u, ok := unifiProbe(get(6)); ok {
+		u.Shell = get(2)
+		return u
+	}
 	p := domain.SystemProfile{OS: get(0), Version: get(1), Shell: get(2), PkgMgr: get(3), Init: get(4)}
 	k := strings.ToLower(p.Version + " " + p.OS)
 	switch {
@@ -116,8 +120,35 @@ var probeRefusal = regexp.MustCompile(`(?i)not supported|invalid (input|command)
 
 // ProbeCommand: läuft unsichtbar in einer eigenen Exec-Sitzung (nur Server).
 // Bewusst über sh, damit auch fish/zsh/csh als Login-Shell nichts ändern.
-// Zeilen: System, Kernel, Shell, Paketmanager, Prozess 1, Locale.
-const ProbeCommand = `sh -c '(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") || (sw_vers -productName 2>/dev/null | tr "\n" " "; sw_vers -productVersion 2>/dev/null) || echo; uname -srm 2>/dev/null || echo; echo "$SHELL"; pm=; for x in apt-get dnf yum zypper pacman apk pkg brew; do if command -v $x >/dev/null 2>&1; then pm=$x; break; fi; done; echo "$pm"; cat /proc/1/comm 2>/dev/null || ps -p 1 -o comm= 2>/dev/null || echo; echo "${LC_ALL:-${LC_CTYPE:-$LANG}}"'`
+// Zeilen: System, Kernel, Shell, Paketmanager, Prozess 1, Locale und
+// Ubiquiti-Kennung („board.name|/etc/version“, sonst nur „|“).
+const ProbeCommand = `sh -c '(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") || (sw_vers -productName 2>/dev/null | tr "\n" " "; sw_vers -productVersion 2>/dev/null) || echo; uname -srm 2>/dev/null || echo; echo "$SHELL"; pm=; for x in apt-get dnf yum zypper pacman apk pkg brew; do if command -v $x >/dev/null 2>&1; then pm=$x; break; fi; done; echo "$pm"; cat /proc/1/comm 2>/dev/null || ps -p 1 -o comm= 2>/dev/null || echo; echo "${LC_ALL:-${LC_CTYPE:-$LANG}}"; echo "$(sed -n "s/^board\.name=//p" /etc/board.info 2>/dev/null | head -n 1)|$(head -n 1 /etc/version 2>/dev/null)"'`
+
+// rxUniFiFW: /etc/version eines UniFi-Switches, z. B.
+// „US.bcm5334x.v4.3.13.11253.200430.1420“ oder „USW.mt7621.v6.6.55.15189…“.
+var rxUniFiFW = regexp.MustCompile(`^(US[A-Z]*)\.[\w-]+\.v(\d+\.\d+\.\d+(?:\.\d+)?)`)
+
+// unifiProbe: Zeile 7 der Abfrage. Ubiquiti-Geräte haben /etc/board.info;
+// Switches erkennt man am Modell (US-…, USW-…) bzw. an /etc/version „US…“.
+func unifiProbe(line string) (domain.SystemProfile, bool) {
+	board, ver, ok := strings.Cut(strings.TrimSpace(line), "|")
+	board, ver = strings.TrimSpace(board), strings.TrimSpace(ver)
+	if !ok || (board == "" && ver == "") {
+		return domain.SystemProfile{}, false
+	}
+	m := rxUniFiFW.FindStringSubmatch(ver)
+	b := strings.ToUpper(board)
+	if m == nil && (!strings.HasPrefix(b, "US") || strings.HasPrefix(b, "USG")) {
+		return domain.SystemProfile{}, false // UniFi-AP, EdgeRouter …: bleibt Linux
+	}
+	p := domain.SystemProfile{Family: domain.FamilyNetwork, OS: unifiName, Dialect: "unifi", Model: board}
+	if m != nil {
+		p.Version = m[2]
+	}
+	return p, true
+}
+
+const unifiName = "UniFi-Switch (Ubiquiti)"
 
 func initName(s string) string {
 	s = strings.TrimSpace(s)
@@ -160,6 +191,7 @@ var screenRules = []screenRule{
 	{regexp.MustCompile(`(?i)huawei versatile routing platform`), domain.FamilyNetwork, "Huawei VRP", "huawei-vrp"},
 	{regexp.MustCompile(`(?i)comware`), domain.FamilyNetwork, "HPE Comware", "comware"},
 	{regexp.MustCompile(`(?i)fortigate|fortios`), domain.FamilyNetwork, "FortiOS", "fortios"},
+	{regexp.MustCompile(`(?im)welcome to unifi\s+us[^g\s!]|^\(UBNT\)\s*[>#]|^\s*model:\s+us[^g\s!][\w-]*\s*$`), domain.FamilyNetwork, unifiName, "unifi"},
 	{regexp.MustCompile(`(?m)^PS [A-Z]:\\[^>]*> ?$`), domain.FamilyWindows, "", "powershell"},
 	{regexp.MustCompile(`(?m)^[A-Z]:\\[^>]*> ?$`), domain.FamilyWindows, "", "cmd"},
 }
@@ -172,6 +204,8 @@ var (
 	rxCiscoVersion  = regexp.MustCompile(`(?i)cisco ios.*?version\s+([\w.()]+)`)
 	rxJunosVersion  = regexp.MustCompile(`(?im)^\s*junos:\s*(\S+)`)
 	rxROSVersion    = regexp.MustCompile(`(?im)^\s*version:\s*(\d+\.\d+[\w.]*)`)
+	rxUniFiVersion  = regexp.MustCompile(`(?im)^\s*version:\s+(\d+\.\d+\.\d+[\d.]*)`)
+	rxUniFiModel    = regexp.MustCompile(`(?im)(?:^\s*model:\s+|welcome to unifi\s+)(US[^Gg\s!][\w-]*)`)
 )
 
 // FromScreen sucht in Terminaltext nach Merkmalen eines Systems. Gefunden
@@ -201,6 +235,8 @@ func FromScreen(text string) domain.SystemProfile {
 		p.Version = sub(rxJunosVersion)
 	case "routeros":
 		p.Version = sub(rxROSVersion)
+	case "unifi":
+		p.Version, p.Model = sub(rxUniFiVersion), sub(rxUniFiModel)
 	case "powershell", "cmd":
 		p.OS = "Windows"
 	}

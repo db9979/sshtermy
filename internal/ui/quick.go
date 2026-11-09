@@ -50,6 +50,10 @@ var (
 		"get system status", "get system interface physical", "get router info routing-table all", "diagnose sys session stat",
 		"get system performance status", "get system arp", "show full-configuration", "get system ha status",
 	}}
+	presetUniFi = quickPreset{"UniFi-Switch", []string{
+		"info", "swctrl port show", "swctrl poe show", "swctrl mac show",
+		"logread | tail -n 50", "free", "cat /tmp/system.cfg", "uptime",
+	}}
 	presetComware = quickPreset{"HPE Comware / Huawei", []string{
 		"display interface brief", "display vlan", "display lldp neighbor-information list", "display mac-address",
 		"display logbuffer", "display device", "display current-configuration", "display version",
@@ -85,6 +89,8 @@ func quickPresetFor(c domain.Connection, remote string) quickPreset {
 		return presetJunos
 	case has("fortigate", "fortios", "fortissh"):
 		return presetFortiOS
+	case has("unifi", "ubiquiti"):
+		return presetUniFi
 	case has("comware", "h3c", "huawei"):
 		return presetComware
 	case c.Device == domain.DeviceNetwork || has("netzwerkgerät", "aruba", "procurve"):

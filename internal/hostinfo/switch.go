@@ -22,6 +22,7 @@ const (
 	VendorJunos    Vendor = "junos"    // Juniper EX/SRX/MX
 	VendorMikroTik Vendor = "routeros" // MikroTik RouterOS
 	VendorFortiOS  Vendor = "fortios"  // Fortinet FortiGate
+	VendorUniFi    Vendor = "unifi"    // Ubiquiti UniFi-Switch (BusyBox-Shell)
 )
 
 // Name für die Anzeige.
@@ -39,6 +40,8 @@ func (v Vendor) Name() string {
 		return "MikroTik RouterOS"
 	case VendorFortiOS:
 		return "FortiOS"
+	case VendorUniFi:
+		return "UniFi-Switch (Ubiquiti)"
 	}
 	return "unbekannt"
 }
@@ -47,6 +50,8 @@ func (v Vendor) Name() string {
 func DetectVendor(showVersion string) Vendor {
 	l := strings.ToLower(showVersion)
 	switch {
+	case unifiInfo.MatchString(showVersion):
+		return VendorUniFi
 	case strings.Contains(l, "arubaos-cx") || strings.Contains(l, "aos-cx"):
 		return VendorArubaCX
 	case strings.Contains(l, "cisco ios") || strings.Contains(l, "cisco internetwork"):
@@ -87,6 +92,8 @@ func (v Vendor) VersionCommand() string {
 		return "/system resource print"
 	case VendorFortiOS:
 		return "get system status"
+	case VendorUniFi:
+		return "info"
 	}
 	return "show version"
 }
@@ -101,6 +108,9 @@ func (v Vendor) ConfigCommand() string {
 		return "/export"
 	case VendorFortiOS:
 		return "show full-configuration"
+	case VendorUniFi:
+		// vom Controller verteilte, gerade gültige Konfiguration
+		return "cat /tmp/system.cfg"
 	}
 	return "show running-config"
 }
@@ -120,6 +130,8 @@ func (v Vendor) InfoCommands() (system, ports, vlans string) {
 		return "/system identity print", "/interface ethernet print terse", "/interface vlan print terse"
 	case VendorFortiOS:
 		return "get system performance status", "get system interface physical", ""
+	case VendorUniFi:
+		return "free; top -bn1 | head -n 3", "swctrl port show", ""
 	}
 	return "", "", ""
 }
@@ -234,6 +246,9 @@ func ParseSwitch(v Vendor, version, system, ports, vlans string) Switch {
 		return s
 	case VendorFortiOS:
 		parseFortiOS(&s, version, system, ports)
+		return s
+	case VendorUniFi:
+		parseUniFi(&s, version, system, ports)
 		return s
 	}
 	s.PortsUp, s.PortsDown = countPorts(ports)

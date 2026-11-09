@@ -112,7 +112,7 @@ func (a *App) profileTick(s *session) {
 // dabei über Hersteller, Modell und Firmware erfahren hat, kommt ins Profil.
 func (a *App) profileFromSwitch(s *session, v hostinfo.Vendor, sw *hostinfo.Switch) {
 	dia := map[hostinfo.Vendor]string{hostinfo.VendorProCurve: "procurve", hostinfo.VendorArubaCX: "arubaos-cx", hostinfo.VendorCisco: "cisco-ios",
-		hostinfo.VendorJunos: "junos", hostinfo.VendorMikroTik: "routeros", hostinfo.VendorFortiOS: "fortios"}[v]
+		hostinfo.VendorJunos: "junos", hostinfo.VendorMikroTik: "routeros", hostinfo.VendorFortiOS: "fortios", hostinfo.VendorUniFi: "unifi"}[v]
 	if dia == "" {
 		return
 	}
@@ -142,6 +142,8 @@ func hostVendor(p domain.SystemProfile) hostinfo.Vendor {
 		return hostinfo.VendorMikroTik
 	case "fortios":
 		return hostinfo.VendorFortiOS
+	case "unifi":
+		return hostinfo.VendorUniFi
 	}
 	return hostinfo.VendorUnknown
 }

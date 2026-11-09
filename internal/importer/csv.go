@@ -35,7 +35,7 @@ var csvColumns = map[string]string{
 }
 
 // netWords: Hinweise in Rolle/Plattform/Typ auf ein Netzwerkgerät.
-var netWords = []string{"switch", "router", "firewall", "aruba", "procurve", "cisco", "ios", "nxos", "junos", "juniper", "mikrotik", "routeros", "comware", "fortigate", "fortinet", "hpe", "access point", "accesspoint", "core", "distribution"}
+var netWords = []string{"switch", "router", "firewall", "aruba", "procurve", "cisco", "ios", "nxos", "junos", "juniper", "mikrotik", "routeros", "comware", "fortigate", "fortinet", "unifi", "ubiquiti", "hpe", "access point", "accesspoint", "core", "distribution"}
 
 func normCol(s string) string {
 	s = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(s, "\ufeff")))

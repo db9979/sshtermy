@@ -198,7 +198,7 @@ func deviceClass(c domain.Connection) devClass {
 		return devFirewall
 	case "routeros":
 		return devRouter
-	case "procurve", "arubaos-cx", "cisco-ios", "junos", "comware", "huawei-vrp", "network":
+	case "procurve", "arubaos-cx", "cisco-ios", "junos", "comware", "huawei-vrp", "unifi", "network":
 		if containsWord(hay, "router") || containsWord(hay, "isr") || containsWord(hay, "mx") {
 			return devRouter
 		}

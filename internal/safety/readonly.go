@@ -202,8 +202,8 @@ func unixSegment(f []string) bool {
 
 var netShow = regexp.MustCompile(`(?i)^(show|sh|display|dis|ping|traceroute|tracert|dir)\b`)
 
-// FortiOS „get …“, RouterOS „/… print“ und „/export“
-var netVendorRead = regexp.MustCompile(`(?i)^(get\s+\S|/[\w/ -]*\bprint\b|/export\b)`)
+// FortiOS „get …“, RouterOS „/… print“ und „/export“, UniFi „info“ und „swctrl … show“
+var netVendorRead = regexp.MustCompile(`(?i)^(get\s+\S|/[\w/ -]*\bprint\b|/export\b|info\s*$|swctrl\s+[\w-]+\s+show\b)`)
 
 // Junos „| save datei“, RouterOS „file=…“ schreiben eine Datei auf das Gerät.
 var netWrites = regexp.MustCompile(`(?i)\|\s*save\b|\bfile=`)

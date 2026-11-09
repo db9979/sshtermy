@@ -21,6 +21,8 @@ func TestReadOnly(t *testing.T) {
 		{"/interface print terse", Network},
 		{"/ip route print where dst-address=0.0.0.0/0", Network},
 		{"/export", Network},
+		{"info", Network},
+		{"swctrl poe show", Network},
 		{"Get-Service sshd | Select-Object Status", "windows"},
 	}
 	for _, c := range yes {
@@ -56,6 +58,8 @@ func TestReadOnly(t *testing.T) {
 		{"/interface set ether1 disabled=yes", Network},
 		{"config system interface", Network},
 		{"execute reboot", Network},
+		{"swctrl poe set off id 3", Network},
+		{"syswrapper.sh restore-default", Network},
 		{"Stop-Service sshd", "windows"},
 		{"Get-Service | % { Stop-Service $_ }", "windows"},
 		{"", "unix"},

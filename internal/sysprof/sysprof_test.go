@@ -187,3 +187,58 @@ func TestMergeServerToNetworkResets(t *testing.T) {
 		t.Fatalf("eigene Angabe überschrieben: %+v", p)
 	}
 }
+
+// UniFi-Switch: Die Abfrage läuft (BusyBox-Shell), Zeile 7 verrät das Gerät.
+func TestFromProbeUniFi(t *testing.T) {
+	out := "\nLinux 3.6.5 mips\n/bin/sh\n\ninit\n\nUSW-24-PoE|USW.mt7621.v6.6.55.15189.230712.1033\n"
+	p := FromProbe(out)
+	if p.Family != domain.FamilyNetwork || p.Dialect != "unifi" || p.Model != "USW-24-PoE" || p.Version != "6.6.55.15189" {
+		t.Fatalf("%+v", p)
+	}
+	if ProbeRejected(out) != "" {
+		t.Fatal("UniFi-Abfrage als Ablehnung gelesen")
+	}
+	old := FromProbe("\nLinux 3.6.5 mips\n/bin/sh\n\ninit\n\n|US.bcm5334x.v4.3.13.11253.200430.1420\n")
+	if old.Dialect != "unifi" || old.Version != "4.3.13.11253" {
+		t.Fatalf("ältere Firmware: %+v", old)
+	}
+	// UniFi-AP und Gateway bleiben Linux
+	for _, o := range []string{"\nLinux 4.4 mips\n/bin/sh\n\ninit\n\nUAP-AC-Lite|BZ.qca956x.v6.5.62.14789\n", "\nLinux 4.9 mips64\n/bin/sh\n\ninit\n\nUSG-3P|UGW3.v4.4.57.5578372\n"} {
+		if q := FromProbe(o); q.Dialect != "posix" {
+			t.Fatalf("%q: %+v", o, q)
+		}
+	}
+	// Server ohne board.info: Zeile 7 ist nur „|“
+	if s := FromProbe("Ubuntu 24.04.1 LTS\nLinux 6.8.0 x86_64\n/bin/bash\napt-get\nsystemd\nde_DE.UTF-8\n|\n"); s.Dialect != "posix" {
+		t.Fatalf("%+v", s)
+	}
+	if d, ok := domain.DialectByID("unifi"); !ok || domain.FamilyOf(d.ID) != domain.FamilyNetwork {
+		t.Fatal("Befehlssatz UniFi fehlt in der Auswahl")
+	}
+}
+
+func TestFromScreenUniFi(t *testing.T) {
+	banner := `  ___ ___      .-. _____ _
+ | | | |____ _(_)/ __(_)| |  Welcome to UniFi USW-Lite-8-PoE!
+ |___|_||_|_||_|_|_| |_|
+      https://www.ui.com
+
+USW-Lite-8-PoE.6.6.55# info
+
+Model:       USW-Lite-8-PoE
+Version:     6.6.55.15189
+MAC Address: 74:ac:b9:00:11:22
+Hostname:    sw-flur
+Uptime:      266460 seconds
+`
+	p := FromScreen(banner)
+	if p.Dialect != "unifi" || p.Model != "USW-Lite-8-PoE" || p.Version != "6.6.55.15189" {
+		t.Fatalf("%+v", p)
+	}
+	if q := FromScreen("(UBNT) >enable\n(UBNT) #"); q.Dialect != "unifi" {
+		t.Fatalf("FASTPATH-CLI: %+v", q)
+	}
+	if q := FromScreen("Welcome to UniFi USG-3P!\n"); q.Dialect == "unifi" {
+		t.Fatal("Gateway als Switch erkannt")
+	}
+}
