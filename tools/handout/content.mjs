@@ -155,7 +155,7 @@ export const de = {
       ['n / e / d', 'neu / bearbeiten / löschen'],
     ]},
     { t: 'Host-Übersicht', ic: '▣', key: 'F6', rows: [
-      ['r / ⏎', 'abfragen (CPU, RAM, Platte, Ports)'],
+      ['r / ⏎', 'abfragen (CPU, RAM, Platten, Ports)'],
       ['b', 'Config sichern + Regeln prüfen'],
       ['↑ / ↓ · d · v', 'Stand wählen · Diff · ansehen'],
       ['c · g · t · z', 'Container · Grenzen · Zeitraum · groß'],
@@ -347,7 +347,7 @@ export const en = {
       ['n / e / d', 'new / edit / delete'],
     ]},
     { t: 'Host overview', ic: '▣', key: 'F6', rows: [
-      ['r / ⏎', 'query (CPU, RAM, disk, ports)'],
+      ['r / ⏎', 'query (CPU, RAM, disks, ports)'],
       ['b', 'back up switch config + check rules'],
       ['↑ / ↓ · d · v', 'pick state · diff · view'],
       ['c · g · t · z', 'containers · limits · range · large'],
