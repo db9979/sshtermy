@@ -184,7 +184,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	case actImport:
 		return a.openImport()
 	case actNextLook:
-		return a.cycleTheme()
+		return a.openThemes()
 	case actKeys:
 		return a.openKeys()
 	case actBroadcast:

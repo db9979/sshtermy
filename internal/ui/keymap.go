@@ -127,7 +127,7 @@ var actionDefs = []actionDef{
 	{actChip4, "Folgebefehl 4 einfügen", "Terminal", []string{"alt+4"}},
 	{actNewline, "Neue Zeile in KI-Eingabe", "KI-Eingabe", []string{"shift+enter", "ctrl+j"}},
 	{actImport, "Verbindungen importieren", "Manager", []string{"i"}},
-	{actNextLook, "Aussehen wechseln", "Manager", []string{"a"}},
+	{actNextLook, "Farbschema wählen", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},
 	{actQuickEdit, "Schnellbefehle bearbeiten", "Manager", []string{"q"}},
 	{actSSHKey, "SSH-Schlüssel erzeugen / übertragen", "Manager", []string{"c"}},

@@ -142,7 +142,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   (connections, keys, logs, switch backups, known_hosts, settings) as one file encrypted with the master password
   (Argon2id + AES-256-GCM). Restoring replaces everything after a confirmation and a restart; the previous state stays
   next to it as `….vorher-<date>`
-- **Themes** dark, light, high contrast, color-blind (dark and light), Matrix, Amber and Neon (a in the manager), **custom colors** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
+- **26 themes** with live preview (a in the manager): dark ones like Night, Polar night, Deep sea, Graphite, Vampire, Cherry blossom, Sunset, Neon, Ink, Forest, Chalk, Lagoon, Solar, Campfire, Amber and Matrix, light ones like Light, Paper, Frost, Sand, Dawn and Mint, plus high contrast and color-blind (dark and light), **custom colors** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
 - **English and German**: switch the language in the palette (“Language”/“Sprache”) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Window style** (palette “Window style”): dialogs, palette and pickers cast a shadow and the background dims a
@@ -253,7 +253,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | Where | Key | Effect |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | connect / new / edit / delete / search / tunnel / AI settings / sync / session logs |
-| | i / a / b | import connections / switch appearance / customize shortcuts |
+| | i / a / b | import connections / choose a color scheme (26 themes, live preview) / customize shortcuts |
 | | c / q | create or copy an SSH key / edit quick commands |
 | | m / f / z | broadcast to several hosts / network scan / schedules (Ctrl+N new, Ctrl+E edit, Ctrl+R now, Ctrl+O on/off, ⏎ last result) |
 | | w / g | workspaces (saved split layouts) / open a folder as a grid |

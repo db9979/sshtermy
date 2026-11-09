@@ -42,7 +42,7 @@ export const de = {
       ['s / y', 'KI-Einstellungen / Sync zwischen Rechnern'],
       ['i', 'importieren (ssh config, PuTTY, MobaXterm, Ansible, CSV)'],
       ['l', 'Sitzungsprotokolle'],
-      ['a / b', 'Aussehen wechseln / Tasten belegen'],
+      ['a / b', 'Farbschema wählen / Tasten belegen'],
     ]},
     { t: 'Terminal', ic: '▸', rows: [
       ['Tab / →', 'Ghost-Text übernehmen'],
@@ -235,7 +235,7 @@ export const en = {
       ['s / y', 'AI settings / sync between computers'],
       ['i', 'import (ssh config, PuTTY, MobaXterm, Ansible, CSV)'],
       ['l', 'session logs'],
-      ['a / b', 'switch appearance / customize keys'],
+      ['a / b', 'choose color scheme / customize keys'],
     ]},
     { t: 'Terminal', ic: '▸', rows: [
       ['Tab / →', 'accept ghost text'],

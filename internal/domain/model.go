@@ -501,7 +501,7 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast" | "kontrasthell" | "matrix" | "bernstein" | "neon" | "eigene"
+	Theme        string `json:"theme"`                    // Name aus ui.Themes (z. B. "nacht", "polar", "papier") oder "eigene"
 	UseDPAPI     bool   `json:"use_dpapi"`                // Windows: Store-Schlüssel zusätzlich per DPAPI
 	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
 	Language     string `json:"language"`                 // "de" | "en"

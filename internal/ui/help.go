@@ -75,7 +75,7 @@ var helpSections = []helpSection{
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
 		{"i", "Verbindungen importieren"},
-		{"a", "Aussehen wechseln"},
+		{"a", "Farbschema wählen"},
 		{"b", "Tastenkürzel anpassen"},
 		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
