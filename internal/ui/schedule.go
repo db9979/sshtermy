@@ -530,7 +530,7 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 	}
 }
 
-// claimSchedules: Zeitpläne ohne Rechner (vor v1.0.311 angelegt) gehören
+// claimSchedules: Zeitpläne ohne Rechner (vor v1.0.312 angelegt) gehören
 // diesem Rechner. Läuft vor jedem Abgleich, damit kein Zeitplan ohne
 // Rechner auf einem anderen Rechner ankommt und dort mitläuft.
 func (a *App) claimSchedules() {

@@ -984,7 +984,7 @@ type Schedule struct {
 	// Machine: Rechner (Name wie beim Sync), auf dem der Zeitplan läuft.
 	// Der Sync zeigt ihn überall, ausführen tut ihn nur dieser Rechner;
 	// sonst liefe derselbe Job auf jedem Rechner. Leer = noch nicht
-	// zugeordnet (vor v1.0.311), sshTermy setzt den eigenen Namen.
+	// zugeordnet (vor v1.0.312), sshTermy setzt den eigenen Namen.
 	Machine   string    `json:"machine,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 }
