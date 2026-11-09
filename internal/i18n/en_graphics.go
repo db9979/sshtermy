@@ -83,3 +83,13 @@ func init() {
 		en[k] = v
 	}
 }
+
+func init() {
+	for k, v := range map[string]string{
+		"sichtbare": "visible",
+		"Online-Punkt: nur sichtbare Verbindungen, zugeklappte Ordner ruhen.":                  "Online dot: visible connections only, collapsed folders rest.",
+		"Online-Punkt: alle Verbindungen, Ausfälle melden sich auch aus zugeklappten Ordnern.": "Online dot: all connections, outages are reported from collapsed folders too.",
+	} {
+		en[k] = v
+	}
+}

@@ -29,6 +29,7 @@ const (
 	reachTimeout = 2 * time.Second
 	reachPar     = 16 // gleichzeitig, bei vielen Hosts mehr (reachParFor)
 	reachParMax  = 64
+	reachKickGap = 3 * time.Second // neue sichtbare Zeilen: höchstens so oft außer der Reihe
 )
 
 // reachParFor: bei 1000 Hosts dauert eine Runde mit 16 gleichzeitigen
@@ -52,6 +53,7 @@ type reachState struct {
 	downAt  map[string]time.Time       // gerade ausgefallen (Punkt blinkt)
 	running bool
 	next    time.Time
+	kick    time.Time // letzte Runde (für sofortige Prüfung neuer Zeilen)
 	started time.Time
 }
 
@@ -59,25 +61,77 @@ type reachMsg struct{ res map[string]reachResult }
 
 func (a *App) reachEnabled() bool { return !a.st.Settings().NoReachCheck }
 
-// reachTick: einmal pro Sekunde; startet eine Runde, wenn fällig.
+// Umfang der Prüfung: aus, nur sichtbare Verbindungen (Standard), alle.
+const (
+	reachOff = iota
+	reachVisible
+	reachAll
+)
+
+func (a *App) reachMode() int {
+	switch set := a.st.Settings(); {
+	case set.NoReachCheck:
+		return reachOff
+	case set.ReachAll:
+		return reachAll
+	}
+	return reachVisible
+}
+
+func reachLabel(mode int) string {
+	return [...]string{i18n.T("aus"), i18n.T("sichtbare"), i18n.T("alle")}[mode]
+}
+
+// reachVisibleIDs: Verbindungen, die im Manager gerade als Zeile stehen
+// (zugeklappte Ordner verbergen ihre, die Suche zeigt nur Treffer).
+func (a *App) reachVisibleIDs() map[string]bool {
+	ids := map[string]bool{}
+	for _, r := range a.mgrRows() {
+		if !r.isFolder() {
+			ids[r.conn.ID] = true
+		}
+	}
+	return ids
+}
+
+// reachTick: einmal pro Sekunde; startet eine Runde, wenn fällig. Steht
+// eine sichtbare Verbindung noch ganz ohne Ergebnis da (Ordner gerade
+// aufgeklappt, Suche, neu angelegt), kommt die Runde sofort.
 func (a *App) reachTick() tea.Cmd {
-	if a.scr != scrManager || a.intro != nil || !a.reachEnabled() || a.reach.running || time.Now().Before(a.reach.next) {
+	mode := a.reachMode()
+	if a.scr != scrManager || a.intro != nil || mode == reachOff || a.reach.running {
 		return nil
 	}
+	var vis map[string]bool
+	if mode == reachVisible {
+		vis = a.reachVisibleIDs()
+	}
 	var todo, via []domain.Connection
+	fresh := false
 	for _, c := range a.st.Connections() {
+		if vis != nil && !vis[c.ID] {
+			continue
+		}
 		switch {
 		case a.connected(c.ID):
 		case c.ViaRelay():
 			via = append(via, c) // Online laut Vermittler (relay.go)
 		case c.JumpHostID == "" && c.Host != "":
 			todo = append(todo, c)
+			if _, ok := a.reach.res[c.ID]; !ok {
+				fresh = true
+			}
 		}
 	}
-	a.reach.next = time.Now().Add(reachEvery)
+	now := time.Now()
+	if now.Before(a.reach.next) && !(fresh && now.Sub(a.reach.kick) >= reachKickGap) {
+		return nil
+	}
+	a.reach.next = now.Add(reachEvery)
 	if len(todo) == 0 && len(via) == 0 {
 		return nil
 	}
+	a.reach.kick = now
 	a.reach.running, a.reach.started = true, time.Now()
 	return func() tea.Msg {
 		res := checkReach(todo)
@@ -294,6 +348,27 @@ func fmtAgo(d time.Duration) string {
 		return i18n.F("vor %d s", int(d.Seconds()))
 	}
 	return i18n.F("vor %d min", int(d.Minutes()))
+}
+
+// cycleReach: aus → sichtbare → alle (Palette › Einstellungen).
+func (a *App) cycleReach(dir int) tea.Cmd {
+	next := cycleIndex(a.reachMode(), 3, dir)
+	if err := a.st.UpdateSettings(func(s *domain.Settings) {
+		s.NoReachCheck, s.ReachAll = next == reachOff, next == reachAll
+	}); err != nil {
+		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		return nil
+	}
+	a.reach.next = time.Time{}
+	switch next {
+	case reachOff:
+		a.flash(i18n.T("Erreichbarkeit aus: sshTermy baut keine Prüfverbindungen mehr auf."))
+	case reachVisible:
+		a.flash(i18n.T("Online-Punkt: nur sichtbare Verbindungen, zugeklappte Ordner ruhen."))
+	default:
+		a.flash(i18n.T("Online-Punkt: alle Verbindungen, Ausfälle melden sich auch aus zugeklappten Ordnern."))
+	}
+	return nil
 }
 
 func (a *App) toggleReach() tea.Cmd {

@@ -152,8 +152,9 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
 - **Lively interface** (palette “Motion”: full, subtle, off): a spinner in the tab while connecting, tabs flash green
   on success and red on errors, a pulsing dot shows new output in hidden tabs, hovering a tab shows a card with target,
-  duration and latency history. In the manager the online dots “breathe”, an outage blinks and is reported, and the
-  details show the reachability history and CPU/RAM/disk bars for connected servers. While connecting, a card shows
+  duration and latency history. In the manager the online dots “breathe”, an outage blinks and is reported (checked are
+  the connections visible in the manager, a folder is checked as soon as you expand it; settings “Online dot”: off,
+  visible, all), and the details show the reachability history and CPU/RAM/disk bars for connected servers. While connecting, a card shows
   the steps (connection, host key, login, shell) with timings and a progress bar with a light sweep, then the shell
   fades in from the top. The AI answer shimmers “thinking …” and types out smoothly, panels fade in. In the command
   palette the matched letters light up, rows fade in one after another and the selection glides. The status line shows
