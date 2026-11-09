@@ -422,8 +422,15 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 		if cl.Profile.OS != "" {
 			cl.Remote.OS = cl.Profile.OS
 		}
+	} else if pr, locale, refused := cl.probe(); refused != "" {
+		// Das Gerät hat die Abfrage abgelehnt statt sie auszuführen (z. B.
+		// ArubaOS-CX: „Command not supported.“, Kennung OpenSSH): also ein
+		// Netzwerkgerät. Ab jetzt keine Exec-Befehle mehr; das Profil merkt
+		// sich die Familie, damit beim nächsten Mal gar nicht erst gefragt wird.
+		cl.NetDevice = true
+		cl.Profile.Family, cl.Profile.Dialect = domain.FamilyNetwork, "network"
+		cl.Remote = RemoteInfo{OS: i18n.T("Netzwerkgerät (") + strings.TrimPrefix(banner, "SSH-2.0-") + ")"}
 	} else {
-		pr, locale := cl.probe()
 		if pr.OS != "" || pr.Version != "" {
 			pr.Banner = cl.Profile.Banner
 			cl.Profile = pr
@@ -621,24 +628,27 @@ func (c *Client) keepAliveLoop(ctx context.Context, ping, deadAfter time.Duratio
 
 // probe fragt System, Kernel, Shell, Paketmanager und Init-System ab, in
 // einer eigenen Exec-Sitzung, also unsichtbar für das Terminal des Nutzers.
-func (c *Client) probe() (domain.SystemProfile, string) {
+// refused ist die Fehlermeldung, wenn das Gerät die Abfrage abgelehnt hat.
+func (c *Client) probe() (prof domain.SystemProfile, locale, refused string) {
 	s, err := c.NewSession()
 	if err != nil {
-		return domain.SystemProfile{}, ""
+		return domain.SystemProfile{}, "", ""
 	}
 	defer s.Close()
 	done := make(chan []byte, 1)
 	go func() { out, _ := s.Output(sysprof.ProbeCommand); done <- out }()
 	select {
 	case out := <-done:
+		if msg := sysprof.ProbeRejected(string(out)); msg != "" {
+			return domain.SystemProfile{}, "", msg
+		}
 		lines := strings.Split(strings.ReplaceAll(string(out), "\r", ""), "\n")
-		locale := ""
 		if len(lines) > 5 {
 			locale = strings.TrimSpace(lines[5])
 		}
-		return sysprof.FromProbe(string(out)), locale
+		return sysprof.FromProbe(string(out)), locale, ""
 	case <-time.After(4 * time.Second):
-		return domain.SystemProfile{}, ""
+		return domain.SystemProfile{}, "", ""
 	}
 }
 

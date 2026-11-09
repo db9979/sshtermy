@@ -29,6 +29,9 @@ type fakeSwitch struct {
 	// mitten im Handshake ab (Sitzung noch nicht freigegeben).
 	busy      time.Duration
 	busyUntil atomic.Int64
+	// execReply: statt aufzulegen antwortet der Switch auf Exec mit dieser
+	// Meldung und bleibt verbunden (ArubaOS-CX: „Command not supported.“).
+	execReply string
 }
 
 func startFakeSwitch(t *testing.T, banner string) *fakeSwitch {
@@ -85,6 +88,13 @@ func (fs *fakeSwitch) serve(nc net.Conn, cfg *ssh.ServerConfig) {
 				switch r.Type {
 				case "exec":
 					fs.execs.Add(1)
+					if fs.execReply != "" {
+						r.Reply(true, nil)
+						ch.Write([]byte(fs.execReply + "\r\n"))
+						ch.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{1}))
+						ch.Close()
+						return
+					}
 					fs.busyUntil.Store(time.Now().Add(fs.busy).UnixNano())
 					sc.Close() // wie der Switch: Verbindung weg → EOF beim Client
 					return
@@ -159,6 +169,31 @@ func TestSwitchHangsUpOnExecFallsBack(t *testing.T) {
 	if fs.execs.Load() != 1 {
 		t.Fatalf("erwartet genau eine Exec-Probe, waren %d", fs.execs.Load())
 	}
+}
+
+// ArubaOS-CX (Kennung OpenSSH) legt bei Exec nicht auf, sondern antwortet
+// „Command not supported.“. Das darf nicht als Systemname im Kopf landen;
+// stattdessen ist es ein Netzwerkgerät, und es folgen keine Exec-Befehle mehr.
+func TestExecRefusedMeansNetworkDevice(t *testing.T) {
+	fs := startFakeSwitch(t, "SSH-2.0-OpenSSH_8.4")
+	fs.execReply = "Command not supported."
+	cl := dialFake(t, fs, domain.DeviceAuto)
+	if !cl.NetDevice {
+		t.Fatal("Netzwerkgerät nicht erkannt")
+	}
+	if cl.Profile.Family != domain.FamilyNetwork || strings.Contains(cl.Profile.OS, "not supported") {
+		t.Fatalf("Profil = %+v", cl.Profile)
+	}
+	if strings.Contains(cl.Remote.OS, "not supported") {
+		t.Fatalf("Remote.OS = %q", cl.Remote.OS)
+	}
+	if _, err := cl.Output("tmux ls", time.Second); err == nil {
+		t.Fatal("Output auf Netzwerkgerät hätte abgelehnt werden müssen")
+	}
+	if n := fs.execs.Load(); n != 1 {
+		t.Fatalf("%d Exec-Anfragen, erwartet genau eine", n)
+	}
+	expectPrompt(t, cl)
 }
 
 // Wie bei Dominiks Aruba: nach dem Auflegen ist der Switch kurz belegt. Der
