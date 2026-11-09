@@ -9,12 +9,15 @@ package ui
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/debuglog"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -56,6 +59,8 @@ type perfState struct {
 	outPrev int64
 	outRate float64 // Bytes/s
 	slowAt  time.Time
+
+	rect rect // wo die Anzeige im letzten Bild stand (Toasts weichen aus)
 }
 
 // record: Dauer eines Bildes merken.
@@ -149,6 +154,79 @@ func fmtMs(d time.Duration) string {
 	return strings.Replace(fmt.Sprintf("%.1f ms", float64(d.Microseconds())/1000), ".", i18n.Pick(",", "."), 1)
 }
 
+// termMemo: das zuletzt gezeichnete Terminalbild einer Sitzung. Viele
+// Bilder entstehen ohne neue Ausgabe (Maus, Uhr, Toasts, Leistungsanzeige);
+// dann ist das Terminal unverändert und muss nicht neu aufgebaut werden.
+type termMemo struct {
+	gen   uint64
+	ghost string
+	hl    any
+	style int
+	w, h  int
+	out   string
+	ok    bool
+}
+
+// termView: Terminalfläche, aus dem Gedächtnis, solange sich nichts geändert hat.
+func (a *App) termView(s *session, ghost string) string {
+	gen := s.term.Gen() // vor dem Zeichnen lesen: kommt währenddessen Ausgabe, zählt das nächste Bild neu
+	w, h := s.term.Size()
+	var hl any
+	if set := a.hlSet(); set != nil {
+		hl = set
+	}
+	m := &s.viewMemo
+	if m.ok && m.gen == gen && m.ghost == ghost && m.hl == hl && m.style == a.styleGen && m.w == w && m.h == h {
+		return m.out
+	}
+	st := a.s
+	out := s.term.ViewHL(ghost, func(g string) string { return st.Ghost.Render(g) }, a.termHL())
+	*m = termMemo{gen: gen, ghost: ghost, hl: hl, style: a.styleGen, w: w, h: h, out: out, ok: true}
+	return out
+}
+
+// beside: links ein Block mit fester Breite lw, rechts daneben right (oben
+// bündig). Wie lipgloss.JoinHorizontal mit Width, aber ohne alles neu zu
+// umbrechen; bei 200 Spalten spart das je Bild spürbar Zeit.
+func beside(left string, lw int, right string) string {
+	ls, rs := strings.Split(left, "\n"), strings.Split(right, "\n")
+	rw := 0
+	rws := make([]int, len(rs))
+	for i, r := range rs {
+		rws[i] = ansi.StringWidth(r)
+		rw = max(rw, rws[i])
+	}
+	n := max(len(ls), len(rs))
+	var b strings.Builder
+	b.Grow(len(left) + len(right) + n*8)
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		l := ""
+		if i < len(ls) {
+			l = ls[i]
+		}
+		w := ansi.StringWidth(l)
+		if w > lw {
+			l = ansi.Truncate(l, lw, "")
+			w = ansi.StringWidth(l)
+		}
+		b.WriteString(l)
+		if strings.IndexByte(l, 0x1b) >= 0 {
+			b.WriteString(sgrReset)
+		}
+		b.WriteString(strings.Repeat(" ", lw-w))
+		if i < len(rs) {
+			b.WriteString(rs[i])
+			b.WriteString(strings.Repeat(" ", rw-rws[i]))
+		} else {
+			b.WriteString(strings.Repeat(" ", rw))
+		}
+	}
+	return b.String()
+}
+
 // togglePerf: Leistungsanzeige an/aus (Palette).
 func (a *App) togglePerf() tea.Cmd {
 	a.perf.on = !a.perf.on
@@ -163,41 +241,92 @@ func (a *App) perfTick() tea.Cmd {
 	return tea.Tick(time.Second, func(time.Time) tea.Msg { return perfTickMsg{} })
 }
 
-// perfBox: die Anzeige oben rechts.
+// perfGrade: Zeichenzeit in Worten. Ein Bildschirm zeigt 60 Bilder/s, für
+// ein Bild bleiben also 16,7 ms; darunter wirkt alles flüssig.
+func (a *App) perfGrade(d time.Duration) (string, lipgloss.Style) {
+	st := a.s
+	switch {
+	case d < 8*time.Millisecond:
+		return i18n.T("flüssig"), st.OK
+	case d < 17*time.Millisecond:
+		return i18n.T("gut"), st.OK
+	case d < perfSlow:
+		return i18n.T("etwas träge"), st.Warn
+	default:
+		return i18n.T("ruckelt"), st.Danger
+	}
+}
+
+// perfBars: zwei Zeilen Balken (16 Stufen), je Bild einer, gefärbt nach
+// Bewertung. Volle Höhe = 33 ms (zwei Bildschirmbilder); flach = gut.
+func (a *App) perfBars(durs []time.Duration, w int) []string {
+	r := []rune(" ▁▂▃▄▅▆▇█")
+	if len(durs) > w {
+		durs = durs[len(durs)-w:]
+	}
+	full := float64(2 * perfMinGap)
+	var top, bot strings.Builder
+	pad := strings.Repeat(" ", w-len(durs))
+	top.WriteString(pad)
+	bot.WriteString(pad)
+	for _, d := range durs {
+		lv := max(1, min(16, int(math.Ceil(float64(d)/full*16))))
+		_, c := a.perfGrade(d)
+		top.WriteString(c.Render(string(r[max(0, lv-8)])))
+		bot.WriteString(c.Render(string(r[min(8, lv)])))
+	}
+	return []string{top.String(), bot.String()}
+}
+
+const perfBoxW = 42 // Inhalt samt Innenabstand, Rahmen kommt dazu
+
+// perfBox: die Anzeige. Jede Zahl bekommt eine Bewertung in Worten, damit
+// man ohne Vorwissen sieht, ob alles in Ordnung ist.
 func (a *App) perfBox(now time.Time) string {
 	p := &a.perf
 	st := a.s
-	const w = 36
-	row := func(label, val string, c lipgloss.Style) string {
-		return st.Muted.Render(fmt.Sprintf("%-10s", label)) + c.Bold(true).Render(val)
-	}
-	mode := i18n.T("sofort")
-	if p.heavy() {
-		mode = fmt.Sprintf(i18n.T("alle %d ms"), p.gap().Milliseconds())
+	const inner = perfBoxW - 4
+	row := func(label, val string, c lipgloss.Style, note string, nc lipgloss.Style) string {
+		l := st.Muted.Render(fmt.Sprintf("%-10s", label)) + c.Bold(true).Render(fmt.Sprintf("%-9s", val))
+		return l + nc.Render(trunc(note, inner-19))
 	}
 	cur := time.Duration(0)
 	if len(p.durs) > 0 {
 		cur = p.durs[len(p.durs)-1]
 	}
-	drawC := st.Text
-	if p.ema >= perfMinGap {
-		drawC = st.Warn
+	peak := time.Duration(0)
+	for _, d := range p.durs {
+		peak = max(peak, d)
 	}
+	grade, gc := a.perfGrade(p.ema)
 	lines := []string{
-		row(i18n.T("Bilder/s"), fmt.Sprintf("%-4d", p.fps(now)), st.Text) + st.OK.Render(mode),
-		row(i18n.T("Zeichnen"), fmtMs(cur), drawC) + st.Muted.Render(" · Ø "+fmtMs(p.ema)),
-		row(i18n.T("Ausgabe"), humanBytes(int64(p.outRate))+"/s", st.Text),
+		row(i18n.T("Zeichnen"), fmtMs(p.ema), gc, "● "+grade, gc),
+		st.Muted.Render(trunc(fmt.Sprintf(i18n.T("zuletzt %s · Spitze %s"), fmtMs(cur), fmtMs(peak)), inner)),
 	}
-	vals := make([]float64, len(p.durs))
-	for i, d := range p.durs {
-		vals[i] = float64(d.Microseconds())
+	if len(p.durs) > 0 {
+		lines = append(lines, a.perfBars(p.durs, inner)...)
+		lines = append(lines, st.Muted.Render(trunc(i18n.T("ein Balken je Bild · voll = 33 ms"), inner)))
 	}
-	if len(vals) > 0 {
-		lines = append(lines, "")
-		lines = append(lines, strings.Split(graphBlock(scaleTo(vals, float64(perfMinGap.Microseconds())), w-4, 2, st.T.Warn, st.T.OK), "\n")...)
+	lines = append(lines, "")
+	fps := p.fps(now)
+	fpsNote := ""
+	if fps <= 5 {
+		fpsNote = i18n.T("nur bei Änderung")
 	}
-	lines = append(lines, st.Muted.Render(fmt.Sprintf(i18n.T("Spitze %s · %d ausgelassen"), fmtMs(p.peak), p.skips)))
-	box := lipgloss.NewStyle().Border(frameBorder).BorderForeground(st.T.Border).Padding(0, 1).Width(w).
+	lines = append(lines, row(i18n.T("Bilder/s"), fmt.Sprintf("%d", fps), st.Text, fpsNote, st.Muted))
+	if p.ema > 0 {
+		// so viele Bilder je Sekunde gingen bei dieser Zeichenzeit
+		lines = append(lines, row(i18n.T("möglich"), fmt.Sprintf("%d", min(999, int(time.Second/p.ema))), st.Text, i18n.T("Bilder/s"), st.Muted))
+	}
+	outNote, oc := i18n.T("sofort gezeigt"), st.Muted
+	if p.heavy() {
+		outNote, oc = fmt.Sprintf(i18n.T("viel: alle %d ms"), p.gap().Milliseconds()), st.Warn
+	}
+	lines = append(lines, row(i18n.T("Ausgabe"), humanBytes(int64(p.outRate))+"/s", st.Text, outNote, oc))
+	if p.skips > 0 {
+		lines = append(lines, st.Muted.Render(trunc(fmt.Sprintf(i18n.T("%d× übersprungen bei Flut (gewollt)"), p.skips), inner)))
+	}
+	box := lipgloss.NewStyle().Border(frameBorder).BorderForeground(st.T.Border).Padding(0, 1).Width(perfBoxW).
 		Render(strings.Join(lines, "\n"))
 	// Titel in die obere Linie
 	bl := strings.SplitN(box, "\n", 2)
@@ -205,21 +334,32 @@ func (a *App) perfBox(now time.Time) string {
 		tc, _ := frameCorners()
 		title := st.AI.Bold(true).Render(" " + i18n.T("Leistung") + " ")
 		bs := lipgloss.NewStyle().Foreground(st.T.Border)
-		box = bs.Render(string(tc[0])+"─") + title + bs.Render(strings.Repeat("─", max(0, w-2-lipgloss.Width(title)-2))+string(tc[1])) + "\n" + bl[1]
+		bw := lipgloss.Width(bl[0])
+		box = bs.Render(string(tc[0])+"─") + title + bs.Render(strings.Repeat("─", max(0, bw-3-lipgloss.Width(title)))+string(tc[1])) + "\n" + bl[1]
 	}
 	return box
 }
 
-// withPerf: Anzeige über das Bild legen.
+// withPerf: Anzeige über das Bild legen. Im Terminal rechts oben in der
+// Terminalfläche, also links neben einer offenen Seitenleiste (F6), damit
+// sie die Host-Übersicht nicht verdeckt.
 func (a *App) withPerf(base string) string {
-	if !a.perf.on || a.w < 44 || a.h < 14 {
+	a.perf.rect = rect{}
+	if !a.perf.on || a.w < perfBoxW+6 || a.h < 16 {
 		return base
 	}
 	box := a.perfBox(time.Now())
-	x := max(0, a.w-lipgloss.Width(box)-1)
-	y := 1
-	if a.scr == scrTerminal {
-		y = 2
+	bw := lipgloss.Width(box)
+	x, y := a.w-bw-1, 1
+	if s := a.current(); a.scr == scrTerminal && s != nil {
+		tr := a.termRect(s)
+		cols, _ := a.paneSize(s)
+		y = tr.y
+		if cols >= bw+2 {
+			x = tr.x + cols - bw - 1
+		}
 	}
-	return lipgloss.NewCompositor(lipgloss.NewLayer(base), lipgloss.NewLayer(box).X(x).Y(y).Z(50)).Render()
+	x = max(0, x)
+	a.perf.rect = rect{x, y, bw, lipgloss.Height(box)}
+	return stamp(base, box, x, y, a.w)
 }

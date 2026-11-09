@@ -396,6 +396,5 @@ func (a *App) withHover(body string) string {
 	w := lipgloss.Width(card)
 	x := max(0, min(h.x, a.w-w))
 	y := min(h.y, max(0, a.h-lipgloss.Height(card)))
-	c := lipgloss.NewCompositor(lipgloss.NewLayer(body), lipgloss.NewLayer(card).X(x).Y(y).Z(2))
-	return c.Render()
+	return stamp(body, card, x, y, a.w)
 }

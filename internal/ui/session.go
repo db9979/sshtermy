@@ -73,7 +73,8 @@ type session struct {
 	detOut atomic.Pointer[detach.Conn] // dorthin geht die Ausgabe mit
 	share  atomic.Pointer[shareOut]    // Sitzung live teilen (share.go)
 
-	fixedCols, fixedRows int // Zuschauer: Größe des Gastgebers (0 = Fenster)
+	fixedCols, fixedRows int      // Zuschauer: Größe des Gastgebers (0 = Fenster)
+	viewMemo             termMemo // letztes Terminalbild (perf.go: termView)
 
 	notice   noticeKind  // Markierung im Tab: Befehl fertig, Glocke (notify.go)
 	unseen   bool        // neue Ausgabe, solange der Tab verdeckt war (motion.go)

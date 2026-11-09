@@ -169,8 +169,10 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   sync as events, never passwords or screen content. Help › “Save cleaned debug log” writes a copy without hosts, IPs and
   user names to Downloads, ready to attach to a GitHub issue. Very slow frames (over 50 ms) are logged there too
 - **Adaptive frame rate**: when a server floods output (`cat` on a big file), sshTermy draws only as often as a frame
-  allows instead of for every chunk; keys and mouse always draw at once. Palette “Performance display” shows frames per
-  second, draw time, output rate and a graph of the last frames
+  allows instead of for every chunk; keys and mouse always draw at once. Unchanged terminal content is not rebuilt for
+  every frame. Palette “Performance display” rates the draw time in words (smooth/good/a bit slow/choppy), shows a bar per
+  frame, frames per second (1 at rest is normal: it only draws on change), the possible frame rate and the output rate;
+  in the terminal it sits left of the F6 sidebar
 - **Versioning and auto-update** from GitHub Releases (signed)
 
 The AI interaction concept (suggestions, goal mode, fixed danger rules) comes from the remote access assistant of

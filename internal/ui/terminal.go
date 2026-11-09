@@ -586,7 +586,7 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 		if focused {
 			ghost = a.visibleGhost(s)
 		}
-		body = s.term.ViewHL(ghost, func(g string) string { return st.Ghost.Render(g) }, a.termHL())
+		body = a.termView(s, ghost)
 		body = revealLines(s, body, rows, time.Now())
 		if x, y, vis := s.term.Cursor(); vis && focused && !s.panelFocus {
 			cur = tea.NewCursor(tr.x+x, tr.y+y)
@@ -614,10 +614,10 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 			}
 			body, cur = lipgloss.JoinHorizontal(lipgloss.Top, strings.Join(lines, "\n"), a.viewPanel(s, pw, rows)), nil
 		} else {
-			body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.panelRail(s, rows))
+			body = beside(body, cols, a.panelRail(s, rows)) // perf.go
 		}
 	} else if s.panel != panelNone {
-		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(cols).Render(body), a.viewPanel(s, a.panelWidth(s), rows))
+		body = beside(body, cols, a.viewPanel(s, a.panelWidth(s), rows))
 	}
 
 	return body, cur

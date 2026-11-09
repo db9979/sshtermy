@@ -63,13 +63,21 @@ func init() {
 
 func init() {
 	for k, v := range map[string]string{
-		"sofort":                     "instant",
-		"alle %d ms":                 "every %d ms",
-		"Bilder/s":                   "frames/s",
-		"Zeichnen":                   "drawing",
-		"Ausgabe":                    "output",
-		"Spitze %s · %d ausgelassen": "peak %s · %d skipped",
-		"Leistung":                   "Performance",
+		"Bilder/s":                            "frames/s",
+		"Zeichnen":                            "drawing",
+		"Ausgabe":                             "output",
+		"Leistung":                            "Performance",
+		"flüssig":                             "smooth",
+		"gut":                                 "good",
+		"etwas träge":                         "a bit slow",
+		"ruckelt":                             "choppy",
+		"zuletzt %s · Spitze %s":              "last %s · peak %s",
+		"ein Balken je Bild · voll = 33 ms":   "one bar per frame · full = 33 ms",
+		"nur bei Änderung":                    "only on change",
+		"möglich":                             "possible",
+		"sofort gezeigt":                      "shown at once",
+		"viel: alle %d ms":                    "busy: every %d ms",
+		"%d× übersprungen bei Flut (gewollt)": "%d× skipped in a flood (by design)",
 		"Leistungsanzeige (Bildrate, Zeichenzeit)": "Performance display (frame rate, draw time)",
 	} {
 		en[k] = v

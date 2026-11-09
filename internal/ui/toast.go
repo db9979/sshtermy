@@ -188,7 +188,6 @@ func (a *App) withToasts(base string) string {
 		return base
 	}
 	w := a.toastWidth()
-	layers := []*lipgloss.Layer{lipgloss.NewLayer(base)}
 	y := 1
 	if a.scr == scrTerminal {
 		y = 2 // Sitzungszeile frei lassen
@@ -203,6 +202,9 @@ func (a *App) withToasts(base string) string {
 		}})
 		bw, bh := lipgloss.Width(box), lipgloss.Height(box)
 		x := max(0, a.w-bw-1)
+		if pr := a.perf.rect; pr.w > 0 && y < pr.y+pr.h && x < pr.x+pr.w && pr.x < x+bw {
+			y = pr.y + pr.h // unter die Leistungsanzeige (perf.go)
+		}
 		if age := now.Sub(t.born); age < toastIn { // von rechts hereingleiten
 			x += int(float64(bw) * (1 - float64(age)/float64(toastIn)) / 2)
 		}
@@ -214,10 +216,10 @@ func (a *App) withToasts(base string) string {
 			box = strings.Join(ls, "\n")
 		}
 		box = a.z.scan(box, x, y)
-		layers = append(layers, lipgloss.NewLayer(box).X(x).Y(y).Z(2+i))
+		base = stamp(base, box, x, y, a.w) // stamp.go
 		y += bh
 	}
-	return lipgloss.NewCompositor(layers...).Render()
+	return base
 }
 
 func (a *App) dropToast(text string) {
