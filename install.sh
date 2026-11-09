@@ -79,6 +79,7 @@ EOF
 	<key>CFBundleDisplayName</key><string>sshTermy</string>
 	<key>CFBundleIdentifier</key><string>com.github.db9979.sshtermy</string>
 	<key>CFBundleExecutable</key><string>sshTermy</string>
+	<key>CFBundleIconFile</key><string>sshtermy</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
 	<key>CFBundleShortVersionString</key><string>1.0</string>
 	<key>LSMinimumSystemVersion</key><string>11.0</string>
@@ -86,6 +87,8 @@ EOF
 </dict>
 </plist>
 EOF
+	# Das Programm legt sein Icon selbst nach Resources/sshtermy.icns.
+	"$bin" -version >/dev/null 2>&1 || true
 	xattr -dr com.apple.quarantine "$app" 2>/dev/null || true
 	# Finder/Launchpad sollen die neue App gleich sehen.
 	/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app" >/dev/null 2>&1 || true

@@ -10,6 +10,25 @@ trap 'rm -rf "$root"' EXIT INT TERM
 chmod 755 "$root"
 install -Dm755 "$bin" "$root/usr/bin/sshtermy"
 install -d "$root/usr/share/doc/sshtermy" "$root/DEBIAN"
+# Icon + Startmenü-Eintrag (öffnet sshTermy im Standard-Terminal)
+icons="$(dirname "$0")/../assets/icon"
+for s in 16 24 32 48 64 128 256 512; do
+	install -Dm644 "$icons/sshtermy-$s.png" "$root/usr/share/icons/hicolor/${s}x$s/apps/sshtermy.png"
+done
+install -d "$root/usr/share/applications"
+cat >"$root/usr/share/applications/sshtermy.desktop" <<'TXT'
+[Desktop Entry]
+Type=Application
+Name=sshTermy
+GenericName=SSH Terminal
+Comment=SSH terminal with an AI copilot
+Comment[de]=SSH-Terminal mit KI-Kopilot
+Exec=sshtermy
+Icon=sshtermy
+Terminal=true
+Categories=Network;RemoteAccess;
+Keywords=ssh;sftp;telnet;serial;terminal;
+TXT
 cat >"$root/usr/share/doc/sshtermy/copyright" <<'TXT'
 sshTermy – SSH terminal with an AI copilot
 Idea: Dominik Bornhäußer

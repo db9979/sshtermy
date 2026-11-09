@@ -82,6 +82,7 @@ func main() {
 	forceTUI := flag.Bool("tui", false, i18n.T("im Terminal starten, auch ohne Terminal kein eigenes Fenster öffnen"))
 	crashTest := flag.String("crash-test", "", i18n.T("nur zum Ausprobieren des Absturzberichts: ui, cmd oder fatal"))
 	flag.Parse()
+	fixMacAppIcon() // auch bei -version: so legt install.sh das Icon in die .app
 
 	if *showVersion {
 		fmt.Println(version.Long())
