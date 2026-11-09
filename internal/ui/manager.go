@@ -585,6 +585,9 @@ func (a *App) viewManager() string {
 				auth = i18n.T("automatisch, sobald das Gerät fragt")
 			}
 		}
+		if c.Protocol == domain.ProtoWinRM {
+			auth = winrmAuthText(c)
+		}
 		if c.Protocol == domain.ProtoLocal {
 			if c.LocalDir != "" {
 				row(i18n.T("Startordner"), c.LocalDir)
@@ -729,14 +732,19 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	}
 	f.section("s_conn", i18n.T("Verbindung"), func(t Theme) color.Color { return t.Accent })
 	f.text("alias", "Alias", c.Alias, i18n.T("Anzeigename, z. B. „DGX Spark“"))
-	f.choice("proto", i18n.T("Verbindungsart"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel · Lokal = Shell auf diesem Rechner")).value = protoLabel(c.Protocol)
+	f.choice("proto", i18n.T("Verbindungsart"), protoLabels, protoLabel(c.Protocol), i18n.T("Telnet = unverschlüsselt (ältere Switches) · Seriell = USB-Konsolenkabel · Lokal = Shell auf diesem Rechner · PowerShell (WinRM) = Windows-Server wie Enter-PSSession")).value = protoLabel(c.Protocol)
 	isProto := func(p domain.Protocol) bool { return protoFromLabel(f.sel("proto")) == p }
 	raw := func(*form) bool { return protoFromLabel(f.sel("proto")).Raw() }
 	notSerial := func(*form) bool { return !isProto(domain.ProtoSerial) }
 	notLocal := func(*form) bool { return !isProto(domain.ProtoLocal) }
 	noHost := func(*form) bool { return protoFromLabel(f.sel("proto")).NoHost() }
 	f.text("host", "Host", c.Host, i18n.T("Name oder IP")).hidden = noHost
-	f.number("port", "Port", c.Port, i18n.T("Standard 22 · Telnet 23")).hidden = noHost
+	f.number("port", "Port", c.Port, i18n.T("Standard 22 · Telnet 23 · WinRM 5985 (HTTP) / 5986 (HTTPS)")).hidden = noHost
+	notWinRM := func(*form) bool { return !isProto(domain.ProtoWinRM) }
+	f.toggle("winrm_https", "HTTPS", c.WinRMHTTPS, i18n.T("Port 5986 mit TLS · aus = 5985, dann verschlüsselt NTLM jede Nachricht")).hidden = notWinRM
+	f.toggle("winrm_insecure", i18n.T("Zertifikat nicht prüfen"), c.WinRMInsecure, i18n.T("nur für selbst signierte Zertifikate im eigenen Netz")).hidden = func(f *form) bool {
+		return notWinRM(f) || !f.flag("winrm_https")
+	}
 	f.text("lshell", "Shell", c.LocalShell, i18n.T("leer = Standard dieses Rechners (jetzt: ")+localShellLabel("")+i18n.T(") · z. B. pwsh, cmd, wsl, zsh, bash -l")).hidden = notLocal
 	f.text("ldir", i18n.T("Startordner"), c.LocalDir, i18n.T("leer = Benutzerordner · z. B. ~/projekte")).hidden = notLocal
 	sports, scur := serialPortOptions(c.SerialPort)
@@ -750,9 +758,12 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 
 	f.section("s_auth", i18n.T("Anmeldung"), func(t Theme) color.Color { return t.Warn }).hidden = func(*form) bool { return isProto(domain.ProtoLocal) }
 	uf := f.text("user", i18n.T("Benutzer"), c.Username, "")
-	uf.help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt")
+	uf.help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt · WinRM: DOMÄNE\\name oder name@domäne")
 	uf.hidden = func(*form) bool { return isProto(domain.ProtoLocal) }
 	f.choice("auth", i18n.T("Verfahren"), []string{"agent", "keyfile", "password", "kerberos"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen) · kerberos = Ticket der Firmen-Domäne (Windows-Anmeldung oder kinit)")).hidden = raw
+	f.choice("winrm_auth", i18n.T("Verfahren"), []string{"negotiate", "basic"}, orDefault(c.WinRMAuth, "negotiate"),
+		i18n.T("negotiate = NTLM, auch Domänenkonten (Standard) · basic = nur lokale Konten und nur über HTTPS")).hidden = func(f *form) bool { return !isProto(domain.ProtoWinRM) }
+	winrm := func(*form) bool { return isProto(domain.ProtoWinRM) }
 	isAuth := func(v string) func(*form) bool {
 		return func(f *form) bool { return raw(f) || f.sel("auth") != v }
 	}
@@ -770,13 +781,16 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.text("certpath", i18n.T("Zertifikat"), c.CertPath, i18n.T("optional, von einer CA signiert · leer = <Keyfile>-cert.pub, falls vorhanden")).hidden = isAuth("keyfile")
 	if keychain.Available() {
 		f.toggle("keychain", i18n.T("Im Schlüsselbund"), c.Keychain, keychainHelp()).hidden = func(f *form) bool {
+			if winrm(f) {
+				return false
+			}
 			return raw(f) || f.sel("auth") != "password" && f.sel("auth") != "keyfile"
 		}
 	}
 
 	f.text("pwsrc", i18n.T("Passwort aus"), c.PassSource,
 		i18n.T("Passwortmanager statt gespeichertem Passwort: op://Tresor/Eintrag/password · bw:Eintrag · keepassxc:Datei.kdbx:Eintrag · pass:Name · cmd:Befehl")).hidden = func(f *form) bool {
-		return raw(f) || f.sel("auth") != "password"
+		return !winrm(f) && (raw(f) || f.sel("auth") != "password")
 	}
 	f.get("pwsrc").in.Placeholder = i18n.T("leer = Passwort oben bzw. fragen")
 
@@ -1027,6 +1041,22 @@ func (a *App) saveConn() error {
 	if c.Protocol == domain.ProtoTelnet && c.Port == 22 && a.formBase.Protocol != domain.ProtoTelnet {
 		c.Port = 23 // Vorbelegung für SSH stehen gelassen
 	}
+	c.WinRMHTTPS, c.WinRMInsecure, c.WinRMAuth = false, false, ""
+	if c.Protocol == domain.ProtoWinRM {
+		c.WinRMHTTPS = f.flag("winrm_https")
+		c.WinRMInsecure = c.WinRMHTTPS && f.flag("winrm_insecure")
+		if f.sel("winrm_auth") == "basic" {
+			c.WinRMAuth = "basic"
+		}
+		switch {
+		case c.Port == 22 || c.Port == 23:
+			c.Port = 0 // Vorbelegung einer anderen Verbindungsart
+		case c.WinRMHTTPS && c.Port == 5985:
+			c.Port = 5986
+		case !c.WinRMHTTPS && c.Port == 5986:
+			c.Port = 5985
+		}
+	}
 	if c.Port == 0 && !c.Protocol.NoHost() {
 		c.Port = c.DefaultPort()
 	}
@@ -1046,6 +1076,12 @@ func (a *App) saveConn() error {
 		c.KeyPEM = a.formBase.KeyPEM
 	}
 	c.PassSource, c.OTPSource = "", ""
+	if c.Protocol == domain.ProtoWinRM {
+		c.PassSource = f.str("pwsrc")
+		if err := pwsource.Valid(c.PassSource); err != nil {
+			return err
+		}
+	}
 	if !c.Protocol.Raw() {
 		if c.Auth == domain.AuthPassword {
 			c.PassSource = f.str("pwsrc")

@@ -12,6 +12,7 @@ import (
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/localsh"
+	"github.com/db9979/sshtermy/internal/psremote"
 	"github.com/db9979/sshtermy/internal/sysprof"
 )
 
@@ -38,6 +39,9 @@ func (a *App) profileConnected(s *session) {
 		if !old.Manual {
 			old.Family, old.OS, old.Dialect, old.Shell = "", "", "", ""
 		}
+	} else if s.isWinRM() {
+		st, _ := s.shell.(*psremote.Stream)
+		fresh = winrmProfile(st)
 	} else if s.netDev() {
 		fresh.Family = domain.FamilyNetwork // Telnet/Konsole: Rest kommt aus dem Bildschirm
 	}

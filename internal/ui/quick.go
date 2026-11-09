@@ -118,7 +118,7 @@ func (a *App) remoteText(s *session) string {
 	if s.client != nil {
 		return s.profileSummary() + " " + s.client.Remote.String()
 	}
-	if s.isLocal() && localWindowsShell(s.prof) {
+	if s.isLocal() && localWindowsShell(s.prof) || s.isWinRM() {
 		return "Windows" // PowerShell/cmd: Windows-Regeln; WSL/Git-Bash: Unix
 	}
 	return ""

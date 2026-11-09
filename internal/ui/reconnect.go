@@ -12,6 +12,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/psremote"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -492,7 +493,7 @@ func retryable(err error) bool {
 }
 
 func isAuthFailure(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "unable to authenticate")
+	return err != nil && (strings.Contains(err.Error(), "unable to authenticate") || errors.Is(err, psremote.ErrAuth))
 }
 
 // secretCache merkt sich Antworten auf Rückfragen (Passwort, Passphrase) für

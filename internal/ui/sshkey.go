@@ -404,7 +404,7 @@ func (a *App) connFormKeychain(c *domain.Connection) string {
 	if fl := a.form.get("keychain"); fl.key != "" {
 		use = fl.on
 	}
-	if c.Protocol.Raw() || c.Auth != domain.AuthPassword && c.Auth != domain.AuthKeyFile {
+	if c.Protocol.Raw() && c.Protocol != domain.ProtoWinRM || c.Auth != domain.AuthPassword && c.Auth != domain.AuthKeyFile {
 		use = false // Telnet/Konsole tippen das Passwort selbst ein
 	}
 	c.Keychain = use

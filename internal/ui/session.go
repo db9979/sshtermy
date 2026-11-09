@@ -345,6 +345,9 @@ func (a *App) agentContext(s *session, withScreen bool) agent.Context {
 		if s.isLocal() {
 			c.Shell = s.localShellName()
 		}
+		if s.isWinRM() {
+			c.Shell = "powershell (WinRM)"
+		}
 	}
 	if withScreen && cfg.SendScreen && s.term != nil {
 		n := cfg.ContextLines
