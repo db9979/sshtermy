@@ -305,6 +305,7 @@ func (s *Store) setLocalKey(id, path string) {
 // lokal, sonst bräche der Sync die Verbindung auf dem anderen Rechner.
 // Aufrufer hält s.mu.
 func (s *Store) keyPathFor(c *domain.Connection, old domain.Connection, found bool, home string) {
+	c.CertPath = domain.PortableKeyPath(c.CertPath, home)
 	if c.Auth != domain.AuthKeyFile || c.KeyPath == "" {
 		s.setLocalKey(c.ID, "")
 		return
@@ -445,6 +446,7 @@ func (s *Store) AddConnections(cs []domain.Connection) ([]domain.Connection, err
 		if c.Auth == domain.AuthKeyFile {
 			c.KeyPath = domain.PortableKeyPath(c.KeyPath, home)
 		}
+		c.CertPath = domain.PortableKeyPath(c.CertPath, home)
 		c.Group = domain.NormPath(c.Group)
 		c.Order = s.nextOrder(c.Group)
 		c.CreatedAt, c.UpdatedAt = now, now
@@ -664,9 +666,9 @@ func (s *Store) UpdateSettings(f func(*domain.Settings)) error {
 		s.mu.Unlock()
 		return vault.ErrLocked
 	}
-	before, _ := json.Marshal(s.data.Settings)
+	before, _ := json.Marshal(s.data.Settings.SyncedPart())
 	f(&s.data.Settings)
-	if after, _ := json.Marshal(s.data.Settings); !bytes.Equal(before, after) {
+	if after, _ := json.Marshal(s.data.Settings.SyncedPart()); !bytes.Equal(before, after) {
 		s.data.SettingsUpdatedAt = time.Now().UTC() // Sync: neuere Einstellungen gewinnen
 	}
 	s.mu.Unlock()

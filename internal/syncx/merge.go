@@ -17,7 +17,10 @@ const tombstoneTTL = 180 * 24 * time.Hour
 // SharedSettings: die Einstellungen, die auf allen Rechnern gleich sind.
 // Rein lokal bleiben nur Dinge, die vom Rechner abhängen: Windows-DPAPI,
 // ob das Terminal hier eine Nerd Font hat, ob die Maus eingefangen wird
-// (hängt vom Terminalprogramm ab) und die zuletzt gestartete Version.
+// (hängt vom Terminalprogramm ab), die zuletzt gestartete Version, die
+// Aufteilung beim letzten Beenden, der Editor, Zeitpläne (liefen sonst auf
+// jedem Rechner doppelt), Debug-/Audit-Protokoll und der MCP-Server.
+// TestSettingsFieldsClassified passt auf, dass kein neues Feld fehlt.
 type SharedSettings struct {
 	Theme        string               `json:"theme"`
 	LockAfterMin int                  `json:"lock_after_min"`
@@ -52,6 +55,15 @@ type SharedPrefs struct {
 	Workspaces      []domain.Workspace   `json:"workspaces,omitempty"`
 	// Highlight: Farbregeln; nil = Stand einer älteren Version (lokale behalten).
 	Highlight *domain.HighlightConfig `json:"highlight,omitempty"`
+	// More: seit v1.0.311 dazugekommen; nil = Stand einer älteren Version
+	// (lokale Werte behalten).
+	More *SharedMore `json:"more,omitempty"`
+}
+
+// SharedMore: KI-Begleiter und Prüfregeln für gesicherte Switch-Configs.
+type SharedMore struct {
+	Companion   domain.CompanionConfig `json:"companion,omitempty"`
+	ConfigRules []string               `json:"config_rules,omitempty"`
 }
 
 func sharedSettings(s domain.Settings) SharedSettings {
@@ -65,6 +77,9 @@ func sharedSettings(s domain.Settings) SharedSettings {
 			NoOSC52: s.NoOSC52, Monitor: s.Monitor, Icons: s.Icons, Intro: s.Intro,
 			DimPanes: s.DimPanes, Accessible: s.Accessible, Motion: s.Motion, Frames: s.Frames, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
 			Highlight: copyHighlight(s.Highlight),
+			More: &SharedMore{
+				Companion: s.Companion, ConfigRules: append([]string(nil), s.ConfigRules...),
+			},
 		},
 	}
 }
@@ -90,6 +105,10 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 	d.DimPanes, d.Workspaces = x.DimPanes, append([]domain.Workspace(nil), x.Workspaces...)
 	if x.Highlight != nil {
 		d.Highlight = *copyHighlight(*x.Highlight)
+	}
+	if x.More != nil {
+		d.Companion = x.More.Companion
+		d.ConfigRules = append([]string(nil), x.More.ConfigRules...)
 	}
 	// Nerd-Font-Symbole von einem anderen Rechner: hier erst nach der Probe,
 	// sonst stünden in jedem Menü Kästchen.

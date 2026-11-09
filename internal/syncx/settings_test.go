@@ -1,6 +1,7 @@
 package syncx
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -72,5 +73,100 @@ func TestSettingsSyncNerdNeedsProbe(t *testing.T) {
 	p.ApplyTo(ok)
 	if ok.Settings.IconsNow() != "nerd" {
 		t.Fatalf("Probe bestätigt: %+v", ok.Settings)
+	}
+}
+
+// Jedes Feld von domain.Settings ist entweder gemeinsam (geht mit dem Sync)
+// oder bewusst lokal. Ein neues Feld, das hier fehlt, lässt den Test
+// scheitern: dann in SharedPrefs/SharedMore eintragen oder in localSettings
+// und Settings.SyncedPart.
+var localSettings = map[string]bool{
+	"UseDPAPI": true, "NoMouse": true, "LastVersion": true, "NerdFont": true,
+	"LastLayout": true, "Editor": true, "Schedules": true, "Debug": true, "Audit": true, "MCP": true,
+}
+
+func TestSettingsFieldsClassified(t *testing.T) {
+	src := domain.NewData()
+	fill(reflect.ValueOf(&src.Settings).Elem())
+	src.Settings.Theme, src.Settings.Icons = "matrix", "uni" // Sonderfälle in applyShared umgehen
+	src.SettingsUpdatedAt = time.Now()
+
+	dst := domain.NewData()
+	dst.Settings = domain.Settings{}
+	FromData(src, nil).ApplyTo(dst)
+
+	part := src.Settings.SyncedPart()
+	st := reflect.TypeOf(domain.Settings{})
+	for i := 0; i < st.NumField(); i++ {
+		f := st.Field(i)
+		got := reflect.ValueOf(dst.Settings).Field(i)
+		want := reflect.ValueOf(src.Settings).Field(i)
+		inPart := !reflect.ValueOf(part).Field(i).IsZero()
+		if localSettings[f.Name] {
+			if !got.IsZero() {
+				t.Errorf("%s ist lokal, kam aber per Sync an", f.Name)
+			}
+			if inPart {
+				t.Errorf("%s ist lokal, fehlt aber in Settings.SyncedPart", f.Name)
+			}
+			continue
+		}
+		if !reflect.DeepEqual(got.Interface(), want.Interface()) {
+			t.Errorf("%s geht nicht mit dem Sync (in SharedPrefs/SharedMore eintragen oder als lokal markieren)", f.Name)
+		}
+		if !inPart {
+			t.Errorf("%s fehlt in Settings.SyncedPart", f.Name)
+		}
+	}
+}
+
+// fill setzt jedes Feld auf einen Wert ungleich null.
+func fill(v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Bool:
+		v.SetBool(true)
+	case reflect.String:
+		v.SetString("x")
+	case reflect.Int, reflect.Int64:
+		v.SetInt(7)
+	case reflect.Float64:
+		v.SetFloat(0.5)
+	case reflect.Struct:
+		if v.Type() == reflect.TypeOf(time.Time{}) {
+			v.Set(reflect.ValueOf(time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)))
+			return
+		}
+		for i := 0; i < v.NumField(); i++ {
+			if v.Type().Field(i).IsExported() {
+				fill(v.Field(i))
+			}
+		}
+	case reflect.Ptr:
+		p := reflect.New(v.Type().Elem())
+		fill(p.Elem())
+		v.Set(p)
+	case reflect.Slice:
+		s := reflect.MakeSlice(v.Type(), 1, 1)
+		fill(s.Index(0))
+		v.Set(s)
+	case reflect.Map:
+		m := reflect.MakeMap(v.Type())
+		k, e := reflect.New(v.Type().Key()).Elem(), reflect.New(v.Type().Elem()).Elem()
+		fill(k)
+		fill(e)
+		m.SetMapIndex(k, e)
+		v.Set(m)
+	}
+}
+
+// Ein Stand von v1.0.310 (Prefs ohne More) lässt Begleiter und Config-Regeln stehen.
+func TestSettingsSyncOldPeerKeepsMore(t *testing.T) {
+	d := domain.NewData()
+	d.Settings.Companion.Level, d.Settings.ConfigRules = 2, []string{"+ntp"}
+	p := FromData(domain.NewData(), nil)
+	p.Settings.Prefs.More = nil
+	p.ApplyTo(d)
+	if d.Settings.Companion.Level != 2 || len(d.Settings.ConfigRules) != 1 {
+		t.Fatalf("%+v", d.Settings)
 	}
 }

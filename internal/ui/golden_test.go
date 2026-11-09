@@ -333,6 +333,7 @@ var goldenCases = []goldenCase{
 	{name: "quick-form", w: 100, h: 30, setup: func(g *gold) { g.keys("down", "down", "down", "down", "q") }},
 	{name: "import", w: 100, h: 30, setup: func(g *gold) { g.keys("i") }},
 	{name: "keys", w: 110, h: 34, setup: func(g *gold) { g.keys("b") }},
+	{name: "themes", w: 120, h: 36, setup: func(g *gold) { g.keys("a", "down", "down") }},
 	{name: "broadcast", w: 120, h: 32, setup: func(g *gold) { g.keys("m") }},
 	{name: "scan", w: 100, h: 30, setup: func(g *gold) { g.keys("f") }},
 	{name: "sync", w: 100, h: 30, setup: func(g *gold) { g.keys("y") }},

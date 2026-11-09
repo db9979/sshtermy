@@ -145,7 +145,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   ganze Datenordner (Verbindungen, Schlüssel, Protokolle, Switch-Sicherungen, known_hosts, Einstellungen) als eine
   mit dem Master-Passwort verschlüsselte Datei (Argon2id + AES-256-GCM). Einspielen ersetzt nach Rückfrage und
   Neustart alles; der bisherige Stand bleibt daneben als `….vorher-<Datum>`
-- **Themes** Dunkel, Hell, Hochkontrast, Farbenblind (dunkel und hell), Matrix, Bernstein und Neon (a im Manager), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
+- **26 Themes** mit Live-Vorschau (a im Manager): dunkle wie Nacht, Polarnacht, Tiefsee, Graphit, Vampir, Kirschblüte, Abendrot, Neon, Tusche, Wald, Kreide, Lagune, Solar, Lagerfeuer, Bernstein und Matrix, helle wie Hell, Papier, Frost, Sand, Morgenrot und Minze, dazu Hochkontrast und Farbenblind (dunkel und hell), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
 - **Deutsch und Englisch**: Sprache in der Palette („Sprache“/„Language“) oder im Über-Dialog (F12 → `l`) umschalten;
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Fensterstil** (Palette „Fensterstil“): Dialoge, Palette und Auswahl werfen einen Schatten, dahinter wird es etwas
@@ -260,7 +260,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | Wo | Taste | Wirkung |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
-| | i / a / b | Verbindungen importieren / Aussehen wechseln / Tastenkürzel anpassen |
+| | i / a / b | Verbindungen importieren / Farbschema wählen (26 Themes, Vorschau) / Tastenkürzel anpassen |
 | | c / q | SSH-Schlüssel erzeugen oder übertragen / Schnellbefehle bearbeiten |
 | | m / f / z | Broadcast an mehrere Hosts / Netzwerk-Scan / Zeitpläne (Strg+N neu, Strg+E bearbeiten, Strg+R jetzt, Strg+O an/aus, ⏎ letztes Ergebnis) |
 | | w / g | Arbeitsplätze (gespeicherte Aufteilungen) / Ordner als Raster öffnen |

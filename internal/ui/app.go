@@ -68,6 +68,7 @@ const (
 	scrMasterForm    // Master-Passwort ändern, DPAPI (master.go)
 	scrBackupForm    // Gesamtsicherung speichern/einspielen (fullbackup.go)
 	scrColors        // Farben anpassen (colors.go)
+	scrThemes        // Farbschema wählen mit Vorschau (themepick.go)
 	scrTeam          // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
 	scrTeamForm      // Team-Freigabe: Passwort, Datei, Optionen
 	scrHighlightForm // Farbregeln (highlight.go)
@@ -150,15 +151,16 @@ type App struct {
 	book *sessionlog.Book // Sitzungsprotokolle (Schlüssel nur bei entsperrtem Store)
 	logs logsState
 
-	sync    syncState
-	wiz     *syncWizard
-	imp     importState   // Import aus ssh-config, PuTTY, MobaXterm
-	team    teamState     // Team-Freigabe (team.go)
-	tl      teamLinkState // Team-Ordner: veröffentlichen/abonnieren (teamlink.go)
-	keyEd   keyEditor     // Tastenkürzel anpassen
-	colEd   colorEditor   // Farben anpassen
-	keys    keymap        // aktuelle Tastenbelegung
-	lookSig string        // Theme+Tasten, zuletzt übernommen
+	sync      syncState
+	wiz       *syncWizard
+	imp       importState   // Import aus ssh-config, PuTTY, MobaXterm
+	team      teamState     // Team-Freigabe (team.go)
+	tl        teamLinkState // Team-Ordner: veröffentlichen/abonnieren (teamlink.go)
+	keyEd     keyEditor     // Tastenkürzel anpassen
+	colEd     colorEditor   // Farben anpassen
+	themePick themePicker   // Farbschema wählen
+	keys      keymap        // aktuelle Tastenbelegung
+	lookSig   string        // Theme+Tasten, zuletzt übernommen
 
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
@@ -615,6 +617,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateKeys(msg)
 	case scrColors:
 		return a, a.updateColors(msg)
+	case scrThemes:
+		return a, a.updateThemes(msg)
 	case scrBroadcast:
 		return a, a.updateBroadcast(msg)
 	case scrScan:
@@ -747,6 +751,8 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewKeys(), a.keysKeys())
 	case scrColors:
 		body = a.frame(a.viewColors(), a.colorsKeys())
+	case scrThemes:
+		body = a.frame(a.viewThemes(), a.themesKeys())
 	case scrBroadcast:
 		body = a.frame(a.viewBroadcast(), a.broadcastKeys())
 	case scrScan:
