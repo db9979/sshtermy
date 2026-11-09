@@ -23,7 +23,7 @@ func (a *App) openMonitorForm() tea.Cmd {
 	f := &form{title: i18n.T("Überwachung: Grenzwerte")}
 	f.number("cpu", i18n.T("CPU ab %"), c, i18n.T("Auslastung über eine Sekunde gemessen · Standard 90"))
 	f.number("ram", i18n.T("RAM ab %"), r, i18n.T("belegter Arbeitsspeicher (ohne Cache) · Standard 90"))
-	f.number("disk", i18n.T("Platte ab %"), d, i18n.T("Dateisystem / · Standard 90"))
+	f.number("disk", i18n.T("Platte ab %"), d, i18n.T("gilt für jede Platte einzeln · Standard 90"))
 	f.number("every", i18n.T("Prüfen alle (Min)"), every, i18n.T("nur Server, unsichtbar · 0 = aus · Switches nur auf Abruf"))
 	if every == 0 {
 		f.get("every").in.SetValue("0")

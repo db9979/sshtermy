@@ -33,6 +33,8 @@ fi
 if [ -r /proc/stat ]; then echo "stat1=$(head -n 1 /proc/stat)"; sleep 1; echo "stat2=$(head -n 1 /proc/stat)"
 else echo "cpu_top=$(top -l 2 -n 0 -s 1 2>/dev/null | grep 'CPU usage' | tail -n 1)"; fi
 df -Pk / 2>/dev/null | awk 'NR==2{print "disk_kb="$2" "$3" "$4}'
+if df -PkT / >/dev/null 2>&1; then $T df -PkT 2>/dev/null | awk 'NR>1&&$3~/^[0-9]+$/{m=$7;for(i=8;i<=NF;i++)m=m" "$i;print "fs="$2" "$3" "$4" "$5" "$1" "m}'
+else $T df -Pk 2>/dev/null | awk 'NR>1&&$2~/^[0-9]+$/{m=$6;for(i=7;i<=NF;i++)m=m" "$i;print "fs=? "$2" "$3" "$4" "$1" "m}'; fi
 if [ -r /proc/uptime ]; then echo "uptime_s=$(cut -d' ' -f1 /proc/uptime)"; else echo "boot=$(sysctl -n kern.boottime 2>/dev/null | sed 's/^[^0-9]*sec = \([0-9]*\).*/\1/')"; fi
 echo "now=$(date +%s)"
 if command -v apt-get >/dev/null 2>&1; then
@@ -64,6 +66,8 @@ type Server struct {
 	MemTotal, MemFree uint64 // Bytes (frei = verfügbar)
 	DiskTotal         uint64 // Bytes, Dateisystem /
 	DiskUsed          uint64
+	DiskAvail         uint64 // frei für normale Benutzer (ohne reservierte Blöcke)
+	Disks             []Disk // alle echten Dateisysteme, "/" zuerst
 	Uptime            time.Duration
 	Updates           int    // -1 = unbekannt
 	Security          int    // -1 = unbekannt
@@ -77,6 +81,7 @@ func ParseServer(out string) (Server, error) {
 	s := Server{Updates: -1, Security: -1, CPUPct: -1, At: time.Now()}
 	var boot, now int64
 	var stat1, stat2 string
+	var rawDisks []Disk
 	seen := 0
 	for _, line := range strings.Split(strings.ReplaceAll(out, "\r", ""), "\n") {
 		k, v, ok := strings.Cut(strings.TrimSpace(line), "=")
@@ -117,6 +122,13 @@ func ParseServer(out string) (Server, error) {
 			if len(f) >= 2 {
 				s.DiskTotal, s.DiskUsed = kb(f[0]), kb(f[1])
 			}
+			if len(f) >= 3 {
+				s.DiskAvail = kb(f[2])
+			}
+		case "fs":
+			if d, ok := parseFS(v); ok {
+				rawDisks = append(rawDisks, d)
+			}
 		case "uptime_s":
 			if x, err := strconv.ParseFloat(strings.TrimSpace(v), 64); err == nil {
 				s.Uptime = time.Duration(x) * time.Second
@@ -142,6 +154,10 @@ func ParseServer(out string) (Server, error) {
 		case "reboot":
 			s.RebootNeeded = true
 		}
+	}
+	s.Disks = realDisks(rawDisks)
+	if s.DiskTotal == 0 && len(s.Disks) > 0 {
+		s.DiskTotal, s.DiskUsed, s.DiskAvail = s.Disks[0].Total, s.Disks[0].Used, s.Disks[0].Avail
 	}
 	if p, ok := statPct(stat1, stat2); ok {
 		s.CPUPct = p
@@ -207,10 +223,30 @@ func (s Server) MemPct() int {
 }
 
 func (s Server) DiskPct() int {
-	if s.DiskTotal == 0 {
-		return 0
+	return Disk{Total: s.DiskTotal, Used: s.DiskUsed, Avail: s.DiskAvail}.Pct()
+}
+
+// DiskList: alle Platten; ohne fs=-Zeilen (älteres Skript) nur "/".
+func (s Server) DiskList() []Disk {
+	if len(s.Disks) > 0 {
+		return s.Disks
 	}
-	return int(s.DiskUsed * 100 / s.DiskTotal)
+	if s.DiskTotal > 0 {
+		return []Disk{{Mount: "/", Total: s.DiskTotal, Used: s.DiskUsed, Avail: s.DiskAvail}}
+	}
+	return nil
+}
+
+// fullestOther: die vollste Platte außer "/".
+func (s Server) fullestOther() (Disk, bool) {
+	var best Disk
+	ok := false
+	for _, d := range s.Disks {
+		if d.Mount != "/" && (!ok || d.Pct() > best.Pct()) {
+			best, ok = d, true
+		}
+	}
+	return best, ok
 }
 
 // Summary: eine Zeile für die Sitzungsleiste.
@@ -226,6 +262,9 @@ func (s Server) Summary() string {
 	}
 	if s.DiskTotal > 0 {
 		parts = append(parts, fmt.Sprintf("/ %d%%", s.DiskPct()))
+	}
+	if d, ok := s.fullestOther(); ok && d.Pct() > s.DiskPct() {
+		parts = append(parts, fmt.Sprintf("%s %d%%", d.Mount, d.Pct()))
 	}
 	if s.Uptime > 0 {
 		parts = append(parts, "up "+Duration(s.Uptime))

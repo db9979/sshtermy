@@ -432,7 +432,7 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 // wieder unter die Schwelle fällt).
 func (a *App) setAlerts(s *session, now []hostinfo.Alert) (fresh []hostinfo.Alert) {
 	for _, al := range now {
-		if !hostinfo.Over(s.host.alerts, al.Metric) {
+		if !hostinfo.Has(s.host.alerts, al) {
 			fresh = append(fresh, al)
 		}
 	}
@@ -686,10 +686,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 				b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.MemPct(), w-10, lim.RAM) + "\n")
 			}
 		}
-		if srv.DiskTotal > 0 {
-			row(i18n.T("Platte /"), fmt.Sprintf("%s / %s", hostinfo.Bytes(srv.DiskUsed), hostinfo.Bytes(srv.DiskTotal)))
-			b.WriteString(strings.Repeat(" ", 10) + a.bar(srv.DiskPct(), w-10, lim.Disk) + "\n")
-		}
+		a.viewDisks(b, srv.DiskList(), w, lim.Disk)
 		if srv.Uptime > 0 {
 			row(i18n.T("Laufzeit"), hostinfo.Duration(srv.Uptime))
 		}
@@ -799,6 +796,81 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			return nil
 		}) + "\n")
 	}
+}
+
+// maxDisks: so viele Platten zeigt die Host-Übersicht, der Rest wird gezählt.
+// Platten über der Grenze stehen immer in der Liste.
+const maxDisks = 8
+
+// viewDisks: eine Platte wie bisher (Zeile + Balken), mehrere je eine Zeile
+// mit Einhängepunkt, Balken und – wenn Platz ist – Größe.
+func (a *App) viewDisks(b *strings.Builder, disks []hostinfo.Disk, w, limit int) {
+	st := a.s
+	if len(disks) == 0 {
+		return
+	}
+	if len(disks) == 1 {
+		d := disks[0]
+		label, val := i18n.T("Platte /"), fmt.Sprintf("%s / %s", hostinfo.Bytes(d.Used), hostinfo.Bytes(d.Total))
+		if d.Mount != "/" {
+			label, val = i18n.T("Platte"), d.Mount+" · "+val
+		}
+		b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", label)) + st.Text.Render(trunc(val, w-10)) + "\n")
+		b.WriteString(strings.Repeat(" ", 10) + a.bar(d.Pct(), w-10, limit) + "\n")
+		return
+	}
+	b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", i18n.T("Platten"))) + st.Text.Render(fmt.Sprintf("%d", len(disks))) + "\n")
+	shown, hidden := pickDisks(disks, limit)
+	size := func(d hostinfo.Disk) string { return hostinfo.Bytes(d.Used) + " / " + hostinfo.Bytes(d.Total) }
+	sizeW := 0
+	for _, d := range shown {
+		sizeW = max(sizeW, len(size(d)))
+	}
+	// Alle Balken gleich breit; die Größe nur, wenn der Balken daneben
+	// mindestens 10 breit bleibt (bar zieht 6 für " 100%" ab).
+	barW := w - 10
+	withSize := barW-sizeW-1 >= 10+6
+	if withSize {
+		barW = min(barW-sizeW-1, 30)
+	}
+	for _, d := range shown {
+		line := st.Muted.Render(fmt.Sprintf("%-9s ", truncLeft(d.Mount, 9))) + a.bar(d.Pct(), barW, limit)
+		if withSize {
+			pad := max(0, 4-len(fmt.Sprint(d.Pct()))) // Prozent rechtsbündig halten
+			line += strings.Repeat(" ", pad) + st.Muted.Render(size(d))
+		}
+		b.WriteString(line + "\n")
+	}
+	if hidden > 0 {
+		b.WriteString(strings.Repeat(" ", 10) + st.Muted.Render(fmt.Sprintf(i18n.T("+%d weitere"), hidden)) + "\n")
+	}
+}
+
+// pickDisks: höchstens maxDisks Platten in der gewohnten Reihenfolge ("/"
+// zuerst, dann nach Pfad); passen nicht alle, haben volle Platten Vorrang.
+func pickDisks(disks []hostinfo.Disk, limit int) ([]hostinfo.Disk, int) {
+	if len(disks) <= maxDisks {
+		return disks, 0
+	}
+	keep := make([]bool, len(disks))
+	n := 0
+	for i, d := range disks { // zuerst alle über der Grenze
+		if n < maxDisks && limit > 0 && d.Pct() >= limit {
+			keep[i], n = true, n+1
+		}
+	}
+	for i := range disks {
+		if n < maxDisks && !keep[i] {
+			keep[i], n = true, n+1
+		}
+	}
+	var out []hostinfo.Disk
+	for i, d := range disks {
+		if keep[i] {
+			out = append(out, d)
+		}
+	}
+	return out, len(disks) - len(out)
 }
 
 // viewAlerts: Warnzeilen über der Schwelle.
