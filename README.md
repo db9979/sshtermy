@@ -116,7 +116,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     line, the running step with a moving bar, planned steps as ○.
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
-  - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z)
+  - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z); Esc or Ctrl+C stops a running answer, n asks a new question, f a follow-up that keeps the conversation
   - **System profile per connection**: sshTermy detects system, version and command set (Linux with package manager and
     init system, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware, UniFi switches …) from the
     SSH banner, an invisible query (servers only) and the terminal it reads along (network devices, no exec).
@@ -264,7 +264,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | ←→ / ↑↓ / z / c / r / x | host column / scroll / enlarge / copy output / again / cancel |
 | Network scan | Ctrl+S, Space / a, ⏎ | start scan, select hits, create as connections |
 | Terminal | F2 | goal mode (agent) |
-| | F3 | ask AI |
+| | F3 | ask AI (Esc stops the answer, n new question, f follow-up) |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
 | | F5 | files (SFTP): Tab side, c copy (up/down), e server file in your own editor, Space/a mark, drag copies, n folder, d delete, . hidden |
 | | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, c containers, b back up switch config, ↑↓ state, d diff, v view |

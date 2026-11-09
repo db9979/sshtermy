@@ -126,3 +126,23 @@ func TestParseStepQuestion(t *testing.T) {
 		t.Fatal("abgeschnittener Befehl akzeptiert")
 	}
 }
+
+func TestAskMessagesFollowUp(t *testing.T) {
+	c := Context{OS: "Linux"}
+	one := askMessages("sys", "A?", c, nil)
+	if len(one) != 2 || !strings.HasSuffix(one[1].Content, "Frage: A?") {
+		t.Fatalf("%+v", one)
+	}
+	two := askMessages("sys", "C?", c, []Turn{{"A?", "a"}, {"B?", "b"}})
+	roles := ""
+	for _, m := range two {
+		roles += m.Role[:1]
+	}
+	if roles != "suauau" || !strings.HasSuffix(two[1].Content, "Frage: A?") || two[2].Content != "a" ||
+		two[3].Content != "Folgefrage: B?" || two[5].Content != "Folgefrage: C?" {
+		t.Fatalf("%s %+v", roles, two)
+	}
+	if !strings.Contains(two[1].Content, "Linux") || strings.Contains(two[3].Content, "Linux") {
+		t.Fatal("Material nur einmal vorne (Prefix-Cache)")
+	}
+}

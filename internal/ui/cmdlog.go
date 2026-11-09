@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -208,15 +207,9 @@ func (a *App) explainFailure(s *session) tea.Cmd {
 		q.err = err.Error()
 		return nil
 	}
-	q.cancel()
-	q.question = i18n.T("Warum ist „") + trunc(f.Command, 80) + i18n.T("“ fehlgeschlagen? Und wie behebe ich es?")
+	ctx, cancel := q.begin(i18n.T("Warum ist „") + trunc(f.Command, 80) + i18n.T("“ fehlgeschlagen? Und wie behebe ich es?"))
+	q.history = nil
 	q.input.SetValue("")
-	q.answer.Reset()
-	q.err, q.busy = "", true
-	q.seq++
-	q.input.Blur()
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	q.cancelFn = cancel
 	sid, seq, ev := s.id, q.seq, a.events
 	c := a.agentContext(s, false) // Ausgabe des Befehls statt ganzem Bildschirm
 	ff := *f

@@ -1,9 +1,7 @@
 package ui
 
 import (
-	"context"
 	"strings"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -54,16 +52,9 @@ func (a *App) diagnoseWith(s *session, text, what string) tea.Cmd {
 		q.err = err.Error()
 		return nil
 	}
-	q.cancel()
-	q.question = i18n.T("Log-Diagnose: ") + what
+	ctx, cancel := q.begin(i18n.T("Log-Diagnose: ") + what)
+	q.history = nil
 	q.input.SetValue("")
-	q.answer.Reset()
-	q.err, q.busy = "", true
-	q.sel, q.armed = 0, -1
-	q.seq++
-	q.input.Blur()
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	q.cancelFn = cancel
 	sid, seq, ev := s.id, q.seq, a.events
 	c := a.agentContext(s, false)
 	s.sel = nil

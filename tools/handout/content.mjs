@@ -125,7 +125,8 @@ export const de = {
       ['↑ / ↓', 'Befehlskarte wählen'],
       ['1 … 9', 'Befehl einfügen'],
       ['a / c', 'ausführen / kopieren'],
-      ['z / n', 'Erklärung auf/zu / neue Frage'],
+      ['z / Esc', 'Erklärung auf/zu / Antwort abbrechen'],
+      ['n / f', 'neue Frage / Folgefrage'],
     ]},
     { t: 'KI-Begleiter', ic: '◇', key: 'Alt+J', ai: true, rows: [
       ['Alt+K', 'Stufe: Aus · Leise · Gesprächig · Coach'],
@@ -317,7 +318,8 @@ export const en = {
       ['↑ / ↓', 'choose a command card'],
       ['1 … 9', 'insert command'],
       ['a / c', 'run / copy'],
-      ['z / n', 'explanation on/off / new question'],
+      ['z / Esc', 'explanation on/off / stop answer'],
+      ['n / f', 'new question / follow-up'],
     ]},
     { t: 'AI companion', ic: '◇', key: 'Alt+J', ai: true, rows: [
       ['Alt+K', 'level: off · quiet · chatty · coach'],

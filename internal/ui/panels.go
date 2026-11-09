@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -93,6 +94,10 @@ type askState struct {
 	armed     int  // Karte, deren gefährlicher Befehl auf den zweiten Druck wartet (-1 = keine)
 	collapsed bool // Erklärung eingeklappt
 	shown     int  // so viele Zeichen der Antwort sind schon „getippt“ (motion2.go)
+
+	history []agent.Turn // frühere Runden dieser Unterhaltung (Folgefragen)
+	follow  bool         // die Eingabe ist eine Folgefrage (sonst neue Frage)
+	stopped bool         // Antwort von dir abgebrochen (Esc/Strg+C)
 }
 
 func (q *askState) cancel() {
@@ -100,6 +105,37 @@ func (q *askState) cancel() {
 		q.cancelFn()
 		q.cancelFn = nil
 	}
+}
+
+// begin startet eine neue Anfrage im Frage-Panel: alte abbrechen, Antwort
+// leeren, Zähler weiter (späte Brocken der alten Anfrage fallen weg).
+func (q *askState) begin(question string) (context.Context, context.CancelFunc) {
+	q.cancel()
+	q.question = strings.TrimSpace(question)
+	q.answer.Reset()
+	q.shown = 0
+	q.err, q.busy, q.stopped, q.follow = "", true, false, false
+	q.sel, q.armed = 0, -1
+	q.seq++
+	q.input.Blur()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	q.cancelFn = cancel
+	return ctx, cancel
+}
+
+// stop bricht die laufende Antwort ab. Was schon da ist, bleibt stehen.
+func (q *askState) stop() {
+	q.cancel()
+	q.busy, q.stopped = false, true
+	q.seq++ // Rest der Antwort ignorieren
+	q.shown = utf8.RuneCountInString(q.answer.String())
+}
+
+// compose öffnet die Eingabe für eine neue Frage oder eine Folgefrage.
+func (q *askState) compose(follow bool) tea.Cmd {
+	q.follow = follow && q.question != "" && strings.TrimSpace(agent.VisibleAnswer(q.answer.String())) != ""
+	q.input.SetValue("")
+	return q.input.Focus()
 }
 
 // Nachrichten
@@ -401,6 +437,18 @@ func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 		a.agentPause(s, i18n.T("von dir angehalten (Esc)"))
 		return nil
 	}
+	if isKey && s.panel == panelAsk {
+		q := &s.ask
+		switch {
+		case (k.String() == "esc" || k.String() == "ctrl+c") && q.busy:
+			q.stop()
+			return nil
+		case k.String() == "esc" && q.input.Focused() && q.question != "":
+			q.input.Blur() // zurück zur Antwort
+			q.follow = false
+			return nil
+		}
+	}
 	if isKey && k.String() == "esc" {
 		s.panelFocus = false
 		if s.panel == panelTunnels || s.panel == panelHost || (s.panel == panelAsk && !s.ask.busy && s.ask.answer.Len() == 0) {
@@ -595,14 +643,16 @@ func (a *App) askKey(s *session, msg tea.Msg) tea.Cmd {
 		if cmd, ok := a.askCardKey(s, key); ok {
 			return cmd
 		}
-		if key == "n" || key == "enter" {
-			q.input.SetValue("")
-			return q.input.Focus()
+		switch key {
+		case "n", "enter":
+			return q.compose(false)
+		case "f":
+			return q.compose(true)
 		}
 		return nil
 	}
 	if isKey && k.String() == "enter" && strings.TrimSpace(q.input.Value()) != "" {
-		return a.startAsk(s, q.input.Value())
+		return a.startAskWith(s, q.input.Value(), q.follow)
 	}
 	var cmd tea.Cmd
 	q.input, cmd = q.input.Update(msg)
@@ -719,10 +769,14 @@ func (a *App) panelKeys(s *session) [][2]string {
 	case panelAsk:
 		q := &s.ask
 		switch {
+		case q.busy && q.input.Focused():
+			return [][2]string{{"⏎", i18n.T("fragen")}, {"Esc", i18n.T("Antwort abbrechen")}, {a.keys.label(actAsk), i18n.T("schließen")}}
 		case q.busy:
-			return [][2]string{{"Esc", "Terminal"}, {a.keys.label(actAsk), i18n.T("schließen")}}
+			return [][2]string{{"Esc", i18n.T("Antwort abbrechen")}, {"n", i18n.T("neue Frage")}, {a.keys.label(actAsk), i18n.T("schließen")}}
 		case q.question == "":
 			return [][2]string{{"⏎", i18n.T("fragen")}, {"Esc", "Terminal"}, {a.keys.label(actAsk), i18n.T("schließen")}}
+		case q.input.Focused():
+			return [][2]string{{"⏎", i18n.T("fragen")}, {"Esc", i18n.T("zurück")}, {a.keys.label(actAsk), i18n.T("schließen")}}
 		}
 		k := [][2]string{}
 		if cards := answerCards(agent.VisibleAnswer(q.answer.String())); len(cards) > 0 {
@@ -735,7 +789,11 @@ func (a *App) panelKeys(s *session) [][2]string {
 			}
 			k = append(k, [2]string{"z", i18n.T("Erklärung")})
 		}
-		return append(k, [2]string{"n", i18n.T("neue Frage")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actAsk), i18n.T("schließen")})
+		k = append(k, [2]string{"n", i18n.T("neue Frage")})
+		if q.canFollow() {
+			k = append(k, [2]string{"f", i18n.T("Folgefrage")})
+		}
+		return append(k, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actAsk), i18n.T("schließen")})
 	case panelTunnels:
 		list := a.st.Tunnels(s.conn.ID)
 		if len(list) == 0 {
@@ -958,11 +1016,27 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	q := &s.ask
 	b.WriteString(st.PanelTitle.Render(i18n.T("◆ KI fragen")) + st.Muted.Render(i18n.T("  mit Terminal-Kontext")) + "\n\n")
 	q.input.SetWidth(w - 2)
-	if q.input.Focused() || q.question == "" {
+	input := func() {
+		label := i18n.T("Neue Frage")
+		if q.follow {
+			label = i18n.T("Folgefrage")
+		}
+		if q.question != "" {
+			b.WriteString(st.Muted.Render(label) + "\n")
+		}
 		b.WriteString(promptBlock(st.Accent.Render("› "), q.input.View()) + "\n\n")
-	} else {
-		b.WriteString(st.Muted.Render(i18n.T("Frage")) + "\n" + wrap(st.Text.Bold(true).Render(q.question), w) + "\n\n")
 	}
+	// Neue Frage (nicht Folgefrage): alte Antwort ausblenden, nur die Eingabe.
+	// Bei einer Folgefrage steht die Eingabe unten, unter der Antwort; das
+	// Panel zeigt bei langen Antworten das Ende, so bleibt sie sichtbar.
+	if q.question == "" || (q.input.Focused() && !q.follow) {
+		input()
+		return
+	}
+	if n := len(q.history); n > 0 {
+		b.WriteString(st.Muted.Render(fmt.Sprintf(i18n.T("└ Folgefrage (%d) zu: "), n)+trunc(oneLine(q.history[0].Q), max(10, w-24))) + "\n")
+	}
+	b.WriteString(st.Muted.Render(i18n.T("Frage")) + "\n" + wrap(st.Text.Bold(true).Render(q.question), w) + "\n\n")
 	ans := q.visibleAsk() // Schreibmaschine (motion2.go)
 	now := time.Now()
 	if ans == "" && q.busy {
@@ -980,6 +1054,23 @@ func (a *App) viewAsk(b *strings.Builder, s *session, w int) {
 	}
 	if q.err != "" {
 		b.WriteString("\n" + wrap(st.Danger.Render("× "+q.err), w))
+	}
+	switch {
+	case q.busy:
+		// sichtbarer Abbrechen-Knopf, auch mit der Maus
+		b.WriteString("\n\n" + a.hintsIn(s, st.Muted, [2]string{"Esc", i18n.T("Antwort abbrechen")}))
+	case q.input.Focused(): // Folgefrage tippen
+		b.WriteString("\n\n")
+		input()
+	default:
+		if q.stopped {
+			b.WriteString("\n" + st.Warn.Render(i18n.T("■ abgebrochen")))
+		}
+		items := [][2]string{{"n", i18n.T("neue Frage")}}
+		if q.canFollow() {
+			items = append(items, [2]string{"f", i18n.T("Folgefrage")})
+		}
+		b.WriteString("\n\n" + a.hintsIn(s, st.Muted, items...))
 	}
 }
 
@@ -1144,8 +1235,11 @@ func (a *App) startGoalWith(s *session, text string, rb *domain.Runbook) tea.Cmd
 	return a.requestStep(s)
 }
 
-// startAsk stellt eine Frage mit Terminal-Kontext (Panel und Palette).
-func (a *App) startAsk(s *session, text string) tea.Cmd {
+// startAsk stellt eine neue Frage mit Terminal-Kontext (Panel und Palette).
+func (a *App) startAsk(s *session, text string) tea.Cmd { return a.startAskWith(s, text, false) }
+
+// startAskWith: follow = Folgefrage, die bisherige Unterhaltung geht mit.
+func (a *App) startAskWith(s *session, text string, follow bool) tea.Cmd {
 	a.panelOpened(withPanel(s, panelAsk))
 	a.resize(s)
 	q := &s.ask
@@ -1154,29 +1248,33 @@ func (a *App) startAsk(s *session, text string) tea.Cmd {
 		q.err = err.Error()
 		return nil
 	}
-	q.cancel()
-	q.question = strings.TrimSpace(text)
+	var prev []agent.Turn
+	if follow && q.canFollow() {
+		prev = append(append(prev, q.history...), agent.Turn{Q: q.question, A: agent.VisibleAnswer(q.answer.String())})
+		if len(prev) > 4 {
+			prev = prev[len(prev)-4:]
+		}
+	}
+	ctx, cancel := q.begin(text)
+	q.history = prev
 	q.input.SetValue(q.question)
-	q.answer.Reset()
-	q.shown = 0
-	q.err, q.busy = "", true
-	q.sel, q.armed = 0, -1
-	q.seq++
-	q.input.Blur()
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	q.cancelFn = cancel
 	sid, seq, ev := s.id, q.seq, a.events
 	c := a.agentContext(s, true)
 	question := q.question
 	return func() tea.Msg {
 		defer cancel()
-		err := ag.Ask(ctx, question, c, func(d string) {
+		err := ag.Ask(ctx, question, c, prev, func(d string) {
 			if d != "" {
 				ev <- askDeltaMsg{sid, seq, d}
 			}
 		})
 		return askDoneMsg{sid, seq, err}
 	}
+}
+
+// canFollow: gibt es eine Antwort, an die eine Folgefrage anknüpfen kann?
+func (q *askState) canFollow() bool {
+	return !q.busy && q.question != "" && strings.TrimSpace(agent.VisibleAnswer(q.answer.String())) != ""
 }
 
 func withPanel(s *session, k panelKind) *session {
