@@ -93,7 +93,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     Stufen: *Vorsichtig* (nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`), *Voll* (auch sudo).
     Gefahrenbefehle, auch jede Zeile eines Skripts, warten immer auf dich; auf Produktiv-Hosts und Netzwerkgeräten fragt
     jede Änderung nach. Grenzen: 25 Schritte, 15 Minuten, 3 Fehler in Folge. Esc oder Tippen im Terminal hält ihn an,
-    `?` gibt ihm eine Anweisung. Am Ende: Zusammenfassung, geänderte Dateien, `s` speichert den Lauf als Runbook samt
+    `?` gibt ihm eine Anweisung. Am Ende: die vollständige Zusammenfassung (blättern mit Bild↑/Bild↓ oder Mausrad, `c`
+    kopiert sie, `l` zeigt sie groß), geänderte Dateien, `s` speichert den Lauf als Runbook samt
     Skripten, `r` löscht die Skripte auf dem Host. Jeder Schritt steht als „Agent“ im Sitzungsprotokoll.
   - **Plan-Modus** (F2, Tab bis „Erst planen“): Die KI sieht sich erst nur mit lesenden Befehlen um und schreibt dann
     einen vollständigen Plan (Schritte, Skripte, Risiken, Prüfung). Schritte streichen (Leertaste), ändern (`e`), neu
@@ -299,7 +300,8 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
 | | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |
 | | Tab | Schritt für Schritt → Agent *Vorsichtig* → *Normal* → *Voll* → *Erst planen* |
-| Agent-Modus | Esc / ? / v / x | anhalten / Anweisung geben / Skript ansehen / beenden; am Ende `s` als Runbook speichern, `r` Skripte auf dem Host löschen |
+| Agent-Modus | Esc / ? / v / x | anhalten / Anweisung geben / Skript ansehen / beenden; am Ende `s` als Runbook speichern, `r` Skripte auf dem Host löschen, `c` Ergebnis kopieren, `l` ganz lesen |
+| Ziel-/Agent-/Plan-Panel, KI fragen | Bild↑ / Bild↓, Mausrad | langen Inhalt blättern (Zusammenfassung, Plan, Antwort) |
 | Plan-Modus | ↑↓ / Leertaste / e / v / ? | Schritt wählen / streichen oder zurückholen / ändern / Skript ansehen / neu planen |
 | | Tab / ⏎ / x | Ausführung (Schritt für Schritt oder Agent-Stufe) / freigeben und ausführen / verwerfen; Strg+S speichert den Plan als Runbook |
 | KI-Eingaben | ⇧⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |

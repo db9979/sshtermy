@@ -250,6 +250,9 @@ func (a *App) viewPlan(b *strings.Builder, s *session, w int) {
 			}
 			return nil
 		}) + "\n")
+		if i == g.planSel && ps.File == nil && text != label { // ausgewählt: ganzer Befehl
+			b.WriteString(lipglossIndent(wrap(st.Code.Render(label), max(4, w-5)), 5) + "\n")
+		}
 		if i == g.planSel {
 			if len(ps.Danger) > 0 {
 				b.WriteString("     " + st.Danger.Render(trunc(i18n.T("Gefahr: ")+ps.Danger[0].Reason, max(4, w-5))) + "\n")

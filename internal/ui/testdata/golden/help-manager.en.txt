@@ -17,15 +17,15 @@
   │   e           edit                     ?           Instruct agent                                               │
   │   d           delete                   v           view the agent's scri…  » Broadcast m                        │
   │   /           search (also #tag)       r           delete the agent's sc…   Space / g / a host / folder / all   │
-  │   o           new folder (A / B nes…   Space       plan: remove step        Tab         hosts · source · cmd    │
-  │   r           Edit folder              ?           plan: re-plan            ⇧⏎          next step               │
-  │   v           move to folder                                                Ctrl+S      check, then ⏎           │
-  │   Shift+↑     move up (↓ down)        ◆ Ask AI F3                           ← / →       select host column      │
-  │   ← / →       collapse/expand folder   ⏎           send question            ↑ ↓ PgUp/Dn scroll output           │
-  │   - / +       collapse/expand all      ⇧⏎ / Ctrl+J new line                 z / c       enlarge / copy          │
-  │   #           filter by tag            1…9         insert command           r / e / x   again / change / stop   │
-  │   t           add tunnel               ↑ ↓         choose command card      {{name}}    variable, asked first   │
-  │   c           Generate / copy SSH k…   a           run command (red ones…   {{host}}    filled in per host      │
+  │   o           new folder (A / B nes…   c / l       copy result / read all   Tab         hosts · source · cmd    │
+  │   r           Edit folder              PgUp PgDn   scroll the panel (mou…   ⇧⏎          next step               │
+  │   v           move to folder           Space       plan: remove step        Ctrl+S      check, then ⏎           │
+  │   Shift+↑     move up (↓ down)         ?           plan: re-plan            ← / →       select host column      │
+  │   ← / →       collapse/expand folder                                        ↑ ↓ PgUp/Dn scroll output           │
+  │   - / +       collapse/expand all     ◆ Ask AI F3                           z / c       enlarge / copy          │
+  │   #           filter by tag            ⏎           send question            r / e / x   again / change / stop   │
+  │   t           add tunnel               ⇧⏎ / Ctrl+J new line                 {{name}}    variable, asked first   │
+  │   c           Generate / copy SSH k…   1…9         insert command           {{host}}    filled in per host      │
   │                                                                                                                 │
   │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
   │  Esc leads back to the terminal from every panel.                                                               │

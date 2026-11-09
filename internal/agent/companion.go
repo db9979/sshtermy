@@ -185,7 +185,7 @@ func (a *Agent) GuessIntent(ctx context.Context, c Context) (Intent, error) {
 	if v.Keine || goal == "" {
 		return in, nil
 	}
-	in.Goal, in.Evidence = goal, flatText(Clean(v.Belege), maxReason)
+	in.Goal, in.Evidence = goal, flatText(Clean(v.Belege), maxShown)
 	for _, x := range v.Schritte {
 		if len(in.Steps) == 6 {
 			break
@@ -246,7 +246,7 @@ func (a *Agent) RecapSession(ctx context.Context, log string, c Context) (Recap,
 		return r, unreadable(res)
 	}
 	for _, p := range v.Zusammenfassung {
-		if p = flatText(Clean(p), 120); p != "" && len(r.Points) < 5 {
+		if p = flatText(Clean(p), maxShown); p != "" && len(r.Points) < 5 {
 			r.Points = append(r.Points, p)
 		}
 	}

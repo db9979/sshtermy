@@ -132,6 +132,8 @@ var helpSections = []helpSection{
 		{"?", "Agent anweisen"},
 		{"v", "Skript des Agenten ansehen"},
 		{"r", "Skripte des Agenten löschen (am Ende)"},
+		{"c / l", "Ergebnis kopieren / ganz lesen"},
+		{"Bild↑ Bild↓", "im Panel blättern (auch Mausrad)"},
 		{"Leertaste", "Plan: Schritt streichen"},
 		{"?", "Plan: neu planen lassen"},
 	}},
