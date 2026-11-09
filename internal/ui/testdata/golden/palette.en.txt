@@ -27,4 +27,4 @@
             │  ↑↓ select    ⏎ run    Esc close                                         │
             └──────────────────────────────────────────────────────────────────────────┘
                                  │
- Ctrl+Space Palette  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e rename  d delete  v move
+ Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e rename  d delete  v move

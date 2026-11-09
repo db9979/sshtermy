@@ -21,4 +21,4 @@
                                 │ Sync
                                 │  nicht eingerichtet · y = Assistent
                                 │
- Strg+Space Palette  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier
+ Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier
