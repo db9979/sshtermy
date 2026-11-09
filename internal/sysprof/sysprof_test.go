@@ -157,3 +157,33 @@ func TestProfilePromptAndFailed(t *testing.T) {
 		t.Errorf("Summary: %s", s)
 	}
 }
+
+// ArubaOS-CX beantwortet die Abfrage mit einer Zeile Fehlermeldung.
+func TestProbeRejected(t *testing.T) {
+	if m := ProbeRejected("Command not supported.\r\n"); m != "Command not supported." {
+		t.Fatalf("ProbeRejected = %q", m)
+	}
+	if !FromProbe("Command not supported.\r\n").Empty() {
+		t.Fatal("Fehlermeldung als Systemprofil gelesen")
+	}
+	for _, ok := range []string{"", "Ubuntu 24.04.1 LTS\nLinux 6.8.0 x86_64\n/bin/bash\napt-get\nsystemd\nde_DE.UTF-8\n", "\n\n\n\n\n\n"} {
+		if m := ProbeRejected(ok); m != "" {
+			t.Fatalf("ProbeRejected(%q) = %q", ok, m)
+		}
+	}
+}
+
+// Früher gespeichertes Falschprofil („Command not supported.“ als Linux)
+// wird überschrieben, sobald das Gerät als Netzwerkgerät erkannt ist.
+func TestMergeServerToNetworkResets(t *testing.T) {
+	old := domain.SystemProfile{Family: domain.FamilyLinux, OS: "Command not supported.", Dialect: "posix"}
+	p, changed := Merge(old, domain.SystemProfile{Family: domain.FamilyNetwork, Dialect: "network"})
+	if !changed || p.Family != domain.FamilyNetwork || p.OS != "" || p.Dialect != "network" {
+		t.Fatalf("Merge = %+v (changed=%v)", p, changed)
+	}
+	man := old
+	man.Manual = true
+	if p, _ := Merge(man, domain.SystemProfile{Family: domain.FamilyNetwork, Dialect: "network"}); p.OS != old.OS {
+		t.Fatalf("eigene Angabe überschrieben: %+v", p)
+	}
+}

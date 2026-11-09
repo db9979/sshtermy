@@ -58,6 +58,12 @@ func FromBanner(banner string) domain.SystemProfile {
 // FromProbe wertet die Ausgabe von ProbeCommand aus (eine Angabe pro Zeile).
 func FromProbe(out string) domain.SystemProfile {
 	lines := strings.Split(strings.ReplaceAll(out, "\r", ""), "\n")
+	if len(lines) < probeLines {
+		// Die echte Abfrage gibt immer mindestens fünf Zeilen aus. Kürzeres
+		// ist eine Fehlermeldung des Geräts (z. B. ArubaOS-CX: „Command not
+		// supported.“) und darf nicht als Systemname gelten.
+		return domain.SystemProfile{}
+	}
 	get := func(i int) string {
 		if i < len(lines) {
 			return strings.TrimSpace(lines[i])
@@ -85,6 +91,28 @@ func FromProbe(out string) domain.SystemProfile {
 	p.Init = initName(p.Init)
 	return p
 }
+
+// probeLines: so viele Zeilen hat die Ausgabe von ProbeCommand mindestens
+// (fünf Angaben, jede mit Zeilenende).
+const probeLines = 5
+
+// ProbeRejected erkennt, dass ein Gerät die unsichtbare Abfrage gar nicht
+// ausgeführt, sondern mit einer kurzen Fehlermeldung beantwortet hat, wie es
+// Switches mit eigener CLI tun (ArubaOS-CX: „Command not supported.“). Dann
+// ist es ein Netzwerkgerät. Rückgabe: die Meldung, sonst "".
+func ProbeRejected(out string) string {
+	out = strings.TrimSpace(strings.ReplaceAll(out, "\r", ""))
+	if out == "" || strings.Count(out, "\n") >= probeLines-1 {
+		return ""
+	}
+	if Rejection(out) != "" || probeRefusal.MatchString(out) {
+		line, _, _ := strings.Cut(out, "\n")
+		return strings.TrimSpace(line)
+	}
+	return ""
+}
+
+var probeRefusal = regexp.MustCompile(`(?i)not supported|invalid (input|command)|unknown command|unrecognized command|not allowed|not permitted|syntax error`)
 
 // ProbeCommand: läuft unsichtbar in einer eigenen Exec-Sitzung (nur Server).
 // Bewusst über sh, damit auch fish/zsh/csh als Login-Shell nichts ändern.
@@ -185,6 +213,7 @@ func FromScreen(text string) domain.SystemProfile {
 // es nicht kennt (falscher Dialekt), nicht einen, der nur scheitert.
 var rejections = []*regexp.Regexp{
 	regexp.MustCompile(`% ?Invalid input[^\n]*`),
+	regexp.MustCompile(`(?m)^\s*Command not supported\.?`),
 	regexp.MustCompile(`(?m)^\s*Invalid input:[^\n]*`),
 	regexp.MustCompile(`% ?Unknown command[^\n]*`),
 	regexp.MustCompile(`% ?Unrecognized command[^\n]*`),
@@ -236,6 +265,12 @@ func Merge(old domain.SystemProfile, fresh domain.SystemProfile) (domain.SystemP
 			*dst = v
 		}
 	}
+	// Als Server gemerkt, jetzt aber als Netzwerkgerät erkannt (z. B. ein
+	// ArubaOS-CX, dessen Fehlermeldung früher als Systemname gespeichert
+	// wurde): die Server-Angaben stimmen nicht, also neu anfangen.
+	if !p.Manual && fresh.Family == domain.FamilyNetwork && serverFamily(p.Family) {
+		p.Family, p.OS, p.Dialect, p.Version, p.Shell, p.PkgMgr, p.Init = "", "", "", "", "", "", ""
+	}
 	// Ein spezifischerer Befund schlägt einen allgemeinen: "Netzwerkgerät
 	// (unbekannt)" wird von "ArubaOS-CX" ersetzt, aber nie umgekehrt.
 	generic := func(d string) bool { return d == "" || d == "network" }
@@ -263,6 +298,10 @@ func Merge(old domain.SystemProfile, fresh domain.SystemProfile) (domain.SystemP
 		p.DetectedAt = time.Now()
 	}
 	return p, changed
+}
+
+func serverFamily(f string) bool {
+	return f == domain.FamilyLinux || f == domain.FamilyBSD || f == domain.FamilyMacOS
 }
 
 func same(a, b domain.SystemProfile) bool {
