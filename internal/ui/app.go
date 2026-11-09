@@ -76,6 +76,7 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
 	inputLog      *os.File          // nur mit SSHTERMY_DEBUG=1
 	audit         *audit.Log        // audit.go
 	nw            *netwatch.Watcher // Ruhezustand/Netzwechsel (netwatch.go)

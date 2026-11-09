@@ -73,7 +73,7 @@ const css = `
 @page { size: A4; margin: 0; }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { font-family: Inter, "Helvetica Neue", Arial, sans-serif; color: #15161c; font-size: 9pt; line-height: 1.27;
+body { font-family: Inter, "Helvetica Neue", Arial, sans-serif; color: #15161c; font-size: 8.6pt; line-height: 1.27;
   -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 :root { --ink: #15161c; --dim: #5b6070; --line: #2a2d38; --soft: #c9ccd6; --ai: #6b3fc4; --warn: #c2283c; --acc: #1f5fd1; --ok: #1d7a3a;
   --mono: "JetBrains Mono", "DejaVu Sans Mono", monospace; }

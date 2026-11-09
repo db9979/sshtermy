@@ -40,6 +40,12 @@ var fontData []byte
 //go:embed fonts/DejaVuSansMono.ttf
 var fallbackData []byte
 
+// Noto Emoji (einfarbig, SIL OFL 1.1, fonts/LICENSE-NotoEmoji.txt): Emoji in
+// Ausgaben, Commit-Nachrichten, Prompts.
+//
+//go:embed fonts/NotoEmoji.ttf
+var emojiData []byte
+
 // Available: In diesem Build gibt es das Fenster.
 func Available() bool { return true }
 
@@ -52,13 +58,67 @@ const (
 // Haupt-Goroutine (macOS verlangt das) und kehrt zurück, wenn das Programm
 // endet. Ergebnis wie bei tea.Program.Run.
 func Run(model tea.Model, opts Options) (tea.Model, error) {
+	// Programme in Tabs (lokale Shell) sollen ein vollwertiges Terminal sehen.
+	for k, v := range map[string]string{"TERM": "xterm-256color", "COLORTERM": "truecolor"} {
+		if os.Getenv(k) == "" {
+			_ = os.Setenv(k, v)
+		}
+	}
+	inR, inW := io.Pipe()
+	w, err := newWindow(opts, inW)
+	if err != nil {
+		return nil, err
+	}
+	// LF wie CR+LF: bubbletea verlässt sich darauf, wenn die Ausgabe kein TTY ist.
+	_, _ = w.term.Write([]byte("\x1b[20h"))
+	prog := tea.NewProgram(model,
+		tea.WithInput(inR),
+		tea.WithOutput(w.output()),
+		tea.WithWindowSize(startCols, startRows),
+		tea.WithColorProfile(colorprofile.TrueColor),
+		tea.WithEnvironment(os.Environ()),
+	)
+	w.onResize = func(c, r int) { prog.Send(tea.WindowSizeMsg{Width: c, Height: r}) }
+	w.onClose = func() {
+		if opts.CloseMsg != nil {
+			go prog.Send(opts.CloseMsg)
+		} else {
+			prog.Quit()
+		}
+	}
+	w.onQuit = prog.Quit
+
+	var final tea.Model
+	var runErr error
+	go func() {
+		final, runErr = prog.Run()
+		close(w.done)
+	}()
+	if err := w.run(); err != nil {
+		prog.Kill()
+		<-w.done
+		return final, err
+	}
+	<-w.done
+	return final, runErr
+}
+
+const startCols, startRows = 120, 34
+
+// newWindow: Schrift laden, Emulator anlegen. in bekommt Tasten und
+// Antworten des Emulators.
+func newWindow(opts Options, in io.Writer) (*window, error) {
 	src, err := text.NewGoTextFaceSource(bytes.NewReader(fontData))
 	if err != nil {
 		return nil, err
 	}
-	fallback, err := text.NewGoTextFaceSource(bytes.NewReader(fallbackData))
-	if err != nil {
-		return nil, err
+	var fallbacks []*text.GoTextFaceSource
+	for _, data := range [][]byte{fallbackData, emojiData} {
+		fb, err := text.NewGoTextFaceSource(bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+		fallbacks = append(fallbacks, fb)
 	}
 	if opts.FontSize <= 0 {
 		opts.FontSize = defaultFontSize
@@ -66,61 +126,44 @@ func Run(model tea.Model, opts Options) (tea.Model, error) {
 	if opts.Title == "" {
 		opts.Title = "sshTermy"
 	}
-
-	// Programme in Tabs (lokale Shell) sollen ein vollwertiges Terminal sehen.
-	for k, v := range map[string]string{"TERM": "xterm-256color", "COLORTERM": "truecolor"} {
-		if os.Getenv(k) == "" {
-			_ = os.Setenv(k, v)
-		}
-	}
-
-	const cols, rows = 120, 34
-	inR, inW := io.Pipe()
-	w := &window{src: src, fallback: fallback, fontSize: opts.FontSize, opts: opts, in: inW, done: make(chan struct{})}
-	w.term = termemu.New(cols, rows, inW)
-	// LF wie CR+LF: bubbletea verlässt sich darauf, wenn die Ausgabe kein TTY ist.
-	_, _ = w.term.Write([]byte("\x1b[20h"))
-	out := writerFunc(func(p []byte) (int, error) {
-		n, err := w.term.Write(p)
-		w.dirty.Add(1)
-		return n, err
-	})
-	w.prog = tea.NewProgram(model,
-		tea.WithInput(inR),
-		tea.WithOutput(out),
-		tea.WithWindowSize(cols, rows),
-		tea.WithColorProfile(colorprofile.TrueColor),
-		tea.WithEnvironment(os.Environ()),
-	)
-	w.script = newScript(os.Getenv("SSHTERMY_GUI_SCRIPT"))
+	w := &window{src: src, fallbacks: fallbacks, fontSize: opts.FontSize, opts: opts, in: in, done: make(chan struct{})}
+	w.term = termemu.New(startCols, startRows, in)
+	w.images = newImageLayer()
+	w.script = newScript(os.Getenv(opts.scriptEnv()))
 	w.resize = make(chan [2]int, 1)
+	return w, nil
+}
+
+// output: Ausgabe des Programms in den Emulator; Bilder (kitty) zeichnet das
+// Fenster selbst, pixelgenau.
+func (w *window) output() io.Writer {
+	return writerFunc(func(p []byte) (int, error) {
+		rest := w.images.filter(p, w.term)
+		if len(rest) > 0 {
+			if _, err := w.term.Write(rest); err != nil {
+				return 0, err
+			}
+		}
+		w.dirty.Add(1)
+		return len(p), nil
+	})
+}
+
+// run öffnet das Fenster und kehrt zurück, wenn done zu ist.
+func (w *window) run() error {
 	go w.resizer()
-
-	var final tea.Model
-	var runErr error
-	go func() {
-		final, runErr = w.prog.Run()
-		close(w.done)
-	}()
-
 	w.setFaces(1)
-	ebiten.SetWindowTitle(opts.Title)
-	ebiten.SetWindowSize(int(float64(cols)*w.cellW+2*padding), int(float64(rows)*w.cellH+2*padding))
+	ebiten.SetWindowTitle(w.opts.Title)
+	ebiten.SetWindowSize(int(float64(startCols)*w.cellW+2*padding), int(float64(startRows)*w.cellH+2*padding))
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowClosingHandled(true)
 	// Bild bleibt stehen; Draw zeichnet nur neu, wenn sich etwas geändert hat
 	// (Akku, GPU).
 	ebiten.SetScreenClearedEveryFrame(false)
-	if icon := opts.Icon; icon != nil {
+	if icon := w.opts.Icon; icon != nil {
 		ebiten.SetWindowIcon([]image.Image{icon})
 	}
-	if err := ebiten.RunGameWithOptions(w, &ebiten.RunGameOptions{InitUnfocused: false}); err != nil {
-		w.prog.Kill()
-		<-w.done
-		return final, err
-	}
-	<-w.done
-	return final, runErr
+	return ebiten.RunGameWithOptions(w, &ebiten.RunGameOptions{InitUnfocused: false})
 }
 
 type writerFunc func([]byte) (int, error)
@@ -130,22 +173,29 @@ func (f writerFunc) Write(p []byte) (int, error) { return f(p) }
 type window struct {
 	opts Options
 	term *termemu.Term
-	prog *tea.Program
 	in   io.Writer
 	done chan struct{}
 
-	src      *text.GoTextFaceSource
-	fallback *text.GoTextFaceSource
-	fontSize float64   // logische Pixel
-	scale    float64   // Gerätepixel je logischem Pixel
-	regular  text.Face // Cascadia, sonst DejaVu
-	bold     text.Face
-	ascentF  float64 // Oberlänge laut Schrift
-	cellW    float64
-	cellH    float64
-	ascent   float64
-	glyphs   map[glyphKey]*ebiten.Image
-	white    *ebiten.Image
+	// Anbindung: bubbletea (Run) oder abgetrennter Tab (RunAttach)
+	onResize func(cols, rows int)
+	onClose  func() // Fenster wird geschlossen
+	onQuit   func() // Skript: beenden
+
+	images   *imageLayer
+	imgCache map[*kittyImage]*ebiten.Image
+
+	src       *text.GoTextFaceSource
+	fallbacks []*text.GoTextFaceSource // DejaVu, Noto Emoji
+	fontSize  float64                  // logische Pixel
+	scale     float64                  // Gerätepixel je logischem Pixel
+	regular   text.Face                // Cascadia, sonst DejaVu
+	bold      text.Face
+	ascentF   float64 // Oberlänge laut Schrift
+	cellW     float64
+	cellH     float64
+	ascent    float64
+	glyphs    map[glyphKey]*ebiten.Image
+	white     *ebiten.Image
 
 	cols, rows int
 	resize     chan [2]int
@@ -155,7 +205,6 @@ type window struct {
 	cells      []uv.Cell
 
 	closing   bool
-	started   bool
 	mouseX    int
 	mouseY    int
 	mouseBtn  uv.MouseButton
@@ -180,12 +229,16 @@ func (w *window) setFaces(scale float64) {
 	regular.SetVariation(text.MustParseTag("wght"), 400)
 	bold := &text.GoTextFace{Source: w.src, Size: size}
 	bold.SetVariation(text.MustParseTag("wght"), 700)
-	fb := &text.GoTextFace{Source: w.fallback, Size: size}
 	w.regular, w.bold = regular, bold
-	if mf, err := text.NewMultiFace(regular, fb); err == nil {
+	reg, bol := []text.Face{regular}, []text.Face{bold}
+	for _, src := range w.fallbacks {
+		fb := &text.GoTextFace{Source: src, Size: size}
+		reg, bol = append(reg, fb), append(bol, fb)
+	}
+	if mf, err := text.NewMultiFace(reg...); err == nil {
 		w.regular = mf
 	}
-	if mf, err := text.NewMultiFace(bold, fb); err == nil {
+	if mf, err := text.NewMultiFace(bol...); err == nil {
 		w.bold = mf
 	}
 	m := regular.Metrics()
@@ -203,7 +256,9 @@ func (w *window) resizer() {
 	for {
 		select {
 		case s := <-w.resize:
-			w.prog.Send(tea.WindowSizeMsg{Width: s[0], Height: s[1]})
+			if w.onResize != nil {
+				w.onResize(s[0], s[1])
+			}
 		case <-w.done:
 			return
 		}
@@ -248,10 +303,8 @@ func (w *window) Update() error {
 	}
 	if ebiten.IsWindowBeingClosed() && !w.closing {
 		w.closing = true
-		if w.opts.CloseMsg != nil {
-			go w.prog.Send(w.opts.CloseMsg)
-		} else {
-			w.prog.Quit()
+		if w.onClose != nil {
+			w.onClose()
 		}
 	}
 	if w.script != nil {
@@ -259,6 +312,13 @@ func (w *window) Update() error {
 	}
 	w.keyboard()
 	w.mouse()
+	if files := ebiten.DroppedFiles(); files != nil {
+		// wie ein Terminal: Pfade als eingefügter Text, sshTermy erkennt
+		// sie (ui/drop.go) und bietet Hochladen an
+		if paths := droppedPaths(files); len(paths) > 0 {
+			w.term.Paste(quotePaths(paths))
+		}
+	}
 
 	// Zwischenablage: das Programm setzt sie per OSC 52 (tea.SetClipboard)
 	if c := w.term.TakeClipboard(); c != "" {
@@ -543,6 +603,9 @@ func (w *window) Draw(screen *ebiten.Image) {
 				fg = bg
 			}
 			px, py := pad+float64(x)*w.cellW, pad+float64(y)*w.cellH
+			if w.drawPlaceholder(screen, c, px, py) {
+				continue
+			}
 			if c.Content != "" && c.Content != " " {
 				if g := w.glyph(c); g != nil {
 					op := &ebiten.DrawImageOptions{}
@@ -614,4 +677,49 @@ func (w *window) glyph(c *uv.Cell) *ebiten.Image {
 	}
 	w.glyphs[k] = img
 	return img
+}
+
+// drawPlaceholder zeichnet an einer kitty-Platzhalterzelle das passende
+// Stück des Bildes. false = keine Platzhalterzelle.
+func (w *window) drawPlaceholder(dst *ebiten.Image, c *uv.Cell, px, py float64) bool {
+	if len(c.Content) < 4 {
+		return false
+	}
+	fg := rgba(c.Style.Fg, defaultFg)
+	id, row, col, ok := placeholderCell(c.Content, fg.R, fg.G, fg.B)
+	if !ok {
+		return false
+	}
+	ki := w.images.get(id)
+	if ki == nil || row >= ki.rows || col >= ki.cols {
+		return true // Bild (noch) nicht da: Zelle leer lassen
+	}
+	if w.imgCache == nil {
+		w.imgCache = map[*kittyImage]*ebiten.Image{}
+	}
+	img, ok := w.imgCache[ki]
+	if !ok {
+		if len(w.imgCache) > maxImages {
+			for k, v := range w.imgCache {
+				v.Deallocate()
+				delete(w.imgCache, k)
+			}
+		}
+		img = ebiten.NewImageFromImage(ki.img)
+		w.imgCache[ki] = img
+	}
+	b := img.Bounds()
+	x0 := b.Min.X + col*b.Dx()/ki.cols
+	x1 := b.Min.X + (col+1)*b.Dx()/ki.cols
+	y0 := b.Min.Y + row*b.Dy()/ki.rows
+	y1 := b.Min.Y + (row+1)*b.Dy()/ki.rows
+	if x1 <= x0 || y1 <= y0 {
+		return true
+	}
+	sub := img.SubImage(image.Rect(x0, y0, x1, y1)).(*ebiten.Image)
+	op := &ebiten.DrawImageOptions{Filter: ebiten.FilterLinear}
+	op.GeoM.Scale(w.cellW/float64(x1-x0), w.cellH/float64(y1-y0))
+	op.GeoM.Translate(px, py)
+	dst.DrawImage(sub, op)
+	return true
 }

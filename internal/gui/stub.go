@@ -16,3 +16,6 @@ func Available() bool { return false }
 func Run(tea.Model, Options) (tea.Model, error) {
 	return nil, errors.New("dieser Build hat kein eigenes Fenster")
 }
+
+// RunAttach gibt es in diesem Build nicht.
+func RunAttach(string, Options) int { return 1 }

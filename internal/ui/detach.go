@@ -82,7 +82,12 @@ func (a *App) toggleDetach(s *session) tea.Cmd {
 		return nil
 	}
 	title := version.Name + " · " + s.conn.Alias
-	if err := openWindow(title, []string{exe, "attach", srv.Dir()}); err != nil {
+	open := func() error { return openWindow(title, []string{exe, "attach", srv.Dir()}) }
+	if a.windowed {
+		// sshTermy läuft im eigenen Fenster: der Tab bekommt auch eins
+		open = func() error { return startWindow([]string{exe, "attach", srv.Dir(), "-window"}) }
+	}
+	if err := open(); err != nil {
 		srv.Close()
 		if errors.Is(err, detach.ErrNoTerminal) {
 			a.flash(i18n.T("Kein Terminalprogramm gefunden. Eigenes festlegen mit SSHTERMY_TERMINAL, z. B. \"kitty {cmd}\""))
@@ -101,8 +106,15 @@ func (a *App) toggleDetach(s *session) tea.Cmd {
 	return nil
 }
 
-// openWindow: austauschbar für Tests.
-var openWindow = detach.OpenWindow
+// openWindow, startWindow: austauschbar für Tests.
+var (
+	openWindow  = detach.OpenWindow
+	startWindow = detach.StartWindowProcess
+)
+
+// SetWindowed: sshTermy läuft im eigenen Fenster (internal/gui), nicht im
+// Terminal. ⇧F10 öffnet dann ebenfalls ein eigenes Fenster.
+func (a *App) SetWindowed() { a.windowed = true }
 
 func (a *App) onDetachConn(m detachConnMsg) {
 	s := a.byID(m.sid)

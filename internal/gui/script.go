@@ -51,7 +51,9 @@ func (s *script) step(w *window) {
 			w.forceDraw = true
 			return
 		case "quit":
-			w.prog.Quit()
+			if w.onQuit != nil {
+				w.onQuit()
+			}
 			return
 		}
 	}

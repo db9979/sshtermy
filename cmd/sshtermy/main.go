@@ -62,9 +62,13 @@ func main() {
 			}
 			return
 		case "attach":
-			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach
+			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach;
+			// „-window“: aus dem eigenen Fenster heraus, also wieder ein eigenes
+			if len(os.Args) == 4 && os.Args[3] == "-window" && gui.Available() {
+				os.Exit(gui.RunAttach(os.Args[2], gui.Options{Title: version.Name}))
+			}
 			if len(os.Args) != 3 {
-				fail(fmt.Errorf("attach <ordner>"))
+				fail(fmt.Errorf("attach <ordner> [-window]"))
 			}
 			os.Exit(ui.Attach(os.Args[2]))
 		}
@@ -103,6 +107,11 @@ func main() {
 		return
 	}
 
+	windowed := wantWindow(*forceWindow, *forceTUI)
+	if windowed {
+		hideConsole()
+		ui.EnablePixelImages()
+	}
 	st, err := store.Open()
 	if err != nil {
 		fail(err)
@@ -128,8 +137,8 @@ func main() {
 	// Bibliotheken (z. B. der SSH-Agent bei der Weiterleitung) schreiben
 	// Meldungen mit log.Printf nach stderr: das würde das Bild zerreißen.
 	log.SetOutput(io.Discard)
-	if wantWindow(*forceWindow, *forceTUI) {
-		hideConsole()
+	if windowed {
+		app.SetWindowed()
 		_, err = gui.Run(app, gui.Options{Title: version.Name, CloseMsg: ui.WindowClosedMsg{}})
 	} else {
 		_, err = tea.NewProgram(app).Run()
