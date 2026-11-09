@@ -8,6 +8,7 @@ package ui
 import (
 	"strings"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -67,6 +68,38 @@ func stampLine(l, bl string, x, maxW int) string {
 		}
 		b.WriteString(strings.Repeat(" ", max(0, want-rw)))
 		b.WriteString(right)
+	}
+	return b.String()
+}
+
+// frameBlock: Inhalt auf genau w × h bringen (auffüllen, zu lange Zeilen
+// umbrechen wie lipgloss, zu viele Zeilen abschneiden). Ist jede Zeile schon
+// schmal genug – der Normalfall –, wird nur gemessen und aufgefüllt; ein
+// lipgloss-Render mit Width/Height zerlegt dagegen jedes Zeichen.
+func frameBlock(content string, w, h int) string {
+	lines := strings.Split(content, "\n")
+	widths := make([]int, len(lines))
+	for i, l := range lines {
+		widths[i] = ansi.StringWidth(l)
+		if widths[i] > w {
+			return lipgloss.NewStyle().Width(w).Height(h).MaxHeight(h).Render(content)
+		}
+	}
+	var b strings.Builder
+	b.Grow(len(content) + h*w/4)
+	for i := 0; i < h; i++ {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		if i < len(lines) {
+			b.WriteString(lines[i])
+			if strings.IndexByte(lines[i], 0x1b) >= 0 {
+				b.WriteString(sgrReset)
+			}
+			b.WriteString(strings.Repeat(" ", w-widths[i]))
+		} else {
+			b.WriteString(strings.Repeat(" ", w))
+		}
 	}
 	return b.String()
 }

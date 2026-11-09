@@ -145,12 +145,31 @@ func (a *App) mgrFiltering() bool {
 }
 
 // mgrRows: aktuelle Zeilen; hält die Auswahl auf dem gemerkten Eintrag.
+// mgrMemo: zuletzt gebaute Zeilen des Managers (mgrRows).
+type mgrMemo struct {
+	gen  uint64
+	key  string
+	rows []mgrRow
+	ok   bool
+}
+
 func (a *App) mgrRows() []mgrRow {
 	m := &a.mgr
 	words, tags := a.mgrFilter()
-	tree := a.st.Tree()
-	m.tree = tree
-	rows := buildRows(tree, words, tags)
+	// Baum und Zeilen nur neu bauen, wenn sich Daten oder Filter geändert
+	// haben: das lief sonst bei jedem Bild (auch für die atmenden Online-Punkte)
+	// und kostete bei 500 Verbindungen gut ein Viertel der Zeichenzeit.
+	key := strings.Join(words, "\x00") + "\x01" + strings.Join(tags, "\x00")
+	gen := a.st.Gen()
+	var rows []mgrRow
+	if mc := &m.memo; mc.ok && mc.gen == gen && mc.key == key {
+		rows = append([]mgrRow(nil), mc.rows...)
+	} else {
+		tree := a.st.Tree()
+		m.tree = tree
+		rows = buildRows(tree, words, tags)
+		*mc = mgrMemo{gen: gen, key: key, rows: append([]mgrRow(nil), rows...), ok: true}
+	}
 	if m.want != "" {
 		for i, r := range rows {
 			if r.key() == m.want {
