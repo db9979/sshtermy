@@ -65,7 +65,7 @@ var windowsRules = []rule{
 // „show reload“ oder „no shutdown“ nicht anschlagen.
 var networkRules = []rule{
 	r(`^\s*(do\s+)?(reload|reboot|boot(\s+system)?)\b|^\s*(execute|exec)\s+(reboot|shutdown)\b|^\s*request\s+system\s+(reboot|halt|power-off)\b|^\s*/?system\s+(reboot|shutdown)\b`, "startet das Gerät neu"),
-	r(`^\s*(do\s+)?(write\s+erase|erase\b|delete\b|format\b)|^\s*reset\s+saved-configuration\b|^\s*execute\s+(factoryreset|formatlogdisk)\b|^\s*request\s+system\s+zeroize\b|^\s*/?system\s+reset-configuration\b|\bfactory[- ]?reset\b|\bzeroize\b`, "löscht Konfiguration oder Speicher des Geräts"),
+	r(`^\s*(do\s+)?(write\s+erase|erase\b|delete\b|format\b)|^\s*reset\s+saved-configuration\b|^\s*execute\s+(factoryreset|formatlogdisk)\b|^\s*request\s+system\s+zeroize\b|^\s*/?system\s+reset-configuration\b|\bfactory[- ]?reset\b|\bzeroize\b|\b(restore|set)-default\b`, "löscht Konfiguration oder Speicher des Geräts"),
 	r(`^\s*(do\s+)?copy\s+(tftp|scp|sftp|ftp|https?|usb|flash|xmodem)\S*(\s+\S+)?\s+(startup-config|running-config)\b`, "überschreibt die Gerätekonfiguration"),
 	r(`^\s*shut(down)?\s*$|^\s*(interface\s+\S+\s+)?disable\s*$`, "schaltet eine Schnittstelle ab"),
 	r(`^\s*no\s+(vlan|interface|router|ip\s+route|spanning-tree|aaa|username|ip\s+address|ip\s+ssh|crypto)\b`, "entfernt Konfiguration (VLAN, Routing, Zugang)"),

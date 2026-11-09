@@ -25,7 +25,7 @@ func TestNetworkDanger(t *testing.T) {
 	bad := []string{"reload", "reload in 5", "do reload", "boot system flash secondary", "erase startup-config",
 		"write erase", "delete flash:/config.cfg", "copy tftp://1.2.3.4/x.cfg startup-config", "shutdown", "shut",
 		"no vlan 20", "no ip route 0.0.0.0 0.0.0.0 10.0.0.1", "erase all zeroize", "execute factoryreset",
-		"request system reboot", "/system reset-configuration", "reset saved-configuration", "  disable"}
+		"request system reboot", "/system reset-configuration", "reset saved-configuration", "  disable", "syswrapper.sh restore-default", "reboot"}
 	for _, c := range bad {
 		if len(Check(c, Network)) == 0 {
 			t.Errorf("nicht erkannt: %q", c)
@@ -33,7 +33,7 @@ func TestNetworkDanger(t *testing.T) {
 	}
 	good := []string{"show running-config", "show vlans", "no shutdown", "show reload", "show interfaces brief",
 		"vlan 20 name test", "copy running-config startup-config", "ping 10.0.0.1", "show boot-history",
-		"interface 1/1/1", "write memory"}
+		"interface 1/1/1", "write memory", "info", "swctrl port show", "cat /tmp/system.cfg"}
 	for _, c := range good {
 		if f := Check(c, Network); len(f) != 0 {
 			t.Errorf("falscher Alarm: %q %v", c, f)

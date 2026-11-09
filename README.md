@@ -44,9 +44,9 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Host overview (F6)**: servers show CPU, load, RAM, disk, uptime and pending updates when you connect.
   On Linux servers, while F6 is open, live Braille graphs show CPU, RAM, network and disk (every 2 s, `t` switches
   5 min / 1 h, `z` shows them large over the terminal with the top processes; a small read-only script in its own
-  exec session, closing the panel ends it). Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
+  exec session, closing the panel ends it). Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate, Ubiquiti UniFi switches) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Containers** (`c` in F6 or palette “docker”): Docker and Podman containers and Kubernetes pods of the server in one list. ⏎ opens a shell in the container, Ctrl+L follows the logs, Ctrl+K lets the AI analyze the last 400 log lines. Restart and start/stop are only inserted at the prompt, ⏎ runs them. Uses `sudo -n` when docker needs root and sudo works without a password
-- **Config backup for switches**: `b` saves the running configuration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`) encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
+- **Config backup for switches**: `b` saves the running configuration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`, UniFi `cat /tmp/system.cfg`) encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
   Nightly runs go through a schedule (`z`, type “Config backup”) for a whole folder. **Switch config rules**
   (palette → Settings): `+^ntp server` must appear, `-telnet-server` must not; every backup is checked,
   violations show in the F6 panel, as a toast and in the schedule result
@@ -104,7 +104,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
   - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z)
   - **System profile per connection**: sshTermy detects system, version and command set (Linux with package manager and
-    init system, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware …) from the
+    init system, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware, UniFi switches …) from the
     SSH banner, an invisible query (servers only) and the terminal it reads along (network devices, no exec).
     The profile goes into every AI prompt; commands the device rejects with “% Invalid input” are remembered and the
     AI stops suggesting them. Editable in the manager (system, command set, AI notes). In the palette,

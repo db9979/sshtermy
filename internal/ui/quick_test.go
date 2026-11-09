@@ -42,6 +42,7 @@ func TestQuickPresetFor(t *testing.T) {
 		{domain.Connection{}, "Juniper Junos", presetJunos.name},
 		{domain.Connection{}, "SSH-2.0-FortiSSH", presetFortiOS.name},
 		{domain.Connection{}, "Netzwerkgerät (Comware-7.1.064)", presetComware.name},
+		{net, "UniFi-Switch (Ubiquiti) · 6.6.55 · USW-24-PoE", presetUniFi.name},
 		{domain.Connection{}, "Ubuntu 24.04 LTS · Linux 6.8 · /bin/bash", presetLinux.name},
 		{domain.Connection{}, "Windows (OpenSSH) oder unbekannt", presetWindows.name},
 		{domain.Connection{}, "", presetLinux.name},
@@ -51,7 +52,7 @@ func TestQuickPresetFor(t *testing.T) {
 			t.Errorf("%q: got %s want %s", c.remote, got, c.want)
 		}
 	}
-	for _, p := range []quickPreset{presetAruba, presetCisco, presetMikroTik, presetJunos, presetFortiOS, presetComware, presetLinux, presetWindows} {
+	for _, p := range []quickPreset{presetAruba, presetCisco, presetMikroTik, presetJunos, presetFortiOS, presetUniFi, presetComware, presetLinux, presetWindows} {
 		if len(p.cmds) != maxQuick {
 			t.Errorf("%s: %d Befehle, erwartet %d", p.name, len(p.cmds), maxQuick)
 		}

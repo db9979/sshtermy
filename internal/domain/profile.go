@@ -82,6 +82,7 @@ var Dialects = []Dialect{
 	{"huawei-vrp", "Huawei VRP", "Huawei-VRP-CLI: display current-configuration, display interface brief, display version; Konfiguration mit system-view … quit, speichern mit save."},
 	{"routeros", "MikroTik RouterOS", "RouterOS-CLI: /system resource print, /interface print, /ip address print, /ip route print, /export; keine Linux-Befehle."},
 	{"fortios", "FortiOS", "FortiOS-CLI: get system status, show full-configuration, get system interface, diagnose …; Konfiguration mit config … edit … set … next … end."},
+	{"unifi", "UniFi-Switch (Ubiquiti)", "Ubiquiti-UniFi-Switch: Anmeldung landet in einer BusyBox-Linux-Shell (ash), keine Cisco-Syntax. Die Konfiguration kommt vom UniFi-Controller (Network-App) und wird beim nächsten Provisionieren überschrieben; dauerhaft also dort ändern. Shell: info (Modell, Firmware, Controller-Status), swctrl port show, swctrl poe show, swctrl mac show, cat /tmp/system.cfg (laufende Konfiguration), logread, set-inform http://<controller>:8080/inform. Ältere Modelle (US-…) haben zusätzlich eine EdgeSwitch-/FASTPATH-CLI über cli bzw. telnet localhost (Prompt (UBNT) >): enable, show running-config, show interfaces status all, show vlan brief, show mac-addr-table, show lldp remote-device all, zurück mit exit. syswrapper.sh restore-default setzt das Gerät zurück."},
 	{"network", "Netzwerkgerät (unbekannt)", "Netzwerkgerät mit eigener CLI, kein Linux. Erst mit Befehlen wie show version oder ? herausfinden, was es kann."},
 }
 
