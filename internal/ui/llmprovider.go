@@ -161,6 +161,9 @@ func (a *App) modelKey() string {
 	if i := a.focusSlot(); i > 0 {
 		return fbKey(i, "model")
 	}
+	if a.form != nil && !a.llm.fallback && a.form.fields[a.form.focus].key == "fast" {
+		return "fast"
+	}
 	return "model"
 }
 
@@ -171,6 +174,9 @@ func (a *App) focusedLLM() (domain.LLMConfig, bool) {
 	i := a.focusSlot()
 	if i == 0 {
 		c.Fallbacks = nil
+		if a.modelKey() == "fast" && c.FastModel != "" {
+			c.Model = c.FastModel // Strg+T prüft das schnelle Modell
+		}
 		return c, true
 	}
 	f := a.form

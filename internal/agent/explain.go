@@ -85,11 +85,10 @@ func (a *Agent) Explain(ctx context.Context, f Failure, c Context) (string, erro
 	if out := strings.TrimSpace(f.Output); out != "" {
 		c.Screen = "$ " + f.Command + "\n" + tail(out, 6000)
 	}
-	b.WriteString("\n" + material(c))
 	res, err := a.C.CompleteResult(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysExplain)},
-		{Role: "user", Content: b.String()},
-	}, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true})
+		{Role: "system", Content: a.sys(sysExplain)},
+		{Role: "user", Content: material(c) + "\n\n" + b.String()},
+	}, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskExplain})
 	if err != nil {
 		return "", err
 	}
@@ -111,9 +110,9 @@ const sysSummary = "Fasse ein Protokoll von Shell-Sitzungen für einen Admin zus
 func (a *Agent) Summarize(ctx context.Context, transcript string) (string, error) {
 	body := strings.NewReplacer("<<<", "‹‹‹", ">>>", "›››").Replace(Redact(transcript))
 	res, err := a.C.CompleteResult(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysSummary)},
+		{Role: "system", Content: a.sys(sysSummary)},
 		{Role: "user", Content: "Protokoll:\n<<<\n" + body + "\n>>>"},
-	}, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true})
+	}, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskSummary})
 	if err != nil {
 		return "", err
 	}

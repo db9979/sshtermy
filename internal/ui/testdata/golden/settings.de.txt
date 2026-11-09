@@ -4,13 +4,13 @@
 
 
 
-
      ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
      │ KI-Copilot: Spark/vLLM, Ollama, OpenAI, Claude oder jeder OpenAI-kompatible Server               │
      │ ▌ Anbieter               Spark / kompatibel  Ollama  OpenAI  Claude                              │
      │   Base-URL               http://spark.lan:8000/v1                                                │
      │   API-Key                                                                                        │
      │   Modell                 qwen3-coder                                                             │
+     │   Schnelles Modell                                                                               │
      │   Max-Tokens             400                                                                     │
      │   Temperatur             0.20                                                                    │
      │   Timeout (s)            60                                                                      │
@@ -20,6 +20,7 @@
      │   Kontext-Zeilen         80                                                                      │
      │   Ziel: Schritte/min     6                                                                       │
      │   http mit API-Key       ○ aus                                                                   │
+     │   Hausregeln                                                                                     │
      │   Ersatz-Anbieter        keine · ⏎ einrichten ▾                                                  │
      │                                                                                                  │
      │ ──────────────────────────────────────────────────────────────────────────────────────────────── │
@@ -27,7 +28,6 @@
      │                                                                                                  │
      │                                                                                                  │
      └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 

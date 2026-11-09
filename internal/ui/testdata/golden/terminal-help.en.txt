@@ -18,7 +18,7 @@ de│   F12 l       Language / Sprache       s           skip                   
   │   d           delete                   v           view the agent's scri…  » Broadcast m                        │
   │   /           search (also #tag)       r           delete the agent's sc…   Space / g / a host / folder / all   │
   │   o           new folder (A / B nes…   Space       plan: remove step        Tab         hosts · source · cmd    │
-  │   r           Rename folder            ?           plan: re-plan            ⇧⏎          next step               │
+  │   r           Edit folder              ?           plan: re-plan            ⇧⏎          next step               │
   │   v           move to folder                                                Ctrl+S      check, then ⏎           │
   │   Shift+↑     move up (↓ down)        ◆ Ask AI F3                           ← / →       select host column      │
   │   ← / →       collapse/expand folder   ⏎           send question            ↑ ↓ PgUp/Dn scroll output           │

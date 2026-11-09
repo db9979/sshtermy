@@ -103,11 +103,11 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 	}
 	b.WriteString("\n" + material(c))
 	msgs := []llm.Message{
-		{Role: "system", Content: sys(sysAuto)},
+		{Role: "system", Content: a.sys(sysAuto)},
 		{Role: "user", Content: b.String()},
 	}
 	kind, files := c.kind(), info.Dir != ""
-	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true})
+	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskAgent})
 	if err != nil {
 		return Step{}, err
 	}
@@ -120,7 +120,7 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 	msgs = append(msgs,
 		llm.Message{Role: "assistant", Content: tail(stripThink(res.Content), 1500)},
 		llm.Message{Role: "user", Content: retryAuto})
-	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.1, NoThink: true})
+	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.1, NoThink: true, Task: TaskAgent})
 	if err2 == nil {
 		if st, err := parseAuto(res2.Content, kind, files); err == nil {
 			return st, nil

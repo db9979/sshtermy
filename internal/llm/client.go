@@ -46,6 +46,9 @@ type request struct {
 	Stop                []string `json:"stop,omitempty"`
 	// vLLM/SGLang: Qwen3-Thinking per Chat-Template abschalten.
 	ChatTemplateKwargs map[string]any `json:"chat_template_kwargs,omitempty"`
+	// gpt-oss (vLLM, Ollama), OpenAI o-/gpt-5-Modelle, Ollama-Denkmodelle:
+	// wie lange das Modell vor der Antwort nachdenkt.
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 // msgOut ist eine Antwortnachricht. Reasoning-Modelle (Qwen3, DeepSeek-R1)
@@ -309,10 +312,18 @@ type Opts struct {
 	MaxTokens   int
 	Temperature float64
 	// NoThink bittet Reasoning-Modelle, nicht lange nachzudenken (für kurze
-	// JSON-Antworten). Derzeit nur für Qwen-Modelle über
-	// chat_template_kwargs.enable_thinking=false (vLLM, SGLang); lehnt der
-	// Server das Feld ab, wird ohne wiederholt.
+	// JSON-Antworten): Qwen über chat_template_kwargs.enable_thinking=false
+	// (vLLM, SGLang), gpt-oss und OpenAI-Denkmodelle über
+	// reasoning_effort=low, Ollama-Denkmodelle über reasoning_effort=none.
+	// Lehnt der Server die Felder ab, wird ohne wiederholt.
 	NoThink bool
+	// Fast: Aufgabe, für die das schnelle Modell (LLMConfig.FastModel) reicht
+	// (Ghost-Text, Folgebefehle, Begleiter). Gilt nur für den eingestellten
+	// Endpunkt; Ersatz-Anbieter nehmen ihr eigenes Modell.
+	Fast bool
+	// Task benennt die Aufgabe für die Antwortzeiten im KI-Status
+	// (TaskStats), z. B. "ghost" oder "agent".
+	Task string
 }
 
 func noThinkKwargs(model string) map[string]any {
@@ -320,6 +331,26 @@ func noThinkKwargs(model string) map[string]any {
 		return map[string]any{"enable_thinking": false}
 	}
 	return nil
+}
+
+// noThinkEffort: reasoning_effort für kurze Antworten ("" = Feld weglassen).
+// gpt-oss lässt sich nicht ganz abschalten, „low“ ist das Minimum; die
+// OpenAI-Denkmodelle kennen je nach Generation „minimal“ oder „none“, „low“
+// verstehen alle.
+func noThinkEffort(p domain.LLMProvider, model string) string {
+	m := strings.ToLower(model)
+	if i := strings.LastIndex(m, "/"); i >= 0 {
+		m = m[i+1:]
+	}
+	switch {
+	case strings.Contains(m, "gpt-oss"):
+		return "low"
+	case p == domain.ProviderOpenAI && (strings.HasPrefix(m, "o1") || strings.HasPrefix(m, "o3") || strings.HasPrefix(m, "o4") || strings.HasPrefix(m, "gpt-5")):
+		return "low"
+	case p == domain.ProviderOllama && (strings.HasPrefix(m, "qwen3") || strings.HasPrefix(m, "deepseek-r1") || strings.HasPrefix(m, "magistral") || strings.HasPrefix(m, "phi4-reasoning")):
+		return "none"
+	}
+	return ""
 }
 
 // Result ist die erste Antwort mit Zusatzinfos.
@@ -360,6 +391,7 @@ func (c *conn) openAIBody(msgs []Message, o Opts, stream bool) request {
 	}
 	if o.NoThink {
 		body.ChatTemplateKwargs = noThinkKwargs(c.cfg.Model)
+		body.ReasoningEffort = noThinkEffort(c.cfg.Provider, c.cfg.Model)
 	}
 	return body
 }
@@ -375,8 +407,8 @@ func (c *conn) completeResult(ctx context.Context, msgs []Message, o Opts) (Resu
 	}
 	body := c.openAIBody(msgs, o, false)
 	status, raw, err := c.post(ctx, body)
-	if err == nil && status == http.StatusBadRequest && body.ChatTemplateKwargs != nil {
-		body.ChatTemplateKwargs = nil // Server kennt das Feld nicht
+	if err == nil && status == http.StatusBadRequest && (body.ChatTemplateKwargs != nil || body.ReasoningEffort != "") {
+		body.ChatTemplateKwargs, body.ReasoningEffort = nil, "" // Server kennt die Felder nicht
 		status, raw, err = c.post(ctx, body)
 	}
 	if err == nil && rejects(status, raw, "temperature") {
@@ -461,7 +493,7 @@ func (c *conn) openStream(ctx context.Context, msgs []Message, o Opts) (*http.Re
 		body = b
 	} else {
 		b := c.openAIBody(msgs, o, true)
-		b.ChatTemplateKwargs = nil
+		b.ChatTemplateKwargs, b.ReasoningEffort = nil, ""
 		body = b
 	}
 	resp, err := c.do(ctx, body, true)

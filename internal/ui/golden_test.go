@@ -35,6 +35,7 @@ import (
 	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/llm"
 	"github.com/db9979/sshtermy/internal/netscan"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/termemu"
@@ -340,7 +341,7 @@ var goldenCases = []goldenCase{
 	{name: "about", w: 100, h: 30, setup: func(g *gold) { g.keys("f12") }},
 	{name: "palette", w: 100, h: 30, setup: func(g *gold) { g.keys("ctrl+space") }},
 	{name: "palette-filter", w: 100, h: 30, setup: func(g *gold) { g.keys("ctrl+space").typ("tunnel") }},
-	{name: "llm-status", w: 100, h: 30, setup: func(g *gold) { g.a.openLLMStatus() }},
+	{name: "llm-status", w: 100, h: 30, setup: func(g *gold) { llm.ResetTaskStats(); g.a.openLLMStatus() }},
 	{name: "tour", w: 100, h: 30, setup: func(g *gold) { g.a.modal = g.a.tourModal() }},
 	{name: "hostkey", w: 100, h: 30, setup: func(g *gold) {
 		g.session("web-01", "")

@@ -60,7 +60,27 @@ func (a *App) agentClientFor(conns ...domain.Connection) (*agent.Agent, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &agent.Agent{C: c}, nil
+	return &agent.Agent{C: c, Rules: a.aiRules(conns...)}, nil
+}
+
+// aiRules: Hausregeln aus den KI-Einstellungen und den Ordnern der
+// Verbindungen (jede Regel nur einmal).
+func (a *App) aiRules(conns ...domain.Connection) string {
+	var out []string
+	seen := map[string]bool{}
+	addLine := func(s string) {
+		if s = strings.TrimSpace(s); s != "" && !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	addLine(a.st.LLM().Rules)
+	for _, c := range conns {
+		for _, r := range a.st.FolderRules(c.Group) {
+			addLine(i18n.T("Ordner ") + r)
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 // logConns: Verbindungen zu Protokollen (für die strengste Stufe).

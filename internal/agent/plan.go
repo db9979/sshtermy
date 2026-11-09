@@ -88,7 +88,7 @@ func (a *Agent) PlanNext(ctx context.Context, goal string, hist []DoneStep, answ
 	}
 	b.WriteString("\n" + material(c))
 	msgs := []llm.Message{
-		{Role: "system", Content: sys(sysPlan)},
+		{Role: "system", Content: a.sys(sysPlan)},
 		{Role: "user", Content: b.String()},
 	}
 	kind, files := c.kind(), info.Dir != ""
@@ -101,7 +101,7 @@ const retryPlan = "Deine letzte Antwort war kein gültiges JSON-Objekt im verlan
 
 // completeStep: Anfrage mit einem Korrekturversuch bei unlesbarer Antwort.
 func (a *Agent) completeStep(ctx context.Context, msgs []llm.Message, retry string, parse func(string) (Step, error)) (Step, error) {
-	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true})
+	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskPlan})
 	if err != nil {
 		return Step{}, err
 	}
@@ -114,7 +114,7 @@ func (a *Agent) completeStep(ctx context.Context, msgs []llm.Message, retry stri
 	msgs = append(msgs,
 		llm.Message{Role: "assistant", Content: tail(stripThink(res.Content), 1500)},
 		llm.Message{Role: "user", Content: retry})
-	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.1, NoThink: true})
+	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.1, NoThink: true, Task: TaskPlan})
 	if err2 == nil {
 		if st, err := parse(res2.Content); err == nil {
 			return st, nil

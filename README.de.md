@@ -261,7 +261,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | c / q | SSH-Schlüssel erzeugen oder übertragen / Schnellbefehle bearbeiten |
 | | m / f / z | Broadcast an mehrere Hosts / Netzwerk-Scan / Zeitpläne (Strg+N neu, Strg+E bearbeiten, Strg+R jetzt, Strg+O an/aus, ⏎ letztes Ergebnis) |
 | | w / g | Arbeitsplätze (gespeicherte Aufteilungen) / Ordner als Raster öffnen |
-| Ordner | o / r / v / d | Ordner anlegen („A / B“ verschachtelt) / umbenennen / verschieben / auflösen (Inhalt bleibt) |
+| Ordner | o / r / v / d | Ordner anlegen („A / B“ verschachtelt) / bearbeiten (Name, KI-Hausregeln) / verschieben / auflösen (Inhalt bleibt) |
 | | ← → Space / - + | Ordner zu-/aufklappen / alle zu bzw. auf |
 | | Shift+↑↓ (Alt+↑↓), Maus ziehen | Reihenfolge ändern, in einen Ordner ziehen |
 | | # , /#tag | nach Tag filtern, Suche über Name, Host, Ordner, Tags |
@@ -540,6 +540,25 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
   die Hintergrundprüfung ihn wieder erreicht. Der Status-Punkt wird gelb und zeigt „Ersatz: Claude“, solange ein
   Ersatz antwortet.
 - Cloud-Dienste brauchen immer einen API-Key; er liegt verschlüsselt wie die Passwörter.
+
+### KI schneller und gezielter
+
+- **Jede Funktion hat ihre eigene Rolle:** Ghost-Text, Folgebefehle, Ziel-Modus, Agent, Plan, Begleiter, Erklären,
+  Logdiagnose, Bericht und „an alle anpassen“ schicken je einen eigenen Systemprompt mit eigenem Token-Limit und eigener Temperatur.
+- **Hausregeln** (KI-Einstellungen → „Hausregeln“, pro Ordner mit `e` im Manager → „KI-Hausregeln“): Freitext, der
+  bei jeder KI-Aufgabe mitgeht, z. B. „Debian 12, nie reboot vorschlagen“. Ordner-Regeln gelten auch für Unterordner.
+  Sicherheitsregeln heben sie nie auf.
+- **Schnelles Modell** (KI-Einstellungen): auf Wunsch ein zweites, kleines Modell am selben Endpunkt für Ghost-Text,
+  Folgebefehle und Begleiter; Ziel-Modus, Agent, Plan und Diagnose bleiben beim Hauptmodell. Fällt das schnelle Modell
+  aus, antwortet das Hauptmodell, und das schnelle wird 5 Minuten übersprungen.
+- **Schnellere Antworten:** Der feste Teil der Anfrage (Systemprofil, letzte Befehle, Bildschirm) steht vorn, das gerade
+  Getippte am Ende, so nutzen vLLM, SGLang und Ollama ihren Prefix-Cache. Der Ghost-Text schickt nur die letzten 25
+  Bildschirmzeilen, Folgebefehle 40. Solange der angezeigte Vorschlag noch passt, gibt es keine neue Anfrage, und dieselbe
+  Eingabe innerhalb von 3 Minuten kommt aus dem Speicher. Bei kurzen Antworten werden Denkmodelle gebeten, nicht lange
+  nachzudenken (Qwen, gpt-oss, OpenAI o/gpt-5, Ollama-Denkmodelle).
+- **Warm halten:** Solange Tabs offen sind, hält eine Anfrage mit einem Token alle 4 Minuten das eigene Modell geladen
+  (Ollama entlädt nach 5 Minuten). Cloud-Dienste werden nicht angepingt.
+- **KI-Status** (Klick auf den Punkt) zeigt die Antwortzeit je Aufgabe (Mittel und zuletzt), so sieht man, was bremst.
 
 ### Fehler erkennen und Sitzungsprotokoll
 

@@ -22,9 +22,9 @@ const sysDiagnose = "Du bekommst Log- oder Befehlsausgabe von einem Server oder 
 func (a *Agent) Diagnose(ctx context.Context, text string, c Context, onDelta func(string)) error {
 	c.Screen = tail(text, 24000)
 	return a.C.Stream(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysDiagnose)},
-		{Role: "user", Content: "Bitte diese Ausgabe auswerten.\n\n" + material(c)},
-	}, llm.Opts{MaxTokens: 900, Temperature: 0.2}, func(d string) { onDelta(Clean(d)) })
+		{Role: "system", Content: a.sys(sysDiagnose)},
+		{Role: "user", Content: material(c) + "\n\nBitte diese Ausgabe auswerten."},
+	}, llm.Opts{MaxTokens: 900, Temperature: 0.2, Task: TaskLogs}, func(d string) { onDelta(Clean(d)) })
 }
 
 // ---------------------------------------------------------------- Änderungsbericht
@@ -42,9 +42,9 @@ const sysReport = "Schreibe aus Protokollen von Shell-Sitzungen einen Änderungs
 func (a *Agent) Report(ctx context.Context, transcript string) (string, error) {
 	body := strings.NewReplacer("<<<", "‹‹‹", ">>>", "›››").Replace(Redact(transcript))
 	res, err := a.C.CompleteResult(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysReport)},
+		{Role: "system", Content: a.sys(sysReport)},
 		{Role: "user", Content: "Protokoll:\n<<<\n" + body + "\n>>>"},
-	}, llm.Opts{MaxTokens: 1500, Temperature: 0.2, NoThink: true})
+	}, llm.Opts{MaxTokens: 1500, Temperature: 0.2, NoThink: true, Task: TaskReport})
 	if err != nil {
 		return "", err
 	}

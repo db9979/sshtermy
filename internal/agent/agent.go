@@ -67,7 +67,12 @@ const (
 )
 
 // Agent kapselt den LLM-Client.
-type Agent struct{ C *llm.Client }
+type Agent struct {
+	C *llm.Client
+	// Rules: Hausregeln des Admins (Einstellungen und Ordner), hängen an
+	// jedem Systemprompt.
+	Rules string
+}
 
 var ctrl = regexp.MustCompile(`[\x{00}-\x{08}\x{0b}-\x{1f}\x{7f}-\x{9f}\x{200b}-\x{200f}\x{2028}-\x{202e}\x{2060}-\x{2064}\x{feff}]`)
 
@@ -124,10 +129,11 @@ const sysComplete = "Du vervollständigst eine Befehlszeile (Shell oder Geräte-
 
 // Complete liefert den Rest der Zeile (Ghost-Text) oder "".
 func (a *Agent) Complete(ctx context.Context, typed string, c Context) (string, error) {
+	c.Screen = lastLines(c.Screen, ghostLines)
 	out, err := a.C.Complete(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysComplete)},
-		{Role: "user", Content: "Bisher getippt: " + typed + "\n\n" + material(c)},
-	}, llm.Opts{MaxTokens: 80, Temperature: 0.1, NoThink: true})
+		{Role: "system", Content: a.sys(sysComplete)},
+		{Role: "user", Content: material(c) + "\n\nBisher getippt: " + typed},
+	}, llm.Opts{MaxTokens: 80, Temperature: 0.1, NoThink: true, Fast: true, Task: TaskGhost})
 	if err != nil {
 		return "", err
 	}
@@ -159,10 +165,11 @@ type Suggestion struct {
 }
 
 func (a *Agent) FollowUps(ctx context.Context, c Context) ([]Suggestion, error) {
+	c.Screen = lastLines(c.Screen, followLines)
 	out, err := a.C.Complete(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysFollow)},
-		{Role: "user", Content: "Welche Befehle als Nächstes?\n" + material(c)},
-	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.2, NoThink: true})
+		{Role: "system", Content: a.sys(sysFollow)},
+		{Role: "user", Content: material(c) + "\n\nWelche Befehle als Nächstes?"},
+	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.2, NoThink: true, Fast: true, Task: TaskFollow})
 	if err != nil {
 		return nil, err
 	}
@@ -252,10 +259,10 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 	}
 	b.WriteString("\n" + material(c))
 	msgs := []llm.Message{
-		{Role: "system", Content: sys(sysGoal)},
+		{Role: "system", Content: a.sys(sysGoal)},
 		{Role: "user", Content: b.String()},
 	}
-	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true})
+	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal})
 	if err != nil {
 		return Step{}, err
 	}
@@ -271,7 +278,7 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 	msgs = append(msgs,
 		llm.Message{Role: "assistant", Content: tail(stripThink(res.Content), 1500)},
 		llm.Message{Role: "user", Content: retryHint})
-	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.1, NoThink: true})
+	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.1, NoThink: true, Task: TaskGoal})
 	if err2 == nil {
 		if st, err := parseStep(res2.Content, c.kind()); err == nil {
 			return st, nil
@@ -455,9 +462,9 @@ const sysAdapt = "Du schreibst einen Befehl so um, dass er auf dem beschriebenen
 // Leerer Command im Ergebnis: auf diesem System gibt es keine Entsprechung.
 func (a *Agent) Adapt(ctx context.Context, cmd string, c Context) (Suggestion, error) {
 	out, err := a.C.Complete(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysAdapt)},
-		{Role: "user", Content: "Befehl: " + Redact(cmd) + "\n\n" + material(c)},
-	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.1, NoThink: true})
+		{Role: "system", Content: a.sys(sysAdapt)},
+		{Role: "user", Content: material(c) + "\n\nBefehl: " + Redact(cmd)},
+	}, llm.Opts{MaxTokens: followTokens, Temperature: 0.1, NoThink: true, Task: TaskAdapt})
 	if err != nil {
 		return Suggestion{}, err
 	}
@@ -487,9 +494,9 @@ const sysAsk = "Du hilfst einem Admin auf einem Server oder Netzwerkgerät. Antw
 
 func (a *Agent) Ask(ctx context.Context, q string, c Context, onDelta func(string)) error {
 	return a.C.Stream(ctx, []llm.Message{
-		{Role: "system", Content: sys(sysAsk)},
-		{Role: "user", Content: "Frage: " + Redact(q) + "\n\n" + material(c)},
-	}, llm.Opts{MaxTokens: 700}, func(d string) { onDelta(Clean(d)) })
+		{Role: "system", Content: a.sys(sysAsk)},
+		{Role: "user", Content: material(c) + "\n\nFrage: " + Redact(q)},
+	}, llm.Opts{MaxTokens: 700, Task: TaskAsk}, func(d string) { onDelta(Clean(d)) })
 }
 
 // ---------------------------------------------------------------- Helfer

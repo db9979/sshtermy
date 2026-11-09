@@ -436,6 +436,7 @@ type ghostTickMsg struct{ sid, seq int }
 type ghostMsg struct {
 	sid, seq    int
 	typed, rest string
+	ok          bool // Antwort kam (auch „nichts Passendes“), kein Fehler
 }
 
 func (a *App) scheduleGhost(s *session) tea.Cmd {
@@ -461,6 +462,15 @@ func (a *App) fireGhost(s *session, seq int) tea.Cmd {
 	if !ok || len(strings.TrimSpace(typed)) < 2 || agent.LooksLikeSecretPrompt(s.term.CursorLine()) {
 		return nil
 	}
+	// Sparen: Der vorhandene Vorschlag passt noch (weitergetippt, wie
+	// vorgeschlagen), oder dieselbe Eingabe wurde eben schon beantwortet.
+	if a.visibleGhost(s) != "" {
+		return nil
+	}
+	if rest, hit := s.ghostLookup(typed, time.Now()); hit {
+		s.ghost, s.ghostFor = rest, typed
+		return nil
+	}
 	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
 		return nil
@@ -471,8 +481,8 @@ func (a *App) fireGhost(s *session, seq int) tea.Cmd {
 	sid := s.id
 	return func() tea.Msg {
 		defer cancel()
-		rest, _ := ag.Complete(ctx, typed, c)
-		return ghostMsg{sid, seq, typed, rest}
+		rest, err := ag.Complete(ctx, typed, c)
+		return ghostMsg{sid, seq, typed, rest, err == nil}
 	}
 }
 

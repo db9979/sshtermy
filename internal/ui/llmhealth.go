@@ -11,6 +11,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/llm"
@@ -27,7 +28,11 @@ import (
 
 const (
 	llmProbeEvery = 5 * time.Minute
-	llmSlow       = 2 * time.Second // Reaktionszeit für ein Token
+	// llmWarmEvery: Solange Tabs offen sind, hält eine Mini-Anfrage ein
+	// eigenes Modell (Ollama, Spark) geladen. Ollama entlädt nach 5 min
+	// ohne Anfrage, die erste Antwort danach dauert dann Sekunden.
+	llmWarmEvery = 4 * time.Minute
+	llmSlow      = 2 * time.Second // Reaktionszeit für ein Token
 )
 
 var llmRetry = []time.Duration{30 * time.Second, time.Minute, 2 * time.Minute}
@@ -195,7 +200,7 @@ func (a *App) llmTick() tea.Cmd {
 		a.lh.seen = n
 		if last, _ := llm.HealthOf(cfg); !last.At.IsZero() && last.At != a.lh.seenAt {
 			a.lh.seenAt = last.At
-			d := llmProbeEvery
+			d := a.llmProbeEvery()
 			if last.Err == nil {
 				a.lh.fails = 0
 			} else {
@@ -222,7 +227,8 @@ func (a *App) llmProbeCmd() tea.Cmd {
 	}
 	chain := a.st.LLM().Chain()
 	a.lh.probing = true
-	a.lh.next = time.Now().Add(llmProbeEvery) // wird von der Meldung neu gesetzt
+	a.lh.next = time.Now().Add(a.llmProbeEvery()) // wird von der Meldung neu gesetzt
+	warm := a.llmKeepWarm()
 	return func() tea.Msg {
 		// Antwortet der Endpunkt nicht, gleich nachsehen, welcher Ersatz
 		// einspringen kann, damit die Anzeige das schon vor der nächsten
@@ -235,8 +241,35 @@ func (a *App) llmProbeCmd() tea.Cmd {
 				break
 			}
 		}
+		// Das schnelle Modell mit aufwärmen (Ghost-Text soll sofort kommen).
+		if fast := chain[0]; warm && fast.FastModel != "" && fast.FastModel != fast.Model {
+			fast.Model = fast.FastModel
+			ctx, cancel := context.WithTimeout(context.Background(), testTimeout(fast))
+			_ = llm.Probe(ctx, fast)
+			cancel()
+		}
 		return llmProbeMsg{}
 	}
+}
+
+// llmKeepWarm: Tabs sind offen und das Modell läuft auf eigener Hardware
+// (Cloud-Dienste brauchen das nicht und würden pro Anfrage abrechnen).
+func (a *App) llmKeepWarm() bool {
+	if len(a.sessions) == 0 {
+		return false
+	}
+	c := a.st.LLM()
+	if c.Provider == domain.ProviderOpenAI || c.Provider == domain.ProviderAnthropic {
+		return false
+	}
+	return llm.IsOwnEndpoint(c.BaseURL, c.OwnHosts)
+}
+
+func (a *App) llmProbeEvery() time.Duration {
+	if a.llmKeepWarm() {
+		return llmWarmEvery
+	}
+	return llmProbeEvery
 }
 
 // ---------------------------------------------------------------- Dialog
@@ -316,6 +349,27 @@ func (a *App) llmStatusView() string {
 			b.WriteString("\n" + s.Warn.Render(i18n.T("Was tun: ")) + s.Text.Render(hint) + "\n")
 		}
 	}
+	if fm := a.st.LLM().FastModel; fm != "" && fm != h.cfg.Model {
+		b.WriteString(row(i18n.T("Schnell"), s.Text.Render(fm)+s.Muted.Render(i18n.T(" · Ghost-Text, Folgebefehle, Begleiter"))))
+	}
+	if ts := llm.TaskStats(); len(ts) > 0 {
+		b.WriteString("\n" + s.Accent.Render(i18n.T("Antwortzeit je Aufgabe")) + s.Muted.Render(i18n.T(" · seit dem Start, Mittel und zuletzt")) + "\n")
+		for i, t := range ts {
+			if i == 8 {
+				break
+			}
+			st := s.Text
+			if t.Avg > 8*time.Second {
+				st = s.Warn
+			}
+			line := fmt.Sprintf("  %-18s", trunc(taskLabel(t.Task), 18)) + st.Render(fmt.Sprintf("%7s", fmtLatency(t.Avg))) +
+				s.Muted.Render(fmt.Sprintf("  %s %s · %d×", i18n.T("zuletzt"), fmtLatency(t.Last), t.N))
+			if t.Model != h.cfg.Model {
+				line += s.Muted.Render(" · " + trunc(t.Model, 24))
+			}
+			b.WriteString(line + "\n")
+		}
+	}
 	if chain := a.st.LLM().Chain(); len(chain) > 1 {
 		b.WriteString("\n" + s.Accent.Render(i18n.T("Ersatz-Anbieter")) + s.Muted.Render(i18n.T(" · springen der Reihe nach ein, wenn der Endpunkt nicht antwortet")) + "\n")
 		for i, e := range chain[1:] {
@@ -393,4 +447,39 @@ func llmErrHint(e string) string {
 		return i18n.T("Die Einstellungen sind unvollständig. Mit e öffnen.")
 	}
 	return ""
+}
+
+// taskLabel: Name einer KI-Aufgabe für den KI-Status.
+func taskLabel(t string) string {
+	switch t {
+	case agent.TaskGhost:
+		return i18n.T("Ghost-Text")
+	case agent.TaskFollow:
+		return i18n.T("Folgebefehle")
+	case agent.TaskGoal:
+		return i18n.T("Ziel-Modus")
+	case agent.TaskAgent:
+		return i18n.T("Agent")
+	case agent.TaskPlan:
+		return i18n.T("Plan")
+	case agent.TaskAsk:
+		return i18n.T("KI fragen")
+	case agent.TaskLogs:
+		return i18n.T("Logdiagnose")
+	case agent.TaskExplain:
+		return i18n.T("Fehler erklären")
+	case agent.TaskCompanion:
+		return i18n.T("Begleiter")
+	case agent.TaskRecap:
+		return i18n.T("Rückblick")
+	case agent.TaskAdapt:
+		return i18n.T("Befehl anpassen")
+	case agent.TaskReview:
+		return i18n.T("Runbook prüfen")
+	case agent.TaskSummary:
+		return i18n.T("Zusammenfassung")
+	case agent.TaskReport:
+		return i18n.T("Änderungsbericht")
+	}
+	return t
 }
