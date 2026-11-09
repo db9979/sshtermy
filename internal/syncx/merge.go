@@ -38,6 +38,7 @@ type SharedPrefs struct {
 	TourDone        bool                 `json:"tour_done,omitempty"`
 	ExplainKeys     bool                 `json:"explain_keys,omitempty"`
 	NoReachCheck    bool                 `json:"no_reach_check,omitempty"`
+	ReachAll        bool                 `json:"reach_all,omitempty"`
 	NoNotify        bool                 `json:"no_notify,omitempty"`
 	NoDesktopNotify bool                 `json:"no_desktop_notify,omitempty"`
 	NoOSC52         bool                 `json:"no_osc52,omitempty"`
@@ -60,7 +61,7 @@ func sharedSettings(s domain.Settings) SharedSettings {
 		Prefs: &SharedPrefs{
 			NoSessionLog: s.NoSessionLog, NoPasteGuard: s.NoPasteGuard, DangerAll: s.DangerAll,
 			NoAutoReconnect: s.NoAutoReconnect, TourDone: s.TourDone, ExplainKeys: s.ExplainKeys,
-			NoReachCheck: s.NoReachCheck, NoNotify: s.NoNotify, NoDesktopNotify: s.NoDesktopNotify,
+			NoReachCheck: s.NoReachCheck, ReachAll: s.ReachAll, NoNotify: s.NoNotify, NoDesktopNotify: s.NoDesktopNotify,
 			NoOSC52: s.NoOSC52, Monitor: s.Monitor, Icons: s.Icons, Intro: s.Intro,
 			DimPanes: s.DimPanes, Accessible: s.Accessible, Motion: s.Motion, Frames: s.Frames, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
 			Highlight: copyHighlight(s.Highlight),
@@ -81,7 +82,7 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 		return // Stand einer älteren Version: lokale Schalter behalten
 	}
 	d.NoSessionLog, d.NoPasteGuard, d.DangerAll = x.NoSessionLog, x.NoPasteGuard, x.DangerAll
-	d.NoAutoReconnect, d.ExplainKeys, d.NoReachCheck = x.NoAutoReconnect, x.ExplainKeys, x.NoReachCheck
+	d.NoAutoReconnect, d.ExplainKeys, d.NoReachCheck, d.ReachAll = x.NoAutoReconnect, x.ExplainKeys, x.NoReachCheck, x.ReachAll
 	d.NoNotify, d.NoDesktopNotify, d.NoOSC52 = x.NoNotify, x.NoDesktopNotify, x.NoOSC52
 	d.TourDone = d.TourDone || x.TourDone
 	d.Monitor, d.Intro = x.Monitor, x.Intro

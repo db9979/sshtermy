@@ -655,7 +655,8 @@ func (a *App) palMenuItems() []palItem {
 		// Verhalten
 		palToggle(ic("mouse"), i18n.T("Maus: klicken, markieren, scrollen"), a.mouseEnabled(), "mouse", func() tea.Cmd { return a.toggleMouse() }),
 		palToggle(ic("reconnect"), i18n.T("Auto-Reconnect: nach Abbruch neu verbinden"), a.autoReconnect(), "reconnect", func() tea.Cmd { return a.toggleAutoReconnect() }),
-		palToggle(ic("reach"), i18n.T("Online-Punkt: Erreichbarkeit der Hosts prüfen"), a.reachEnabled(), "online reach", func() tea.Cmd { return a.toggleReach() }),
+		palCycle(pgSetBehave, ic("reach"), i18n.T("Online-Punkt: Erreichbarkeit der Hosts prüfen"), reachLabel(a.reachMode()),
+			"online reach erreichbar ordner zugeklappt", func(dir int) tea.Cmd { return a.cycleReach(dir) }),
 		palToggle(ic("sesslog"), i18n.T("Sitzungsprotokoll schreiben"), a.logsEnabled(), "log protokoll", func() tea.Cmd { return a.toggleSessionLog() }),
 		palCycle(pgSetBehave, ic("news"), i18n.T("Meldung, wenn lange Befehle fertig sind"), notifyLabel(a.notifyLevel()),
 			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }),

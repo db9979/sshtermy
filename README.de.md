@@ -155,7 +155,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Lebendige Oberfläche** (Palette „Bewegung“: voll, dezent, aus): Spinner im Tab beim Verbinden, Tabs leuchten bei
   Erfolg grün und bei Fehlern rot auf, ein pulsierender Punkt zeigt neue Ausgabe in verdeckten Tabs, Maus auf einem Tab
   zeigt eine Karte mit Ziel, Dauer und Latenzverlauf. Im Manager „atmen“ die Online-Punkte, ein Ausfall blinkt und meldet
-  sich, die Details zeigen den Verlauf der Erreichbarkeit und bei verbundenen Servern CPU/RAM/Platte als Balken.
+  sich (geprüft werden die im Manager sichtbaren Verbindungen, ein Ordner sofort beim Aufklappen; Einstellung
+  „Online-Punkt“: aus, sichtbare, alle), die Details zeigen den Verlauf der Erreichbarkeit und bei verbundenen Servern CPU/RAM/Platte als Balken.
   Beim Verbinden zeigt eine Karte die Schritte (Verbindung, Host-Schlüssel, Anmelden, Shell) mit Zeiten und einem
   Fortschrittsbalken mit Lichtlauf, danach blendet die Shell von oben ein. Die KI-Antwort schimmert „denkt nach …“ und
   tippt sich gleichmäßig, Panels blenden ein. In der Befehlspalette leuchten die getroffenen Buchstaben, die Zeilen

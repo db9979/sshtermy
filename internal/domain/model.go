@@ -516,6 +516,9 @@ type Settings struct {
 	ExplainKeys     bool `json:"explain_keys,omitempty"` // Tastenzeile mit Erklärungen (⇧F9)
 	// NoReachCheck: im Manager nicht prüfen, ob die Hosts erreichbar sind.
 	NoReachCheck bool `json:"no_reach_check,omitempty"`
+	// ReachAll: auch Hosts in zugeklappten Ordnern prüfen (sonst nur, was im
+	// Manager sichtbar ist). Dann meldet sich auch dort ein Ausfall.
+	ReachAll bool `json:"reach_all,omitempty"`
 	// NoNotify: keine Meldung (Tab-Markierung, Einblendung), wenn ein langer
 	// Befehl in einem verdeckten Tab fertig ist oder dort die Glocke läutet.
 	NoNotify bool `json:"no_notify,omitempty"`

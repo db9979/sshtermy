@@ -244,3 +244,41 @@ func TestPerfBoxReadable(t *testing.T) {
 		}
 	}
 }
+
+// Online-Prüfung: Standard nur sichtbare Zeilen; zugeklappte Ordner ruhen,
+// bis sie aufgeklappt werden (dann sofort), „alle“ prüft alles.
+func TestReachVisibleOnly(t *testing.T) {
+	a := manyConnsApp(t, 40)
+	if a.reachMode() != reachVisible {
+		t.Fatalf("Standard %d, erwartet sichtbare", a.reachMode())
+	}
+	if err := a.st.SetCollapsed(true); err != nil {
+		t.Fatal(err)
+	}
+	if ids := a.reachVisibleIDs(); len(ids) != 0 {
+		t.Fatalf("alles zugeklappt, trotzdem %d sichtbar", len(ids))
+	}
+	if cmd := a.reachTick(); cmd != nil || a.reach.running {
+		t.Fatal("Runde trotz nichts Sichtbarem")
+	}
+	if err := a.st.SetCollapsed(false, "Kunde 3", "Kunde 3 / Standort 0"); err != nil {
+		t.Fatal(err)
+	}
+	vis := a.reachVisibleIDs()
+	if len(vis) == 0 || len(vis) >= 40 {
+		t.Fatalf("aufgeklappt: %d sichtbar", len(vis))
+	}
+	a.reach.next = time.Now().Add(time.Hour) // Runde wäre erst später fällig
+	if cmd := a.reachTick(); cmd == nil {
+		t.Fatal("neu sichtbare Verbindungen nicht sofort geprüft")
+	}
+	a.reach.running = false
+	_ = a.cycleReach(1)
+	if a.reachMode() != reachAll {
+		t.Fatalf("nach Weiterschalten %d, erwartet alle", a.reachMode())
+	}
+	_ = a.cycleReach(1)
+	if a.reachMode() != reachOff || a.reachEnabled() {
+		t.Fatal("drittes Weiterschalten schaltet nicht aus")
+	}
+}
