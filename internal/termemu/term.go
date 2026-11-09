@@ -399,3 +399,7 @@ func (t *Term) CommandOutput(cmd string, n int) (out, line string, found bool) {
 	}
 	return strings.Join(lines[max(0, end-60):end], "\n"), cmd, false
 }
+
+// Snapshot: der ganze Bildschirm als Zellen, unter einer Sperre kopiert
+// (eigenes Fenster, internal/gui). dst wird wiederverwendet.
+func (t *Term) Snapshot(dst []uv.Cell) ([]uv.Cell, int, int) { return t.emu.Snapshot(dst) }

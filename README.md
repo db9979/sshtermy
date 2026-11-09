@@ -17,6 +17,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **a real SSH terminal** (xterm-256color, truecolor, vim/htop/tmux, scrollback, tabs, jump hosts)
 - **Auto-reconnect**: if the line drops (Wi-Fi, VPN, standby), sshTermy reconnects the session by itself, restarts running tunnels and reattaches tmux/screen (can be turned off in the palette). After **sleep or a network change** (other Wi-Fi, VPN on/off) every line is checked within seconds instead of waiting for the keepalive timeout; while there is no network at all, sshTermy waits without using up its attempts
 - **Persistent session** (idea: Dominik Bornhäußer): per connection, always land in the same tmux/screen session on connect, even from another computer. Other sessions already running? sshTermy asks which one. Same session name in two tabs or on two computers = mirrored screen; "view only" attaches tmux read-only. The palette opens a second watching tab or copies an `ssh … tmux attach -r` command for colleagues. Not on switches, Telnet or console.
+- **Own window** (no terminal needed): double-click `sshtermy.exe` in Explorer, open `sshTermy.app` on the Mac or run `sshtermy -window`, and sshTermy opens its own window with Cascadia Mono, Nerd Font symbols and emoji built in. Images from the server show pixel-perfect, files dragged onto the window are offered for upload, ⇧F10 moves a tab into a second window of its own. All keys arrive (Alt+⏎, ⇧F1 … ⇧F12, Ctrl+Space), Ctrl+⇧V or ⇧Insert paste (Windows also Ctrl+V, Mac ⌘V), Ctrl + / Ctrl − / Ctrl 0 or Ctrl + mouse wheel change the font size. Started from a terminal, sshTermy runs in that terminal as before; `-tui` forces it
 - **Local shell** (Alt+L): your own PowerShell (Windows, via ConPTY), zsh or bash (macOS/Linux) as a tab, with AI help, goal/agent/plan mode, split view, tabs and session log. Danger rules and agent levels apply on your own computer too; the agent drops its scripts in `~/.sshtermy-agent`. Or save it as a connection (“Connect via: Local”) with its own shell (`pwsh`, `cmd`, `wsl`, `bash -l` …) and start folder
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
@@ -29,7 +30,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   (“Verification code”), sshTermy takes the TOTP code from the same source, also after a key login.
   Only the reference is stored, never the password
 - **Kerberos/GSSAPI login** (login `kerberos`): uses the company domain ticket from the Windows sign-in or `kinit`, no password needed; without a ticket it falls back to the password
-- **Images in the terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), the kitty graphics protocol (`kitty +kitten icat`, `viu`, `timg`) and iTerm2 inline images (`imgcat`) show up as colored half blocks right in the text, in every terminal with 24-bit color, in the scrollback and in split view. Two pixels per cell, so plots and photos are recognizable, not pixel-perfect. In kitty and Ghostty the images show pixel-perfect instead (kitty graphics with Unicode placeholders, so they still scroll with the text; off with `SSHTERMY_NO_PIXELS=1`)
+- **Images in the terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), the kitty graphics protocol (`kitty +kitten icat`, `viu`, `timg`) and iTerm2 inline images (`imgcat`) show up as colored half blocks right in the text, in every terminal with 24-bit color, in the scrollback and in split view. Two pixels per cell, so plots and photos are recognizable, not pixel-perfect. In kitty, Ghostty and sshTermy's own window the images show pixel-perfect instead (kitty graphics with Unicode placeholders, so they still scroll with the text; off with `SSHTERMY_NO_PIXELS=1`)
 - **Clipboard from the server (OSC 52)**: what you copy in tmux or vim on the server lands in your local clipboard. The server can never read it
 - **Split view** (Ctrl+T): up to six sessions at once in seven layouts, resize with the mouse or Alt+⇧+arrow, zoom one pane (Alt+Z), swap panes by dragging their title, optionally dim the other panes. The layout survives updates; **workspaces** (w in the manager) save layout and connections to reopen in one go, “Last used” is remembered on quit, `g` on a folder opens all its connections as a grid
 - **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
@@ -191,8 +192,8 @@ Or download the matching file from the [Releases](https://github.com/db9979/ssht
 | Linux | `sshtermy_linux_amd64` / `sshtermy_linux_arm64` / `sshtermy_linux_arm` (32 bit ARMv7) / `sshtermy_linux_riscv64` |
 
 **macOS (and Linux): one line in Terminal** installs the latest version, checks its checksum and creates
-`~/Applications/sshTermy.app` (double-click or Spotlight "sshTermy" opens it in Terminal, or iTerm if installed)
-plus the command `~/.local/bin/sshtermy`:
+`~/Applications/sshTermy.app` (double-click or Spotlight "sshTermy" opens sshTermy in its own window, no Terminal
+needed; an `.app` from an older installer opens Terminal, run the line again to switch) plus the command `~/.local/bin/sshtermy`:
 
 ```
 curl -fsSL https://raw.githubusercontent.com/db9979/sshtermy/main/install.sh | sh
@@ -202,7 +203,8 @@ A file downloaded with the browser is marked as quarantined by macOS and blocked
 opened"). If you still want to use it: `xattr -d com.apple.quarantine sshtermy_darwin_arm64 && chmod +x
 sshtermy_darwin_arm64`, then start it from Terminal with `./sshtermy_darwin_arm64`.
 
-Recommended on Windows: **Windows Terminal** (truecolor, function keys, Unicode).
+Windows: double-click the `.exe` and sshTermy opens in its own window. Started from PowerShell or cmd it stays in
+that terminal; there **Windows Terminal** is recommended (truecolor, function keys, Unicode).
 
 **ClockworkPi uConsole** (and similar handhelds): apt or the one-line installer pick the right build for every core
 (CM4/CM5 and A-06 with a 64 bit system: arm64, 32 bit Raspberry Pi OS: armhf, R-01: riscv64). The 5" screen is big
@@ -216,6 +218,8 @@ changed in the manager with `b`.
 sshtermy              # start
 sshtermy --version    # version, commit, build date
 sshtermy --update     # update to the newest version
+sshtermy -window      # own window instead of the terminal (automatic when started without a terminal)
+sshtermy -tui         # always in the terminal, never an own window
 sshtermy --no-intro   # without the start animation (permanently: palette “Start animation off”)
 sshtermy --debug      # write a debug log for this run (debug.log in the config folder)
 sshtermy backup [file]   # full backup of all data (asks for the master password)
@@ -255,7 +259,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | F9 / ⇧F1…F8 | quick commands: list / run directly |
 | | F10 | back to the manager (sessions keep running) |
 | | ⇧F9 | key bar explains the keys of the current area |
-| | ⇧F10 | move the tab to its own terminal window (Windows Terminal/console, Terminal.app/iTerm2, Linux terminals, tmux); the session stays open, closing the window or ⏎ brings it back. Own terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
+| | ⇧F10 | move the tab to its own terminal window (Windows Terminal/console, Terminal.app/iTerm2, Linux terminals, tmux; in sshTermy's own window a second own window); the session stays open, closing the window or ⏎ brings it back. Own terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
 | | Ctrl+F | search the scrollback (Ctrl+E only error lines, Tab error list) |
 | | Ctrl+T | choose a layout: one, two side by side/stacked, large + two, three, four, six (keys 1…7); inside, ⇧+arrow resizes, `=` equal sizes, `z` zoom, `d` dim the others, `w` workspaces |
 | | Alt+I | split view: type into all visible panes at once |
@@ -278,6 +282,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | Everywhere | Ctrl+Space | command palette: ⏎ start as goal, Tab ask AI, ↑↓ choose suggestion/tunnel/connection; `log` = AI analyzes output, `color` = color rules |
 | | F1 / F12 / Ctrl+Q | help / about + update / quit |
 | | F12 → l / F12 → w | switch language (English ↔ German) / what's new |
+| Own window | Ctrl+⇧V · ⇧Insert (Windows also Ctrl+V, Mac ⌘V) / Ctrl + · Ctrl − · Ctrl 0 (Mac: ⌘) | paste / font size bigger · smaller · default (also Ctrl + mouse wheel); on the Mac ⌘ acts as Alt, ⌥ keeps typing @ [ ] { } \| ~ |
 
 Why function keys instead of `Ctrl+A`? In bash/zsh `Ctrl+A` means “beginning of line” and it is the prefix of GNU screen.
 sshTermy only binds keys that shells and full-screen programs practically never need.

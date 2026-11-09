@@ -16,6 +16,10 @@ import (
 // pixelsOn: Terminal kann es und es ist nicht abgeschaltet.
 var pixelsOn = termemu.PixelImagesSupported(os.Getenv)
 
+// EnablePixelImages: Das eigene Fenster (internal/gui) zeichnet kitty-Bilder
+// mit Platzhaltern selbst. Aufruf vor New; SSHTERMY_NO_PIXELS schaltet ab.
+func EnablePixelImages() { pixelsOn = os.Getenv("SSHTERMY_NO_PIXELS") == "" }
+
 // pixelImages: Emulator der Sitzung aufs Durchreichen einstellen.
 func (s *session) pixelImages() {
 	if !pixelsOn || s.term == nil {
