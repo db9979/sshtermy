@@ -143,7 +143,9 @@ var helpSections = []helpSection{
 		{"a", "Befehl ausführen (rote zweimal)"},
 		{"c", "Befehl kopieren"},
 		{"z", "Erklärung ein-/ausklappen"},
-		{"n", "neue Frage"},
+		{"Esc / Strg+C", "Antwort abbrechen"},
+		{"n", "neue Frage (ohne Verlauf)"},
+		{"f", "Folgefrage (Verlauf geht mit)"},
 	}},
 	{hcCompanion, "◇", "KI-Begleiter", "Alt+J", true, [][2]string{
 		{"Alt+K", "Stufe: Aus/Leise/Gesprächig/Coach"},

@@ -492,11 +492,37 @@ const sysAsk = "Du hilfst einem Admin auf einem Server oder Netzwerkgerät. Antw
 	"Jeder Befehl steht in einem eigenen Codeblock ```sh … ``` mit genau einem Befehl. Sag deutlich, wenn ein Befehl " +
 	"Daten löscht, Rechte ändert oder den Server neu startet." + guard
 
-func (a *Agent) Ask(ctx context.Context, q string, c Context, onDelta func(string)) error {
-	return a.C.Stream(ctx, []llm.Message{
-		{Role: "system", Content: a.sys(sysAsk)},
-		{Role: "user", Content: material(c) + "\n\nFrage: " + Redact(q)},
-	}, llm.Opts{MaxTokens: 700, Task: TaskAsk}, func(d string) { onDelta(Clean(d)) })
+// Turn: eine frühere Frage samt Antwort im Frage-Panel (für Folgefragen).
+type Turn struct{ Q, A string }
+
+// Ask beantwortet eine Frage mit Terminal-Kontext. prev sind die früheren
+// Fragen derselben Unterhaltung (Folgefrage); das Material steht vorne in der
+// ersten Nachricht, damit der Prefix-Cache greift.
+func (a *Agent) Ask(ctx context.Context, q string, c Context, prev []Turn, onDelta func(string)) error {
+	return a.C.Stream(ctx, askMessages(a.sys(sysAsk), q, c, prev), llm.Opts{MaxTokens: 700, Task: TaskAsk}, func(d string) { onDelta(Clean(d)) })
+}
+
+// askMessages baut den Verlauf: Material + erste Frage, dann abwechselnd
+// Antwort und Folgefrage. Höchstens die letzten 4 Runden gehen mit.
+func askMessages(sys, q string, c Context, prev []Turn) []llm.Message {
+	if len(prev) > 4 {
+		prev = prev[len(prev)-4:]
+	}
+	msgs := []llm.Message{{Role: "system", Content: sys}}
+	first := q
+	if len(prev) > 0 {
+		first = prev[0].Q
+	}
+	msgs = append(msgs, llm.Message{Role: "user", Content: material(c) + "\n\nFrage: " + Redact(first)})
+	for i, t := range prev {
+		msgs = append(msgs, llm.Message{Role: "assistant", Content: tail(stripThink(t.A), 1500)})
+		next := q
+		if i+1 < len(prev) {
+			next = prev[i+1].Q
+		}
+		msgs = append(msgs, llm.Message{Role: "user", Content: "Folgefrage: " + Redact(next)})
+	}
+	return msgs
 }
 
 // ---------------------------------------------------------------- Helfer
