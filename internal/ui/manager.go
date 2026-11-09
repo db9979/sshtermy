@@ -690,8 +690,21 @@ func (a *App) mgrLoad(rb *strings.Builder, c domain.Connection, w int, now time.
 	if srv.MemTotal > 0 {
 		line("RAM", srv.MemPct(), ramL)
 	}
-	if srv.DiskTotal > 0 {
-		line(i18n.T("Platte"), srv.DiskPct(), diskL)
+	disks := srv.DiskList()
+	if len(disks) == 1 {
+		line(i18n.T("Platte"), disks[0].Pct(), diskL)
+		return
+	}
+	shown, hidden := pickDisks(disks, diskL)
+	if len(shown) > 4 {
+		shown, hidden = shown[:4], hidden+len(shown)-4
+	}
+	nameW := max(4, label.GetWidth()-2)
+	for _, d := range shown {
+		line(truncLeft(d.Mount, nameW), d.Pct(), diskL)
+	}
+	if hidden > 0 {
+		rb.WriteString(" " + label.Render("") + st.Muted.Render(fmt.Sprintf(i18n.T("+%d weitere Platten · F6"), hidden)) + "\n")
 	}
 }
 

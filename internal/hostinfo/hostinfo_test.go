@@ -224,3 +224,51 @@ func TestConfigRules(t *testing.T) {
 		t.Error("kaputter Ausdruck sollte scheitern")
 	}
 }
+
+func TestParseServerDisks(t *testing.T) {
+	out := "cpus=4\nmem_kb=1000 500\ndisk_kb=1000 400 600\n" +
+		"fs=ext4 1000 400 600 /dev/sda2 /\n" +
+		"fs=tmpfs 800 0 800 tmpfs /run\n" +
+		"fs=devtmpfs 800 0 800 udev /dev\n" +
+		"fs=overlay 1000 400 600 overlay /var/lib/docker/overlay2/abc/merged\n" +
+		"fs=squashfs 50 50 0 /dev/loop0 /snap/core/1\n" +
+		"fs=xfs 2000 1900 100 /dev/sdb1 /data\n" +
+		"fs=ext4 1000 400 600 /dev/sda2 /srv/bind\n" +
+		"fs=vfat 500 10 490 /dev/sda1 /boot/efi\n" +
+		"fs=cifs 4000 1000 3000 //nas/backup /mnt/nas backup\n"
+	s, err := ParseServer(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mounts []string
+	for _, d := range s.Disks {
+		mounts = append(mounts, d.Mount)
+	}
+	if got := strings.Join(mounts, ","); got != "/,/boot/efi,/data,/mnt/nas backup" {
+		t.Fatalf("Platten %q", got)
+	}
+	if s.Disks[2].Pct() != 95 || s.Disks[2].Type != "xfs" {
+		t.Fatalf("/data %+v", s.Disks[2])
+	}
+	al := s.Alerts(Limits{CPU: 90, RAM: 90, Disk: 90})
+	if len(al) != 1 || al[0].Mount != "/data" || !strings.Contains(al[0].Text(), "/data 95") {
+		t.Fatalf("Warnungen %+v", al)
+	}
+	if !Has(al, Alert{Metric: MetricDisk, Mount: "/data"}) || Has(al, Alert{Metric: MetricDisk, Mount: "/"}) {
+		t.Fatal("Has unterscheidet Platten nicht")
+	}
+	if !strings.Contains(s.Summary(), "/data 95%") {
+		t.Fatalf("Zusammenfassung %q", s.Summary())
+	}
+	// macOS (df ohne -T): Systemvolumes weg, Data bleibt
+	m, _ := ParseServer("cpus=8\nfs=? 1000 100 900 /dev/disk3s1s1 /\nfs=? 300 1 299 devfs /dev\n" +
+		"fs=? 1000 20 980 /dev/disk3s6 /System/Volumes/VM\nfs=? 1000 600 400 /dev/disk3s5 /System/Volumes/Data\n")
+	if len(m.Disks) != 2 || m.Disks[1].Mount != "/System/Volumes/Data" || m.DiskTotal != 1000*1024 {
+		t.Fatalf("macOS %+v", m.Disks)
+	}
+	// älteres Skript ohne fs=: "/" aus disk_kb
+	o, _ := ParseServer("cpus=1\ndisk_kb=100 95 5\n")
+	if l := o.DiskList(); len(l) != 1 || l[0].Mount != "/" || len(o.Alerts(Limits{Disk: 90})) != 1 {
+		t.Fatalf("alt %+v", l)
+	}
+}
