@@ -69,8 +69,12 @@ func Run(model tea.Model, opts Options) (tea.Model, error) {
 	if err != nil {
 		return nil, err
 	}
-	// LF wie CR+LF: bubbletea verlässt sich darauf, wenn die Ausgabe kein TTY ist.
-	_, _ = w.term.Write([]byte("\x1b[20h"))
+	// LF wie CR+LF nur dort, wo bubbletea es annimmt: Ohne TTY-Eingabe setzt
+	// es mapNl = GOOS != "windows". Unter Windows schickt es CR selbst; mit
+	// LNM sprängen Zeilen dort an Spalte 0 und der Aufbau zerfiele.
+	if runtime.GOOS != "windows" {
+		_, _ = w.term.Write([]byte("\x1b[20h"))
+	}
 	prog := tea.NewProgram(model,
 		tea.WithInput(inR),
 		tea.WithOutput(w.output()),
