@@ -939,6 +939,10 @@ type Schedule struct {
 	LastOK    int       `json:"last_ok,omitempty"`
 	LastFail  int       `json:"last_fail,omitempty"`
 	LastText  string    `json:"last_text,omitempty"` // Ergebnis je Host, gekürzt
+	// Known: Verbindungen im Ziel-Ordner, die du bestätigt hast (beim Speichern
+	// oder mit Strg+A). Neue Hosts im Ordner – etwa aus einem Team-Abo – laufen
+	// erst danach mit. nil = alter Zeitplan, beim nächsten Lauf übernommen.
+	Known []string `json:"known,omitempty"`
 }
 
 // ScheduleBackup: Zeitplan sichert die running-config aller Switches im Ziel.
@@ -948,7 +952,12 @@ const ScheduleBackup = "backup"
 const ScheduleLogs = "logs"
 
 // ScheduleCatchUp: so lange nach dem Termin wird ein verpasster Lauf nachgeholt.
+// Was etwas ändert, holt sshTermy nur bis ScheduleLate nach (eine Wartung für
+// 3 Uhr soll nicht mitten am Tag laufen); Lesendes bis ScheduleCatchUp.
 const ScheduleCatchUp = 12 * time.Hour
+
+// ScheduleLate: ab dieser Verspätung gilt ein Lauf als nachgeholt.
+const ScheduleLate = 10 * time.Minute
 
 // DueAt: Termin des Tages von now (zero, wenn heute kein Lauftag ist oder
 // die Zeit unlesbar).

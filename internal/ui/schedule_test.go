@@ -80,3 +80,68 @@ func TestScheduleFormAndRun(t *testing.T) {
 		t.Fatal("muss als fertig gelten")
 	}
 }
+
+// Sicherheitsprüfung 2026-11-10: neue Hosts im Ordner laufen erst nach
+// Bestätigung, Änderndes wird nicht stundenlang nachgeholt, ein vom Team
+// geändertes Runbook läuft nicht nach Zeitplan.
+func TestScheduleGuards(t *testing.T) {
+	a := newPaletteTestApp(t)
+	a.pal = nil
+	a.st.UpsertConnection(domain.Connection{Alias: "web-1", Host: "w1", Username: "u", Auth: domain.AuthAgent, Group: "Web"})
+	old := schedDialer
+	t.Cleanup(func() { schedDialer = old })
+	schedDialer = func(*App) broadcast.Dialer {
+		return func(_ context.Context, c domain.Connection) (broadcast.Executor, error) { return schedExec{c.Alias}, nil }
+	}
+	a.openScheduleForm(domain.Schedule{At: "03:00"})
+	f := a.form
+	f.get("name").in.SetValue("Neustart App")
+	setChoice(t, f, "folder", "Web")
+	f.get("steps").in.SetValue("systemctl restart app")
+	if err := a.saveScheduleForm(); err != nil {
+		t.Fatal(err)
+	}
+	// später kommt ein Host dazu (z. B. aus einem Team-Ordner)
+	a.st.UpsertConnection(domain.Connection{Alias: "fremd", Host: "evil", Username: "u", Auth: domain.AuthAgent, Group: "Web"})
+	sc := a.schedules()[0]
+	run, fresh := a.schedTargets(sc)
+	if len(run) != 1 || len(fresh) != 1 || fresh[0].Alias != "fremd" {
+		t.Fatalf("run %v fresh %v", run, fresh)
+	}
+	res := a.startSchedule(sc)()
+	a.scheduleMsg(res)
+	sc, _ = a.scheduleByID(sc.ID)
+	if strings.Contains(sc.LastText, "fremd") || sc.LastOK != 1 {
+		t.Fatalf("neuer Host lief ohne Bestätigung mit:\n%s", sc.LastText)
+	}
+
+	// verpasst: 3 Uhr, jetzt 3 Stunden später, Schritte ändern etwas
+	now := time.Now()
+	a.updateSchedule(sc.ID, func(x *domain.Schedule) {
+		x.At = now.Add(-3 * time.Hour).Format("15:04")
+		x.Days, x.LastRun = nil, now.Add(-30*time.Hour)
+	})
+	if now.Add(-3*time.Hour).Day() != now.Day() {
+		t.Skip("um Mitternacht nicht prüfbar")
+	}
+	a.scheduleTick()
+	sc, _ = a.scheduleByID(sc.ID)
+	if a.schedRun[sc.ID] || !strings.Contains(sc.LastText, "nicht nachgeholt") {
+		t.Fatalf("Änderndes nachgeholt: %q", sc.LastText)
+	}
+
+	// Runbook aus dem Team, geändert
+	rb, _ := a.st.UpsertRunbook(domain.Runbook{Name: "Team", Goal: "x", Steps: []string{"uptime"}})
+	a.st.Update(func(d *domain.Data) {
+		for i := range d.Runbooks {
+			d.Runbooks[i].TeamChanged = true
+		}
+	})
+	if _, err := a.schedSteps(domain.Schedule{RunbookID: rb.ID}); err == nil || !strings.Contains(err.Error(), "Team") {
+		t.Fatalf("Team-Runbook läuft ungesehen: %v", err)
+	}
+	a.st.UseRunbook(rb.ID)
+	if _, err := a.schedSteps(domain.Schedule{RunbookID: rb.ID}); err != nil {
+		t.Fatalf("nach dem Ansehen: %v", err)
+	}
+}
