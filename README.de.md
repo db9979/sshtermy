@@ -126,7 +126,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     API erreichbar), zählen dann wie lokale Endpunkte für „nur eigene KI“ und den Filter-Schalter des Begleiters.
   - **Runbooks**: Ziele mit den ausgeführten Befehlen speichern (Strg+S) und wiederverwenden, der Agent nimmt sie als Vorlage
   - **Endpunkt-Test und Modellauswahl** in den KI-Einstellungen (Strg+T testet, Strg+L listet die Modelle von `/v1/models`)
-  - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort als Karten mit Syntaxfarben: einfügen (⏎/1…9), ausführen (a), kopieren (c), Erklärung einklappbar (z); Esc oder Strg+C bricht eine laufende Antwort ab, n stellt eine neue Frage, f eine Folgefrage mit dem bisherigen Verlauf
+  - **KI fragen** (F3) mit Terminal-Kontext, Befehle aus der Antwort als Karten mit Syntaxfarben: einfügen (⏎/1…9), ausführen (a), kopieren (c), Erklärung einklappbar (z); schlägt ein Befehl aus einer Karte fehl, zeigt die Karte den Fehler und einen korrigierten Befehl (vom Begleiter oder eigens erfragt), u übernimmt ihn, gleiche Fehler in anderen Karten werden mitkorrigiert und die Korrektur fürs Gerät gemerkt; die KI kennt das heutige Datum und schreibt Datum/Uhrzeit in Befehlen im Format des Programms (ISO statt „10.11.“); Esc oder Strg+C bricht eine laufende Antwort ab, n stellt eine neue Frage, f eine Folgefrage mit dem bisherigen Verlauf
   - **Systemprofil pro Verbindung**: sshTermy erkennt System, Version und Befehlssatz (Linux mit Paketmanager und
     Init-System, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware, UniFi-Switches …) aus
     SSH-Kennung, unsichtbarer Abfrage (nur Server) und dem mitgelesenen Terminal (Netzwerkgeräte, ohne Exec).
@@ -294,7 +294,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | ←→ / ↑↓ / z / c / r / x | Host-Spalte / blättern / groß / Ausgabe kopieren / nochmal / abbrechen |
 | Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
 | Terminal | F2 | Ziel-Modus (Agent) |
-| | F3 | KI fragen (Esc bricht die Antwort ab, n neue Frage, f Folgefrage) |
+| | F3 | KI fragen (Esc bricht die Antwort ab, n neue Frage, f Folgefrage, u Fix nach Fehler übernehmen) |
 | | F4 | Tunnel an/aus (⏎ oder Klick), a mit Verbindung starten, Web-Service im Browser öffnen |
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), e Server-Datei im eigenen Editor, Leertaste/a markieren, Ziehen kopiert, n Ordner, d löschen, . versteckte |
 | | F6 | Host-Übersicht: r/⏎ abfragen, t Zeitraum der Graphen 5 min/1 h, z groß, l Log-Blick, c Container, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |

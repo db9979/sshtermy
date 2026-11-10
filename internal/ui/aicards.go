@@ -247,7 +247,7 @@ func (a *App) viewAnswer(b *strings.Builder, s *session, ans string, w int) {
 		}
 		i := n
 		n++
-		b.WriteString(a.commandCard(s, i, card{p.text, p.lang}, i == q.sel, q.armed == i, kind, w) + "\n")
+		b.WriteString(a.commandCard(s, i, q.cardText(i, card{p.text, p.lang}), i == q.sel, q.armed == i, kind, w) + "\n")
 	}
 }
 
@@ -276,9 +276,14 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 	if cd.shell() {
 		danger = safety.Check(code, kind)
 	}
+	fx := s.ask.fixes[i]
+	open := fx != nil && !fx.adopted // fehlgeschlagen, Fix noch nicht übernommen
 	border := st.T.Border
 	if sel {
 		border = st.T.AI
+	}
+	if open {
+		border = st.T.Warn
 	}
 	if len(danger) > 0 {
 		border = st.T.Danger
@@ -300,6 +305,12 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 		label = st.Muted.Render(" " + fmt.Sprintf(i18n.T("Skript · %d Zeilen"), n))
 	}
 	head := num + label
+	switch {
+	case fx != nil && fx.adopted && fx.like >= 0:
+		head += "  " + st.OK.Render(fmt.Sprintf(i18n.T("✓ angepasst wie Karte %d"), fx.like+1))
+	case fx != nil && fx.adopted:
+		head += "  " + st.OK.Render("✓ "+i18n.T("korrigiert"))
+	}
 	if len(danger) > 0 {
 		head += "  " + st.Danger.Render("▲ "+trunc(danger[0].Reason, max(8, inner-20)))
 	}
@@ -315,6 +326,9 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 		lines = append(lines, wrap(l, inner))
 	}
 	body := strings.Join(lines, "\n")
+	if open {
+		body += "\n" + a.cardFixView(fx, inner)
+	}
 
 	// Knöpfe (bei schmalem Panel nur die Tasten)
 	type button struct {
@@ -323,6 +337,9 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 		f         func() tea.Cmd
 	}
 	var bs []button
+	if open && fx.fix.Command != "" {
+		bs = append(bs, button{"u", i18n.T("Fix übernehmen"), st.Key, func() tea.Cmd { return a.adoptCardFix(s, i) }})
+	}
 	if cd.runnable() {
 		bs = append(bs, button{"⏎", i18n.T("Einfügen"), st.Key, func() tea.Cmd { return a.cardInsert(s, i) }})
 		run := button{"a", i18n.T("Ausführen"), st.Key, func() tea.Cmd { return a.cardRun(s, i) }}
@@ -376,7 +393,7 @@ func (a *App) cardCode(s *session, i int) (card, bool) {
 	if i < 0 || i >= len(cards) {
 		return card{}, false
 	}
-	return cards[i], true
+	return s.ask.cardText(i, cards[i]), true
 }
 
 // cardInsert schreibt den Befehl in die Eingabezeile; Enter drückt der Mensch.
@@ -389,6 +406,9 @@ func (a *App) cardInsert(s *session, i int) tea.Cmd {
 	s.ask.armed = -1
 	s.term.SendText(c)
 	s.noteAI(c, true)
+	if from := s.ask.learnSource(i); from != "" && s.aiPend != nil {
+		s.aiPend.learnFrom = from // läuft er nach Enter, lernt das Profil daraus
+	}
 	s.panelFocus = false
 	return nil
 }
@@ -408,6 +428,9 @@ func (a *App) cardRun(s *session, i int) tea.Cmd {
 	s.ask.armed = -1
 	a.clearToasts()
 	a.beginCommand(s, c)
+	if from := s.ask.learnSource(i); from != "" && s.run != nil {
+		s.run.learnFrom = from
+	}
 	s.term.SendText(c + "\r")
 	s.noteAI(c, false)
 	s.history = append(s.history, c)
@@ -465,6 +488,8 @@ func (a *App) askCardKey(s *session, key string) (tea.Cmd, bool) {
 		return a.cardRun(s, q.sel), true
 	case "c":
 		return a.cardCopy(s, q.sel), true
+	case "u":
+		return a.adoptCardFix(s, q.sel), true
 	default:
 		return nil, false
 	}

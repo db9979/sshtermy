@@ -743,6 +743,9 @@ func (a *App) onTick() tea.Cmd {
 		if c := a.companionTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
+		if c := a.cardFixTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
 		a.profileTick(s)
 		if c := a.liveTick(s); c != nil {
 			cmds = append(cmds, c)

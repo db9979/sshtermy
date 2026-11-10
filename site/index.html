@@ -151,7 +151,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Sync</h3><p>End-to-end encrypted via OneDrive, Dropbox, iCloud, Syncthing or WebDAV (Synology, Nextcloud).</p></div>
     <div class="card"><h3>System profile</h3><p>Knows Linux distributions, macOS, Windows and network OS dialects (Aruba, Cisco, Juniper, MikroTik, FortiGate, UniFi …), so the AI suggests matching commands.</p></div>
     <div class="card"><h3>Command sets</h3><p>48 command sets built in (Cisco, Arista, Aruba, Comware, Huawei, Dell, Extreme, Ruckus, Palo Alto, Sophos, FortiGate, pfSense, Proxmox …). Add your own as YAML, test it on the device or let the AI draft it; own and team sets can never weaken the built-in safety rules.</p></div>
-    <div class="card"><h3>AI companion</h3><p>Reads along and comments on its own: quiet (errors, risky lines before Enter, repeats), chatty (every command) or coach (spots your goal, recap with runbook). Your own AI servers, also external, can be registered.</p></div>
+    <div class="card"><h3>AI companion</h3><p>Reads along and comments on its own: quiet (errors, risky lines before Enter, repeats), chatty (every command) or coach (spots your goal, recap with runbook). Your own AI servers, also external, can be registered. If a command from an answer card fails, the card shows the error and a corrected command; <kbd>u</kbd> takes it over and fixes the same mistake in the other cards.</p></div>
     <div class="card"><h3>Agent &amp; plan mode</h3><p>The AI works towards a goal on its own, writes and runs scripts; three levels, dangerous steps always wait for you. Plan first: review and approve the whole plan.</p></div>
     <div class="card"><h3>Split view &amp; tabs</h3><p>Seven layouts with up to six sessions, zoom, swap, type into all; tab bar with <code>+</code>, <code>×</code>, right-click menu and tab list (<kbd>Alt</kbd>+<kbd>T</kbd>).</p></div>
     <div class="card"><h3>Telnet &amp; serial</h3><p>Telnet and USB console cables (e.g. Aruba switches), cable picked automatically, login typed for you.</p></div>
@@ -202,7 +202,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F1</kbd></td><td>Help</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Goal mode (agent)</td></tr>
     <tr><td><kbd>F2</kbd> → <kbd>c</kbd> / <kbd>l</kbd></td><td>Agent finished: copy the result / read it in full; <kbd>PgUp</kbd>/<kbd>PgDn</kbd> or the mouse wheel scroll the panel</td></tr>
-    <tr><td><kbd>F3</kbd></td><td>Ask AI with terminal context; <kbd>Esc</kbd> stops the answer, <kbd>n</kbd> new question, <kbd>f</kbd> follow-up</td></tr>
+    <tr><td><kbd>F3</kbd></td><td>Ask AI with terminal context; <kbd>Esc</kbd> stops the answer, <kbd>n</kbd> new question, <kbd>f</kbd> follow-up, <kbd>u</kbd> use the fix after a failed card command</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>K</kbd> / <kbd>Alt</kbd>+<kbd>J</kbd></td><td>AI companion: level (off, quiet, chatty, coach) / companion sidebar</td></tr>
     <tr><td><kbd>F4</kbd> / <kbd>F5</kbd> / <kbd>F6</kbd></td><td>Tunnels / files (SFTP) / host overview</td></tr>
     <tr><td><kbd>F7</kbd> / <kbd>F8</kbd></td><td>Previous / next tab</td></tr>

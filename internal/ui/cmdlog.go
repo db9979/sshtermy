@@ -114,6 +114,9 @@ func (a *App) finishCommand(s *session) {
 	}
 	a.auditCommand(s, r, failed, f.Exit)
 	a.companionAfter(s, r, f, failed)
+	if failed && !r.interrupted && !r.agent {
+		a.cardFailed(s, f) // Befehl aus einer Antwortkarte? (cardfix.go)
+	}
 	if s.log != nil && !r.private {
 		s.log.Add(sessionlog.Entry{At: r.at, Command: r.cmd, Output: out, Duration: dur,
 			Failed: failed, Exit: f.Exit, Reason: f.Reason, Agent: r.agent})

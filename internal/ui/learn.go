@@ -29,6 +29,9 @@ type aiPending struct {
 	cmd      string
 	at       time.Time
 	inserted bool // steht in der Eingabezeile, Enter fehlt noch
+	// learnFrom: der eingefügte Befehl ist selbst schon die Korrektur eines
+	// fehlgeschlagenen (Karten-Fix, cardfix.go)
+	learnFrom string
 }
 
 const learnWindow = 10 * time.Minute
@@ -59,8 +62,12 @@ func (s *session) correctionFrom(typed string) string {
 	if typed == p.cmd {
 		// unverändert übernommen: läuft jetzt; schlägt er fehl, zählt der
 		// nächste eigene Befehl als Korrektur
-		p.inserted, p.at = false, time.Now()
-		return ""
+		from := ""
+		if p.inserted {
+			from = p.learnFrom
+		}
+		p.inserted, p.at, p.learnFrom = false, time.Now(), ""
+		return from
 	}
 	s.aiPend = nil
 	if p.inserted {
