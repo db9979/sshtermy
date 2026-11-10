@@ -29,6 +29,9 @@ type Switch struct {
 	vlans []int
 	// PressAnyKey: nach dem Login erst "Press any key to continue" zeigen.
 	PressAnyKey bool
+	// Positioned: wie echte ArubaOS-Switches neue Zeilen per Cursor-
+	// Position (ESC[24;1H) beginnen statt mit "\r\n".
+	Positioned bool
 }
 
 // StartSwitch lauscht auf addr ("127.0.0.1:0" für einen freien Port).
@@ -132,7 +135,11 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 		}
 	}
 	page := true
-	w(prompt)
+	pr, nl := prompt, "\r\n"
+	if sw.Positioned {
+		pr, nl = "\x1b[24;1H\x1b[2Ksw-buero# ", "\x1b[24;1H"
+	}
+	w(pr)
 	var line []byte
 	for {
 		if _, err := ch.Read(key); err != nil {
@@ -142,7 +149,7 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 		case '\r', '\n':
 			cmd := strings.TrimSpace(string(line))
 			line = line[:0]
-			w("\r\n")
+			w(nl)
 			if cmd == "exit" || cmd == "logout" {
 				return
 			}
@@ -153,7 +160,7 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 			if !sw.pageOut(ch, out, page) {
 				return
 			}
-			w(prompt)
+			w(pr)
 		case 0x7f, 0x08:
 			if len(line) > 0 {
 				line = line[:len(line)-1]
@@ -161,7 +168,7 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 			}
 		case 0x03:
 			line = line[:0]
-			w("\r\n" + prompt)
+			w(nl + pr)
 		default:
 			if c >= 0x20 {
 				line = append(line, c)

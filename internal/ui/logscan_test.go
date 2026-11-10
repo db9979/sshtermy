@@ -17,7 +17,13 @@ import (
 
 // Log-Blick an einem nachgebauten ProCurve-Switch: Befehle sichtbar an der
 // Shell, Muster gruppiert, Rauschen ausblenden, Was ist neu?, Zeitleiste.
-func TestLogScanSwitch(t *testing.T) {
+func TestLogScanSwitch(t *testing.T) { logScanSwitch(t, false) }
+
+// Echte ArubaOS-Switches beginnen Zeilen mit Cursor-Sprüngen statt "\r\n"
+// (Fehler aus dem Praxistest: „no page“: Prompt kam nicht zurück).
+func TestLogScanSwitchPositioned(t *testing.T) { logScanSwitch(t, true) }
+
+func logScanSwitch(t *testing.T, positioned bool) {
 	t.Setenv("SSHTERMY_HOME", t.TempDir())
 	st, err := store.Open()
 	if err != nil {
@@ -31,6 +37,7 @@ func TestLogScanSwitch(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer sw.Close()
+	sw.Positioned = positioned
 
 	a, err := New(st)
 	if err != nil {

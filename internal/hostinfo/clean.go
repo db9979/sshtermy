@@ -6,7 +6,10 @@ import (
 )
 
 var (
-	csiRe  = regexp.MustCompile(`\x1b\[[0-?]*[ -/]*[@-~]`)
+	csiRe = regexp.MustCompile(`\x1b\[[0-?]*[ -/]*[@-~]`)
+	// Cursor auf Zeile/Spalte setzen: ProCurve/ArubaOS-Switch beginnt so
+	// neue Zeilen statt mit "\r\n" (sonst klebt der Prompt am Echo).
+	cupRe  = regexp.MustCompile(`\x1b\[[0-9]*(?:;[0-9]*)?[Hf]`)
 	oscRe  = regexp.MustCompile(`\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)`)
 	escRe  = regexp.MustCompile(`\x1b[()][0-9A-Za-z]|\x1b[0-9=>A-DF-Za-z]`)
 	moreRe = regexp.MustCompile(`(?i)-+\s*more\s*-+(?:[^\n]*?control-c)?|--more--|<--- more --->|---\(more[^)\n]*\)---|-- \[Q quit\|D dump\|down\]`)
@@ -19,6 +22,7 @@ var (
 func Clean(raw string) []string {
 	s := strings.ReplaceAll(raw, "\x1bE", "\n")
 	s = oscRe.ReplaceAllString(s, "")
+	s = cupRe.ReplaceAllString(s, "\n")
 	s = csiRe.ReplaceAllString(s, "")
 	s = escRe.ReplaceAllString(s, "")
 	s = moreRe.ReplaceAllString(s, "")

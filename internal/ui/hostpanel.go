@@ -349,12 +349,33 @@ func shellRun(ctx context.Context, s *session, prompt, cmd string, limit time.Du
 		switch {
 		case done && idle > 300*time.Millisecond:
 			return lines, nil
+		case raw != "" && idle > 800*time.Millisecond && time.Since(start) > time.Second && atPrompt(s, prompt):
+			// Der Emulator sieht den Prompt wieder, auch wenn die Ausgabe
+			// anders aussieht als erwartet (Cursor-Sprünge, Neuzeichnen).
+			return trimPromptLines(lines, prompt), nil
 		case raw == "" && time.Since(start) > 10*time.Second:
 			return nil, fmt.Errorf(i18n.T("„%s“: keine Antwort"), cmd)
 		case time.Since(start) > limit || (raw != "" && idle > 10*time.Second):
 			return lines, fmt.Errorf(i18n.T("„%s“: Prompt kam nicht zurück"), cmd)
 		}
 	}
+}
+
+// atPrompt: steht der Cursor wieder hinter dem leeren Prompt?
+func atPrompt(s *session, prompt string) bool {
+	return s.term != nil && strings.TrimSpace(s.term.CursorLine()) == prompt
+}
+
+// trimPromptLines: Prompt-Zeilen am Ende weg (auch „prompt# befehl“).
+func trimPromptLines(lines []string, prompt string) []string {
+	for len(lines) > 0 {
+		l := strings.TrimSpace(lines[len(lines)-1])
+		if l != prompt && !strings.HasSuffix(l, prompt) {
+			break
+		}
+		lines = lines[:len(lines)-1]
+	}
+	return lines
 }
 
 // hostMsg verarbeitet die Ergebnisse.
