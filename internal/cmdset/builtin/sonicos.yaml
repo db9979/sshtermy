@@ -1,0 +1,18 @@
+id: sonicos
+name: SonicWall SonicOS
+order: 295
+hint: "SonicWall SonicOS (ab 7 eigene CLI): show status, show interfaces, show route, show current-config; Konfiguration mit configure · … · commit. Ältere Versionen (6.x) haben eine eingeschränkte CLI; dann über die Weboberfläche."
+detect:
+  screen: ['(?i)sonicwall|sonicos']
+  version: ['(?i)sonicwall|sonicos']
+commands:
+  version: show status
+  config: show current-config
+parse:
+  firmware: '(?im)^Firmware Version:\s*(?:SonicOS\s+)?(\S+)'
+  model: '(?im)^Model:\s*(.+?)\s*$'
+syslog:
+  note: "SonicOS: Device › Log › Syslog › Hinzufügen (IP, Port)."
+danger:
+  - rx: '^\s*(restart\s*$|import\s+config\b|restore\s+settings\b)'
+    reason: überschreibt die Gerätekonfiguration

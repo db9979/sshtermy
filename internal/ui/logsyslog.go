@@ -9,11 +9,23 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/cmdset"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/logscan"
+	"github.com/db9979/sshtermy/internal/safety"
 )
+
+// syslogHasPort: kann das Gerät einen Zielport? Ohne {{port}} sendet es an 514.
+func syslogHasPort(steps []string) bool {
+	for _, s := range steps {
+		if strings.Contains(strings.ReplaceAll(s, " ", ""), "{{port}}") {
+			return true
+		}
+	}
+	return false
+}
 
 // Syslog-Ziel am Gerät einrichten: sshTermy zeigt die Befehle für den
 // Hersteller mit der eigenen IP und tippt sie nach Bestätigung sichtbar ein.
@@ -61,21 +73,42 @@ func (a *App) askSyslogSetup(s *session) tea.Cmd {
 		a.flashErr(i18n.T("Der Switch ist im Konfigurationsmodus. Erst mit end bzw. exit zurück an den normalen Prompt."))
 		return nil
 	}
-	cmds := logscan.SyslogSetup(v, ip, port)
+	set := hostinfo.SetOf(v, s.prof.Model, s.prof.Version)
+	cmds := logscan.SyslogSetupWith(set, ip, port)
 	if len(cmds) == 0 {
 		hint := i18n.T("Für dieses Gerät kennt sshTermy die Befehle nicht.")
-		if v == hostinfo.VendorUniFi {
-			hint = i18n.T("UniFi-Switches stellt man im UniFi-Controller ein: Einstellungen › System › Remote Logging (Syslog).")
+		if set.Syslog.Note != "" {
+			hint = i18n.T(set.Syslog.Note)
 		}
 		a.modal = textModal(i18n.T("Syslog an sshTermy senden"), []string{hint, "", fmt.Sprintf(i18n.T("Ziel: %s, UDP-Port %d"), ip, port)})
 		return nil
 	}
+	// Jede Zeile gegen alle Gefahrenregeln: ein Befehlssatz darf über die
+	// Syslog-Schritte nichts Gefährliches eintippen lassen.
+	for _, c := range cmds {
+		for _, k := range safety.Kinds {
+			if f := safety.Check(c, k); len(f) > 0 {
+				a.flashErr(fmt.Sprintf(i18n.T("Syslog-Schritt „%s“ gesperrt: %s"), c, f[0].Reason))
+				return nil
+			}
+		}
+	}
 	body := fmt.Sprintf(i18n.T("Das Gerät schickt danach Meldungen (ab Warnung) an %s:%d. sshTermy tippt diese Zeilen sichtbar ein:"), ip, port) +
 		"\n\n  " + strings.Join(cmds, "\n  ") + "\n\n"
+	if set.Source != cmdset.Builtin {
+		body += fmt.Sprintf(i18n.T("Die Schritte stammen aus dem eigenen Befehlssatz „%s“ (%s), nicht aus sshTermy."), set.Name, cmdsetSource(set)) + "\n"
+	}
+	if !syslogHasPort(set.Syslog.Steps) && port != 514 {
+		body += fmt.Sprintf(i18n.T("Achtung: Dieses Gerät sendet immer an UDP 514, der Empfang läuft auf %d. Port in den Einstellungen auf 514 stellen oder weiterleiten."), port) + "\n"
+	}
 	if a.st.Settings().SyslogPort == 0 {
 		body += fmt.Sprintf(i18n.T("Der Syslog-Empfang wird dabei auf UDP %d eingeschaltet."), port) + "\n"
 	}
-	body += i18n.T("Gespeichert wird am Gerät nichts: dauerhaft mit write memory (bzw. copy run start).") + "\n" +
+	save := "write memory"
+	if set.Syslog.Save != "" {
+		save = set.Syslog.Save
+	}
+	body += fmt.Sprintf(i18n.T("Gespeichert wird am Gerät nichts: dauerhaft mit %s."), save) + "\n" +
 		i18n.T("Läuft eine Firewall auf diesem Rechner, muss sie den UDP-Port durchlassen.")
 	sid := s.id
 	a.modal = confirmModal(i18n.T("Syslog an sshTermy senden"), body, func() tea.Cmd {
@@ -83,7 +116,7 @@ func (a *App) askSyslogSetup(s *session) tea.Cmd {
 			_ = a.st.UpdateSettings(func(x *domain.Settings) { x.SyslogPort = port })
 			a.watchTick()
 		}
-		return a.runSyslogSetup(sid, cmds, logscan.SyslogAbort(v))
+		return a.runSyslogSetup(sid, cmds, set.SyslogAbort())
 	})
 	return nil
 }
@@ -157,6 +190,6 @@ func (a *App) syslogSetupMsg(msg tea.Msg) (tea.Cmd, bool) {
 		a.flashErr(i18n.T("Syslog einrichten: ") + m.err.Error())
 		return nil, true
 	}
-	a.flashOK(fmt.Sprintf(i18n.T("Syslog eingerichtet (UDP %d). Mit write memory dauerhaft speichern."), a.st.Settings().SyslogPort))
+	a.flashOK(fmt.Sprintf(i18n.T("Syslog eingerichtet (UDP %d). Dauerhaft erst nach dem Speichern am Gerät."), a.st.Settings().SyslogPort))
 	return nil, true
 }

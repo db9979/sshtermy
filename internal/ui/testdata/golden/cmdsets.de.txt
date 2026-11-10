@@ -1,0 +1,34 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ● KI
+ ▤ Befehlssätze · was sshTermy je Hersteller tippt, liest und der KI sagt
+
+ Eigene Sätze liegen in ~/.config/sshtermy/befehlssaetze.
+ Sie können eingebaute Gefahrenregeln nur ergänzen, tippen nur Lesebefehle und erkennen ein Gerät erst, wenn
+kein eingebauter Satz passt.
+
+ ▸ Linux/Unix-Shell                   posix            eingebaut        aktiv
+   macOS                              macos            eingebaut        aktiv
+   BSD                                bsd              eingebaut        aktiv
+   Windows PowerShell                 powershell       eingebaut        aktiv
+   Windows cmd.exe                    cmd              eingebaut        aktiv
+   Proxmox VE                         proxmox          eingebaut        aktiv
+   VMware ESXi                        esxi             eingebaut        aktiv
+   Synology DSM                       synology         eingebaut        aktiv
+   QNAP QTS / QuTS                    qnap             eingebaut        aktiv
+   TrueNAS                            truenas          eingebaut        aktiv
+   pfSense                            pfsense          eingebaut        aktiv
+   OPNsense                           opnsense         eingebaut        aktiv
+   Ubiquiti EdgeOS (EdgeRouter)       edgeos           eingebaut        aktiv
+   VyOS                               vyos             eingebaut        aktiv
+   UniFi-Switch (Ubiquiti)            unifi            eingebaut        aktiv
+   Aruba Mobility Controller (AOS 8)  aruba-mobility   eingebaut        aktiv
+   Aruba Instant (IAP)                aruba-instant    eingebaut        aktiv
+   ArubaOS-CX                         arubaos-cx       eingebaut        aktiv
+   Cisco WLC (AireOS)                 cisco-wlc        eingebaut        aktiv
+   Cisco ASA                          cisco-asa        eingebaut        aktiv
+   Cisco NX-OS (Nexus)                cisco-nxos       eingebaut        aktiv
+   Cisco IOS / IOS-XE                 cisco-ios        eingebaut        aktiv
+
+
+
+
+ ⏎ Details  n neu  t am Gerät testen  k KI-Entwurf  l Korrekturen  x export  i import  Esc zurück

@@ -1,0 +1,17 @@
+id: opnsense
+name: OPNsense
+family: bsd
+order: 121
+hint: "OPNsense (FreeBSD): nach der Anmeldung als root ein Menü, 8 = Shell. Shell: opnsense-version, configctl … (z. B. configctl filter reload), pfctl -s rules/-s state/-s info, cat /conf/config.xml, pkg, opnsense-update. Dauerhafte Änderungen über die Weboberfläche."
+detect:
+  screen: ['(?i)\bOPNsense\b']
+  probe: [/usr/local/sbin/opnsense-version]
+commands:
+  extra:
+    - label: Version
+      cmd: opnsense-version
+      pick: '(OPNsense\s+\S+)'
+    - label: Firewall
+      cmd: pfctl -si
+      pick: '(?im)^Status:\s*(\w+)'
+read: ['^opnsense-version$']

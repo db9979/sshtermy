@@ -1,0 +1,40 @@
+id: idrac
+name: Dell iDRAC
+order: 311
+hint: "Dell iDRAC (Fernwartung, Prompt /admin1-> oder racadm>>): racadm getsysinfo, racadm getversion, racadm getsel (Ereignisse), racadm lclog view -n 50, racadm get iDRAC.Info; racadm serveraction powerup/powerdown/powercycle/graceshutdown wirkt sofort; console com2 öffnet die serielle Konsole."
+detect:
+  screen: ['(?i)/admin1->|racadm>>|integrated dell remote access controller|\bidrac\d*\b']
+  version: ['(?i)idrac|racadm|integrated dell remote access|(?m)^RAC Information:']
+commands:
+  version: racadm getsysinfo
+  extra:
+    - label: Strom
+      label_en: Power
+      cmd: racadm getsysinfo
+      pick: '(?im)^Power Status\s*=\s*(\S+)'
+read: ['^racadm (getsysinfo|getversion|getsel|lclog view(\s+-n\s+\d{1,4})?|get iDRAC\.Info)$']
+parse:
+  firmware: '(?im)^Firmware Version\s*=\s*(\S+)'
+  model: '(?im)^System Model\s*=\s*(.+?)\s*$'
+  name: '(?im)^Host Name\s*=\s*(\S+)'
+danger:
+  - rx: '\bracadm\s+serveraction\s+(powerdown|powercycle|hardreset|graceshutdown)\b'
+    reason: schaltet den Server aus oder startet ihn neu
+    reason_en: powers the server off or restarts it
+  - rx: '\bracadm\s+(racresetcfg|systemerase|resetcfg)\b'
+    reason: löscht Konfiguration oder Speicher des Geräts
+  - rx: '\bracadm\s+racreset\b'
+    reason: startet das Gerät neu
+samples:
+  - name: R740
+    version: |
+      RAC Information:
+      Firmware Version        = 6.10.30.00
+      System Information:
+      System Model            = PowerEdge R740
+      Host Name               = esx01
+      Power Status            = ON
+    expect:
+      firmware: 6.10.30.00
+      model: PowerEdge R740
+      name: esx01

@@ -1,0 +1,22 @@
+id: esxi
+name: VMware ESXi
+family: linux
+order: 102
+hint: "VMware ESXi (BusyBox-Shell, kein Linux-Paketmanager, kein systemctl): esxcli (system version get, network nic list, storage filesystem list, vm process list), vim-cmd vmsvc/getallvms, vim-cmd vmsvc/power.getstate <id>, vim-cmd hostsvc/maintenance_mode_enter, /etc/init.d/<dienst> restart. Dateien der VMs unter /vmfs/volumes/."
+detect:
+  probe: [/bin/vim-cmd]
+commands:
+  extra:
+    - label: VMs
+      cmd: vim-cmd vmsvc/getallvms
+      count: '(?m)^\d+\s+\S'
+    - label: Version
+      cmd: vmware -v
+      pick: 'VMware ESXi\s+(\S+(?:\s+build-\d+)?)'
+read: ['^vim-cmd vmsvc/getallvms$', '^vmware -v$', '^esxcli (system version get|storage filesystem list|network nic list|vm process list)$']
+danger:
+  - rx: '\bvim-cmd\s+vmsvc/(destroy|unregister|power\.off|power\.reset|power\.shutdown)\b|\besxcli\s+vm\s+process\s+kill\b'
+    reason: schaltet VMs ab oder löscht sie
+    reason_en: stops or deletes VMs
+  - rx: '\besxcli\s+system\s+(shutdown|maintenanceMode\s+set)\b'
+    reason: fährt den Server herunter oder neu

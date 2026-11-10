@@ -1,0 +1,24 @@
+id: cisco-sb
+name: Cisco Small Business (SG/CBS)
+order: 225
+hint: "Cisco Small Business / Catalyst 1200/1300 (SG300, SG350, CBS250, CBS350), kein IOS: show running-config, show interfaces status, show vlan, show mac address-table, show lldp neighbors, show system, show version; Blättern aus mit terminal datadump; Konfiguration mit configure … end, speichern mit write memory (fragt Y/N)."
+detect:
+  screen: ['(?i)cisco (?:sg|sf|cbs)\d{3}|cisco small business|\bCBS\d{3}-']
+  version: ['(?im)^\s*SW version\s+\d|^\s*Active-image:\s+flash://system/images/']
+commands:
+  paging_off: terminal datadump
+  version: show version
+  system: show cpu utilization
+  ports: show interfaces status
+  vlans: show vlan
+  config: show running-config
+parse:
+  firmware: '(?im)^\s*(?:SW version|Version:)\s+([\d.]+)'
+  cpu: '(?i)five seconds\s*(\d{1,3})\s*%'
+logs:
+  commands: [show logging]
+  ports: show interfaces status
+  reader: generic
+syslog:
+  steps: [configure, 'logging host {{ip}} port {{port}} severity warnings', end]
+  save: write memory

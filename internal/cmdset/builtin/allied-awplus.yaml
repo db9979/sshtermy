@@ -1,0 +1,28 @@
+id: allied-awplus
+name: Allied Telesis AlliedWare Plus
+order: 250
+hint: "Allied Telesis AlliedWare Plus (IOS-ähnlich): show running-config, show interface brief, show vlan brief, show mac address-table, show lldp neighbors, show system, show version, show log; Blättern aus mit terminal length 0; Konfiguration mit configure terminal … end, speichern mit copy running-config startup-config (oder write). Ports heißen port1.0.1."
+detect:
+  screen: ['(?i)alliedware plus|allied telesis']
+  version: ['(?i)alliedware plus|allied telesis']
+commands:
+  paging_off: terminal length 0
+  version: show version
+  system: show cpu
+  memory: show memory
+  ports: show interface brief
+  vlans: show vlan brief
+  config: show running-config
+parse:
+  firmware: '(?i)AlliedWare Plus \(TM\)\s+(\S+)'
+  cpu: '(?i)1 second:\s*(\d{1,3})(?:\.\d+)?%'
+  mem: '(?i)RAM total:\s*(?P<total>\d+)\s*kB;\s*free:\s*(?P<free>\d+)'
+  port_up: '^port\S+\s+admin up\s+running'
+  port_down: '^port\S+\s+admin (?:down|up\s+down)'
+logs:
+  commands: [show log tail 600]
+  ports: show interface brief
+  reader: generic
+syslog:
+  steps: [configure terminal, 'log host {{ip}} level warnings', end]
+  save: copy running-config startup-config

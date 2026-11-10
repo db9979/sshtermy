@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/db9979/sshtermy/internal/hostinfo"
 )
 
 // Logwache: einzelne Zeilen aus einem laufenden Strom (journalctl -f,
@@ -127,11 +125,11 @@ func SyslogPacket(pkt string, now time.Time) (Entry, bool) {
 	}
 	// FortiOS: date=… time=… logid=… level=… msg="…"
 	// Cisco: "123: *Mar  1 00:01:02: %LINK-3-UPDOWN: …"
-	for _, v := range []hostinfo.Vendor{hostinfo.VendorFortiOS, hostinfo.VendorCisco} {
-		if (v == hostinfo.VendorFortiOS) != strings.Contains(rest, "logid=") || (v == hostinfo.VendorCisco && !strings.Contains(rest, "%")) {
+	for _, rd := range []string{"fortios", "generic"} {
+		if (rd == "fortios") != strings.Contains(rest, "logid=") || (rd == "generic" && !strings.Contains(rest, "%")) {
 			continue
 		}
-		if x, ok := netLine(v, rest, now); ok {
+		if x, ok := netLine(rd, rest, now); ok {
 			x.Time = now
 			return x, true
 		}

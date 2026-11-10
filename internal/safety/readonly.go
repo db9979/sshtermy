@@ -3,6 +3,8 @@ package safety
 import (
 	"regexp"
 	"strings"
+
+	"github.com/db9979/sshtermy/internal/cmdset"
 )
 
 // ReadOnly: ändert der Befehl sicher nichts am System? Der Agent-Modus führt
@@ -12,6 +14,9 @@ func ReadOnly(cmd, kind string) bool {
 	cmd = strings.TrimSpace(cmd)
 	if cmd == "" {
 		return false
+	}
+	if cmdset.BuiltinRead(cmd) {
+		return true // ganze Zeile steht auf der Leseliste eines eingebauten Befehlssatzes
 	}
 	switch kind {
 	case Network:

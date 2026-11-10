@@ -1,0 +1,5 @@
+id: cmd
+name: Windows cmd.exe
+family: windows
+order: 5
+hint: "Windows-Eingabeaufforderung (cmd.exe): dir, type, ipconfig, sc query, findstr; keine Unix-Befehle."

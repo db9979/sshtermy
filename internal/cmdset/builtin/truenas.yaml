@@ -1,0 +1,20 @@
+id: truenas
+name: TrueNAS
+family: linux
+order: 105
+hint: "TrueNAS (SCALE: Debian, CORE: FreeBSD): zpool status/list, zfs list, midclt call … (API), cli (TrueNAS-CLI ab 23.10); Einstellungen über die Weboberfläche oder midclt, nicht über Systemdateien und nie per apt/pkg."
+detect:
+  probe: [/usr/bin/midclt, /usr/local/bin/midclt]
+commands:
+  extra:
+    - label: Pools
+      cmd: zpool list -H -o name,health
+      count: '(?m)\tONLINE\s*$'
+    - label: Version
+      cmd: cat /etc/version
+      pick: '^\s*(\S+)'
+read: ['^zpool list -H -o name,health$', '^zpool status$', '^zfs list$']
+danger:
+  - rx: '\bzpool\s+(destroy|labelclear|offline|detach)\b|\bzfs\s+(destroy|rollback)\b'
+    reason: löscht Daten auf dem Speicher
+    reason_en: deletes data on the storage

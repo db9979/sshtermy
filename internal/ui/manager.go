@@ -961,6 +961,10 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		a.confirmDeleteTunnel(a.formTunnel)
 		return nil
 	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" && a.scr == scrCmdSetForm {
+		a.form, a.scr = nil, scrCmdSets
+		return nil
+	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" {
 		a.form = nil
 		a.scr = scrManager
@@ -1006,10 +1010,16 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveScheduleForm()
 	case scrRulesForm:
 		err = a.saveConfigRules()
+	case scrCmdSetForm:
+		err = a.saveCmdSetForm()
 	}
 	if err != nil {
 		a.form.err = err.Error()
 		return nil
+	}
+	if a.scr == scrCmdSetForm {
+		a.form, a.scr = nil, scrCmdSets
+		return next
 	}
 	a.form = nil
 	a.scr = scrManager
@@ -1271,7 +1281,7 @@ const dialectAuto = "automatisch"
 
 func dialectLabels() []string {
 	l := []string{dialectAuto}
-	for _, d := range domain.Dialects {
+	for _, d := range domain.Dialects() {
 		l = append(l, d.Name)
 	}
 	return l

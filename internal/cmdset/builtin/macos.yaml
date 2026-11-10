@@ -1,0 +1,5 @@
+id: macos
+name: macOS
+family: macos
+order: 2
+hint: "macOS: zsh, BSD-Werkzeuge (z. B. sed -i '', kein systemctl; launchctl, brew)."

@@ -1,0 +1,21 @@
+id: arubaos-cx
+name: ArubaOS-CX
+order: 210
+hint: "ArubaOS-CX-CLI, kein Linux: show running-config, show interface brief, show vlan, show mac-address-table, show lldp neighbor-info, show version, show system; Blättern aus mit no page; Konfiguration mit configure terminal … end, speichern mit write memory."
+detect:
+  screen: ['(?i)arubaos-cx|\baos-cx\b']
+  version: ['(?i)arubaos-cx|aos-cx']
+commands:
+  paging_off: no page
+  version: show version
+  system: show system
+  ports: show interface brief
+  vlans: show vlan
+  config: show running-config
+logs:
+  commands: [show logging -r]
+  ports: show interface brief
+  reader: arubaos-cx
+syslog:
+  steps: [configure terminal, 'logging {{ip}} udp {{port}}', end]
+  save: write memory

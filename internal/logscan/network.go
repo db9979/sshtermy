@@ -6,32 +6,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/db9979/sshtermy/internal/cmdset"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
 )
 
-// NetCommands: lesende Befehle für Switches und Firewalls. logs liefern die
-// Meldungen, ports (falls vorhanden) den Zustand der Ports für die Leiste.
-// FortiOS: „execute log filter“ setzt nur den Anzeigefilter dieser
-// CLI-Sitzung, nichts an der Konfiguration.
+// NetCommands: lesende Befehle für Switches und Firewalls aus dem
+// Befehlssatz. logs liefern die Meldungen, ports (falls vorhanden) den
+// Zustand der Ports für die Leiste. FortiOS: „execute log filter“ setzt nur
+// den Anzeigefilter dieser CLI-Sitzung, nichts an der Konfiguration.
 func NetCommands(v hostinfo.Vendor) (logs []string, ports string) {
-	switch v {
-	case hostinfo.VendorProCurve:
-		return []string{"show logging -r"}, "show interfaces brief"
-	case hostinfo.VendorArubaCX:
-		return []string{"show logging -r"}, "show interface brief"
-	case hostinfo.VendorCisco:
-		return []string{"show logging"}, "show interfaces status"
-	case hostinfo.VendorJunos:
-		return []string{"show log messages | last 600 | no-more"}, "show interfaces terse | no-more"
-	case hostinfo.VendorMikroTik:
-		return []string{"/log print without-paging"}, ""
-	case hostinfo.VendorFortiOS:
-		return []string{"execute log filter reset", "execute log filter category 1", "execute log filter view-lines 1000", "execute log display"}, ""
-	case hostinfo.VendorUniFi:
-		return []string{"tail -n 600 /var/log/messages"}, ""
+	l := hostinfo.SetOf(v, "", "").Logs
+	if len(l.Commands) == 0 {
+		return []string{"show logging"}, l.Ports
 	}
-	return []string{"show logging"}, ""
+	return l.Commands, l.Ports
 }
 
 // ParseNetwork liest die Ausgaben der Log-Befehle (in der Reihenfolge von
@@ -39,6 +28,7 @@ func NetCommands(v hostinfo.Vendor) (logs []string, ports string) {
 func ParseNetwork(v hostinfo.Vendor, outs []string, ports string, hours int, now time.Time) *Report {
 	r := &Report{Kind: KindNetwork, Hours: hours, At: now}
 	logs, pc := NetCommands(v)
+	reader := hostinfo.SetOf(v, "", "").Logs.Reader
 	for _, c := range logs {
 		if !strings.HasPrefix(c, "execute log filter") {
 			r.Read = append(r.Read, c)
@@ -54,7 +44,7 @@ func ParseNetwork(v hostinfo.Vendor, outs []string, ports string, hours int, now
 			if strings.TrimSpace(line) == "" {
 				continue
 			}
-			e, ok := netLine(v, line, now)
+			e, ok := netLine(reader, line, now)
 			if !ok {
 				continue
 			}
@@ -74,6 +64,21 @@ func ParseNetwork(v hostinfo.Vendor, outs []string, ports string, hours int, now
 	return r
 }
 
+// CountLines: so viele Zeilen erkennt der Leser (für den Selbsttest).
+func CountLines(reader, out string, now time.Time) int {
+	n := 0
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimRight(line, "\r ")
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if _, ok := netLine(reader, line, now); ok {
+			n++
+		}
+	}
+	return n
+}
+
 var (
 	reProCurve = regexp.MustCompile(`^\s*([IWMEDP])\s+(\d\d/\d\d/\d\d)\s+(\d\d:\d\d:\d\d)\s+\d+\s+([\w-]+):\s+(.*)$`)
 	reCXLog    = regexp.MustCompile(`^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:?\d\d)?)\s+\S+\s+([^\s:\[]+)(?:\[\d+\])?:\s*(.*)$`)
@@ -85,9 +90,9 @@ var (
 	reBusybox  = regexp.MustCompile(`^([A-Z][a-z]{2}\s+\d{1,2}\s+\d\d:\d\d:\d\d)\s+(?:\S+\s+)?(\w+)\.(\w+)\s+([^\s:\[]+)(?:\[\d+\])?:\s*(.*)$`)
 )
 
-func netLine(v hostinfo.Vendor, line string, now time.Time) (Entry, bool) {
-	switch v {
-	case hostinfo.VendorProCurve:
+func netLine(reader, line string, now time.Time) (Entry, bool) {
+	switch reader {
+	case "procurve":
 		if m := reProCurve.FindStringSubmatch(line); m != nil {
 			e := Entry{Source: m[4], Msg: m[5]}
 			switch m[1] {
@@ -104,7 +109,7 @@ func netLine(v hostinfo.Vendor, line string, now time.Time) (Entry, bool) {
 			return e, true
 		}
 		return Entry{}, false
-	case hostinfo.VendorArubaCX:
+	case "arubaos-cx":
 		if m := reCXLog.FindStringSubmatch(line); m != nil {
 			e := Entry{Time: parseISO(m[1]), Source: m[2], Msg: m[3]}
 			e.Sev = sevOfWords(e.Msg)
@@ -117,7 +122,7 @@ func netLine(v hostinfo.Vendor, line string, now time.Time) (Entry, bool) {
 			return e, true
 		}
 		return Entry{}, false
-	case hostinfo.VendorMikroTik:
+	case "routeros":
 		if m := reROS.FindStringSubmatch(line); m != nil && strings.Contains(m[4], ",") || m != nil && rosTopic(m[4]) {
 			e := Entry{Source: m[4], Msg: m[5], Sev: SevInfo}
 			switch {
@@ -132,7 +137,7 @@ func netLine(v hostinfo.Vendor, line string, now time.Time) (Entry, bool) {
 			return e, true
 		}
 		return Entry{}, false
-	case hostinfo.VendorFortiOS:
+	case "fortios":
 		if !strings.Contains(line, "logid=") && !strings.Contains(line, "date=") {
 			return Entry{}, false
 		}
@@ -163,7 +168,12 @@ func netLine(v hostinfo.Vendor, line string, now time.Time) (Entry, bool) {
 		}
 		e.Msg = strings.TrimSpace(msg)
 		return e, e.Msg != ""
-	case hostinfo.VendorUniFi:
+	case "vrp":
+		if e, ok := vrpLine(line, now); ok {
+			return e, true
+		}
+		return Entry{}, false
+	case "busybox":
 		if m := reBusybox.FindStringSubmatch(line); m != nil {
 			e := Entry{Time: parseBSD(m[1], now), Source: m[4], Msg: m[5]}
 			e.Sev = map[string]Sev{"emerg": SevCrit, "alert": SevCrit, "crit": SevCrit, "err": SevErr, "warn": SevWarn, "warning": SevWarn}[m[3]]
@@ -184,8 +194,11 @@ func netLine(v hostinfo.Vendor, line string, now time.Time) (Entry, bool) {
 		lv, _ := strconv.Atoi(m[2])
 		return Entry{Sev: sevOfSyslog(lv), Source: m[1], ID: m[1] + "-" + m[3], Msg: m[4]}, true
 	}
+	if e, ok := otherLine(line, now); ok {
+		return e, true
+	}
 	if e, ok := syslogLine(line, now); ok {
-		if v == hostinfo.VendorJunos {
+		if reader == "junos" {
 			e.Sev = max(e.Sev, junosSev(e.Msg))
 		}
 		return e, true
@@ -280,42 +293,25 @@ var rePortName = regexp.MustCompile(`^(?:[A-Za-z]{1,3}\d|\d)[\d/:.]*$|^(?:Gi|Te|
 
 func portLike(s string) bool { return rePortName.MatchString(s) && len(s) <= 16 }
 
-// SyslogSetup: Befehle, mit denen das Gerät Syslog (ab Warnung) an ip:port
-// schickt. Leer = per CLI nicht einstellbar (UniFi: im Controller).
-// Gespeichert wird nichts außer bei Junos (commit); write memory macht der
-// Benutzer selbst.
 // SyslogAbort: Befehle, die eine abgebrochene Einrichtung verwerfen und den
-// Konfigurationsmodus verlassen (nil = nichts zu tun).
+// Konfigurationsmodus verlassen (aus dem Befehlssatz).
 func SyslogAbort(v hostinfo.Vendor) []string {
-	switch v {
-	case hostinfo.VendorProCurve, hostinfo.VendorArubaCX, hostinfo.VendorCisco:
-		return []string{"end"}
-	case hostinfo.VendorJunos:
-		return []string{"rollback", "exit configuration-mode"}
-	case hostinfo.VendorFortiOS:
-		return []string{"abort"}
-	}
-	return nil
+	return hostinfo.SetOf(v, "", "").SyslogAbort()
 }
 
+// SyslogSetup: Befehle aus dem Befehlssatz, mit denen das Gerät Syslog an
+// ip:port schickt. Leer = per CLI nicht einstellbar (dann SyslogNote).
+// Gespeichert wird nichts außer bei Junos (commit); write memory macht der
+// Benutzer selbst.
 func SyslogSetup(v hostinfo.Vendor, ip string, port int) []string {
-	p := strconv.Itoa(port)
-	switch v {
-	case hostinfo.VendorProCurve, hostinfo.VendorArubaCX:
-		return []string{"configure terminal", "logging " + ip + " udp " + p, "end"}
-	case hostinfo.VendorCisco:
-		return []string{"configure terminal", "logging host " + ip + " transport udp port " + p, "logging trap warnings", "end"}
-	case hostinfo.VendorJunos:
-		return []string{"configure", "set system syslog host " + ip + " any warning", "set system syslog host " + ip + " port " + p, "commit and-quit"}
-	case hostinfo.VendorMikroTik:
-		return []string{
-			"/system logging action add name=sshtermy target=remote remote=" + ip + " remote-port=" + p,
-			"/system logging add topics=warning action=sshtermy",
-			"/system logging add topics=error action=sshtermy",
-			"/system logging add topics=critical action=sshtermy",
-		}
-	case hostinfo.VendorFortiOS:
-		return []string{"config log syslogd setting", "set status enable", "set server " + ip, "set port " + p, "end"}
+	return SyslogSetupWith(hostinfo.SetOf(v, "", ""), ip, port)
+}
+
+// SyslogSetupWith wie SyslogSetup mit einem (aufgelösten) Befehlssatz.
+func SyslogSetupWith(set *cmdset.Set, ip string, port int) []string {
+	out, err := cmdset.SyslogSteps(set.Syslog.Steps, ip, port)
+	if err != nil {
+		return nil
 	}
-	return nil
+	return out
 }

@@ -294,6 +294,7 @@ func (a *App) commitTeamTake() {
 		return
 	}
 	msg := fmt.Sprintf(i18n.T("Team-Paket übernommen: %d neu, %d aktualisiert"), st.Added, st.Updated)
+	a.storeTeamCmdSets(t.pkg.From, t.pkg.CmdSets) // wirken erst nach Freigabe
 	if t.abo {
 		var have, skip []string
 		for _, it := range t.items {

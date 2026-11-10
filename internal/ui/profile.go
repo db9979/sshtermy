@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/agent"
+	"github.com/db9979/sshtermy/internal/cmdset"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -115,12 +116,13 @@ func (a *App) profileTick(s *session) {
 // profileFromSwitch: Die Host-Übersicht hat „show version“ gelesen; was sie
 // dabei über Hersteller, Modell und Firmware erfahren hat, kommt ins Profil.
 func (a *App) profileFromSwitch(s *session, v hostinfo.Vendor, sw *hostinfo.Switch) {
-	dia := map[hostinfo.Vendor]string{hostinfo.VendorProCurve: "procurve", hostinfo.VendorArubaCX: "arubaos-cx", hostinfo.VendorCisco: "cisco-ios",
-		hostinfo.VendorJunos: "junos", hostinfo.VendorMikroTik: "routeros", hostinfo.VendorFortiOS: "fortios", hostinfo.VendorUniFi: "unifi"}[v]
-	if dia == "" {
+	if v == hostinfo.VendorUnknown {
 		return
 	}
-	fresh := domain.SystemProfile{Family: domain.FamilyNetwork, OS: v.Name(), Dialect: dia}
+	if _, ok := cmdset.Lookup(string(v)); !ok {
+		return
+	}
+	fresh := domain.SystemProfile{Family: domain.FamilyNetwork, OS: v.Name(), Dialect: string(v)}
 	if sw != nil {
 		fresh.Model, fresh.Version = sw.Model, sw.Firmware
 	}
@@ -130,24 +132,11 @@ func (a *App) profileFromSwitch(s *session, v hostinfo.Vendor, sw *hostinfo.Swit
 	}
 }
 
-// hostVendor: Familie für die Host-Übersicht aus dem Profil (spart dort
+// hostVendor: Befehlssatz für die Host-Übersicht aus dem Profil (spart dort
 // „show version“ beim ersten Aufruf nicht, aber wählt passende Befehle).
 func hostVendor(p domain.SystemProfile) hostinfo.Vendor {
-	switch p.Dialect {
-	case "procurve":
-		return hostinfo.VendorProCurve
-	case "arubaos-cx":
-		return hostinfo.VendorArubaCX
-	case "cisco-ios":
-		return hostinfo.VendorCisco
-	case "junos":
-		return hostinfo.VendorJunos
-	case "routeros":
-		return hostinfo.VendorMikroTik
-	case "fortios":
-		return hostinfo.VendorFortiOS
-	case "unifi":
-		return hostinfo.VendorUniFi
+	if set, ok := cmdset.Lookup(p.Dialect); ok && p.Dialect != "network" && domain.FamilyOf(p.Dialect) == domain.FamilyNetwork && set.ID != "" {
+		return hostinfo.Vendor(p.Dialect)
 	}
 	return hostinfo.VendorUnknown
 }

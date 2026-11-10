@@ -28,6 +28,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/db9979/sshtermy/internal/audit"
+	"github.com/db9979/sshtermy/internal/cmdset"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -225,6 +226,10 @@ func (a *App) hostServerCmd(s *session, mode hostMode) tea.Cmd {
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	h.cancelFn = cancel
 	sid, seq, cl := s.id, h.seq, s.client
+	var extras []cmdset.Extra
+	if set := cmdset.Resolve(s.prof.Dialect, s.prof.Model, s.prof.Version); set != nil && set.EffFamily() != cmdset.FamilyNetwork {
+		extras = set.Commands.Extra // geprüft: nur Lesebefehle
+	}
 	return func() tea.Msg {
 		defer cancel()
 		out, err := cl.RunScript(ctx, hostinfo.ServerScript)
@@ -232,6 +237,15 @@ func (a *App) hostServerCmd(s *session, mode hostMode) tea.Cmd {
 			return hostSrvMsg{sid: sid, seq: seq, err: err, mode: mode}
 		}
 		srv, err := hostinfo.ParseServer(out)
+		for _, e := range extras {
+			eo, err := cl.RunScript(ctx, e.Cmd+" 2>/dev/null\n")
+			if err != nil {
+				continue
+			}
+			if v := hostinfo.ExtraValue(e, eo); v != "" {
+				srv.Extras = append(srv.Extras, hostinfo.Extra{Label: hostinfo.ExtraLabel(e), Value: v})
+			}
+		}
 		return hostSrvMsg{sid: sid, seq: seq, srv: srv, err: err, mode: mode}
 	}
 }
@@ -272,6 +286,7 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 	if vendor == hostinfo.VendorUnknown {
 		vendor = hostVendor(s.prof) // aus dem Systemprofil
 	}
+	model, firmware := s.prof.Model, s.prof.Version
 	st := a.st
 	connID := s.conn.ID
 	rules := a.configRules()
@@ -288,7 +303,11 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 
 		var ver string
 		if info || r.vendor == hostinfo.VendorUnknown {
-			out, err := run(r.vendor.VersionCommand(), 20*time.Second)
+			vcmd := hostinfo.SetOf(r.vendor, model, firmware).Commands.Version
+			if vcmd == "" {
+				vcmd = r.vendor.VersionCommand()
+			}
+			out, err := run(vcmd, 20*time.Second)
 			if err != nil {
 				return fail(err)
 			}
@@ -296,31 +315,52 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 			if v := hostinfo.DetectVendor(out); v != hostinfo.VendorUnknown {
 				r.vendor = v
 			}
+			// Modell und Firmware entscheiden über die Variante des Satzes.
+			if sw := hostinfo.ParseWith(hostinfo.SetOf(r.vendor, "", ""), ver, "", "", ""); sw.Model != "" || sw.Firmware != "" {
+				model, firmware = orDefault(sw.Model, model), orDefault(sw.Firmware, firmware)
+			}
 		}
-		if p := r.vendor.PagingOff(); p != "" && !r.pagingOff {
+		set := hostinfo.SetOf(r.vendor, model, firmware)
+		if p := set.Commands.PagingOff; p != "" && !r.pagingOff {
 			if _, err := run(p, 10*time.Second); err != nil {
 				return fail(err)
 			}
 			r.pagingOff = true
 		}
 		if info {
-			sysCmd, portCmd, vlanCmd := r.vendor.InfoCommands()
-			outs := make([]string, 3)
-			for i, c := range []string{sysCmd, portCmd, vlanCmd} {
-				if c == "" {
+			c := set.Commands
+			outs := make([]string, 4)
+			for i, cmd := range []string{c.System, c.Ports, c.VLANs, c.Memory} {
+				if cmd == "" {
 					continue
 				}
-				out, err := run(c, 30*time.Second)
+				out, err := run(cmd, 30*time.Second)
 				if err != nil {
 					return fail(err)
 				}
 				outs[i] = out
 			}
-			sw := hostinfo.ParseSwitch(r.vendor, ver, outs[0], outs[1], outs[2])
+			system := outs[0]
+			if outs[3] != "" {
+				system += "\n" + outs[3]
+			}
+			sw := hostinfo.ParseWith(set, ver, system, outs[1], outs[2])
+			for _, e := range c.Extra {
+				out, err := run(e.Cmd, 30*time.Second)
+				if err != nil {
+					continue
+				}
+				if v := hostinfo.ExtraValue(e, out); v != "" {
+					sw.Extras = append(sw.Extras, hostinfo.Extra{Label: hostinfo.ExtraLabel(e), Value: v})
+				}
+			}
 			r.sw = &sw
 		}
 		if backup {
-			cfgCmd := r.vendor.ConfigCommand()
+			cfgCmd := set.Commands.Config
+			if cfgCmd == "" {
+				return fail(errors.New(i18n.T("Für dieses Gerät kennt der Befehlssatz keinen Befehl für die Konfiguration (Einstellungen › Befehlssätze).")))
+			}
 			cfg, err := run(cfgCmd, 2*time.Minute)
 			if err != nil {
 				return fail(err)
@@ -795,6 +835,9 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		if srv.RebootNeeded {
 			b.WriteString(st.Warn.Render(i18n.T("◌ Neustart erforderlich")) + "\n")
 		}
+		for _, e := range srv.Extras {
+			row(trunc(e.Label, 9), e.Value)
+		}
 		a.viewAlerts(b, s, w)
 		b.WriteString("\n" + st.Muted.Render(i18n.T("Stand ")+srv.At.Format("15:04:05")+i18n.T(" · r aktualisieren")) + "\n")
 		b.WriteString(st.Muted.Render(wrap(a.monitorLine(false), w)) + "\n")
@@ -834,6 +877,9 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 				vs = append(vs, fmt.Sprintf("%d %s", v.ID, v.Name))
 			}
 			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "VLANs")) + st.Text.Render(lipgloss.NewStyle().Width(w-10).Render(trunc(strings.Join(vs, ", "), 3*(w-10)))) + "\n")
+		}
+		for _, e := range sw.Extras {
+			row(trunc(e.Label, 9), e.Value)
 		}
 		a.viewAlerts(b, s, w)
 		b.WriteString(st.Muted.Render(i18n.T("Stand ")+sw.At.Format("15:04:05")) + "\n")

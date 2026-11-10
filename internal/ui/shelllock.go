@@ -32,8 +32,12 @@ func (a *App) shellBusyKey(s *session, k tea.KeyPressMsg) bool {
 // Abfragen und Einrichtung starten dort nicht: Befehle hätten eine andere
 // Bedeutung oder änderten etwas.
 func configPrompt(p string) bool {
-	l := strings.ToLower(p)
-	return strings.Contains(l, "(config") || strings.Contains(l, "[edit")
+	l := strings.ToLower(strings.TrimSpace(p))
+	if strings.Contains(l, "(config") || strings.Contains(l, "[edit") {
+		return true
+	}
+	// Comware/Huawei: <Name> normal, [Name] bzw. [~Name] in der system-view
+	return strings.HasPrefix(l, "[") && strings.HasSuffix(l, "]") && !strings.ContainsAny(l, "@ ")
 }
 
 // cliError: meldet das Gerät einen Fehler in der Ausgabe?

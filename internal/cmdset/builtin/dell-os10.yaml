@@ -1,0 +1,25 @@
+id: dell-os10
+name: Dell OS10
+order: 235
+hint: "Dell EMC SmartFabric OS10 (Linux-basiert, CLI ähnlich IOS): show running-configuration, show interface status, show vlan, show mac address-table, show lldp neighbors, show version; Blättern aus mit terminal length 0; Konfiguration mit configure terminal … end, speichern mit write memory. Schnittstellen heißen ethernet 1/1/1."
+detect:
+  screen: ['(?i)dell (?:emc )?(?:smartfabric |networking )?os10']
+  version: ['(?i)dell (?:emc )?(?:smartfabric |networking )?os10|^OS Version:\s*10\.']
+commands:
+  paging_off: terminal length 0
+  version: show version
+  ports: show interface status
+  vlans: show vlan
+  config: show running-configuration
+parse:
+  firmware: '(?im)^OS Version:\s*(\S+)'
+  model: '(?im)^System Type:\s*(\S+)'
+  port_up: '(?i)^Eth\s+\d\S*\s+(?:.*?\s)?up\s'
+  port_down: '(?i)^Eth\s+\d\S*\s+(?:.*?\s)?down\s'
+  vlan: '^\s*\*?\s*(\d{1,4})\s+(?:up|down|active|inactive)\b'
+logs:
+  commands: [show logging log-file]
+  reader: generic
+syslog:
+  steps: [configure terminal, 'logging server {{ip}} udp {{port}}', end]
+  save: write memory

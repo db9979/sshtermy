@@ -1,0 +1,27 @@
+id: fortios
+name: FortiOS
+order: 260
+hint: "FortiOS-CLI: get system status, show full-configuration, get system interface, diagnose …; Konfiguration mit config … edit … set … next … end."
+detect:
+  banner: ['(?i)fortissh']
+  screen: ['(?i)fortigate|fortios']
+  version: ['(?i)fortigate|fortios|fortiswitch']
+commands:
+  version: get system status
+  system: get system performance status
+  ports: get system interface physical
+  config: show full-configuration
+parse:
+  reader: fortios
+# „execute log filter“ setzt nur den Anzeigefilter dieser CLI-Sitzung.
+read:
+  - '^execute log filter (reset|category \d{1,2}|view-lines \d{1,4})$'
+  - '^execute log display$'
+logs:
+  commands: [execute log filter reset, execute log filter category 1, execute log filter view-lines 1000, execute log display]
+  reader: fortios
+syslog:
+  steps: [config log syslogd setting, set status enable, 'set server {{ip}}', 'set port {{port}}', end]
+danger:
+  - rx: '^\s*(execute\s+(restore|batch|disk\s+format|factoryreset2|erase-disk))\b'
+    reason: überschreibt die Gerätekonfiguration

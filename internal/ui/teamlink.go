@@ -163,6 +163,7 @@ func (a *App) pullLink(l domain.TeamLink, force bool) tea.Cmd {
 			if len(st.AddrChanges) > 0 && a.modal != nil {
 				sum = l.LastSum // gerade ein anderer Dialog offen: beim nächsten Abgleich fragen
 			}
+			a.storeTeamCmdSets(p.From, p.CmdSets) // wirken erst nach Freigabe
 			l.Have, l.LastSum, l.LastErr, l.LastRun = have, sum, "", time.Now().UTC()
 			a.saveLink(l)
 			note := fmt.Sprintf(i18n.T("Team-Ordner „%s“: %d neu, %d aktualisiert, %d entfernt"), l.Name, st.Added, st.Updated, st.Removed) + teamGuardNote(st)
