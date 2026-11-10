@@ -512,6 +512,10 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		if !net && a.containersOK(s) {
 			return a.openContainers(s)
 		}
+	case "l":
+		if !h.busy {
+			return a.openLogScan(s)
+		}
 	case "b":
 		if net && !h.busy {
 			s.panelFocus = false
@@ -592,7 +596,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		if len(s.host.backups) > 0 {
 			k = append(k, [2]string{"↑↓", i18n.T("Stand")}, [2]string{"v", i18n.T("ansehen")})
 		}
-		return append(k, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+		return append(k, [2]string{"l", "Logs"}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 	}
 	k := [][2]string{{"r", i18n.T("aktualisieren")}}
 	if s.host.live.hasLive() {
@@ -605,7 +609,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		}
 		k = append(k, [2]string{"t", span}, [2]string{"z", size})
 	}
-	return append(k, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+	return append(k, [2]string{"l", "Logs"}, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 }
 
 // ---------------------------------------------------------------- Ansicht

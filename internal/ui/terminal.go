@@ -261,6 +261,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if i, ok := a.quickIndex(key); ok {
 			return a.runQuick(s, i)
 		}
+		if a.keys.is(actLogScan, key) {
+			return a.openLogScan(s)
+		}
 		switch a.keys.which(key, actCompanion, actCompanionBar) {
 		case actCompanion:
 			return a.cycleCompanion(1)

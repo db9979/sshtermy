@@ -53,19 +53,8 @@ func winrmConfig(c domain.Connection, pw string) psremote.Config {
 // dialWinRM: aus connectRawCmd (läuft im Hintergrund).
 func (a *App) dialWinRM(s *session, c domain.Connection, cols int, out io.Writer) (*psremote.Stream, error) {
 	ev := a.events
-	if s.secrets == nil {
-		s.secrets = &secretCache{}
-	}
+	ask := a.winrmAsk(s)
 	sc := s.secrets
-	ask := sc.wrap(func(label string) (string, error) {
-		r := make(chan string, 1)
-		ev <- secretAskMsg{label, r}
-		v := <-r
-		if v == "\x00cancel" {
-			return "", context.Canceled
-		}
-		return v, nil
-	})
 	pw, err := winrmPassword(c, ask, func(t string) { ev <- connectNoticeMsg{s.id, t} })
 	if err != nil {
 		return nil, err
@@ -81,6 +70,38 @@ func (a *App) dialWinRM(s *session, c domain.Connection, cols int, out io.Writer
 		return nil, winrmError(err, c)
 	}
 	return st, nil
+}
+
+// winrmAsk: Passwort-Rückfrage der Sitzung (Antworten bleiben im Speicher,
+// damit Neuverbinden und Abfragen wie der Log-Blick nicht noch einmal fragen).
+func (a *App) winrmAsk(s *session) sshx.SecretPrompt {
+	ev := a.events
+	if s.secrets == nil {
+		s.secrets = &secretCache{}
+	}
+	return s.secrets.wrap(func(label string) (string, error) {
+		r := make(chan string, 1)
+		ev <- secretAskMsg{label, r}
+		v := <-r
+		if v == "\x00cancel" {
+			return "", context.Canceled
+		}
+		return v, nil
+	})
+}
+
+// winrmRun: kurzes PowerShell-Skript neben der Sitzung ausführen (eigene
+// WinRS-Shell, gleiche Anmeldung). Läuft im Hintergrund.
+func (a *App) winrmRun(ctx context.Context, s *session, script string) (string, error) {
+	pw, err := winrmPassword(s.conn, a.winrmAsk(s), func(string) {})
+	if err != nil {
+		return "", err
+	}
+	out, err := psremote.Run(ctx, winrmConfig(s.conn, pw), script)
+	if err != nil {
+		return out, winrmError(err, s.conn)
+	}
+	return out, nil
 }
 
 // winrmError: Fehler mit Hinweis, was auf dem Server fehlt.

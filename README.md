@@ -49,6 +49,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   5 min / 1 h, `z` shows them large over the terminal with the top processes; a small read-only script in its own
   exec session, closing the panel ends it). Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate, Ubiquiti UniFi switches) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Containers** (`c` in F6 or palette “docker”): Docker and Podman containers and Kubernetes pods of the server in one list. ⏎ opens a shell in the container, Ctrl+L follows the logs, Ctrl+K lets the AI analyze the last 400 log lines. Restart and start/stop are only inserted at the prompt, ⏎ runs them. Uses `sudo -n` when docker needs root and sudo works without a password
+- **Log view (Alt+E, or `l` in F6)**: reads the logs of the system you are on, read-only, and shows anomalies instead of lines. Linux/BSD: journalctl (or syslog files), failed units and package updates; Windows (PowerShell/WinRM): event logs System/Application, failed sign-ins 4625/4740 and stopped automatic services; switches and firewalls: the log commands typed visibly at the prompt (ProCurve/CX, Cisco, Junos, RouterOS, FortiOS, UniFi) plus a port bar. Same lines are grouped into patterns locally, without AI (numbers, IPs, MACs replaced), known patterns get a plain title, hint and read-only check commands (`1`…`4` insert them). `n` *What's new?* compares with your last look (new, much more frequent, gone; the baseline stays encrypted on this computer), `x`/`X` hides noise for the host or the whole folder (synced). `t` timeline: errors and warnings per time slot with marks for reboots, package updates, config changes and your own commands; ←→ picks a slot, `k` asks the AI what happened there. `k` lets the AI explain a pattern, `b` writes an AI status report from the condensed patterns only (cause, connections, what to check). `z` period 1 h … 7 days, `c` copies as Markdown.
 - **Config backup for switches**: `b` saves the running configuration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`, UniFi `cat /tmp/system.cfg`) encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
   Nightly runs go through a schedule (`z`, type “Config backup”) for a whole folder. **Switch config rules**
   (palette → Settings): `+^ntp server` must appear, `-telnet-server` must not; every backup is checked,
@@ -274,7 +275,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | F3 | ask AI (Esc stops the answer, n new question, f follow-up) |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
 | | F5 | files (SFTP): Tab side, c copy (up/down), e server file in your own editor, Space/a mark, drag copies, n folder, d delete, . hidden |
-| | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, c containers, b back up switch config, ↑↓ state, d diff, v view |
+| | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, l log view, c containers, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu, hover it for target, duration and latency) |
@@ -290,6 +291,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Tab or → | accept ghost text |
 | | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
 | | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
+| | Alt+E | log view: anomalies in the logs (⏎ lines, 1…4 check, k AI explains, b AI status report, x/X hide, n what's new, t timeline, z period) |
 | | Alt+K / Alt+J | AI companion: level off · quiet · chatty · coach / companion sidebar |
 | Companion sidebar | ↑↓ / ⏎ / a / c | choose suggestion / insert / run (dangerous ones twice) / copy |
 | | m / l / s / ? / r | mute topic / remember fact / level / last request sent / recap |

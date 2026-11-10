@@ -29,4 +29,4 @@ deploy@web-01:~$                                                        │     
                                                                         │                                              │
                                                                         └──────────────────────────────────────────────┘
 
- r aktualisieren  c Container  g Grenzwerte  Esc Terminal  F6 schließen
+ r aktualisieren  l Logs  c Container  g Grenzwerte  Esc Terminal  F6 schließen

@@ -67,6 +67,7 @@ type Store struct {
 	conns connCache
 
 	stats cmdStats // Befehlsstatistik (cmdstats.go), nur lokal
+	lbase logBase  // Grundlinie des Log-Blicks (logbase.go), nur lokal
 }
 
 type connCache struct {

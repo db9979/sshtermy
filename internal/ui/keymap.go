@@ -72,6 +72,7 @@ const (
 	actSchedule     action = "schedules"
 	actCompanion    action = "companion"
 	actCompanionBar action = "companion_bar"
+	actLogScan      action = "log_scan"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -99,6 +100,7 @@ var actionDefs = []actionDef{
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
 	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},
+	{actLogScan, "Log-Blick (Auffälligkeiten in den Logs)", "Terminal", []string{"alt+e"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},
 	{actNewTab, "Neuer Tab", "Terminal", []string{"alt+n"}},

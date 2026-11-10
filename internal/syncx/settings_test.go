@@ -82,7 +82,7 @@ func TestSettingsSyncNerdNeedsProbe(t *testing.T) {
 // und Settings.SyncedPart.
 var localSettings = map[string]bool{
 	"UseDPAPI": true, "NoMouse": true, "LastVersion": true, "NerdFont": true,
-	"LastLayout": true, "Editor": true, "Schedules": true, "Debug": true, "Audit": true, "MCP": true,
+	"LastLayout": true, "Editor": true, "Schedules": true, "Debug": true, "Audit": true, "MCP": true, "SyslogPort": true,
 }
 
 func TestSettingsFieldsClassified(t *testing.T) {
