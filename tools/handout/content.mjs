@@ -160,7 +160,7 @@ export const de = {
       ['b', 'Config sichern + Regeln prüfen'],
       ['↑ / ↓ · d · v', 'Stand wählen · Diff · ansehen'],
       ['c · g · t · z', 'Container · Grenzen · Zeitraum · groß'],
-      ['Alt+E / l', 'Log-Blick: n neu · t Zeitleiste · b KI · w Wache'],
+      ['Alt+E / l', 'Log-Blick: n neu · t Zeit · b KI · w Wache · s Syslog'],
     ]},
     { t: 'Suche im Verlauf', ic: '/', key: 'Strg+F', rows: [
       ['⏎ / ⇧⏎', 'älterer / neuerer Treffer'],
@@ -355,7 +355,7 @@ export const en = {
       ['b', 'back up switch config + check rules'],
       ['↑ / ↓ · d · v', 'pick state · diff · view'],
       ['c · g · t · z', 'containers · limits · range · large'],
-      ['Alt+E / l', "log view: n new · t timeline · b AI · w watch"],
+      ['Alt+E / l', "log view: n new · t time · b AI · w watch · s syslog"],
     ]},
     { t: 'Scrollback search', ic: '/', key: 'Ctrl+F', rows: [
       ['⏎ / ⇧⏎', 'older / newer match'],

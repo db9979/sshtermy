@@ -60,6 +60,18 @@ type logWatchState struct {
 	seen     map[string]int // ConnID|Key → Index in alerts
 	base     map[string]map[string]bool
 	unread   int
+	burst    map[string]watchBurst      // gleiche Zeilen in kurzer Zeit (Fehlanmeldungen)
+	syslog   map[string][]logscan.Entry // empfangenes Syslog je Verbindung (nur im Speicher)
+	hostIdx  map[string]string          // Host aus der Verbindung → ID
+	hostAt   time.Time
+}
+
+// watchSyslogKeep: so viele empfangene Zeilen je Gerät für den Log-Blick.
+const watchSyslogKeep = 5000
+
+type watchBurst struct {
+	n    int
+	from time.Time
 }
 
 // watchItem: eine Zeile aus einem Strom.
@@ -382,6 +394,9 @@ func (a *App) watchMsg(msg tea.Msg) (tea.Cmd, bool) {
 	switch m := msg.(type) {
 	case watchBatchMsg:
 		for _, it := range m.items {
+			if it.sid == 0 {
+				a.keepSyslog(it)
+			}
 			a.watchEntry(it)
 		}
 		return a.listen(), true
@@ -410,8 +425,17 @@ func (a *App) watchConn(it watchItem) (domain.Connection, bool) {
 		}
 		return domain.Connection{}, false
 	}
-	for _, c := range a.st.Connections() {
-		if c.Host == it.addr {
+	w := &a.lwatch
+	if w.hostIdx == nil || time.Since(w.hostAt) > 30*time.Second {
+		w.hostIdx, w.hostAt = map[string]string{}, time.Now()
+		for _, c := range a.st.Connections() {
+			if _, ok := w.hostIdx[c.Host]; !ok && c.Host != "" {
+				w.hostIdx[c.Host] = c.ID
+			}
+		}
+	}
+	if id, ok := w.hostIdx[it.addr]; ok {
+		if c, ok := a.st.Connection(id); ok {
 			return c, true
 		}
 	}
@@ -421,6 +445,23 @@ func (a *App) watchConn(it watchItem) (domain.Connection, bool) {
 		}
 	}
 	return domain.Connection{}, false
+}
+
+// keepSyslog: empfangene Zeile für den Log-Blick des Geräts aufheben.
+func (a *App) keepSyslog(it watchItem) {
+	c, ok := a.watchConn(it)
+	if !ok {
+		return
+	}
+	w := &a.lwatch
+	if w.syslog == nil {
+		w.syslog = map[string][]logscan.Entry{}
+	}
+	es := append(w.syslog[c.ID], it.e)
+	if len(es) > watchSyslogKeep {
+		es = append([]logscan.Entry(nil), es[len(es)-watchSyslogKeep:]...)
+	}
+	w.syslog[c.ID] = es
 }
 
 // watchBase: Musterschlüssel der letzten Grundlinie einer Verbindung.
@@ -455,16 +496,38 @@ func (a *App) watchEntry(it watchItem) {
 		return
 	}
 	f, ok := logscan.Classify(it.kind, it.e)
-	if !ok || f.Sev < minSev {
+	if !ok {
 		return
 	}
 	c, known := a.watchConn(it)
 	host, connID := it.addr, "ip:"+it.addr
 	if known {
-		host, connID = c.Alias, c.ID
-		if a.noiseFor(c)(f.Key) {
-			return
-		}
+		connID = c.ID
+	}
+	// Fehlanmeldungen zählen in einem Zeitfenster mit.
+	if w.burst == nil || len(w.burst) > 2000 {
+		w.burst = map[string]watchBurst{}
+	}
+	bk := connID + "|" + f.Key
+	b := w.burst[bk]
+	if time.Since(b.from) > logscan.BurstWindow {
+		b = watchBurst{from: time.Now()}
+	}
+	b.n++
+	w.burst[bk] = b
+	if b.n > 1 {
+		f, _ = logscan.ClassifyBurst(it.kind, it.e, b.n)
+	}
+	if f.Sev < minSev {
+		return
+	}
+	if known {
+		host = c.Alias
+	} else {
+		c = domain.Connection{ID: connID}
+	}
+	if a.noiseFor(c)(f.Key) {
+		return
 	}
 	id := connID + "|" + f.Key
 	if w.seen == nil {
@@ -522,27 +585,29 @@ func (a *App) announceWatch(al watchAlert, sid int) {
 	}
 }
 
-// watchLines: Meldungen der Logwache für die Liste (neueste oben).
-func (a *App) watchLines() []string {
+// watchStatus: Zustand der Logwache in einer Zeile.
+func (a *App) watchStatus() string {
 	w := &a.lwatch
-	var out []string
-	switch lvl := a.watchLevel(); {
-	case lvl == 0:
-		out = append(out, i18n.T("Logwache ist aus: Einstellungen › Logwache (Fehler oder Fehler + Warnungen)."))
-	default:
-		out = append(out, fmt.Sprintf(i18n.T("Logwache: %s · %d Sitzungen beobachtet"), watchLabel(lvl), len(w.streams)))
+	var parts []string
+	if lvl := a.watchLevel(); lvl == 0 {
+		parts = append(parts, i18n.T("aus (Einstellungen › Logwache)"))
+	} else {
+		parts = append(parts, fmt.Sprintf(i18n.T("%s · %d Sitzungen"), watchLabel(lvl), len(w.streams)))
 	}
 	if w.sysPort > 0 {
 		if w.sysErr != "" {
-			out = append(out, fmt.Sprintf(i18n.T("Syslog-Empfang UDP %d: Fehler: %s"), w.sysPort, w.sysErr))
+			parts = append(parts, fmt.Sprintf(i18n.T("Syslog UDP %d: Fehler"), w.sysPort))
 		} else {
-			out = append(out, fmt.Sprintf(i18n.T("Syslog-Empfang auf UDP %d aktiv"), w.sysPort))
+			parts = append(parts, fmt.Sprintf("Syslog UDP %d", w.sysPort))
 		}
 	}
-	out = append(out, "")
-	if len(w.alerts) == 0 {
-		out = append(out, i18n.T("Noch keine Meldungen. Gemeldet wird, was neu oder kritisch ist."))
-	}
+	return strings.Join(parts, " · ")
+}
+
+// watchItems: Meldungen als Auswahlliste (neueste oben).
+func (a *App) watchItems() []pickItem {
+	w := &a.lwatch
+	var out []pickItem
 	for i := len(w.alerts) - 1; i >= 0; i-- {
 		al := w.alerts[i]
 		cnt := ""
@@ -553,15 +618,100 @@ func (a *App) watchLines() []string {
 		if al.New {
 			tag = i18n.T(" · neu")
 		}
-		out = append(out, fmt.Sprintf("%s  %-4s %s · %s%s%s", al.At.Local().Format("02.01. 15:04"), al.Sev.Label(), al.Host, al.Title, cnt, tag))
-		out = append(out, "      "+trunc(al.Line, 160))
+		out = append(out, pickItem{value: fmt.Sprint(i), label: al.Sev.Label() + "  " + al.Host + " · " + al.Title + cnt,
+			detail: trunc(al.Line, 120), hint: al.At.Local().Format("02.01. 15:04") + tag, search: al.Src})
+	}
+	if len(out) == 0 {
+		out = append(out, pickItem{value: "", label: i18n.T("Noch keine Meldungen. Gemeldet wird, was neu oder kritisch ist."),
+			disabled: i18n.T("Noch keine Meldungen")})
 	}
 	return out
 }
 
+func (a *App) watchAlertAt(it *pickItem) (watchAlert, bool) {
+	if it == nil {
+		return watchAlert{}, false
+	}
+	var i int
+	if _, err := fmt.Sscan(it.value, &i); err != nil || i < 0 || i >= len(a.lwatch.alerts) {
+		return watchAlert{}, false
+	}
+	return a.lwatch.alerts[i], true
+}
+
+// openWatchList: Meldungen der Logwache. ⏎ öffnet den Log-Blick beim
+// Muster (wenn der Tab offen ist), x blendet es als Rauschen aus.
 func (a *App) openWatchList() tea.Cmd {
 	a.lwatch.unread = 0
-	a.modal = textModal(i18n.T("Logwache: Meldungen"), a.watchLines())
+	var p *picker
+	p = newPicker(i18n.T("Logwache: Meldungen")+" · "+a.watchStatus(), i18n.T("Meldungen filtern …"), a.watchItems(), "", func(it pickItem) tea.Cmd {
+		al, ok := a.watchAlertAt(&it)
+		if !ok {
+			return nil
+		}
+		return a.openWatchAlert(al)
+	})
+	p.reload = a.watchItems
+	p.keys = [][2]string{{"⏎", i18n.T("Log-Blick beim Muster")}, {"x", i18n.T("als Rauschen ausblenden")}, {"Esc", i18n.T("schließen")}}
+	p.onKey = func(key string, it *pickItem) (tea.Cmd, bool) {
+		if key != "x" || p.in.Value() != "" {
+			return nil, false
+		}
+		al, ok := a.watchAlertAt(it)
+		if !ok {
+			return nil, true
+		}
+		c, known := a.st.Connection(al.ConnID)
+		if !known {
+			c = domain.Connection{ID: al.ConnID, Alias: al.Host}
+		}
+		a.addNoiseFor(c, logscan.Finding{Key: al.Key, Title: al.Title}, false)
+		a.dropWatchAlerts(al.ConnID, al.Key)
+		p.items = a.watchItems()
+		p.sel = clamp(p.sel, 0, max(0, len(p.items)-1))
+		return nil, true
+	}
+	a.pick = p
+	return nil
+}
+
+// dropWatchAlerts: Meldungen eines ausgeblendeten Musters entfernen.
+func (a *App) dropWatchAlerts(connID, key string) {
+	w := &a.lwatch
+	out := w.alerts[:0]
+	for _, al := range w.alerts {
+		if al.ConnID != connID || al.Key != key {
+			out = append(out, al)
+		}
+	}
+	w.alerts = out
+	w.seen = map[string]int{}
+	for i, al := range w.alerts {
+		w.seen[al.ConnID+"|"+al.Key] = i
+	}
+}
+
+// openWatchAlert: Log-Blick der Verbindung öffnen und das Muster wählen.
+func (a *App) openWatchAlert(al watchAlert) tea.Cmd {
+	for i, s := range a.sessions {
+		if s.conn.ID != al.ConnID || s.state != stConnected {
+			continue
+		}
+		a.focusSession(i)
+		a.scr = scrTerminal
+		if a.lscan.sid == s.id && a.lscan.rep != nil {
+			a.lscan.focus = al.Key
+			return a.openLogScan(s)
+		}
+		cmd := a.openLogScan(s)
+		a.lscan.focus = al.Key
+		return cmd
+	}
+	a.modal = textModal(al.Host+" · "+al.Title, []string{
+		al.At.Local().Format("02.01.2006 15:04:05") + "  " + al.Sev.Label() + "  " + al.Src,
+		"", al.Line, "",
+		i18n.T("Kein offener Tab zu diesem Host: Verbindung öffnen, dann Alt+E für den Log-Blick."),
+	})
 	return nil
 }
 

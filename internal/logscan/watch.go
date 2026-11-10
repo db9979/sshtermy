@@ -16,18 +16,31 @@ import (
 
 // Classify ordnet eine einzelne Zeile einem Muster zu (ok = false: unter
 // Warnung und kein bekanntes Muster).
-func Classify(k Kind, e Entry) (Finding, bool) {
+func Classify(k Kind, e Entry) (Finding, bool) { return ClassifyBurst(k, e, 1) }
+
+// ClassifyBurst wie Classify, aber als n-te gleiche Zeile in kurzer Zeit
+// (Fehlanmeldungen zählen erst ab einer Menge).
+func ClassifyBurst(k Kind, e Entry, n int) (Finding, bool) {
 	f := classify(k, &e)
 	if f == nil {
 		return Finding{}, false
 	}
-	f.Count, f.First, f.Last, f.Sample = 1, e.Time, e.Time, e.Line()
+	f.Count, f.First, f.Last, f.Sample = max(1, n), e.Time, e.Time, e.Line()
 	if f.rule != nil && f.rule.after != nil {
 		f.rule.after(f)
+	}
+	if f.rule != nil && f.rule.Burst && n >= BurstErr && f.Sev < SevErr {
+		f.Sev = SevErr
 	}
 	f.rule = nil
 	return *f, true
 }
+
+// BurstErr: so viele gleiche Fehlanmeldungen in BurstWindow sind ein Fehler.
+const (
+	BurstErr    = 20
+	BurstWindow = 10 * time.Minute
+)
 
 // UnixWatchScript folgt dem Journal ab jetzt (JSON, damit jede Zeile ihre
 // Schwere mitbringt), ohne Journal den Syslog-Dateien. warn: auch Warnungen.
@@ -37,12 +50,17 @@ func UnixWatchScript(warn bool) string {
 		p = "0..4"
 	}
 	return `S=""; if [ "$(id -u)" != 0 ] && sudo -n true 2>/dev/null; then S="sudo -n"; fi
+F="--output-fields=PRIORITY,SYSLOG_IDENTIFIER,_COMM,MESSAGE"
 if command -v journalctl >/dev/null 2>&1; then
-  $S journalctl -f -n 0 -q -p ` + p + ` -o json --output-fields=PRIORITY,SYSLOG_IDENTIFIER,_COMM,MESSAGE 2>/dev/null ||
-  $S journalctl -f -n 0 -q -p ` + p + ` -o json
+  $S journalctl -n 0 -q $F >/dev/null 2>&1 || F=""
+  # Fehlanmeldungen meldet sshd als Info: eigener Strom ohne Schwere-Filter
+  $S journalctl -f -n 0 -q -t sshd -t sshd-session -o json $F &
+  $S journalctl -f -n 0 -q -p ` + p + ` -o json $F
+  wait
 else
-  for f in /var/log/syslog /var/log/messages /var/log/system.log; do [ -r "$f" ] && exec tail -n 0 -F "$f"; done
-  for f in /var/log/syslog /var/log/messages; do [ -e "$f" ] && exec $S tail -n 0 -F "$f"; done
+  L=""
+  for f in /var/log/syslog /var/log/messages /var/log/system.log /var/log/auth.log /var/log/secure; do [ -e "$f" ] && L="$L $f"; done
+  [ -n "$L" ] && exec $S tail -q -n 0 -F $L
 fi
 `
 }
@@ -123,4 +141,41 @@ func SyslogPacket(pkt string, now time.Time) (Entry, bool) {
 		return Entry{}, false
 	}
 	return e, true
+}
+
+// MergeSyslog nimmt empfangene Syslog-Zeilen eines Geräts in den Bericht
+// auf (der Puffer im Switch ist oft klein). Zeilen, die der Switch selbst
+// schon gezeigt hat (gleicher Text, höchstens 90 s Abstand), zählen nicht
+// doppelt. Danach werden die Muster neu gebildet.
+func (r *Report) MergeSyslog(es []Entry) int {
+	since := r.Since()
+	seen := map[string][]time.Time{}
+	for _, e := range r.Entries {
+		seen[e.Msg] = append(seen[e.Msg], e.Time)
+	}
+	added := 0
+	for _, e := range es {
+		if e.Time.Before(since) || e.Time.After(r.At.Add(time.Minute)) {
+			continue
+		}
+		dup := false
+		for _, t := range seen[e.Msg] {
+			if d := e.Time.Sub(t); d < 90*time.Second && d > -90*time.Second {
+				dup = true
+				break
+			}
+		}
+		if dup {
+			continue
+		}
+		e.key = ""
+		r.add(e)
+		r.Lines++
+		added++
+	}
+	if added > 0 {
+		sortEntries(r.Entries)
+		Group(r)
+	}
+	return added
 }

@@ -279,3 +279,29 @@ func parsePorts(out string) []Port {
 var rePortName = regexp.MustCompile(`^(?:[A-Za-z]{1,3}\d|\d)[\d/:.]*$|^(?:Gi|Te|Fa|Tw|Fo|Hu|Eth|ge-|xe-|et-)[\w/:-]+$`)
 
 func portLike(s string) bool { return rePortName.MatchString(s) && len(s) <= 16 }
+
+// SyslogSetup: Befehle, mit denen das Gerät Syslog (ab Warnung) an ip:port
+// schickt. Leer = per CLI nicht einstellbar (UniFi: im Controller).
+// Gespeichert wird nichts außer bei Junos (commit); write memory macht der
+// Benutzer selbst.
+func SyslogSetup(v hostinfo.Vendor, ip string, port int) []string {
+	p := strconv.Itoa(port)
+	switch v {
+	case hostinfo.VendorProCurve, hostinfo.VendorArubaCX:
+		return []string{"configure terminal", "logging " + ip + " udp " + p, "end"}
+	case hostinfo.VendorCisco:
+		return []string{"configure terminal", "logging host " + ip + " transport udp port " + p, "logging trap warnings", "end"}
+	case hostinfo.VendorJunos:
+		return []string{"configure", "set system syslog host " + ip + " any warning", "set system syslog host " + ip + " port " + p, "commit and-quit"}
+	case hostinfo.VendorMikroTik:
+		return []string{
+			"/system logging action add name=sshtermy target=remote remote=" + ip + " remote-port=" + p,
+			"/system logging add topics=warning action=sshtermy",
+			"/system logging add topics=error action=sshtermy",
+			"/system logging add topics=critical action=sshtermy",
+		}
+	case hostinfo.VendorFortiOS:
+		return []string{"config log syslogd setting", "set status enable", "set server " + ip, "set port " + p, "end"}
+	}
+	return nil
+}

@@ -80,6 +80,10 @@ func logScanSwitch(t *testing.T, positioned bool) {
 		}
 		waitFor(t, func() bool { return strings.HasSuffix(strings.TrimSpace(s.term.CursorLine()), "#") })
 	}
+	// empfangenes Syslog (älter als der Puffer im Switch) kommt mit hinein
+	poe, _ := logscan.SyslogPacket("<131>Nov 10 03:00:00 sw-lager 00561 chassis: Fan 1 failure detected", time.Now())
+	poe.Time = time.Now().Add(-5 * time.Hour)
+	a.lwatch.syslog = map[string][]logscan.Entry{c.ID: {poe}}
 	_, cmd := a.Update(keyMsg("alt+e"))
 	scan(cmd)
 	if a.scr != scrLogScan {
@@ -90,7 +94,7 @@ func logScanSwitch(t *testing.T, positioned bool) {
 		t.Fatalf("Bericht: %+v", r)
 	}
 	out := a.View().Content
-	for _, want := range []string{"Port 23 flattert", "Schleife erkannt", "Erste Prüfung"} {
+	for _, want := range []string{"Port 23 flattert", "Schleife erkannt", "Erste Prüfung", "Lüfter", "Syslog-Empfang: 1"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("%q fehlt:\n%s", want, out)
 		}
@@ -120,6 +124,26 @@ func logScanSwitch(t *testing.T, positioned bool) {
 	if a.lscan.view != lsList || a.scr != scrLogScan {
 		t.Fatal("Esc aus der Unteransicht")
 	}
+
+	// s: Syslog-Ziel am Switch einrichten (nach Bestätigung sichtbar getippt).
+	a.Update(runeKey('s'))
+	if a.modal == nil || a.modal.kind != mConfirm || !strings.Contains(a.modal.body, "logging 127.0.0.1 udp 5514") {
+		t.Fatalf("Syslog-Dialog: %+v", a.modal)
+	}
+	setup := a.modal.onYes()
+	a.modal = nil
+	defer a.stopWatch()
+	if setup == nil || a.st.Settings().SyslogPort != 5514 {
+		t.Fatal("Syslog-Empfang nicht eingeschaltet")
+	}
+	if m, ok := setup().(syslogSetupMsg); !ok || m.err != nil {
+		t.Fatalf("Einrichten: %+v", m)
+	}
+	waitFor(t, func() bool { return strings.HasSuffix(strings.TrimSpace(s.term.CursorLine()), "#") })
+	if !positioned && !strings.Contains(s.term.PlainLines(40), "logging 127.0.0.1 udp 5514") {
+		t.Fatal("Befehl nicht sichtbar getippt")
+	}
+	a.scr = scrLogScan
 
 	// Zeitleiste: Fehler und Warnungen je Abschnitt, ←→ wählt.
 	a.Update(runeKey('t'))
@@ -155,6 +179,15 @@ func logScanSwitch(t *testing.T, positioned bool) {
 	if a.scr != scrTerminal {
 		t.Fatal("Esc führt nicht zurück")
 	}
+
+	// Meldung der Logwache öffnet den Log-Blick beim Muster.
+	vis := a.lsVisible()
+	last := vis[len(vis)-1]
+	_ = a.openWatchAlert(watchAlert{ConnID: c.ID, Key: last.Key, Host: c.Alias, Title: last.Title})
+	if a.scr != scrLogScan || a.lsVisible()[a.lscan.sel].Key != last.Key {
+		t.Fatalf("Log-Blick nicht beim Muster: %d", a.lscan.sel)
+	}
+	a.Update(keyMsg("esc"))
 }
 
 // Ordner-Rauschen gilt für alle Hosts des Ordners, nicht für andere.

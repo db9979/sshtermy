@@ -344,3 +344,36 @@ func TestWatchScriptSyntax(t *testing.T) {
 		}
 	}
 }
+
+// Link-Wechsel: Schwere der Zeile zählt (Cisco LINK-3 = Fehler), down
+// mindestens Warnung, up bleibt Info.
+func TestLinkSeverity(t *testing.T) {
+	now := time.Now()
+	e, _ := SyslogPacket("<187>42: *Mar  1 00:01:02: %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down", now)
+	if f, ok := Classify(KindNetwork, e); !ok || f.Sev != SevErr || !strings.HasPrefix(f.Key, "network:link:") {
+		t.Fatalf("Cisco down: %+v", f)
+	}
+	down := Entry{Time: now, Sev: SevInfo, Source: "interface", Msg: "ether3 link down"}
+	if f, ok := Classify(KindNetwork, down); !ok || f.Sev != SevWarn {
+		t.Fatalf("down ohne Schwere: %+v", f)
+	}
+	up := Entry{Time: now, Sev: SevInfo, Source: "interface", Msg: "ether3 link up (speed 1G, full duplex)"}
+	if f, ok := Classify(KindNetwork, up); !ok || f.Sev != SevInfo {
+		t.Fatalf("up: %+v", f)
+	}
+}
+
+func TestMergeSyslog(t *testing.T) {
+	now := time.Now()
+	r := &Report{Kind: KindNetwork, At: now, Hours: 24}
+	r.add(Entry{Time: now.Add(-time.Hour), Sev: SevWarn, Source: "ports", Msg: "port 23 is now off-line"})
+	Group(r)
+	es := []Entry{
+		{Time: now.Add(-time.Hour + 20*time.Second), Sev: SevWarn, Source: "ports", Msg: "port 23 is now off-line"}, // doppelt
+		{Time: now.Add(-20 * time.Hour), Sev: SevWarn, Source: "ports", Msg: "port 23 is now off-line"},
+		{Time: now.Add(-30 * time.Hour), Sev: SevWarn, Source: "ports", Msg: "port 23 is now off-line"}, // zu alt
+	}
+	if n := r.MergeSyslog(es); n != 1 || len(r.Entries) != 2 || len(r.Findings) != 1 || r.Findings[0].Count != 2 {
+		t.Fatalf("Merge: %d %+v", n, r.Findings)
+	}
+}

@@ -143,29 +143,37 @@ func (a *App) runFolderScan(folder string) tea.Cmd {
 	}
 	go func() {
 		defer cancel()
-		sem := make(chan struct{}, folderScanParallel)
-		var wg sync.WaitGroup
-		for i, c := range conns {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				select {
-				case sem <- struct{}{}:
-				case <-ctx.Done():
-					ev <- folderHostMsg{seq: seq, i: i, err: ctx.Err()}
-					return
-				}
-				defer func() { <-sem }()
-				hctx, hcancel := context.WithTimeout(ctx, 3*time.Minute)
-				r, err := scan(hctx, c, hours)
-				hcancel()
-				ev <- folderHostMsg{seq: seq, i: i, rep: r, err: err}
-			}()
-		}
-		wg.Wait()
+		scanHosts(ctx, conns, hours, scan, func(i int, r *logscan.Report, err error) {
+			ev <- folderHostMsg{seq: seq, i: i, rep: r, err: err}
+		})
 	}()
 	a.showFolderScan()
 	return nil
+}
+
+// scanHosts liest die Logs der Verbindungen, folderScanParallel gleichzeitig.
+func scanHosts(ctx context.Context, conns []domain.Connection, hours int,
+	scan func(context.Context, domain.Connection, int) (*logscan.Report, error), done func(int, *logscan.Report, error)) {
+	sem := make(chan struct{}, folderScanParallel)
+	var wg sync.WaitGroup
+	for i, c := range conns {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				done(i, nil, ctx.Err())
+				return
+			}
+			defer func() { <-sem }()
+			hctx, hcancel := context.WithTimeout(ctx, 3*time.Minute)
+			r, err := scan(hctx, c, hours)
+			hcancel()
+			done(i, r, err)
+		}()
+	}
+	wg.Wait()
 }
 
 // folderScanHost liest die Logs eines Hosts ohne Rückfragen.
@@ -229,12 +237,24 @@ func (a *App) folderScanMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if m.seq != f.seq || m.i >= len(f.hosts) {
 		return a.listen(), true
 	}
-	h := &f.hosts[m.i]
+	a.finishFolderHost(&f.hosts[m.i], m.rep, m.err)
+	if f.allDone() {
+		a.flashOK(fmt.Sprintf(i18n.T("Ordner-Scan fertig: %d Hosts in %s"), len(f.hosts), durText(time.Since(f.start))))
+	}
+	if f.open && a.modal != nil && a.modal.kind == mText && a.modal.copy != "" {
+		a.showFolderScan()
+	}
+	return a.listen(), true
+}
+
+// finishFolderHost: Ergebnis eines Hosts übernehmen (Rauschen, Vergleich mit
+// der Grundlinie, neue Grundlinie speichern).
+func (a *App) finishFolderHost(h *folderHost, rep *logscan.Report, err error) {
 	h.done = true
-	if m.err != nil {
-		h.err = m.err.Error()
-	} else if m.rep != nil {
-		r := m.rep
+	if err != nil {
+		h.err = err.Error()
+	} else if rep != nil {
+		r := rep
 		r.Host = h.conn.Alias
 		logscan.ApplyNoise(r, a.noiseFor(h.conn))
 		var prev *logscan.Base
@@ -258,13 +278,6 @@ func (a *App) folderScanMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		h.rep = r
 	}
-	if f.allDone() {
-		a.flashOK(fmt.Sprintf(i18n.T("Ordner-Scan fertig: %d Hosts in %s"), len(f.hosts), durText(time.Since(f.start))))
-	}
-	if f.open && a.modal != nil && a.modal.kind == mText && a.modal.copy != "" {
-		a.showFolderScan()
-	}
-	return a.listen(), true
 }
 
 func (f *folderScanState) allDone() bool {
@@ -415,4 +428,81 @@ func (a *App) showFolderScan() {
 	a.modal = textModal(i18n.T("Ordner-Scan: ")+where, lines)
 	a.modal.copy, a.modal.scroll = md, scroll
 	f.open = true
+}
+
+// ---------------------------------------------------------------- Zeitplan
+
+type schedLogsMsg struct {
+	id     string
+	folder string
+	hosts  []folderHost
+	reps   []*logscan.Report
+	errs   []error
+	start  time.Time
+}
+
+// startScheduleLogs: Ordner-Scan nach Zeitplan (ohne Rückfragen).
+func (a *App) startScheduleLogs(sc domain.Schedule, conns []domain.Connection) tea.Cmd {
+	scan := folderScanDial(a)
+	hours := a.st.Settings().LogScan.LogHours()
+	a.flash(i18n.T("Zeitplan startet: ") + sc.Name)
+	id, folder := sc.ID, sc.Folder
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+		m := schedLogsMsg{id: id, folder: folder, start: time.Now(), reps: make([]*logscan.Report, len(conns)), errs: make([]error, len(conns))}
+		var mu sync.Mutex
+		scanHosts(ctx, conns, hours, scan, func(i int, r *logscan.Report, err error) {
+			mu.Lock()
+			m.reps[i], m.errs[i] = r, err
+			mu.Unlock()
+		})
+		for _, c := range conns {
+			m.hosts = append(m.hosts, folderHost{conn: c})
+		}
+		return m
+	}
+}
+
+func (a *App) schedLogsMsg(msg tea.Msg) (tea.Cmd, bool) {
+	m, ok := msg.(schedLogsMsg)
+	if !ok {
+		return nil, false
+	}
+	delete(a.schedRun, m.id)
+	if a.lfold.cancel != nil {
+		a.lfold.cancel()
+	}
+	a.lfold = folderScanState{seq: a.lfold.seq + 1, folder: m.folder, hosts: m.hosts, start: m.start}
+	okN, failN, news := 0, 0, 0
+	for i := range a.lfold.hosts {
+		a.finishFolderHost(&a.lfold.hosts[i], m.reps[i], m.errs[i])
+		if a.lfold.hosts[i].err != "" {
+			failN++
+		} else {
+			okN++
+			news += a.lfold.hosts[i].news
+		}
+	}
+	lines, _ := a.folderLines()
+	text := strings.Join(lines, "\n")
+	if len(text) > 6000 {
+		text = text[:6000] + "\n…"
+	}
+	a.updateSchedule(m.id, func(x *domain.Schedule) { x.LastOK, x.LastFail, x.LastText = okN, failN, text })
+	name := i18n.T("Ordner-Scan (Logs)")
+	if sc, ok := a.scheduleByID(m.id); ok {
+		name = sc.Name
+	}
+	msgText := fmt.Sprintf(i18n.T("Zeitplan „%s“: Ordner-Scan fertig, %d Hosts, %d neue Muster, %d Fehler"), name, okN+failN, news, failN)
+	switch {
+	case failN > 0:
+		a.flashErr(msgText)
+	case news > 0:
+		a.pushToast(toastWarn, msgText)
+	default:
+		a.flashOK(msgText)
+	}
+	a.schedDesktop(name, fmt.Sprintf(i18n.T("%d neue Muster, %d Fehler · Palette: Ordner-Scan: letztes Ergebnis"), news, failN))
+	return nil, true
 }
