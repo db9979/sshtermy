@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -53,6 +54,16 @@ func TestMCPAccess(t *testing.T) {
 		reply: func(_ string, e error) { declined = e }})
 	if a.modal == nil || !strings.Contains(a.modal.body, "rm -rf /var/www") || !strings.Contains(a.modal.body, "▲") {
 		t.Fatalf("Rückfrage fehlt oder ohne Gefahrenhinweis: %+v", a.modal)
+	}
+	// gerade aufgegangen: ein getipptes j (aus „journalctl“) bestätigt nichts
+	a.modalKey(tea.KeyPressMsg{Code: 'j', Text: "j"})
+	if a.modal == nil || a.modal.yesArmed {
+		t.Fatal("Taste direkt nach dem Aufgehen nicht verworfen")
+	}
+	a.modal.guardUntil = time.Time{}
+	a.modalKey(tea.KeyPressMsg{Code: 'j', Text: "j"})
+	if a.modal == nil || !a.modal.yesArmed {
+		t.Fatal("Gefahr: erstes j darf noch nicht ausführen")
 	}
 	a.modalKey(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	if declined == nil || a.modal != nil {

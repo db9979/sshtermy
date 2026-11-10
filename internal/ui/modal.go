@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"strings"
+	"time"
 	"unicode"
 
 	"charm.land/bubbles/v2/textinput"
@@ -67,6 +68,10 @@ type modal struct {
 	crash *crash.Report // nur Absturzbericht
 	recap bool          // Menü ist der Rückblick des Begleiters (companion.go)
 	quit  bool          // Rückfrage beim Beenden (quitask.go)
+
+	guardUntil time.Time // von selbst aufgegangen: bis dahin keine Tasten (modalguard.go)
+	twice      bool      // Bestätigen: Gefahr, j zweimal
+	yesArmed   bool      // erstes j bei twice gedrückt
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {
@@ -148,6 +153,9 @@ func firstRune(s string) rune {
 
 func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	m := a.modal
+	if m.guarded(time.Now()) {
+		return nil // gerade aufgegangen: die Taste galt noch etwas anderem
+	}
 	key := k.String()
 	switch m.kind {
 	case mHostKey:
@@ -177,6 +185,11 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	case mConfirm:
 		switch yesNo(k) {
 		case 1:
+			if m.twice && !m.yesArmed {
+				m.yesArmed = true
+				m.body += "\n\n" + i18n.T("▲ Gefahr: zum Ausführen nochmal j drücken")
+				return nil
+			}
 			a.modal = nil
 			if m.onYes != nil {
 				return m.onYes()

@@ -271,7 +271,11 @@ func (a *App) mcpRun(m mcpCallMsg) tea.Cmd {
 	for _, d := range dangers {
 		body += "\n▲ " + d.Reason
 	}
-	body += i18n.T("\n\nj = ausführen · n = ablehnen")
+	if len(dangers) > 0 {
+		body += i18n.T("\n\nj zweimal = ausführen · n = ablehnen")
+	} else {
+		body += i18n.T("\n\nj = ausführen · n = ablehnen")
+	}
 	md := confirmModal(i18n.T("MCP: Befehl erlauben?"), body, func() tea.Cmd { return a.mcpExec(c, cmd, p.Timeout, m.reply) })
 	md.onCancel = func() tea.Cmd {
 		a.auditAdd("mcp", auditConn(c), "abgelehnt: "+cmd)
@@ -282,7 +286,8 @@ func (a *App) mcpRun(m mcpCallMsg) tea.Cmd {
 		m.reply("", errors.New("sshTermy is busy with another dialog; try again in a moment"))
 		return nil
 	}
-	a.modal = md
+	md.twice = len(dangers) > 0 // Gefahr: j zweimal
+	a.showAsync(md)             // kam von selbst: erst nach einer Sekunde bedienbar
 	return nil
 }
 

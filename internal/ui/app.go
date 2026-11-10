@@ -79,6 +79,10 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	// asyncModals: Rückfragen, die von selbst kamen, während schon ein Dialog
+	// offen war (modalguard.go). Sie überschreiben ihn nicht, sie warten.
+	asyncModals []*modal
+
 	lscan         logScanState      // Log-Blick (logscan.go)
 	lwatch        logWatchState     // Logwache + Syslog-Empfang (logwatch.go)
 	lfold         folderScanState   // Ordner-Scan (logfolder.go)
@@ -290,6 +294,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.debugMsg(msg)
 	a.auditMsg(msg)
 	m, cmd := a.update(msg)
+	a.popAsyncModal() // modalguard.go
 	a.clearNotices()
 	if c := a.trackFade(); c != nil {
 		cmd = tea.Batch(cmd, c)
@@ -358,10 +363,10 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.connTestResult(m)
 		return a, nil
 	case hostKeyAskMsg:
-		a.modal = hostKeyModal(m)
+		a.showAsync(hostKeyModal(m))
 		return a, a.listen()
 	case secretAskMsg:
-		a.modal = secretModal(m)
+		a.showAsync(secretModal(m))
 		return a, a.listen()
 	case connectStepMsg:
 		if s := a.byID(m.sid); s != nil && m.step >= 0 && m.step < len(s.connStepAt) {
