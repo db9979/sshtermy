@@ -35,6 +35,9 @@ func (a *App) logScanKeys() [][2]string {
 		k = append(k, [2]string{"↑↓", i18n.T("wählen")}, [2]string{"⏎", i18n.T("Zeilen")}, [2]string{"1…4", i18n.T("Prüfbefehl einfügen")},
 			[2]string{"k", i18n.T("KI erklärt")}, [2]string{"b", i18n.T("KI-Lagebericht")}, [2]string{"x", i18n.T("ignorieren")})
 	}
+	if s := a.byID(l.sid); s != nil && s.netDevice() {
+		k = append(k, [2]string{"s", i18n.T("Syslog einrichten")})
+	}
 	return append(k, [2]string{"n", i18n.T("Was ist neu?")}, [2]string{"t", i18n.T("Zeitleiste")}, [2]string{"z", i18n.T("Zeitraum")},
 		[2]string{"w", i18n.T("Logwache")}, [2]string{"r", i18n.T("neu lesen")}, [2]string{"c", i18n.T("kopieren")}, [2]string{"Esc", i18n.T("zurück")})
 }

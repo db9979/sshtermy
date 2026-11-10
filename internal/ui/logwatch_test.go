@@ -75,8 +75,27 @@ func TestLogWatchAlerts(t *testing.T) {
 		t.Fatalf("fremder Absender: %+v", w.alerts)
 	}
 	_ = a.openWatchList()
-	if a.modal == nil || !strings.Contains(strings.Join(a.modal.lines, "\n"), "sw-lager") || w.unread != 0 {
+	if a.pick == nil || len(a.pick.items) != len(w.alerts) || w.unread != 0 {
 		t.Fatal("Liste der Logwache fehlt")
+	}
+	// neueste oben: der fremde Absender; ⏎ ohne offenen Tab zeigt die Zeile
+	if !strings.Contains(a.pick.items[0].label, "192.0.2.7") {
+		t.Fatalf("Reihenfolge: %+v", a.pick.items[0])
+	}
+	// x blendet das Muster des Switches aus und nimmt die Meldung weg
+	a.pick.sel = len(a.pick.items) - 1
+	a.Update(runeKey('x'))
+	if len(w.alerts) != n || len(a.st.Settings().LogScan.Noise) != 2 {
+		t.Fatalf("x in der Liste: %d Meldungen, Rauschen %+v", len(w.alerts), a.st.Settings().LogScan.Noise)
+	}
+	a.Update(watchBatchMsg{[]watchItem{syslogItem("10.0.0.9", loop)}})
+	if len(w.alerts) != n {
+		t.Fatal("ausgeblendetes Muster wieder gemeldet")
+	}
+	a.pick.sel = 0
+	a.Update(keyMsg("enter"))
+	if a.modal == nil || !strings.Contains(strings.Join(a.modal.lines, "\n"), "kex_exchange") {
+		t.Fatal("⏎ ohne Tab zeigt die Zeile nicht")
 	}
 
 	// Aus: nichts mehr aus Sitzungen.
@@ -198,5 +217,46 @@ func TestFolderScan(t *testing.T) {
 	}
 	if len(a.st.LogBase(web1.conn.ID)) == 0 {
 		t.Fatal("Grundlinie nicht gespeichert")
+	}
+
+	// Als Zeitplan: gleicher Scan ohne Fenster, Ergebnis im Zeitplan.
+	sc := domain.Schedule{ID: "sch-logs", Name: "Logs Prod", At: "03:00", Folder: "Prod", Kind: domain.ScheduleLogs}
+	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.Schedules = append(s.Schedules, sc) })
+	if n := len(a.schedConns(sc)); n != 3 {
+		t.Fatalf("Ziele: %d", n)
+	}
+	a.modal = nil
+	cmd := a.startSchedule(sc)
+	if cmd == nil {
+		t.Fatal("Zeitplan startet nicht")
+	}
+	a.Update(cmd())
+	got, _ := a.scheduleByID("sch-logs")
+	if got.LastOK != 2 || got.LastFail != 1 || !strings.Contains(got.LastText, "Gemeinsam") || a.schedRun["sch-logs"] {
+		t.Fatalf("Zeitplan-Ergebnis: %+v", got)
+	}
+}
+
+// Fehlanmeldungen: einzeln Info, ab 20 in 10 Minuten eine Fehler-Meldung.
+func TestLogWatchAuthBurst(t *testing.T) {
+	a := newWatchApp(t)
+	if _, err := a.st.UpsertConnection(domain.Connection{Alias: "web", Host: "10.0.0.5", Username: "root"}); err != nil {
+		t.Fatal(err)
+	}
+	var items []watchItem
+	for i := 0; i < 25; i++ {
+		e := logscan.Entry{Time: time.Now(), Sev: logscan.SevInfo, Source: "sshd", Msg: fmt.Sprintf("Failed password for root from 203.0.113.%d port 4%d ssh2", i, i)}
+		items = append(items, watchItem{addr: "10.0.0.5", kind: logscan.KindUnix, e: e})
+		if i == 10 {
+			a.Update(watchBatchMsg{items})
+			items = nil
+			if len(a.lwatch.alerts) != 0 {
+				t.Fatalf("zu früh gemeldet: %+v", a.lwatch.alerts)
+			}
+		}
+	}
+	a.Update(watchBatchMsg{items})
+	if len(a.lwatch.alerts) != 1 || a.lwatch.alerts[0].Sev != logscan.SevErr || a.lwatch.alerts[0].Count != 6 {
+		t.Fatalf("Meldungen: %+v", a.lwatch.alerts)
 	}
 }

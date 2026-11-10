@@ -53,6 +53,7 @@ type logScanState struct {
 	view    lsView
 	hours   int
 	newsSel int
+	focus   string     // Muster, das nach dem Lesen gewählt wird (Logwache)
 	tl      timeCursor // Zeitleiste
 }
 
@@ -102,6 +103,7 @@ func (a *App) openLogScan(s *session) tea.Cmd {
 	}
 	a.lscan.back = back
 	a.scr = scrLogScan
+	a.lsApplyFocus()
 	if a.lscan.rep == nil && !a.lscan.busy {
 		return a.runLogScan(s)
 	}
@@ -241,10 +243,16 @@ func (a *App) logScanResult(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		a.addOwnCommands(s, r)
 	}
+	if es := a.lwatch.syslog[l.conn.ID]; r.Kind == logscan.KindNetwork && len(es) > 0 {
+		if n := r.MergeSyslog(es); n > 0 {
+			r.Read = append(r.Read, fmt.Sprintf(i18n.T("Syslog-Empfang: %d Zeilen"), n))
+		}
+	}
 	logscan.ApplyNoise(r, a.noiseFor(l.conn))
 	l.gone = logscan.Compare(r, l.prev)
 	l.rep = r
 	l.sel, l.top = 0, 0
+	a.lsApplyFocus()
 	l.tl = timeCursor{}
 	if raw, err := json.Marshal(r.Base()); err == nil {
 		_ = a.st.SetLogBase(l.conn.ID, raw)
@@ -268,13 +276,30 @@ func (a *App) noiseFor(c domain.Connection) func(string) bool {
 }
 
 // addNoise: Muster als Rauschen ausblenden (Host oder Ordner).
-func (a *App) addNoise(f logscan.Finding, folder bool) {
+func (a *App) addNoise(f logscan.Finding, folder bool) { a.addNoiseFor(a.lscan.conn, f, folder) }
+
+// lsApplyFocus wählt das vorgemerkte Muster (aus der Logwache) in der Liste.
+func (a *App) lsApplyFocus() {
 	l := &a.lscan
-	n := domain.LogNoise{Key: f.Key, Title: f.Title, Conn: l.conn.ID}
-	where := l.conn.Alias
+	if l.focus == "" || l.rep == nil {
+		return
+	}
+	for i, f := range a.lsVisible() {
+		if f.Key == l.focus {
+			l.view, l.sel = lsList, i
+			l.top = max(0, i-3)
+			break
+		}
+	}
+	l.focus = ""
+}
+
+func (a *App) addNoiseFor(c domain.Connection, f logscan.Finding, folder bool) {
+	n := domain.LogNoise{Key: f.Key, Title: f.Title, Conn: c.ID}
+	where := c.Alias
 	if folder {
 		n.Conn = ""
-		n.Folder = l.conn.Group
+		n.Folder = c.Group
 		where = i18n.T("überall")
 		if n.Folder != "" {
 			where = i18n.T("Ordner ") + n.Folder
@@ -498,6 +523,10 @@ func (a *App) updateLogScan(msg tea.Msg) tea.Cmd {
 		}
 	case "w":
 		return a.openWatchList()
+	case "s":
+		if s != nil && s.netDevice() {
+			return a.askSyslogSetup(s)
+		}
 	case "c":
 		if l.rep != nil {
 			txt := a.lsMarkdown()

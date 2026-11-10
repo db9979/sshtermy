@@ -339,6 +339,9 @@ func classify(k Kind, e *Entry) *Finding {
 		f := &Finding{rule: rl, Source: e.Source, Sev: e.Sev}
 		if rl.Sev >= 0 {
 			f.Sev = rl.Sev
+		} else if rl.Down != nil && f.Sev < SevWarn && rl.Down.MatchString(e.Msg) {
+			f.Sev = SevWarn
+			e.Sev = SevWarn
 		}
 		f.Key = k.prefix() + expand(rl.Key, m)
 		f.Title = expand(i18n.T(rl.Title), m)

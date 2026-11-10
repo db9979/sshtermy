@@ -43,7 +43,9 @@ $s=([datetime]'1970-01-01').AddSeconds(@T@).ToLocalTime()
 function u($d){[int64](($d.ToUniversalTime()-[datetime]'1970-01-01').TotalSeconds)}
 $l=1..@L@
 $e=@(Get-WinEvent -FilterHashtable @{LogName='System','Application';Level=$l;StartTime=$s} -MaxEvents 200)
+$e+=@(Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625,4740,1102;StartTime=$s} -MaxEvents 500)
 foreach($x in $e){$m=(($x.Message+'') -split "` + "`" + `r?` + "`" + `n")[0]
+if($x.Id -eq 4625){$m='4625 '+$x.Properties[5].Value+' @ '+$x.Properties[19].Value}
 "E|$(u $x.TimeCreated)|$($x.Level)|$($x.Id)|$($x.ProviderName)|$m"}
 "N|$(u (Get-Date))"
 `

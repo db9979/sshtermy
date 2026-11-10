@@ -206,13 +206,16 @@ func (a *App) openScheduleForm(sc domain.Schedule) tea.Cmd {
 	}
 	f := &form{title: title}
 	f.text("name", "Name", sc.Name, i18n.T("z. B. „Switch-Configs sichern“"))
-	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)")}
+	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)"), i18n.T("Ordner-Scan (Logs)")}
 	kindCur := kinds[0]
-	if sc.Kind == domain.ScheduleBackup {
+	switch sc.Kind {
+	case domain.ScheduleBackup:
 		kindCur = kinds[1]
+	case domain.ScheduleLogs:
+		kindCur = kinds[2]
 	}
-	f.choice("kind", i18n.T("Art"), kinds, kindCur, i18n.T("Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert, mit den Regeln für Switch-Configs geprüft"))
-	isBackup := func(f *form) bool { return f.sel("kind") == kinds[1] }
+	f.choice("kind", i18n.T("Art"), kinds, kindCur, i18n.T("Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert · Ordner-Scan: Log-Blick je Host, Ergebnis mit neuen Mustern"))
+	isBackup := func(f *form) bool { return f.sel("kind") != kinds[0] }
 	f.text("at", i18n.T("Uhrzeit"), sc.At, i18n.T("HH:MM, Ortszeit dieses Rechners"))
 	var days []string
 	for _, d := range dayChoices {
@@ -293,11 +296,14 @@ func (a *App) saveScheduleForm() error {
 		}
 	}
 	sc.Kind = ""
-	if f.sel("kind") == i18n.T("Config-Sicherung (Switches)") {
+	switch f.sel("kind") {
+	case i18n.T("Config-Sicherung (Switches)"):
 		sc.Kind = domain.ScheduleBackup
+	case i18n.T("Ordner-Scan (Logs)"):
+		sc.Kind = domain.ScheduleLogs
 	}
 	sc.RunbookID, sc.Steps = a.schedRBIDs[f.sel("runbook")], nil
-	if sc.Kind == domain.ScheduleBackup {
+	if sc.Kind == domain.ScheduleBackup || sc.Kind == domain.ScheduleLogs {
 		sc.RunbookID = ""
 	} else if sc.RunbookID == "" {
 		for _, st := range strings.Split(f.str("steps"), schedStepSep) {
@@ -308,6 +314,9 @@ func (a *App) saveScheduleForm() error {
 	}
 	if sc.Name == "" && sc.Kind == domain.ScheduleBackup {
 		sc.Name = i18n.T("Switch-Configs sichern")
+	}
+	if sc.Name == "" && sc.Kind == domain.ScheduleLogs {
+		sc.Name = i18n.T("Ordner-Scan (Logs)")
 	}
 	if sc.Name == "" {
 		sc.Name = orDefault(firstOf(sc.Steps), i18n.T("Zeitplan"))
@@ -372,6 +381,12 @@ func (a *App) schedConns(sc domain.Schedule) []domain.Connection {
 	}
 	out := list[:0]
 	for _, c := range list {
+		if sc.Kind == domain.ScheduleLogs {
+			if folderScanable(c) {
+				out = append(out, c)
+			}
+			continue
+		}
 		if c.Protocol.Raw() {
 			continue
 		}
@@ -398,6 +413,9 @@ func maybeNetConn(c domain.Connection) bool {
 func (a *App) schedSteps(sc domain.Schedule) ([]string, error) {
 	if sc.Kind == domain.ScheduleBackup {
 		return []string{"show running-config"}, nil
+	}
+	if sc.Kind == domain.ScheduleLogs {
+		return []string{"log-scan"}, nil
 	}
 	steps := sc.Steps
 	if sc.RunbookID != "" {
@@ -467,6 +485,9 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 		a.schedRun = map[string]bool{}
 	}
 	a.schedRun[sc.ID] = true
+	if sc.Kind == domain.ScheduleLogs {
+		return a.startScheduleLogs(sc, conns)
+	}
 	job := broadcast.Job{Conns: conns, Steps: steps}
 	var backup *schedBackup
 	if sc.Kind == domain.ScheduleBackup {

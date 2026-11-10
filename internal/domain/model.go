@@ -925,7 +925,7 @@ type Schedule struct {
 	Days      []int     `json:"days,omitempty"` // 0 = Sonntag … 6; leer = täglich
 	Folder    string    `json:"folder,omitempty"`
 	Conns     []string  `json:"conns,omitempty"`
-	Kind      string    `json:"kind,omitempty"` // "" = Befehle/Runbook, "backup" = Switch-Configs sichern
+	Kind      string    `json:"kind,omitempty"` // "" = Befehle/Runbook, "backup" = Switch-Configs sichern, "logs" = Ordner-Scan
 	RunbookID string    `json:"runbook_id,omitempty"`
 	Steps     []string  `json:"steps,omitempty"` // ohne Runbook
 	Off       bool      `json:"off,omitempty"`
@@ -937,6 +937,9 @@ type Schedule struct {
 
 // ScheduleBackup: Zeitplan sichert die running-config aller Switches im Ziel.
 const ScheduleBackup = "backup"
+
+// ScheduleLogs: Zeitplan macht einen Ordner-Scan der Logs (Log-Blick je Host).
+const ScheduleLogs = "logs"
 
 // ScheduleCatchUp: so lange nach dem Termin wird ein verpasster Lauf nachgeholt.
 const ScheduleCatchUp = 12 * time.Hour

@@ -534,6 +534,12 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.netMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.schedLogsMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.syslogSetupMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.folderScanMsg(msg); ok {
 		return a, cmd
 	}

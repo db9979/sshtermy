@@ -11,21 +11,21 @@ de│   F12 w       What's new               s           skip                   
   │   ⇧F9         explain key bar          x           end goal                 t           Timeline (←→, ⏎, k)     │
   │   Ctrl+Q      quit (asks if connect…   ↑ ↓         choose runbook           z           Period 1 h … 7 days     │
   │                                        Ctrl+S      save as runbook          w           Log watch: alerts       │
-  │  ≡ Connection manager F10              Ctrl+D      Delete runbook           r / c       reload / copy           │
-  │   F10         back to the terminal     Tab         step by step or agent…                                       │
-  │   ⏎           connect                  Esc         pause agent             ≡ Session logs l                     │
-  │   n           new connection           ?           Instruct agent           /           search (output too)     │
-  │   e           edit                     v           view the agent's scri…   ⏎ / → ←     expand/collapse         │
-  │   d           delete                   r           delete the agent's sc…   Tab         by time / by host       │
-  │   Ctrl+Z      undo delete (10 s)       c / l       copy result / read all   f           filter: today · 7 day…  │
-  │   Ctrl+T      in the form: test con…   PgUp PgDn   scroll the panel (mou…   s           sort hosts              │
-  │   /           search (also #tag)       Space       plan: remove step        z           AI summary              │
-  │   o           new folder (A / B nes…   ?           plan: re-plan            Z           summarize all matches   │
-  │   r           Edit folder                                                   b           Change report           │
-  │   v           move to folder          ◆ Ask AI F3                           x           export: md · txt · ca…  │
-  │   Shift+↑     move up (↓ down)         ⏎           send question            d           delete                  │
-  │   ← / →       collapse/expand folder   ⇧⏎ / Ctrl+J new line                 a           recording on/off        │
-  │   - / +       collapse/expand all      1…9         insert command           ␣ command   do not log              │
+  │  ≡ Connection manager F10              Ctrl+D      Delete runbook           s           switch: send syslog t…  │
+  │   F10         back to the terminal     Tab         step by step or agent…   r / c       reload / copy           │
+  │   ⏎           connect                  Esc         pause agent                                                  │
+  │   n           new connection           ?           Instruct agent          ≡ Session logs l                     │
+  │   e           edit                     v           view the agent's scri…   /           search (output too)     │
+  │   d           delete                   r           delete the agent's sc…   ⏎ / → ←     expand/collapse         │
+  │   Ctrl+Z      undo delete (10 s)       c / l       copy result / read all   Tab         by time / by host       │
+  │   Ctrl+T      in the form: test con…   PgUp PgDn   scroll the panel (mou…   f           filter: today · 7 day…  │
+  │   /           search (also #tag)       Space       plan: remove step        s           sort hosts              │
+  │   o           new folder (A / B nes…   ?           plan: re-plan            z           AI summary              │
+  │   r           Edit folder                                                   Z           summarize all matches   │
+  │   v           move to folder          ◆ Ask AI F3                           b           Change report           │
+  │   Shift+↑     move up (↓ down)         ⏎           send question            x           export: md · txt · ca…  │
+  │   ← / →       collapse/expand folder   ⇧⏎ / Ctrl+J new line                 d           delete                  │
+  │   - / +       collapse/expand all      1…9         insert command           a           recording on/off        │
   │                                                                                                                 │
   │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
   │  Esc leads back to the terminal from every panel.                                                               │
