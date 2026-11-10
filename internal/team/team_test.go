@@ -269,3 +269,52 @@ func TestApplyAsksBeforeMovingSecrets(t *testing.T) {
 		t.Fatal("AcceptAddr wirkt nicht")
 	}
 }
+
+// Sicherheitsprüfung 2026-11-10: ein Paket nimmt keinen Schutz weg, Tunnel
+// starten nie von selbst, geänderte Befehle wollen angesehen werden.
+func TestApplyKeepsGuards(t *testing.T) {
+	d := &domain.Data{
+		Connections: []domain.Connection{{ID: "sw", Alias: "core", Host: "10.0.0.2", Tags: []string{"prod"}, Device: domain.DeviceNetwork, QuickCmds: []string{"show vlan"}}},
+		Tunnels:     []domain.Tunnel{{ID: "t1", ConnectionID: "sw", Kind: domain.TunnelLocal, BindHost: "127.0.0.1", BindPort: 8080, TargetHost: "localhost", TargetPort: 80, AutoStart: true}},
+		Runbooks:    []domain.Runbook{{ID: "rb", Name: "Check", Steps: []string{"show log"}}, {ID: "rb2", Name: "Gleich", Steps: []string{"uptime"}}},
+	}
+	p := &Package{
+		Connections: []domain.Connection{{ID: "sw", Alias: "core", Host: "10.0.0.2", Tags: []string{"lab"}, Device: domain.DeviceServer, QuickCmds: []string{"reload"}}},
+		Tunnels: []domain.Tunnel{
+			{ID: "t1", ConnectionID: "sw", Kind: domain.TunnelLocal, BindHost: "127.0.0.1", BindPort: 8080, TargetHost: "localhost", TargetPort: 80},
+			{ID: "t2", ConnectionID: "sw", Kind: domain.TunnelRemote, BindPort: 3389, TargetHost: "192.168.1.10", TargetPort: 3389, AutoStart: true, AutoOpen: true},
+		},
+		Runbooks: []domain.Runbook{{ID: "rb", Name: "Check", Steps: []string{"show log", "write erase"}}, {ID: "rb2", Name: "Gleich", Steps: []string{"uptime"}}},
+	}
+	st := Apply(d, p, nil, "", "", time.Now())
+	c := d.Connections[0]
+	if !domain.IsProduction(c) || c.Device != domain.DeviceNetwork || st.KeptGuard != 2 {
+		t.Fatalf("Schutz verloren: %+v %+v", c, st)
+	}
+	if !c.QuickTeamChanged {
+		t.Error("geänderte Schnellbefehle nicht markiert")
+	}
+	for _, tu := range d.Tunnels {
+		switch tu.ID {
+		case "t1":
+			if !tu.AutoStart {
+				t.Error("eigener Autostart bei unverändertem Tunnel verloren")
+			}
+		case "t2":
+			if tu.AutoStart || tu.AutoOpen {
+				t.Error("Team-Tunnel startet von selbst")
+			}
+		}
+	}
+	for _, r := range d.Runbooks {
+		if r.ID == "rb" && !r.TeamChanged {
+			t.Error("geändertes Runbook nicht markiert")
+		}
+		if r.ID == "rb2" && r.TeamChanged {
+			t.Error("unverändertes Runbook markiert")
+		}
+	}
+	if st.Review != 2 {
+		t.Errorf("Review = %d", st.Review)
+	}
+}

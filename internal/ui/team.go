@@ -315,9 +315,22 @@ func (a *App) commitTeamTake() {
 	if st.NeedPw > 0 {
 		msg += i18n.T(" · Passwort wird beim Verbinden abgefragt")
 	}
+	msg += teamGuardNote(st)
 	a.scr = scrManager
 	a.flash(msg)
 	a.askAddrChanges(st.AddrChanges)
+}
+
+// teamGuardNote: was die Übernahme zur Sicherheit anders gemacht hat.
+func teamGuardNote(st team.Stats) string {
+	out := ""
+	if st.KeptGuard > 0 {
+		out += fmt.Sprintf(i18n.T(" · Schutz (Produktiv/Netzwerkgerät) bei %d behalten"), st.KeptGuard)
+	}
+	if st.Review > 0 {
+		out += fmt.Sprintf(i18n.T(" · %d neue/geänderte Befehle erst ansehen"), st.Review)
+	}
+	return out
 }
 
 // askAddrChanges: das Team-Paket will die Adresse von Verbindungen ändern,

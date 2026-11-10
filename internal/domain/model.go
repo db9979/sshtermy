@@ -132,6 +132,9 @@ type Connection struct {
 
 	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
 	QuickCmds []string `json:"quick_cmds,omitempty"`
+	// QuickTeamChanged: Schnellbefehle kamen geändert aus dem Team; der erste
+	// Druck zeigt den Befehl nur an, erst der zweite führt ihn aus.
+	QuickTeamChanged bool `json:"quick_team_changed,omitempty"`
 
 	// Protocol: SSH (leer), Telnet oder serielle Konsole (USB-Konsolenkabel).
 	// Bei Telnet und seriell meldet sshTermy sich selbst an, wenn Benutzer
@@ -893,6 +896,9 @@ type Runbook struct {
 	LastUsed     time.Time     `json:"last_used,omitempty"`
 	Uses         int           `json:"uses,omitempty"`
 	UpdatedAt    time.Time     `json:"updated_at,omitempty"` // letzte Änderung (Sync)
+	// TeamChanged: ein abonnierter Team-Ordner hat die Schritte geändert und
+	// noch niemand hat sie hier angesehen. Zeitpläne lassen es so lange liegen.
+	TeamChanged bool `json:"team_changed,omitempty"`
 }
 
 // RunbookFile: eine Datei, die der Agent-Modus angelegt hat. Pfade in den
@@ -1034,4 +1040,22 @@ func (n LogNoise) Hides(key string, c Connection, now time.Time) bool {
 		return InFolder(c.Group, n.Folder)
 	}
 	return true
+}
+
+// IsProduction: Produktiv-Host? Ordner, Tag („prod“, „live“) oder Alias mit
+// „prod“. Der Gefahren-Check beim Tippen und der Agent sind hier strenger.
+func IsProduction(c Connection) bool {
+	has := func(s string) bool {
+		l := strings.ToLower(s)
+		return strings.Contains(l, "prod") || l == "live"
+	}
+	if has(c.Group) || strings.Contains(strings.ToLower(c.Alias), "prod") {
+		return true
+	}
+	for _, t := range c.Tags {
+		if has(t) {
+			return true
+		}
+	}
+	return false
 }

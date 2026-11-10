@@ -151,6 +151,11 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 		return nil
 	}
 	cmd := cmds[i]
+	if a.quickTeamChanged(s) && s.quickArmed != i {
+		s.quickArmed = i
+		a.flash(i18n.T("Vom Team geändert: ") + trunc(cmd, 60) + i18n.T(". Nochmal ") + a.quickLabel(i) + i18n.T(" zum Ausführen"))
+		return nil
+	}
 	if f := safety.Check(cmd, a.safetyKind(s)); len(f) > 0 && s.quickArmed != i {
 		s.quickArmed = i
 		a.flash(i18n.T("Vorsicht: ") + f[0].Reason + i18n.T(". Nochmal ") + a.quickLabel(i) + i18n.T(" zum Ausführen"))
@@ -168,7 +173,29 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 
 // quickModal: alle Schnellbefehle der Sitzung in F-Tasten-Reihenfolge.
 // ↑↓ wählen, ⏎ oder 1…8 ausführen, e bearbeiten, Esc schließt.
+// quickTeamChanged: kamen die Schnellbefehle geändert aus dem Team und
+// hat sie hier noch niemand angesehen?
+func (a *App) quickTeamChanged(s *session) bool {
+	c, ok := a.st.Connection(s.conn.ID)
+	return ok && c.QuickTeamChanged && len(c.QuickCmds) > 0
+}
+
+// quickSeen: die Liste wurde angezeigt, die Team-Markierung fällt weg.
+func (a *App) quickSeen(id string) {
+	if c, ok := a.st.Connection(id); !ok || !c.QuickTeamChanged {
+		return
+	}
+	_ = a.st.Update(func(d *domain.Data) {
+		for i := range d.Connections {
+			if d.Connections[i].ID == id {
+				d.Connections[i].QuickTeamChanged = false
+			}
+		}
+	})
+}
+
 func (a *App) quickModal(s *session) *modal {
+	a.quickSeen(s.conn.ID) // die Liste zeigt jeden Befehl
 	return &modal{kind: mQuick, title: i18n.T("Schnellbefehle"), quickSID: s.id, armed: -1}
 }
 
@@ -406,7 +433,7 @@ func (a *App) saveQuick() error {
 	if len(cmds) == 0 || sameStrings(cmds, a.formQuickPreset) {
 		cmds = nil // Vorbelegung behalten (folgt späteren Verbesserungen)
 	}
-	c.QuickCmds = cmds
+	c.QuickCmds, c.QuickTeamChanged = cmds, false
 	_, err := a.st.UpsertConnection(c)
 	return err
 }

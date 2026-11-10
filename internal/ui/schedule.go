@@ -425,6 +425,9 @@ func (a *App) schedSteps(sc domain.Schedule) ([]string, error) {
 				if len(rb.Files) > 0 {
 					return nil, errors.New(i18n.T("Runbooks mit Skripten des Agenten lassen sich nicht einplanen"))
 				}
+				if rb.TeamChanged {
+					return nil, fmt.Errorf(i18n.T("Runbook „%s“ kam neu oder geändert aus dem Team: einmal im Broadcast ansehen und starten, dann läuft der Zeitplan wieder"), rb.Name)
+				}
 				steps, found = rb.Steps, true
 			}
 		}

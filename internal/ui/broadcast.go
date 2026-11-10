@@ -161,7 +161,11 @@ func (b *bcState) stepList() []string {
 func (b *bcState) sourceNames() []string {
 	out := []string{i18n.T("eigener Befehl")}
 	for _, r := range b.books {
-		out = append(out, "▶ "+r.Name)
+		n := "▶ " + r.Name
+		if r.TeamChanged {
+			n += i18n.T(" (neu vom Team, ansehen)")
+		}
+		out = append(out, n)
 	}
 	return out
 }
