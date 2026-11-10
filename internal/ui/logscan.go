@@ -128,6 +128,10 @@ func (a *App) runLogScan(s *session) tea.Cmd {
 		l.err = i18n.T("Abfrage nur an einem leeren Prompt (z. B. switch#). Bitte erst Eingabe beenden oder ⏎ drücken.")
 		return nil
 	}
+	if s.netDevice() && configPrompt(s.term.CursorLine()) {
+		l.err = i18n.T("Der Switch ist im Konfigurationsmodus. Erst mit end bzw. exit zurück an den normalen Prompt.")
+		return nil
+	}
 	if !l.prevOK {
 		l.prevOK = true
 		if raw := a.st.LogBase(s.conn.ID); len(raw) > 0 {
@@ -165,7 +169,9 @@ func (a *App) runLogScan(s *session) tea.Cmd {
 			vendor = hostVendor(s.prof)
 		}
 		prompt := strings.TrimSpace(s.term.CursorLine())
+		s.cap.hold() // bis alles getippt ist keine Tasten an diese Shell (shelllock.go)
 		return func() tea.Msg {
+			defer s.cap.release()
 			defer cancel()
 			run := func(cmd string, limit time.Duration) (string, error) {
 				lines, err := shellRun(ctx, s, prompt, cmd, limit)

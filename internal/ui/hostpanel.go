@@ -67,6 +67,45 @@ type shellCap struct {
 	on   bool
 	buf  bytes.Buffer
 	last time.Time
+	// held: eine Folge von Befehlen läuft (auch zwischen zwei Befehlen);
+	// solange nimmt der Tab keine Tasten an, sonst mischten sich deine
+	// Eingaben in die Zeile, die sshTermy gerade tippt (shelllock.go).
+	held    int
+	stopped bool // Esc: Folge abbrechen
+}
+
+func (c *shellCap) hold() {
+	c.mu.Lock()
+	c.held++
+	c.stopped = false
+	c.mu.Unlock()
+}
+
+func (c *shellCap) release() {
+	c.mu.Lock()
+	if c.held > 0 {
+		c.held--
+	}
+	c.mu.Unlock()
+}
+
+// active: tippt sshTermy gerade in diese Shell?
+func (c *shellCap) active() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.on || c.held > 0
+}
+
+func (c *shellCap) abort() {
+	c.mu.Lock()
+	c.stopped = true
+	c.mu.Unlock()
+}
+
+func (c *shellCap) aborted() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.stopped
 }
 
 func (c *shellCap) feed(p []byte) {
@@ -212,6 +251,10 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 		h.err = i18n.T("Abfrage nur an einem leeren Prompt (z. B. switch#). Bitte erst Eingabe beenden oder ⏎ drücken.")
 		return nil
 	}
+	if configPrompt(prompt) {
+		h.err = i18n.T("Der Switch ist im Konfigurationsmodus. Erst mit end bzw. exit zurück an den normalen Prompt.")
+		return nil
+	}
 	h.seq++
 	h.busy, h.err, h.note = true, "", ""
 	if backup {
@@ -232,7 +275,9 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 	st := a.st
 	connID := s.conn.ID
 	rules := a.configRules()
+	s.cap.hold() // ab jetzt keine Tasten an diese Shell, bis alles getippt ist
 	return func() tea.Msg {
+		defer s.cap.release()
 		defer cancel()
 		r := netResult{vendor: vendor, pagingOff: pagingOff}
 		run := func(cmd string, limit time.Duration) (string, error) {
@@ -336,6 +381,9 @@ func shellRun(ctx context.Context, s *session, prompt, cmd string, limit time.Du
 			return nil, errors.New(i18n.T("abgebrochen"))
 		case <-t.C:
 		}
+		if s.cap.aborted() {
+			return nil, errors.New(i18n.T("abgebrochen"))
+		}
 		raw, last := s.cap.peek()
 		if len(raw) > answered && hostinfo.HasMore(raw) {
 			if _, err := s.shell.Write([]byte(" ")); err != nil {
@@ -353,6 +401,11 @@ func shellRun(ctx context.Context, s *session, prompt, cmd string, limit time.Du
 			// Der Emulator sieht den Prompt wieder, auch wenn die Ausgabe
 			// anders aussieht als erwartet (Cursor-Sprünge, Neuzeichnen).
 			return trimPromptLines(lines, prompt), nil
+		case raw != "" && idle > 800*time.Millisecond && time.Since(start) > time.Second && s.term != nil &&
+			hostinfo.IsPrompt(strings.TrimSpace(s.term.CursorLine())):
+			// anderer Prompt: der Befehl hat den Modus gewechselt
+			// (configure terminal → switch(config)#, end → switch#)
+			return trimPromptLines(lines, strings.TrimSpace(s.term.CursorLine())), nil
 		case raw == "" && time.Since(start) > 10*time.Second:
 			return nil, fmt.Errorf(i18n.T("„%s“: keine Antwort"), cmd)
 		case time.Since(start) > limit || (raw != "" && idle > 10*time.Second):

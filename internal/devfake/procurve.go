@@ -141,6 +141,13 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 	}
 	w(pr)
 	var line []byte
+	conf := false // Konfigurationsmodus: Prompt sw-buero(config)#
+	cur := func() string {
+		if conf {
+			return strings.Replace(pr, "sw-buero# ", "sw-buero(config)# ", 1)
+		}
+		return pr
+	}
 	for {
 		if _, err := ch.Read(key); err != nil {
 			return
@@ -150,17 +157,25 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 			cmd := strings.TrimSpace(string(line))
 			line = line[:0]
 			w(nl)
-			if cmd == "exit" || cmd == "logout" {
+			var out string
+			switch {
+			case conf && (cmd == "end" || cmd == "exit"):
+				conf = false
+			case cmd == "exit" || cmd == "logout":
 				return
+			case cmd == "configure terminal" || cmd == "configure" || cmd == "conf t":
+				conf = true
+			case conf && strings.HasPrefix(cmd, "logging "):
+			default:
+				if cmd == "no page" {
+					page = false
+				}
+				out = sw.run(cmd)
 			}
-			if cmd == "no page" {
-				page = false
-			}
-			out := sw.run(cmd)
 			if !sw.pageOut(ch, out, page) {
 				return
 			}
-			w(pr)
+			w(cur())
 		case 0x7f, 0x08:
 			if len(line) > 0 {
 				line = line[:len(line)-1]
@@ -168,7 +183,7 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 			}
 		case 0x03:
 			line = line[:0]
-			w(nl + pr)
+			w(nl + cur())
 		default:
 			if c >= 0x20 {
 				line = append(line, c)

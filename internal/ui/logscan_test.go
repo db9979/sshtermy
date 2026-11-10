@@ -137,7 +137,7 @@ func logScanSwitch(t *testing.T, positioned bool) {
 		t.Fatal("Syslog-Empfang nicht eingeschaltet")
 	}
 	if m, ok := setup().(syslogSetupMsg); !ok || m.err != nil {
-		t.Fatalf("Einrichten: %+v", m)
+		t.Fatalf("Einrichten: %+v %v", m, m.err)
 	}
 	waitFor(t, func() bool { return strings.HasSuffix(strings.TrimSpace(s.term.CursorLine()), "#") })
 	if !positioned && !strings.Contains(s.term.PlainLines(40), "logging 127.0.0.1 udp 5514") {

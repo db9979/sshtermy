@@ -57,6 +57,10 @@ func (a *App) askSyslogSetup(s *session) tea.Cmd {
 		a.flashErr(i18n.T("Eigene IP zum Gerät nicht gefunden (Verbindung über Jump-Host?)"))
 		return nil
 	}
+	if configPrompt(s.term.CursorLine()) {
+		a.flashErr(i18n.T("Der Switch ist im Konfigurationsmodus. Erst mit end bzw. exit zurück an den normalen Prompt."))
+		return nil
+	}
 	cmds := logscan.SyslogSetup(v, ip, port)
 	if len(cmds) == 0 {
 		hint := i18n.T("Für dieses Gerät kennt sshTermy die Befehle nicht.")
@@ -79,12 +83,12 @@ func (a *App) askSyslogSetup(s *session) tea.Cmd {
 			_ = a.st.UpdateSettings(func(x *domain.Settings) { x.SyslogPort = port })
 			a.watchTick()
 		}
-		return a.runSyslogSetup(sid, cmds)
+		return a.runSyslogSetup(sid, cmds, logscan.SyslogAbort(v))
 	})
 	return nil
 }
 
-func (a *App) runSyslogSetup(sid int, cmds []string) tea.Cmd {
+func (a *App) runSyslogSetup(sid int, cmds, abort []string) tea.Cmd {
 	s := a.byID(sid)
 	if s == nil {
 		return nil
@@ -94,14 +98,38 @@ func (a *App) runSyslogSetup(sid int, cmds []string) tea.Cmd {
 		return nil
 	}
 	a.scr = scrTerminal
+	s.cap.hold() // bis alles getippt ist keine Tasten an diese Shell (shelllock.go)
 	return func() tea.Msg {
+		defer s.cap.release()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
+		// Fehler mitten in der Folge: nicht weitertippen, sondern verwerfen
+		// und den Konfigurationsmodus verlassen.
+		undo := func(err error) tea.Msg {
+			if s.cap.aborted() {
+				s.cap.hold() // Esc gilt der Folge, nicht dem Aufräumen
+				defer s.cap.release()
+			}
+			uctx, ucancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer ucancel()
+			for _, c := range abort {
+				prompt := strings.TrimSpace(s.term.CursorLine())
+				if _, e := shellRun(uctx, s, prompt, c, 10*time.Second); e != nil {
+					break
+				}
+				waitPrompt(s, 3*time.Second)
+			}
+			return syslogSetupMsg{sid: sid, err: err}
+		}
 		for _, c := range cmds {
 			// Der Prompt ändert sich im Konfigurationsmodus (switch(config)#).
 			prompt := strings.TrimSpace(s.term.CursorLine())
-			if _, err := shellRun(ctx, s, prompt, c, 20*time.Second); err != nil {
-				return syslogSetupMsg{sid: sid, err: err}
+			lines, err := shellRun(ctx, s, prompt, c, 20*time.Second)
+			if err != nil {
+				return undo(err)
+			}
+			if bad := cliError(lines); bad != "" {
+				return undo(fmt.Errorf(i18n.T("Gerät meldet bei „%s“: %s (Einrichtung verworfen)"), c, bad))
 			}
 			waitPrompt(s, 3*time.Second)
 		}
