@@ -75,6 +75,8 @@ const (
 	scrScheduleForm  // Zeitplan (schedule.go)
 	scrRulesForm     // Regeln für Switch-Configs (configrules.go)
 	scrLogScan       // Log-Blick (logscan.go)
+	scrCmdSets       // Befehlssätze (cmdsets.go)
+	scrCmdSetForm    // eigener Befehlssatz bearbeiten
 )
 
 // App ist das Wurzel-Modell.
@@ -84,6 +86,7 @@ type App struct {
 	asyncModals []*modal
 
 	lscan         logScanState      // Log-Blick (logscan.go)
+	cmds          cmdsetState       // Befehlssätze (cmdsets.go)
 	lwatch        logWatchState     // Logwache + Syslog-Empfang (logwatch.go)
 	lfold         folderScanState   // Ordner-Scan (logfolder.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
@@ -530,6 +533,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.reportMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.cmdsetMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.logsMsg(msg); ok {
 		return a, cmd
 	}
@@ -593,7 +599,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pick != nil {
 			return a, a.pickerKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrFolderForm || a.scr == scrHighlightForm || a.scr == scrScheduleForm || a.scr == scrRulesForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrMasterForm || a.scr == scrBackupForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrFolderForm || a.scr == scrHighlightForm || a.scr == scrScheduleForm || a.scr == scrRulesForm || a.scr == scrCmdSetForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrMasterForm || a.scr == scrBackupForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
@@ -634,7 +640,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -644,6 +650,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateLogs(msg)
 	case scrLogScan:
 		return a, a.updateLogScan(msg)
+	case scrCmdSets:
+		return a, a.updateCmdSets(msg)
 	case scrImport:
 		return a, a.updateImport(msg)
 	case scrTeam:
@@ -771,7 +779,7 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewForm(), append(k, [2]string{"Esc", i18n.T("abbrechen")}))
 	case scrConnForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+T", i18n.T("testen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
-	case scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm:
+	case scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
@@ -785,6 +793,8 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrLogScan:
 		body = a.frame(a.viewLogScan(), a.logScanKeys())
+	case scrCmdSets:
+		body = a.frame(a.viewCmdSets(), a.cmdSetsKeys())
 	case scrImport:
 		body = a.frame(a.viewImport(), a.importKeys())
 	case scrTeam:

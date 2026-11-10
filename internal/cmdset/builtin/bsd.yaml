@@ -1,0 +1,5 @@
+id: bsd
+name: BSD
+family: bsd
+order: 3
+hint: "BSD: sh/csh, BSD-Werkzeuge, service/rc.d statt systemctl, pkg."

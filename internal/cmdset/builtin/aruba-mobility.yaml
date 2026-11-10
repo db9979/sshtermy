@@ -1,0 +1,50 @@
+id: aruba-mobility
+name: Aruba Mobility Controller (AOS 8)
+order: 206
+hint: "Aruba Mobility Conductor/Controller (ArubaOS 8/10, WLAN-Controller), kein ArubaOS-Switch: show ap database, show ap active, show user-table, show ap radio-summary, show running-config, show version, show log system; Blättern aus mit no paging; Konfiguration am Conductor mit configure terminal … end und write memory; Konfigurationsknoten mit cd /md/…"
+detect:
+  screen: ['(?i)ArubaOS \(MODEL:\s*(?:Aruba)?(?:7\d{3}|9\d{3}|MM-|MC-|A7\d{3})']
+  version: ['(?i)ArubaOS \(MODEL:\s*(?:Aruba)?(?:7\d{3}|9\d{3}|MM-|MC-|A7\d{3})']
+commands:
+  paging_off: no paging
+  version: show version
+  system: show cpuload
+  memory: show memory
+  config: show running-config
+  extra:
+    - label: APs aktiv
+      label_en: APs up
+      cmd: show ap database
+      count: '(?m)\s\d{1,3}(?:\.\d{1,3}){3}\s+Up\b'
+    - label: Clients
+      cmd: show user-table
+      pick: '(?i)User Entries:\s*(\d+)'
+parse:
+  firmware: '(?i)ArubaOS \(MODEL:[^)]*\),\s*Version\s+(\S+)'
+  model: '(?i)ArubaOS \(MODEL:\s*([^)]+)\)'
+  cpu: '(?i)idle\s+(?P<idle>\d{1,3})(?:\.\d+)?%'
+  mem: '(?i)total:\s*(?P<total>\d+),\s*used:\s*(?P<used>\d+)'
+logs:
+  commands: [show log system 300]
+  reader: generic
+syslog:
+  steps: [configure terminal, 'logging {{ip}} severity warnings', end]
+  save: write memory
+danger:
+  - rx: '^\s*(apboot|ap\s+wipe|clear\s+gap-db|ap-regroup)\b'
+    reason: startet Access Points neu oder setzt sie zurück
+    reason_en: reboots or resets access points
+samples:
+  - name: Aruba 7010
+    version: |
+      Aruba Operating System Software.
+      ArubaOS (MODEL: Aruba7010-US), Version 8.10.0.7
+      Switch uptime is 30 days 2 hours 3 minutes 4 seconds
+    system: |
+      user 4.5%, system 3.2%, idle 92.3%
+      Memory (Kb): total: 4026572, used: 2013286, free: 2013286
+    expect:
+      firmware: 8.10.0.7
+      model: Aruba7010-US
+      cpu: 8
+      mem: 50

@@ -1,0 +1,40 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ● AI
+     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │ Command set                                                                                      │
+     │                                                                                                  │
+     │ ━━ Command set ───────────────────────────────────────────────────────────────────────────────── │
+     │ ▌ ID                     posix-eigen                                                             │
+     │ │ Name                   Linux/Unix-Shell (own)                                                  │
+     │ │ Based on               posix                                                                   │
+     │ │ Family                 linux                                                                   │
+     │ │ Hint for the AI                                                                                │
+     │                                                                                                  │
+     │ ━━ Detection (regular expressions, several with ||) ──────────────────────────────────────────── │
+     │ │ Screen                                                                                         │
+     │ │ Version output                                                                                 │
+     │ │ SSH ID                                                                                         │
+     │                                                                                                  │
+     │ ━━ Commands sshTermy types (read-only) ───────────────────────────────────────────────────────── │
+     │ │ Paging off                                                                                     │
+     │ │ Version                                                                                        │
+     │ │ System (CPU)                                                                                   │
+     │ │ Memory                                                                                         │
+     │ │ Ports                                                                                          │
+     │ │ VLANs                                                                                          │
+     │ │ Configuration                                                                                  │
+     │ │ Logs                                                                                           │
+     │                                                                                                  │
+     │ ━━ Reading (regular expressions, one group = value) ──────────────────────────────────────────── │
+     │ │ Firmware                                                                                       │
+     │ │ Model                                                                                          │
+     │ │ Name                                                                                           │
+     │ │ CPU                                                                                            │
+     │ │ RAM                                                                                            │
+     │                                                                                                  │
+     │ ━━ Set up syslog (changes the device, shown every time) ──────────────────────────────────────── │
+     │ │ steps                                                                                          │
+     │ │ Save with                                                                                      │
+     │                                                                                                  │
+     │ ━━ Extra danger rule (add only) ──────────────────────────────────────────────────────────────── │
+     │ │ Pattern                                                                                        │
+ Tab next  ←/→ select  Ctrl+S save  Esc cancel

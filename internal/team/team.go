@@ -54,6 +54,7 @@ type Package struct {
 	Connections []domain.Connection `json:"connections"`
 	Tunnels     []domain.Tunnel     `json:"tunnels,omitempty"`
 	Runbooks    []domain.Runbook    `json:"runbooks,omitempty"`
+	CmdSets     []CmdSet            `json:"cmdsets,omitempty"` // eigene Befehlssätze der Verbindungen
 }
 
 type header struct {
@@ -190,6 +191,7 @@ func Build(d *domain.Data, ids []string, from string, o Options, now time.Time) 
 			}
 		}
 	}
+	p.CmdSets = cmdSetsFor(p.Connections)
 	sort.Strings(jumps)
 	return p, jumps
 }

@@ -1,0 +1,28 @@
+id: routeros
+name: MikroTik RouterOS
+order: 250
+hint: "RouterOS-CLI: /system resource print, /interface print, /ip address print, /ip route print, /export; keine Linux-Befehle."
+detect:
+  banner: ['(?i)rosssh|mikrotik']
+  screen: ['(?i)mikrotik routeros|\[[\w.-]+@[\w.-]+\] >']
+  version: ['(?i)routeros|mikrotik|board-name:']
+commands:
+  version: /system resource print
+  system: /system identity print
+  ports: /interface ethernet print terse
+  vlans: /interface vlan print terse
+  config: /export
+parse:
+  reader: routeros
+logs:
+  commands: [/log print without-paging]
+  reader: routeros
+syslog:
+  steps:
+    - '/system logging action add name=sshtermy target=remote remote={{ip}} remote-port={{port}}'
+    - /system logging add topics=warning action=sshtermy
+    - /system logging add topics=error action=sshtermy
+    - /system logging add topics=critical action=sshtermy
+danger:
+  - rx: '^\s*/?(ip\s+firewall\s+\S+\s+remove|interface\s+\S*\s*remove|user\s+remove|ip\s+address\s+remove)\b'
+    reason: entfernt Konfiguration (VLAN, Routing, Zugang)

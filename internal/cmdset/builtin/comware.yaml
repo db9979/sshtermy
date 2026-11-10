@@ -1,0 +1,90 @@
+id: comware
+name: HPE Comware / H3C
+order: 270
+hint: "Comware-CLI: display current-configuration, display interface brief, display vlan, display version, display logbuffer; Blättern aus mit screen-length disable; Konfiguration mit system-view … quit, entfernen mit undo …, speichern mit save force."
+detect:
+  banner: ['(?i)comware|h3c']
+  screen: ['(?i)comware']
+  version: ['(?i)comware software']
+commands:
+  paging_off: screen-length disable
+  version: display version
+  system: display cpu-usage
+  memory: display memory
+  ports: display interface brief
+  vlans: display vlan brief
+  config: display current-configuration
+parse:
+  firmware: '(?i)comware software,\s*version\s+([\d.]+,\s*release\s+\w+)'
+  model: '(?im)^(?:H3C|HPE|HP)\s+(.+?)\s+uptime is'
+  cpu: '(?im)^\s*(\d{1,3})%\s+in last 5 seconds'
+  mem: '(?im)^\s*Mem:\s+(?P<total>\d+)\s+(?P<used>\d+)\s'
+  port_up: '^(?:GE|XGE|FGE|HGE|WGE|MGE|BAGG|Ten-GigabitEthernet|GigabitEthernet)\d\S*\s+UP\b'
+  port_down: '^(?:GE|XGE|FGE|HGE|WGE|MGE|BAGG|Ten-GigabitEthernet|GigabitEthernet)\d\S*\s+(?:DOWN|ADM)\b'
+  vlan: '^\s*(\d{1,4})\s+(\S+(?: \S+)?)'
+logs:
+  commands: [display logbuffer]
+  ports: display interface brief
+  reader: vrp
+syslog:
+  steps: [system-view, info-center enable, 'info-center loghost {{ip}} port {{port}}', quit]
+  save: save force
+variants:
+  - name: Comware 5
+    firmware: '^5\.'
+    hint: "Comware 5: info-center loghost kennt keinen Port (immer UDP 514), Speicherangabe mit display memory in Byte."
+    syslog:
+      steps: [system-view, info-center enable, 'info-center loghost {{ip}}', quit]
+danger:
+  - rx: '^\s*undo\s+(vlan|interface|ip\s+route|stp|local-user|ssh|ip\s+address|info-center\s+enable)\b'
+    reason: entfernt Konfiguration (VLAN, Routing, Zugang)
+  - rx: '^\s*(startup\s+saved-configuration|boot-loader\s+file)\b'
+    reason: ändert die Startkonfiguration oder das Startabbild
+    reason_en: changes the startup configuration or boot image
+samples:
+  - name: H3C S5130
+    version: |
+      H3C Comware Software, Version 7.1.070, Release 3208P13
+      Copyright (c) 2004-2021 New H3C Technologies Co., Ltd. All rights reserved.
+      H3C S5130S-28S-EI uptime is 0 weeks, 3 days, 4 hours, 25 minutes
+      Last reboot reason: User reboot
+      Boot image: flash:/s5130s_ei-cmw710-boot-r3208p13.bin
+    system: |
+      Slot 1 CPU 0 CPU usage:
+             3% in last 5 seconds
+             2% in last 1 minute
+             2% in last 5 minutes
+      Memory statistics are measured in KB:
+      Slot 1:
+                   Total      Used      Free    Shared   Buffers    Cached   FreeRatio
+      Mem:        999656    490336    509320         0      2496    139256       51.0%
+    ports: |
+      Brief information on interfaces in bridge mode:
+      Link: ADM - administratively down; Stby - standby
+      Speed: (a) - auto
+      Duplex: (a)/A - auto; H - half; F - full
+      Type: A - access; T - trunk; H - hybrid
+      Interface            Link Speed   Duplex Type PVID Description
+      GE1/0/1              UP   1G(a)   F(a)   A    1
+      GE1/0/2              DOWN auto    A      A    1
+      XGE1/0/25            ADM  auto    A      A    1
+    vlans: |
+      Brief information about all VLANs:
+      Supported Minimum VLAN ID: 1
+      Supported Maximum VLAN ID: 4094
+      Default VLAN ID: 1
+      VLAN ID   Name                             Port
+      1         VLAN 0001                        GE1/0/1 GE1/0/2
+      10        Server                           GE1/0/1
+    logs: |
+      %Nov 10 10:21:33:518 2026 H3C SHELL/5/SHELL_LOGIN: admin logged in from 10.0.0.5.
+      %Nov 10 10:25:01:002 2026 H3C IFNET/3/PHY_UPDOWN: Physical state on the interface GigabitEthernet1/0/2 changed to down.
+    expect:
+      firmware: 7.1.070, Release 3208P13
+      model: S5130S-28S-EI
+      cpu: 3
+      mem: 49
+      ports_up: 1
+      ports_down: 2
+      vlans: 2
+      log_lines: 2

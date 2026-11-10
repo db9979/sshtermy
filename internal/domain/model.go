@@ -580,6 +580,10 @@ type Settings struct {
 	// Geht mit dem Sync.
 	ConfigRules []string `json:"config_rules,omitempty"`
 
+	// CmdSetApproved: freigegebene Team-Befehlssätze (Kennung → Prüfsumme des
+	// Inhalts). Ändert das Team die Datei, ist der Satz bis zur neuen Freigabe aus.
+	CmdSetApproved map[string]string `json:"cmdset_approved,omitempty"`
+
 	// Highlight: Farbregeln für die Ausgabe im Terminal (highlight-Paket).
 	Highlight HighlightConfig `json:"highlight,omitempty"`
 
@@ -650,6 +654,7 @@ func (s Settings) SyncedPart() Settings {
 	s.LastLayout, s.Editor, s.Schedules = nil, "", nil
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort = 0
+	s.CmdSetApproved = nil // Freigaben gelten für die Team-Dateien dieses Rechners
 	return s
 }
 

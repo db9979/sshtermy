@@ -73,6 +73,7 @@ type Server struct {
 	Security          int    // -1 = unbekannt
 	UpdateTool        string // apt, dnf, …
 	RebootNeeded      bool
+	Extras            []Extra // Zusatzzeilen aus dem Befehlssatz (Proxmox, ESXi, …)
 	At                time.Time
 }
 

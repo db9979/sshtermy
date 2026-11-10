@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/db9979/sshtermy/internal/cmdset"
 	"regexp"
 	"testing"
 
@@ -60,8 +61,14 @@ func TestTablesTranslated(t *testing.T) {
 	texts = append(texts, deviceLabels...)
 	texts = append(texts, accentLabels()...)
 	texts = append(texts, dialectAuto, modeFolder, modeOff, version.Idea, version.Slogan)
-	for _, d := range domain.Dialects {
-		texts = append(texts, d.Name)
+	// Befehlssätze heißen meist wie das Produkt; deutsche Namen brauchen name_en.
+	german := regexp.MustCompile(`[äöüÄÖÜß]|\b(und|oder|eigener|Gerät|Geräte)\b`)
+	for _, d := range domain.Dialects() {
+		if german.MatchString(d.Name) {
+			if s, ok := cmdset.Lookup(d.ID); !ok || s.NameEN == "" {
+				texts = append(texts, d.Name)
+			}
+		}
 	}
 	word := regexp.MustCompile(`[A-Za-zÄÖÜäöüß]{2,}`)
 	for _, s := range texts {

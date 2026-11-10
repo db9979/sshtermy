@@ -1,0 +1,40 @@
+id: procurve
+name: ArubaOS-Switch (ProCurve)
+# Spät in der Erkennung: „Boot Image“ und Versionsnummern wie YA.16.10.0009
+# sind weniger eindeutig als die Merkmale anderer Hersteller.
+order: 800
+hint: "HPE/Aruba ProCurve-CLI, kein Linux: show running-config, show interfaces brief, show vlans, show mac-address, show lldp info remote-device, show system, show version; Blättern aus mit no page; Konfiguration mit configure … exit, speichern mit write memory."
+detect:
+  banner: ['(?i)mocana|procurve']
+  screen: ['(?i)arubaos-switch|procurve|image stamp:|\bsoftware revision\s+:?\s*[A-Z]{1,2}\.\d{2}\.']
+  version: ['(?i)image stamp', '(?im)^\s*boot image:\s+(primary|secondary)', '\b[A-Z]{1,3}\.\d{2}\.\d{2}\.\d{4}\b']
+commands:
+  paging_off: no page
+  version: show version
+  system: show system
+  ports: show interfaces brief
+  vlans: show vlans
+  config: show running-config
+logs:
+  commands: [show logging -r]
+  ports: show interfaces brief
+  reader: procurve
+syslog:
+  steps: [configure terminal, 'logging {{ip}} udp {{port}}', end]
+  save: write memory
+variants:
+  - name: ältere Firmware (vor 15.x)
+    firmware: '^[A-Z]{1,2}\.(0\d|1[0-4])\.'
+    hint: "Ältere Firmware: logging <IP> kennt keinen Port (immer UDP 514), manche show-Befehle fehlen."
+    syslog:
+      steps: [configure terminal, 'logging {{ip}}', end]
+samples:
+  - name: Aruba 2930F
+    version: |
+      Image stamp:    /ws/swbuildm/rel_onfire_qaoff/code/build/lpr(swbuildm_rel_onfire_qaoff_rel_onfire)
+                      Jan 13 2022 06:21:45
+                      WC.16.10.0009
+                      1018
+      Boot Image:     Primary
+    expect:
+      firmware: WC.16.10.0009

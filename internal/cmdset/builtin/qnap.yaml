@@ -1,0 +1,16 @@
+id: qnap
+name: QNAP QTS / QuTS
+family: linux
+order: 104
+hint: "QNAP QTS/QuTS hero (Linux ohne apt): qpkg_cli, getcfg/setcfg (Einstellungen in /etc/config/uLinux.conf), /etc/init.d/<dienst>.sh restart, cat /proc/mdstat; Freigaben unter /share/…. Viele Einstellungen nur in der Weboberfläche."
+detect:
+  probe: [/etc/config/uLinux.conf]
+commands:
+  extra:
+    - label: Version
+      cmd: cat /etc/config/uLinux.conf
+      pick: '(?im)^\s*Version\s*=\s*(\S+)'
+    - label: Modell
+      label_en: Model
+      cmd: cat /etc/config/uLinux.conf
+      pick: '(?im)^\s*Model\s*=\s*(\S+)'

@@ -1,0 +1,22 @@
+id: pfsense
+name: pfSense
+family: bsd
+order: 120
+hint: "pfSense (FreeBSD): nach der Anmeldung als admin ein Menü, 8 = Shell. Shell: pfctl -s rules/-s state/-s info, pfSsh.php playback …, cat /conf/config.xml (Konfiguration), clog/ tail /var/log/filter.log, service … , pkg. Dauerhafte Änderungen über die Weboberfläche, sonst überschreibt pfSense sie aus config.xml."
+detect:
+  screen: ['(?i)welcome to pfsense|pfsense - netgate|\*\*\* welcome to pfsense']
+  probe: [/usr/local/sbin/pfSsh.php]
+commands:
+  extra:
+    - label: Version
+      cmd: cat /etc/version
+      pick: '^\s*(\S+)'
+    - label: Firewall
+      cmd: pfctl -si
+      pick: '(?im)^Status:\s*(\w+)'
+read: ['^pfctl -si$']
+danger:
+  - rx: '\bpfctl\s+(-d\b|-F\s*all\b|-Fa\b)'
+    reason: leert oder deaktiviert die Firewall
+  - rx: '\b(/etc/rc\.initial\.defaults|rc\.initial\.defaults)\b'
+    reason: löscht Konfiguration oder Speicher des Geräts

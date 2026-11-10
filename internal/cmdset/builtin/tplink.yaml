@@ -1,0 +1,26 @@
+id: tplink
+name: TP-Link JetStream / Omada
+order: 265
+hint: "TP-Link JetStream-/Omada-Switches: show system-info, show running-config, show interface status, show vlan brief, show mac address-table all, show lldp neighbor-information interface; Konfiguration mit configure … end, speichern mit copy running-config startup-config. Von Omada verwaltete Switches nimmt der Controller zurück: dauerhaft dort ändern."
+detect:
+  screen: ['(?i)tp-?link|jetstream']
+  version: ['(?i)tp-?link|jetstream']
+commands:
+  version: show system-info
+  ports: show interface status
+  vlans: show vlan brief
+  config: show running-config
+parse:
+  firmware: '(?im)^\s*Firmware Version\s*-\s*(.+?)\s*$'
+  model: '(?im)^\s*Hardware Version\s*-\s*(\S+)'
+  name: '(?im)^\s*System Name\s*-\s*(.+?)\s*$'
+  uptime: '(?im)^\s*Running Time\s*-\s*(.+?)\s*$'
+  port_up: '(?i)^\s*(?:Gi|Te|Tw)\S+\s+LinkUp'
+  port_down: '(?i)^\s*(?:Gi|Te|Tw)\S+\s+LinkDown'
+logs:
+  commands: [show logging buffer]
+  ports: show interface status
+  reader: generic
+syslog:
+  steps: [configure, 'logging host index 1 {{ip}} 4', end]
+  save: copy running-config startup-config

@@ -1,0 +1,33 @@
+id: cisco-wlc
+name: Cisco WLC (AireOS)
+order: 212
+hint: "Cisco Wireless LAN Controller mit AireOS (Prompt (Cisco Controller) >), kein IOS: show sysinfo, show ap summary, show client summary, show wlan summary, show run-config commands, show msglog; Blättern aus mit config paging disable; Änderungen mit config … (wirken sofort), speichern mit save config. Catalyst 9800 ist IOS-XE (Befehlssatz Cisco IOS)."
+detect:
+  screen: ['(?i)\(Cisco Controller\)\s*>|cisco controller']
+  version: ['(?im)^Product Name\.*\s*Cisco Controller']
+commands:
+  paging_off: config paging disable
+  version: show sysinfo
+  system: show cpu
+  config: show run-config commands
+  extra:
+    - label: APs
+      cmd: show ap summary
+      pick: '(?i)Number of APs\.*\s*(\d+)'
+    - label: Clients
+      cmd: show client summary
+      pick: '(?i)Number of Clients\.*\s*(\d+)'
+parse:
+  firmware: '(?im)^Product Version\.*\s*(\S+)'
+  name: '(?im)^System Name\.*\s*(\S+)'
+  uptime: '(?im)^System Up Time\.*\s*(.+?)\s*$'
+  cpu: '(?i)current cpu\(s\) load:\s*(\d{1,3})%'
+logs:
+  commands: [show msglog]
+  reader: generic
+syslog:
+  steps: ['config logging syslog host {{ip}}', config logging syslog level warnings]
+  save: save config
+danger:
+  - rx: '^\s*(reset\s+system|clear\s+config|config\s+ap\s+reset|transfer\s+download\s+start)\b'
+    reason: startet das Gerät neu

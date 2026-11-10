@@ -1,0 +1,34 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ● AI
+ ▤ Command sets · what sshTermy types, reads and tells the AI for each vendor
+
+ Own sets live in ~/.config/sshtermy/befehlssaetze.
+ They can only add to built-in danger rules, only type read commands and only detect a device when no built-
+in set matches.
+
+ ▸ Linux/Unix shell                   posix            built in         active
+   macOS                              macos            built in         active
+   BSD                                bsd              built in         active
+   Windows PowerShell                 powershell       built in         active
+   Windows cmd.exe                    cmd              built in         active
+   Proxmox VE                         proxmox          built in         active
+   VMware ESXi                        esxi             built in         active
+   Synology DSM                       synology         built in         active
+   QNAP QTS / QuTS                    qnap             built in         active
+   TrueNAS                            truenas          built in         active
+   pfSense                            pfsense          built in         active
+   OPNsense                           opnsense         built in         active
+   Ubiquiti EdgeOS (EdgeRouter)       edgeos           built in         active
+   VyOS                               vyos             built in         active
+   UniFi switch (Ubiquiti)            unifi            built in         active
+   Aruba Mobility Controller (AOS 8)  aruba-mobility   built in         active
+   Aruba Instant (IAP)                aruba-instant    built in         active
+   ArubaOS-CX                         arubaos-cx       built in         active
+   Cisco WLC (AireOS)                 cisco-wlc        built in         active
+   Cisco ASA                          cisco-asa        built in         active
+   Cisco NX-OS (Nexus)                cisco-nxos       built in         active
+   Cisco IOS / IOS-XE                 cisco-ios        built in         active
+
+
+
+
+ ⏎ Details  n new  t test on device  k AI draft  l corrections  x export  i import  Esc back

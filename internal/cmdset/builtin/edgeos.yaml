@@ -1,0 +1,11 @@
+id: edgeos
+name: Ubiquiti EdgeOS (EdgeRouter)
+order: 129
+family: linux
+hint: "Ubiquiti EdgeRouter (EdgeOS, Vyatta-Basis): Betriebsmodus show interfaces, show ip route, show version, show log; Konfiguration mit configure · set …/delete … · commit · save · exit. Hardware-Infos mit /usr/sbin/ubnt-hal show-version."
+detect:
+  screen: ['(?i)welcome to edgeos']
+  probe: [/usr/sbin/ubnt-hal]
+danger:
+  - rx: '^\s*(load\s+\S|rollback\s+\d)'
+    reason: überschreibt die Gerätekonfiguration

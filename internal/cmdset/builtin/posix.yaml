@@ -1,0 +1,6 @@
+id: posix
+name: Linux/Unix-Shell
+name_en: Linux/Unix shell
+family: linux
+order: 1
+hint: POSIX-Shell (bash/sh) mit GNU-Werkzeugen.

@@ -748,6 +748,8 @@ func (a *App) palMenuItems() []palItem {
 		look(hide(palToggle(ic("colors"), i18n.T("Farbregeln: Ausgabe einfärben"), a.highlightOn(), "highlight farbregeln einfärben", func() tea.Cmd { return a.toggleHighlight() }))),
 		palItem{group: pgSetLook, menu: "settings", icon: ic("backup"), label: i18n.T("Regeln für Switch-Configs …"), hint: a.configRulesHint(),
 			keys: "config regeln rules compliance prüfen check ntp telnet snmp switch", run: func() tea.Cmd { return a.openConfigRulesForm() }},
+		palItem{group: pgSetLook, menu: "settings", icon: ic("backup"), label: i18n.T("Befehlssätze (Hersteller) …"), hint: a.cmdsetHint(),
+			keys: "befehlssatz befehlssätze hersteller vendor dialekt switch firewall router wlan yaml modell", run: func() tea.Cmd { return a.openCmdSets() }},
 	)
 	iconIdx := -1
 	for i, st := range iconStyles {

@@ -8,132 +8,76 @@ import (
 	"strings"
 	"time"
 
+	"github.com/db9979/sshtermy/internal/cmdset"
 	"github.com/db9979/sshtermy/internal/i18n"
 )
 
-// Vendor: Familie des Netzwerkgeräts, erkannt an "show version".
+// Vendor: Befehlssatz des Netzwerkgeräts (Kennung aus internal/cmdset),
+// erkannt an "show version" oder aus dem Systemprofil.
 type Vendor string
 
+// Die Hersteller, die der Code selbst kennt (eigene Leser). Alle anderen
+// kommen nur aus den Befehlssatz-Dateien.
 const (
 	VendorUnknown  Vendor = ""
-	VendorProCurve Vendor = "procurve" // ArubaOS-Switch / HP ProCurve
-	VendorArubaCX  Vendor = "aruba-cx" // ArubaOS-CX
-	VendorCisco    Vendor = "cisco"    // IOS / IOS-XE
-	VendorJunos    Vendor = "junos"    // Juniper EX/SRX/MX
-	VendorMikroTik Vendor = "routeros" // MikroTik RouterOS
-	VendorFortiOS  Vendor = "fortios"  // Fortinet FortiGate
-	VendorUniFi    Vendor = "unifi"    // Ubiquiti UniFi-Switch (BusyBox-Shell)
+	VendorProCurve Vendor = "procurve"   // ArubaOS-Switch / HP ProCurve
+	VendorArubaCX  Vendor = "arubaos-cx" // ArubaOS-CX
+	VendorCisco    Vendor = "cisco-ios"  // IOS / IOS-XE
+	VendorJunos    Vendor = "junos"      // Juniper EX/SRX/MX
+	VendorMikroTik Vendor = "routeros"   // MikroTik RouterOS
+	VendorFortiOS  Vendor = "fortios"    // Fortinet FortiGate
+	VendorUniFi    Vendor = "unifi"      // Ubiquiti UniFi-Switch (BusyBox-Shell)
 )
+
+// SetOf: wirksamer Befehlssatz für ein Gerät (mit Variante für Modell und
+// Firmware). Unbekannt ⇒ der allgemeine Satz „network“.
+func SetOf(v Vendor, model, firmware string) *cmdset.Set {
+	if s := cmdset.Resolve(string(v), model, firmware); s != nil {
+		return s
+	}
+	if s := cmdset.Resolve("network", "", ""); s != nil {
+		return s
+	}
+	return &cmdset.Set{ID: "network", Commands: cmdset.Commands{Version: "show version", Config: "show running-config"}}
+}
 
 // Name für die Anzeige.
 func (v Vendor) Name() string {
-	switch v {
-	case VendorProCurve:
-		return "ArubaOS-Switch (ProCurve)"
-	case VendorArubaCX:
-		return "ArubaOS-CX"
-	case VendorCisco:
-		return "Cisco IOS"
-	case VendorJunos:
-		return "Juniper Junos"
-	case VendorMikroTik:
-		return "MikroTik RouterOS"
-	case VendorFortiOS:
-		return "FortiOS"
-	case VendorUniFi:
-		return "UniFi-Switch (Ubiquiti)"
+	if s, ok := cmdset.Lookup(string(v)); ok && v != "" && s.ID != "network" {
+		return s.DisplayName()
 	}
-	return "unbekannt"
+	return i18n.T("unbekannt")
 }
 
-// DetectVendor erkennt die Familie an der Ausgabe von "show version".
+// DetectVendor erkennt den Befehlssatz an der Ausgabe von "show version".
 func DetectVendor(showVersion string) Vendor {
-	l := strings.ToLower(showVersion)
-	switch {
-	case unifiInfo.MatchString(showVersion):
-		return VendorUniFi
-	case strings.Contains(l, "arubaos-cx") || strings.Contains(l, "aos-cx"):
-		return VendorArubaCX
-	case strings.Contains(l, "cisco ios") || strings.Contains(l, "cisco internetwork"):
-		return VendorCisco
-	case strings.Contains(l, "junos"):
-		return VendorJunos
-	case strings.Contains(l, "routeros") || strings.Contains(l, "mikrotik") || strings.Contains(l, "board-name:"):
-		return VendorMikroTik
-	case strings.Contains(l, "fortigate") || strings.Contains(l, "fortios") || strings.Contains(l, "fortiswitch"):
-		return VendorFortiOS
-	case strings.Contains(l, "image stamp") || strings.Contains(l, "boot image") || procurveRev.MatchString(showVersion):
-		return VendorProCurve
+	if s := cmdset.DetectVersion(showVersion); s != nil && s.EffFamily() == cmdset.FamilyNetwork && s.ID != "network" {
+		return Vendor(s.ID)
 	}
 	return VendorUnknown
 }
 
 // PagingOff: Befehl, der das Blättern (-- MORE --) für diese Sitzung
 // abschaltet. Wirkt nur bis zum Abmelden, ändert keine Konfiguration.
-func (v Vendor) PagingOff() string {
-	switch v {
-	case VendorProCurve, VendorArubaCX:
-		return "no page"
-	case VendorCisco:
-		return "terminal length 0"
-	case VendorJunos:
-		return "set cli screen-length 0"
-	}
-	// RouterOS blättert bei „print terse“ nicht; FortiOS ginge nur über
-	// eine Konfigurationsänderung (config system console) – dort beantwortet
-	// shellRun „--More--“ selbst.
-	return ""
-}
+// Ohne Befehl beantwortet shellRun „--More--“ selbst.
+func (v Vendor) PagingOff() string { return SetOf(v, "", "").Commands.PagingOff }
 
 // VersionCommand: Befehl, der Modell und Firmware nennt.
 func (v Vendor) VersionCommand() string {
-	switch v {
-	case VendorMikroTik:
-		return "/system resource print"
-	case VendorFortiOS:
-		return "get system status"
-	case VendorUniFi:
-		return "info"
+	if c := SetOf(v, "", "").Commands.Version; c != "" {
+		return c
 	}
 	return "show version"
 }
 
 // ConfigCommand: Befehl, der die laufende Konfiguration ausgibt (für die
-// Konfigurationssicherung). Ändert nichts am Gerät.
-func (v Vendor) ConfigCommand() string {
-	switch v {
-	case VendorJunos:
-		return "show configuration | display set"
-	case VendorMikroTik:
-		return "/export"
-	case VendorFortiOS:
-		return "show full-configuration"
-	case VendorUniFi:
-		// vom Controller verteilte, gerade gültige Konfiguration
-		return "cat /tmp/system.cfg"
-	}
-	return "show running-config"
-}
+// Konfigurationssicherung). Ändert nichts am Gerät. "" = unbekannt.
+func (v Vendor) ConfigCommand() string { return SetOf(v, "", "").Commands.Config }
 
-// InfoCommands: show-Befehle für die Übersicht (nach "show version").
+// InfoCommands: Befehle für die Übersicht (nach "show version").
 func (v Vendor) InfoCommands() (system, ports, vlans string) {
-	switch v {
-	case VendorProCurve:
-		return "show system", "show interfaces brief", "show vlans"
-	case VendorArubaCX:
-		return "show system", "show interface brief", "show vlan"
-	case VendorCisco:
-		return "show processes cpu | include CPU utilization", "show interfaces status", "show vlan brief"
-	case VendorJunos:
-		return "show chassis routing-engine", "show interfaces terse", "show vlans brief"
-	case VendorMikroTik:
-		return "/system identity print", "/interface ethernet print terse", "/interface vlan print terse"
-	case VendorFortiOS:
-		return "get system performance status", "get system interface physical", ""
-	case VendorUniFi:
-		return "free; top -bn1 | head -n 3", "swctrl port show", ""
-	}
-	return "", "", ""
+	c := SetOf(v, "", "").Commands
+	return c.System, c.Ports, c.VLANs
 }
 
 // VLAN: ID und Name.
@@ -154,7 +98,13 @@ type Switch struct {
 	VLANs     []VLAN
 	CPUPct    int // -1 = unbekannt
 	MemPct    int // belegter Speicher in %, -1 = unbekannt
+	Extras    []Extra
 	At        time.Time
+}
+
+// Extra: Zusatzzeile aus dem Befehlssatz (z. B. „APs: 12“).
+type Extra struct {
+	Label, Value string
 }
 
 // Summary: eine Zeile für die Sitzungsleiste.
@@ -202,6 +152,16 @@ var (
 
 // ParseSwitch wertet die Ausgaben aus (fehlende Befehle sind leer).
 func ParseSwitch(v Vendor, version, system, ports, vlans string) Switch {
+	return ParseWith(SetOf(v, "", ""), version, system, ports, vlans)
+}
+
+// ParseWith liest die Ausgaben mit einem Befehlssatz: erst der allgemeine
+// Leser, dann ein eingebauter Herstellerleser, dann die Muster des Satzes.
+func ParseWith(set *cmdset.Set, version, system, ports, vlans string) Switch {
+	v := Vendor(set.ID)
+	if set.ID == "network" {
+		v = VendorUnknown
+	}
 	s := Switch{Vendor: v, At: time.Now(), CPUPct: -1, MemPct: -1}
 	all := version + "\n" + system
 	if m := cpuUtil.FindStringSubmatch(system); m != nil {
@@ -237,22 +197,20 @@ func ParseSwitch(v Vendor, version, system, ports, vlans string) Switch {
 	} else if m := ciscoName.FindStringSubmatch(version); m != nil {
 		s.Name = m[1]
 	}
-	switch v {
-	case VendorJunos:
+	switch set.Parse.Reader {
+	case "junos":
 		parseJunos(&s, version, system, ports, vlans)
-		return s
-	case VendorMikroTik:
+	case "routeros":
 		parseRouterOS(&s, version, system, ports, vlans)
-		return s
-	case VendorFortiOS:
+	case "fortios":
 		parseFortiOS(&s, version, system, ports)
-		return s
-	case VendorUniFi:
+	case "unifi":
 		parseUniFi(&s, version, system, ports)
-		return s
+	default:
+		s.PortsUp, s.PortsDown = countPorts(ports)
+		s.VLANs = parseVLANs(vlans)
 	}
-	s.PortsUp, s.PortsDown = countPorts(ports)
-	s.VLANs = parseVLANs(vlans)
+	applyParse(&s, set.Parse, all, ports, vlans)
 	return s
 }
 

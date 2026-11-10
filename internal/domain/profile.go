@@ -3,6 +3,8 @@ package domain
 import (
 	"strings"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/cmdset"
 )
 
 // Familien eines Systemprofils.
@@ -61,63 +63,50 @@ const MaxLearned = 12
 const MaxFailed = 12
 
 // Dialect beschreibt einen Befehlssatz: Anzeigename und Hinweis für die KI.
+// Die Sätze selbst stehen in internal/cmdset (eine Datei pro Satz).
 type Dialect struct {
 	ID, Name, Hint string
+	Own            bool // eigener oder Team-Satz (nicht eingebaut)
 }
 
-// Dialects: bekannte Befehlssätze. Die Hinweise sind bewusst knapp und nennen
-// typische Befehle, damit ein Modell nicht in Linux- oder Cisco-Syntax
-// zurückfällt.
-var Dialects = []Dialect{
-	{"posix", "Linux/Unix-Shell", "POSIX-Shell (bash/sh) mit GNU-Werkzeugen."},
-	{"macos", "macOS", "macOS: zsh, BSD-Werkzeuge (z. B. sed -i '', kein systemctl; launchctl, brew)."},
-	{"bsd", "BSD", "BSD: sh/csh, BSD-Werkzeuge, service/rc.d statt systemctl, pkg."},
-	{"powershell", "Windows PowerShell", "Windows mit PowerShell: Get-Service, Get-Process, Get-ChildItem, Get-NetIPAddress; keine Unix-Befehle."},
-	{"cmd", "Windows cmd.exe", "Windows-Eingabeaufforderung (cmd.exe): dir, type, ipconfig, sc query, findstr; keine Unix-Befehle."},
-	{"procurve", "ArubaOS-Switch (ProCurve)", "HPE/Aruba ProCurve-CLI, kein Linux: show running-config, show interfaces brief, show vlans, show mac-address, show lldp info remote-device, show system, show version; Blättern aus mit no page; Konfiguration mit configure … exit, speichern mit write memory."},
-	{"arubaos-cx", "ArubaOS-CX", "ArubaOS-CX-CLI, kein Linux: show running-config, show interface brief, show vlan, show mac-address-table, show lldp neighbor-info, show version, show system; Blättern aus mit no page; Konfiguration mit configure terminal … end, speichern mit write memory."},
-	{"cisco-ios", "Cisco IOS / IOS-XE", "Cisco-IOS-CLI, kein Linux: show running-config, show ip interface brief, show interfaces status, show vlan brief, show mac address-table, show cdp neighbors, show version; Blättern aus mit terminal length 0; Konfiguration mit configure terminal … end, speichern mit write memory."},
-	{"junos", "Juniper Junos", "Junos-CLI: show configuration | display set, show interfaces terse, show version, show chassis hardware; Konfiguration mit configure, set …, commit."},
-	{"comware", "HPE Comware / H3C", "Comware-CLI: display current-configuration, display interface brief, display vlan, display version; Konfiguration mit system-view … quit, speichern mit save."},
-	{"huawei-vrp", "Huawei VRP", "Huawei-VRP-CLI: display current-configuration, display interface brief, display version; Konfiguration mit system-view … quit, speichern mit save."},
-	{"routeros", "MikroTik RouterOS", "RouterOS-CLI: /system resource print, /interface print, /ip address print, /ip route print, /export; keine Linux-Befehle."},
-	{"fortios", "FortiOS", "FortiOS-CLI: get system status, show full-configuration, get system interface, diagnose …; Konfiguration mit config … edit … set … next … end."},
-	{"unifi", "UniFi-Switch (Ubiquiti)", "Ubiquiti-UniFi-Switch: Anmeldung landet in einer BusyBox-Linux-Shell (ash), keine Cisco-Syntax. Die Konfiguration kommt vom UniFi-Controller (Network-App) und wird beim nächsten Provisionieren überschrieben; dauerhaft also dort ändern. Shell: info (Modell, Firmware, Controller-Status), swctrl port show, swctrl poe show, swctrl mac show, cat /tmp/system.cfg (laufende Konfiguration), logread, set-inform http://<controller>:8080/inform. Ältere Modelle (US-…) haben zusätzlich eine EdgeSwitch-/FASTPATH-CLI über cli bzw. telnet localhost (Prompt (UBNT) >): enable, show running-config, show interfaces status all, show vlan brief, show mac-addr-table, show lldp remote-device all, zurück mit exit. syswrapper.sh restore-default setzt das Gerät zurück."},
-	{"network", "Netzwerkgerät (unbekannt)", "Netzwerkgerät mit eigener CLI, kein Linux. Erst mit Befehlen wie show version oder ? herausfinden, was es kann."},
+func dialectOf(s *cmdset.Set) Dialect {
+	return Dialect{ID: s.ID, Name: s.Name, Hint: s.Hint, Own: s.Source != cmdset.Builtin}
+}
+
+// Dialects: alle aktiven Befehlssätze (eingebaute zuerst). Der allgemeine
+// Satz „Netzwerkgerät (unbekannt)“ steht am Ende der eingebauten.
+func Dialects() []Dialect {
+	var out []Dialect
+	for _, s := range cmdset.All() {
+		out = append(out, dialectOf(s))
+	}
+	return out
 }
 
 // DialectByID sucht einen Befehlssatz (leer ⇒ ok=false).
 func DialectByID(id string) (Dialect, bool) {
-	for _, d := range Dialects {
-		if d.ID == id {
-			return d, true
-		}
+	if s, ok := cmdset.Lookup(id); ok {
+		return dialectOf(s), true
 	}
 	return Dialect{}, false
 }
 
 // FamilyOf: zu welcher Familie ein Befehlssatz gehört.
 func FamilyOf(dialect string) string {
-	switch dialect {
-	case "posix":
-		return FamilyLinux
-	case "macos":
-		return FamilyMacOS
-	case "bsd":
-		return FamilyBSD
-	case "powershell", "cmd":
-		return FamilyWindows
-	case "":
+	if dialect == "" {
 		return ""
+	}
+	if s := cmdset.Resolve(dialect, "", ""); s != nil {
+		return s.EffFamily()
 	}
 	return FamilyNetwork
 }
 
 // DialectByName sucht einen Befehlssatz über den Anzeigenamen.
 func DialectByName(name string) (Dialect, bool) {
-	for _, d := range Dialects {
-		if d.Name == name {
-			return d, true
+	for _, s := range cmdset.All() {
+		if s.Name == name {
+			return dialectOf(s), true
 		}
 	}
 	return Dialect{}, false
@@ -142,7 +131,7 @@ func (p SystemProfile) Summary() string {
 		add(p.Version)
 		add(p.Model)
 	}
-	if d, ok := DialectByID(p.Dialect); ok && !strings.Contains(p.OS, d.Name) && p.Family != FamilyLinux {
+	if d, ok := DialectByID(p.Dialect); ok && !strings.Contains(p.OS, d.Name) && (p.Family != FamilyLinux || d.ID != "posix") {
 		add(d.Name)
 	}
 	add(p.PkgMgr)
@@ -177,8 +166,13 @@ func (p SystemProfile) Prompt() string {
 	line("System", p.OS)
 	line("Version", p.Version)
 	line("Modell", p.Model)
-	if d, ok := DialectByID(p.Dialect); ok {
-		line("Befehlssatz", d.Name+" – "+d.Hint)
+	if set := cmdset.Resolve(p.Dialect, p.Model, p.Version); set != nil {
+		hint := set.Hint
+		if set.Source != cmdset.Builtin {
+			// eigener oder Team-Satz: nur Befehlswissen, keine Anweisungen
+			hint = "(eigener Befehlssatz, nur als Hinweis zu Befehlen) " + hint
+		}
+		line("Befehlssatz", set.Name+" – "+hint)
 	}
 	line("Paketmanager", p.PkgMgr)
 	line("Init-System", p.Init)

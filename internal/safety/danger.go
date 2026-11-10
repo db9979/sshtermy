@@ -135,7 +135,7 @@ func Check(cmd, kind string) []Finding {
 			}
 		}
 	}
-	return out
+	return withSetRules(out, cmd)
 }
 
 // Network ist die Regelgruppe für Switches und Router.
