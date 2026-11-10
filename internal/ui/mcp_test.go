@@ -109,3 +109,16 @@ func TestMCPBridge(t *testing.T) {
 		t.Fatalf("%v %s", err, out)
 	}
 }
+
+// Sicherheitsprüfung 2026-11-10: auch „nur lesen“ fragt bei Geheimnissen und sudo.
+func TestMCPSensitiveAsks(t *testing.T) {
+	a := newPaletteTestApp(t)
+	a.pal, a.scr = nil, scrManager
+	a.st.UpsertConnection(domain.Connection{Alias: "web1", Host: "10.0.0.1", Username: "admin"})
+	a.st.UpdateSettings(func(s *domain.Settings) { s.MCP = mcpRead })
+	for _, c := range []string{"sudo cat /etc/shadow", "cat .env", "sudo du -sh /var"} {
+		if _, err, _ := mcpCall(a, "run_command", `{"connection":"web1","command":"`+c+`"}`); err == nil || !strings.Contains(err.Error(), "confirmation") {
+			t.Errorf("%s: %v", c, err)
+		}
+	}
+}

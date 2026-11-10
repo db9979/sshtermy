@@ -93,6 +93,8 @@ func TestAgentGates(t *testing.T) {
 		{"winrm normal", domain.Connection{Alias: "win", Protocol: domain.ProtoWinRM}, lvlNormal, "Restart-Service Spooler", false},
 		{"root voll fstab", domain.Connection{Alias: "lab", Username: "root"}, lvlFull, "rm /etc/fstab", false},
 		{"falscher switch", domain.Connection{Alias: "lab"}, lvlFull, "erase startup-config", false},
+		{"geheimnis voll", domain.Connection{Alias: "lab"}, lvlFull, "sudo cat /etc/shadow", false},
+		{"switch config lesen", domain.Connection{Alias: "sw", Device: domain.DeviceNetwork}, lvlFull, "show running-config", false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -123,6 +123,10 @@ func (a *App) agentGate(s *session, st *agent.Step) (bool, string) {
 		}
 		return true, ""
 	}
+	if why := safety.Sensitive(st.Command); why != "" {
+		// liest nur, aber die Ausgabe ginge an die KI: immer fragen
+		return false, why + i18n.T(" (Ausgabe ginge an die KI)")
+	}
 	if safety.ReadOnly(st.Command, a.safetyKind(s)) && !(st.Elevated && g.level == lvlCareful) {
 		return true, ""
 	}
