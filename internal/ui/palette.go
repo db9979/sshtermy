@@ -264,6 +264,8 @@ func (a *App) paletteItems() []palItem {
 				a.resize(s)
 				return a.panelOpened(s)
 			}},
+			palItem{icon: ic("errors"), label: i18n.T("Log-Blick: Auffälligkeiten in den Logs"), hint: a.keys.label(actLogScan), top: true,
+				keys: "logs log journal journalctl syslog eventlog ereignis ereignisanzeige auffälligkeiten fehler show logging", run: func() tea.Cmd { return a.openLogScan(s) }},
 			palItem{icon: ic("ai"), label: i18n.T("KI-Begleiter: Stufe wechseln"), hint: companionLevelLabel(a.compLevel()) + " · " + a.keys.label(actCompanion),
 				keys: "begleiter companion mitlesen kommentar coach", run: func() tea.Cmd { return a.cycleCompanion(1) }},
 			palItem{icon: ic("ai"), label: i18n.T("Begleiter-Leiste"), pro: true, hint: a.keys.label(actCompanionBar),

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -232,6 +233,18 @@ func (sw *Switch) run(cmd string) string {
 		for _, v := range sw.vlanList() {
 			fmt.Fprintf(&b, "  %-7d %-32s | Port-based No    No\n", v, vlanName(v))
 		}
+		return b.String()
+	case "show logging -r":
+		var b strings.Builder
+		b.WriteString(" Keys:   W=Warning   I=Information\n         M=Major     D=Debug E=Error\n ----  Reverse event Log listing: Events Since Boot  ----\n")
+		now := time.Now()
+		for i := 0; i < 8; i++ {
+			t := now.Add(-time.Duration(i*7+1) * time.Minute)
+			fmt.Fprintf(&b, " I %s 00076 ports: port 23 is now on-line\n", t.Format("01/02/06 15:04:05"))
+			fmt.Fprintf(&b, " W %s 00077 ports: port 23 is now off-line\n", t.Add(-3*time.Second).Format("01/02/06 15:04:05"))
+		}
+		fmt.Fprintf(&b, " M %s 00921 loop-protect: port 17 disabled - loop detected on VLAN 20\n", now.Add(-2*time.Hour).Format("01/02/06 15:04:05"))
+		fmt.Fprintf(&b, " I %s 00422 mgr: SME SSH from 10.0.0.50 - MANAGER Mode\n", now.Add(-3*time.Hour).Format("01/02/06 15:04:05"))
 		return b.String()
 	case "show mac-address":
 		return " Status and Counters - Port Address Table\n\n  MAC Address   Port  VLAN\n  ------------- ----- ----\n  001122-aabbcc 4     1\n  941882-000001 25    1\n  941882-000002 25    1\n"

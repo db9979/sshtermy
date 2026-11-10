@@ -17,6 +17,7 @@
  Tunnel                        F4
  Files (SFTP)                  F5
  Host overview                 F6
+ Log view (anomalies in the logs)  Alt+E
  previous tab                  F7
  next tab                      F8
  New tab                       Alt+N
@@ -26,7 +27,6 @@
  Quick command 1               Shift+F1 / F13
  Quick command 2               Shift+F2 / F14
  Quick command 3               Shift+F3 / F15
- Quick command 4               Shift+F4 / F16
 
  Alt+⏎ is blocked: Windows Terminal uses it for full screen.
  Font size: Ctrl + plus/minus in the terminal window (macOS: ⌘ + / −)

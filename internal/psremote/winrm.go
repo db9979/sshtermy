@@ -327,3 +327,46 @@ func explain(err error, cfg Config) error {
 	}
 	return err
 }
+
+// CommandLine: Aufruf von powershell.exe, der script ausführt (für Run).
+func CommandLine(script string) string {
+	return "powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + encodedCommand(script)
+}
+
+// Run führt ein kurzes PowerShell-Skript in einer eigenen WinRS-Shell aus,
+// neben der offenen Sitzung (deren Eingabezeile bleibt unberührt), und
+// liefert die Ausgabe. Für nur lesende Abfragen wie den Log-Blick.
+func Run(ctx context.Context, cfg Config, script string) (string, error) {
+	if cfg.Auth == AuthBasic && !cfg.HTTPS {
+		return "", ErrBasicHTTP
+	}
+	if cfg.Port == 0 {
+		cfg.Port = DefaultPort(cfg.HTTPS)
+	}
+	if cfg.Timeout == 0 {
+		cfg.Timeout = 30 * time.Second
+	}
+	ep := winrm.NewEndpoint(cfg.Host, cfg.Port, cfg.HTTPS, cfg.Insecure, nil, nil, nil, 120*time.Second)
+	params := winrm.NewParameters("PT60S", "en-US", 153600)
+	t, err := newTransport(cfg)
+	if err != nil {
+		return "", explain(err, cfg)
+	}
+	params.TransportDecorator = func() winrm.Transporter { return t }
+	c, err := winrm.NewClientWithParameters(ep, cfg.User, cfg.Password, params)
+	if err != nil {
+		return "", explain(err, cfg)
+	}
+	out, errOut, code, err := c.RunWithContextWithString(ctx, CommandLine(script), "")
+	if err != nil {
+		return out, explain(err, cfg)
+	}
+	if code != 0 && strings.TrimSpace(out) == "" {
+		msg := strings.TrimSpace(errOut)
+		if i := strings.IndexByte(msg, '\n'); i > 0 {
+			msg = msg[:i]
+		}
+		return "", fmt.Errorf("PowerShell (Code %d): %s", code, msg)
+	}
+	return out, nil
+}

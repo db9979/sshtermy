@@ -49,6 +49,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   (alle 2 s, `t` wechselt 5 min / 1 h, `z` zeigt sie groß über dem Terminal mit den Top-Prozessen; ein kleines,
   nur lesendes Skript in einer eigenen Exec-Sitzung, Panel zu = Skript beendet). Switches, Router und Firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate, Ubiquiti-UniFi-Switches) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
 - **Container** (`c` in F6 oder Palette „docker“): Docker- und Podman-Container und Kubernetes-Pods des Servers in einer Liste. ⏎ öffnet eine Shell im Container, Strg+L verfolgt die Logs, Strg+K lässt die KI die letzten 400 Log-Zeilen auswerten. Neustart und Start/Stopp werden nur am Prompt eingefügt, ⏎ führt sie aus. Braucht docker root und geht sudo ohne Passwort, nimmt sshTermy `sudo -n`
+- **Log-Blick (Alt+E oder `l` in F6)**: liest die Logs des Systems, auf dem du gerade bist, nur lesend, und zeigt Auffälligkeiten statt Zeilen. Linux/BSD: journalctl (oder Syslog-Dateien), fehlgeschlagene Units und Paket-Updates; Windows (PowerShell/WinRM): Ereignisprotokolle System/Application, Fehlanmeldungen 4625/4740 und gestoppte automatische Dienste; Switches und Firewalls: die Log-Befehle sichtbar am Prompt getippt (ProCurve/CX, Cisco, Junos, RouterOS, FortiOS, UniFi) und eine Port-Leiste. Gleiche Zeilen werden lokal ohne KI zu Mustern zusammengefasst (Zahlen, IPs, MACs ersetzt), bekannte Muster bekommen einen Klartext-Titel, einen Hinweis und lesende Prüfbefehle (`1`…`4` fügen sie ein). `n` *Was ist neu?* vergleicht mit deinem letzten Blick (neu, deutlich häufiger, verschwunden; die Grundlinie liegt verschlüsselt nur auf diesem Rechner), `x`/`X` blendet Rauschen für den Host oder den ganzen Ordner aus (wird gesynct). `t` Zeitleiste: Fehler und Warnungen pro Zeitabschnitt mit Marken für Neustarts, Paket-Updates, Konfigurationsänderungen und deine eigenen Befehle; ←→ wählt einen Abschnitt, `k` fragt die KI, was dort passierte. `k` lässt die KI ein Muster erklären, `b` schreibt einen KI-Lagebericht nur aus den verdichteten Mustern (Ursache, Zusammenhang, was prüfen). `z` Zeitraum 1 h … 7 Tage, `c` kopiert als Markdown.
 - **Config-Sicherung für Switches**: `b` sichert die laufende Konfiguration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`, UniFi `cat /tmp/system.cfg`) verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert.
   Nächtlich geht es per Zeitplan (`z`, Art „Config-Sicherung“) für einen ganzen Ordner. **Regeln für Switch-Configs**
   (Palette → Einstellungen): `+^ntp server` muss vorkommen, `-telnet-server` darf nicht; jede Sicherung wird geprüft,
@@ -280,7 +281,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | F3 | KI fragen (Esc bricht die Antwort ab, n neue Frage, f Folgefrage) |
 | | F4 | Tunnel an/aus (⏎ oder Klick), a mit Verbindung starten, Web-Service im Browser öffnen |
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), e Server-Datei im eigenen Editor, Leertaste/a markieren, Ziehen kopiert, n Ordner, d löschen, . versteckte |
-| | F6 | Host-Übersicht: r/⏎ abfragen, t Zeitraum der Graphen 5 min/1 h, z groß, c Container, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
+| | F6 | Host-Übersicht: r/⏎ abfragen, t Zeitraum der Graphen 5 min/1 h, z groß, l Log-Blick, c Container, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
 | | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
@@ -296,6 +297,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
 | | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
+| | Alt+E | Log-Blick: Auffälligkeiten in den Logs (⏎ Zeilen, 1…4 prüfen, k KI erklärt, b KI-Lagebericht, x/X ausblenden, n Was ist neu?, t Zeitleiste, z Zeitraum) |
 | | Alt+K / Alt+J | KI-Begleiter: Stufe Aus · Leise · Gesprächig · Coach / Begleiter-Leiste |
 | Begleiter-Leiste | ↑↓ / ⏎ / a / c | Vorschlag wählen / einfügen / ausführen (gefährliche zweimal) / kopieren |
 | | m / l / s / ? / r | Thema stumm / Tatsache merken / Stufe / zuletzt gesendet / Rückblick |

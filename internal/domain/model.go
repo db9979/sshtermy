@@ -534,6 +534,12 @@ type Settings struct {
 	// Companion: der KI-Begleiter liest im Terminal mit und kommentiert
 	// (Stufe, Grenzen, Datenschutz). Geht mit dem Sync.
 	Companion CompanionConfig `json:"companion,omitempty"`
+	// LogScan: Log-Blick (Zeitraum, als Rauschen ausgeblendete Meldungen)
+	// und Logwache. Geht mit dem Sync.
+	LogScan LogScanConfig `json:"log_scan,omitempty"`
+	// SyslogPort: Syslog-Empfänger der Logwache auf diesem Rechner (UDP),
+	// 0 = aus. Nur lokal: jeder Rechner hat seinen eigenen Port.
+	SyslogPort int `json:"syslog_port,omitempty"`
 
 	// Colors: eigene Farben (Theme "eigene"), wird mit dem Sync übertragen.
 	Colors *CustomColors `json:"colors,omitempty"`
@@ -640,6 +646,7 @@ func (s Settings) SyncedPart() Settings {
 	s.UseDPAPI, s.NoMouse, s.LastVersion, s.NerdFont = false, false, "", ""
 	s.LastLayout, s.Editor, s.Schedules = nil, "", nil
 	s.Debug, s.Audit, s.MCP = false, false, ""
+	s.SyslogPort = 0
 	return s
 }
 
@@ -982,4 +989,46 @@ func ParseClock(v string) (h, m int, ok bool) {
 		return 0, 0, false
 	}
 	return h, m, true
+}
+
+// LogScanConfig: Einstellungen des Log-Blicks.
+type LogScanConfig struct {
+	Hours int        `json:"hours,omitempty"` // Zeitraum in Stunden, 0 = 24
+	Noise []LogNoise `json:"noise,omitempty"` // als Rauschen ausgeblendet
+	// Watch: Logwache – liest bei offenen Tabs mit und meldet neue Fehler.
+	Watch bool `json:"watch,omitempty"`
+	// WatchWarn: auch Warnungen melden (sonst ab Fehler).
+	WatchWarn bool `json:"watch_warn,omitempty"`
+}
+
+// LogHours: Zeitraum des Log-Blicks.
+func (c LogScanConfig) LogHours() int {
+	if c.Hours <= 0 {
+		return 24
+	}
+	return c.Hours
+}
+
+// LogNoise: eine als Rauschen ausgeblendete Meldung. Conn und Folder leer =
+// überall; Until leer = für immer.
+type LogNoise struct {
+	Key    string    `json:"key"`
+	Title  string    `json:"title,omitempty"`
+	Conn   string    `json:"conn,omitempty"`
+	Folder string    `json:"folder,omitempty"`
+	Until  time.Time `json:"until,omitempty"`
+}
+
+// Hides: blendet die Regel die Meldung key auf der Verbindung c aus?
+func (n LogNoise) Hides(key string, c Connection, now time.Time) bool {
+	if n.Key != key || (!n.Until.IsZero() && now.After(n.Until)) {
+		return false
+	}
+	switch {
+	case n.Conn != "":
+		return n.Conn == c.ID
+	case n.Folder != "":
+		return InFolder(c.Group, n.Folder)
+	}
+	return true
 }

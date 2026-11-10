@@ -74,10 +74,12 @@ const (
 	scrHighlightForm // Farbregeln (highlight.go)
 	scrScheduleForm  // Zeitplan (schedule.go)
 	scrRulesForm     // Regeln für Switch-Configs (configrules.go)
+	scrLogScan       // Log-Blick (logscan.go)
 )
 
 // App ist das Wurzel-Modell.
 type App struct {
+	lscan         logScanState      // Log-Blick (logscan.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -530,6 +532,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.netMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.logScanResult(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.containerMsg(msg); ok {
 		return a, cmd
 	}
@@ -576,7 +581,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pal != nil {
 			return a, a.paletteKey(k)
 		}
-		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs) {
+		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs || a.scr == scrLogScan) {
 			return a, a.openPalette()
 		}
 		if a.keys.is(actLocal, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) && a.lock == nil {
@@ -618,6 +623,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateSync(msg)
 	case scrLogs:
 		return a, a.updateLogs(msg)
+	case scrLogScan:
+		return a, a.updateLogScan(msg)
 	case scrImport:
 		return a, a.updateImport(msg)
 	case scrTeam:
@@ -755,6 +762,8 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewSync(), a.syncKeys())
 	case scrLogs:
 		body = a.frame(a.viewLogs(), a.logsKeys())
+	case scrLogScan:
+		body = a.frame(a.viewLogScan(), a.logScanKeys())
 	case scrImport:
 		body = a.frame(a.viewImport(), a.importKeys())
 	case scrTeam:

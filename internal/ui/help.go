@@ -32,6 +32,7 @@ const (
 	hcScan
 	hcHost
 	hcCompanion
+	hcLogScan
 )
 
 type helpSection struct {
@@ -111,6 +112,7 @@ var helpSections = []helpSection{
 		{"⇧F10", "Tab in eigenes Fenster (Sitzung bleibt offen)"},
 		{"Strg+F", "im Verlauf suchen"},
 		{"F6", "Host-Übersicht"},
+		{"Alt+E", "Log-Blick: Auffälligkeiten"},
 		{"F7 / F8", "Tab wechseln"},
 		{"Alt+T", "alle Tabs (Liste)"},
 		{"Alt+N", "neuer Tab"},
@@ -175,6 +177,7 @@ var helpSections = []helpSection{
 		{"r / ⏎", "abfragen"},
 		{"b", "Switch-Config sichern"},
 		{"c", "Container (Docker, Podman, k8s)"},
+		{"l", "Log-Blick"},
 		{"↑ ↓", "Sicherung wählen"},
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},
@@ -204,6 +207,17 @@ var helpSections = []helpSection{
 		{"Strg+E", "nur Fehlerzeilen"},
 		{"Tab", "Fehlerliste / Verlauf"},
 		{"Esc", "schließen"},
+	}},
+	{hcLogScan, "▲", "Log-Blick", "Alt+E", false, [][2]string{
+		{"⏎", "Zeilen des Musters"},
+		{"1…4", "Prüfbefehl einfügen"},
+		{"k", "KI erklärt das Muster"},
+		{"b", "KI-Lagebericht"},
+		{"x / X", "ausblenden: Host / Ordner"},
+		{"n", "Was ist neu? (u zurückholen)"},
+		{"t", "Zeitleiste (←→, ⏎, k)"},
+		{"z", "Zeitraum 1 h … 7 Tage"},
+		{"r / c", "neu lesen / kopieren"},
 	}},
 	{hcLogs, "≡", "Sitzungsprotokolle", "l", false, [][2]string{
 		{"/", "suchen (auch Ausgabe)"},
@@ -312,6 +326,8 @@ func (a *App) helpContext() helpCtx {
 		return hcSettings
 	case scrLogs:
 		return hcLogs
+	case scrLogScan:
+		return hcLogScan
 	case scrBroadcast:
 		return hcBroadcast
 	case scrScan:

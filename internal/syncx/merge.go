@@ -65,6 +65,7 @@ type SharedMore struct {
 	Companion   domain.CompanionConfig `json:"companion,omitempty"`
 	ConfigRules []string               `json:"config_rules,omitempty"`
 	Simple      bool                   `json:"simple,omitempty"` // einfacher Modus
+	LogScan     *domain.LogScanConfig  `json:"log_scan,omitempty"`
 }
 
 func sharedSettings(s domain.Settings) SharedSettings {
@@ -80,6 +81,7 @@ func sharedSettings(s domain.Settings) SharedSettings {
 			Highlight: copyHighlight(s.Highlight),
 			More: &SharedMore{
 				Companion: s.Companion, ConfigRules: append([]string(nil), s.ConfigRules...), Simple: s.Simple,
+				LogScan: copyLogScan(s.LogScan),
 			},
 		},
 	}
@@ -111,6 +113,9 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 		d.Companion = x.More.Companion
 		d.ConfigRules = append([]string(nil), x.More.ConfigRules...)
 		d.Simple = x.More.Simple
+		if x.More.LogScan != nil {
+			d.LogScan = *copyLogScan(*x.More.LogScan)
+		}
 	}
 	// Nerd-Font-Symbole von einem anderen Rechner: hier erst nach der Probe,
 	// sonst stünden in jedem Menü Kästchen.
@@ -118,6 +123,11 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 		d.NerdFont = "nein"
 	}
 	d.Icons = x.Icons
+}
+
+func copyLogScan(c domain.LogScanConfig) *domain.LogScanConfig {
+	c.Noise = append([]domain.LogNoise(nil), c.Noise...)
+	return &c
 }
 
 func copyHighlight(h domain.HighlightConfig) *domain.HighlightConfig {
