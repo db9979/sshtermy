@@ -49,6 +49,7 @@ type session struct {
 	panelAt    time.Time
 	id         int
 	conn       domain.Connection
+	errv       error  // letzter Verbindungsfehler (Klartext in connerr.go)
 	title      string // eigener Tab-Name (tabs.go), "" = Alias
 	client     *sshx.Client
 	shell      termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)

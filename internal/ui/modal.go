@@ -65,6 +65,7 @@ type modal struct {
 
 	crash *crash.Report // nur Absturzbericht
 	recap bool          // Menü ist der Rückblick des Begleiters (companion.go)
+	quit  bool          // Rückfrage beim Beenden (quitask.go)
 }
 
 func hostKeyModal(m hostKeyAskMsg) *modal {

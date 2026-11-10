@@ -540,12 +540,14 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		case "ctrl+d":
 			if g.rbSel >= 0 && g.rbSel < len(rbs) {
 				rb := rbs[g.rbSel]
-				a.modal = confirmModal(i18n.T("Runbook löschen?"), "„"+rb.Name+i18n.T("“ löschen?"), func() tea.Cmd {
-					_ = a.st.DeleteRunbook(rb.ID)
-					g.rbSel = -1
-					g.input.SetValue("")
+				tr, err := a.st.DeleteRunbookTrash(rb.ID)
+				if err != nil {
+					a.flashErr(err.Error())
 					return nil
-				})
+				}
+				g.rbSel = -1
+				g.input.SetValue("")
+				a.offerUndo(i18n.T("Runbook „")+rb.Name+i18n.T("“ gelöscht"), tr, nil, nil) // Klick auf den Hinweis (Strg+Z gehört hier der Shell)
 			}
 			return nil
 		case "enter":

@@ -64,6 +64,7 @@ type SharedPrefs struct {
 type SharedMore struct {
 	Companion   domain.CompanionConfig `json:"companion,omitempty"`
 	ConfigRules []string               `json:"config_rules,omitempty"`
+	Simple      bool                   `json:"simple,omitempty"` // einfacher Modus
 }
 
 func sharedSettings(s domain.Settings) SharedSettings {
@@ -78,7 +79,7 @@ func sharedSettings(s domain.Settings) SharedSettings {
 			DimPanes: s.DimPanes, Accessible: s.Accessible, Motion: s.Motion, Frames: s.Frames, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
 			Highlight: copyHighlight(s.Highlight),
 			More: &SharedMore{
-				Companion: s.Companion, ConfigRules: append([]string(nil), s.ConfigRules...),
+				Companion: s.Companion, ConfigRules: append([]string(nil), s.ConfigRules...), Simple: s.Simple,
 			},
 		},
 	}
@@ -109,6 +110,7 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 	if x.More != nil {
 		d.Companion = x.More.Companion
 		d.ConfigRules = append([]string(nil), x.More.ConfigRules...)
+		d.Simple = x.More.Simple
 	}
 	// Nerd-Font-Symbole von einem anderen Rechner: hier erst nach der Probe,
 	// sonst stünden in jedem Menü Kästchen.

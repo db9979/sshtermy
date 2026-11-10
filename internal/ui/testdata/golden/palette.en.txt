@@ -21,7 +21,7 @@
             │ [/] Network & switches ›  find device, topology                        2 │
             │ [&] Team & sharing ›  live sharing, team folders                       4 │
             │ [=] Connections & keys ›  manager, new, SSH key, logs                  5 │
-            │ [:] Settings ›  mouse, look, language, AI …                           33 │
+            │ [:] Settings ›  mouse, look, language, AI …                           35 │
             │ [?] Help & info ›  keys, tour, news, update                            6 │
             │                                                                          │
             │  ↑↓ select    ⏎ run    Esc close                                         │

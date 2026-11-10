@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -20,8 +21,35 @@ type HostKeyPrompt func(host string, fingerprint string, keyType string) bool
 
 // ErrHostKeyChanged: der Server zeigt einen anderen Schlüssel als gespeichert.
 // Das kann ein Man-in-the-Middle sein. sshtermy bietet hier bewusst KEIN
-// "trotzdem verbinden" an; der Eintrag muss bewusst gelöscht werden.
+// "trotzdem verbinden" an; der neue Schlüssel muss bewusst übernommen werden
+// (HostKeyChangedError + Replace, Oberfläche mit zweiter Bestätigung).
 var ErrHostKeyChanged = i18n.NewError("ACHTUNG: Host-Key hat sich geändert (möglicher Man-in-the-Middle). Verbindung abgebrochen")
+
+// HostKeyChangedError trägt, was die Oberfläche zum Vergleichen und
+// Übernehmen braucht. errors.Is(err, ErrHostKeyChanged) bleibt wahr.
+type HostKeyChangedError struct {
+	Host   string        // Name, wie verbunden (host:port)
+	Remote string        // Adresse der Gegenstelle
+	Key    ssh.PublicKey // neuer Schlüssel
+	Old    []string      // Fingerprints der gespeicherten Schlüssel
+}
+
+func (e *HostKeyChangedError) Error() string        { return ErrHostKeyChanged.Error() }
+func (e *HostKeyChangedError) Is(target error) bool { return target == ErrHostKeyChanged }
+
+// Fingerprint des neuen Schlüssels (SHA256:…).
+func (e *HostKeyChangedError) Fingerprint() string { return ssh.FingerprintSHA256(e.Key) }
+
+func changedErr(hostname string, remote net.Addr, key ssh.PublicKey, ke *knownhosts.KeyError) error {
+	e := &HostKeyChangedError{Host: hostname, Key: key}
+	if remote != nil {
+		e.Remote = remote.String()
+	}
+	for _, k := range ke.Want {
+		e.Old = append(e.Old, k.Key.Type()+" "+ssh.FingerprintSHA256(k.Key))
+	}
+	return e
+}
 
 // HostKeyStore verwaltet eine known_hosts-Datei im OpenSSH-Format.
 type HostKeyStore struct {
@@ -48,7 +76,7 @@ func (h *HostKeyStore) Callback(prompt HostKeyPrompt) ssh.HostKeyCallback {
 		case err == nil:
 			return nil
 		case errors.As(err, &ke) && len(ke.Want) > 0:
-			return ErrHostKeyChanged
+			return changedErr(hostname, remote, key, ke)
 		case errors.As(err, &ke):
 			// Die Rückfrage läuft OHNE Sperre: sie wartet auf den Benutzer, und
 			// die Oberfläche greift währenddessen selbst auf den Store zu
@@ -65,7 +93,7 @@ func (h *HostKeyStore) Callback(prompt HostKeyPrompt) ssh.HostKeyCallback {
 			case err == nil:
 				return nil
 			case errors.As(err, &ke) && len(ke.Want) > 0:
-				return ErrHostKeyChanged
+				return changedErr(hostname, remote, key, ke)
 			}
 			return h.add(hostname, remote, key)
 		default:
@@ -97,6 +125,73 @@ func (h *HostKeyStore) add(hostname string, remote net.Addr, key ssh.PublicKey) 
 	}
 	_, err = fmt.Fprintln(f, knownhosts.Line(addrs, key))
 	return err
+}
+
+// Replace ersetzt die gespeicherten Schlüssel eines Hosts durch einen neuen
+// (nach Neuinstallation oder Werksreset). Entfernt werden nur Zeilen, die zu
+// host oder remote passen (auch gehashte); @-Markierungen und Kommentare
+// bleiben. Danach wird der neue Schlüssel wie beim ersten Verbinden gemerkt.
+func (h *HostKeyStore) Replace(host, remote string, key ssh.PublicKey) (int, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	b, err := os.ReadFile(h.path)
+	if err != nil {
+		return 0, err
+	}
+	var ra net.Addr
+	if remote != "" {
+		if a, err := net.ResolveTCPAddr("tcp", remote); err == nil {
+			ra = a
+		}
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(h.path), ".kh-*")
+	if err != nil {
+		return 0, err
+	}
+	tmpName := tmp.Name()
+	tmp.Close()
+	defer os.Remove(tmpName)
+	matches := func(line string) bool {
+		if os.WriteFile(tmpName, []byte(line+"\n"), 0o600) != nil {
+			return false
+		}
+		check, err := knownhosts.New(tmpName)
+		if err != nil {
+			return false
+		}
+		var ke *knownhosts.KeyError
+		for _, name := range []string{host, remote} {
+			if name == "" {
+				continue
+			}
+			addr := ra
+			if addr == nil {
+				addr = &net.TCPAddr{IP: net.IPv4zero}
+			}
+			if err := check(name, addr, dummyKey{}); errors.As(err, &ke) && len(ke.Want) > 0 {
+				return true
+			}
+		}
+		return false
+	}
+	var keep []string
+	removed := 0
+	for _, l := range strings.Split(string(b), "\n") {
+		t := strings.TrimSpace(l)
+		if t != "" && !strings.HasPrefix(t, "#") && !strings.HasPrefix(t, "@") && matches(t) {
+			removed++
+			continue
+		}
+		keep = append(keep, l)
+	}
+	out := strings.TrimRight(strings.Join(keep, "\n"), "\n")
+	if out != "" {
+		out += "\n"
+	}
+	if err := os.WriteFile(h.path, []byte(out), 0o600); err != nil {
+		return removed, err
+	}
+	return removed, h.add(host, ra, key)
 }
 
 // Algorithms: bekannte Key-Typen eines Hosts (leer = Standardliste).

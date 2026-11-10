@@ -21,6 +21,7 @@ const (
 	actHelp      action = "help"
 	actAbout     action = "about"
 	actQuit      action = "quit"
+	actUndo      action = "undo"
 	actGoal      action = "goal"
 	actAsk       action = "ask"
 	actTunnels   action = "tunnels"
@@ -126,6 +127,7 @@ var actionDefs = []actionDef{
 	{actChip3, "Folgebefehl 3 einfügen", "Terminal", []string{"alt+3"}},
 	{actChip4, "Folgebefehl 4 einfügen", "Terminal", []string{"alt+4"}},
 	{actNewline, "Neue Zeile in KI-Eingabe", "KI-Eingabe", []string{"shift+enter", "ctrl+j"}},
+	{actUndo, "Löschen rückgängig machen", "Manager", []string{"ctrl+z"}},
 	{actImport, "Verbindungen importieren", "Manager", []string{"i"}},
 	{actNextLook, "Farbschema wählen", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},

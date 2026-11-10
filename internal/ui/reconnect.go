@@ -373,7 +373,7 @@ func (a *App) onReconnectErr(s *session, err error) {
 		s.rc = reconnState{}
 		a.endLog(s)
 		s.close()
-		s.err = msg
+		s.err, s.errv = msg, err
 		return
 	}
 	s.rc.due = time.Now().Add(reconnectWaits[s.rc.attempts])

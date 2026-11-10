@@ -577,6 +577,10 @@ type Settings struct {
 	// Accessible: barrierearm. Keine Animationen, Formen und Wörter statt
 	// nur Farbe (z. B. Online-Punkt). Geht mit dem Sync.
 	Accessible bool `json:"accessible,omitempty"`
+	// Simple: einfacher Modus. Profi-Funktionen (Agent, Broadcast, Team,
+	// Netzwerk, Aufzeichnung …) verschwinden aus Übersicht und Tastenzeile,
+	// bleiben aber über die Suche in der Palette und ihre Tasten erreichbar.
+	Simple bool `json:"simple,omitempty"`
 	// Motion: Bewegung der Oberfläche (ui/motion.go). "" = voll (Spinner,
 	// Pulsieren, Atmen, Hover-Karten), "dezent" = nur kurze Übergänge,
 	// "aus" = keine. Barrierearm schaltet sie immer ab. Geht mit dem Sync.

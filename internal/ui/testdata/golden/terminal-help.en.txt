@@ -4,28 +4,28 @@ Li│                                                                           
   │  ◆ Everywhere                         ◎ Goal mode F2                       ≡ Session logs l                     │
 de│   Ctrl+Space  Command palette          ⏎           start goal / run         /           search (output too)     │
 ● │   F1          this help                ⇧⏎ / Ctrl+J new line in the goal     ⏎ / → ←     expand/collapse         │
-  │   F12         About & update           i           only insert (dry run)    Tab         by time / by host       │
-  │   F12 w       What's new               e           edit                     f           filter: today · 7 day…  │
-de│   F12 l       Language / Sprache       s           skip                     s           sort hosts              │
-  │   ⇧F9         explain key bar          r           suggest again            z           AI summary              │
-  │   Ctrl+Q      quit                     x           end goal                 Z           summarize all matches   │
-  │                                        ↑ ↓         choose runbook           b           Change report           │
-  │  ≡ Connection manager F10              Ctrl+S      save as runbook          x           export: md · txt · ca…  │
-  │   F10         back to the terminal     Ctrl+D      Delete runbook           d           delete                  │
-  │   ⏎           connect                  Tab         step by step or agent…   a           recording on/off        │
-  │   n           new connection           Esc         pause agent              ␣ command   do not log              │
-  │   e           edit                     ?           Instruct agent                                               │
-  │   d           delete                   v           view the agent's scri…  » Broadcast m                        │
-  │   /           search (also #tag)       r           delete the agent's sc…   Space / g / a host / folder / all   │
-  │   o           new folder (A / B nes…   c / l       copy result / read all   Tab         hosts · source · cmd    │
-  │   r           Edit folder              PgUp PgDn   scroll the panel (mou…   ⇧⏎          next step               │
-  │   v           move to folder           Space       plan: remove step        Ctrl+S      check, then ⏎           │
-  │   Shift+↑     move up (↓ down)         ?           plan: re-plan            ← / →       select host column      │
-  │   ← / →       collapse/expand folder                                        ↑ ↓ PgUp/Dn scroll output           │
-  │   - / +       collapse/expand all     ◆ Ask AI F3                           z / c       enlarge / copy          │
-  │   #           filter by tag            ⏎           send question            r / e / x   again / change / stop   │
-  │   t           add tunnel               ⇧⏎ / Ctrl+J new line                 {{name}}    variable, asked first   │
-  │   c           Generate / copy SSH k…   1…9         insert command           {{host}}    filled in per host      │
+  │   F11         full screen on/off (o…   i           only insert (dry run)    Tab         by time / by host       │
+  │   F12         About & update           e           edit                     f           filter: today · 7 day…  │
+de│   F12 w       What's new               s           skip                     s           sort hosts              │
+  │   F12 l       Language / Sprache       r           suggest again            z           AI summary              │
+  │   ⇧F9         explain key bar          x           end goal                 Z           summarize all matches   │
+  │   Ctrl+Q      quit (asks if connect…   ↑ ↓         choose runbook           b           Change report           │
+  │                                        Ctrl+S      save as runbook          x           export: md · txt · ca…  │
+  │  ≡ Connection manager F10              Ctrl+D      Delete runbook           d           delete                  │
+  │   F10         back to the terminal     Tab         step by step or agent…   a           recording on/off        │
+  │   ⏎           connect                  Esc         pause agent              ␣ command   do not log              │
+  │   n           new connection           ?           Instruct agent                                               │
+  │   e           edit                     v           view the agent's scri…  » Broadcast m                        │
+  │   d           delete                   r           delete the agent's sc…   Space / g / a host / folder / all   │
+  │   Ctrl+Z      undo delete (10 s)       c / l       copy result / read all   Tab         hosts · source · cmd    │
+  │   Ctrl+T      in the form: test con…   PgUp PgDn   scroll the panel (mou…   ⇧⏎          next step               │
+  │   /           search (also #tag)       Space       plan: remove step        Ctrl+S      check, then ⏎           │
+  │   o           new folder (A / B nes…   ?           plan: re-plan            ← / →       select host column      │
+  │   r           Edit folder                                                   ↑ ↓ PgUp/Dn scroll output           │
+  │   v           move to folder          ◆ Ask AI F3                           z / c       enlarge / copy          │
+  │   Shift+↑     move up (↓ down)         ⏎           send question            r / e / x   again / change / stop   │
+  │   ← / →       collapse/expand folder   ⇧⏎ / Ctrl+J new line                 {{name}}    variable, asked first   │
+  │   - / +       collapse/expand all      1…9         insert command           {{host}}    filled in per host      │
   │                                                                                                                 │
   │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
   │  Esc leads back to the terminal from every panel.                                                               │

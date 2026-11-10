@@ -107,6 +107,7 @@ type App struct {
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
 	returnToTerminal bool
+	undo             *undoState // Löschen rückgängig machen (undo.go)
 
 	sessions []*session
 	cur      int
@@ -249,7 +250,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.perf.skip = false // jede Nachricht außer Ausgabeflut zeichnet sofort (perf.go)
 	switch msg.(type) {
 	case WindowClosedMsg:
-		return a, a.quit()
+		return a, a.askQuit() // quitask.go
 	case perfRedrawMsg:
 		a.perf.redraw = false
 		return a, nil
@@ -265,6 +266,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 	case toastTickMsg:
 		a.toastTicking = false
+		a.expireUndo(time.Now())
 		a.liveToasts(time.Now())
 		return a, a.toastTick()
 	case animMsg:
@@ -345,6 +347,12 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case mcpCallMsg:
 		return a, tea.Batch(a.onMCP(m), a.listen())
+	case connTestMsg:
+		if a.modal != nil && a.modal.kind == mBusy {
+			a.modal = nil
+		}
+		a.connTestResult(m)
+		return a, nil
 	case hostKeyAskMsg:
 		a.modal = hostKeyModal(m)
 		return a, a.listen()
@@ -376,7 +384,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
-			s.client, s.shell, s.state, s.connNote = m.client, m.shell, stConnected, ""
+			s.client, s.shell, s.state, s.connNote, s.errv = m.client, m.shell, stConnected, "", nil
 			s.connectedAt = time.Now()
 			s.flashTab(a.s.T.OK)
 			if !s.rc.active {
@@ -427,7 +435,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s.rc.active {
 				a.onReconnectErr(s, m.err)
 			} else {
-				s.state, s.err = stClosed, m.err.Error()
+				s.state, s.err, s.errv = stClosed, m.err.Error(), m.err
 				s.flashTab(a.s.T.Danger)
 				var km *sshx.KeyMissingError
 				if errors.As(m.err, &km) && a.form == nil && a.modal == nil && a.pick == nil && a.pal == nil && a.scr == scrTerminal {
@@ -550,7 +558,10 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, a.updateKeys(k) // neue Taste: nichts anderes darf sie abfangen
 		}
 		if a.keys.is(actQuit, k.String()) {
-			return a, a.quit()
+			if a.modal != nil && a.modal.quit {
+				return a, a.quit() // zweimal Strg+Q = beenden
+			}
+			return a, a.askQuit()
 		}
 		if a.modal != nil {
 			return a, a.modalKey(k)
@@ -633,6 +644,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 type WindowClosedMsg struct{}
 
 func (a *App) quit() tea.Cmd {
+	a.finishUndo()     // offenes Löschen endgültig machen (undo.go)
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
 	a.cleanupEdits()
 	sshx.StopSKAgent() // eigener ssh-agent für Sicherheitsschlüssel
@@ -722,14 +734,16 @@ func (a *App) viewFrame() tea.View {
 	case scrUnlock:
 		body = a.viewUnlock()
 	case scrManager:
-		body = a.frame(a.viewManager(), a.managerKeys())
+		body = a.frame(a.viewManager(), a.simpleKeys(a.managerKeys()))
 	case scrTunnelForm:
 		k := [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}}
 		if a.formTunnel.ID != "" {
 			k = append(k, [2]string{"Strg+D", i18n.T("löschen")})
 		}
 		body = a.frame(a.viewForm(), append(k, [2]string{"Esc", i18n.T("abbrechen")}))
-	case scrConnForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm:
+	case scrConnForm:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+T", i18n.T("testen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
+	case scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
