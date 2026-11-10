@@ -490,13 +490,17 @@ const DirName = "befehlssaetze"
 // TeamDir: Unterordner für Sätze aus dem Team.
 const TeamDir = "team"
 
+// SyncDir: Unterordner für Sätze, die der Sync von anderen Rechnern bringt.
+// Sie wirken erst, wenn man sie übernimmt (dann als eigener Satz).
+const SyncDir = "sync"
+
 // Ext: Dateiendung.
 const Ext = ".yaml"
 
 // Loaded: Ergebnis von LoadUser (eigene und Team-Dateien).
 type Loaded struct {
-	Own, Team []*Set
-	Errs      []LoadError
+	Own, Team, Sync []*Set
+	Errs            []LoadError
 }
 
 // ReadDir liest eigene (dir) und Team-Sätze (dir/team).
@@ -529,7 +533,7 @@ func ReadDir(dir string) Loaded {
 				continue
 			}
 			s.Source, s.File = src, p
-			if src == Team {
+			if src == Team || src == Synced {
 				s.From = readFrom(raw)
 			}
 			out = append(out, s)
@@ -538,6 +542,7 @@ func ReadDir(dir string) Loaded {
 	}
 	l.Own = read(dir, Own)
 	l.Team = read(filepath.Join(dir, TeamDir), Team)
+	l.Sync = read(filepath.Join(dir, SyncDir), Synced)
 	return l
 }
 
@@ -586,7 +591,7 @@ func Install(l Loaded, approved map[string]string, selfTest func(*Set) []string)
 		}
 		return st
 	}
-	var cands []Status
+	var cands, syncSts []Status
 	for _, s := range l.Own {
 		st := try(s)
 		if st.Problem == "" {
@@ -610,6 +615,29 @@ func Install(l Loaded, approved map[string]string, selfTest func(*Set) []string)
 			}
 		}
 		cands = append(cands, st)
+	}
+	// Vom Sync: nie aktiv, nur zur Übernahme angeboten.
+	own := map[string]bool{}
+	for _, s := range l.Own {
+		own[s.ID] = true
+	}
+	for _, s := range l.Sync {
+		st := Status{Set: s, Pending: true}
+		switch {
+		case IsBuiltinID(r.builtin, s.ID):
+			st.Pending, st.Shadowed = false, true
+			st.Problem = i18n.T("Kennung gehört zu einem eingebauten Satz; bitte umbenennen")
+		default:
+			if err := s.Validate(); err != nil {
+				st.Pending, st.Problem = false, err.Error()
+			} else if own[s.ID] {
+				st.Changed = true
+				st.Problem = i18n.T("auf einem anderen Rechner geändert, wartet auf Übernahme")
+			} else {
+				st.Problem = i18n.T("vom Sync, wartet auf Übernahme")
+			}
+		}
+		syncSts = append(syncSts, st)
 	}
 	for i := range cands {
 		if cands[i].Problem == "" {
@@ -655,6 +683,7 @@ func Install(l Loaded, approved map[string]string, selfTest func(*Set) []string)
 		st.Active = !st.Pending && !st.Shadowed && containsSet(r.user, st.Set)
 		r.all = append(r.all, st)
 	}
+	r.all = append(r.all, syncSts...)
 	r.compile()
 	mu.Lock()
 	reg = r

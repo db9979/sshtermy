@@ -65,6 +65,8 @@ func cmdsetSource(s *cmdset.Set) string {
 	switch s.Source {
 	case cmdset.Own:
 		return i18n.T("eigen")
+	case cmdset.Synced:
+		return i18n.T("vom Sync")
 	case cmdset.Team:
 		if s.From != "" {
 			return i18n.T("Team: ") + s.From
@@ -77,7 +79,7 @@ func cmdsetSource(s *cmdset.Set) string {
 func (a *App) cmdsetHint() string {
 	own, pend := 0, 0
 	for _, st := range cmdset.Statuses() {
-		if st.Set.Source != cmdset.Builtin {
+		if st.Set.Source != cmdset.Builtin && st.Set.Source != cmdset.Synced {
 			own++
 		}
 		if st.Pending {
@@ -131,7 +133,12 @@ func (a *App) cmdsetSelected() (cmdset.Status, bool) {
 
 func (a *App) cmdSetsKeys() [][2]string {
 	k := [][2]string{{"⏎", i18n.T("Details")}, {"n", i18n.T("neu")}}
-	if st, ok := a.cmdsetSelected(); ok && st.Set.Source != cmdset.Builtin {
+	if st, ok := a.cmdsetSelected(); ok && st.Set.Source == cmdset.Synced {
+		if st.Pending {
+			k = append(k, [2]string{"f", i18n.T("übernehmen")})
+		}
+		k = append(k, [2]string{"Entf", i18n.T("verwerfen")})
+	} else if ok && st.Set.Source != cmdset.Builtin {
 		k = append(k, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"o", i18n.T("Datei")}, [2]string{"Entf", i18n.T("löschen")})
 		if st.Pending {
 			k = append(k, [2]string{"f", i18n.T("freigeben")})
@@ -195,11 +202,17 @@ func (a *App) updateCmdSets(msg tea.Msg) tea.Cmd {
 			return a.launchEditor(st.Set.File)
 		}
 	case "f":
-		if have && st.Pending {
+		switch {
+		case have && st.Pending && st.Set.Source == cmdset.Synced:
+			a.askAdoptSyncCmdSet(st.Set)
+		case have && st.Pending:
 			a.askApproveCmdSet(st.Set)
 		}
 	case "delete", "backspace", "ctrl+d":
-		if have && st.Set.File != "" {
+		switch {
+		case have && st.Set.Source == cmdset.Synced && st.Set.File != "":
+			a.rejectSyncCmdSet(st.Set)
+		case have && st.Set.File != "":
 			a.askDeleteCmdSet(st.Set)
 		}
 	case "t":
@@ -220,7 +233,7 @@ func (a *App) updateCmdSets(msg tea.Msg) tea.Cmd {
 			return nil
 		})
 	case "r":
-		a.loadCmdSets()
+		a.cmdsetsEdited() // auch von Hand geänderte Dateien abgleichen
 		a.flash(i18n.T("Befehlssätze neu geladen"))
 	}
 	return nil
@@ -515,8 +528,9 @@ func (a *App) saveCmdSetForm() error {
 	}
 	if c.own && c.edit != nil && c.edit.File != "" && c.edit.File != path {
 		_ = os.Remove(c.edit.File) // umbenannt
+		a.cmdsetTombstone(c.edit.ID)
 	}
-	a.loadCmdSets()
+	a.cmdsetsEdited()
 	a.selectCmdSet(s.ID)
 	a.flashOK(fmt.Sprintf(i18n.T("Befehlssatz „%s“ gespeichert"), s.Name))
 	return nil
@@ -547,10 +561,32 @@ func (a *App) askDeleteCmdSet(s *cmdset.Set) {
 			a.cmds.err = err.Error()
 			return nil
 		}
+		if s.Source == cmdset.Own {
+			a.cmdsetTombstone(s.ID) // auch auf den anderen Rechnern weg
+		}
 		a.loadCmdSets()
 		a.cmds.sel = max(0, a.cmds.sel-1)
 		return nil
 	})
+}
+
+// diffLines: Unterschiede zweier Dateien, eingefärbt.
+func (a *App) diffLines(old, cur []byte) []string {
+	diff, add, del := hostinfo.Diff(strings.Split(string(old), "\n"), strings.Split(string(cur), "\n"), 2)
+	lines := []string{fmt.Sprintf("+%d −%d", add, del)}
+	for _, l := range diff {
+		switch l.Op {
+		case hostinfo.DiffAdd:
+			lines = append(lines, a.s.OK.Render("+ "+l.Text))
+		case hostinfo.DiffDel:
+			lines = append(lines, a.s.Danger.Render("- "+l.Text))
+		case hostinfo.DiffHunk:
+			lines = append(lines, a.s.AI.Render(l.Text))
+		default:
+			lines = append(lines, a.s.Muted.Render("  "+l.Text))
+		}
+	}
+	return lines
 }
 
 func approvedCopy(dir, id string) string {
@@ -567,20 +603,8 @@ func (a *App) askApproveCmdSet(s *cmdset.Set) {
 	var lines []string
 	old, _ := os.ReadFile(approvedCopy(a.cmdsetDir(), s.ID))
 	if len(old) > 0 {
-		diff, add, del := hostinfo.Diff(strings.Split(string(old), "\n"), strings.Split(string(s.Raw), "\n"), 2)
-		lines = append(lines, fmt.Sprintf(i18n.T("Änderungen seit der letzten Freigabe: +%d −%d"), add, del), "")
-		for _, l := range diff {
-			switch l.Op {
-			case hostinfo.DiffAdd:
-				lines = append(lines, a.s.OK.Render("+ "+l.Text))
-			case hostinfo.DiffDel:
-				lines = append(lines, a.s.Danger.Render("- "+l.Text))
-			case hostinfo.DiffHunk:
-				lines = append(lines, a.s.AI.Render(l.Text))
-			default:
-				lines = append(lines, a.s.Muted.Render("  "+l.Text))
-			}
-		}
+		lines = append(lines, i18n.T("Änderungen seit der letzten Freigabe:"), "")
+		lines = append(lines, a.diffLines(old, s.Raw)...)
 	} else {
 		lines = append(lines, i18n.T("Neuer Befehlssatz aus dem Team:"), "")
 		lines = append(lines, strings.Split(strings.TrimRight(string(s.Raw), "\n"), "\n")...)
@@ -652,7 +676,7 @@ func (a *App) importCmdSet(path string) error {
 	if err := writeCmdSet(filepath.Join(a.cmdsetDir(), s.ID+cmdset.Ext), raw); err != nil {
 		return err
 	}
-	a.loadCmdSets()
+	a.cmdsetsEdited()
 	a.selectCmdSet(s.ID)
 	a.flashOK(fmt.Sprintf(i18n.T("Befehlssatz „%s“ importiert"), s.Name))
 	return nil
@@ -888,7 +912,7 @@ func (a *App) onCmdSetDraft(m cmdsetDraftMsg) {
 			a.cmds.err = err.Error()
 			return nil
 		}
-		a.loadCmdSets()
+		a.cmdsetsEdited()
 		a.selectCmdSet(id)
 		return nil
 	})
@@ -962,7 +986,7 @@ func (a *App) cmdsetFromLearned() tea.Cmd {
 			a.cmds.err = err.Error()
 			return nil
 		}
-		a.loadCmdSets()
+		a.cmdsetsEdited()
 		if x := a.byID(sid); x != nil {
 			x.prof.Dialect, x.prof.Manual = id, true
 			a.saveProfile(x)
