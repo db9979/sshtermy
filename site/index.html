@@ -126,7 +126,8 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <h2>Features</h2>
   <div class="features">
     <div class="card"><h3>Connection manager</h3><p>Folders, tags, jump hosts, import from <code>~/.ssh/config</code>, PuTTY and MobaXterm.</p></div>
-    <div class="card"><h3>Own window</h3><p>No terminal needed: double-click the <code>.exe</code>, open the <code>.app</code> or run <code>sshtermy -window</code>. Font, Nerd Font symbols and emoji are built in, every key arrives (Alt+⏎, ⇧F-keys, Ctrl+Space), images show pixel-perfect, dropped files are uploaded, ⇧F10 opens a second window. From a terminal it runs in the terminal as before.</p></div>
+    <div class="card"><h3>Forgiving</h3><p>Quitting asks while connections are open, deleting offers undo for 10 s, <kbd>Ctrl</kbd>+<kbd>T</kbd> in the form tests the connection before saving, and failed connections explain in plain language what's wrong (with a key to fix it, e.g. accept a new host key after a reinstall). Simple mode hides the pro features.</p></div>
+    <div class="card"><h3>Own window</h3><p>No terminal needed: double-click the <code>.exe</code>, open the <code>.app</code> or run <code>sshtermy -window</code>. Font, Nerd Font symbols and emoji are built in, every key arrives (Alt+⏎, ⇧F-keys, Ctrl+Space), images show pixel-perfect, dropped files are uploaded, ⇧F10 opens a second window. Starts in full screen (<kbd>F11</kbd> toggles; maximized or “as last time” in the settings), font size and window position are remembered. From a terminal it runs in the terminal as before.</p></div>
     <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback, tabs, split view, search.</p></div>
     <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen. After sleep or a network change every line is checked within seconds.</p></div>
     <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right. <kbd>e</kbd> opens a server file in VS Code, Notepad++ or TextEdit, saving uploads it back. While copying: percent, MB/s, time left and a speed curve.</p></div>
@@ -214,13 +215,17 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Session logs: AI change report</td></tr>
     <tr><td><kbd>z</kbd> (manager)</td><td>Schedules for broadcast and runbooks</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Move the tab to its own terminal window</td></tr>
-    <tr><td><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Own window: font size bigger / smaller / default (Mac: <kbd>⌘</kbd>)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Own window: font size bigger / smaller / default (Mac: <kbd>⌘</kbd>), remembered</td></tr>
+    <tr><td><kbd>F11</kbd></td><td>Own window: full screen on / off</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> (manager)</td><td>Undo the last delete (10 s)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>T</kbd> (connection form)</td><td>Test the connection: reachable, host key, login</td></tr>
+    <tr><td><kbd>e</kbd> / <kbd>k</kbd> (closed tab)</td><td>Edit the connection / compare and accept a changed host key</td></tr>
     <tr><td><kbd>F10</kbd></td><td>Back to the manager (sessions keep running)</td></tr>
     <tr><td><kbd>F12</kbd></td><td>About and update</td></tr>
     <tr><td><kbd>Tab</kbd> / <kbd>→</kbd></td><td>Accept ghost text</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd></td><td>Insert follow-up command</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>After a failure: cause and fix</td></tr>
-    <tr><td><kbd>Ctrl</kbd>+<kbd>Q</kbd></td><td>Quit</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Q</kbd></td><td>Quit (asks while connections are open)</td></tr>
   </table>
   <p>All shortcuts can be changed: <kbd>b</kbd> in the manager. The full list is in the <a href="https://github.com/db9979/sshtermy#usage">README</a> and in the app (<kbd>F1</kbd>).</p>
 </section>

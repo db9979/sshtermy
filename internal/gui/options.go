@@ -14,6 +14,9 @@ type Options struct {
 	// CloseMsg geht an das Programm, wenn jemand das Fenster schließt, damit
 	// es Sitzungen und Protokolle sauber beendet. nil = sofort beenden.
 	CloseMsg tea.Msg
+	// StateDir: Ordner für window.json (Vollbild/Größe/Schrift merken,
+	// internal/winstate). Leer = nichts merken.
+	StateDir string
 
 	attach bool // zweites Fenster eines abgetrennten Tabs
 }

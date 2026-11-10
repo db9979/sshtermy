@@ -141,7 +141,7 @@ func main() {
 	log.SetOutput(io.Discard)
 	if windowed {
 		app.SetWindowed()
-		_, err = gui.Run(app, gui.Options{Title: version.Name, Icon: icon.Window(), CloseMsg: ui.WindowClosedMsg{}})
+		_, err = gui.Run(app, gui.Options{Title: version.Name, Icon: icon.Window(), CloseMsg: ui.WindowClosedMsg{}, StateDir: st.Dir})
 	} else {
 		_, err = tea.NewProgram(app).Run()
 	}

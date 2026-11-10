@@ -126,7 +126,8 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <h2>Funktionen</h2>
   <div class="features">
     <div class="card"><h3>Verbindungsmanager</h3><p>Ordner, Tags, Jump-Hosts, Import aus <code>~/.ssh/config</code>, PuTTY und MobaXterm.</p></div>
-    <div class="card"><h3>Eigenes Fenster</h3><p>Kein Terminal nötig: Doppelklick auf die <code>.exe</code>, die <code>.app</code> öffnen oder <code>sshtermy -window</code>. Schrift, Nerd-Font-Symbole und Emoji sind eingebaut, jede Taste kommt an (Alt+⏎, ⇧F-Tasten, Strg+Leertaste), Bilder erscheinen pixelgenau, abgelegte Dateien werden hochgeladen, ⇧F10 öffnet ein zweites Fenster. Im Terminal gestartet läuft es wie bisher im Terminal.</p></div>
+    <div class="card"><h3>Fehlerverzeihend</h3><p>Beenden fragt bei offenen Verbindungen nach, Löschen lässt sich 10 Sekunden lang rückgängig machen, <kbd>Strg</kbd>+<kbd>T</kbd> im Formular testet die Verbindung vor dem Speichern, und fehlgeschlagene Verbindungen erklären in Klartext, was los ist (mit Taste zum Beheben, z. B. neuen Host-Key nach Neuinstallation übernehmen). Der einfache Modus blendet Profi-Funktionen aus.</p></div>
+    <div class="card"><h3>Eigenes Fenster</h3><p>Kein Terminal nötig: Doppelklick auf die <code>.exe</code>, die <code>.app</code> öffnen oder <code>sshtermy -window</code>. Schrift, Nerd-Font-Symbole und Emoji sind eingebaut, jede Taste kommt an (Alt+⏎, ⇧F-Tasten, Strg+Leertaste), Bilder erscheinen pixelgenau, abgelegte Dateien werden hochgeladen, ⇧F10 öffnet ein zweites Fenster. Startet im Vollbild (<kbd>F11</kbd> schaltet um; maximiert oder „wie zuletzt“ in den Einstellungen), Schriftgröße und Fensterposition werden gemerkt. Im Terminal gestartet läuft es wie bisher im Terminal.</p></div>
     <div class="card"><h3>Echtes Terminal</h3><p>xterm-256color, Truecolor, vim, htop und tmux, Scrollback, Tabs, geteilte Ansicht, Suche.</p></div>
     <div class="card"><h3>Auto-Reconnect</h3><p>Reißt WLAN oder VPN ab, kommt die Sitzung von selbst zurück, mit Tunneln und tmux/screen. Nach Ruhezustand oder Netzwechsel wird jede Leitung binnen Sekunden geprüft.</p></div>
     <div class="card"><h3>Dateien (F5)</h3><p>SFTP über dieselbe Verbindung: links lokal, rechts der Server. <kbd>e</kbd> öffnet eine Server-Datei in VS Code, Notepad++ oder TextEdit, Speichern lädt sie zurück. Beim Kopieren: Prozent, MB/s, Restzeit und Tempo-Kurve.</p></div>
@@ -215,9 +216,13 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Sitzungsprotokolle: KI-Änderungsbericht</td></tr>
     <tr><td><kbd>z</kbd> (Manager)</td><td>Zeitpläne für Broadcast und Runbooks</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Tab in ein eigenes Terminalfenster</td></tr>
-    <tr><td><kbd>Strg</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Eigenes Fenster: Schrift größer / kleiner / Standard (Mac: <kbd>⌘</kbd>)</td></tr>
+    <tr><td><kbd>Strg</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Eigenes Fenster: Schrift größer / kleiner / Standard (Mac: <kbd>⌘</kbd>), wird gemerkt</td></tr>
+    <tr><td><kbd>F11</kbd></td><td>Eigenes Fenster: Vollbild an / aus</td></tr>
+    <tr><td><kbd>Strg</kbd>+<kbd>Z</kbd> (Manager)</td><td>Letztes Löschen rückgängig (10 s)</td></tr>
+    <tr><td><kbd>Strg</kbd>+<kbd>T</kbd> (Verbindungsformular)</td><td>Verbindung testen: erreichbar, Host-Key, Anmeldung</td></tr>
+    <tr><td><kbd>e</kbd> / <kbd>k</kbd> (getrennter Tab)</td><td>Verbindung bearbeiten / geänderten Host-Key vergleichen und übernehmen</td></tr>
     <tr><td><kbd>F10</kbd></td><td>Zurück zum Manager (Sitzungen laufen weiter)</td></tr>
-    <tr><td><kbd>F1</kbd> / <kbd>F12</kbd> / <kbd>Strg</kbd>+<kbd>Q</kbd></td><td>Hilfe / Über und Update / Beenden</td></tr>
+    <tr><td><kbd>F1</kbd> / <kbd>F12</kbd> / <kbd>Strg</kbd>+<kbd>Q</kbd></td><td>Hilfe / Über und Update / Beenden (fragt bei offenen Verbindungen)</td></tr>
   </table>
   <p>Alle Tasten lassen sich ändern: <kbd>b</kbd> im Manager. Die ganze Liste steht in der <a href="https://github.com/db9979/sshtermy/blob/main/README.de.md">README</a> und in der App (<kbd>F1</kbd>).</p>
 </section>

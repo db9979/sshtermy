@@ -35,6 +35,7 @@ type toastItem struct {
 	text        string
 	kind        toastKind
 	born, until time.Time
+	undo        bool // Klick macht das Löschen rückgängig (undo.go)
 }
 
 // toastLife: Fehler bleiben länger stehen, man will sie lesen können.
@@ -194,9 +195,12 @@ func (a *App) withToasts(base string) string {
 	}
 	for i := len(a.toasts) - 1; i >= 0 && y < a.h-3; i-- {
 		t := a.toasts[i]
-		text := t.text
+		text, undo := t.text, t.undo
 		box := a.toastBox(t, w, now)
 		box = a.z.mark(box, zoneAction{block: true, click: func(tea.Mouse, bool) tea.Cmd {
+			if undo && a.undo != nil && a.undo.toast == text {
+				return a.doUndo()
+			}
 			a.dropToast(text)
 			return nil
 		}})

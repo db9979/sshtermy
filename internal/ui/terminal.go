@@ -300,12 +300,15 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		if s.state != stConnected {
+			if cmd, ok := a.closedKey(s, key); ok {
+				return cmd
+			}
 			switch key {
 			case "enter", "r":
 				if fresh, ok := a.st.Connection(s.conn.ID); ok {
 					s.conn = fresh // inzwischen geändert (z. B. Schlüsseldatei gewählt)
 				}
-				s.state, s.err = stConnecting, ""
+				s.state, s.err, s.errv = stConnecting, "", nil
 				return a.connectCmd(s)
 			case "x", "esc":
 				a.closeTab(s)
@@ -548,7 +551,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	if line := a.companionLine(s); line != "" {
 		bottom = line + "\n" + bottom
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, bottom, a.footer(a.terminalKeys(s))), cur
+	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, bottom, a.footer(a.simpleKeys(a.terminalKeys(s)))), cur
 }
 
 // paneBody zeichnet die Terminalfläche einer Sitzung (samt Panel/Dateien).
@@ -570,10 +573,7 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	case s.state == stReconnect:
 		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, a.reconnectView(s))
 	case s.state == stClosed:
-		msg := st.Danger.Render("× " + orDefault(s.err, i18n.T("getrennt")))
-		body = lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center,
-			msg+"\n\n"+a.hints(st.Muted, [2]string{"⏎", i18n.T("neu verbinden")}, [2]string{"x", i18n.T("Tab schließen")},
-				[2]string{a.keys.label(actManager), i18n.T("Manager")}))
+		body = a.closedView(s, cols, rows) // connerr.go
 	case s.search.open && s.search.list:
 		body = a.viewErrorList(s, cols, rows)
 	case s.scroll > 0 || s.sel != nil || s.search.open:

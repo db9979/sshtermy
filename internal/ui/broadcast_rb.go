@@ -267,14 +267,20 @@ func (a *App) bcDeleteBook() tea.Cmd {
 		return nil
 	}
 	id, name := rb.ID, rb.Name
-	a.modal = confirmModal(i18n.T("Runbook löschen?"), "„"+name+i18n.T("“ löschen?"), func() tea.Cmd {
-		_ = a.st.DeleteRunbook(id)
-		b.books = a.st.Runbooks("")
-		b.src = 0
-		if b.editID == id {
-			b.editID, b.editName = "", ""
-		}
+	tr, err := a.st.DeleteRunbookTrash(id)
+	if err != nil {
+		a.flashErr(err.Error())
 		return nil
+	}
+	b.books = a.st.Runbooks("")
+	b.src = 0
+	if b.editID == id {
+		b.editID, b.editName = "", ""
+	}
+	a.offerUndo(i18n.T("Runbook „")+name+i18n.T("“ gelöscht"), tr, nil, func() {
+		if a.bc != nil {
+			a.bc.books = a.st.Runbooks("")
+		}
 	})
 	return nil
 }

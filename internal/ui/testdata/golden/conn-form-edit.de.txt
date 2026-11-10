@@ -29,4 +29,4 @@
   │ ──────────────────────────────────────────────────────────────────────────────────────────── │
   │ Anzeigename, z. B. „DGX Spark“                                                               │
   │                                                                                              │
- Tab weiter  ←/→ wählen  Strg+S speichern  Esc abbrechen
+ Tab weiter  ←/→ wählen  Strg+T testen  Strg+S speichern  Esc abbrechen

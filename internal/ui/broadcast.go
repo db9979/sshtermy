@@ -207,6 +207,9 @@ func (a *App) updateBroadcast(msg tea.Msg) tea.Cmd {
 		return a.bcRunKey(k)
 	}
 	key := k.String()
+	if a.undo != nil && a.keys.is(actUndo, key) {
+		return a.doUndo()
+	}
 	switch key {
 	case "esc":
 		a.scr = scrManager
