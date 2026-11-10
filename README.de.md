@@ -38,7 +38,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Geteilte Ansicht** (Strg+T): bis zu sechs Sitzungen gleichzeitig in sieben Aufteilungen, Größe per Maus oder Alt+⇧+Pfeil, Zoom auf einen Bereich (Alt+Z), Bereiche per Titel tauschen, andere Bereiche auf Wunsch abdunkeln. Die Aufteilung übersteht Updates; **Arbeitsplätze** (w im Manager) speichern Aufteilung und Verbindungen zum Wiederöffnen mit einem Klick, „Zuletzt“ merkt sich sshTermy beim Beenden selbst, `g` auf einem Ordner öffnet alle Verbindungen darin als Raster
 - **Eingabe an alle geteilten Bereiche** (Alt+I in der geteilten Ansicht): Was du tippst, geht live an jeden sichtbaren Host, z. B. dieselbe Änderung auf vier Switches. Enter geht nur durch, wenn die Zeile auf keinem Host gefährlich ist
 - **SSH-Zertifikate**: Von einer Firmen-CA signierte Keys (`id_ed25519-cert.pub` neben dem Key oder ein eigener Pfad in der Verbindung) werden automatisch genutzt; ein abgelaufenes Zertifikat meldet sshTermy mit Datum
-- **Dateien direkt im Terminal (trzsz)**: `tsz datei` auf dem Server lädt in deinen Downloads-Ordner, `trz` lädt hoch; klappt auch nach `sudo su`, über mehrere Sprünge und auf Geräten ohne SFTP. ZMODEM (`sz`/`rz`) wird erkannt und mit Hinweis abgebrochen, statt zu hängen
+- **Dateien direkt im Terminal (trzsz)**: `tsz datei` auf dem Server lädt in deinen Downloads-Ordner (sshTermy fragt vorher und überschreibt nie eine vorhandene Datei), `trz` lädt hoch; klappt auch nach `sudo su`, über mehrere Sprünge und auf Geräten ohne SFTP. ZMODEM (`sz`/`rz`) wird erkannt und mit Hinweis abgebrochen, statt zu hängen
 - **Bildschirmsperre**: Palette „Jetzt sperren“ oder automatisch bei Leerlauf (5/15/30/60 min). Offene Sitzungen laufen hinter der Sperre weiter, nur das Master-Passwort entsperrt. **Master-Passwort ändern** (Palette → Einstellungen › Sicherheit) schaltet auch die Windows-Anmeldung (DPAPI) nachträglich ein oder aus
 - **Statuszeile pro Sitzung**: Verbindungsdauer, Latenz, Zeichensatz, Warnung bei root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) bekommen eine rote Zeile
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen, mit der Maus auf die andere Seite ziehen, mehrere mit der Leertaste markieren. Dateien aus Explorer/Finder ins Fenster ziehen lädt sie hoch, auch direkt im Terminal. Beim Kopieren zeigt ein Balken Prozent, MB/s, Restzeit und „Datei 2 von 5“, dazu eine kleine Tempo-Kurve
@@ -65,10 +65,12 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   welchem Port von wem, APs und Telefone gedimmt im Switch-Kasten, Ringverbindungen darunter; passt es nicht, ein Baum), dazu ein Mermaid-Diagramm in Downloads für Doku, Wiki oder GitHub
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
   jeder Host bekommt eine eigene Kachel (grün umrandet wenn fertig, rot bei Fehler, pulsierend solange er läuft; `z` vergrößert eine). Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
+  Ändernde Schritte laufen erst auf einem Host als Probelauf, dann auf dem Rest; nach 3 gescheiterten Hosts startet kein weiterer (`p` schaltet den Probelauf ab).
   Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
 - **Zeitpläne** (z im Manager): Ein Broadcast oder Runbook läuft zu einer Uhrzeit auf einem Ordner oder einzelnen
   Verbindungen, täglich, Mo–Fr, am Wochenende oder an einem Wochentag, z. B. „3:00 Mo–Fr `show running-config` auf
-  allen Switches“. Läuft, solange sshTermy offen ist (auch gesperrt), Verpasstes holt es innerhalb von 12 Stunden nach.
+  allen Switches“. Läuft, solange sshTermy offen ist (auch gesperrt), verpasste lesende Läufe holt es innerhalb von 12 Stunden nach, ändernde nur innerhalb von 10 Minuten (eine Wartung für 3:00 läuft nie mittags).
+  Hosts, die später im Ziel-Ordner auftauchen (etwa aus einem Team-Ordner), laufen erst nach `Strg+A` in der Liste mit; ein Runbook, das geändert aus einem Team-Ordner kam, wartet, bis du es einmal im Broadcast gestartet hast.
   Ohne Aufsicht gibt es keine Rückfragen: unbekannte Host-Keys und fehlende Passwörter lassen den Host scheitern,
   Gefährliches und Runbooks mit Variablen lassen sich gar nicht einplanen. Das Ergebnis je Host steht in der Liste
   (⏎), dazu eine Einblendung bzw. Desktop-Meldung. Zeitpläne bleiben auf dem Rechner (kein Sync), damit nicht zwei
@@ -95,7 +97,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst
   - **Agent-Modus** (F2, Tab wählt den Modus): Der Agent arbeitet selbstständig bis zum Ziel. Er führt Befehle aus,
     sieht Ausgabe und Exit-Code, legt Skripte per SFTP in `~/.sshtermy-agent/<lauf>/` an und führt sie aus (erst Probelauf).
-    Stufen: *Vorsichtig* (nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`), *Voll* (auch sudo).
+    Stufen: *Vorsichtig* (Standard; nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`; als root angemeldet oder unter Windows fragt jede Änderung, weil es dort kein sudo zum Anhalten gibt), *Voll* (auch sudo).
     Gefahrenbefehle, auch jede Zeile eines Skripts, warten immer auf dich; auf Produktiv-Hosts und Netzwerkgeräten fragt
     jede Änderung nach. Grenzen: 25 Schritte, 15 Minuten, 3 Fehler in Folge. Esc oder Tippen im Terminal hält ihn an,
     `?` gibt ihm eine Anweisung. Am Ende: die vollständige Zusammenfassung (blättern mit Bild↑/Bild↓ oder Mausrad, `c`
@@ -276,7 +278,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | ← → Space / - + | Ordner zu-/aufklappen / alle zu bzw. auf |
 | | Shift+↑↓ (Alt+↑↓), Maus ziehen | Reihenfolge ändern, in einen Ordner ziehen |
 | | # , /#tag | nach Tag filtern, Suche über Name, Host, Ordner, Tags |
-| Broadcast | Space / g / a, Tab, Strg+S | Host / Ordner / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
+| Broadcast | Space / g / a, Tab, Strg+S, p | Host / Ordner / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen, Probelauf an/aus |
 | | ←→ / ↑↓ / z / c / r / x | Host-Spalte / blättern / groß / Ausgabe kopieren / nochmal / abbrechen |
 | Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
 | Terminal | F2 | Ziel-Modus (Agent) |
@@ -523,8 +525,12 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 - Die KI **tippt nie selbst**. Jeder Befehl ist ein Vorschlag; erst deine Bestätigung sendet ihn ans PTY.
 - **Feste Gefahrenregeln** (`internal/safety`), nie das Modell, entscheiden über Rot: `rm -rf`, `find -delete`, `dd`, `mkfs`,
   `curl | sh`, `… | base64 -d | sh`, Neustart, Firewall leeren, Benutzer ändern, `git reset --hard`, Pakete entfernen, Docker prune,
-  SSH-Dienst stoppen; für Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)` u. a.
+  SSH-Dienst stoppen, Systemdateien löschen, Netzwerk abschalten, `iptables -P … DROP`, `kubectl delete`, `DROP DATABASE`, `zfs destroy`, `rsync --delete`;
+  für Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)`, WinRM stoppen, `Disable-NetAdapter` u. a.
+  Jeder Befehl wird gegen alle Regelgruppen geprüft (Unix, Windows, Netzwerkgeräte), Mehrzeiliges Zeile für Zeile: ein Switch, der für einen Server gehalten wurde, versteckt kein `erase startup-config`.
   Rote Befehle brauchen zwei Bestätigungen; bearbeitete Befehle werden neu geprüft. `sudo` wird markiert, auch hinter `&&`, `;` oder `|`.
+- **Geheimnisse lesen fragt auch:** `/etc/shadow`, private Schlüssel, `.env`, `kubectl get secret`, `docker inspect`, `printenv` oder `show running-config` am Switch ändern nichts, ihre Ausgabe ginge aber an die KI. Agent und MCP fragen deshalb immer; der Plan-Modus lässt sie beim Erkunden aus.
+- **Dialoge, die von selbst aufgehen** (Host-Key, Passwort, MCP-Anfrage, Dateien vom Server), nehmen eine Sekunde lang keine Tasten an: ein `j` aus `journalctl`, das du gerade tippst, bestätigt nichts. Ist schon ein Dialog offen, warten sie, statt ihn zu ersetzen.
 - **Einfügeschutz:** Dieselben Regeln prüfen jede eingefügte Zeile. Ein Treffer zeigt die Vorschau mit der
   roten Zeile und braucht zwei Bestätigungen, auch wenn die Mehrzeilen-Vorschau abgeschaltet ist.
 - **Prompt Injection:** alles aus dem Terminal steht als Material in einem Block `<<< … >>>`, dessen Marker im
@@ -546,7 +552,7 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 KI-Clients wie Claude Desktop oder Claude Code können deine gespeicherten Verbindungen über das Model Context
 Protocol nutzen. Einschalten unter Einstellungen › Sicherheit › „MCP-Zugriff für KI-Clients“: **nur lesen**
 (Verbindungen und offene Tabs auflisten, einen Tab lesen, lesende Befehle wie `df -h` oder `show interfaces`) oder
-**mit Rückfrage** (jeder andere Befehl läuft erst, wenn du in sshTermy `j` drückst; gefährliche sind rot markiert).
+**mit Rückfrage** (jeder andere Befehl läuft erst, wenn du in sshTermy `j` drückst; gefährliche brauchen `j` zweimal). Befehle mit `sudo` oder solche, die Geheimnisse lesen (`/etc/shadow`, Schlüssel, `.env`, `show running-config` …), fragen immer, auch wenn sie nur lesen.
 sshTermy muss laufen und entsperrt sein; `sshtermy mcp` ist nur die Brücke und hält keine Daten. Verbindungen mit Tag
 `ki-aus`/`ki-lokal` oder KI-Datenschutz „KI aus“ tauchen nie auf. Geheimnisse in Ausgaben werden entfernt, jeder
 Aufruf steht im Audit-Protokoll.
@@ -771,7 +777,10 @@ einem Ordner im Manager geteilt hat, teilt den ganzen Ordner: Neue Verbindungen 
 
 Kollegen lassen beim Übernehmen „Abonnieren“ an. sshTermy liest die Datei dann alle 5 Minuten und übernimmt
 Änderungen: neue Verbindungen kommen dazu, geänderte werden aktualisiert, beim Absender gelöschte verschwinden auch
-hier. Eigene Passwörter, Keys und Benutzernamen bleiben. Strg+Leertaste → „Team-Ordner“ zeigt den Stand, gleicht
+hier. Eigene Passwörter, Keys und Benutzernamen bleiben. Ein Paket nimmt nie Schutz weg: ein Tag „prod“ oder der
+Gerätetyp „Netzwerkgerät“ bleibt, auch wenn der Absender ihn entfernt hat. Geänderte Schnellbefehle zeigen beim ersten
+Druck nur den Befehl und laufen erst beim zweiten; neue oder geänderte Runbooks warten, bevor ein Zeitplan sie
+ausführt; Tunnel aus dem Team starten nie von selbst. Strg+Leertaste → „Team-Ordner“ zeigt den Stand, gleicht
 sofort ab oder beendet ein Abo (die Verbindungen bleiben dann). Team-Ordner sind rein lokal und gehen nicht in den Sync.
 
 ## Lizenz

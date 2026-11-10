@@ -249,6 +249,7 @@ var helpSections = []helpSection{
 		{"Strg+R", "als Runbook speichern"},
 		{"e / Strg+D", "ändern / löschen"},
 		{"k / a", "KI prüft / übernehmen"},
+		{"p", "Probelauf an/aus"},
 	}},
 	{hcScan, "/", "Netzwerk-Scan", "f", false, [][2]string{
 		{"Strg+S", "Scan starten"},

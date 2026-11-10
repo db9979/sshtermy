@@ -91,7 +91,9 @@ func TestScheduleGuards(t *testing.T) {
 	old := schedDialer
 	t.Cleanup(func() { schedDialer = old })
 	schedDialer = func(*App) broadcast.Dialer {
-		return func(_ context.Context, c domain.Connection) (broadcast.Executor, error) { return schedExec{c.Alias}, nil }
+		return func(_ context.Context, c domain.Connection) (broadcast.Executor, error) {
+			return schedExec{c.Alias}, nil
+		}
 	}
 	a.openScheduleForm(domain.Schedule{At: "03:00"})
 	f := a.form

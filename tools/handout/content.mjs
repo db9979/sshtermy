@@ -110,7 +110,7 @@ export const de = {
       ['v', 'Skript des Agenten ansehen'],
       ['⏎ ⏎', 'gefährlichen Schritt freigeben', 'warn'],
       ['s r c l', 'Ende: Runbook · Skripte weg · kopieren · lesen'],
-    ], note: '<b>Vorsichtig</b>: nur Lesendes läuft allein · <b>Normal</b>: alles außer Gefahr, sudo, python -c · <b>Voll</b>: auch sudo. Gefahr wartet immer. Grenzen: 25 Schritte, 15 min, 3 Fehler in Folge.' },
+    ], note: '<b>Vorsichtig</b> (Standard): nur Lesendes allein · <b>Normal</b>: außer Gefahr, sudo, root, python -c · <b>Voll</b>: auch sudo. Gefahr/Geheimnisse warten immer. Grenzen: 25 Schritte, 15 min, 3 Fehler.' },
     { t: 'Plan-Modus', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
       ['↑ / ↓', 'Schritt wählen'],
       ['Space', 'Schritt streichen / zurückholen'],
@@ -180,7 +180,7 @@ export const de = {
       ['Strg+S', 'prüfen, dann ⏎'],
       ['← / → · z · c', 'Host-Spalte · groß · kopieren'],
       ['{{name}}', 'Variable, wird abgefragt'],
-      ['k', 'KI prüft die Schritte je Host'],
+      ['k · p', 'KI prüft je Host · Probelauf an/aus'],
     ]},
     { t: 'Sicherheit', ic: '▲', warn: true, rows: [
       ['⏎ ⏎', 'roter Befehl: zweimal bestätigen', 'warn'],
@@ -305,7 +305,7 @@ export const en = {
       ['⏎ ⏎', 'allow a dangerous step', 'warn'],
       ['s / r', '(at the end) save as runbook / delete scripts'],
       ['c / l', 'copy result / read all'],
-    ], note: '<b>Careful</b>: only read-only runs on its own · <b>Normal</b>: all but danger, sudo, python -c · <b>Full</b>: sudo too. Danger always waits. Limits: 25 steps, 15 min, 3 failures in a row. PgUp/PgDn/wheel scroll the panel.' },
+    ], note: '<b>Careful</b> (default): only read-only runs on its own · <b>Normal</b>: all but danger, sudo, root, python -c · <b>Full</b>: sudo too. Danger and secrets always wait. Limits: 25 steps, 15 min, 3 failures in a row. PgUp/PgDn/wheel scroll the panel.' },
     { t: 'Plan mode', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
       ['↑ / ↓', 'choose a step'],
       ['Space', 'remove / restore a step'],
@@ -375,7 +375,7 @@ export const en = {
       ['Ctrl+S', 'check, then ⏎'],
       ['← / → · z · c', 'host column · enlarge · copy'],
       ['{{name}}', 'variable, asked before the run'],
-      ['k', 'AI checks the steps per host'],
+      ['k · p', 'AI checks per host · trial run on/off'],
     ]},
     { t: 'Safety', ic: '▲', warn: true, rows: [
       ['⏎ ⏎', 'red command: confirm twice', 'warn'],

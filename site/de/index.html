@@ -102,7 +102,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>Agent-Modus: das Ziel selbstständig erreichen</h3>
-      <p>Im Ziel-Modus (<kbd>F2</kbd>) schaltet <kbd>Tab</kbd> auf den Agenten. Er führt Befehle aus, liest die Ausgabe, legt Skripte per SFTP an und startet sie, zuerst als Probelauf. Du wählst die Stufe: <em>Vorsichtig</em> (nur Lesendes allein), <em>Normal</em> oder <em>Voll</em> (auch sudo). Gefährliche Befehle warten immer auf dich, <kbd>Esc</kbd> hält an, <kbd>?</kbd> gibt eine Anweisung. Am Ende steht die vollständige Zusammenfassung: blättern, mit <kbd>c</kbd> kopieren oder mit <kbd>l</kbd> ganz lesen. Mit <em>Erst planen</em> sieht er sich nur lesend um, schreibt einen vollständigen Plan, und du streichst oder änderst Schritte, bevor du mit <kbd>⏎</kbd> freigibst.</p>
+      <p>Im Ziel-Modus (<kbd>F2</kbd>) schaltet <kbd>Tab</kbd> auf den Agenten. Er führt Befehle aus, liest die Ausgabe, legt Skripte per SFTP an und startet sie, zuerst als Probelauf. Du wählst die Stufe: <em>Vorsichtig</em> (Standard, nur Lesendes allein), <em>Normal</em> (als root fragt jede Änderung) oder <em>Voll</em> (auch sudo). Gefährliche Befehle und alles, was Geheimnisse liest, warten immer auf dich, <kbd>Esc</kbd> hält an, <kbd>?</kbd> gibt eine Anweisung. Am Ende steht die vollständige Zusammenfassung: blättern, mit <kbd>c</kbd> kopieren oder mit <kbd>l</kbd> ganz lesen. Mit <em>Erst planen</em> sieht er sich nur lesend um, schreibt einen vollständigen Plan, und du streichst oder änderst Schritte, bevor du mit <kbd>⏎</kbd> freigibst.</p>
     </div>
     <figure><img src="../bilder/16-agent.png" alt="Agent-Modus komprimiert alte Logs: rechts der Plan, ein Skript lief als Probelauf" loading="lazy"></figure>
   </div>
@@ -136,14 +136,14 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Container</h3><p>Docker, Podman und Kubernetes-Pods in einer Liste: Shell im Container, Logs live, KI-Auswertung der Logs.</p></div>
     <div class="card"><h3>Host-Übersicht (F6)</h3><p>CPU, Last, RAM, alle Platten und Updates bei Servern, Live-Graphen aus Braille-Punkten über 5 min oder 1 h mit Top-Prozessen; Firmware, Ports und VLANs bei Aruba, Cisco, Juniper, MikroTik, FortiGate und UniFi-Switches, mit Konfig-Sicherung und Diff.</p></div>
     <div class="card"><h3>Tunnel</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) und Webdienste mit einem Klick.</p></div>
-    <div class="card"><h3>Broadcast</h3><p>Ein Befehl oder Runbook parallel auf einer ganzen Gruppe, je Host eine Kachel: grün wenn fertig, rot bei Fehler, pulsierend solange er läuft.</p></div>
+    <div class="card"><h3>Broadcast</h3><p>Ein Befehl oder Runbook parallel auf einer ganzen Gruppe, je Host eine Kachel: grün wenn fertig, rot bei Fehler, pulsierend solange er läuft. Änderungen laufen erst auf einem Host als Probelauf und stoppen nach 3 Fehlern.</p></div>
     <div class="card"><h3>Live teilen</h3><p>Kollegen sehen einen Tab live über den eigenen Vermittler mit, Ende-zu-Ende verschlüsselt, der Schlüssel steht nur im Link.</p></div>
     <div class="card"><h3>Gerät finden</h3><p>MAC oder IP rein, Switch, Port und VLAN raus: sshTermy liest MAC-, ARP- und LLDP-Tabellen aller Switches, oder nur die eines Ordners, wenn du mehrere Netze betreust.</p></div>
     <div class="card"><h3>Netzwerk-Topologie</h3><p>LLDP/CDP-Nachbarn werden zum Bild mit Kästen, Linien und Ports, dazu ein Mermaid-Diagramm; Config-Regeln prüfen jede Sicherung.</p></div>
-    <div class="card"><h3>Zeitpläne</h3><p>Broadcast oder Runbook zu einer Uhrzeit auf einem Ordner, z. B. nachts <code>show running-config</code> auf allen Switches.</p></div>
+    <div class="card"><h3>Zeitpläne</h3><p>Broadcast oder Runbook zu einer Uhrzeit auf einem Ordner, z. B. nachts <code>show running-config</code> auf allen Switches. Neue Hosts im Ordner laufen erst nach deiner Bestätigung mit.</p></div>
     <div class="card"><h3>Passwortmanager</h3><p>Passwörter und 2FA-Codes aus 1Password, Bitwarden, KeePassXC oder <code>pass</code>; gespeichert wird nur der Verweis.</p></div>
     <div class="card"><h3>Netzwerk-Scan</h3><p>SSH-Geräte in einem Subnetz finden und als Verbindungen anlegen.</p></div>
-    <div class="card"><h3>Gefahr-Regeln</h3><p>Feste Regeln markieren riskante Befehle rot; sie brauchen zweimal Enter, auch beim Einfügen. Auf Produktiv-Hosts Enter gedrückt halten, bis der Balken voll ist.</p></div>
+    <div class="card"><h3>Gefahr-Regeln</h3><p>Feste Regeln markieren riskante Befehle rot; sie brauchen zweimal Enter, auch beim Einfügen. Auf Produktiv-Hosts Enter gedrückt halten, bis der Balken voll ist. Es gelten immer alle Regelgruppen, ein falsch erkannter Switch versteckt kein <code>erase</code>.</p></div>
     <div class="card"><h3>Sitzungsprotokoll</h3><p>Verschlüsselt, durchsuchbar, mit KI-Zusammenfassung, Markdown-Export und KI-Änderungsbericht (<kbd>b</kbd>) für Ticket oder Doku. Ein Aktivitätskalender zeigt, an welchen Tagen und zu welcher Uhrzeit gearbeitet wurde.</p></div>
     <div class="card"><h3>KI-Logdiagnose</h3><p>Markierung oder die letzten 400 Zeilen (journalctl, <code>show logging</code>): Lage, Auffälliges mit Zeitpunkt, Ursache, Prüfbefehle.</p></div>
     <div class="card"><h3>Log-Blick</h3><p><kbd>Alt</kbd>+<kbd>E</kbd> liest die Logs des Systems, auf dem du gerade bist (Linux, Windows, Switches, Firewalls), nur lesend, und zeigt Muster statt Zeilen: was seit dem letzten Blick neu ist, eine Zeitleiste mit Neustarts, Updates und deinen Befehlen, Rauschen pro Host oder Ordner ausblenden und ein KI-Lagebericht nur aus den verdichteten Mustern.</p></div>
@@ -217,7 +217,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F6</kbd> → <kbd>t</kbd> / <kbd>z</kbd></td><td>Live-Graphen: Zeitraum 5 min / 1 h, groß</td></tr>
     <tr><td><kbd>F5</kbd> → <kbd>e</kbd></td><td>Server-Datei im eigenen Editor (Speichern lädt hoch)</td></tr>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Sitzungsprotokolle: KI-Änderungsbericht</td></tr>
-    <tr><td><kbd>z</kbd> (Manager)</td><td>Zeitpläne für Broadcast und Runbooks</td></tr>
+    <tr><td><kbd>z</kbd> (Manager)</td><td>Zeitpläne für Broadcast und Runbooks (<kbd>Strg</kbd>+<kbd>A</kbd> übernimmt neue Hosts)</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Tab in ein eigenes Terminalfenster</td></tr>
     <tr><td><kbd>Strg</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Eigenes Fenster: Schrift größer / kleiner / Standard (Mac: <kbd>⌘</kbd>), wird gemerkt</td></tr>
     <tr><td><kbd>F11</kbd></td><td>Eigenes Fenster: Vollbild an / aus</td></tr>

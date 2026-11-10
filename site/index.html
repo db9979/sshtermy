@@ -102,7 +102,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>Agent mode: reach the goal on its own</h3>
-      <p>In goal mode (<kbd>F2</kbd>) <kbd>Tab</kbd> switches to the agent. It runs commands, reads their output, writes scripts via SFTP and runs them, dry run first. You pick the level: <em>Careful</em> (read-only on its own), <em>Normal</em> or <em>Full</em> (sudo too). Dangerous commands always wait for you, <kbd>Esc</kbd> pauses, <kbd>?</kbd> gives an instruction. At the end you get the complete summary: scroll it, copy it with <kbd>c</kbd> or read it in full with <kbd>l</kbd>. With <em>Plan first</em> it only looks around read-only, writes a full plan, and you remove or change steps before you approve it with <kbd>⏎</kbd>.</p>
+      <p>In goal mode (<kbd>F2</kbd>) <kbd>Tab</kbd> switches to the agent. It runs commands, reads their output, writes scripts via SFTP and runs them, dry run first. You pick the level: <em>Careful</em> (default, read-only on its own), <em>Normal</em> (signed in as root every change asks) or <em>Full</em> (sudo too). Dangerous commands and anything that reads secrets always wait for you, <kbd>Esc</kbd> pauses, <kbd>?</kbd> gives an instruction. At the end you get the complete summary: scroll it, copy it with <kbd>c</kbd> or read it in full with <kbd>l</kbd>. With <em>Plan first</em> it only looks around read-only, writes a full plan, and you remove or change steps before you approve it with <kbd>⏎</kbd>.</p>
     </div>
     <figure><img src="bilder/16-agent.png" alt="Agent mode compresses old logs: plan on the right, a script ran as a dry run" loading="lazy"></figure>
   </div>
@@ -136,14 +136,14 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Containers</h3><p>Docker, Podman and Kubernetes pods in one list: shell in the container, live logs, AI log analysis.</p></div>
     <div class="card"><h3>Host overview (F6)</h3><p>CPU, load, RAM, every disk and updates for servers, live Braille graphs over 5 min or 1 h with top processes; firmware, ports and VLANs for Aruba, Cisco, Juniper, MikroTik, FortiGate and UniFi switches, with config backup and diff.</p></div>
     <div class="card"><h3>Tunnels</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) and web services with one click.</p></div>
-    <div class="card"><h3>Broadcast</h3><p>One command or runbook on a whole group in parallel, one tile per host: green when done, red on failure, pulsing while running.</p></div>
+    <div class="card"><h3>Broadcast</h3><p>One command or runbook on a whole group in parallel, one tile per host: green when done, red on failure, pulsing while running. Changes run on one host first as a trial run and stop after 3 failures.</p></div>
     <div class="card"><h3>Share live</h3><p>Colleagues watch a tab live through your own relay, end-to-end encrypted, the key is only in the link.</p></div>
     <div class="card"><h3>Find device</h3><p>MAC or IP in, switch, port and VLAN out: sshTermy reads the MAC, ARP and LLDP tables of all switches, or only those in one folder if you look after several networks.</p></div>
     <div class="card"><h3>Network topology</h3><p>LLDP/CDP neighbors become a picture with boxes, lines and port numbers, plus a Mermaid diagram; config rules check every backup.</p></div>
-    <div class="card"><h3>Schedules</h3><p>Broadcast or runbook at a set time on a folder, e.g. nightly <code>show running-config</code> on all switches.</p></div>
+    <div class="card"><h3>Schedules</h3><p>Broadcast or runbook at a set time on a folder, e.g. nightly <code>show running-config</code> on all switches. New hosts in the folder only join once you confirm them.</p></div>
     <div class="card"><h3>Password manager</h3><p>Passwords and 2FA codes from 1Password, Bitwarden, KeePassXC or <code>pass</code>; only the reference is stored.</p></div>
     <div class="card"><h3>Network scan</h3><p>Find SSH devices in a subnet and create them as connections.</p></div>
-    <div class="card"><h3>Danger rules</h3><p>Fixed rules mark risky commands red; they need Enter twice, also when pasted. On production hosts hold Enter until the bar is full.</p></div>
+    <div class="card"><h3>Danger rules</h3><p>Fixed rules mark risky commands red; they need Enter twice, also when pasted. On production hosts hold Enter until the bar is full. All rule groups always apply, so a misdetected switch cannot hide <code>erase</code>.</p></div>
     <div class="card"><h3>Session log</h3><p>Encrypted, searchable, with AI summary, Markdown export and an AI change report (<kbd>b</kbd>) for tickets or docs. An activity calendar shows which days and hours you worked.</p></div>
     <div class="card"><h3>AI log diagnosis</h3><p>A selection or the last 400 lines (journalctl, <code>show logging</code>): situation, what stands out with timestamps, cause, commands to check.</p></div>
     <div class="card"><h3>Log view</h3><p><kbd>Alt</kbd>+<kbd>E</kbd> reads the logs of the system you are on (Linux, Windows, switches, firewalls), read-only, and shows patterns instead of lines: what is new since your last look, a timeline with reboots, updates and your own commands, hide noise per host or folder, and an AI status report from the condensed patterns only.</p></div>
@@ -216,7 +216,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F6</kbd> → <kbd>t</kbd> / <kbd>z</kbd></td><td>Live graphs: range 5 min / 1 h, large view</td></tr>
     <tr><td><kbd>F5</kbd> → <kbd>e</kbd></td><td>Server file in your own editor (saving uploads it)</td></tr>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Session logs: AI change report</td></tr>
-    <tr><td><kbd>z</kbd> (manager)</td><td>Schedules for broadcast and runbooks</td></tr>
+    <tr><td><kbd>z</kbd> (manager)</td><td>Schedules for broadcast and runbooks (<kbd>Ctrl</kbd>+<kbd>A</kbd> accepts new hosts)</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Move the tab to its own terminal window</td></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Own window: font size bigger / smaller / default (Mac: <kbd>⌘</kbd>), remembered</td></tr>
     <tr><td><kbd>F11</kbd></td><td>Own window: full screen on / off</td></tr>
