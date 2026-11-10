@@ -10,22 +10,22 @@ de│   F12 w       What's new               s           skip                   
   │   F12 l       Language / Sprache       r           suggest again            n           What's new? (u restor…  │
   │   ⇧F9         explain key bar          x           end goal                 t           Timeline (←→, ⏎, k)     │
   │   Ctrl+Q      quit (asks if connect…   ↑ ↓         choose runbook           z           Period 1 h … 7 days     │
-  │                                        Ctrl+S      save as runbook          r / c       reload / copy           │
-  │  ≡ Connection manager F10              Ctrl+D      Delete runbook                                               │
-  │   F10         back to the terminal     Tab         step by step or agent…  ≡ Session logs l                     │
-  │   ⏎           connect                  Esc         pause agent              /           search (output too)     │
-  │   n           new connection           ?           Instruct agent           ⏎ / → ←     expand/collapse         │
-  │   e           edit                     v           view the agent's scri…   Tab         by time / by host       │
-  │   d           delete                   r           delete the agent's sc…   f           filter: today · 7 day…  │
-  │   Ctrl+Z      undo delete (10 s)       c / l       copy result / read all   s           sort hosts              │
-  │   Ctrl+T      in the form: test con…   PgUp PgDn   scroll the panel (mou…   z           AI summary              │
-  │   /           search (also #tag)       Space       plan: remove step        Z           summarize all matches   │
-  │   o           new folder (A / B nes…   ?           plan: re-plan            b           Change report           │
-  │   r           Edit folder                                                   x           export: md · txt · ca…  │
-  │   v           move to folder          ◆ Ask AI F3                           d           delete                  │
-  │   Shift+↑     move up (↓ down)         ⏎           send question            a           recording on/off        │
-  │   ← / →       collapse/expand folder   ⇧⏎ / Ctrl+J new line                 ␣ command   do not log              │
-  │   - / +       collapse/expand all      1…9         insert command                                               │
+  │                                        Ctrl+S      save as runbook          w           Log watch: alerts       │
+  │  ≡ Connection manager F10              Ctrl+D      Delete runbook           r / c       reload / copy           │
+  │   F10         back to the terminal     Tab         step by step or agent…                                       │
+  │   ⏎           connect                  Esc         pause agent             ≡ Session logs l                     │
+  │   n           new connection           ?           Instruct agent           /           search (output too)     │
+  │   e           edit                     v           view the agent's scri…   ⏎ / → ←     expand/collapse         │
+  │   d           delete                   r           delete the agent's sc…   Tab         by time / by host       │
+  │   Ctrl+Z      undo delete (10 s)       c / l       copy result / read all   f           filter: today · 7 day…  │
+  │   Ctrl+T      in the form: test con…   PgUp PgDn   scroll the panel (mou…   s           sort hosts              │
+  │   /           search (also #tag)       Space       plan: remove step        z           AI summary              │
+  │   o           new folder (A / B nes…   ?           plan: re-plan            Z           summarize all matches   │
+  │   r           Edit folder                                                   b           Change report           │
+  │   v           move to folder          ◆ Ask AI F3                           x           export: md · txt · ca…  │
+  │   Shift+↑     move up (↓ down)         ⏎           send question            d           delete                  │
+  │   ← / →       collapse/expand folder   ⇧⏎ / Ctrl+J new line                 a           recording on/off        │
+  │   - / +       collapse/expand all      1…9         insert command           ␣ command   do not log              │
   │                                                                                                                 │
   │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
   │  Esc leads back to the terminal from every panel.                                                               │

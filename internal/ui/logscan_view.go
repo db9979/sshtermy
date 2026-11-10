@@ -36,7 +36,7 @@ func (a *App) logScanKeys() [][2]string {
 			[2]string{"k", i18n.T("KI erklärt")}, [2]string{"b", i18n.T("KI-Lagebericht")}, [2]string{"x", i18n.T("ignorieren")})
 	}
 	return append(k, [2]string{"n", i18n.T("Was ist neu?")}, [2]string{"t", i18n.T("Zeitleiste")}, [2]string{"z", i18n.T("Zeitraum")},
-		[2]string{"r", i18n.T("neu lesen")}, [2]string{"c", i18n.T("kopieren")}, [2]string{"Esc", i18n.T("zurück")})
+		[2]string{"w", i18n.T("Logwache")}, [2]string{"r", i18n.T("neu lesen")}, [2]string{"c", i18n.T("kopieren")}, [2]string{"Esc", i18n.T("zurück")})
 }
 
 func (a *App) viewLogScan() string {
@@ -103,7 +103,11 @@ func (a *App) viewLogScan() string {
 		b.WriteString(a.portBar(r, w) + "\n")
 		used++
 	}
-	b.WriteString(a.newsLine(w) + "\n\n")
+	b.WriteString(a.newsLine(w))
+	if n := a.lwatch.unread; n > 0 {
+		b.WriteString(st.Danger.Render(fmt.Sprintf(i18n.T("  ▲ Logwache: %d neue Meldungen (w)"), n)))
+	}
+	b.WriteString("\n\n")
 	used += 2
 	vis := a.lsVisible()
 	if len(vis) == 0 {

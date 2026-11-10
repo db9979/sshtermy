@@ -217,6 +217,7 @@ var helpSections = []helpSection{
 		{"n", "Was ist neu? (u zurückholen)"},
 		{"t", "Zeitleiste (←→, ⏎, k)"},
 		{"z", "Zeitraum 1 h … 7 Tage"},
+		{"w", "Logwache: Meldungen"},
 		{"r / c", "neu lesen / kopieren"},
 	}},
 	{hcLogs, "≡", "Sitzungsprotokolle", "l", false, [][2]string{

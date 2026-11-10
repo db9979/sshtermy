@@ -40,6 +40,7 @@ const (
 
 type modal struct {
 	kind     modalKind
+	copy     string // mText: c kopiert diesen Text
 	title    string
 	body     string
 	hk       hostKeyAskMsg

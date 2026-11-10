@@ -10,22 +10,22 @@ de│   F12 w       Was ist neu              s           überspringen          
   │   F12 l       Sprache: Deutsch/Engl…   r           neu vorschlagen          n           Was ist neu? (u zurüc…  │
   │   ⇧F9         Tastenzeile erklären     x           Ziel beenden             t           Zeitleiste (←→, ⏎, k)   │
   │   Strg+Q      beenden (fragt bei of…   ↑ ↓         Runbook wählen           z           Zeitraum 1 h … 7 Tage   │
-  │                                        Strg+S      als Runbook speichern    r / c       neu lesen / kopieren    │
-  │  ≡ Verbindungs-Manager F10             Strg+D      Runbook löschen                                              │
-  │   F10         zurück zum Terminal      Tab         Schritt für Schritt o…  ≡ Sitzungsprotokolle l               │
-  │   ⏎           verbinden                Esc         Agent anhalten           /           suchen (auch Ausgabe)   │
-  │   n           neue Verbindung          ?           Agent anweisen           ⏎ / → ←     auf-/zuklappen          │
-  │   e           bearbeiten               v           Skript des Agenten an…   Tab         nach Zeit / nach Host   │
-  │   d           löschen                  r           Skripte des Agenten l…   f           Filter: heute · 7 Tag…  │
-  │   Strg+Z      Löschen rückgängig (1…   c / l       Ergebnis kopieren / g…   s           Hosts sortieren         │
-  │   Strg+T      im Formular: Verbindu…   Bild↑ Bild↓ im Panel blättern (au…   z           KI-Zusammenfassung      │
-  │   /           suchen (auch #tag)       Leertaste   Plan: Schritt streich…   Z           alle Treffer zusammen…  │
-  │   o           neuer Ordner (A / B v…   ?           Plan: neu planen lass…   b           Änderungsbericht        │
-  │   r           Ordner bearbeiten                                             x           Export: md · txt · ca…  │
-  │   v           in Ordner verschieben   ◆ KI fragen F3                        d           löschen                 │
-  │   Shift+↑     nach oben schieben (↓…   ⏎           Frage senden             a           Mitschreiben an/aus     │
-  │   ← / →       Ordner zu-/aufklappen    ⇧⏎ / Strg+J neue Zeile               ␣ Befehl    nicht protokollieren    │
-  │   - / +       alle Ordner zu/auf       1…9         Befehl einfügen                                              │
+  │                                        Strg+S      als Runbook speichern    w           Logwache: Meldungen     │
+  │  ≡ Verbindungs-Manager F10             Strg+D      Runbook löschen          r / c       neu lesen / kopieren    │
+  │   F10         zurück zum Terminal      Tab         Schritt für Schritt o…                                       │
+  │   ⏎           verbinden                Esc         Agent anhalten          ≡ Sitzungsprotokolle l               │
+  │   n           neue Verbindung          ?           Agent anweisen           /           suchen (auch Ausgabe)   │
+  │   e           bearbeiten               v           Skript des Agenten an…   ⏎ / → ←     auf-/zuklappen          │
+  │   d           löschen                  r           Skripte des Agenten l…   Tab         nach Zeit / nach Host   │
+  │   Strg+Z      Löschen rückgängig (1…   c / l       Ergebnis kopieren / g…   f           Filter: heute · 7 Tag…  │
+  │   Strg+T      im Formular: Verbindu…   Bild↑ Bild↓ im Panel blättern (au…   s           Hosts sortieren         │
+  │   /           suchen (auch #tag)       Leertaste   Plan: Schritt streich…   z           KI-Zusammenfassung      │
+  │   o           neuer Ordner (A / B v…   ?           Plan: neu planen lass…   Z           alle Treffer zusammen…  │
+  │   r           Ordner bearbeiten                                             b           Änderungsbericht        │
+  │   v           in Ordner verschieben   ◆ KI fragen F3                        x           Export: md · txt · ca…  │
+  │   Shift+↑     nach oben schieben (↓…   ⏎           Frage senden             d           löschen                 │
+  │   ← / →       Ordner zu-/aufklappen    ⇧⏎ / Strg+J neue Zeile               a           Mitschreiben an/aus     │
+  │   - / +       alle Ordner zu/auf       1…9         Befehl einfügen          ␣ Befehl    nicht protokollieren    │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

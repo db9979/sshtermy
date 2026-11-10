@@ -147,6 +147,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Session log</h3><p>Encrypted, searchable, with AI summary, Markdown export and an AI change report (<kbd>b</kbd>) for tickets or docs. An activity calendar shows which days and hours you worked.</p></div>
     <div class="card"><h3>AI log diagnosis</h3><p>A selection or the last 400 lines (journalctl, <code>show logging</code>): situation, what stands out with timestamps, cause, commands to check.</p></div>
     <div class="card"><h3>Log view</h3><p><kbd>Alt</kbd>+<kbd>E</kbd> reads the logs of the system you are on (Linux, Windows, switches, firewalls), read-only, and shows patterns instead of lines: what is new since your last look, a timeline with reboots, updates and your own commands, hide noise per host or folder, and an AI status report from the condensed patterns only.</p></div>
+    <div class="card"><h3>Log watch &amp; folder scan</h3><p>Follows the logs of open tabs in the background and reports only new or critical patterns; receives syslog from switches and firewalls. The folder scan checks every host of a folder at once and shows what several hosts share.</p></div>
     <div class="card"><h3>Sync</h3><p>End-to-end encrypted via OneDrive, Dropbox, iCloud, Syncthing or WebDAV (Synology, Nextcloud).</p></div>
     <div class="card"><h3>System profile</h3><p>Knows Linux distributions, macOS, Windows and network OS dialects (Aruba, Cisco, Juniper, MikroTik, FortiGate, UniFi …), so the AI suggests matching commands.</p></div>
     <div class="card"><h3>AI companion</h3><p>Reads along and comments on its own: quiet (errors, risky lines before Enter, repeats), chatty (every command) or coach (spots your goal, recap with runbook). Your own AI servers, also external, can be registered.</p></div>
@@ -211,7 +212,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>Alt</kbd>+<kbd>I</kbd></td><td>Zoom a pane / type into all panes</td></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>Search the scrollback</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>c</kbd></td><td>Containers: Docker, Podman, Kubernetes (shell, logs, AI)</td></tr>
-    <tr><td><kbd>Alt</kbd>+<kbd>E</kbd> or <kbd>F6</kbd> → <kbd>l</kbd></td><td>Log view: <kbd>n</kbd> what's new, <kbd>t</kbd> timeline, <kbd>x</kbd>/<kbd>X</kbd> hide noise, <kbd>k</kbd> AI explains, <kbd>b</kbd> AI status report, <kbd>1</kbd>…<kbd>4</kbd> check command</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>E</kbd> or <kbd>F6</kbd> → <kbd>l</kbd></td><td>Log view: <kbd>n</kbd> what's new, <kbd>t</kbd> timeline, <kbd>x</kbd>/<kbd>X</kbd> hide noise, <kbd>k</kbd> AI explains, <kbd>b</kbd> AI status report, <kbd>1</kbd>…<kbd>4</kbd> check command, <kbd>w</kbd> log watch alerts</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>t</kbd> / <kbd>z</kbd></td><td>Live graphs: range 5 min / 1 h, large view</td></tr>
     <tr><td><kbd>F5</kbd> → <kbd>e</kbd></td><td>Server file in your own editor (saving uploads it)</td></tr>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Session logs: AI change report</td></tr>
