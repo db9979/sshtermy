@@ -249,6 +249,7 @@ func (a *App) logScanResult(msg tea.Msg) (tea.Cmd, bool) {
 	if raw, err := json.Marshal(r.Base()); err == nil {
 		_ = a.st.SetLogBase(l.conn.ID, raw)
 	}
+	delete(a.lwatch.base, l.conn.ID) // Logwache liest die neue Grundlinie
 	return nil, true
 }
 
@@ -495,6 +496,8 @@ func (a *App) updateLogScan(msg tea.Msg) tea.Cmd {
 		if s != nil && l.rep != nil {
 			return a.logBrief(s)
 		}
+	case "w":
+		return a.openWatchList()
 	case "c":
 		if l.rep != nil {
 			txt := a.lsMarkdown()

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 	"strings"
 	"sync"
@@ -935,6 +936,9 @@ func (m *modal) textView(s Styles, w, h int) string {
 		body = append(body, trunc(l, width))
 	}
 	keys := [][2]string{{"Esc", i18n.T("schließen")}}
+	if m.copy != "" {
+		keys = append([][2]string{{"c", i18n.T("kopieren")}}, keys...)
+	}
 	info := ""
 	if total > maxBody {
 		info = fmt.Sprintf(i18n.T("Zeile %d–%d von %d"), m.scroll+1, end, total)
@@ -957,6 +961,11 @@ func (m *modal) textKey(key string) (closeIt bool) {
 		m.scroll = 0
 	case "end", "G":
 		m.scroll = len(m.lines)
+	case "c":
+		if m.copy != "" {
+			txt := m.copy
+			go func() { _ = clipboard.WriteAll(txt) }()
+		}
 	case "esc", "q", "enter":
 		return true
 	}

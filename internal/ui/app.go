@@ -80,6 +80,8 @@ const (
 // App ist das Wurzel-Modell.
 type App struct {
 	lscan         logScanState      // Log-Blick (logscan.go)
+	lwatch        logWatchState     // Logwache + Syslog-Empfang (logwatch.go)
+	lfold         folderScanState   // Ordner-Scan (logfolder.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -532,6 +534,12 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.netMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.folderScanMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.watchMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.logScanResult(msg); ok {
 		return a, cmd
 	}
@@ -660,6 +668,7 @@ func (a *App) quit() tea.Cmd {
 		a.stopRecording(s)
 		s.close()
 	}
+	a.stopWatch()
 	a.closeBook()
 	a.stopMCP()
 	a.st.Lock()
@@ -694,6 +703,7 @@ func (a *App) onTick() tea.Cmd {
 	if c := a.teamLinkTick(); c != nil {
 		cmds = append(cmds, c)
 	}
+	a.watchTick()
 	for _, s := range a.sessions {
 		if s.term != nil && s.term.TakeBell() {
 			a.noticeBell(s)

@@ -310,7 +310,15 @@ func (a *App) paletteItems() []palItem {
 	add("multi",
 		palItem{icon: ic("broadcast"), label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), top: inMgr, run: func() tea.Cmd { return a.openBroadcast() }},
 		palItem{icon: ic("scan"), label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), top: inMgr, run: func() tea.Cmd { return a.openScan() }},
-		palItem{icon: ic("runbook"), label: i18n.T("Zeitpläne: Broadcast/Runbook nach Uhrzeit"), hint: a.keys.label(actSchedule), run: func() tea.Cmd { return a.openSchedules() }})
+		palItem{icon: ic("runbook"), label: i18n.T("Zeitpläne: Broadcast/Runbook nach Uhrzeit"), hint: a.keys.label(actSchedule), run: func() tea.Cmd { return a.openSchedules() }},
+		palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: Logs aller Hosts im Ordner …"), hint: i18n.T("Logs"), top: inMgr,
+			keys: "ordner scan folder logs log blick alle hosts auffälligkeiten journal eventlog", run: func() tea.Cmd { return a.openFolderScan() }},
+		palItem{icon: ic("errors"), label: a.watchMenuLabel(), hint: watchLabel(a.watchLevel()),
+			keys: "logwache log watch syslog alarm meldungen journal überwachen", run: func() tea.Cmd { return a.openWatchList() }})
+	if len(a.lfold.hosts) > 0 {
+		add("multi", palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: letztes Ergebnis"), hint: a.lfold.folder,
+			keys: "ordner scan ergebnis folder logs", run: func() tea.Cmd { a.showFolderScan(); return nil }})
+	}
 	add("net",
 		palItem{icon: ic("scan"), label: i18n.T("Gerät finden: MAC/IP → Switch-Port …"), hint: i18n.T("Switches"),
 			keys: "mac ip port vlan switch finden suchen wo hängt locate find", run: func() tea.Cmd { return a.askNetFind() }},
@@ -671,6 +679,10 @@ func (a *App) palMenuItems() []palItem {
 		palToggle(ic("sesslog"), i18n.T("Sitzungsprotokoll schreiben"), a.logsEnabled(), "log protokoll", func() tea.Cmd { return a.toggleSessionLog() }),
 		palCycle(pgSetBehave, ic("news"), i18n.T("Meldung, wenn lange Befehle fertig sind"), notifyLabel(a.notifyLevel()),
 			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }),
+		palCycle(pgSetBehave, ic("errors"), i18n.T("Logwache: neue Log-Muster melden"), watchLabel(a.watchLevel()),
+			"logwache log watch journal überwachen fehler warnungen", func(dir int) tea.Cmd { return a.cycleWatch(dir) }),
+		proItem(palCycle(pgSetBehave, ic("errors"), i18n.T("Syslog-Empfang (Switches, Firewalls)"), syslogLabel(a.st.Settings().SyslogPort),
+			"syslog udp 514 5514 empfang switch firewall logwache", func(dir int) tea.Cmd { return a.cycleSyslog(dir) })),
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
 		palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }),

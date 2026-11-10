@@ -298,3 +298,49 @@ func TestWindowsScriptRuns(t *testing.T) {
 		_ = ParseWindows(string(out), 1, time.Now())
 	}
 }
+
+func TestWatchLines(t *testing.T) {
+	now := time.Unix(1731230000, 0)
+	e, ok := UnixWatchLine(`{"__REALTIME_TIMESTAMP":"1731229990123456","PRIORITY":"3","SYSLOG_IDENTIFIER":"kernel","MESSAGE":"Out of memory: Killed process 1234 (java) total-vm:1kB"}`, now)
+	if !ok || e.Sev != SevErr || e.Source != "kernel" || e.Time.Unix() != 1731229990 {
+		t.Fatalf("journal json: %+v %v", e, ok)
+	}
+	f, ok := Classify(KindUnix, e)
+	if !ok || !strings.Contains(f.Title, "java") || f.Key == "" {
+		t.Fatalf("Classify: %+v", f)
+	}
+	if _, ok := UnixWatchLine(`{"MESSAGE":[1,2,3],"PRIORITY":"3"}`, now); ok {
+		t.Fatal("Binärnachricht nicht verworfen")
+	}
+	// Syslog-Empfang: ProCurve mit BSD-Kopf, Cisco ohne, FortiOS kv
+	for _, c := range []struct {
+		pkt  string
+		want string
+		sev  Sev
+	}{
+		{"<132>Nov 10 08:00:00 sw-buero 00077 ports: port 23 is now off-line", "port 23", SevWarn},
+		{"<187>42: *Mar  1 00:01:02: %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down", "GigabitEthernet0/1", SevErr},
+		{`<185>date=2026-11-10 time=08:00:00 logid="0101037131" type="event" subtype="vpn" level="error" logdesc="IPsec tunnel down" msg="tunnel down" vpntunnel="hq"`, "", SevErr},
+		{"<11>sshd[99]: error: kex_exchange_identification", "kex", SevErr},
+	} {
+		e, ok := SyslogPacket(c.pkt, now)
+		if !ok || !strings.Contains(e.Line(), c.want) || e.Sev != c.sev || e.Time.IsZero() {
+			t.Errorf("%q → %+v (%s)", c.pkt, e, e.Sev.Label())
+		}
+	}
+	if _, ok := SyslogPacket("  ", now); ok {
+		t.Fatal("leeres Paket")
+	}
+}
+
+func TestWatchScriptSyntax(t *testing.T) {
+	sh, err := exec.LookPath("sh")
+	if err != nil {
+		t.Skip("kein sh")
+	}
+	for _, w := range []bool{false, true} {
+		if out, err := exec.Command(sh, "-n", "-c", UnixWatchScript(w)).CombinedOutput(); err != nil {
+			t.Fatalf("%v: %s", err, out)
+		}
+	}
+}
