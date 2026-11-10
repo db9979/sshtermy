@@ -260,8 +260,15 @@ func (a *App) mcpRun(m mcpCallMsg) tea.Cmd {
 	}
 	kind := mcpKind(c)
 	dangers := safety.Check(cmd, kind)
-	if safety.ReadOnly(cmd, kind) && len(dangers) == 0 {
+	secret := safety.Sensitive(cmd)
+	// Nur Lesendes ohne sudo und ohne Geheimnisse läuft ohne Rückfrage: die
+	// Ausgabe geht an einen fremden KI-Client.
+	if safety.ReadOnly(cmd, kind) && len(dangers) == 0 && secret == "" && !safety.Elevated(cmd) {
 		return a.mcpExec(c, cmd, p.Timeout, m.reply)
+	}
+	if a.mcpLevel() != mcpAsk && safety.ReadOnly(cmd, kind) && len(dangers) == 0 {
+		m.reply("", errors.New("this command reads secrets or needs sudo; sshTermy only runs it after the user's confirmation (setting “MCP access: with confirmation”)"))
+		return nil
 	}
 	if a.mcpLevel() != mcpAsk {
 		m.reply("", errors.New("only read-only commands are allowed (sshTermy setting “MCP access: read only”); ask the user to run it or to allow confirmations"))
@@ -271,7 +278,14 @@ func (a *App) mcpRun(m mcpCallMsg) tea.Cmd {
 	for _, d := range dangers {
 		body += "\n▲ " + d.Reason
 	}
-	body += i18n.T("\n\nj = ausführen · n = ablehnen")
+	if secret != "" {
+		body += "\n◆ " + secret + i18n.T(": die Ausgabe geht an den KI-Client")
+	}
+	if len(dangers) > 0 {
+		body += i18n.T("\n\nj zweimal = ausführen · n = ablehnen")
+	} else {
+		body += i18n.T("\n\nj = ausführen · n = ablehnen")
+	}
 	md := confirmModal(i18n.T("MCP: Befehl erlauben?"), body, func() tea.Cmd { return a.mcpExec(c, cmd, p.Timeout, m.reply) })
 	md.onCancel = func() tea.Cmd {
 		a.auditAdd("mcp", auditConn(c), "abgelehnt: "+cmd)
@@ -282,7 +296,8 @@ func (a *App) mcpRun(m mcpCallMsg) tea.Cmd {
 		m.reply("", errors.New("sshTermy is busy with another dialog; try again in a moment"))
 		return nil
 	}
-	a.modal = md
+	md.twice = len(dangers) > 0 // Gefahr: j zweimal
+	a.showAsync(md)             // kam von selbst: erst nach einer Sekunde bedienbar
 	return nil
 }
 

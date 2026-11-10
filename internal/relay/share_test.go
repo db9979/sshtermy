@@ -41,7 +41,7 @@ func TestShareEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv.Logf = t.Logf
+	srv.Logf = testLogf(t)
 	ts := httptest.NewTLSServer(srv.Handler())
 	defer ts.Close()
 	fp := CertFP(ts.Certificate().Raw)

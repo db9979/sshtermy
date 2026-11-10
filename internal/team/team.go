@@ -248,6 +248,12 @@ type Stats struct {
 	QuickCmds        int // Verbindungen mit eigenen Schnellbefehlen
 	NeedUser, NeedPw int // ohne Benutzername / mit Passwort-Anmeldung (fragt beim Verbinden)
 	Removed          int // Team-Ordner: beim Absender entfernt, hier gelöscht
+	// KeptGuard: Verbindungen, deren Schutz (Produktiv, Netzwerkgerät) das
+	// Paket wegnehmen wollte; hier bleibt er.
+	KeptGuard int
+	// Review: Runbooks und Schnellbefehle, die neu oder geändert ankamen und
+	// vor dem ersten Lauf angesehen werden wollen.
+	Review int
 	// AddrChanges: neue Adresse für Verbindungen mit eigenen Zugangsdaten,
 	// noch nicht übernommen (erst nach Rückfrage, AcceptAddr).
 	AddrChanges []AddrChange
@@ -358,13 +364,28 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 					Old: addrOf(cur.Host, cur.Port), New: addrOf(in.Host, in.Port), Host: in.Host, Port: in.Port, Jump: in.JumpHostID})
 				in.Host, in.Port, in.JumpHostID = cur.Host, cur.Port, cur.JumpHostID
 			}
+			wasProd, wasNet := domain.IsProduction(cur), cur.Device == domain.DeviceNetwork
 			cur.Alias, cur.Host, cur.Port = in.Alias, in.Host, in.Port
 			if cur.Group != in.Group {
 				cur.Group, cur.Order = in.Group, nextOrder(in.Group)
 			}
 			cur.Tags, cur.JumpHostID, cur.Device = in.Tags, in.JumpHostID, in.Device
 			cur.TunnelIDs = mergeIDs(cur.TunnelIDs, in.TunnelIDs)
+			// Schutz nimmt ein Paket nie weg: sonst schaltete ein geänderter Tag
+			// oder Gerätetyp Gefahren-Check und Agent-Bremse still ab.
+			if wasNet && cur.Device != domain.DeviceNetwork {
+				cur.Device = domain.DeviceNetwork
+				st.KeptGuard++
+			}
+			if wasProd && !domain.IsProduction(cur) {
+				cur.Tags = append(append([]string(nil), cur.Tags...), "prod")
+				st.KeptGuard++
+			}
 			if in.QuickCmds != nil {
+				if len(in.QuickCmds) > 0 && !sameStrings(cur.QuickCmds, in.QuickCmds) {
+					cur.QuickTeamChanged = true
+					st.Review++
+				}
 				cur.QuickCmds = in.QuickCmds
 			}
 			if cur.Username == "" {
@@ -383,6 +404,10 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 			continue
 		}
 		c := safeIncoming(in)
+		c.QuickTeamChanged = len(c.QuickCmds) > 0
+		if c.QuickTeamChanged {
+			st.Review++
+		}
 		if c.Port == 0 {
 			c.Port = 22
 		}
@@ -418,7 +443,17 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 		}
 		t.UpdatedAt = now
 		delete(d.Deleted, t.ID)
+		// Tunnel aus dem Team starten nie von selbst: ein Remote-Tunnel oder
+		// eine Bindung an alle Adressen öffnete sonst still einen Weg in dein
+		// Netz. Ein Autostart, den du hier gesetzt hast, bleibt, solange das
+		// Paket Art, Bindung und Ziel nicht ändert.
+		t.AutoStart, t.AutoOpen = false, false
 		if i, ok := tidx[t.ID]; ok {
+			cur := d.Tunnels[i]
+			if cur.Kind == t.Kind && cur.BindHost == t.BindHost && cur.BindPort == t.BindPort &&
+				cur.TargetHost == t.TargetHost && cur.TargetPort == t.TargetPort {
+				t.AutoStart, t.AutoOpen = cur.AutoStart, cur.AutoOpen
+			}
 			d.Tunnels[i] = t
 		} else {
 			d.Tunnels = append(d.Tunnels, t)
@@ -435,11 +470,20 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 		}
 		r.UpdatedAt = now
 		delete(d.Deleted, r.ID)
+		// Neu oder geändert: erst ansehen, bevor ein Zeitplan es ausführt.
+		r.TeamChanged = true
 		if i, ok := ridx[r.ID]; ok {
 			cur := d.Runbooks[i]
 			r.Uses, r.LastUsed, r.CreatedAt = cur.Uses, cur.LastUsed, cur.CreatedAt
+			if sameRunbook(cur, r) {
+				r.TeamChanged = cur.TeamChanged
+			}
+			if r.TeamChanged && !cur.TeamChanged {
+				st.Review++
+			}
 			d.Runbooks[i] = r
 		} else {
+			st.Review++
 			if r.CreatedAt.IsZero() {
 				r.CreatedAt = now
 			}
@@ -448,6 +492,31 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 		st.Runbooks++
 	}
 	return st
+}
+
+func sameStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// sameRunbook: gleiche Befehle und Skripte (Name und Ziel zählen nicht).
+func sameRunbook(a, b domain.Runbook) bool {
+	if !sameStrings(a.Steps, b.Steps) || len(a.Files) != len(b.Files) || a.Goal != b.Goal {
+		return false
+	}
+	for i := range a.Files {
+		if a.Files[i] != b.Files[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func mergeIDs(a, b []string) []string {

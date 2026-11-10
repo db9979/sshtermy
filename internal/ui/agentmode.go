@@ -31,7 +31,7 @@ import (
 
 const (
 	lvlCareful = iota // nur Lesendes läuft allein
-	lvlNormal         // alles außer Gefahr, sudo und Inline-Code (python -c …)
+	lvlNormal         // alles außer Gefahr, sudo, root/Admin und Inline-Code (python -c …)
 	lvlFull           // auch sudo; Gefahr fragt trotzdem
 )
 
@@ -62,7 +62,7 @@ func levelHint(l int) string {
 	case lvlFull:
 		return i18n.T("auch sudo; Gefahr fragt immer")
 	}
-	return i18n.T("alles außer Gefahr, sudo und Code in der Zeile")
+	return i18n.T("alles außer Gefahr, sudo, root und Code in der Zeile")
 }
 
 // agentRunning: läuft gerade ein Agent (nicht angehalten)?
@@ -123,6 +123,10 @@ func (a *App) agentGate(s *session, st *agent.Step) (bool, string) {
 		}
 		return true, ""
 	}
+	if why := safety.Sensitive(st.Command); why != "" {
+		// liest nur, aber die Ausgabe ginge an die KI: immer fragen
+		return false, why + i18n.T(" (Ausgabe ginge an die KI)")
+	}
 	if safety.ReadOnly(st.Command, a.safetyKind(s)) && !(st.Elevated && g.level == lvlCareful) {
 		return true, ""
 	}
@@ -137,10 +141,20 @@ func (a *App) agentGate(s *session, st *agent.Step) (bool, string) {
 		return false, i18n.T("Produktiv-Host: Änderungen fragen nach")
 	case st.Elevated && g.level < lvlFull:
 		return false, i18n.T("braucht sudo")
+	case g.level < lvlFull && a.agentAdmin(s):
+		return false, i18n.T("angemeldet als root/Administrator: Änderungen fragen nach")
 	case g.level < lvlFull && safety.InlineCode(st.Command):
 		return false, i18n.T("startet Code aus der Zeile (python -c, bash -c, eval …)")
 	}
 	return true, ""
+}
+
+// agentAdmin: läuft die Sitzung ohnehin mit vollen Rechten (root, Windows-
+// Administrator)? Dann fehlt die sudo-Bremse; „Normal“ fragt deshalb bei
+// allem nach, was etwas ändert. Windows zählt immer dazu: Fernzugang per
+// WinRM oder SSH hat dort fast immer Administratorrechte.
+func (a *App) agentAdmin(s *session) bool {
+	return s.rootNow() || s.conn.Protocol == domain.ProtoWinRM || a.safetyKind(s) == "windows"
 }
 
 // agentPause hält den Agenten an. Ein laufender Befehl läuft weiter; sein

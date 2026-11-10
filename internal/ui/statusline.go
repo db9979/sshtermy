@@ -20,21 +20,7 @@ import (
 // die Zeile rot, und als root gibt es immer eine deutliche Warnung.
 
 // isProduction: Verbindung gehört zu einem Produktivsystem.
-func isProduction(c domain.Connection) bool {
-	has := func(s string) bool {
-		l := strings.ToLower(s)
-		return strings.Contains(l, "prod") || l == "live"
-	}
-	if has(c.Group) || strings.Contains(strings.ToLower(c.Alias), "prod") {
-		return true
-	}
-	for _, t := range c.Tags {
-		if has(t) {
-			return true
-		}
-	}
-	return false
-}
+func isProduction(c domain.Connection) bool { return domain.IsProduction(c) }
 
 // rootNow: arbeitet der Nutzer gerade als root? Anmeldename root, oder der
 // Prompt endet auf „#“ (sudo -i, su -). Bei Netzwerkgeräten heißt „#“ nur

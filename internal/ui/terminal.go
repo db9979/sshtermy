@@ -364,6 +364,9 @@ func (a *App) terminalKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 
 // terminalKeyOne: Taste für genau eine Sitzung.
 func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
+	if a.shellBusyKey(s, k) {
+		return nil // sshTermy tippt gerade selbst (shelllock.go)
+	}
 	key := k.String()
 	// Ghost-Text übernehmen
 	if g := a.visibleGhost(s); g != "" && (key == "tab" || key == "right" || key == "end") {

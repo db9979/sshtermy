@@ -38,7 +38,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Split view** (Ctrl+T): up to six sessions at once in seven layouts, resize with the mouse or Alt+⇧+arrow, zoom one pane (Alt+Z), swap panes by dragging their title, optionally dim the other panes. The layout survives updates; **workspaces** (w in the manager) save layout and connections to reopen in one go, “Last used” is remembered on quit, `g` on a folder opens all its connections as a grid
 - **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
 - **SSH certificates**: keys signed by a company CA (`id_ed25519-cert.pub` next to the key, or any path in the connection) are used automatically; an expired certificate is reported with its date
-- **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder, or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
+- **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder (sshTermy asks first and never overwrites an existing file), or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
 - **Screen lock**: palette “Lock now” or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen. **Change master password** (palette → Settings › Security) also switches the Windows sign-in (DPAPI) on or off later
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag “Produktion”, “prod”, “live”) get a red line
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal. While copying, a bar shows percent, MB/s, time left and “file 2 of 5”, with a small speed curve
@@ -65,10 +65,12 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   which port of whom, APs and phones listed dimmed inside the switch box, ring links below; a plain tree if it does not fit), plus a Mermaid diagram in Downloads for docs, wiki or GitHub
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
   every host gets its own tile (framed green when done, red on failure, pulsing while running; `z` enlarges one). The danger rules apply here too: red needs ⏎ twice.
+  Steps that change something first run on one host as a trial run, then on the rest; after 3 failed hosts no further host starts (`p` turns the trial run off).
   Servers get every step via exec (with exit code), network devices get the commands typed into their shell (“-- MORE --” is paged automatically).
 - **Schedules** (z in the manager): a broadcast or runbook runs at a set time on a folder or single connections,
   daily, Mon–Fri, on weekends or on one weekday, e.g. “3:00 Mon–Fri `show running-config` on all switches”.
-  Runs while sshTermy is open (also when locked), missed runs are caught up within 12 hours.
+  Runs while sshTermy is open (also when locked), missed read-only runs are caught up within 12 hours; steps that change something only within 10 minutes (a 3:00 maintenance never runs at noon).
+  New hosts that appear in the target folder later (e.g. from a team folder) only join after `Ctrl+A` in the list, and a runbook that came changed from a team folder waits until you have started it once in the broadcast.
   Unattended there are no questions: unknown host keys and missing passwords make that host fail,
   dangerous steps and runbooks with variables cannot be scheduled at all. The result per host is in the list
   (⏎), plus a toast or desktop notification. Schedules stay on this computer (no sync), so two computers never
@@ -95,7 +97,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
-    Levels: *Careful* (only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`),
+    Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),
     *Full* (sudo too). Dangerous commands, including every line of a script, always wait for you; on production hosts
     and network devices every change asks. Limits: 25 steps, 15 minutes, 3 failures in a row. Esc or typing in the
     terminal pauses it, `?` gives it an instruction. At the end: the full summary (scroll with PgUp/PgDn or the mouse wheel,
@@ -270,7 +272,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | ← → Space / - + | collapse/expand folder / collapse or expand all |
 | | Shift+↑↓ (Alt+↑↓), drag with the mouse | change the order, drag into a folder |
 | | # , /#tag | filter by tag, search by name, host, folder, tags |
-| Broadcast | Space / g / a, Tab, Ctrl+S | select host / folder / all, hosts·source·command, check and confirm |
+| Broadcast | Space / g / a, Tab, Ctrl+S, p | select host / folder / all, hosts·source·command, check and confirm, trial run on/off |
 | | ←→ / ↑↓ / z / c / r / x | host column / scroll / enlarge / copy output / again / cancel |
 | Network scan | Ctrl+S, Space / a, ⏎ | start scan, select hits, create as connections |
 | Terminal | F2 | goal mode (agent) |
@@ -518,8 +520,12 @@ Windows login ──DPAPI CryptProtectData────────────�
 - The AI **never types by itself**. Every command is a suggestion; only your confirmation sends it to the PTY.
 - **Fixed danger rules** (`internal/safety`), never the model, decide what is red: `rm -rf`, `find -delete`, `dd`, `mkfs`,
   `curl | sh`, `… | base64 -d | sh`, reboot, flushing the firewall, changing users, `git reset --hard`, removing packages, Docker prune,
-  stopping the SSH service; on Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)` and more.
+  stopping the SSH service, deleting system files, taking the network down, `iptables -P … DROP`, `kubectl delete`, `DROP DATABASE`, `zfs destroy`, `rsync --delete`;
+  on Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)`, stopping WinRM, `Disable-NetAdapter` and more.
+  Every command is checked against all rule groups (Unix, Windows, network devices), multi-line input line by line: a switch that was taken for a server cannot hide `erase startup-config`.
   Red commands need two confirmations; edited commands are checked again. `sudo` is marked, also behind `&&`, `;` or `|`.
+- **Reading secrets asks too:** `/etc/shadow`, private keys, `.env`, `kubectl get secret`, `docker inspect`, `printenv` or a switch's `show running-config` change nothing, but their output would go to the AI. The agent and MCP always ask first; plan mode skips them while exploring.
+- **Dialogs that pop up by themselves** (host key, password, MCP request, files from the server) ignore keys for one second, so a `j` from `journalctl` you were typing confirms nothing. If another dialog is open, they wait instead of replacing it.
 - **Paste guard:** the same rules check every pasted line. A hit shows the preview with the
   red line and needs two confirmations, even if the multi-line preview is turned off.
 - **Prompt injection:** everything from the terminal is passed as material in a `<<< … >>>` block whose markers are
@@ -540,7 +546,7 @@ Windows login ──DPAPI CryptProtectData────────────�
 AI clients such as Claude Desktop or Claude Code can use your saved connections through the Model Context Protocol.
 Turn it on in Settings › Security › “MCP access for AI clients”: **read only** (list connections and open tabs,
 read a tab, run read-only commands like `df -h` or `show interfaces`) or **with confirmation** (any other command
-runs only after you press `y` in sshTermy; dangerous commands are marked red). sshTermy must be running and unlocked;
+runs only after you press `y` in sshTermy; dangerous commands need `y` twice). Commands with `sudo` or that read secrets (`/etc/shadow`, keys, `.env`, `show running-config` …) always ask, even if they only read. sshTermy must be running and unlocked;
 `sshtermy mcp` is only a bridge and holds no data. Connections tagged `no-ai`/`ai-local`, or AI privacy “AI off”, are
 never shown. Secrets in output are redacted, every call lands in the audit log.
 
@@ -761,7 +767,10 @@ manager, the whole folder is shared: new connections in it are included automati
 
 Colleagues leave “Subscribe” on when importing. sshTermy then re-reads the file every 5 minutes and applies changes:
 new connections are added, changed ones updated, and ones the sender deleted disappear here too. Their own
-passwords, keys and user names stay. Ctrl+Space → “Team folders” shows the status, checks right away or ends a
+passwords, keys and user names stay. A package never removes protection: a “prod” tag or the device type
+“network device” stays even if the sender removed it. Changed quick commands show the command on the first key
+press and only run on the second; new or changed runbooks wait before any schedule runs them; tunnels from the
+team never start by themselves. Ctrl+Space → “Team folders” shows the status, checks right away or ends a
 subscription (the connections stay). Team folders are local only and not part of the sync.
 
 ## License

@@ -75,6 +75,12 @@ func (a *App) syncKey(s *session, tg []*session, k tea.KeyPressMsg) tea.Cmd {
 		return nil
 	}
 	all := append([]*session{s}, tg...)
+	for _, x := range all {
+		if x != s && x.cap.active() {
+			a.flashErr(x.conn.Alias + i18n.T(": sshTermy tippt dort gerade. Taste an keinen Host geschickt."))
+			return nil
+		}
+	}
 	if key == "enter" {
 		for _, x := range all {
 			if why := a.syncDanger(x); why != "" {
@@ -102,6 +108,12 @@ func (a *App) syncPaste(s *session, tg []*session, text string) tea.Cmd {
 		pc := checkPaste(text, a.safetyKind(x))
 		if pc.multi || pc.dangerous > 0 {
 			a.flashErr(i18n.T("Bei Eingabe an alle geht nur einzeiliges, harmloses Einfügen. Nichts eingefügt."))
+			return nil
+		}
+	}
+	for _, x := range all {
+		if x.cap.active() {
+			a.flashErr(x.conn.Alias + i18n.T(": sshTermy tippt dort gerade. Nichts eingefügt."))
 			return nil
 		}
 	}

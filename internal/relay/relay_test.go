@@ -90,7 +90,7 @@ func TestEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv.Logf = t.Logf
+	srv.Logf = testLogf(t)
 	srv.OpenWait = 5 * time.Second
 	ts := httptest.NewTLSServer(srv.Handler())
 	defer ts.Close()
@@ -132,7 +132,7 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatal("Anker-Code als Geräte-Code")
 	}
 
-	an := &Anchor{Cfg: acfg, Logf: t.Logf}
+	an := &Anchor{Cfg: acfg, Logf: testLogf(t)}
 	go an.Run(ctx)
 
 	// Gerät koppeln

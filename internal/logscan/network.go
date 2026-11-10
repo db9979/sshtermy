@@ -284,6 +284,20 @@ func portLike(s string) bool { return rePortName.MatchString(s) && len(s) <= 16 
 // schickt. Leer = per CLI nicht einstellbar (UniFi: im Controller).
 // Gespeichert wird nichts außer bei Junos (commit); write memory macht der
 // Benutzer selbst.
+// SyslogAbort: Befehle, die eine abgebrochene Einrichtung verwerfen und den
+// Konfigurationsmodus verlassen (nil = nichts zu tun).
+func SyslogAbort(v hostinfo.Vendor) []string {
+	switch v {
+	case hostinfo.VendorProCurve, hostinfo.VendorArubaCX, hostinfo.VendorCisco:
+		return []string{"end"}
+	case hostinfo.VendorJunos:
+		return []string{"rollback", "exit configuration-mode"}
+	case hostinfo.VendorFortiOS:
+		return []string{"abort"}
+	}
+	return nil
+}
+
 func SyslogSetup(v hostinfo.Vendor, ip string, port int) []string {
 	p := strconv.Itoa(port)
 	switch v {

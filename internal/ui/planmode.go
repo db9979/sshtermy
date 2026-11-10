@@ -45,6 +45,11 @@ func (a *App) planStepMsg(s *session, st agent.Step) tea.Cmd {
 			ExitHint: i18n.T("nicht ausgeführt: beim Planen nur lesende Befehle")})
 		return a.requestStep(s)
 	}
+	if why := safety.Sensitive(st.Command); why != "" {
+		g.steps = append(g.steps, agent.DoneStep{Command: st.Command, Skipped: true,
+			ExitHint: i18n.T("nicht ausgeführt: ") + why + i18n.T(" (Ausgabe ginge an die KI)")})
+		return a.requestStep(s)
+	}
 	if s.state != stConnected || s.term == nil {
 		g.err = i18n.T("keine Verbindung: erst neu verbinden")
 		return nil

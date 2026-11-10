@@ -132,6 +132,9 @@ type Connection struct {
 
 	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
 	QuickCmds []string `json:"quick_cmds,omitempty"`
+	// QuickTeamChanged: Schnellbefehle kamen geändert aus dem Team; der erste
+	// Druck zeigt den Befehl nur an, erst der zweite führt ihn aus.
+	QuickTeamChanged bool `json:"quick_team_changed,omitempty"`
 
 	// Protocol: SSH (leer), Telnet oder serielle Konsole (USB-Konsolenkabel).
 	// Bei Telnet und seriell meldet sshTermy sich selbst an, wenn Benutzer
@@ -893,6 +896,9 @@ type Runbook struct {
 	LastUsed     time.Time     `json:"last_used,omitempty"`
 	Uses         int           `json:"uses,omitempty"`
 	UpdatedAt    time.Time     `json:"updated_at,omitempty"` // letzte Änderung (Sync)
+	// TeamChanged: ein abonnierter Team-Ordner hat die Schritte geändert und
+	// noch niemand hat sie hier angesehen. Zeitpläne lassen es so lange liegen.
+	TeamChanged bool `json:"team_changed,omitempty"`
 }
 
 // RunbookFile: eine Datei, die der Agent-Modus angelegt hat. Pfade in den
@@ -933,6 +939,10 @@ type Schedule struct {
 	LastOK    int       `json:"last_ok,omitempty"`
 	LastFail  int       `json:"last_fail,omitempty"`
 	LastText  string    `json:"last_text,omitempty"` // Ergebnis je Host, gekürzt
+	// Known: Verbindungen im Ziel-Ordner, die du bestätigt hast (beim Speichern
+	// oder mit Strg+A). Neue Hosts im Ordner – etwa aus einem Team-Abo – laufen
+	// erst danach mit. nil = alter Zeitplan, beim nächsten Lauf übernommen.
+	Known []string `json:"known,omitempty"`
 }
 
 // ScheduleBackup: Zeitplan sichert die running-config aller Switches im Ziel.
@@ -942,7 +952,12 @@ const ScheduleBackup = "backup"
 const ScheduleLogs = "logs"
 
 // ScheduleCatchUp: so lange nach dem Termin wird ein verpasster Lauf nachgeholt.
+// Was etwas ändert, holt sshTermy nur bis ScheduleLate nach (eine Wartung für
+// 3 Uhr soll nicht mitten am Tag laufen); Lesendes bis ScheduleCatchUp.
 const ScheduleCatchUp = 12 * time.Hour
+
+// ScheduleLate: ab dieser Verspätung gilt ein Lauf als nachgeholt.
+const ScheduleLate = 10 * time.Minute
 
 // DueAt: Termin des Tages von now (zero, wenn heute kein Lauftag ist oder
 // die Zeit unlesbar).
@@ -1034,4 +1049,22 @@ func (n LogNoise) Hides(key string, c Connection, now time.Time) bool {
 		return InFolder(c.Group, n.Folder)
 	}
 	return true
+}
+
+// IsProduction: Produktiv-Host? Ordner, Tag („prod“, „live“) oder Alias mit
+// „prod“. Der Gefahren-Check beim Tippen und der Agent sind hier strenger.
+func IsProduction(c Connection) bool {
+	has := func(s string) bool {
+		l := strings.ToLower(s)
+		return strings.Contains(l, "prod") || l == "live"
+	}
+	if has(c.Group) || strings.Contains(strings.ToLower(c.Alias), "prod") {
+		return true
+	}
+	for _, t := range c.Tags {
+		if has(t) {
+			return true
+		}
+	}
+	return false
 }

@@ -107,3 +107,44 @@ func TestDangers(t *testing.T) {
 		t.Fatal("Elevated falsch")
 	}
 }
+
+// Probelauf: scheitert der erste Host, startet kein weiterer. StopAfter hält
+// nach so vielen Fehlern an.
+func TestRunCanaryAndStop(t *testing.T) {
+	var mu sync.Mutex
+	var dialed []string
+	dial := func(_ context.Context, c domain.Connection) (Executor, error) {
+		mu.Lock()
+		dialed = append(dialed, c.ID)
+		mu.Unlock()
+		if strings.HasPrefix(c.ID, "x") {
+			return nil, errors.New("refused")
+		}
+		var execs []string
+		return fakeExec{mu: &sync.Mutex{}, execs: &execs}, nil
+	}
+	conns := []domain.Connection{{ID: "x1", Alias: "erster"}, {ID: "b"}, {ID: "c"}}
+	res := Run(context.Background(), Job{Conns: conns, Steps: []string{"x"}, Canary: true}, dial, func(int, Result) {})
+	if len(dialed) != 1 || res[1].State != Canceled || !strings.Contains(res[1].Err, "Probelauf") {
+		t.Fatalf("Probelauf: dialed %v, %+v", dialed, res[1])
+	}
+	dialed = nil
+	conns = []domain.Connection{{ID: "x1"}, {ID: "x2"}, {ID: "x3"}, {ID: "x4"}, {ID: "x5"}}
+	res = Run(context.Background(), Job{Conns: conns, Steps: []string{"x"}, Parallel: 1, StopAfter: 2}, dial, func(int, Result) {})
+	skipped := 0
+	for _, r := range res {
+		if r.State == Canceled {
+			skipped++
+		}
+	}
+	if len(dialed) != 2 || skipped != 3 {
+		t.Fatalf("StopAfter: dialed %v, übersprungen %d", dialed, skipped)
+	}
+	// Probelauf gut: alle laufen
+	dialed = nil
+	conns = []domain.Connection{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	res = Run(context.Background(), Job{Conns: conns, Steps: []string{"x"}, Canary: true}, dial, func(int, Result) {})
+	if len(dialed) != 3 || !res[2].OK() {
+		t.Fatalf("alle: dialed %v", dialed)
+	}
+}
