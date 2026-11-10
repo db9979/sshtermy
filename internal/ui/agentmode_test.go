@@ -86,6 +86,13 @@ func TestAgentGates(t *testing.T) {
 		{"inline voll", domain.Connection{Alias: "lab"}, lvlFull, "bash -c 'mkdir -p /tmp/x'", true},
 		{"skript normal", domain.Connection{Alias: "lab"}, lvlNormal, "bash /tmp/x.sh", true},
 		{"switch show", domain.Connection{Alias: "sw", Device: domain.DeviceNetwork}, lvlCareful, "show ntp status", true},
+		// Sicherheitsprüfung 2026-11-10: root/Admin hat keine sudo-Bremse
+		{"root normal ändern", domain.Connection{Alias: "lab", Username: "root"}, lvlNormal, "systemctl restart nginx", false},
+		{"root normal lesen", domain.Connection{Alias: "lab", Username: "root"}, lvlNormal, "df -h", true},
+		{"root voll", domain.Connection{Alias: "lab", Username: "root"}, lvlFull, "systemctl restart nginx", true},
+		{"winrm normal", domain.Connection{Alias: "win", Protocol: domain.ProtoWinRM}, lvlNormal, "Restart-Service Spooler", false},
+		{"root voll fstab", domain.Connection{Alias: "lab", Username: "root"}, lvlFull, "rm /etc/fstab", false},
+		{"falscher switch", domain.Connection{Alias: "lab"}, lvlFull, "erase startup-config", false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

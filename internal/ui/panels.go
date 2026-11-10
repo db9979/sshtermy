@@ -161,7 +161,7 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 			s.goal.input = newAIInput(i18n.T("z. B. Installiere Docker und richte Nginx als Reverse Proxy ein"))
 			s.goal.edit, s.goal.answer = newCommandInput(), newAIInput("")
 			s.goal.inited, s.goal.rbSel = true, -1
-			s.goal.level = lvlNormal
+			s.goal.level = lvlCareful // Standard seit 2026-11-10: nur Lesendes läuft allein
 		}
 		if !s.goal.active {
 			return s.goal.input.Focus()
