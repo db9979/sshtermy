@@ -580,6 +580,9 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 		return a.startScheduleLogs(sc, conns)
 	}
 	job := broadcast.Job{Conns: conns, Steps: steps}
+	if sc.Kind == "" && !stepsReadOnly(steps) {
+		job.Canary, job.StopAfter = true, bcStopAfter // ohne Aufsicht erst recht
+	}
 	var backup *schedBackup
 	if sc.Kind == domain.ScheduleBackup {
 		backup = &schedBackup{st: a.st, rules: a.configRules()}
