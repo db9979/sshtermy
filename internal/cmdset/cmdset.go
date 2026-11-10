@@ -62,6 +62,7 @@ const (
 	Builtin Source = iota // im Programm
 	Own                   // eigene Datei im Konfigordner
 	Team                  // aus dem Team-Ordner (nur nach Freigabe aktiv)
+	Synced                // vom Sync (anderer eigener Rechner), nie aktiv: nach Übernahme eigener Satz
 )
 
 // Set ist ein Befehlssatz, wie er in der Datei steht.
