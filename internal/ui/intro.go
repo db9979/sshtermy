@@ -18,8 +18,10 @@ import (
 )
 
 // Startanimation „Entschlüsseln“: Zufallszeichen rasten einzeln in das
-// große Logo ein, danach erscheinen Slogan und Credit. Unter 2 Sekunden,
-// jede Taste und jeder Klick überspringt sie.
+// große Logo ein, danach erscheinen Slogan und Credit. Der Credit
+// „Idee: …“ entschlüsselt sich Buchstabe für Buchstabe wie das Logo, ein
+// Strich wächst darunter auf, ein Lichtschein läuft über den Namen. Gut
+// vier Sekunden; jede Taste und jeder Klick überspringt sie.
 //
 // Abschalten: Palette „Startanimation aus“, Startparameter --no-intro oder
 // SSHTERMY_NO_INTRO=1. Die Einstellung muss vor dem Entsperren lesbar sein,
@@ -30,8 +32,13 @@ import (
 // Halbblöcke, ░▒▓, ASCII, Braille-Spinner und ✓.
 
 const (
-	introDur     = 1.9 // Sekunden bis zum Entsperren-Bildschirm
+	introDur     = 4.6 // Sekunden bis zum Entsperren-Bildschirm
 	introLockEnd = 1.15
+	// Credit-Zeitplan (Sekunden seit Start)
+	creditStart  = 1.55 // „Idee:“ blendet ein
+	creditDecode = 1.75 // erster Buchstabe des Namens rastet ein
+	creditStep   = 0.055
+	creditGlint  = 0.55 // Dauer eines Lichtscheins über den Namen
 	introFPS     = 30
 	noIntroFile  = "no-intro"
 )
@@ -303,9 +310,74 @@ func renderIntro(th Theme, t float64, w, h int, unlocked bool) string {
 		g.center(ly, done, bg.mix(ok, (t-introLockEnd)/0.2))
 	}
 	g.center(ly+1, typed(i18n.T(version.Slogan)+" · v"+version.Version, t-introLockEnd, 0.35), text)
-	g.center(ly+2, i18n.T(version.Idea), bg.mix(muted, (t-introLockEnd-0.25)/0.3))
+	introCredit(g, ly+2, t, i18n.T(version.Idea), bg, muted, border, accent, ai, ok, flashC)
 	g.center(h-1, i18n.T("beliebige Taste überspringt"), bg.mix(border, t/0.3))
 	return g.String()
+}
+
+// introCredit: „Idee: Name“. Das Präfix blendet ein, die Buchstaben des
+// Namens wirbeln wie beim Logo als Zufallszeichen und rasten von links nach
+// rechts mit kurzem Aufblitzen ein. Darunter wächst von der Mitte aus ein
+// Strich, danach läuft zweimal ein Lichtschein über den Namen.
+func introCredit(g *introGrid, y int, t float64, s string, bg, muted, border, accent, ai, ok, flashC rgb) {
+	r := []rune(s)
+	pre := 0 // Länge von „Idee: “
+	if i := strings.Index(s, ": "); i >= 0 {
+		pre = len([]rune(s[:i+2]))
+	}
+	x0 := (g.w - len(r)) / 2
+	n := len(r) - pre
+	nameEnd := creditDecode + float64(n)*creditStep + 0.1
+	grad := func(i int) rgb {
+		if n <= 1 {
+			return accent
+		}
+		return accent.mix(ai, float64(i)/float64(n-1))
+	}
+	noise := []rune(`01░▒▓<>/\{}#$%&*+=`)
+	rnd := rand.New(rand.NewSource(int64(t*introFPS) + 99))
+	for i, c := range r {
+		x := x0 + i
+		if i < pre {
+			if t >= creditStart {
+				g.set(x, y, c, bg.mix(muted, (t-creditStart)/0.3), false)
+			}
+			continue
+		}
+		k := i - pre
+		lock := creditDecode + float64(k)*creditStep
+		switch {
+		case c == ' ':
+		case t < creditStart:
+		case t < lock:
+			g.set(x, y, noise[rnd.Intn(len(noise))], border.mix(ok, 0.4+0.5*rnd.Float64()), false)
+		case t < lock+0.1:
+			g.set(x, y, c, flashC, true)
+		default:
+			col := grad(k)
+			// Lichtschein: heller Fleck wandert über den Namen (zweimal)
+			for _, gs := range []float64{nameEnd + 0.25, nameEnd + 1.35} {
+				if p := (t - gs) / creditGlint; p >= 0 && p <= 1 {
+					pos := -2 + p*float64(n+4)
+					if d := math.Abs(float64(k) - pos); d < 2.5 {
+						col = col.mix(flashC, 0.85*(1-d/2.5))
+					}
+				}
+			}
+			g.set(x, y, c, col, true)
+		}
+	}
+	// Strich wächst von der Mitte des Namens nach außen
+	if ut := (t - nameEnd + 0.15) / 0.45; ut > 0 && n > 0 && y+1 < g.h-1 {
+		mid := float64(x0+pre) + float64(n-1)/2
+		half := clamp01(ut) * (float64(n)/2 + 1)
+		for x := x0 + pre - 1; x <= x0+len(r); x++ {
+			if d := math.Abs(float64(x) - mid); d <= half {
+				col := accent.mix(ai, (float64(x)-float64(x0+pre))/float64(max(n-1, 1)))
+				g.set(x, y+1, '─', bg.mix(col, 0.65*(1-0.6*d/(half+1))), false)
+			}
+		}
+	}
 }
 
 func (a *App) viewIntro() string {

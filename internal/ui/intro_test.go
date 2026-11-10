@@ -38,6 +38,17 @@ func TestIntroFrames(t *testing.T) {
 	if strings.ContainsAny(last, `░▒▓{}#$%&`) {
 		t.Error("Endbild enthält noch Zufallszeichen")
 	}
+	if !strings.Contains(last, "────") {
+		t.Error("Endbild ohne Strich unter dem Credit")
+	}
+	// Credit entschlüsselt sich nach und nach: früh noch nicht ganz da
+	name := version.Idea[strings.Index(version.Idea, ": ")+2:]
+	if mid := ansi.Strip(renderIntro(Nacht, creditDecode+0.2, 80, 24, true)); strings.Contains(mid, name) {
+		t.Error("Name steht schon vollständig da, bevor er eingerastet ist")
+	}
+	if introDur < 4 {
+		t.Error("Startanimation soll nicht so schnell schließen")
+	}
 	if strings.Contains(ansi.Strip(renderIntro(Nacht, introDur, 80, 24, false)), "entschlüsselt") {
 		t.Error("ohne DPAPI-Entsperren darf nicht „entschlüsselt“ dastehen")
 	}
@@ -59,7 +70,7 @@ func TestIntroSkipAndDisable(t *testing.T) {
 		t.Fatal("Taste hat die Animation nicht beendet")
 	}
 	// Zeit abgelaufen
-	a.intro = &introState{start: time.Now().Add(-3 * time.Second)}
+	a.intro = &introState{start: time.Now().Add(-introDur * 1100 * time.Millisecond)}
 	if cmd, ok := a.introMsg(introFrameMsg(time.Now())); !ok || cmd != nil || a.intro != nil {
 		t.Fatal("Animation endet nicht nach Ablauf")
 	}
