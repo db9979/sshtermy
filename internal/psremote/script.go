@@ -79,7 +79,7 @@ while($true){
  if($__k -eq 'C'){
   $__t=$null;$__pe=$null
   [void][Management.Automation.Language.Parser]::ParseInput($__s,[ref]$__t,[ref]$__pe)
-  if(@($__pe|Where-Object{$_.IncompleteInput}).Count -gt 0){__m 'M' '';continue}
+  if(@($__pe|Where-Object{$_.IncompleteInput -or ($_.ErrorId -match '^(MissingEnd|MissingClosing|TerminatorExpected|MissingEndCurlyBrace)' -and $_.Extent.EndOffset -ge $__s.TrimEnd().Length)}).Count -gt 0){__m 'M' '';continue}
  }
  try{. ([ScriptBlock]::Create($__s)) *>&1 | ForEach-Object{__c $_} | Out-String -Stream -Width $__w | ForEach-Object{$__o.WriteLine($_)}}catch{$__o.WriteLine((__c $_))}
  $__o.Flush()
