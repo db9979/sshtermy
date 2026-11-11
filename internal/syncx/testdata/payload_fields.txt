@@ -1,4 +1,4 @@
-format 2
+format 3
 payload.cmd_stats
 payload.cmd_stats.at
 payload.cmd_stats.conns
@@ -194,6 +194,7 @@ payload.settings.prefs.more.log_scan.noise.title
 payload.settings.prefs.more.log_scan.noise.until
 payload.settings.prefs.more.log_scan.watch
 payload.settings.prefs.more.log_scan.watch_warn
+payload.settings.prefs.more.no_tab_frames
 payload.settings.prefs.more.simple
 payload.settings.prefs.motion
 payload.settings.prefs.no_auto_reconnect
