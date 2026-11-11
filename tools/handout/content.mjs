@@ -129,6 +129,7 @@ export const de = {
       ['→ / ←', 'Ordner › öffnen · ‹ Wert › weiter / zurück'],
       ['„log“ / „befehl“', 'Ausgabe auswerten / Befehlssätze'],
       ['MAC, IP / „topo“', 'Switch-Port finden / Topologie'],
+      ['„teilen“ / Code', 'Tab live teilen / Code tippen = zusehen'],
       ['Esc', 'Ordner zurück / schließen'],
     ]},
     { t: 'Dateien (SFTP)', ic: '▤', key: 'F5', rows: [
@@ -300,6 +301,7 @@ export const en = {
       ['→ / ←', 'open folder › · ‹ value › next / back'],
       ['“log” / “vendor”', 'AI analyzes output / command sets'],
       ['MAC, IP / “topo”', 'find switch port / topology'],
+      ['“share” / code', 'share tab live / type a code = watch'],
       ['Esc', 'back from folder / close'],
     ]},
     { t: 'Files (SFTP)', ic: '▤', key: 'F5', rows: [
