@@ -98,7 +98,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question; without text only frequent actions, connections and one folder per area (session, tabs, view, network, team …), typing finds everything directly
   - **Ghost text** while typing (Tab accepts)
   - **Follow-up commands** after every Enter (Alt+1…4 inserts)
-  - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
+  - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm. Text in the panel (goal, steps, output, error messages) can be selected with the mouse and is copied right away
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
     Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),
@@ -322,6 +322,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
 | Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host, `c` copy the result, `l` read it in full |
 | Goal/agent/plan panel, Ask AI | PgUp / PgDn, mouse wheel | scroll long content (summary, plan, answer) |
+| | drag / double-click / triple-click, right-click | select text in the panel (goal, steps, output, error messages) and copy it right away (clipboard + OSC 52): word / line; right-click copies the selection again |
 | Plan mode | ↑↓ / Space / e / v / ? | choose step / remove or restore / edit / view script / re-plan |
 | | Tab / ⏎ / x | how it runs (step by step or agent level) / approve and run / discard; Ctrl+S saves the plan as a runbook |
 | AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |

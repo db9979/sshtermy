@@ -76,7 +76,7 @@ export const de = {
       ['_Titel ziehen_', 'Bereiche tauschen'],
     ]},
     { t: 'Maus', ic: '◦', rows: [
-      ['_Ziehen_', 'markieren + kopieren'],
+      ['_Ziehen_', 'markieren + kopieren, auch im Panel'],
       ['_Rechtsklick_', 'einfügen · auf Link/IP: Menü'],
       ['Strg+_Klick_', 'URL im Browser öffnen'],
       ['⇧+_Ziehen_', 'markieren in htop / vim'],
@@ -245,7 +245,7 @@ export const en = {
       ['_drag title_', 'swap panes'],
     ]},
     { t: 'Mouse', ic: '◦', rows: [
-      ['_drag_', 'select + copy'],
+      ['_drag_', 'select + copy, also in the panel'],
       ['_right-click_', 'paste · on a link/IP: menu'],
       ['Ctrl+_click_', 'open URL in the browser'],
       ['⇧+_drag_', 'select inside htop / vim'],

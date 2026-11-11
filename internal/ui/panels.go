@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/domain"
@@ -442,6 +443,9 @@ func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 
 func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 	k, isKey := msg.(tea.KeyPressMsg)
+	if isKey {
+		s.psel = nil // Tippen hebt die Markierung auf
+	}
 	if isKey && k.String() == "esc" && s.panel == panelGoal && s.goal.agentRunning() {
 		a.agentPause(s, i18n.T("von dir angehalten (Esc)"))
 		return nil
@@ -842,6 +846,7 @@ func (a *App) viewPanel(s *session, w, h int) string {
 	if s.panel != s.panelSeen {
 		s.panelSeen, s.panelAt = s.panel, time.Now()
 		s.pscroll = panelScroll{}
+		s.psel = nil
 	}
 	inner := w - 4
 	var b strings.Builder
@@ -868,8 +873,12 @@ func (a *App) viewPanel(s *session, w, h int) string {
 		ps.markSeen, ps.pinned = ps.mark, false
 	}
 	var out string
+	var sel panelSel
+	if s.psel != nil {
+		sel = *s.psel
+	}
 	if m.ok && m.raw == raw && m.w == w && m.h == h && m.focus == s.panelFocus && m.style == a.styleGen && m.kind == s.panel && m.top == top &&
-		m.pinned == ps.pinned && m.start == ps.start {
+		m.pinned == ps.pinned && m.start == ps.start && m.sel == sel {
 		out = m.out
 	} else {
 		style := st.Panel
@@ -877,10 +886,18 @@ func (a *App) viewPanel(s *session, w, h int) string {
 			style = st.PanelFocus
 		}
 		content := lipgloss.NewStyle().Width(inner).Render(raw)
-		lines := a.scrollPanelLines(s, strings.Split(content, "\n"), h-2, top, inner)
+		all := strings.Split(content, "\n")
+		s.pplain = s.pplain[:0]
+		for _, l := range all {
+			s.pplain = append(s.pplain, ansi.Strip(l))
+		}
+		lines := a.scrollPanelLines(s, all, h-2, top, inner)
+		if selectablePanel(s.panel) {
+			a.highlightPanelSel(s, lines, ps.start, inner)
+		}
 		out = style.Width(w).Height(h).MaxHeight(h).Render(strings.Join(lines, "\n"))
 		*m = panelMemo{raw: raw, w: w, h: h, focus: s.panelFocus, style: a.styleGen, kind: s.panel, top: top, out: out, ok: true,
-			pinned: ps.pinned, start: ps.start}
+			pinned: ps.pinned, start: ps.start, sel: sel}
 	}
 	if d := time.Since(s.panelAt); motionLevel() > 0 && d < fadeInDur*2 {
 		out = fadeANSI(out, st.T, easeOut(float64(d)/float64(fadeInDur*2))) // Panel blendet ein
@@ -901,6 +918,7 @@ type panelMemo struct {
 	// Blättern (panelscroll.go)
 	pinned bool
 	start  int
+	sel    panelSel // Markierung (panelsel.go)
 }
 
 func wrap(s string, w int) string { return lipgloss.NewStyle().Width(w).Render(s) }
