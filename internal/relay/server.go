@@ -30,7 +30,7 @@ type Server struct {
 
 	mu      sync.Mutex
 	st      *State
-	stMod   time.Time
+	stMod   stateStamp
 	anchors map[string]*anchorLink // Anker-ID → Steuerleitung
 	pending map[string]*pendingChan
 	active  map[string]*activeChan
@@ -136,7 +136,7 @@ func (s *Server) log(word string, n int) {
 
 // reload liest state.json neu, wenn die Datei sich geändert hat (Aufrufer hält s.mu).
 func (s *Server) reload() {
-	if m := stateMtime(s.Dir); !m.Equal(s.stMod) {
+	if m := stateMtime(s.Dir); !m.mod.Equal(s.stMod.mod) || m.size != s.stMod.size {
 		if st, err := LoadState(s.Dir); err == nil {
 			s.st, s.stMod = st, m
 		}
