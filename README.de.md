@@ -100,7 +100,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage; ohne Text nur Häufiges, Verbindungen und Ordner je Bereich (Sitzung, Tabs, Ansicht, Netzwerk, Team …), Tippen findet alles direkt
   - **Ghost-Text** beim Tippen (Tab übernimmt)
   - **Folgebefehle** nach jedem Enter (Alt+1…4 fügt ein)
-  - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst.
+  - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst. Text im Panel (Ziel, Schritte, Ausgaben, Fehlermeldungen) lässt sich mit der Maus markieren und wird gleich kopiert.
     Mehrzeilige Inhalte (Konfigurationsabschnitte, Skripte) kommen als Datei, die sshTermy nach ⏎ per SFTP in `~/.sshtermy-agent/<lauf>/`
     anlegt, nie als Heredoc im Befehl; Konfigurationsdateien werden gesichert und ergänzt statt ersetzt
     (`docker cp` in einen Container gilt als Gefahr). Ist die Antwort des Modells unbrauchbar, fragt sshTermy einmal nach und nennt den Fehler.
@@ -335,6 +335,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Tab | Schritt für Schritt → Agent *Vorsichtig* → *Normal* → *Voll* → *Erst planen* |
 | Agent-Modus | Esc / ? / v / x | anhalten / Anweisung geben / Skript ansehen / beenden; am Ende `s` als Runbook speichern, `r` Skripte auf dem Host löschen, `c` Ergebnis kopieren, `l` ganz lesen |
 | Ziel-/Agent-/Plan-Panel, KI fragen | Bild↑ / Bild↓, Mausrad | langen Inhalt blättern (Zusammenfassung, Plan, Antwort) |
+| | Ziehen / Doppelklick / Dreifachklick, Rechtsklick | Text im Panel markieren (Ziel, Schritte, Ausgaben, Fehlermeldungen) und gleich kopieren (Zwischenablage + OSC 52): Wort / Zeile; Rechtsklick kopiert die Markierung erneut |
 | Plan-Modus | ↑↓ / Leertaste / e / v / ? | Schritt wählen / streichen oder zurückholen / ändern / Skript ansehen / neu planen |
 | | Tab / ⏎ / x | Ausführung (Schritt für Schritt oder Agent-Stufe) / freigeben und ausführen / verwerfen; Strg+S speichert den Plan als Runbook |
 | KI-Eingaben | ⇧⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |

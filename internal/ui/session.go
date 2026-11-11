@@ -78,6 +78,8 @@ type session struct {
 	viewMemo             termMemo    // letztes Terminalbild (perf.go: termView)
 	panelMemo            panelMemo   // letzte Seitenleiste (panels.go: viewPanel)
 	pscroll              panelScroll // Blättern in der Seitenleiste (panelscroll.go)
+	psel                 *panelSel   // Markierung in der Seitenleiste (panelsel.go)
+	pplain               []string    // Seitenleiste als Klartext, je Inhaltszeile (zum Kopieren)
 
 	notice   noticeKind  // Markierung im Tab: Befehl fertig, Glocke (notify.go)
 	unseen   bool        // neue Ausgabe, solange der Tab verdeckt war (motion.go)

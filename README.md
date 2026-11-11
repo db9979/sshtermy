@@ -98,7 +98,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question; without text only frequent actions, connections and one folder per area (session, tabs, view, network, team …), typing finds everything directly
   - **Ghost text** while typing (Tab accepts)
   - **Follow-up commands** after every Enter (Alt+1…4 inserts)
-  - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm.
+  - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm. Text in the panel (goal, steps, output, error messages) can be selected with the mouse and is copied right away.
     Multi-line content (config sections, scripts) comes as a file that sshTermy creates via SFTP in `~/.sshtermy-agent/<run>/`
     after ⏎, never as a heredoc in the command; config files are backed up and extended, not replaced
     (`docker cp` into a container counts as dangerous). If the model's answer is unusable, sshTermy asks once more and names the problem.
@@ -326,6 +326,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
 | Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host, `c` copy the result, `l` read it in full |
 | Goal/agent/plan panel, Ask AI | PgUp / PgDn, mouse wheel | scroll long content (summary, plan, answer) |
+| | drag / double-click / triple-click, right-click | select text in the panel (goal, steps, output, error messages) and copy it right away (clipboard + OSC 52): word / line; right-click copies the selection again |
 | Plan mode | ↑↓ / Space / e / v / ? | choose step / remove or restore / edit / view script / re-plan |
 | | Tab / ⏎ / x | how it runs (step by step or agent level) / approve and run / discard; Ctrl+S saves the plan as a runbook |
 | AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |

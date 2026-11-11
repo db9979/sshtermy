@@ -128,6 +128,11 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		}
 	}
 
+	// Seitenpanel (Ziel, KI fragen, Begleiter): Text markieren und kopieren
+	if cmd, ok := a.panelSelMouse(s, msg, clicks); ok {
+		return cmd
+	}
+
 	if isWheel {
 		up := m.Button == tea.MouseWheelUp
 		if m.Button != tea.MouseWheelUp && m.Button != tea.MouseWheelDown {
@@ -610,6 +615,7 @@ func (a *App) modalKeys() [][2]string {
 // mouseHelp: Abschnitt für die Hilfe (F1).
 const mouseHelp = `Maus         Klick auf Tabs, Listen, Vorschläge, Felder, Fußzeile · Doppelklick öffnet
              Terminal: Ziehen markiert + kopiert · Doppel-/Dreifachklick Wort/Zeile
+             Ziel-/Agent-Panel, KI fragen: ebenso, Rechtsklick kopiert die Markierung
              Rechtsklick fügt ein, auf Link/IP/Host öffnet er ein Menü · Strg+Klick öffnet URL
              Rad blättert im Verlauf (Esc zurück)
              htop, mc, vim, tmux bekommen die Maus · Shift+Ziehen markiert trotzdem
