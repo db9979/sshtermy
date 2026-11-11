@@ -543,12 +543,16 @@ func (a *App) companionMsg(msg tea.Msg) (tea.Cmd, bool) {
 		c := &s.comp
 		c.busy, c.cancel = false, nil
 		a.companionSpent(m.r.Tokens)
+		var fix tea.Cmd
+		if m.ev.Kind == agent.EventFail { // Antwortkarte wartet auf den Fix (cardfix.go)
+			fix = a.cardFixFromCompanion(s, m.ev.Command, m.r, m.err)
+		}
 		if m.err != nil {
 			c.note(i18n.T("KI-Fehler: ") + trunc(m.err.Error(), 120))
-			return nil, true
+			return fix, true
 		}
 		if m.r.Quiet {
-			return nil, true
+			return fix, true
 		}
 		if m.ev.Kind == agent.EventDanger {
 			typed, _ := s.term.TypedInput()
@@ -575,7 +579,7 @@ func (a *App) companionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			s.chips, s.chipArmed = append([]agent.Suggestion(nil), e.cmds...), -1
 			s.chipReplace, s.compChips = m.ev.Kind == agent.EventDanger, true
 		}
-		return nil, true
+		return fix, true
 	case compIntentMsg:
 		s := a.byID(m.sid)
 		if s == nil || m.seq != s.comp.intentSeq {

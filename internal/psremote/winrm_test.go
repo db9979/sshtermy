@@ -210,6 +210,23 @@ func TestWinRMRefusedAndBasicHTTP(t *testing.T) {
 	}
 }
 
+// Portnummern wie 33401 sind kein HTTP-Status 401 (war ein Wackeltest).
+func TestExplainPortNotStatus(t *testing.T) {
+	err := explain(errors.New(`Post "http://127.0.0.1:33401/wsman": dial tcp 127.0.0.1:33401: connect: connection refused`), Config{})
+	if !errors.Is(err, ErrRefused) {
+		t.Fatalf("err = %v", err)
+	}
+	if err := explain(errors.New("http error 401: Unauthorized"), Config{}); !errors.Is(err, ErrAuth) {
+		t.Fatalf("err = %v", err)
+	}
+	if err := explain(errors.New("http response error: 401 - invalid content type"), Config{}); !errors.Is(err, ErrAuth) {
+		t.Fatalf("err = %v", err)
+	}
+	if err := explain(errors.New("dial tcp 10.0.0.1:1404: i/o timeout"), Config{}); !errors.Is(err, ErrRefused) {
+		t.Fatalf("err = %v", err)
+	}
+}
+
 func TestWinRMCertNotTrusted(t *testing.T) {
 	_, cfg := startFakeWSMan(t)
 	cfg.Insecure = false
