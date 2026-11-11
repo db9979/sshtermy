@@ -313,10 +313,25 @@ func (s *Server) shareRooms() map[string]*shareRoom {
 	return s.shares
 }
 
-// shareCreate: gekoppeltes Gerät legt eine Freigabe an.
+// shareCreate: gekoppeltes Gerät legt eine Freigabe an ({"v":2} = mit Code
+// und Zulassung, share2.go).
 func (s *Server) shareCreate(w http.ResponseWriter, r *http.Request) {
-	cid, ok := s.peer(w, r, false)
+	var in struct {
+		V   int `json:"v"`
+		Min int `json:"min"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+	_ = json.NewDecoder(r.Body).Decode(&in)
+	cid, open, ok := s.shareOwner(w, r, true)
 	if !ok {
+		return
+	}
+	if in.V >= 2 {
+		s.create2(w, cid, open, in.Min)
+		return
+	}
+	if open || cid == "lokal" {
+		fail(w, http.StatusForbidden, "nur mit Code (sshTermy zu alt?)")
 		return
 	}
 	s.mu.Lock()
@@ -331,7 +346,7 @@ func (s *Server) shareCreate(w http.ResponseWriter, r *http.Request) {
 			mine++
 		}
 	}
-	if len(rooms) >= maxShares || mine >= maxSharesPer {
+	if len(rooms)+len(s.rooms2()) >= maxShares || mine >= maxSharesPer {
 		s.mu.Unlock()
 		fail(w, http.StatusTooManyRequests, "zu viele Freigaben")
 		return
@@ -345,12 +360,17 @@ func (s *Server) shareCreate(w http.ResponseWriter, r *http.Request) {
 
 // shareSend: der Gastgeber schickt Rahmen, der Vermittler verteilt sie.
 func (s *Server) shareSend(w http.ResponseWriter, r *http.Request) {
-	cid, ok := s.peer(w, r, false)
+	cid, _, ok := s.shareOwner(w, r, false)
 	if !ok {
 		return
 	}
 	id := r.URL.Query().Get("id")
 	s.mu.Lock()
+	if rm := s.rooms2()[id]; rm != nil {
+		s.mu.Unlock()
+		s.send2(w, r, rm, cid)
+		return
+	}
 	room := s.shareRooms()[id]
 	bad := room == nil || room.owner != cid || room.host != nil
 	s.mu.Unlock()
@@ -428,6 +448,10 @@ func notifyViewers(host *websocket.Conn, n int) {
 // shareWatch: Zuschauer ohne Kopplung; die Kennung ist das Geheimnis für den
 // Vermittler, der Schlüssel im Link das für den Inhalt.
 func (s *Server) shareWatch(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Has("platz") {
+		s.watch2(w, r)
+		return
+	}
 	if !s.limit.allow("watch:"+s.ip(r), 30, time.Minute) {
 		fail(w, http.StatusTooManyRequests, "zu viele Anfragen")
 		return

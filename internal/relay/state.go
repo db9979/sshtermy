@@ -36,6 +36,9 @@ type Peer struct {
 	Folder  string    `json:"ordner,omitempty"`
 	KeySHA  string    `json:"key_sha"`
 	Since   time.Time `json:"seit"`
+	// Admin: darf aus sshTermy heraus weitere Kopplungscodes holen
+	// (gekoppelt mit `vermittler code --verwalten` oder vom Assistenten).
+	Admin bool `json:"verwalten,omitempty"`
 }
 
 const (
@@ -51,6 +54,7 @@ const (
 const (
 	CodeClient = "client"
 	CodeAnchor = "anker"
+	CodeAdmin  = "verwalten" // Gerät, das selbst weitere Codes holen darf
 )
 
 func newState() *State {
@@ -156,7 +160,7 @@ const codeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ" // ohne 0/O und 1/I
 
 // NewCode legt einen Einmal-Code an (CodeTTL gültig).
 func NewCode(dir, kind string) (string, error) {
-	if kind != CodeClient && kind != CodeAnchor {
+	if kind != CodeClient && kind != CodeAnchor && kind != CodeAdmin {
 		return "", errors.New("bad kind")
 	}
 	cd := filepath.Join(dir, codesDir)
@@ -181,20 +185,29 @@ func normCode(c string) string {
 
 // takeCode löst einen Code ein: gültig, richtige Art, danach gelöscht.
 func takeCode(dir, code, kind string, now time.Time) bool {
+	k, ok := takeCodeKind(dir, code, now)
+	return ok && (k == kind || kind == CodeClient && k == CodeAdmin)
+}
+
+// takeCodeKind löst einen Code ein und sagt, welche Art er hatte.
+func takeCodeKind(dir, code string, now time.Time) (string, bool) {
 	c := normCode(code)
-	if len(c) < 6 || len(c) > 64 {
-		return false
+	if dir == "" || len(c) < 6 || len(c) > 64 {
+		return "", false
 	}
 	p := filepath.Join(dir, codesDir, keySHA(c)+".json")
 	b, err := os.ReadFile(p)
 	if err != nil {
-		return false
+		return "", false
 	}
 	if os.Remove(p) != nil { // nur einmal, auch bei zwei gleichzeitigen Versuchen
-		return false
+		return "", false
 	}
 	var f codeFile
-	return json.Unmarshal(b, &f) == nil && f.Kind == kind && now.Before(f.Until)
+	if json.Unmarshal(b, &f) != nil || !now.Before(f.Until) {
+		return "", false
+	}
+	return f.Kind, true
 }
 
 func cleanCodes(dir string, now time.Time) {
