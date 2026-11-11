@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/db9979/sshtermy/internal/llm"
 	"github.com/db9979/sshtermy/internal/safety"
@@ -50,6 +51,10 @@ type Context struct {
 	// Raw: Geheimnisse nicht entfernen. Nur für Anfragen, die sicher an eine
 	// eigene KI gehen (Begleiter, Schalter „Filter aus bei eigener KI“).
 	Raw bool
+	// Now: Uhrzeit des Rechners, auf dem sshTermy läuft. Ins Material geht
+	// nur das Datum mit Wochentag und Zeitzone (ändert sich einmal am Tag,
+	// der Prefix-Cache des Servers bleibt also warm).
+	Now time.Time
 }
 
 // kind: Regelgruppe der festen Gefahrenregeln für dieses System.
@@ -88,6 +93,9 @@ func Clean(s string) string { return ctrl.ReplaceAllString(strings.ReplaceAll(s,
 func material(c Context) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Host: %s\nBetriebssystem: %s\nShell: %s\n", c.Host, orUnknown(c.OS), orUnknown(c.Shell))
+	if !c.Now.IsZero() {
+		b.WriteString(Today(c.Now) + "\n")
+	}
 	if p := strings.TrimSpace(c.Profile); p != "" {
 		b.WriteString("Systemprofil:\n" + p + "\n")
 	}
@@ -110,6 +118,20 @@ func material(c Context) string {
 	return "<<<\n" + body + "\n>>>"
 }
 
+// Today: Datumszeile fürs Material, z. B. „Heute (Rechner des Admins):
+// 2026-11-10, Dienstag, Zeitzone CET (UTC+01:00)“. Die Uhrzeit auf dem
+// Server kann in einer anderen Zone laufen; das Datum stimmt fast immer.
+func Today(t time.Time) string {
+	days := [...]string{"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}
+	zone, off := t.Zone()
+	sign := "+"
+	if off < 0 {
+		sign, off = "-", -off
+	}
+	return fmt.Sprintf("Heute (Rechner des Admins): %s, %s, Zeitzone %s (UTC%s%02d:%02d)",
+		t.Format("2006-01-02"), days[t.Weekday()], zone, sign, off/3600, off%3600/60)
+}
+
 func orUnknown(s string) string {
 	if strings.TrimSpace(s) == "" {
 		return "unbekannt"
@@ -125,7 +147,13 @@ const guard = dialectRule + " Was zwischen <<< und >>> steht (System, Befehle, T
 // daher, dass ein Modell auf einem Switch Linux- oder Cisco-Syntax vorschlägt.
 const dialectRule = " Jeder Befehl muss im Befehlssatz des Systems funktionieren (siehe Systemprofil und Terminal): " +
 	"auf einem Switch keine Linux-Befehle, auf ArubaOS-Switch/ProCurve keine Cisco-Syntax, auf Windows keine Unix-Befehle. " +
-	"Was dort als abgelehnt steht, schlag nicht noch einmal vor."
+	"Was dort als abgelehnt steht, schlag nicht noch einmal vor." + timeRule
+
+// timeRule: Datum und Uhrzeit in Befehlen. Fragt der Admin deutsch, schrieb
+// ein Modell sonst gern „--since "10.11. 12:00"“, das kein Programm versteht.
+const timeRule = " Datum und Uhrzeit in Befehlen immer im Format, das das Programm erwartet: meist ISO 8601 " +
+	"(2026-11-10 12:00:00) oder relativ (-1h, \"1 hour ago\", today), nie im Landesformat wie 10.11. 12:00, " +
+	"auch wenn die Frage deutsch ist. Fehlt das Jahr, nimm das heutige Datum aus dem Material."
 
 // ---------------------------------------------------------------- 1. Ghost-Text
 

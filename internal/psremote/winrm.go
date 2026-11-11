@@ -316,17 +316,36 @@ func explain(err error, cfg Config) error {
 	switch {
 	case errors.As(err, &ua) || errors.As(err, &hn) || errors.As(err, &ci) || strings.Contains(s, "x509:") || strings.Contains(s, "certificate"):
 		return &Error{ErrCert, err}
-	case strings.Contains(s, "401") || strings.Contains(s, "Unauthorized") || strings.Contains(s, "Access is denied") || strings.Contains(s, "logon failure"):
+	case httpStatus(s, "401") || strings.Contains(s, "Unauthorized") || strings.Contains(s, "Access is denied") || strings.Contains(s, "logon failure"):
 		return &Error{ErrAuth, err}
 	case strings.Contains(s, "connection refused") || strings.Contains(s, "i/o timeout") || strings.Contains(s, "no such host") ||
 		strings.Contains(s, "actively refused") || strings.Contains(s, "timed out") || strings.Contains(s, "deadline exceeded") ||
-		strings.Contains(s, "404"):
+		httpStatus(s, "404"):
 		return &Error{ErrRefused, err}
 	case strings.Contains(s, "malformed HTTP") || strings.Contains(s, "server gave HTTP response to HTTPS client") || strings.Contains(s, "first record does not look like a TLS handshake"):
 		return &Error{ErrUnreadable, err}
 	}
 	return err
 }
+
+// httpStatus: steht der Statuscode als eigene Zahl im Text? Nicht als Teil
+// einer Portnummer („127.0.0.1:33401“ ist kein 401).
+func httpStatus(s, code string) bool {
+	for i := 0; ; {
+		j := strings.Index(s[i:], code)
+		if j < 0 {
+			return false
+		}
+		j += i
+		end := j + len(code)
+		if (j == 0 || !isDigit(s[j-1])) && (end == len(s) || !isDigit(s[end])) && (j == 0 || s[j-1] != ':') {
+			return true
+		}
+		i = j + 1
+	}
+}
+
+func isDigit(c byte) bool { return c >= '0' && c <= '9' }
 
 // CommandLine: Aufruf von powershell.exe, der script ausführt (für Run).
 func CommandLine(script string) string {

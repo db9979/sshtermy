@@ -98,6 +98,11 @@ type askState struct {
 	history []agent.Turn // frühere Runden dieser Unterhaltung (Folgefragen)
 	follow  bool         // die Eingabe ist eine Folgefrage (sonst neue Frage)
 	stopped bool         // Antwort von dir abgebrochen (Esc/Strg+C)
+
+	// Karten nach Fehlern (cardfix.go): geänderter Befehl je Karte und der
+	// Zustand nach einem Fehlschlag. Gelten nur für diese Antwort.
+	codes map[int]string
+	fixes map[int]*cardFix
 }
 
 func (q *askState) cancel() {
@@ -116,6 +121,7 @@ func (q *askState) begin(question string) (context.Context, context.CancelFunc) 
 	q.shown = 0
 	q.err, q.busy, q.stopped, q.follow = "", true, false, false
 	q.sel, q.armed = 0, -1
+	q.codes, q.fixes = nil, nil
 	q.seq++
 	q.input.Blur()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -268,6 +274,9 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			s.ask.answer.WriteString(m.text)
 		}
 		return a.listen(), true
+	case cardFixMsg:
+		a.cardFixDone(m)
+		return nil, true
 	case askDoneMsg:
 		if s := a.byID(m.sid); s != nil && m.seq == s.ask.seq {
 			s.ask.busy = false

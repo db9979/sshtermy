@@ -334,7 +334,7 @@ func (s *session) close() {
 // context fürs Sprachmodell.
 func (a *App) agentContext(s *session, withScreen bool) agent.Context {
 	cfg := a.st.LLM()
-	c := agent.Context{Host: s.conn.Alias, Commands: lastN(s.history, 10)}
+	c := agent.Context{Host: s.conn.Alias, Commands: lastN(s.history, 10), Now: time.Now()}
 	if s.client != nil {
 		c.OS = s.profileSummary()
 		c.Shell = s.client.Remote.Shell
