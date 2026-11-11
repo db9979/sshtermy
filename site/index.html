@@ -102,7 +102,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>Agent mode: reach the goal on its own</h3>
-      <p>In goal mode (<kbd>F2</kbd>) <kbd>Tab</kbd> switches to the agent. It runs commands, reads their output, writes scripts via SFTP and runs them, dry run first. You pick the level: <em>Careful</em> (default, read-only on its own), <em>Normal</em> (signed in as root every change asks) or <em>Full</em> (sudo too). Dangerous commands and anything that reads secrets always wait for you, <kbd>Esc</kbd> pauses, <kbd>?</kbd> gives an instruction. At the end you get the complete summary: scroll it, copy it with <kbd>c</kbd> or read it in full with <kbd>l</kbd>. With <em>Plan first</em> it only looks around read-only, writes a full plan, and you remove or change steps before you approve it with <kbd>⏎</kbd>.</p>
+      <p>In goal mode (<kbd>F2</kbd>) <kbd>Tab</kbd> switches to the agent. It runs commands, reads their output, writes scripts via SFTP and runs them, dry run first. You pick the level: <em>Careful</em> (default, read-only on its own), <em>Normal</em> (signed in as root every change asks) or <em>Full</em> (sudo too). Dangerous commands and anything that reads secrets always wait for you, <kbd>Esc</kbd> pauses, <kbd>?</kbd> gives an instruction. At the end you get the complete summary: scroll it, copy it with <kbd>c</kbd> or read it in full with <kbd>l</kbd>. Any text in the panel, error messages included, can be selected with the mouse and is copied right away. With <em>Plan first</em> it only looks around read-only, writes a full plan, and you remove or change steps before you approve it with <kbd>⏎</kbd>.</p>
     </div>
     <figure><img src="bilder/16-agent.png" alt="Agent mode compresses old logs: plan on the right, a script ran as a dry run" loading="lazy"></figure>
   </div>
@@ -201,7 +201,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>Command palette</td></tr>
     <tr><td><kbd>F1</kbd></td><td>Help</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Goal mode (agent)</td></tr>
-    <tr><td><kbd>F2</kbd> → <kbd>c</kbd> / <kbd>l</kbd></td><td>Agent finished: copy the result / read it in full; <kbd>PgUp</kbd>/<kbd>PgDn</kbd> or the mouse wheel scroll the panel</td></tr>
+    <tr><td><kbd>F2</kbd> → <kbd>c</kbd> / <kbd>l</kbd></td><td>Agent finished: copy the result / read it in full; <kbd>PgUp</kbd>/<kbd>PgDn</kbd> or the mouse wheel scroll the panel; drag with the mouse to select and copy text in the panel (goal, steps, output, errors)</td></tr>
     <tr><td><kbd>F3</kbd></td><td>Ask AI with terminal context; <kbd>Esc</kbd> stops the answer, <kbd>n</kbd> new question, <kbd>f</kbd> follow-up, <kbd>u</kbd> use the fix after a failed card command</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>K</kbd> / <kbd>Alt</kbd>+<kbd>J</kbd></td><td>AI companion: level (off, quiet, chatty, coach) / companion sidebar</td></tr>
     <tr><td><kbd>F4</kbd> / <kbd>F5</kbd> / <kbd>F6</kbd></td><td>Tunnels / files (SFTP) / host overview</td></tr>
