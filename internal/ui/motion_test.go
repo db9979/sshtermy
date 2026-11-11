@@ -106,9 +106,8 @@ func TestDangerHoldRuns(t *testing.T) {
 	if a.modal != nil {
 		t.Fatal("Dialog nach dem Halten noch offen")
 	}
-	if !strings.Contains(out.String(), "\r") {
-		t.Fatal("Befehl ging nach dem Halten nicht an den Server")
-	}
+	// Der Emulator reicht Eingaben über eine eigene Goroutine weiter: warten.
+	waitFor(t, func() bool { return strings.Contains(out.String(), "\r") })
 }
 
 func TestMotionLevels(t *testing.T) {

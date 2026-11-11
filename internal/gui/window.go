@@ -565,7 +565,8 @@ func (w *window) mouse() {
 	buttons := []struct {
 		e ebiten.MouseButton
 		u uv.MouseButton
-	}{{ebiten.MouseButtonLeft, uv.MouseLeft}, {ebiten.MouseButtonMiddle, uv.MouseMiddle}, {ebiten.MouseButtonRight, uv.MouseRight}}
+	}{{ebiten.MouseButtonLeft, uv.MouseLeft}, {ebiten.MouseButtonMiddle, uv.MouseMiddle}, {ebiten.MouseButtonRight, uv.MouseRight},
+		{ebiten.MouseButton3, uv.MouseBackward}, {ebiten.MouseButton4, uv.MouseForward}}
 	for _, b := range buttons {
 		if inpututil.IsMouseButtonJustPressed(b.e) {
 			w.mouseBtn = b.u
