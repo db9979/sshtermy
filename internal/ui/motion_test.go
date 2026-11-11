@@ -106,7 +106,7 @@ func TestDangerHoldRuns(t *testing.T) {
 	if a.modal != nil {
 		t.Fatal("Dialog nach dem Halten noch offen")
 	}
-	if !strings.Contains(out.String(), "\r") {
+	if !out.has("\r") {
 		t.Fatal("Befehl ging nach dem Halten nicht an den Server")
 	}
 }

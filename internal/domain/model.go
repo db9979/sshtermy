@@ -592,6 +592,9 @@ type Settings struct {
 	Workspaces []Workspace `json:"workspaces,omitempty"`
 	LastLayout *Workspace  `json:"last_layout,omitempty"`
 
+	// Share: Vorgaben fürs Teilen einer Sitzung. Bleibt auf dem Rechner.
+	Share ShareConfig `json:"share,omitempty"`
+
 	// Editor: Befehl für Server-Dateien im eigenen Editor ("" = Standard des
 	// Systems). Bleibt auf dem Rechner, nie im Sync.
 	Editor string `json:"editor,omitempty"`
@@ -699,9 +702,23 @@ func (s Settings) SyncedPart() Settings {
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false
-	s.UpdateWaitH = 0      // Update-Kanal gilt je Rechner
-	s.CmdSetApproved = nil // Freigaben gelten für die Team-Dateien dieses Rechners
+	s.UpdateWaitH = 0       // Update-Kanal gilt je Rechner
+	s.CmdSetApproved = nil  // Freigaben gelten für die Team-Dateien dieses Rechners
+	s.Share = ShareConfig{} // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
 	return s
+}
+
+// ShareConfig: Vorgaben für „Sitzung teilen“ (zuletzt gewählt). Rein lokal.
+type ShareConfig struct {
+	Minutes int    `json:"min,omitempty"`      // Dauer, 0 = 30
+	Max     int    `json:"max,omitempty"`      // Zuschauer, 0 = 1
+	NoKnock bool   `json:"no_knock,omitempty"` // Zuschauer ohne Rückfrage zulassen (Code genügt)
+	ShowPw  bool   `json:"show_pw,omitempty"`  // bei Passwortabfragen nicht pausieren
+	Screen  bool   `json:"screen,omitempty"`   // aktuellen Bildschirm mitschicken (sonst „ab jetzt“)
+	Way     string `json:"way,omitempty"`      // "lan", "relay:<id>", "public"
+	// Public: öffentlicher Vermittler fürs Teilen ohne Kopplung
+	// (https://host[:port][#fp=SHA256]), "" = keiner.
+	Public string `json:"public,omitempty"`
 }
 
 // IconsNow: der Symbolstil, der auf diesem Rechner wirklich gilt. Kam
@@ -962,6 +979,17 @@ type Relay struct {
 	Key    Secret    `json:"key"`          // Geräteschlüssel aus der Kopplung
 	Device string    `json:"device"`       // Name dieses Rechners beim Vermittler
 	Since  time.Time `json:"since"`
+	// Admin: dieses Gerät darf beim Vermittler weitere Kopplungscodes holen.
+	Admin bool `json:"admin,omitempty"`
+	// Setup: vom Assistenten auf einem eigenen Server eingerichtet (Rückweg).
+	Setup *RelaySetup `json:"setup,omitempty"`
+}
+
+// RelaySetup: was der Vermittler-Assistent auf dem Server angelegt hat.
+type RelaySetup struct {
+	ConnID string `json:"conn_id"`        // gespeicherte Verbindung zum Server
+	Bin    bool   `json:"bin,omitempty"`  // /usr/local/bin/sshtermy stammt vom Assistenten
+	Unit   string `json:"unit,omitempty"` // Name des systemd-Dienstes
 }
 
 // NewData: leerer Store mit Standardwerten.

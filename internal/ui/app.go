@@ -66,6 +66,8 @@ const (
 	scrKeyForm       // Schlüsseldatei auf diesem Rechner wählen (nach Sync)
 	scrSSHKeyForm    // SSH-Schlüssel erzeugen / übertragen (sshkey.go)
 	scrRelayForm     // Vermittler koppeln (relay.go)
+	scrShareForm     // Sitzung teilen: Weg und Freigabe (sharedialog.go)
+	scrRelaySetup    // Vermittler-Assistent: Server und Adresse (relaysetup.go)
 	scrMasterForm    // Master-Passwort ändern, DPAPI (master.go)
 	scrBackupForm    // Gesamtsicherung speichern/einspielen (fullbackup.go)
 	scrColors        // Farben anpassen (colors.go)
@@ -124,7 +126,8 @@ type App struct {
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
 	returnToTerminal bool
-	undo             *undoState // Löschen rückgängig machen (undo.go)
+	shareForm        shareFormState // Teilen-Dialog (sharedialog.go)
+	undo             *undoState     // Löschen rückgängig machen (undo.go)
 
 	sessions []*session
 	cur      int
@@ -649,7 +652,7 @@ func (a *App) overlayMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if a.pick != nil {
 			return a.pickerKey(k), true
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrFolderForm || a.scr == scrHighlightForm || a.scr == scrScheduleForm || a.scr == scrRulesForm || a.scr == scrCmdSetForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrMasterForm || a.scr == scrBackupForm || a.scr == scrBulkForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrFolderForm || a.scr == scrHighlightForm || a.scr == scrScheduleForm || a.scr == scrRulesForm || a.scr == scrCmdSetForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrShareForm || a.scr == scrRelaySetup || a.scr == scrMasterForm || a.scr == scrBackupForm || a.scr == scrBulkForm) {
 			a.modal = a.helpModal()
 			return nil, true
 		}
@@ -695,7 +698,7 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 		return a.updateUnlock(msg)
 	case scrManager:
 		return a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrBulkForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrShareForm, scrRelaySetup, scrMasterForm, scrBackupForm, scrBulkForm:
 		return a.updateForm(msg)
 	case scrTerminal:
 		return a.updateTerminal(msg)
@@ -837,6 +840,10 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewForm(), append(k, [2]string{"Esc", i18n.T("abbrechen")}))
 	case scrConnForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+T", i18n.T("testen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
+	case scrShareForm:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("Einladung erzeugen")}, {"Esc", i18n.T("abbrechen")}})
+	case scrRelaySetup:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("weiter zu den Schritten")}, {"Esc", i18n.T("abbrechen")}})
 	case scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrBulkForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:

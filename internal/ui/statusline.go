@@ -73,6 +73,14 @@ func (a *App) sessionBar(s *session) string {
 	if s.recording() {
 		left.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
 	}
+	if chip := a.shareChip(s); chip != "" {
+		left.WriteString(a.z.click(chip, func(tea.Mouse, bool) tea.Cmd {
+			if o := s.share.Load(); o != nil {
+				return a.openShareManage(s, o)
+			}
+			return nil
+		}))
+	}
 	if r := s.trz.Load(); r != nil {
 		left.WriteString(st.Badge.Foreground(st.T.AI).Bold(true).Render(r.label()))
 	}

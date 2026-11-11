@@ -820,6 +820,9 @@ func (a *App) tabStrip() string {
 		if g := a.noticeGlyph(x); g != "" {
 			dot = g // Befehl fertig / Glocke, solange der Tab verdeckt war
 		}
+		if x.share.Load() != nil {
+			dot = st.Danger.Bold(true).Render("◉") // live geteilt: andere sehen zu
+		}
 		if x.goal.auto && x.goal.active {
 			dot = st.AI.Render("◆") // Agent läuft
 			if x.goal.paused {

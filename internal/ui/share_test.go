@@ -4,14 +4,46 @@ import (
 	"context"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/relay"
 )
 
-func TestShareAndWatch(t *testing.T) {
+type shareShell struct {
+	mu  sync.Mutex
+	got strings.Builder
+}
+
+func (f *shareShell) Write(p []byte) (int, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.got.Write(p)
+}
+func (f *shareShell) Resize(int, int) error { return nil }
+func (f *shareShell) Close() error          { return nil }
+func (f *shareShell) String() string        { f.mu.Lock(); defer f.mu.Unlock(); return f.got.String() }
+
+// pumpUntil verarbeitet Meldungen, bis ok() stimmt.
+func pumpUntil(t *testing.T, a *App, what string, ok func() bool) {
+	t.Helper()
+	deadline := time.After(10 * time.Second)
+	for !ok() {
+		select {
+		case m := <-a.events:
+			a.shareMsg(m)
+		case <-deadline:
+			t.Fatal("wartet vergeblich auf: " + what)
+		case <-time.After(20 * time.Millisecond):
+		}
+	}
+}
+
+func TestShareAndWatchV2(t *testing.T) {
 	dir := t.TempDir()
 	srv, err := relay.NewServer(dir)
 	if err != nil {
@@ -39,56 +71,88 @@ func TestShareAndWatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, _ := typedSession(domain.Connection{Alias: "web"}, "$ ", "uptime")
+	s, _ := typedSession(domain.Connection{Alias: "web"}, "$ ", "cat geheim-von-vorher")
+	sh := &shareShell{}
+	s.shell = sh
 	a.sessions = append(a.sessions, s)
 
-	// Gastgeber: Freigabe anlegen
-	a.shareMsg(a.startShareVia(s, r.ID)())
+	// Dialog statt Fehlermeldung
+	a.startShare(s)
+	if a.scr != scrShareForm || a.form == nil || !strings.Contains(a.form.title, "web") {
+		t.Fatalf("kein Teilen-Dialog: %v", a.scr)
+	}
+	a.form, a.scr = nil, scrTerminal
+
+	// Gastgeber: Freigabe über den Vermittler, Standard-Vorgaben
+	a.shareMsg(a.startShareWith(s, shareOpts{way: "relay:" + r.ID, knock: true, hidePw: true})())
 	o := s.share.Load()
-	if o == nil || !strings.Contains(o.link, "#teilen=") || a.modal == nil {
-		t.Fatalf("nicht geteilt: %+v", o)
+	if o == nil || a.modal == nil || !strings.Contains(a.modal.copy, "sshtermy://zusehen/") {
+		t.Fatalf("nicht geteilt / keine Einladung: %+v", o)
+	}
+	a.modal = nil
+	if !strings.Contains(a.shareChip(s), "LIVE") {
+		t.Fatal("LIVE-Anzeige fehlt")
 	}
 
-	// Zuschauer: eigener Tab über den Link
+	// Zuschauer mit Link
 	out := &syncBuf{}
-	ws, done, err := dialWatch(99, o.link, out, a.events)
+	ws, done, err := a.dialWatch(99, o.hs.Invite().Link(), out, a.events)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer ws.Close()
-	// Meldung über den Zuschauer → Bildschirm wird geschickt
-	deadline := time.After(10 * time.Second)
-	for o.viewers == 0 {
-		select {
-		case m := <-a.events:
-			a.shareMsg(m)
-		case <-deadline:
-			t.Fatal("kein Zuschauer gemeldet")
-		}
+	pumpUntil(t, a, "Anklopfen", func() bool { return a.modal != nil && a.modal.kind == mConfirm })
+	if !out.has("Prüfwörter") || !strings.Contains(a.modal.body, strings.ToUpper(o.hs.Guests()[0].Check[0])) {
+		t.Fatalf("Prüfwörter fehlen: %q / %q", out.String(), a.modal.body)
 	}
-	if !out.has("uptime") {
-		t.Fatalf("Bildschirm fehlt: %q", out.String())
+	a.modal.onYes()
+	a.modal = nil
+	pumpUntil(t, a, "zugelassen", func() bool { return len(o.guestNames()) == 1 })
+	time.Sleep(200 * time.Millisecond)
+	if strings.Contains(out.String(), "geheim-von-vorher") {
+		t.Fatal("„ab jetzt“: alter Bildschirm darf nicht zum Zuschauer")
 	}
-	// laufende Ausgabe kommt an, Tasten des Zuschauers nicht beim Gastgeber
+	// laufende Ausgabe kommt an
 	_, _ = outWriter{s, a.events}.Write([]byte("\r\n load average: 0.42\r\n"))
 	if !out.has("load average: 0.42") {
 		t.Fatalf("Ausgabe fehlt: %q", out.String())
 	}
-	if n, _ := ws.Write([]byte("rm -rf /\r")); n != 9 {
-		t.Fatal("Zuschauer-Tasten sollen still verworfen werden")
+	// Passwortabfrage: Pause, was dann kommt, sieht niemand
+	_, _ = outWriter{s, a.events}.Write([]byte("[sudo] password for dominik: "))
+	if !out.has("Passwort ein") {
+		t.Fatalf("keine Pause: %q", out.String())
 	}
+	_, _ = outWriter{s, a.events}.Write([]byte("hunter2-echo"))
+	_, _ = outWriter{s, a.events}.Write([]byte("\r\nweiter-nach-pause\r\n$ "))
+	if !out.has("weiter-nach-pause") {
+		t.Fatalf("kein Weiter: %q", out.String())
+	}
+	if strings.Contains(out.String(), "hunter2") {
+		t.Fatal("Ausgabe während der Passwortabfrage ging hinaus")
+	}
+	// Tasten des Zuschauers gehen nirgendwohin, bis Mitschreiben erlaubt ist
+	_, _ = ws.Write([]byte("rm -rf /\r"))
+	time.Sleep(200 * time.Millisecond)
+	pumpUntil(t, a, "nichts", func() bool { return true })
+	if sh.String() != "" {
+		t.Fatalf("Zuschauer-Tasten kamen an: %q", sh.String())
+	}
+	g := o.hs.Guests()[0]
+	_ = o.hs.SetWrite(g.V, time.Now().Add(time.Minute))
+	pumpUntil(t, a, "Schreibrecht beim Zuschauer", func() bool { return ws.(*watch2Stream).writeTo.Load() > 0 })
+	_, _ = ws.Write([]byte("uptime\r"))
+	pumpUntil(t, a, "⏎-Rückfrage (produktiv)", func() bool { return a.modal != nil && strings.Contains(a.modal.title, "⏎") })
+	if sh.String() != "uptime" {
+		t.Fatalf("vor der Bestätigung: %q", sh.String())
+	}
+	a.modal.onYes()
+	if sh.String() != "uptime\r" {
+		t.Fatalf("nach der Bestätigung: %q", sh.String())
+	}
+	a.modal = nil
+
 	// Größe kommt als eigene Meldung
-	gotSize := false
-	for !gotSize {
-		select {
-		case m := <-a.events:
-			if w, ok := m.(watchSizeMsg); ok && w.sid == 99 && w.cols == 100 && w.rows == 20 {
-				gotSize = true
-			}
-		case <-time.After(5 * time.Second):
-			t.Fatal("keine Größe")
-		}
-	}
+	pumpUntil(t, a, "Größe", func() bool { return s.share.Load() != nil })
 	// Gastgeber beendet: Zuschauer-Tab endet ohne Fehler
 	a.stopShare(s)
 	select {
@@ -99,10 +163,32 @@ func TestShareAndWatch(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("Zuschauer merkt das Ende nicht")
 	}
-	if relay.IsShareLink("hallo") || !relay.IsShareLink(o.link) {
-		t.Fatal("IsShareLink")
-	}
-	if !strings.Contains(watchConn(o.link).WatchLink, "#teilen=") {
+	if !strings.Contains(watchConn("7-taube-kompass-ofen").WatchLink, "taube") {
 		t.Fatal("watchConn")
+	}
+	_ = tea.Quit
+}
+
+func TestShareFormWays(t *testing.T) {
+	a := dangerApp(t)
+	s, _ := typedSession(domain.Connection{Alias: "db01"}, "$ ", "")
+	a.sessions = append(a.sessions, s)
+	a.openShareForm(s)
+	fl := a.form.get("way")
+	if len(fl.options) != 2 || a.shareForm.ways[fl.options[0]] != "lan" || a.shareForm.ways[fl.options[1]] != "setup" {
+		t.Fatalf("Wege: %v", fl.options)
+	}
+	if !a.form.flag("knock") || !a.form.flag("hidepw") || a.form.flag("screen") || a.form.sel("max") != maxLabel(1) {
+		t.Fatal("sichere Vorgaben fehlen")
+	}
+	if a.form.get("prod").label == "" {
+		t.Fatal("Hinweis „produktiv“ fehlt")
+	}
+}
+
+func TestQRLines(t *testing.T) {
+	q := qrLines("sshtermy://zusehen/7-taube-kompass-ofen@192.168.1.20:47213?fp=" + strings.Repeat("ab", 32))
+	if len(q) < 10 || len(q) > 40 {
+		t.Fatalf("QR: %d Zeilen", len(q))
 	}
 }

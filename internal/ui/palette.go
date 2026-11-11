@@ -219,8 +219,8 @@ func (a *App) palDirect(q string, s *session, inTerm bool, match func(string) bo
 	if quickFirst {
 		items = append(items, quick...) // user@host:port: Verbinden ist gemeint
 	}
-	if relay.IsShareLink(q) {
-		items = append(items, palItem{group: pgConnect, icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen"), hint: i18n.T("Link"),
+	if relay.IsShareLink(q) || relay.IsInvite(q) {
+		items = append(items, palItem{group: pgConnect, icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen"), hint: i18n.T("Code"),
 			run: func() tea.Cmd { return a.watchLink(q) }})
 	}
 	if looksLikeAddr(q) && len(a.netDevices("")) > 0 {
@@ -403,8 +403,8 @@ func (a *App) palActsGlobal(add palAdd, inMgr bool) {
 		palItem{icon: ic("scan"), label: i18n.T("Netzwerk-Topologie (LLDP/CDP)"), hint: i18n.T("Switches"),
 			keys: "topologie topology lldp cdp nachbarn neighbors karte map plan", run: func() tea.Cmd { return a.netTopology() }})
 	add("team",
-		palItem{icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen …"), hint: i18n.T("Link"),
-			keys: "zusehen watch link teilen share live", run: func() tea.Cmd { return a.askWatch() }},
+		palItem{icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen …"), hint: i18n.T("Code"),
+			keys: "zusehen watch link code teilen share live einladung", run: func() tea.Cmd { return a.askWatch() }},
 		palItem{icon: ic("team"), label: i18n.T("Mit dem Team teilen (verschlüsselt, ohne Passwörter)"), hint: "Team", run: func() tea.Cmd { a.scr = scrManager; return a.openTeamShare() }},
 		palItem{icon: ic("team"), label: i18n.T("Team-Paket übernehmen"), hint: "Team", run: func() tea.Cmd { return a.openTeamTake() }},
 		palItem{icon: ic("team"), label: i18n.T("Team-Ordner (veröffentlicht / abonniert)"), hint: "Team", run: func() tea.Cmd { return a.openTeamLinks() }})
@@ -418,13 +418,18 @@ func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 		}
 		if o := s.share.Load(); o != nil {
 			add("team",
-				palItem{icon: ic("team"), label: fmt.Sprintf(i18n.T("Teilen beenden (%d Zuschauer)"), o.viewers), hint: i18n.T("live"),
-					keys: "teilen share live stop beenden", run: func() tea.Cmd { a.stopShare(s); return nil }},
-				palItem{icon: ic("team"), label: i18n.T("Link zum Zusehen anzeigen"), hint: i18n.T("live"),
-					keys: "teilen share link", run: func() tea.Cmd { a.showShareLink(s, o); return nil }})
-		} else if s.conn.Protocol != domain.ProtoWatch {
-			add("team", palItem{icon: ic("team"), label: i18n.T("Sitzung live teilen (Link zum Zusehen) …"), hint: i18n.T("Vermittler"),
-				keys: "teilen share live zuschauen zeigen kollege screen", run: func() tea.Cmd { return a.startShare(s) }})
+				palItem{icon: ic("team"), label: fmt.Sprintf(i18n.T("Teilen verwalten (%d Zuschauer)"), len(o.guestNames())), hint: i18n.T("live"),
+					keys: "teilen share live verwalten zuschauer mitschreiben code einladung stop beenden", run: func() tea.Cmd { return a.openShareManage(s, o) }},
+				palItem{icon: ic("team"), label: i18n.T("Teilen beenden"), hint: i18n.T("live"),
+					keys: "teilen share live stop beenden", run: func() tea.Cmd { a.stopShare(s); return nil }})
+		} else if s.conn.Protocol == domain.ProtoWatch {
+			if _, ok := s.shell.(*watch2Stream); ok {
+				add("team", palItem{icon: ic("team"), label: i18n.T("Hand heben (um Mitschreiben bitten)"), hint: i18n.T("Zusehen"),
+					keys: "hand heben mitschreiben tippen bitten raise", run: func() tea.Cmd { return a.watchHand(s) }})
+			}
+		} else if s.state == stConnected {
+			add("team", palItem{icon: ic("team"), label: i18n.T("Sitzung live teilen (Code für Zuschauer) …"), hint: i18n.T("Netz/Vermittler"),
+				keys: "teilen share live zuschauen zeigen kollege screen einladen code", run: func() tea.Cmd { return a.startShare(s) }})
 		}
 		if a.containersOK(s) {
 			add("session", palItem{icon: ic("host"), label: i18n.T("Container (Docker, Podman, Kubernetes)"), hint: i18n.T("F6 c"),
@@ -860,6 +865,10 @@ func (a *App) palMenuItems() []palItem {
 			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
 		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},
 		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), keys: "relay", run: func() tea.Cmd { return a.openRelayManage() }},
+		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Eigenen Vermittler einrichten (Assistent über SSH)"), hint: i18n.T("Server"),
+			keys: "relay vermittler einrichten assistent setup installieren server", run: func() tea.Cmd { return a.openRelaySetup(a.current()) }},
+		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("team"), label: i18n.T("Öffentlicher Vermittler fürs Teilen …"), hint: orDefault(trunc(strings.TrimPrefix(a.st.Settings().Share.Public, "https://"), 24), i18n.T("keiner")),
+			keys: "relay teilen share öffentlich public offen vermittler internet", run: func() tea.Cmd { return a.askPublicRelay() }},
 		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm, Ansible, CSV)"), hint: a.keys.label(actImport), keys: "import netbox", run: func() tea.Cmd { return a.openImport() }},
 		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("export"), label: i18n.T("Verbindungen als CSV exportieren (ohne Passwörter)"), hint: ".csv", keys: "export csv excel", run: func() tea.Cmd { return a.exportConnsCSV() }},
 		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("export"), label: i18n.T("Gesamtsicherung speichern (für Umzug/Sicherung) …"), hint: i18n.T("alles, verschlüsselt"), keys: "backup sicherung umzug neuer rechner migrate", run: func() tea.Cmd { return a.openBackupForm(false) }},

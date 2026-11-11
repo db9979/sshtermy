@@ -85,6 +85,7 @@ var localSettings = map[string]bool{
 	"LastLayout": true, "Editor": true, "KeysHere": true, "Debug": true, "Audit": true, "MCP": true, "SyslogPort": true,
 	"SyslogAny":      true,
 	"CmdSetApproved": true,
+	"Share":          true,
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der

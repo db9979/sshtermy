@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -123,16 +124,17 @@ func (h *HostSession) LockCode() {
 	_ = h.Sh.Lock()
 }
 
-// Guests: alle bekannten Zuschauer (zugelassen zuerst).
-func (h *HostSession) Guests() []*GuestState {
+// Guests: alle angemeldeten Zuschauer (Kopien, nach Ankunft sortiert).
+func (h *HostSession) Guests() []GuestState {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	var out []*GuestState
+	var out []GuestState
 	for _, g := range h.guests {
 		if g.ready {
-			out = append(out, g)
+			out = append(out, *g)
 		}
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].V < out[j].V })
 	return out
 }
 
