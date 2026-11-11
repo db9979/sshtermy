@@ -74,6 +74,7 @@ const (
 	actCompanion    action = "companion"
 	actCompanionBar action = "companion_bar"
 	actLogScan      action = "log_scan"
+	actVorgang      action = "vorgang"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -98,6 +99,7 @@ var actionDefs = []actionDef{
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
 	{actCompanion, "KI-Begleiter: Stufe wechseln", "Terminal", []string{"alt+k"}},
 	{actCompanionBar, "Begleiter-Leiste", "Terminal", []string{"alt+j"}},
+	{actVorgang, "Vorgang über mehrere Fenster (KI sieht alle)", "Terminal", []string{"alt+v"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
 	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},

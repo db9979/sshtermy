@@ -121,7 +121,7 @@ func (r rect) has(x, y int) bool { return x >= r.x && x < r.x+r.w && y >= r.y &&
 
 // areaRect: Fläche zwischen Sitzungszeile und Vorschlagszeile.
 func (a *App) areaRect() rect {
-	return rect{0, topRows, a.w, max(5, a.h-topRows-bottomRows-a.companionRows())}
+	return rect{0, topRows, a.w, max(5, a.h-topRows-bottomRows-a.companionRows()-a.vgRows())}
 }
 
 // splitLen teilt total in n gleiche Stücke mit sep Trennbreite dazwischen.
@@ -851,7 +851,7 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 		bar = bar.Background(col)
 	}
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○", stReconnect: "◌"}[s.state]
-	left := " " + dot + " " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
+	left := " " + dot + " " + strconv.Itoa(a.winNo(s)) + " · " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string
 	if a.syncIn && s.state == stConnected && !s.detached() {
 		marks = append(marks, i18n.T("◈ alle"))
@@ -861,6 +861,9 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 	}
 	if s.goal.active {
 		marks = append(marks, i18n.T("◎ Ziel"))
+	}
+	if a.vg.member(s.id) != nil {
+		marks = append(marks, i18n.T("◆ Vorgang"))
 	}
 	if s.panel != panelNone {
 		marks = append(marks, i18n.T("▐ Panel"))
