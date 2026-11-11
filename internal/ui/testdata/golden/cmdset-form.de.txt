@@ -30,11 +30,11 @@
      │ │ Name                                                                                           │
      │ │ CPU                                                                                            │
      │ │ RAM                                                                                            │
+     │   ↓ …                                                                                            │
      │                                                                                                  │
-     │ ━━ Syslog einrichten (ändert das Gerät, wird jedes Mal gezeigt) ──────────────────────────────── │
-     │ │ Schritte                                                                                       │
-     │ │ Speichern mit                                                                                  │
+     │ ──────────────────────────────────────────────────────────────────────────────────────────────── │
+     │ a–z, 0–9 und -, eindeutig; eingebaute Kennungen sind vergeben                                    │
      │                                                                                                  │
-     │ ━━ Zusätzliche Gefahrenregel (nur ergänzen) ──────────────────────────────────────────────────── │
-     │ │ Muster                                                                                         │
+     │                                                                                                  │
+     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
  Tab weiter  ←/→ wählen  Strg+S speichern  Esc abbrechen

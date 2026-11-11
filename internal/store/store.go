@@ -73,6 +73,8 @@ type Store struct {
 	cmu   sync.Mutex
 	conns connCache
 
+	late lateSave // vorgemerktes Speichern kleiner Änderungen (later.go)
+
 	stats cmdStats // Befehlsstatistik (cmdstats.go), nur lokal
 	lbase logBase  // Grundlinie des Log-Blicks (logbase.go), nur lokal
 }
@@ -169,6 +171,7 @@ func (s *Store) Fresh() bool {
 	}
 	s.data = d
 	s.mu.Unlock()
+	s.takeLate() // Vorgemerktes galt dem alten Stand
 	s.changed()
 	if s.OnReload != nil {
 		s.OnReload()
@@ -191,6 +194,7 @@ func (s *Store) AfterUnlock() error {
 
 // Lock sperrt und verwirft die entschlüsselten Daten.
 func (s *Store) Lock() {
+	_ = s.Flush()
 	s.mu.Lock()
 	s.data = nil
 	s.mu.Unlock()
@@ -200,6 +204,7 @@ func (s *Store) Lock() {
 }
 
 func (s *Store) save() error {
+	s.takeLate() // dieses Speichern nimmt Vorgemerktes mit
 	if err := s.persist(); err != nil {
 		if s.OnSaveError != nil && !errors.Is(err, vault.ErrLocked) {
 			s.OnSaveError(err)
@@ -598,7 +603,7 @@ func (s *Store) Touch(id string) {
 		}
 	}
 	s.mu.Unlock()
-	_ = s.save()
+	s.saveSoon()
 }
 
 // Tunnels einer Verbindung ("" = alle).
@@ -903,7 +908,7 @@ func (s *Store) UseRunbook(id string) {
 		}
 	}
 	s.mu.Unlock()
-	_ = s.save()
+	s.saveSoon()
 }
 
 // LogDir: Ordner der verschlüsselten Sitzungsprotokolle (im Sync nur über das

@@ -60,16 +60,17 @@ type session struct {
 	err        string
 	started    time.Time
 
-	connectedAt time.Time                // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
-	quitAt      time.Time                // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
-	rc          reconnState              // Auto-Reconnect
-	mux         muxState                 // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
-	secrets     *secretCache             // Antworten auf Passwort-Rückfragen, nur im Speicher
-	muxPending  bool                     // tmux/screen nach dem Neuverbinden anhängen
-	rootPrompt  bool                     // letzter Prompt endete auf „#“
-	dangerOK    string                   // Gefahren-Check: diese Eingabe wurde bestätigt (dangerguard.go)
-	rec         atomic.Pointer[recorder] // laufende Aufnahme (record.go)
-	recStart    time.Time
+	connectedAt  time.Time                // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
+	quitAt       time.Time                // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
+	rc           reconnState              // Auto-Reconnect
+	mux          muxState                 // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
+	secrets      *secretCache             // Antworten auf Passwort-Rückfragen, nur im Speicher
+	startPending bool                     // Startbefehl der Verbindung noch nicht getippt (connextra.go)
+	muxPending   bool                     // tmux/screen nach dem Neuverbinden anhängen
+	rootPrompt   bool                     // letzter Prompt endete auf „#“
+	dangerOK     string                   // Gefahren-Check: diese Eingabe wurde bestätigt (dangerguard.go)
+	rec          atomic.Pointer[recorder] // laufende Aufnahme (record.go)
+	recStart     time.Time
 
 	detach *detachState                // Tab läuft in eigenem Fenster (detach.go)
 	detOut atomic.Pointer[detach.Conn] // dorthin geht die Ausgabe mit

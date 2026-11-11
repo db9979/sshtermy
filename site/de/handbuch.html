@@ -71,6 +71,8 @@
     <li><b>Telnet, seriell, lokal:</b> „Verbindungsart“ wählt Telnet, ein USB-Konsolenkabel oder die Shell dieses Rechners (<kbd>Alt</kbd>+<kbd>L</kbd>).</li>
     <li><b>PowerShell (WinRM):</b> Windows-Server ohne SSH. „negotiate“ (NTLM) geht auch mit Domänenkonten; „kerberos“ für Server, die NTLM gesperrt haben: Rechnernamen statt IP eintragen (<code>srv01.firma.local</code>), Benutzer als <code>name@firma.local</code>. Unter Linux/macOS reicht ein Ticket von <code>kinit</code>, sonst fragt sshTermy nach dem Passwort.</li>
     <li><b>Schutz:</b> Jede Verbindung gilt als Produktivsystem (Gefahren-Check, Agent fragt bei Änderungen). Nur für Test- und Laborsysteme den Schalter „Schutz“ unter „Einordnung“ ausschalten.</li>
+    <li><b>Notiz, Startbefehl, Aufwecken:</b> „Notiz“ ist nur für dich (die KI sieht sie nie). Unter „Erweitert“: ein Startbefehl, der nach dem Anmelden einmal getippt wird, und die MAC-Adresse für Wake-on-LAN (merkt sich sshTermy beim Verbinden meist selbst).</li>
+    <li><b>Mehrere auf einmal:</b> <kbd>Leertaste</kbd> markiert, <kbd>*</kbd> markiert alle sichtbaren; dann ändern <kbd>e</kbd>, <kbd>v</kbd> und <kbd>d</kbd> alle markierten.</li>
     <li><b>Feste Sitzung:</b> pro Verbindung immer in derselben tmux/screen-Sitzung landen, auch von einem anderen Rechner.</li>
   </ul>
 </section>
@@ -81,7 +83,7 @@
     <li><kbd>F7</kbd>/<kbd>F8</kbd> wechseln Tabs, <kbd>Alt</kbd>+<kbd>T</kbd> zeigt alle, <kbd>Alt</kbd>+<kbd>N</kbd>/<kbd>Alt</kbd>+<kbd>W</kbd> öffnen und schließen.</li>
     <li><kbd>Strg</kbd>+<kbd>T</kbd> teilt die Ansicht (2 bis 6 Bereiche), <kbd>Alt</kbd>+<kbd>I</kbd> tippt in alle sichtbaren gleichzeitig.</li>
     <li><kbd>⇧F10</kbd> verschiebt einen Tab in ein eigenes Terminalfenster.</li>
-    <li><kbd>Strg</kbd>+<kbd>F</kbd> durchsucht den Verlauf, <kbd>Strg</kbd>+<kbd>E</kbd> springt zu Fehlerzeilen.</li>
+    <li><kbd>Strg</kbd>+<kbd>F</kbd> durchsucht den Verlauf, <kbd>Strg</kbd>+<kbd>E</kbd> springt zu Fehlerzeilen. <kbd>Alt</kbd>+<kbd>S</kbd> sucht in allen offenen Tabs.</li>
     <li><kbd>F9</kbd> und <kbd>⇧F1</kbd>…<kbd>⇧F8</kbd>: Schnellbefehle, passend zum Gerät vorbelegt (Linux, Windows, Aruba, Cisco, Juniper, MikroTik, FortiGate …).</li>
     <li><kbd>F6</kbd> Host-Übersicht: CPU, RAM, Platte, Updates bei Servern, bei Linux Live-Graphen (<kbd>t</kbd> 5 min / 1 h, <kbd>z</kbd> groß); Firmware, Ports und VLANs bei Netzwerkgeräten; <kbd>c</kbd> Container.</li>
     <li>Reißt die Leitung ab (WLAN, VPN, Ruhezustand), verbindet sshTermy von selbst neu, startet Tunnel und hängt tmux/screen wieder an. Nach dem Aufwachen oder einem Netzwechsel werden alle Leitungen sofort geprüft.</li>
@@ -252,7 +254,7 @@
   <details><summary>Die KI antwortet nicht.</summary><p>Der Punkt oben rechts zeigt den Zustand. <kbd>s</kbd> → <kbd>Strg</kbd>+<kbd>T</kbd> testet den Endpunkt. Ist der KI-Datenschutz auf „nur lokal“ oder „aus“, oder hat die Verbindung den Tag <code>ki-aus</code>, ist das gewollt.</p></details>
   <details><summary>Werden meine Befehle irgendwohin geschickt?</summary><p>Nur an den KI-Anbieter, den du einrichtest, und nur bereinigt. sshTermy hat keine Telemetrie. Der Update-Check fragt nur GitHub nach der neuesten Version.</p></details>
   <details><summary>Kann ich sshTermy ohne KI nutzen?</summary><p>Ja. Ohne eingerichteten Anbieter (oder mit „KI aus“) ist es ein vollwertiges SSH-Terminal mit Manager, SFTP, Tunneln, Broadcast und Sicherungen.</p></details>
-  <details><summary>Wie bekomme ich Updates?</summary><p>sshTermy prüft beim Start und zeigt neue Versionen an; <kbd>F12</kbd> → <kbd>u</kbd> installiert. Mit Homebrew, apt oder winget kommen Updates über den Paketmanager.</p></details>
+  <details><summary>Wie bekomme ich Updates?</summary><p>sshTermy prüft beim Start und zeigt neue Versionen an; <kbd>F12</kbd> → <kbd>u</kbd> installiert. Wer nicht jede Version sofort will, stellt unter Einstellungen › Sicherheit „Updates anbieten“ auf „stabil“ (erst nach einem Tag oder einer Woche). Mit Homebrew, apt oder winget kommen Updates über den Paketmanager.</p></details>
 </section>
 </article>
 </main>
