@@ -2,6 +2,16 @@ package i18n
 
 // Texte für Teilen v2 (Code, Zulassung, LAN, Assistent).
 var enShare2 = map[string]string{
+	"Der Code gilt %d Minuten und nur einmal. Danach klopfst du an, wir vergleichen kurz drei Prüfwörter (am Telefon oder im Chat), und ich lasse dich herein. Das Teilen endet spätestens um %s.": "The code is valid for %d minutes and only once. Then you knock, we quickly compare three check words (by phone or chat), and I let you in. Sharing ends at %s at the latest.",
+	"Einladung per E-Mail senden (Mailprogramm)": "Send invitation by email (mail app)",
+	"Hallo,": "Hi,",
+	"Mailprogramm ließ sich nicht öffnen: ":                                      "Could not open the mail app: ",
+	"Noch kein sshTermy? https://db9979.github.io/sshtermy/":                     "No sshTermy yet? https://db9979.github.io/sshtermy/",
+	"Oder den ganzen Link in die Palette einfügen:":                              "Or paste the whole link into the palette:",
+	"So geht's: sshTermy öffnen, Strg+Leertaste drücken und den Code eintippen:": "How: open sshTermy, press Ctrl+Space and type the code:",
+	"Zusehen bei %s (sshTermy)":                                                  "Watch %s live (sshTermy)",
+	"du kannst live zusehen, wie ich in %s arbeite.":                             "you can watch me work in %s live.",
+	"per E-Mail": "by email",
 	"        sudo systemctl enable --now sshtermy-anker":                               "        sudo systemctl enable --now sshtermy-anker",
 	"   Liegt %s dort noch nicht, vorher installieren (Paketquellen, siehe Webseite).": "   If %s is not there yet, install it first (package sources, see website).",
 	" (in der Zwischenablage, c kopiert erneut)":                                       " (in the clipboard, c copies again)",

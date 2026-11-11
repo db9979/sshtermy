@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -88,6 +89,24 @@ func TestShareAndWatchV2(t *testing.T) {
 	o := s.share.Load()
 	if o == nil || a.modal == nil || !strings.Contains(a.modal.copy, "sshtermy://zusehen/") {
 		t.Fatalf("nicht geteilt / keine Einladung: %+v", o)
+	}
+	// m: fertige E-Mail im Mailprogramm
+	mails := make(chan string, 1)
+	defer func(f func(string) error) { openMail = f }(openMail)
+	openMail = func(u string) error { mails <- u; return nil }
+	if a.modal.mail == "" {
+		t.Fatal("Einladung ohne E-Mail")
+	}
+	a.modal.textKey("m")
+	var mailed string
+	select {
+	case mailed = <-mails:
+	case <-time.After(5 * time.Second):
+	}
+	mu, err := url.Parse(mailed)
+	if err != nil || mu.Scheme != "mailto" || strings.Contains(mailed, "+") ||
+		!strings.Contains(mu.Query().Get("body"), o.hs.Invite().Code()) || !strings.Contains(mu.Query().Get("subject"), "web") {
+		t.Fatalf("E-Mail: %q", mailed)
 	}
 	a.modal = nil
 	if !strings.Contains(a.shareChip(s), "LIVE") {

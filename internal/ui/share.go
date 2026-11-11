@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/user"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/relay"
 	"github.com/db9979/sshtermy/internal/sessionlog"
+	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/termemu"
 	"github.com/db9979/sshtermy/internal/version"
 )
@@ -634,8 +636,44 @@ func (a *App) showInvite(s *session, o *shareOut) {
 		st.Muted.Render(i18n.T("Verwalten, Mitschreiben erlauben, beenden: Palette › „Teilen verwalten“")),
 	)
 	m := textModal(i18n.T("Einladung · ")+s.tabName(), lines)
-	m.styled, m.copy = true, link
+	m.styled, m.copy, m.mail = true, link, a.shareMailto(s, o)
 	a.modal = m
+}
+
+// openMail öffnet eine mailto:-Adresse im eingestellten Mailprogramm (im Test ersetzt).
+var openMail = func(u string) error { return sshx.OpenBrowser(u) }
+
+// shareMailto: fertige E-Mail mit Code, Link und Anleitung für den Zuschauer.
+func (a *App) shareMailto(s *session, o *shareOut) string {
+	inv := o.hs.Invite()
+	subject := fmt.Sprintf(i18n.T("Zusehen bei %s (sshTermy)"), s.tabName())
+	lines := []string{
+		i18n.T("Hallo,"),
+		"",
+		fmt.Sprintf(i18n.T("du kannst live zusehen, wie ich in %s arbeite."), s.tabName()),
+		"",
+		i18n.T("So geht's: sshTermy öffnen, Strg+Leertaste drücken und den Code eintippen:"),
+		"",
+		"    " + inv.Code(),
+		"",
+		i18n.T("Oder den ganzen Link in die Palette einfügen:"),
+		"",
+		"    " + inv.Link(),
+		"",
+		fmt.Sprintf(i18n.T("Der Code gilt %d Minuten und nur einmal. Danach klopfst du an, wir vergleichen kurz drei Prüfwörter (am Telefon oder im Chat), und ich lasse dich herein. Das Teilen endet spätestens um %s."), int(relay.CodeTTL.Minutes()), o.until.Format("15:04")),
+		"",
+		i18n.T("Noch kein sshTermy? https://db9979.github.io/sshtermy/"),
+	}
+	if n, _ := localName(); n != "" {
+		lines = append(lines, "", n)
+	}
+	return mailtoURL("", subject, strings.Join(lines, "\r\n"))
+}
+
+// mailtoURL baut eine mailto:-Adresse (RFC 6068: Leerzeichen als %20, nicht +).
+func mailtoURL(to, subject, body string) string {
+	esc := func(v string) string { return strings.ReplaceAll(url.QueryEscape(v), "+", "%20") }
+	return "mailto:" + to + "?subject=" + esc(subject) + "&body=" + esc(body)
 }
 
 func (a *App) shareSummary(o *shareOut) string {
@@ -654,6 +692,12 @@ func (a *App) shareSummary(o *shareOut) string {
 func (a *App) openShareManage(s *session, o *shareOut) tea.Cmd {
 	items := []menuItem{
 		{label: i18n.T("Einladung anzeigen (Code, Link, QR)"), hint: "⏎", run: func() tea.Cmd { a.showInvite(s, o); return nil }},
+		{label: i18n.T("Einladung per E-Mail senden (Mailprogramm)"), hint: "m", run: func() tea.Cmd {
+			if err := openMail(a.shareMailto(s, o)); err != nil {
+				a.flash(i18n.T("Mailprogramm ließ sich nicht öffnen: ") + err.Error())
+			}
+			return nil
+		}},
 		{label: i18n.T("Neuer Code (der alte gilt nicht mehr)"), hint: i18n.T("10 min"), run: func() tea.Cmd {
 			o.hs.NewCode()
 			o.codeAt = time.Now()

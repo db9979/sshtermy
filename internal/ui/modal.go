@@ -42,6 +42,7 @@ const (
 type modal struct {
 	kind     modalKind
 	copy     string // mText: c kopiert diesen Text
+	mail     string // mText: m öffnet diese mailto:-Adresse im Mailprogramm
 	title    string
 	body     string
 	hk       hostKeyAskMsg

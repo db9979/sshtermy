@@ -1059,6 +1059,9 @@ func (m *modal) textView(s Styles, w, h int) string {
 	if m.copy != "" {
 		keys = append([][2]string{{"c", i18n.T("kopieren")}}, keys...)
 	}
+	if m.mail != "" {
+		keys = append([][2]string{{"m", i18n.T("per E-Mail")}}, keys...)
+	}
 	info := ""
 	if total > maxBody {
 		info = fmt.Sprintf(i18n.T("Zeile %d–%d von %d"), m.scroll+1, end, total)
@@ -1085,6 +1088,11 @@ func (m *modal) textKey(key string) (closeIt bool) {
 		if m.copy != "" {
 			txt := m.copy
 			go func() { _ = clipboard.WriteAll(txt) }()
+		}
+	case "m":
+		if m.mail != "" {
+			u := m.mail
+			go func() { _ = openMail(u) }()
 		}
 	case "esc", "q", "enter":
 		return true
