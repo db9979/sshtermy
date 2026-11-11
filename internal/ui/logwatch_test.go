@@ -66,11 +66,18 @@ func TestLogWatchAlerts(t *testing.T) {
 		t.Fatalf("bekanntes Muster gemeldet: %+v", w.alerts)
 	}
 
-	// Rauschen bleibt still, unbekannte Absender werden mit IP gemeldet.
+	// Rauschen bleibt still; unbekannte Absender werden verworfen, außer
+	// „Syslog auch von unbekannten Absendern“ ist an – dann mit IP gemeldet.
 	a.lscan.conn = c
 	a.addNoise(logscan.Finding{Key: "network:x", Title: "x"}, true)
 	n := len(w.alerts)
-	a.Update(watchBatchMsg{[]watchItem{syslogItem("192.0.2.7", "<11>sshd[99]: error: kex_exchange_identification: Connection closed")}})
+	stranger := syslogItem("192.0.2.7", "<11>sshd[99]: error: kex_exchange_identification: Connection closed")
+	a.Update(watchBatchMsg{[]watchItem{stranger}})
+	if len(w.alerts) != n || w.dropped["192.0.2.7"] != 1 {
+		t.Fatalf("fremder Absender nicht verworfen: %+v", w.alerts)
+	}
+	a.toggleSyslogAny()
+	a.Update(watchBatchMsg{[]watchItem{stranger}})
 	if len(w.alerts) != n+1 || w.alerts[n].Host != "192.0.2.7" {
 		t.Fatalf("fremder Absender: %+v", w.alerts)
 	}

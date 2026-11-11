@@ -16,16 +16,16 @@ import (
 
 // Gefahren-Check beim Tippen
 //
-// Auf Produktiv-Hosts (siehe isProduction: Ordner, Tag oder Alias mit „prod“,
-// Tag „live“) prüft sshTermy jede Zeile, bevor Enter an den Server geht. Trifft
+// Auf jeder Verbindung (alle gelten als produktiv, siehe isProduction; nur der
+// Schalter „Schutz“ im Formular nimmt einzelne aus) prüft sshTermy jede Zeile, bevor Enter an den Server geht. Trifft
 // eine der festen Gefahrenregeln (internal/safety, auch für Switches: reload,
 // erase, write erase, delete …), kommt erst ein roter Dialog. Ausführen nur mit
 // „j“ oder ⏎ gedrückt halten (1,2 s, ein Balken füllt sich); ein kurzes ⏎
 // reicht nicht (Gewohnheit). Esc lässt die Zeile stehen, damit man sie
 // korrigieren kann.
 //
-// Über die Palette lässt sich der Check auf alle Hosts ausweiten
-// (Settings.DangerAll). Auf Produktiv-Hosts ist er nicht abschaltbar.
+// Einen globalen Schalter gibt es nicht mehr (Settings.DangerAll bleibt nur
+// für ältere Sync-Stände im Format): abschalten nur je Verbindung.
 
 type dangerAsk struct {
 	sid     int
@@ -127,31 +127,8 @@ func (a *App) safetyKind(s *session) string {
 	return safety.KindFor(a.remoteText(s), s.netDevice())
 }
 
-func (a *App) dangerAll() bool { return a.st.Settings().DangerAll }
-
 // dangerGuardOn: wird auf dieser Verbindung beim Tippen geprüft?
-func (a *App) dangerGuardOn(c domain.Connection) bool { return isProduction(c) || a.dangerAll() }
-
-func dangerLabel(all bool) string {
-	if all {
-		return i18n.T("alle Hosts")
-	}
-	return i18n.T("nur Produktiv")
-}
-
-func (a *App) toggleDangerAll() tea.Cmd {
-	on := !a.dangerAll()
-	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.DangerAll = on }); err != nil {
-		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
-		return nil
-	}
-	if on {
-		a.flash(i18n.T("Gefahren-Check auf allen Hosts: riskante Befehle fragen vor dem Ausführen nach."))
-	} else {
-		a.flash(i18n.T("Gefahren-Check nur noch auf Produktiv-Hosts."))
-	}
-	return nil
-}
+func (a *App) dangerGuardOn(c domain.Connection) bool { return isProduction(c) }
 
 // dangerCheck: Enter am Prompt. true = zurückgehalten, Dialog ist offen.
 func (a *App) dangerCheck(s *session, k tea.KeyPressMsg) bool {
@@ -172,7 +149,7 @@ func (a *App) dangerCheck(s *session, k tea.KeyPressMsg) bool {
 	if len(f) == 0 {
 		return false
 	}
-	d := &dangerAsk{sid: s.id, cmd: cmd, key: k, prod: isProduction(s.conn), root: s.state == stConnected && s.rootNow(), opened: time.Now()}
+	d := &dangerAsk{sid: s.id, cmd: cmd, key: k, prod: domain.LooksProduction(s.conn), root: s.state == stConnected && s.rootNow(), opened: time.Now()}
 	d.hold.last = d.opened // das ⏎, das den Dialog geöffnet hat
 	for _, x := range f {
 		d.reasons = append(d.reasons, x.Reason)

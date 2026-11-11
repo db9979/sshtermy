@@ -100,7 +100,7 @@ func accentColor(t Theme, id string) color.Color {
 
 // envKind: Umgebung aus Ordner, Tags und Alias. "prod", "test", "lab" oder "".
 func envKind(c domain.Connection) string {
-	if isProduction(c) {
+	if domain.LooksProduction(c) {
 		return "prod"
 	}
 	words := append([]string{c.Group, c.Alias}, c.Tags...)

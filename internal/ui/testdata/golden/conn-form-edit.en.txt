@@ -17,6 +17,7 @@
   │ │ Folder                 ▸ Produktion / Web ▾                                                │
   │ │ Tags                   prod, nginx                                                         │
   │ │ Color                  automatic                                                           │
+  │ │ Protection             ● on                                                                │
   │                                                                                              │
   │ ━━ Device & AI ───────────────────────────────────────────────────────────────────────────── │
   │ │ Device type            automatic                                                           │
@@ -28,5 +29,4 @@
   │                                                                                              │
   │ ──────────────────────────────────────────────────────────────────────────────────────────── │
   │ Display name, e.g. “DGX Spark”                                                               │
-  │                                                                                              │
  Tab next  ←/→ select  Ctrl+T test  Ctrl+S save  Esc cancel

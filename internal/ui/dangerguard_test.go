@@ -123,19 +123,22 @@ func TestDangerGuardSwitchAndScope(t *testing.T) {
 	}
 	a.modal = nil
 
-	// kein Produktiv-Host: nur mit „Gefahren-Check auf allen Hosts“
+	// jede Verbindung ist geschützt, auch ohne „prod“ im Namen
 	lab := domain.Connection{Alias: "lab-sw", Device: domain.DeviceNetwork}
-	s2, out2 := typedSession(lab, "lab-sw# ", "reload")
+	s2, _ := typedSession(lab, "lab-sw# ", "reload")
 	a.sessions = []*session{s2}
 	a.terminalKey(s2, enter)
-	if a.modal != nil || !out2.sent() {
-		t.Fatal("Nicht-Produktiv-Host ohne Einstellung abgefangen")
+	if a.modal == nil || a.modal.kind != mDanger {
+		t.Fatal("Verbindung ohne prod im Namen nicht geschützt")
 	}
-	a.toggleDangerAll()
-	s3, _ := typedSession(lab, "lab-sw# ", "write erase")
+	a.modal = nil
+
+	// nur der Schalter im Formular nimmt eine Verbindung aus
+	lab.GuardOff = true
+	s3, out3 := typedSession(lab, "lab-sw# ", "write erase")
 	a.sessions = []*session{s3}
 	a.terminalKey(s3, enter)
-	if a.modal == nil || a.modal.kind != mDanger {
-		t.Fatal("DangerAll greift nicht")
+	if a.modal != nil || !out3.sent() {
+		t.Fatal("Schutz aus, trotzdem abgefangen")
 	}
 }

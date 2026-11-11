@@ -104,16 +104,26 @@ func TestQuitIntent(t *testing.T) {
 }
 
 func TestIsProduction(t *testing.T) {
+	// Schutz: jede Verbindung, außer der Schalter im Formular ist aus
+	for _, c := range []domain.Connection{{Group: "Homelab"}, {Alias: "olive"}, {Tags: []string{"test"}}, {Alias: "db-prod-1"}} {
+		if !isProduction(c) {
+			t.Errorf("%+v sollte geschützt sein", c)
+		}
+	}
+	if isProduction(domain.Connection{Alias: "db-prod-1", GuardOff: true}) {
+		t.Error("Schutz aus wirkt nicht")
+	}
+	// Aussehen (rote Statuszeile): nur mit prod/live im Namen
 	yes := []domain.Connection{{Group: "Produktion"}, {Tags: []string{"live"}}, {Alias: "db-prod-1"}, {Tags: []string{"PROD"}}}
 	no := []domain.Connection{{Group: "Homelab"}, {Alias: "olive"}, {Tags: []string{"test"}}}
 	for _, c := range yes {
-		if !isProduction(c) {
-			t.Errorf("%+v sollte produktiv sein", c)
+		if !domain.LooksProduction(c) {
+			t.Errorf("%+v sollte produktiv aussehen", c)
 		}
 	}
 	for _, c := range no {
-		if isProduction(c) {
-			t.Errorf("%+v ist nicht produktiv", c)
+		if domain.LooksProduction(c) {
+			t.Errorf("%+v sieht nicht produktiv aus", c)
 		}
 	}
 }

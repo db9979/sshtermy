@@ -100,6 +100,9 @@ func main() {
 		case rel == nil:
 			fmt.Println(version.Short(), i18n.T("ist aktuell."))
 		default:
+			if !update.Signed() {
+				fmt.Fprintln(os.Stderr, i18n.T("Warnung: Dieser Build prüft die Signatur von Updates nicht (selbst gebaut, ohne UPDATE_PUBKEY). Nur die Prüfsumme wird geprüft."))
+			}
 			fmt.Println(i18n.T("Aktualisiere auf v") + rel.Version + " …")
 			if err := update.Apply(ctx, rel); err != nil {
 				fail(err)

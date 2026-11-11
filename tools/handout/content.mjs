@@ -12,7 +12,7 @@ export const de = {
   sub: 'SSH-Terminal mit KI-Copilot · Windows · macOS · Linux',
   credit: 'Idee: Dominik Bornhäußer',
   stand: 'Stand November 2026',
-  hint: 'Alle Tasten lassen sich ändern: <b>b</b> im Manager (<b>l</b> = nur dieser Rechner). Hilfe in der App: <b>F1</b>, Tastenzeile erklären: <b>⇧F9</b>.',
+  hint: 'Tasten ändern: <b>b</b> im Manager (<b>l</b> = nur dieser Rechner) · Hilfe: <b>F1</b> · Plan-Modus, Protokolle und Start-Optionen: Handbuch (Palette › Hilfe).',
   web: 'db9979.github.io/sshtermy',
   page1: [
     { t: 'Überall', ic: '◆', rows: [
@@ -87,7 +87,7 @@ export const de = {
       ['●', 'gelb: langsam oder Ersatz-Anbieter', 'mid'],
       ['●', 'rot: KI nicht erreichbar (Klick: Details)', 'bad'],
       ['✓  ×  !', 'Tab: langer Befehl fertig · ! = Farbregel'],
-      ['PRODUKTIV', 'rote Statuszeile: Vorsicht, Live-System', 'warn'],
+      ['PRODUKTIV', 'rote Statuszeile: prod/live im Namen', 'warn'],
       ['status nginx', 'grauer Ghost-Text: Tab übernimmt', 'ghost'],
       ['rm -rf', 'rot: gefährlich, zweimal ⏎', 'danger'],
     ]},
@@ -109,16 +109,7 @@ export const de = {
       ['v', 'Skript des Agenten ansehen'],
       ['⏎ ⏎', 'gefährlichen Schritt freigeben', 'warn'],
       ['s r c l', 'Ende: Runbook · Skripte weg · kopieren · lesen'],
-    ], note: '<b>Vorsichtig</b> (Standard): nur Lesendes allein · <b>Normal</b>: außer Gefahr, sudo, root, python -c · <b>Voll</b>: auch sudo. Gefahr/Geheimnisse warten immer. Grenzen: 25 Schritte, 15 min, 3 Fehler.' },
-    { t: 'Plan-Modus', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
-      ['↑ / ↓', 'Schritt wählen'],
-      ['Space', 'Schritt streichen / zurückholen'],
-      ['e / v', 'ändern / Skript ansehen'],
-      ['?', 'neu planen lassen'],
-      ['Tab', 'Ausführung: Schritt für Schritt / Agent-Stufe'],
-      ['⏎', 'Plan freigeben und ausführen'],
-      ['Strg+S / x', 'als Runbook speichern / verwerfen'],
-    ]},
+    ], note: '<b>Vorsichtig</b> (Standard): nur Lesendes allein · <b>Normal</b> / <b>Voll</b>: mehr allein, nur auf Verbindungen mit „Schutz“ aus. Gefahr und Geheimnisse warten immer.' },
     { t: 'KI fragen', ic: '◆', key: 'F3', ai: true, rows: [
       ['⏎', 'Frage senden (mit Terminal-Kontext)'],
       ['↑ / ↓', 'Befehlskarte wählen'],
@@ -166,14 +157,6 @@ export const de = {
       ['Strg+E', 'nur Fehlerzeilen'],
       ['Tab', 'Fehlerliste ↔ Verlauf'],
     ]},
-    { t: 'Sitzungsprotokolle', ic: '≡', key: 'l', rows: [
-      ['/', 'suchen (auch in der Ausgabe)'],
-      ['Tab / f / s', 'nach Zeit ↔ Host / Filter / sortieren'],
-      ['z / Z', 'KI-Zusammenfassung / alle Treffer'],
-      ['b', 'Änderungsbericht für Ticket / Doku', 'ai'],
-      ['x / d', 'Export md·txt·cast / löschen'],
-      ['a', 'Mitschreiben an / aus'],
-    ]},
     { t: 'Broadcast', ic: '»', key: 'm', rows: [
       ['Space / g / a', 'Host / Ordner / alle wählen'],
       ['Strg+S', 'prüfen, dann ⏎'],
@@ -183,17 +166,10 @@ export const de = {
     ]},
     { t: 'Sicherheit', ic: '▲', warn: true, rows: [
       ['⏎ ⏎', 'roter Befehl: zweimal bestätigen', 'warn'],
-      ['j', 'Produktiv: riskant zulassen · oder ⏎ halten', 'warn'],
+      ['j', 'riskant zulassen · oder ⏎ halten', 'warn'],
+      ['_Formular_', '„Schutz“ aus: nur Test- und Laborsysteme'],
       ['␣befehl', 'führendes Leerzeichen: nicht protokolliert'],
-      ['_Palette_', '„Jetzt sperren“ · „Master-Passwort“ · „Audit“ · „Gefahren-Check“'],
-    ]},
-    { t: 'Start & Tipps', ic: '$', rows: [
-      ['backup · mcp', 'alles sichern · KI-Clients'],
-      ['--no-intro', 'ohne Startanimation (--debug: Protokoll)'],
-      ['-window · -tui', 'eigenes Fenster · immer im Terminal'],
-      ['tsz / trz', 'Datei vom / zum Server (trzsz)'],
-      ['_Palette_', '„teilen“: Tab live zeigen'],
-      ['Fn+1 … Fn+=', 'uConsole: F1 … F12'],
+      ['_Palette_', '„Jetzt sperren“ · „Master-Passwort“ · „Audit“'],
     ]},
   ],
 };
@@ -205,7 +181,7 @@ export const en = {
   sub: 'SSH terminal with an AI copilot · Windows · macOS · Linux',
   credit: 'Idea: Dominik Bornhäußer',
   stand: 'As of November 2026',
-  hint: 'Every key can be changed: <b>b</b> in the manager (<b>l</b> = this computer only). Help in the app: <b>F1</b>, explain the key bar: <b>⇧F9</b>.',
+  hint: 'Change keys: <b>b</b> in the manager (<b>l</b> = this computer only) · help: <b>F1</b> · plan mode, session logs and start options: manual (palette › Help).',
   web: 'db9979.github.io/sshtermy',
   page1: [
     { t: 'Everywhere', ic: '◆', rows: [
@@ -280,7 +256,7 @@ export const en = {
       ['●', 'yellow: slow or fallback provider', 'mid'],
       ['●', 'red: AI unreachable (click: details)', 'bad'],
       ['✓  ×  !', 'tab: long command done · ! = color rule'],
-      ['PRODUCTION', 'red status line: careful, live system', 'warn'],
+      ['PRODUCTION', 'red status line: prod/live in the name', 'warn'],
       ['status nginx', 'gray ghost text: Tab accepts', 'ghost'],
       ['rm -rf', 'red: dangerous, ⏎ twice', 'danger'],
     ]},
@@ -304,16 +280,7 @@ export const en = {
       ['⏎ ⏎', 'allow a dangerous step', 'warn'],
       ['s / r', '(at the end) save as runbook / delete scripts'],
       ['c / l', 'copy result / read all'],
-    ], note: '<b>Careful</b> (default): only read-only runs on its own · <b>Normal</b>: all but danger, sudo, root, python -c · <b>Full</b>: sudo too. Danger and secrets always wait. Limits: 25 steps, 15 min, 3 failures in a row. PgUp/PgDn/wheel scroll the panel.' },
-    { t: 'Plan mode', ic: '☰', key: 'F2 → Tab', ai: true, rows: [
-      ['↑ / ↓', 'choose a step'],
-      ['Space', 'remove / restore a step'],
-      ['e / v', 'edit step / view script'],
-      ['?', 'have it re-planned'],
-      ['Tab', 'run: step by step / agent level'],
-      ['⏎', 'approve the plan and run it'],
-      ['Ctrl+S / x', 'save as runbook / discard'],
-    ]},
+    ], note: '<b>Careful</b> (default): only read-only runs on its own · <b>Normal</b> / <b>Full</b>: more on its own, only on connections with “Protection” off. Danger and secrets always wait.' },
     { t: 'Ask AI', ic: '◆', key: 'F3', ai: true, rows: [
       ['⏎', 'send question (with terminal context)'],
       ['↑ / ↓', 'choose a command card'],
@@ -361,14 +328,6 @@ export const en = {
       ['Ctrl+E', 'error lines only'],
       ['Tab', 'error list ↔ scrollback'],
     ]},
-    { t: 'Session logs', ic: '≡', key: 'l', rows: [
-      ['/', 'search (output too)'],
-      ['Tab / f / s', 'by time ↔ host / filter / sort'],
-      ['z / Z', 'AI summary / of all matches'],
-      ['b', 'change report for ticket / docs', 'ai'],
-      ['x / d', 'export md·txt·cast / delete'],
-      ['a', 'recording on / off'],
-    ]},
     { t: 'Broadcast', ic: '»', key: 'm', rows: [
       ['Space / g / a', 'pick host / folder / all'],
       ['Ctrl+S', 'check, then ⏎'],
@@ -378,17 +337,10 @@ export const en = {
     ]},
     { t: 'Safety', ic: '▲', warn: true, rows: [
       ['⏎ ⏎', 'red command: confirm twice', 'warn'],
-      ['y', 'production: allow risky · or hold ⏎', 'warn'],
+      ['y', 'allow risky · or hold ⏎', 'warn'],
+      ['_form_', '“Protection” off: test and lab systems only'],
       ['␣command', 'leading space: not logged'],
-      ['_palette_', '“Lock now” · “Master password” · “Audit” · “Danger check”'],
-    ]},
-    { t: 'Start & tips', ic: '$', rows: [
-      ['backup · mcp', 'full backup · AI clients'],
-      ['--no-intro · --debug', 'no start animation · debug log'],
-      ['-window · -tui', 'own window · always in the terminal'],
-      ['tsz / trz', 'file from / to the server (trzsz)'],
-      ['_palette_', '“share”: show a tab live'],
-      ['Fn+1 … Fn+=', 'uConsole: F1 … F12'],
+      ['_palette_', '“Lock now” · “Master password” · “Audit”'],
     ]},
   ],
 };

@@ -772,8 +772,8 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	uf.help = i18n.T("Telnet/Konsole: optional, wird eingetippt, sobald das Gerät fragt · WinRM: DOMÄNE\\name oder name@domäne")
 	uf.hidden = func(*form) bool { return isProto(domain.ProtoLocal) }
 	f.choice("auth", i18n.T("Verfahren"), []string{"agent", "keyfile", "password", "kerberos"}, string(c.Auth), i18n.T("agent = ssh-agent / Windows OpenSSH-Agent (empfohlen) · kerberos = Ticket der Firmen-Domäne (Windows-Anmeldung oder kinit)")).hidden = raw
-	f.choice("winrm_auth", i18n.T("Verfahren"), []string{"negotiate", "basic"}, orDefault(c.WinRMAuth, "negotiate"),
-		i18n.T("negotiate = NTLM, auch Domänenkonten (Standard) · basic = nur lokale Konten und nur über HTTPS")).hidden = func(f *form) bool { return !isProto(domain.ProtoWinRM) }
+	f.choice("winrm_auth", i18n.T("Verfahren"), []string{"negotiate", "kerberos", "basic"}, orDefault(c.WinRMAuth, "negotiate"),
+		i18n.T("negotiate = NTLM, auch Domänenkonten (Standard) · kerberos = Domäne ohne NTLM, Rechnername statt IP · basic = nur lokale Konten und nur über HTTPS")).hidden = func(f *form) bool { return !isProto(domain.ProtoWinRM) }
 	winrm := func(*form) bool { return isProto(domain.ProtoWinRM) }
 	isAuth := func(v string) func(*form) bool {
 		return func(f *form) bool { return raw(f) || f.sel("auth") != v }
@@ -819,6 +819,9 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		}
 		return nil
 	}
+
+	f.toggle("guard", i18n.T("Schutz"), !c.GuardOff,
+		i18n.T("Standard an: riskante Befehle fragen vor ⏎, der Agent fragt bei Änderungen · aus nur für Test- und Laborsysteme"))
 
 	f.section("s_dev", i18n.T("Gerät & KI"), func(t Theme) color.Color { return t.AI })
 	f.choice("device", i18n.T("Gerätetyp"), deviceLabels, deviceLabel(c.Device), i18n.T("Netzwerkgerät = Switch/Router (Aruba, Cisco …): keine Systemabfrage"))
@@ -1079,8 +1082,8 @@ func (a *App) connFromForm() (domain.Connection, error) {
 	if c.Protocol == domain.ProtoWinRM {
 		c.WinRMHTTPS = f.flag("winrm_https")
 		c.WinRMInsecure = c.WinRMHTTPS && f.flag("winrm_insecure")
-		if f.sel("winrm_auth") == "basic" {
-			c.WinRMAuth = "basic"
+		if v := f.sel("winrm_auth"); v == "basic" || v == "kerberos" {
+			c.WinRMAuth = v
 		}
 		switch {
 		case c.Port == 22 || c.Port == 23:
@@ -1135,6 +1138,7 @@ func (a *App) connFromForm() (domain.Connection, error) {
 		}
 	}
 	c.Color = accentFromLabel(f.sel("color"))
+	c.GuardOff = !f.flag("guard")
 	c.Device = deviceFromLabel(f.sel("device"))
 	applyPersistFields(f, &c)
 	c.ForwardAgent = f.flag("fwdagent") && !c.Protocol.Raw() && c.Device != domain.DeviceNetwork

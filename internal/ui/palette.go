@@ -685,6 +685,8 @@ func (a *App) palMenuItems() []palItem {
 			"logwache log watch journal überwachen fehler warnungen", func(dir int) tea.Cmd { return a.cycleWatch(dir) }),
 		proItem(palCycle(pgSetBehave, ic("errors"), i18n.T("Syslog-Empfang (Switches, Firewalls)"), syslogLabel(a.st.Settings().SyslogPort),
 			"syslog udp 514 5514 empfang switch firewall logwache", func(dir int) tea.Cmd { return a.cycleSyslog(dir) })),
+		proItem(palToggle(ic("errors"), i18n.T("Syslog auch von unbekannten Absendern annehmen"), a.st.Settings().SyslogAny,
+			"syslog absender unbekannt fremd alle", func() tea.Cmd { return a.toggleSyslogAny() })),
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
 		palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }),
@@ -695,8 +697,6 @@ func (a *App) palMenuItems() []palItem {
 
 		// Sicherheit
 		safe(palToggle(ic("paste"), i18n.T("Einfügeschutz: Vorschau bei mehreren Zeilen"), a.pasteGuardEnabled(), "paste einfügen", func() tea.Cmd { return a.togglePasteGuard() })),
-		palCycle(pgSetSafe, ic("danger"), i18n.T("Gefahren-Check"), dangerLabel(a.dangerAll()), "danger gefahr produktiv alle hosts",
-			func(int) tea.Cmd { return a.toggleDangerAll() }),
 		proItem(safe(palToggle(ic("paste"), i18n.T("Server darf in die Zwischenablage kopieren (OSC 52)"), a.osc52On(), "clipboard zwischenablage osc52 tmux vim", func() tea.Cmd { return a.toggleOSC52() }))),
 		palCycle(pgSetSafe, ic("sshkey"), i18n.T("Automatisch sperren bei Leerlauf"), lockLabel(set.LockAfterMin), "lock sperren idle leerlauf",
 			func(dir int) tea.Cmd { return a.cycleLockAfter(dir) }),

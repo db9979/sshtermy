@@ -147,8 +147,16 @@ for (const c of [de, en]) {
   await pg.setContent(html, { waitUntil: 'load' });
   await pg.evaluate(() => document.fonts.ready);
   // Passt eine Seite nicht, sieht man es hier statt erst auf dem Papier.
-  const over = await pg.evaluate(() => [...document.querySelectorAll('.cols')].map((el) => el.scrollWidth > el.clientWidth + 1));
-  if (over.some(Boolean)) console.warn(`${c.file}: Inhalt läuft über (Spalten zu voll)`);
+  // CSS-Spalten laufen nach rechts über (eine vierte Spalte), nicht nach unten.
+  const over = await pg.evaluate(() => [...document.querySelectorAll('.cols')].map((el) => {
+    const r = el.getBoundingClientRect();
+    return el.scrollWidth > el.clientWidth + 1 || [...el.children].some((b) => b.getBoundingClientRect().right > r.right + 1);
+  }));
+  if (over.some(Boolean)) {
+    // Abgeschnittenes merkt man sonst erst auf dem Papier: abbrechen.
+    console.error(`${c.file}: Inhalt läuft über (Spalten zu voll), Kästen kürzen oder ins Handbuch verschieben`);
+    process.exitCode = 1;
+  }
   await pg.pdf({ path: join(out, c.file), format: 'A4', printBackground: true, preferCSSPageSize: true });
   console.log('geschrieben:', join('site', 'handout', c.file));
 }

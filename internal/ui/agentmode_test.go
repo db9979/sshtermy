@@ -40,7 +40,7 @@ var enterKey = tea.KeyPressMsg{Code: tea.KeyEnter}
 func runeKey(r rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: r, Text: string(r)} }
 
 func TestAgentPlanThenAuto(t *testing.T) {
-	a, s, out := agentSession(t, domain.Connection{Alias: "lab-01"}, lvlNormal)
+	a, s, out := agentSession(t, domain.Connection{GuardOff: true, Alias: "lab-01"}, lvlNormal)
 	g := &s.goal
 	a.sessionMsg(stepMsg(s, cmdStep("df -h /var", "unix")))
 	if !g.paused || g.planOK || g.cur == nil {
@@ -72,28 +72,28 @@ func TestAgentGates(t *testing.T) {
 		cmd   string
 		auto  bool
 	}{
-		{"lesen vorsichtig", domain.Connection{Alias: "lab"}, lvlCareful, "ls -la /etc", true},
-		{"ändern vorsichtig", domain.Connection{Alias: "lab"}, lvlCareful, "mkdir /tmp/x", false},
-		{"sudo normal", domain.Connection{Alias: "lab"}, lvlNormal, "sudo systemctl restart nginx", false},
-		{"sudo lesen normal", domain.Connection{Alias: "lab"}, lvlNormal, "sudo du -sh /var/log", true},
-		{"sudo voll", domain.Connection{Alias: "lab"}, lvlFull, "sudo systemctl restart nginx", true},
-		{"gefahr voll", domain.Connection{Alias: "lab"}, lvlFull, "sudo rm -rf /var/log/app/old", false},
+		{"lesen vorsichtig", domain.Connection{GuardOff: true, Alias: "lab"}, lvlCareful, "ls -la /etc", true},
+		{"ändern vorsichtig", domain.Connection{GuardOff: true, Alias: "lab"}, lvlCareful, "mkdir /tmp/x", false},
+		{"sudo normal", domain.Connection{GuardOff: true, Alias: "lab"}, lvlNormal, "sudo systemctl restart nginx", false},
+		{"sudo lesen normal", domain.Connection{GuardOff: true, Alias: "lab"}, lvlNormal, "sudo du -sh /var/log", true},
+		{"sudo voll", domain.Connection{GuardOff: true, Alias: "lab"}, lvlFull, "sudo systemctl restart nginx", true},
+		{"gefahr voll", domain.Connection{GuardOff: true, Alias: "lab"}, lvlFull, "sudo rm -rf /var/log/app/old", false},
 		{"prod ändern voll", domain.Connection{Alias: "web-prod"}, lvlFull, "mkdir /tmp/x", false},
 		{"prod lesen", domain.Connection{Alias: "web-prod"}, lvlNormal, "df -h", true},
 		{"switch config", domain.Connection{Alias: "sw", Device: domain.DeviceNetwork}, lvlFull, "ntp server 10.0.0.1", false},
-		{"sudo verkettet normal", domain.Connection{Alias: "lab"}, lvlNormal, "cd /etc && sudo systemctl restart nginx", false},
-		{"inline normal", domain.Connection{Alias: "lab"}, lvlNormal, `python3 -c "import os; os.remove('x')"`, false},
-		{"inline voll", domain.Connection{Alias: "lab"}, lvlFull, "bash -c 'mkdir -p /tmp/x'", true},
-		{"skript normal", domain.Connection{Alias: "lab"}, lvlNormal, "bash /tmp/x.sh", true},
+		{"sudo verkettet normal", domain.Connection{GuardOff: true, Alias: "lab"}, lvlNormal, "cd /etc && sudo systemctl restart nginx", false},
+		{"inline normal", domain.Connection{GuardOff: true, Alias: "lab"}, lvlNormal, `python3 -c "import os; os.remove('x')"`, false},
+		{"inline voll", domain.Connection{GuardOff: true, Alias: "lab"}, lvlFull, "bash -c 'mkdir -p /tmp/x'", true},
+		{"skript normal", domain.Connection{GuardOff: true, Alias: "lab"}, lvlNormal, "bash /tmp/x.sh", true},
 		{"switch show", domain.Connection{Alias: "sw", Device: domain.DeviceNetwork}, lvlCareful, "show ntp status", true},
 		// Sicherheitsprüfung 2026-11-10: root/Admin hat keine sudo-Bremse
-		{"root normal ändern", domain.Connection{Alias: "lab", Username: "root"}, lvlNormal, "systemctl restart nginx", false},
-		{"root normal lesen", domain.Connection{Alias: "lab", Username: "root"}, lvlNormal, "df -h", true},
-		{"root voll", domain.Connection{Alias: "lab", Username: "root"}, lvlFull, "systemctl restart nginx", true},
+		{"root normal ändern", domain.Connection{GuardOff: true, Alias: "lab", Username: "root"}, lvlNormal, "systemctl restart nginx", false},
+		{"root normal lesen", domain.Connection{GuardOff: true, Alias: "lab", Username: "root"}, lvlNormal, "df -h", true},
+		{"root voll", domain.Connection{GuardOff: true, Alias: "lab", Username: "root"}, lvlFull, "systemctl restart nginx", true},
 		{"winrm normal", domain.Connection{Alias: "win", Protocol: domain.ProtoWinRM}, lvlNormal, "Restart-Service Spooler", false},
-		{"root voll fstab", domain.Connection{Alias: "lab", Username: "root"}, lvlFull, "rm /etc/fstab", false},
-		{"falscher switch", domain.Connection{Alias: "lab"}, lvlFull, "erase startup-config", false},
-		{"geheimnis voll", domain.Connection{Alias: "lab"}, lvlFull, "sudo cat /etc/shadow", false},
+		{"root voll fstab", domain.Connection{GuardOff: true, Alias: "lab", Username: "root"}, lvlFull, "rm /etc/fstab", false},
+		{"falscher switch", domain.Connection{GuardOff: true, Alias: "lab"}, lvlFull, "erase startup-config", false},
+		{"geheimnis voll", domain.Connection{GuardOff: true, Alias: "lab"}, lvlFull, "sudo cat /etc/shadow", false},
 		{"switch config lesen", domain.Connection{Alias: "sw", Device: domain.DeviceNetwork}, lvlFull, "show running-config", false},
 	}
 	for _, c := range cases {
@@ -114,7 +114,7 @@ func TestAgentGates(t *testing.T) {
 }
 
 func TestAgentDangerNeedsTwoEnters(t *testing.T) {
-	a, s, out := agentSession(t, domain.Connection{Alias: "lab-01"}, lvlFull)
+	a, s, out := agentSession(t, domain.Connection{GuardOff: true, Alias: "lab-01"}, lvlFull)
 	g := &s.goal
 	g.planOK = true
 	a.sessionMsg(stepMsg(s, cmdStep("rm -rf /tmp/rot/old", "unix")))
@@ -132,7 +132,7 @@ func TestAgentDangerNeedsTwoEnters(t *testing.T) {
 }
 
 func TestAgentTypingAndEscPause(t *testing.T) {
-	a, s, _ := agentSession(t, domain.Connection{Alias: "lab-01"}, lvlNormal)
+	a, s, _ := agentSession(t, domain.Connection{GuardOff: true, Alias: "lab-01"}, lvlNormal)
 	g := &s.goal
 	g.planOK, g.paused = true, false
 	a.terminalKey(s, runeKey('l'))
@@ -147,7 +147,7 @@ func TestAgentTypingAndEscPause(t *testing.T) {
 }
 
 func TestAgentLimits(t *testing.T) {
-	a, s, _ := agentSession(t, domain.Connection{Alias: "lab-01"}, lvlNormal)
+	a, s, _ := agentSession(t, domain.Connection{GuardOff: true, Alias: "lab-01"}, lvlNormal)
 	g := &s.goal
 	g.planOK, g.paused = true, false
 	for i := 0; i < agentSteps; i++ {
@@ -179,7 +179,7 @@ func TestAgentLimits(t *testing.T) {
 }
 
 func TestAgentFileStepAndRunbook(t *testing.T) {
-	a, s, _ := agentSession(t, domain.Connection{Alias: "lab-01"}, lvlNormal)
+	a, s, _ := agentSession(t, domain.Connection{GuardOff: true, Alias: "lab-01"}, lvlNormal)
 	g := &s.goal
 	g.planOK = true
 	f := agent.FileAction{Name: "rotate.sh", Content: "#!/bin/sh\necho ok\n"}
@@ -216,7 +216,7 @@ func TestAgentFileStepAndRunbook(t *testing.T) {
 }
 
 func TestAgentViewRenders(t *testing.T) {
-	a, s, _ := agentSession(t, domain.Connection{Alias: "lab-01"}, lvlNormal)
+	a, s, _ := agentSession(t, domain.Connection{GuardOff: true, Alias: "lab-01"}, lvlNormal)
 	g := &s.goal
 	render := func() string {
 		var b strings.Builder

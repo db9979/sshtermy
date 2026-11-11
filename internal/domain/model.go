@@ -70,6 +70,10 @@ type Connection struct {
 	Group    string     `json:"group,omitempty"` // Ordner, verschachtelt mit „ / “, z. B. "Produktion / Web"
 	Tags     []string   `json:"tags,omitempty"`
 	Order    float64    `json:"order,omitempty"` // Reihenfolge im Ordner (0 = alphabetisch)
+	// GuardOff: Schutz für dieses System aus (Test-/Laborrechner). Standard
+	// ist an: Jede Verbindung gilt als produktiv (Gefahren-Check beim Tippen,
+	// Agent fragt bei Änderungen). Nur einzeln im Formular abschaltbar.
+	GuardOff bool `json:"guard_off,omitempty"`
 
 	Password      Secret `json:"password,omitempty"`       // AuthPassword
 	KeyPath       string `json:"key_path,omitempty"`       // AuthKeyFile: Datei auf der Platte …
@@ -153,7 +157,7 @@ type Connection struct {
 	// PowerShell über WinRM (Protocol "winrm", wie Enter-PSSession):
 	// WinRMHTTPS = Port 5986 mit TLS statt 5985 (dort verschlüsselt NTLM die
 	// Nachrichten), WinRMInsecure = Zertifikat nicht prüfen (selbst
-	// signiert), WinRMAuth = "" Negotiate/NTLM oder "basic" (nur HTTPS).
+	// signiert), WinRMAuth = "" Negotiate/NTLM, "kerberos" oder "basic" (nur HTTPS).
 	WinRMHTTPS    bool   `json:"winrm_https,omitempty"`
 	WinRMInsecure bool   `json:"winrm_insecure,omitempty"`
 	WinRMAuth     string `json:"winrm_auth,omitempty"`
@@ -543,6 +547,11 @@ type Settings struct {
 	// SyslogPort: Syslog-Empfänger der Logwache auf diesem Rechner (UDP),
 	// 0 = aus. Nur lokal: jeder Rechner hat seinen eigenen Port.
 	SyslogPort int `json:"syslog_port,omitempty"`
+	// SyslogAny: Syslog auch von Absendern annehmen, die zu keiner
+	// gespeicherten Verbindung passen. Standard aus: UDP-Absender lassen sich
+	// fälschen, fremde Meldungen kämen sonst in Logwache und KI-Lagebericht.
+	// Nur lokal wie SyslogPort.
+	SyslogAny bool `json:"syslog_any,omitempty"`
 
 	// Colors: eigene Farben (Theme "eigene"), wird mit dem Sync übertragen.
 	Colors *CustomColors `json:"colors,omitempty"`
@@ -674,7 +683,7 @@ func (s Settings) SyncedPart() Settings {
 	s.UseDPAPI, s.NoMouse, s.LastVersion, s.NerdFont = false, false, "", ""
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
-	s.SyslogPort = 0
+	s.SyslogPort, s.SyslogAny = 0, false
 	s.CmdSetApproved = nil // Freigaben gelten für die Team-Dateien dieses Rechners
 	return s
 }
@@ -1127,9 +1136,14 @@ func (n LogNoise) Hides(key string, c Connection, now time.Time) bool {
 	return true
 }
 
-// IsProduction: Produktiv-Host? Ordner, Tag („prod“, „live“) oder Alias mit
-// „prod“. Der Gefahren-Check beim Tippen und der Agent sind hier strenger.
-func IsProduction(c Connection) bool {
+// IsProduction: gilt die Verbindung als Produktivsystem? Standard ja; nur
+// wer den Schutz im Formular abschaltet (GuardOff), bekommt ihn nicht. Der
+// Gefahren-Check beim Tippen und der Agent sind hier strenger.
+func IsProduction(c Connection) bool { return !c.GuardOff }
+
+// LooksProduction: trägt die Verbindung „prod“ im Ordner, Tag oder Alias
+// (oder den Tag „live“)? Nur fürs Aussehen: rote Statuszeile, Akzentfarbe.
+func LooksProduction(c Connection) bool {
 	has := func(s string) bool {
 		l := strings.ToLower(s)
 		return strings.Contains(l, "prod") || l == "live"

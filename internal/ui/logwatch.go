@@ -64,6 +64,8 @@ type logWatchState struct {
 	syslog   map[string][]logscan.Entry // empfangenes Syslog je Verbindung (nur im Speicher)
 	hostIdx  map[string]string          // Host aus der Verbindung → ID
 	hostAt   time.Time
+	// dropped: Syslog von unbekannten Absendern, verworfen (IP → Anzahl)
+	dropped map[string]int
 }
 
 // watchSyslogKeep: so viele empfangene Zeilen je Gerät für den Log-Blick.
@@ -395,6 +397,9 @@ func (a *App) watchMsg(msg tea.Msg) (tea.Cmd, bool) {
 	case watchBatchMsg:
 		for _, it := range m.items {
 			if it.sid == 0 {
+				if !a.syslogAccepted(it) {
+					continue
+				}
 				a.keepSyslog(it)
 			}
 			a.watchEntry(it)
@@ -445,6 +450,38 @@ func (a *App) watchConn(it watchItem) (domain.Connection, bool) {
 		}
 	}
 	return domain.Connection{}, false
+}
+
+// syslogAccepted: Syslog nur von Absendern, die zu einer gespeicherten
+// Verbindung gehören (oder alle, wenn eingeschaltet). Verworfenes wird je
+// Absender gezählt; beim ersten Paket eines Absenders kommt ein Hinweis.
+func (a *App) syslogAccepted(it watchItem) bool {
+	if _, known := a.watchConn(it); known || a.st.Settings().SyslogAny {
+		return true
+	}
+	w := &a.lwatch
+	if w.dropped == nil {
+		w.dropped = map[string]int{}
+	}
+	if _, seen := w.dropped[it.addr]; !seen && len(w.dropped) < 200 {
+		a.pushToast(toastWarn, fmt.Sprintf(i18n.T("Syslog von %s verworfen: gehört zu keiner Verbindung. Verbindung anlegen oder in den Einstellungen „Syslog auch von unbekannten Absendern“ einschalten."), it.addr))
+	}
+	if len(w.dropped) < 200 || w.dropped[it.addr] > 0 {
+		w.dropped[it.addr]++
+	}
+	return false
+}
+
+func (a *App) toggleSyslogAny() tea.Cmd {
+	on := !a.st.Settings().SyslogAny
+	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.SyslogAny = on })
+	if on {
+		a.flash(i18n.T("Syslog von allen Absendern: auch Geräte ohne Verbindung landen in der Logwache (Absender lassen sich fälschen)."))
+	} else {
+		a.lwatch.dropped = nil
+		a.flash(i18n.T("Syslog nur noch von gespeicherten Verbindungen."))
+	}
+	return nil
 }
 
 // keepSyslog: empfangene Zeile für den Log-Blick des Geräts aufheben.
@@ -599,6 +636,9 @@ func (a *App) watchStatus() string {
 			parts = append(parts, fmt.Sprintf(i18n.T("Syslog UDP %d: Fehler"), w.sysPort))
 		} else {
 			parts = append(parts, fmt.Sprintf("Syslog UDP %d", w.sysPort))
+		}
+		if n := len(w.dropped); n > 0 {
+			parts = append(parts, plural(n, i18n.T("unbekannter Absender verworfen"), i18n.T("unbekannte Absender verworfen")))
 		}
 	}
 	return strings.Join(parts, " · ")

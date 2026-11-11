@@ -26,7 +26,8 @@ import (
 //
 // Feste Grenzen, die keine Stufe aufhebt:
 //   - Gefahrenbefehle (safety-Regeln, auch jede Zeile eines Skripts) fragen immer.
-//   - Produktiv-Hosts und Netzwerkgeräte: nur Lesendes läuft allein.
+//   - Verbindungen mit Schutz (Standard, siehe isProduction) und
+//     Netzwerkgeräte: nur Lesendes läuft allein.
 //   - Esc im Panel oder Tippen im Terminal hält den Agenten sofort an.
 
 const (
@@ -117,7 +118,7 @@ func (a *App) agentGate(s *session, st *agent.Step) (bool, string) {
 		case g.level == lvlCareful:
 			return false, i18n.T("Stufe Vorsichtig: Datei anlegen fragt nach")
 		case prod:
-			return false, i18n.T("Produktiv-Host: Datei anlegen fragt nach")
+			return false, i18n.T("Schutz an: Datei anlegen fragt nach")
 		case st.Elevated && g.level < lvlFull:
 			return false, i18n.T("Skript nutzt sudo")
 		}
@@ -138,7 +139,7 @@ func (a *App) agentGate(s *session, st *agent.Step) (bool, string) {
 	case net:
 		return false, i18n.T("Netzwerkgerät: Konfiguration fragt immer nach")
 	case prod:
-		return false, i18n.T("Produktiv-Host: Änderungen fragen nach")
+		return false, i18n.T("Schutz an: Änderungen fragen nach")
 	case st.Elevated && g.level < lvlFull:
 		return false, i18n.T("braucht sudo")
 	case g.level < lvlFull && a.agentAdmin(s):
