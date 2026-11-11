@@ -1,6 +1,10 @@
 package importer
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/db9979/sshtermy/internal/fuzzguard"
+)
 
 // FuzzParse: Importdateien (ssh_config, PuTTY-.reg, MobaXterm, Ansible, CSV).
 func FuzzParse(f *testing.F) {
@@ -11,12 +15,14 @@ func FuzzParse(f *testing.F) {
 	f.Add("all:\n  children:\n    web:\n      hosts:\n        web1:\n          ansible_host: 10.0.0.1\n")
 	f.Add("name,host,port,user,folder\nweb,10.0.0.1,22,root,Kunde\n")
 	f.Fuzz(func(t *testing.T, txt string) {
-		_, _ = ParseSSHConfig(txt, "config")
-		_, _ = ParsePuTTYReg(txt)
-		_, _ = ParseMoba(txt)
-		LooksLikeAnsible(txt, "hosts")
-		_, _ = ParseAnsible(txt)
-		LooksLikeCSV(txt, "x.csv")
-		_, _ = ParseCSV(txt)
+		fuzzguard.Run(t, func() {
+			_, _ = ParseSSHConfig(txt, "config")
+			_, _ = ParsePuTTYReg(txt)
+			_, _ = ParseMoba(txt)
+			LooksLikeAnsible(txt, "hosts")
+			_, _ = ParseAnsible(txt)
+			LooksLikeCSV(txt, "x.csv")
+			_, _ = ParseCSV(txt)
+		})
 	})
 }

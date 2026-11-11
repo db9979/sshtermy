@@ -172,6 +172,9 @@ func Check(ctx context.Context) (*Release, error) {
 	if !Newer(v, version.Version) {
 		return nil, nil
 	}
+	if v == skipped() {
+		return nil, nil // nach dem Update nicht gestartet und zurückgenommen (guard.go): erst die nächste Version
+	}
 	rel := &Release{Version: v, Notes: r.Body, URL: r.HTML, assets: map[string][]string{}}
 	for _, a := range r.Assets {
 		// Der API-Weg ist verlässlicher; github.com/…/releases/download
@@ -265,7 +268,7 @@ func Apply(ctx context.Context, rel *Release) error {
 	if hex.EncodeToString(got[:]) != want {
 		return errors.New(i18n.T("update: Prüfsumme stimmt nicht, Download verworfen"))
 	}
-	return replaceSelf(bin)
+	return replaceSelf(bin, rel.Version)
 }
 
 // VerifySignature prüft eine Ed25519-Signatur (Rohbytes oder hex) über data.
@@ -305,14 +308,20 @@ func Executable() (string, error) {
 	return exe, nil
 }
 
-func replaceSelf(bin []byte) error {
+func replaceSelf(bin []byte, ver string) error {
 	exe, err := Executable()
 	if err != nil {
 		return err
 	}
-	tmp := exe + ".new"
+	tmp := newPath(exe)
 	if err := os.WriteFile(tmp, bin, 0o755); err != nil {
 		return fmt.Errorf(i18n.T("update: keine Schreibrechte im Programmordner: %w"), err)
+	}
+	// Erst prüfen, dann tauschen: startet die neue Datei nicht oder ist sie
+	// nicht die angekündigte Version, bleibt alles beim Alten (guard.go).
+	if err := selfTest(tmp, ver); err != nil {
+		os.Remove(tmp)
+		return err
 	}
 	old := exe + ".old"
 	if err := os.Remove(old); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -328,6 +337,9 @@ func replaceSelf(bin []byte) error {
 		_ = os.Rename(old, exe) // zurückrollen
 		return err
 	}
+	// Die alte Datei bleibt, bis die neue einmal sauber gelaufen ist.
+	writeJSON(pendingPath(exe), pendingInfo{Version: ver, From: version.Version, Old: old})
+	_ = os.Remove(skipPath(exe))
 	return nil
 }
 
@@ -338,6 +350,10 @@ func Cleanup() {
 	if err != nil {
 		return
 	}
+	if _, err := os.Stat(pendingPath(exe)); err == nil {
+		return // unbestätigtes Update: die alte Datei wird für den Rückfall gebraucht
+	}
+	_ = os.Remove(newPath(exe)) // Rest eines abgebrochenen Updates
 	dir, base := filepath.Dir(exe), filepath.Base(exe)
 	ents, err := os.ReadDir(dir)
 	if err != nil {

@@ -37,10 +37,15 @@ import (
 )
 
 const (
-	FileName      = "sshtermy-sync.vault"
-	formatName    = "sshtermy-sync"
-	formatVer     = 1
-	payloadFormat = 1 // Version des Inhalts (siehe Payload.Format)
+	FileName   = "sshtermy-sync.vault"
+	formatName = "sshtermy-sync"
+	formatVer  = 1
+	// payloadFormat: Stand der abgeglichenen Felder. Bei jedem neuen Feld im
+	// Sync-Inhalt erhöhen: ein älteres sshTermy kennt das Feld nicht, würde es
+	// beim Bearbeiten weglassen und den Verlust zurück in den Sync schreiben.
+	// Mit der höheren Zahl verweigert es stattdessen den Abgleich (ErrTooNew),
+	// bis es aktualisiert ist. TestPayloadFields erinnert daran.
+	payloadFormat = 2
 	aadWrap       = "sshtermy/v1/sync/wrap"
 	aadPayload    = "sshtermy/v1/sync/payload"
 	minPassLen    = 8
@@ -153,8 +158,10 @@ func aad(h header) ([]byte, error) {
 }
 
 // Encode verschlüsselt den Inhalt zur Sync-Datei.
-func Encode(k *Key, p *Payload) ([]byte, error) {
-	p.Format = payloadFormat
+func Encode(k *Key, p *Payload) ([]byte, error) { return encodeAs(k, p, payloadFormat) }
+
+func encodeAs(k *Key, p *Payload, format int) ([]byte, error) {
+	p.Format = format
 	plain, err := json.Marshal(p)
 	if err != nil {
 		return nil, err

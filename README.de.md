@@ -210,7 +210,8 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   für jedes Bild neu aufgebaut. Palette „Leistungsanzeige“ bewertet die Zeichenzeit in Worten (flüssig/gut/etwas
   träge/ruckelt), zeigt je Bild einen Balken, Bilder pro Sekunde (1 im Leerlauf ist normal: gezeichnet wird nur bei
   Änderung), die mögliche Bildrate und die Ausgaberate; im Terminal steht sie links neben der F6-Leiste
-- **Versionierung und Auto-Update** aus GitHub Releases (signiert)
+- **Versionierung und Auto-Update** aus GitHub Releases (signiert). Vor dem Austausch wird die neue Programmdatei einmal gestartet und muss die angekündigte Version nennen; startet sie danach zweimal nicht sauber, stellt sshTermy die alte Version von selbst wieder her
+- **Zwei sshTermy gleichzeitig** (zweites Fenster, zweiter Start): Jedes bemerkt, wenn das andere gespeichert hat, und lädt Verbindungen und Einstellungen neu, statt sie zu überschreiben. Schlägt das Speichern fehl (Platte voll, Ordner schreibgeschützt), erscheint eine Meldung
 
 Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt aus dem Fernzugang-Assistenten von
 [speech-on-dgx-spark](https://github.com/db9979/speech-on-dgx-spark); die Technik ist hier neu in Go gebaut.

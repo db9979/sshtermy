@@ -52,7 +52,8 @@ type session struct {
 	errv       error  // letzter Verbindungsfehler (Klartext in connerr.go)
 	title      string // eigener Tab-Name (tabs.go), "" = Alias
 	client     *sshx.Client
-	shell      termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
+	shell      termStream               // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
+	out        atomic.Pointer[shellRef] // dieselbe Shell für den Schreib-Läufer (setShell)
 	term       *termemu.Term
 	tunnels    *sshx.TunnelManager
 	state      sessState
@@ -284,17 +285,35 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 	}
 }
 
-// shellWriter: vom Emulator kodierte Tasten → SSH (Shell kann kurz nil sein).
+// shellWriter: vom Emulator kodierte Tasten → SSH. Läuft im Schreib-Läufer
+// des Emulators (termemu/hostqueue.go), nie in der Oberfläche. Die Shell
+// kann kurz fehlen (Emulator steht schon, Shell wird noch geöffnet), darum
+// liest er sie über s.out statt über das Feld der Oberfläche.
 type shellWriter struct{ s *session }
 
-func (w shellWriter) Write(p []byte) (int, error) {
-	for i := 0; i < 100 && w.s.shell == nil; i++ {
-		time.Sleep(20 * time.Millisecond)
+// shellRef: Schachtel für atomic.Pointer (termStream ist eine Schnittstelle).
+type shellRef struct{ st termStream }
+
+// setShell setzt die Shell für Oberfläche und Schreib-Läufer zugleich.
+func (s *session) setShell(st termStream) {
+	s.shell = st
+	if st == nil {
+		s.out.Store(nil)
+		return
 	}
-	if w.s.shell == nil {
+	s.out.Store(&shellRef{st})
+}
+
+func (w shellWriter) Write(p []byte) (int, error) {
+	ref := w.s.out.Load()
+	for i := 0; i < 100 && ref == nil; i++ {
+		time.Sleep(20 * time.Millisecond)
+		ref = w.s.out.Load()
+	}
+	if ref == nil {
 		return len(p), nil
 	}
-	return w.s.shell.Write(p)
+	return ref.st.Write(p)
 }
 
 func (s *session) close() {

@@ -36,6 +36,7 @@ func (s *Store) Relay(id string) (domain.Relay, bool) {
 
 // UpsertRelay legt an (ID leer) oder ersetzt.
 func (s *Store) UpsertRelay(r domain.Relay) (domain.Relay, error) {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()
@@ -59,6 +60,7 @@ func (s *Store) UpsertRelay(r domain.Relay) (domain.Relay, error) {
 }
 
 func (s *Store) DeleteRelay(id string) error {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()

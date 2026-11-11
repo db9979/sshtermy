@@ -11,6 +11,9 @@ markiert ist:
 - `scrollback.go`, `emulator.go`: `SetScrollbackHook` – Zeilen, die oben aus dem
   Bild laufen, gehen an sshTermy (`internal/termemu/scrollback.go`), das sie kompakt
   speichert (8 statt 112 Byte pro Zeichen).
+- `csi_cursor.go`, `csi_screen.go`: Obergrenzen für Zählparameter (REP höchstens ein
+  Bildschirm, ECH/CHT/CBT höchstens eine Zeile). Ohne sie hielt `CSI 2147483647 b`
+  den Emulator minutenlang fest. Test: `internal/termemu/bounds_test.go`.
 
 Beim Wechsel auf eine neuere vt-Version: Dateien ersetzen, die markierten Stellen
 wieder einbauen, `go test ./...` hier und im Hauptmodul laufen lassen.
