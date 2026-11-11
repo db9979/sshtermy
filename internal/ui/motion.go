@@ -69,6 +69,21 @@ func (a *App) cycleMotion(dir int) tea.Cmd {
 	}
 	motionSetting = next
 	a.hov = hoverState{}
+	// Die Startanimation hängt an der Bewegung: „aus“ schaltet sie ab, der
+	// Weg zurück aus „aus“ wieder an. Sie läuft vor dem Entsperren, daher
+	// die eigene Datei statt der verschlüsselten Einstellungen.
+	want := ""
+	switch {
+	case next == motionAus:
+		want = "aus"
+	case cur == indexOf(motionValues, motionAus):
+		want = "an"
+	}
+	if want != "" {
+		if err := syncIntroFile(a.st.Dir, want); err != nil {
+			a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
+		}
+	}
 	if accessible && next != motionAus {
 		a.flash(i18n.T("Barrierearm ist an: Bewegung bleibt aus, bis du es abschaltest."))
 	}

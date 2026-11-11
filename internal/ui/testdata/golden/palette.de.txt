@@ -4,10 +4,10 @@
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
    ○ # switc│ // häufig                                                                │
  ▾ Produktio│ [+] Neue Verbindung                                                    n │
-   ▾ Web    │ [#] Sitzungsprotokolle durchsuchen                                     l │
-▌    ○ · web│ [$] Lokale Shell öffnen                                            Alt+L │
+   ▾ Web    │ [$] Lokale Shell in neuem Tab                                      Alt+L │
 ▌    ○ · web│ [*] Broadcast: Befehl auf mehreren Hosts                               m │
-▌  ○ · db-01│ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
+▌    ○ · web│ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
+▌  ○ · db-01│ [#] Sitzungsprotokolle durchsuchen                                     l │
  ○ · nas    │ [!] Ordner-Scan: Logs aller Hosts im Ordner …                       Logs │
  ○ · spark  │ // verbindungen                                                          │
             │ [·] nas                                                  admin@nas.local │
@@ -17,12 +17,12 @@
             │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │ oder
             │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │
             │ // alle aktionen                                                         │
-            │ [|] Ansicht & Aufteilung ›  teilen, Zoom, Arbeitsplätze                1 │
-            │ [*] Mehrere Hosts ›  Broadcast, Zeitpläne, Scan                        5 │
-            │ [/] Netzwerk & Switches ›  Gerät finden, Topologie                     2 │
+            │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         3 │
+            │ [T] Tabs & Ansicht ›  neu, teilen, Zoom, Arbeitsplätze                 2 │
+            │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switches   5 │
             │ [&] Team & Teilen ›  live teilen, Team-Ordner                          4 │
-            │ [=] Verbindungen & Schlüssel ›  Manager, neu, SSH-Key, Protokolle      5 │
-            │ [:] Einstellungen ›  Maus, Aussehen, Sprache, KI …                    39 │
+            │ [=] Verbindungen & Daten ›  neu, SSH-Key, Import/Export, Sicherung     6 │
+            │ [:] Einstellungen ›  Maus, Aussehen, Sprache, KI …                    27 │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘

@@ -59,7 +59,7 @@ func TestPaletteSubmenus(t *testing.T) {
 	}
 
 	// Im Manager ohne Sitzung gibt es kein „KI fragen“: kein Tab-Hinweis.
-	if strings.Contains(ansiStrip(a.viewPalette()), "Tab") {
+	if _, ok := palAskItem(a.paletteItems()); ok || strings.Contains(ansiStrip(a.viewPalette()), "KI fragen") {
 		t.Error("Tab „KI fragen“ ohne Wirkung darf nicht angezeigt werden")
 	}
 
@@ -164,9 +164,15 @@ func TestPaletteSettingsCompact(t *testing.T) {
 	if _, ok := hasLabel(a.paletteItems(), "Aussehen: Matrix"); !ok {
 		t.Fatal("Suche findet das Farbschema nicht")
 	}
-	a.pal.in.SetValue("csv")
-	if it, ok := hasLabel(a.paletteItems(), "Verbindungen als CSV"); !ok || !strings.Contains(it.sub, "Import / Export") {
+	a.pal.in.SetValue("syslog")
+	if it, ok := hasLabel(a.paletteItems(), "Syslog-Empfang"); !ok || !strings.Contains(it.sub, "Protokolle & Logs") {
 		t.Fatalf("Suche im Unterordner: %+v", it)
+	}
+	// Import/Export sind Aktionen im Bereich „Verbindungen & Daten“.
+	a.palEnter("")
+	a.pal.in.SetValue("csv")
+	if it, ok := hasLabel(a.paletteItems(), "Verbindungen als CSV"); !ok || it.group != pgAction {
+		t.Fatalf("CSV-Export: %+v", it)
 	}
 }
 

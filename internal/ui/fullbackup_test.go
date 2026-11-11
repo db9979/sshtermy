@@ -15,7 +15,8 @@ func TestFullBackupForms(t *testing.T) {
 	open := func(label string) {
 		t.Helper()
 		a.openPalette()
-		a.palEnter("settings/io")
+		a.scr = scrManager
+		a.palEnter("conns")
 		it, ok := hasLabel(a.paletteItems(), label)
 		if !ok {
 			t.Fatalf("%q fehlt: %v", label, labels(a.paletteItems()))
