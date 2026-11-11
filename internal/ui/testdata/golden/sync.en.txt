@@ -13,6 +13,7 @@
   │   Sync password                                                                              │
   │   Host keys              ● on                                                                │
   │   Archive                ○ off                                                               │
+  │   Command history        ● on                                                                │
   │   Automatic              ● on                                                                │
   │                                                                                              │
   │ ──────────────────────────────────────────────────────────────────────────────────────────── │
@@ -23,7 +24,6 @@
   │ starts automatically once the details are complete (or Ctrl+T)                               │
   │                                                                                              │
   └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 

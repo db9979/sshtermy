@@ -150,6 +150,7 @@ var helpSections = []helpSection{
 		{"↑ ↓", "Befehlskarte wählen"},
 		{"a", "Befehl ausführen (rote zweimal)"},
 		{"c", "Befehl kopieren"},
+		{"u", "nach Fehler: Fix in die Karte übernehmen"},
 		{"z", "Erklärung ein-/ausklappen"},
 		{"Esc / Strg+C", "Antwort abbrechen"},
 		{"n", "neue Frage (ohne Verlauf)"},

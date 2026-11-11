@@ -581,7 +581,9 @@ type Settings struct {
 	// Systems). Bleibt auf dem Rechner, nie im Sync.
 	Editor string `json:"editor,omitempty"`
 
-	// Schedules: Zeitpläne für Broadcast/Runbooks (nur dieser Rechner).
+	// Schedules: Zeitpläne für Broadcast/Runbooks. Gehen pro Eintrag mit dem
+	// Sync (eigener Abgleich wie Runbooks), laufen aber nur auf dem Rechner,
+	// der in Schedule.Machine steht.
 	Schedules []Schedule `json:"schedules,omitempty"`
 
 	// ConfigRules: Regeln für gesicherte Switch-Configs, eine pro Zeile:
@@ -628,6 +630,24 @@ type Settings struct {
 	// Keys: eigene Tastenkürzel, Aktion → Taste (bubbletea-Schreibweise,
 	// z. B. "goal": "ctrl+g"). Fehlt eine Aktion, gilt der Standard.
 	Keys map[string]string `json:"keys,omitempty"`
+	// KeysHere: Tasten nur für diesen Rechner (z. B. uConsole ohne F-Reihe,
+	// Mac ohne Alt-Tasten im Terminal). Gehen vor Keys, nie in den Sync.
+	KeysHere map[string]string `json:"keys_here,omitempty"`
+}
+
+// KeysNow: die Tastenbelegung, die auf diesem Rechner gilt.
+func (s Settings) KeysNow() map[string]string {
+	if len(s.KeysHere) == 0 {
+		return s.Keys
+	}
+	out := make(map[string]string, len(s.Keys)+len(s.KeysHere))
+	for k, v := range s.Keys {
+		out[k] = v
+	}
+	for k, v := range s.KeysHere {
+		out[k] = v
+	}
+	return out
 }
 
 // HighlightConfig: Farbregeln. Off schaltet das Einfärben ab, NoDefaults
@@ -654,13 +674,14 @@ type Workspace struct {
 }
 
 // SyncedPart: die Einstellungen ohne die rein lokalen Felder (DPAPI, Maus,
-// Version, Nerd-Font-Probe, letzte Aufteilung, Editor, Zeitpläne, Debug,
-// Audit, MCP). Nur eine Änderung hier macht die Einstellungen für den Sync
+// Version, Nerd-Font-Probe, letzte Aufteilung, Editor, eigene Tasten
+// dieses Rechners, Debug, Audit, MCP) und ohne die Zeitpläne, die pro
+// Eintrag abgeglichen werden. Nur eine Änderung hier macht die Einstellungen für den Sync
 // „neuer“; sonst gewänne z. B. das Merken der Aufteilung beim Beenden gegen
 // ein Theme, das auf einem anderen Rechner gerade umgestellt wurde.
 func (s Settings) SyncedPart() Settings {
 	s.UseDPAPI, s.NoMouse, s.LastVersion, s.NerdFont = false, false, "", ""
-	s.LastLayout, s.Editor, s.Schedules = nil, "", nil
+	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false
 	s.CmdSetApproved = nil // Freigaben gelten für die Team-Dateien dieses Rechners
@@ -805,7 +826,16 @@ type SyncConfig struct {
 	ArchiveDays int       `json:"archive_days,omitempty"` // Aufbewahrung im Archiv, 0 = 90 Tage
 	LastSync    time.Time `json:"last_sync,omitempty"`
 	LastError   string    `json:"last_error,omitempty"`
+	// CmdStats: Befehlsstatistik (Favoriten-Vorschläge) mit den anderen
+	// Rechnern teilen. Zeiger: nil = nie gewählt (Standard an).
+	CmdStats *bool `json:"cmd_stats,omitempty"`
+	// Devices: Rechner im Sync und wann sie zuletzt abgeglichen haben
+	// (Kopie aus der Sync-Datei, für die Übersicht im Assistenten).
+	Devices map[string]time.Time `json:"devices,omitempty"`
 }
+
+// ShareCmdStats: Befehlsstatistik mit abgleichen?
+func (c SyncConfig) ShareCmdStats() bool { return c.CmdStats == nil || *c.CmdStats }
 
 // Enabled: ist Sync eingerichtet?
 func (c SyncConfig) Enabled() bool { return c.Backend != SyncOff && c.Key.IsSet() }
@@ -830,6 +860,11 @@ type Data struct {
 	// koppelt sich selbst (eigener Geräteschlüssel), nie in der Sync-Datei.
 	Relays []Relay `json:"relays,omitempty"`
 
+	// ConnHere: Shell, Startordner und serielle Schnittstelle einer
+	// Verbindung nur für diesen Rechner (ID → Werte). Rein lokal wie
+	// LocalKeys; gehen vor den synchronisierten Werten der Verbindung.
+	ConnHere map[string]ConnHere `json:"conn_here,omitempty"`
+
 	// LocalKeys: Schlüsseldatei pro Verbindung (ID → Pfad), nur für diesen
 	// Rechner. Rein lokal wie Sync, geht nie in die Sync-Datei. Hat Vorrang
 	// vor Connection.KeyPath, wenn der Key hier woanders liegt als auf dem
@@ -839,6 +874,30 @@ type Data struct {
 	// TeamLinks: Team-Ordner (veröffentlichen bzw. abonnieren). Rein lokal:
 	// Pfade sind je Rechner anders, das Team-Passwort bleibt auf dem Gerät.
 	TeamLinks []TeamLink `json:"team_links,omitempty"`
+}
+
+// CmdUse: wie oft ein Befehl auf einer Verbindung ohne Fehler lief
+// (Befehlsstatistik für Favoriten-Vorschläge, store/cmdstats.go).
+type CmdUse struct {
+	Cmd     string    `json:"c"`
+	N       int       `json:"n"`
+	Last    time.Time `json:"t"`
+	Offered bool      `json:"o,omitempty"` // Vorschlag schon einmal gezeigt
+	Hidden  bool      `json:"h,omitempty"` // „nicht vorschlagen“
+}
+
+// CmdStatsSet: Befehlsstatistik eines Rechners im Sync. At = letzte
+// Änderung auf diesem Rechner, Conns = Verbindungs-ID → Befehle.
+type CmdStatsSet struct {
+	At    time.Time           `json:"at"`
+	Conns map[string][]CmdUse `json:"conns,omitempty"`
+}
+
+// ConnHere: rechnerabhängige Felder einer Verbindung, nur hier gültig.
+type ConnHere struct {
+	LocalShell string `json:"shell,omitempty"`
+	LocalDir   string `json:"dir,omitempty"`
+	SerialPort string `json:"serial,omitempty"`
 }
 
 // Rollen eines Team-Ordners.
@@ -953,10 +1012,22 @@ type Schedule struct {
 	LastOK    int       `json:"last_ok,omitempty"`
 	LastFail  int       `json:"last_fail,omitempty"`
 	LastText  string    `json:"last_text,omitempty"` // Ergebnis je Host, gekürzt
+	// Machine: Rechner (Name wie beim Sync), auf dem der Zeitplan läuft.
+	// Der Sync zeigt ihn überall, ausführen tut ihn nur dieser Rechner;
+	// sonst liefe derselbe Job auf jedem Rechner. Leer = noch nicht
+	// zugeordnet (vor v1.0.312), sshTermy setzt den eigenen Namen.
+	Machine   string    `json:"machine,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
 	// Known: Verbindungen im Ziel-Ordner, die du bestätigt hast (beim Speichern
 	// oder mit Strg+A). Neue Hosts im Ordner – etwa aus einem Team-Abo – laufen
 	// erst danach mit. nil = alter Zeitplan, beim nächsten Lauf übernommen.
 	Known []string `json:"known,omitempty"`
+}
+
+// RunsOn: läuft der Zeitplan auf dem Rechner mit diesem Namen?
+func (s Schedule) RunsOn(device string) bool {
+	return s.Machine == "" || strings.EqualFold(s.Machine, device)
+
 }
 
 // ScheduleBackup: Zeitplan sichert die running-config aller Switches im Ziel.

@@ -757,6 +757,11 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.choice("sport", i18n.T("Schnittstelle"), sports, scur, serialPortHelp()).hidden = notSerial
 	f.choice("baud", "Baud", baudOpts(c.SerialBaud()), strconv.Itoa(c.SerialBaud()), i18n.T("Aruba/HPE/Cisco: 9600 · viele neuere Geräte: 115200")).hidden = notSerial
 	f.choice("frame", i18n.T("Datenformat"), frameOpts(c.SerialFrame()), c.SerialFrame(), i18n.T("Datenbits, Parität, Stoppbits · fast immer 8N1")).hidden = notSerial
+	_, hereOn := a.st.ConnHere(c.ID)
+	f.toggle("connhere", i18n.T("Nur dieser Rechner"), hereOn && c.ID != "",
+		i18n.T("Shell, Startordner bzw. Schnittstelle gelten nur hier; die anderen Rechner im Sync behalten ihre (z. B. pwsh am PC, zsh am Mac, COM3 ↔ /dev/ttyUSB0)")).hidden = func(f *form) bool {
+		return notLocal(f) && notSerial(f)
+	}
 	self := c
 	f.pick("jump", i18n.T("Jump-Host"), c.JumpHostID, func(v string) string { return a.jumpFieldText(self, v) },
 		func() tea.Cmd { return a.pickJumpField(self) }, i18n.T("wie ssh -J · ⏎ öffnet die Liste aller Verbindungen mit Suche")).hidden = raw
@@ -1157,7 +1162,11 @@ func (a *App) connFromForm() (domain.Connection, error) {
 
 func (a *App) storeConn(c domain.Connection) error {
 	secret := a.connFormKeychain(&c)
-	saved, err := a.st.UpsertConnection(c)
+	var here *domain.ConnHere
+	if a.form != nil && a.form.flag("connhere") && (c.Protocol == domain.ProtoLocal || c.Protocol == domain.ProtoSerial) {
+		here = &domain.ConnHere{LocalShell: c.LocalShell, LocalDir: c.LocalDir, SerialPort: c.SerialPort}
+	}
+	saved, err := a.st.UpsertConnectionHere(c, here)
 	if err == nil {
 		err = a.saveConnKeychain(saved, secret)
 	}

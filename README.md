@@ -75,8 +75,8 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   New hosts that appear in the target folder later (e.g. from a team folder) only join after `Ctrl+A` in the list, and a runbook that came changed from a team folder waits until you have started it once in the broadcast.
   Unattended there are no questions: unknown host keys and missing passwords make that host fail,
   dangerous steps and runbooks with variables cannot be scheduled at all. The result per host is in the list
-  (⏎), plus a toast or desktop notification. Schedules stay on this computer (no sync), so two computers never
-  start the same run
+  (⏎), plus a toast or desktop notification. Schedules travel with the sync but run only on one computer
+  (“Runs on” in the form, default: the computer that created it), so two computers never start the same run
 - **Runbooks with variables:** `{{vlan}}` or `{{vlan=20}}` in a step is asked before the run, `{{host}}`, `{{alias}}`,
   `{{user}}`, `{{port}}` are filled in per host. In the broadcast `e` loads a runbook for editing, `Ctrl+R` saves,
   `Ctrl+D` deletes. Before the run `k` lets the AI check the steps against each host's system profile and suggest
@@ -128,7 +128,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
     line, the running step with a moving bar, planned steps as ○.
   - **Runbooks**: save goals with the commands that ran (Ctrl+S) and reuse them; the agent uses them as a template
   - **Endpoint test and model selection** in the AI settings (Ctrl+T tests, Ctrl+L lists the models from `/v1/models`)
-  - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z); Esc or Ctrl+C stops a running answer, n asks a new question, f a follow-up that keeps the conversation
+  - **Ask AI** (F3) with terminal context, commands from the answer shown as highlighted cards: insert (⏎/1…9), run (a), copy (c), collapsible explanation (z); if a card command fails, the card shows the error and a corrected command (from the companion or asked for separately), u puts it into the card, the same mistake in other cards is fixed too and the correction is remembered for the device; the AI knows today's date and writes dates/times in commands in the program's format (ISO, not "10.11."); Esc or Ctrl+C stops a running answer, n asks a new question, f a follow-up that keeps the conversation
   - **System profile per connection**: sshTermy detects system, version and command set (Linux with package manager and
     init system, macOS, Windows, ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Junos, RouterOS, Comware, UniFi switches …) from the
     SSH banner, an invisible query (servers only) and the terminal it reads along (network devices, no exec).
@@ -291,7 +291,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | ←→ / ↑↓ / z / c / r / x | host column / scroll / enlarge / copy output / again / cancel |
 | Network scan | Ctrl+S, Space / a, ⏎ | start scan, select hits, create as connections |
 | Terminal | F2 | goal mode (agent) |
-| | F3 | ask AI (Esc stops the answer, n new question, f follow-up) |
+| | F3 | ask AI (Esc stops the answer, n new question, f follow-up, u use the fix after an error) |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
 | | F5 | files (SFTP): Tab side, c copy (up/down), e server file in your own editor, Space/a mark, drag copies, n folder, d delete, . hidden |
 | | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, l log view, c containers, b back up switch config, ↑↓ state, d diff, v view |
@@ -338,7 +338,9 @@ sshTermy only binds keys that shells and full-screen programs practically never 
 
 **Customize keys** (b in the manager or palette → “Customize shortcuts”): pick an action, ⏎, press the new key.
 Del resets an action, r resets all. Duplicate bindings are marked red. Alt+⏎ is blocked because
-Windows Terminal uses it for full screen. Your bindings travel to your other computers with the sync.
+Windows Terminal uses it for full screen. Your bindings travel to your other computers with the sync. `l` switches
+to “this computer only”: keys you set then apply only here (marked ◆) and win over the synced ones, e.g. on a
+uConsole without an F row or a Mac terminal without Alt; r in that mode removes them again.
 
 **Language:** palette (Ctrl+Space) → “Language” or F12 → `l` switches between English and German, immediately and
 without a restart. The choice is stored in the settings (synced to your other computers) and additionally, unencrypted,
@@ -371,7 +373,8 @@ PuTTY export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), a portabl
 **Telnet and serial console:** in the connection form, “Connection type” switches between SSH, Telnet and
 “Serial (console cable)”, e.g. for an Aruba switch on a USB console cable. Port “automatic” uses the only USB
 console cable that is plugged in, so a synced connection also works on the other computer (COM5 on Windows,
-`/dev/cu.usbserial-…` on macOS, `/dev/ttyUSB0` on Linux). Default 9600 baud 8N1. If user and password are stored,
+`/dev/cu.usbserial-…` on macOS, `/dev/ttyUSB0` on Linux). With “This computer only” a fixed port applies only
+here and the other computers keep theirs. Default 9600 baud 8N1. If user and password are stored,
 sshTermy types them as soon as the device asks (and answers “Press any key to continue”). In the palette,
 `telnet 10.0.0.5`, `COM3` or `console /dev/ttyUSB0 115200` connects right away; palette → “Send break” sends a serial
 break. Host overview (F6), config backup, quick commands and the AI work as with SSH; files, tunnels and broadcast
@@ -381,7 +384,8 @@ need SSH. Linux: the user needs to be in the `dialout` group. Telnet is unencryp
 computer in a tab: PowerShell 7 (`pwsh`), otherwise Windows PowerShell or cmd on Windows (ConPTY, Windows 10 1809 or
 newer), your login shell on macOS and `$SHELL` on Linux. Typing `pwsh`, `cmd`, `wsl -d Ubuntu` or `zsh` in the palette
 starts that one. As a saved connection (“Connection type: Local”) you can set the shell and a start folder;
-left empty, each computer uses its own default, so a synced entry works on Windows and Mac alike. The AI knows whether it
+left empty, each computer uses its own default, so a synced entry works on Windows and Mac alike. With
+“This computer only” a shell such as `pwsh` applies only on this computer; the others keep theirs. The AI knows whether it
 is talking to PowerShell, cmd or a Unix shell; danger rules and the agent levels work as on a server. Files (F5),
 tunnels and broadcast need SSH.
 
@@ -753,9 +757,14 @@ Syncing happens at start, a few seconds after every change and every 5 minutes; 
 limits, danger check, paste preview, session logs, intro animation and so on. Your own command sets sync too; on another computer
 a changed or new set only takes effect after you take it over there (Settings › Command sets, `f`, with a diff), and a
 set deleted on one computer is moved aside to `befehlssaetze/.geloescht` on the others. Only computer-specific things stay local:
-DPAPI, the sync settings themselves, key file paths, paired relays, team folder paths and the "mouse" switch (depends on
-the terminal program). Nerd Font icons sync too, but on another computer they only turn on after the test, since the
-font may be missing there.
+DPAPI, the sync settings themselves, key file paths, paired relays, team folder paths, the "mouse" switch (depends on
+the terminal program), audit/debug log, MCP server, editor, the font size of the own window and everything marked
+“this computer only” (keys, shell, serial port). Passwords in the OS keychain stay on each computer; only the switch
+travels, and each computer asks once. Nerd Font icons sync too, but on another computer they only turn on after the
+test, since the font may be missing there. Schedules sync per entry and run only on their computer. With “Command
+history” (on by default) the favorite suggestions (F9) count the commands from all computers; each computer only
+writes its own count. Below the form the wizard lists the computers in the sync with their last sync and what
+travels or stays.
 
 **Archive (optional):** With the “Archive” switch in the sync wizard (y), the config backups of your switches (F6)
 and the session logs also travel to your other computers. They are stored in the subfolder `sshtermy-archiv/` next to

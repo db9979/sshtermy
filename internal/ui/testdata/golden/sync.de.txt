@@ -13,6 +13,7 @@
   │   Sync-Passwort                                                                              │
   │   Host-Keys              ● an                                                                │
   │   Archiv                 ○ aus                                                               │
+  │   Befehlsverlauf         ● an                                                                │
   │   Automatisch            ● an                                                                │
   │                                                                                              │
   │ ──────────────────────────────────────────────────────────────────────────────────────────── │
@@ -23,7 +24,6 @@
   │ startet automatisch, sobald die Angaben vollständig sind (oder Strg+T)                       │
   │                                                                                              │
   └──────────────────────────────────────────────────────────────────────────────────────────────┘
-
 
 
 

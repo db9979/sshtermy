@@ -82,10 +82,14 @@ func TestSettingsSyncNerdNeedsProbe(t *testing.T) {
 // und Settings.SyncedPart.
 var localSettings = map[string]bool{
 	"UseDPAPI": true, "NoMouse": true, "LastVersion": true, "NerdFont": true,
-	"LastLayout": true, "Editor": true, "Schedules": true, "Debug": true, "Audit": true, "MCP": true, "SyslogPort": true,
+	"LastLayout": true, "Editor": true, "KeysHere": true, "Debug": true, "Audit": true, "MCP": true, "SyslogPort": true,
 	"SyslogAny":      true,
 	"CmdSetApproved": true,
 }
+
+// ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der
+// Einstellungen (daher nicht in Settings.SyncedPart).
+var ownMerge = map[string]bool{"Schedules": true}
 
 func TestSettingsFieldsClassified(t *testing.T) {
 	src := domain.NewData()
@@ -116,8 +120,8 @@ func TestSettingsFieldsClassified(t *testing.T) {
 		if !reflect.DeepEqual(got.Interface(), want.Interface()) {
 			t.Errorf("%s geht nicht mit dem Sync (in SharedPrefs/SharedMore eintragen oder als lokal markieren)", f.Name)
 		}
-		if !inPart {
-			t.Errorf("%s fehlt in Settings.SyncedPart", f.Name)
+		if inPart == ownMerge[f.Name] {
+			t.Errorf("%s: Settings.SyncedPart falsch", f.Name)
 		}
 	}
 }
@@ -170,5 +174,47 @@ func TestSettingsSyncOldPeerKeepsMore(t *testing.T) {
 	p.ApplyTo(d)
 	if d.Settings.Companion.Level != 2 || len(d.Settings.ConfigRules) != 1 {
 		t.Fatalf("%+v", d.Settings)
+	}
+}
+
+// Zeitpläne: pro Eintrag, neuere Änderung gewinnt, Grabstein löscht.
+func TestSchedulesMergePerEntry(t *testing.T) {
+	now := time.Now().UTC()
+	a := &Payload{Schedules: []domain.Schedule{
+		{ID: "s1", Name: "alt", Machine: "pc", UpdatedAt: now.Add(-time.Hour)},
+		{ID: "s2", Name: "weg", Machine: "pc", UpdatedAt: now.Add(-time.Hour)},
+	}}
+	b := &Payload{
+		Schedules: []domain.Schedule{{ID: "s1", Name: "neu", Machine: "mac", UpdatedAt: now}},
+		Deleted:   map[string]time.Time{"s2": now},
+	}
+	m := Merge(a, b, now)
+	if len(m.Schedules) != 1 || m.Schedules[0].Name != "neu" || m.Schedules[0].Machine != "mac" {
+		t.Fatalf("%+v", m.Schedules)
+	}
+	d := domain.NewData()
+	m.ApplyTo(d)
+	if len(d.Settings.Schedules) != 1 {
+		t.Fatalf("%+v", d.Settings.Schedules)
+	}
+}
+
+// Befehlsstatistik: je Rechner die neuere Fassung.
+func TestCmdStatsMergePerDevice(t *testing.T) {
+	now := time.Now().UTC()
+	a := &Payload{CmdStats: map[string]domain.CmdStatsSet{
+		"pc":  {At: now, Conns: map[string][]domain.CmdUse{"c": {{Cmd: "uptime", N: 3}}}},
+		"mac": {At: now.Add(-time.Hour)},
+	}}
+	b := &Payload{CmdStats: map[string]domain.CmdStatsSet{
+		"pc":  {At: now.Add(-time.Hour)},
+		"mac": {At: now, Conns: map[string][]domain.CmdUse{"c": {{Cmd: "df -h", N: 5}}}},
+	}}
+	m := Merge(a, b, now)
+	if m.CmdStats["pc"].Conns["c"][0].N != 3 || m.CmdStats["mac"].Conns["c"][0].N != 5 {
+		t.Fatalf("%+v", m.CmdStats)
+	}
+	if !equalContent(m, Merge(b, a, now)) {
+		t.Fatal("Merge nicht kommutativ")
 	}
 }

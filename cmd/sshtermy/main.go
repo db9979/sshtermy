@@ -66,7 +66,7 @@ func main() {
 			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach;
 			// „-window“: aus dem eigenen Fenster heraus, also wieder ein eigenes
 			if len(os.Args) == 4 && os.Args[3] == "-window" && gui.Available() {
-				os.Exit(gui.RunAttach(os.Args[2], gui.Options{Title: version.Name, Icon: icon.Window()}))
+				os.Exit(gui.RunAttach(os.Args[2], gui.Options{Title: version.Name, Icon: icon.Window(), FontSize: attachFont(dir)}))
 			}
 			if len(os.Args) != 3 {
 				fail(fmt.Errorf("attach <ordner> [-window]"))

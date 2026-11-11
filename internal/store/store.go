@@ -270,7 +270,63 @@ func (s *Store) withLocalKey(c domain.Connection) domain.Connection {
 	if p := s.data.LocalKeys[c.ID]; p != "" && c.Auth == domain.AuthKeyFile {
 		c.KeyPath = p
 	}
+	if h, ok := s.data.ConnHere[c.ID]; ok {
+		switch c.Protocol {
+		case domain.ProtoLocal:
+			c.LocalShell, c.LocalDir = h.LocalShell, h.LocalDir
+		case domain.ProtoSerial:
+			c.SerialPort = h.SerialPort
+		}
+	}
 	return c
+}
+
+// ConnHere: eigene Werte dieses Rechners für eine Verbindung (ok = false,
+// wenn sie die synchronisierten Werte nimmt).
+func (s *Store) ConnHere(id string) (domain.ConnHere, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data == nil {
+		return domain.ConnHere{}, false
+	}
+	h, ok := s.data.ConnHere[id]
+	return h, ok
+}
+
+// UpsertConnectionHere speichert wie UpsertConnection. here != nil: Shell,
+// Startordner bzw. serielle Schnittstelle gelten nur auf diesem Rechner,
+// die Verbindung im Sync behält ihre bisherigen Werte. here == nil: die
+// Werte gehen mit dem Sync, eine lokale Abweichung entfällt.
+func (s *Store) UpsertConnectionHere(c domain.Connection, here *domain.ConnHere) (domain.Connection, error) {
+	if here != nil {
+		s.mu.RLock()
+		var old domain.Connection
+		if s.data != nil {
+			for _, o := range s.data.Connections {
+				if o.ID == c.ID && c.ID != "" {
+					old = o
+				}
+			}
+		}
+		s.mu.RUnlock()
+		c.LocalShell, c.LocalDir, c.SerialPort = old.LocalShell, old.LocalDir, old.SerialPort
+	}
+	out, err := s.UpsertConnection(c)
+	if err != nil {
+		return out, err
+	}
+	s.mu.Lock()
+	if here == nil {
+		delete(s.data.ConnHere, out.ID)
+	} else {
+		if s.data.ConnHere == nil {
+			s.data.ConnHere = map[string]domain.ConnHere{}
+		}
+		s.data.ConnHere[out.ID] = *here
+	}
+	out = s.withLocalKey(out)
+	s.mu.Unlock()
+	return out, s.persist()
 }
 
 // SetLocalKeyPath legt fest, wo die Schlüsseldatei einer Verbindung auf
@@ -472,6 +528,7 @@ func (s *Store) DeleteConnection(id string) error {
 	}
 	s.data.Connections = cs
 	delete(s.data.LocalKeys, id)
+	delete(s.data.ConnHere, id)
 	s.tombstone(id)
 	ts := s.data.Tunnels[:0]
 	for _, t := range s.data.Tunnels {
@@ -673,6 +730,42 @@ func (s *Store) UpdateSettings(f func(*domain.Settings)) error {
 		s.data.SettingsUpdatedAt = time.Now().UTC() // Sync: neuere Einstellungen gewinnen
 	}
 	s.mu.Unlock()
+	return s.save()
+}
+
+// UpdateSchedules ändert die Zeitpläne. Geänderte Einträge bekommen einen
+// neuen UpdatedAt (Sync pro Eintrag), entfernte einen Grabstein.
+func (s *Store) UpdateSchedules(f func([]domain.Schedule) []domain.Schedule) error {
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return vault.ErrLocked
+	}
+	before := map[string][]byte{}
+	for _, x := range s.data.Settings.Schedules {
+		before[x.ID], _ = json.Marshal(x)
+	}
+	list := f(append([]domain.Schedule(nil), s.data.Settings.Schedules...))
+	now := time.Now().UTC()
+	seen := map[string]bool{}
+	changed := false
+	for i := range list {
+		seen[list[i].ID] = true
+		if b, _ := json.Marshal(list[i]); !bytes.Equal(b, before[list[i].ID]) {
+			list[i].UpdatedAt, changed = now, true
+		}
+	}
+	for id := range before {
+		if !seen[id] {
+			s.tombstone(id)
+			changed = true
+		}
+	}
+	s.data.Settings.Schedules = list
+	s.mu.Unlock()
+	if !changed {
+		return nil
+	}
 	return s.save()
 }
 

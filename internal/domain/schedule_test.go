@@ -39,3 +39,21 @@ func TestScheduleDue(t *testing.T) {
 		t.Fatal("aus")
 	}
 }
+
+func TestScheduleRunsOnlyOnItsMachine(t *testing.T) {
+	s := Schedule{Machine: "PC-Buero"}
+	if !s.RunsOn("pc-buero") || s.RunsOn("macbook") {
+		t.Fatal("falscher Rechner")
+	}
+	if !(Schedule{}).RunsOn("x") {
+		t.Fatal("ohne Rechner: hier (wird vor dem Sync zugeordnet)")
+	}
+}
+
+func TestKeysHereWin(t *testing.T) {
+	s := Settings{Keys: map[string]string{"goal": "ctrl+g", "ask": "f3"}, KeysHere: map[string]string{"goal": "alt+g"}}
+	k := s.KeysNow()
+	if k["goal"] != "alt+g" || k["ask"] != "f3" || s.Keys["goal"] != "ctrl+g" {
+		t.Fatalf("%v", k)
+	}
+}

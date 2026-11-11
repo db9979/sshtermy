@@ -153,12 +153,13 @@ type App struct {
 	hl    hlState       // Farbregeln (highlight.go)
 	edits []*remoteEdit // Server-Dateien im eigenen Editor (editor.go)
 
-	formSched  domain.Schedule   // Zeitplan im Formular (schedule.go)
-	schedRBIDs map[string]string // Runbook-Name → ID im Formular
-	schedRun   map[string]bool   // laufende Zeitpläne
-	netData    *netCache         // letzte Abfrage der Switches (netfind.go)
-	netBusy    bool
-	netScope   string // zuletzt gewähltes Netz (Ordner) für Gerät finden/Topologie
+	formSched     domain.Schedule   // Zeitplan im Formular (schedule.go)
+	schedRBIDs    map[string]string // Runbook-Name → ID im Formular
+	schedMachines map[string]string // Rechner-Auswahl im Zeitplan-Formular → Name
+	schedRun      map[string]bool   // laufende Zeitpläne
+	netData       *netCache         // letzte Abfrage der Switches (netfind.go)
+	netBusy       bool
+	netScope      string // zuletzt gewähltes Netz (Ordner) für Gerät finden/Topologie
 
 	book *sessionlog.Book // Sitzungsprotokolle (Schlüssel nur bei entsperrtem Store)
 	logs logsState
@@ -741,6 +742,9 @@ func (a *App) onTick() tea.Cmd {
 			cmds = append(cmds, c)
 		}
 		if c := a.companionTick(s); c != nil {
+			cmds = append(cmds, c)
+		}
+		if c := a.cardFixTick(s); c != nil {
 			cmds = append(cmds, c)
 		}
 		a.profileTick(s)

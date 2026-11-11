@@ -149,7 +149,13 @@ type Payload struct {
 	Deleted     map[string]time.Time `json:"deleted,omitempty"`
 	KnownHosts  []string             `json:"known_hosts,omitempty"`
 	Devices     map[string]time.Time `json:"devices,omitempty"` // Rechnername → letzter Abgleich
-	CmdSets     []CmdSet             `json:"cmdsets,omitempty"` // eigene Befehlssätze (Dateien, kein Teil des Stores)
+	// Schedules: Zeitpläne pro Eintrag; jeder läuft nur auf seinem Rechner
+	// (Schedule.Machine).
+	Schedules []domain.Schedule `json:"schedules,omitempty"`
+	// CmdStats: Befehlsstatistik je Rechnername; jeder Rechner schreibt nur
+	// seine eigene, die Vorschläge zählen alle zusammen.
+	CmdStats map[string]domain.CmdStatsSet `json:"cmd_stats,omitempty"`
+	CmdSets  []CmdSet                      `json:"cmdsets,omitempty"` // eigene Befehlssätze (Dateien, kein Teil des Stores)
 }
 
 // CmdSet: eigener Befehlssatz im Sync. Beim anderen Rechner wirkt er erst,
@@ -171,6 +177,7 @@ func FromData(d *domain.Data, knownHosts []string) *Payload {
 		Tunnels:     append([]domain.Tunnel(nil), d.Tunnels...),
 		Runbooks:    append([]domain.Runbook(nil), d.Runbooks...),
 		Folders:     append([]domain.Folder(nil), d.Folders...),
+		Schedules:   append([]domain.Schedule(nil), d.Settings.Schedules...),
 		LLM:         d.LLM, LLMAt: d.LLMUpdatedAt,
 		Settings:   sharedSettings(d.Settings),
 		SettingsAt: d.SettingsUpdatedAt,
@@ -193,6 +200,7 @@ func (p *Payload) ApplyTo(d *domain.Data) {
 	d.Folders = append([]domain.Folder(nil), p.Folders...)
 	d.LLM, d.LLMUpdatedAt = p.LLM, p.LLMAt
 	applyShared(p.Settings, &d.Settings)
+	d.Settings.Schedules = append([]domain.Schedule(nil), p.Schedules...)
 	d.SettingsUpdatedAt = p.SettingsAt
 	d.Deleted = map[string]time.Time{}
 	for k, v := range p.Deleted {
@@ -282,6 +290,21 @@ func Merge(a, b *Payload, now time.Time) *Payload {
 	}
 	sort.SliceStable(out.Folders, func(i, j int) bool { return out.Folders[i].ID < out.Folders[j].ID })
 
+	out.Schedules = mergeByID(a.Schedules, b.Schedules, out.Deleted,
+		func(x domain.Schedule) string { return x.ID },
+		func(x domain.Schedule) time.Time { return x.UpdatedAt }, nil)
+	sort.SliceStable(out.Schedules, func(i, j int) bool { return out.Schedules[i].ID < out.Schedules[j].ID })
+
+	for _, src := range []*Payload{a, b} {
+		for dev, set := range src.CmdStats {
+			if o, ok := out.CmdStats[dev]; !ok || newer(set, set.At, o, o.At) {
+				if out.CmdStats == nil {
+					out.CmdStats = map[string]domain.CmdStatsSet{}
+				}
+				out.CmdStats[dev] = set
+			}
+		}
+	}
 	out.CmdSets = mergeByID(a.CmdSets, b.CmdSets, out.Deleted,
 		func(c CmdSet) string { return CmdSetTombstone(c.ID) },
 		func(c CmdSet) time.Time { return c.UpdatedAt }, nil)

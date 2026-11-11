@@ -1,0 +1,40 @@
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
+
+
+
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ↕ Sync between computers                                                                     │
+  │ Connections, tunnels, runbooks, AI and all settings are stored as an end-to-end encrypted    │
+  │ file at the                                                                                  │
+  │ chosen location. The location never sees plain text; DPAPI and master password stay per      │
+  │ computer.                                                                                    │
+  │ ▌ Location               Folder (cloud)  NAS / WebDAV  off                                   │
+  │   Folder                 ~/OneDrive/sshtermy                                                 │
+  │   Sync password                                                                              │
+  │   Host keys              ○ off                                                               │
+  │   Archive                ○ off                                                               │
+  │   Command history        ● on                                                                │
+  │   Automatic              ● on                                                                │
+  │                                                                                              │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ Folder = OneDrive, Dropbox, iCloud, Syncthing · NAS = Synology, QNAP, Nextcloud directly     │
+  │                                                                                              │
+  │                                                                                              │
+  │ Computers in sync                                                                            │
+  │  ● golden-pc               1 min ago  ← this computer                                        │
+  │  ● macbook                 3 min ago                                                         │
+  │  ● uconsole                2 h ago                                                           │
+  │  Synced: Connections, folders, tunnels, runbooks, workspaces, schedules (run only on their   │
+  │  computer), AI including house rules, all settings and keys.                                 │
+  │  Stays here: Sync location, own key paths, shell/port “this computer only”, keys “here       │
+  │  only”, passwords in the keychain, team folders, relays, audit, debug, MCP, editor, window   │
+  │  font size.                                                                                  │
+  │                                                                                              │
+  │ Live test                                                                                    │
+  │ ⠿ checking connection …                                                                      │
+  │                                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+ Tab next  ←/→ select  Ctrl+T test  Ctrl+S save  Esc close

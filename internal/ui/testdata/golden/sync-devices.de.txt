@@ -1,0 +1,40 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
+
+
+
+  ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ↕ Sync zwischen Rechnern                                                                     │
+  │ Verbindungen, Tunnel, Runbooks, KI und alle Einstellungen landen als Ende-zu-Ende            │
+  │ verschlüsselte Datei am                                                                      │
+  │ gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro     │
+  │ Rechner.                                                                                     │
+  │ ▌ Speicherort            Ordner (Cloud)  NAS / WebDAV  aus                                   │
+  │   Ordner                 ~/OneDrive/sshtermy                                                 │
+  │   Sync-Passwort                                                                              │
+  │   Host-Keys              ○ aus                                                               │
+  │   Archiv                 ○ aus                                                               │
+  │   Befehlsverlauf         ● an                                                                │
+  │   Automatisch            ● an                                                                │
+  │                                                                                              │
+  │ ──────────────────────────────────────────────────────────────────────────────────────────── │
+  │ Ordner = OneDrive, Dropbox, iCloud, Syncthing · NAS = Synology, QNAP, Nextcloud direkt       │
+  │                                                                                              │
+  │                                                                                              │
+  │ Rechner im Sync                                                                              │
+  │  ● golden-pc               vor 1 min  ← dieser Rechner                                       │
+  │  ● macbook                 vor 3 min                                                         │
+  │  ● uconsole                vor 2 h                                                           │
+  │  Geht mit: Verbindungen, Ordner, Tunnel, Runbooks, Arbeitsplätze, Zeitpläne (laufen nur auf  │
+  │  ihrem Rechner), KI samt Hausregeln, alle Einstellungen und Tasten.                          │
+  │  Bleibt hier: Sync-Ort, eigene Key-Pfade, Shell/Schnittstelle „nur dieser Rechner“, Tasten   │
+  │  „nur hier“, Passwörter im Schlüsselbund, Team-Ordner, Vermittler, Audit, Debug, MCP,        │
+  │  Editor, Schriftgröße im Fenster.                                                            │
+  │                                                                                              │
+  │ Live-Test                                                                                    │
+  │ ⠿ prüfe Verbindung …                                                                         │
+  │                                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+
+ Tab weiter  ←/→ wählen  Strg+T testen  Strg+S speichern  Esc schließen
