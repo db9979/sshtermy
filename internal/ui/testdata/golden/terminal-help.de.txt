@@ -17,15 +17,15 @@ de│   F12 w       Was ist neu              a           Befehl ausführen (rot�
   │   n           neue Verbindung         ◇ KI-Begleiter Alt+J                 ≡ Sitzungsprotokolle l               │
   │   e           bearbeiten               Alt+K       Stufe: Aus/Leise/Gesp…   /           suchen (auch Ausgabe)   │
   │   d           löschen                  Alt+1…4     Vorschlag einfügen       ⏎ / → ←     auf-/zuklappen          │
-  │   Strg+Z      Löschen rückgängig (1…   ⏎ / a       einfügen / ausführen     Tab         nach Zeit / nach Host   │
-  │   Strg+T      im Formular: Verbindu…   m           Thema stumm              f           Filter: heute · 7 Tag…  │
-  │   /           suchen (auch #tag)       l           Tatsache merken          s           Hosts sortieren         │
-  │   o           neuer Ordner (A / B v…   p / g       Absicht: Plan / Agent…   z           KI-Zusammenfassung      │
-  │   r           Ordner bearbeiten        r           Rückblick (merken, Ru…   Z           alle Treffer zusammen…  │
-  │   v           in Ordner verschieben    ?           zuletzt gesendet         b           Änderungsbericht        │
-  │   Shift+↑     nach oben schieben (↓…                                        x           Export: md · txt · ca…  │
-  │   ← / →       Ordner zu-/aufklappen   ◆ Vorgang über mehrere Fenster        d           löschen                 │
-  │   - / +       alle Ordner zu/auf      Alt+V                                 a           Mitschreiben an/aus     │
+  │   Leertaste   markieren (dann e, v,…   ⏎ / a       einfügen / ausführen     Tab         nach Zeit / nach Host   │
+  │   Rechtsklick Menü zu Verbindung od…   m           Thema stumm              f           Filter: heute · 7 Tag…  │
+  │   *           alle sichtbaren marki…   l           Tatsache merken          s           Hosts sortieren         │
+  │   Strg+Z      Löschen rückgängig (1…   p / g       Absicht: Plan / Agent…   z           KI-Zusammenfassung      │
+  │   Strg+T      im Formular: Verbindu…   r           Rückblick (merken, Ru…   Z           alle Treffer zusammen…  │
+  │   /           suchen (auch #tag)       ?           zuletzt gesendet         b           Änderungsbericht        │
+  │   o           neuer Ordner (A / B v…                                        x           Export: md · txt · ca…  │
+  │   r           Ordner bearbeiten       ◆ Vorgang über mehrere Fenster        d           löschen                 │
+  │   v           in Ordner verschieben   Alt+V                                 a           Mitschreiben an/aus     │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

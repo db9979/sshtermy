@@ -17,15 +17,15 @@ de│   F12 w       What's new               a           run command (red ones�
   │   n           new connection          ◇ AI companion Alt+J                 ≡ Session logs l                     │
   │   e           edit                     Alt+K       level: off/quiet/chat…   /           search (output too)     │
   │   d           delete                   Alt+1…4     insert suggestion        ⏎ / → ←     expand/collapse         │
-  │   Ctrl+Z      undo delete (10 s)       ⏎ / a       insert / run             Tab         by time / by host       │
-  │   Ctrl+T      in the form: test con…   m           mute topic               f           filter: today · 7 day…  │
-  │   /           search (also #tag)       l           remember fact            s           sort hosts              │
-  │   o           new folder (A / B nes…   p / g       intent: plan / agent …   z           AI summary              │
-  │   r           Edit folder              r           recap (remember, runb…   Z           summarize all matches   │
-  │   v           move to folder           ?           last request sent        b           Change report           │
-  │   Shift+↑     move up (↓ down)                                              x           export: md · txt · ca…  │
-  │   ← / →       collapse/expand folder  ◆ Task across several windows Alt+V   d           delete                  │
-  │   - / +       collapse/expand all      Space / ← → choose windows / what…   a           recording on/off        │
+  │   Space       mark (then e, v, d fo…   ⏎ / a       insert / run             Tab         by time / by host       │
+  │   Right-click menu for a connection…   m           mute topic               f           filter: today · 7 day…  │
+  │   *           mark all visible         l           remember fact            s           sort hosts              │
+  │   Ctrl+Z      undo delete (10 s)       p / g       intent: plan / agent …   z           AI summary              │
+  │   Ctrl+T      in the form: test con…   r           recap (remember, runb…   Z           summarize all matches   │
+  │   /           search (also #tag)       ?           last request sent        b           Change report           │
+  │   o           new folder (A / B nes…                                        x           export: md · txt · ca…  │
+  │   r           Edit folder             ◆ Task across several windows Alt+V   d           delete                  │
+  │   v           move to folder           Space / ← → choose windows / what…   a           recording on/off        │
   │                                                                                                                 │
   │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
   │  Esc leads back to the terminal from every panel.                                                               │
