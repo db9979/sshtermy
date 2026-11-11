@@ -317,9 +317,13 @@ func (a *App) writeAgentFile(s *session) tea.Cmd {
 	g.cur, g.armed = nil, false
 	if !a.agentFilesOK(s) {
 		g.steps = append(g.steps, agent.DoneStep{Command: i18n.T("Datei ") + f.Name, File: f.Name, ExitHint: i18n.T("Dateien gehen hier nicht")})
-		return a.agentNext(s)
+		return a.goalNext(s)
 	}
 	if len(g.files) >= agent.MaxFiles && g.fileIndex(f.Name) < 0 {
+		if !g.auto {
+			g.err = fmt.Sprintf(i18n.T("höchstens %d Dateien pro Lauf"), agent.MaxFiles)
+			return nil
+		}
 		a.agentPause(s, fmt.Sprintf(i18n.T("höchstens %d Dateien pro Lauf"), agent.MaxFiles))
 		return nil
 	}
@@ -369,6 +373,10 @@ func (a *App) agentFileDone(m agentFileMsg) tea.Cmd {
 	path := g.agentDir() + "/" + m.file.Name
 	if m.err != nil {
 		g.steps = append(g.steps, agent.DoneStep{Command: i18n.T("Datei ") + path, File: m.file.Name, ExitHint: m.err.Error()})
+		if !g.auto { // Ziel-Modus: Fehler zeigen, r fragt neu
+			g.err = i18n.T("Datei konnte nicht angelegt werden: ") + m.err.Error()
+			return nil
+		}
 		g.fails++
 		a.agentPause(s, i18n.T("Datei konnte nicht angelegt werden: ")+m.err.Error())
 		g.needStep = true
@@ -386,7 +394,15 @@ func (a *App) agentFileDone(m agentFileMsg) tea.Cmd {
 		a.saveLog(s)
 	}
 	g.fails = 0
-	return a.agentNext(s)
+	return a.goalNext(s)
+}
+
+// goalNext: nächster Schritt, im Agent-Modus mit dessen Grenzen.
+func (a *App) goalNext(s *session) tea.Cmd {
+	if s.goal.auto {
+		return a.agentNext(s)
+	}
+	return a.requestStep(s)
 }
 
 // agentCleanup löscht den Arbeitsordner des Laufs auf dem Host.

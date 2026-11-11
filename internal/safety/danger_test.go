@@ -112,6 +112,7 @@ func TestDangerRootGaps(t *testing.T) {
 			"ip link set eth0 down", "ifdown eth0", "systemctl restart networking", "mysql -e 'drop database x'",
 			"psql -c 'DROP TABLE x'", "kubectl delete ns prod", "docker compose down -v", "zfs destroy tank",
 			"lvremove vg/lv", "kill -9 -1", "rsync -a --delete /empty/ /srv",
+			"docker cp /dev/stdin gitea:/data/gitea/conf/app.ini", "docker cp -a app.ini gitea:/data/gitea/conf/app.ini",
 			// falsch erkannter Switch: Netzwerkregeln gelten auch hier
 			"erase startup-config", "reload", "int 1-48 disable", "interface 1\nshutdown"},
 		"windows": {"Stop-Service WinRM", "Disable-NetAdapter -Name Ethernet", "Remove-Item C:\\Windows\\x -Force",
@@ -128,7 +129,7 @@ func TestDangerRootGaps(t *testing.T) {
 	good := []string{"cat /etc/passwd", "grep -r rm .", "git rm --cached x", "systemctl set-default multi-user.target",
 		"docker compose down", "kubectl get pods", "echo x | tee /etc/nginx/conf.d/a.conf", "ip link show",
 		"rsync -a src/ dst/", "kill -HUP 1234", "truncate -s 0 app.log", "mv a.txt /tmp/", "systemctl restart nginx",
-		"ps aux | grep rm", "journalctl -u x > /tmp/l"}
+		"ps aux | grep rm", "journalctl -u x > /tmp/l", "docker cp gitea:/data/gitea/conf/app.ini ./app.ini"}
 	for _, c := range good {
 		if f := Check(c, "unix"); len(f) != 0 {
 			t.Errorf("falscher Alarm: %q %v", c, f)

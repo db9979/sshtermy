@@ -100,7 +100,10 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   - **Befehlspalette** (Strg+Leertaste): ein Eingabefeld für alles, Text wird Ziel oder Frage; ohne Text nur Häufiges, Verbindungen und Ordner je Bereich (Sitzung, Tabs, Ansicht, Netzwerk, Team …), Tippen findet alles direkt
   - **Ghost-Text** beim Tippen (Tab übernimmt)
   - **Folgebefehle** nach jedem Enter (Alt+1…4 fügt ein)
-  - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst. Text im Panel (Ziel, Schritte, Ausgaben, Fehlermeldungen) lässt sich mit der Maus markieren und wird gleich kopiert
+  - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst. Text im Panel (Ziel, Schritte, Ausgaben, Fehlermeldungen) lässt sich mit der Maus markieren und wird gleich kopiert.
+    Mehrzeilige Inhalte (Konfigurationsabschnitte, Skripte) kommen als Datei, die sshTermy nach ⏎ per SFTP in `~/.sshtermy-agent/<lauf>/`
+    anlegt, nie als Heredoc im Befehl; Konfigurationsdateien werden gesichert und ergänzt statt ersetzt
+    (`docker cp` in einen Container gilt als Gefahr). Ist die Antwort des Modells unbrauchbar, fragt sshTermy einmal nach und nennt den Fehler.
   - **Agent-Modus** (F2, Tab wählt den Modus): Der Agent arbeitet selbstständig bis zum Ziel. Er führt Befehle aus,
     sieht Ausgabe und Exit-Code, legt Skripte per SFTP in `~/.sshtermy-agent/<lauf>/` an und führt sie aus (erst Probelauf).
     Stufen: *Vorsichtig* (Standard; nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`; als root angemeldet oder unter Windows fragt jede Änderung, weil es dort kein sudo zum Anhalten gibt), *Voll* (auch sudo).
@@ -327,6 +330,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Strg+Klick / Rechtsklick | URL im Browser öffnen / Menü zu Link, IP oder Host: verbinden (direkt oder über den Server), Ping vom Server oder von hier, kopieren |
 | | Einfügen | mehrzeilig erst Vorschau (⏎ einfügen, o ohne letztes Enter, Esc abbrechen); Palette „Einfügeschutz aus“ |
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
+| Ziel-Modus, Datei-Schritt | ⏎ / v / s | Datei auf dem Host anlegen / ansehen / überspringen; am Ende löscht `r` den Arbeitsordner |
 | | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |
 | | Tab | Schritt für Schritt → Agent *Vorsichtig* → *Normal* → *Voll* → *Erst planen* |
 | Agent-Modus | Esc / ? / v / x | anhalten / Anweisung geben / Skript ansehen / beenden; am Ende `s` als Runbook speichern, `r` Skripte auf dem Host löschen, `c` Ergebnis kopieren, `l` ganz lesen |

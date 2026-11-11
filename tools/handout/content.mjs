@@ -106,7 +106,7 @@ export const de = {
     { t: 'Agent-Modus', ic: '◆', key: 'F2 → Tab', ai: true, rows: [
       ['Esc', 'anhalten (auch: ins Terminal tippen)'],
       ['?', 'Agent eine Anweisung geben'],
-      ['v', 'Skript des Agenten ansehen'],
+      ['v', 'Skript bzw. Datei ansehen (auch Ziel-Modus)'],
       ['⏎ ⏎', 'gefährlichen Schritt freigeben', 'warn'],
       ['s r c l', 'Ende: Runbook · Skripte weg · kopieren · lesen'],
     ], note: '<b>Vorsichtig</b> (Standard): nur Lesendes allein · <b>Normal</b> / <b>Voll</b>: mehr allein, nur auf Verbindungen mit „Schutz“ aus. Gefahr und Geheimnisse warten immer.' },
@@ -276,7 +276,7 @@ export const en = {
     { t: 'Agent mode', ic: '◆', key: 'F2 → Tab', ai: true, rows: [
       ['Esc', 'pause (typing in the terminal too)'],
       ['?', 'give the agent an instruction'],
-      ['v', "view the agent's script"],
+      ['v', 'view the script or file (goal mode too)'],
       ['⏎ ⏎', 'allow a dangerous step', 'warn'],
       ['s / r', '(at the end) save as runbook / delete scripts'],
       ['c / l', 'copy result / read all'],

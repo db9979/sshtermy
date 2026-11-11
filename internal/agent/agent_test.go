@@ -57,11 +57,11 @@ func TestParseStepReasoningModels(t *testing.T) {
 }
 
 func TestUnreadableMessage(t *testing.T) {
-	e := unreadable(llm.Result{Content: "<think>lange…", FinishReason: "length"})
+	e := unreadable(llm.Result{Content: "<think>lange…", FinishReason: "length"}, nil)
 	if !errors.Is(e, ErrUnreadable) || !strings.Contains(e.Error(), "Token-Limit") {
 		t.Fatal(e)
 	}
-	e = unreadable(llm.Result{Content: "Ich empfehle \x1b[31mdocker\x1b[0m", FinishReason: "stop"})
+	e = unreadable(llm.Result{Content: "Ich empfehle \x1b[31mdocker\x1b[0m", FinishReason: "stop"}, nil)
 	if strings.Contains(e.Error(), "\x1b") || !strings.Contains(e.Error(), "Ich empfehle") {
 		t.Fatal(e)
 	}

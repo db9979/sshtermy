@@ -57,6 +57,9 @@ var unixRules = []rule{
 	r(`\bzfs\s+destroy\b|\bzpool\s+(destroy|labelclear)\b|\b(lvremove|vgremove|pvremove)\b`, "löscht Datenträger oder Volumes"),
 	r(`\bdocker(-compose|\s+compose)\s+(\S+\s+)*down\b[^|;&]*\s(-v|--volumes)\b|\bdocker\s+volume\s+(rm|remove)\b`, "löscht Docker-Volumes"),
 	r(`\brsync\b[^|;&]*\s--delete`, "löscht am Ziel, was in der Quelle fehlt"),
+	// Seit 2026-11-11 (Gitea-app.ini per „docker cp /dev/stdin …“ ersetzt):
+	// eine Datei im Container wird damit immer ganz ersetzt.
+	r(`\b(docker|podman)\s+(container\s+)?cp\s+(-\S+\s+)*\S+\s+[A-Za-z0-9][\w.-]*:\S`, "ersetzt eine Datei im Container"),
 	r(`\bkill\s+(-\S+\s+)*-1\b|\bkillall5\b`, "beendet alle Prozesse"),
 }
 

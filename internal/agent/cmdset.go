@@ -42,7 +42,7 @@ func (a *Agent) DraftCmdSet(ctx context.Context, screen string, c Context) (stri
 		out = m[1]
 	}
 	if out == "" {
-		return "", unreadable(res)
+		return "", unreadable(res, nil)
 	}
 	return out + "\n", nil
 }
