@@ -100,8 +100,19 @@ jobs:
           if-no-files-found: ignore
 
   packaging:
-    runs-on: ubuntu-latest
+    # ubuntu-latest (26.04) holte apt-utils am 2026-11-11 stundenlang nur von
+    # security.ubuntu.com, das der Runner nicht auflösen konnte.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: sudo apt-get install -y -qq apt-utils python3-yaml >/dev/null
+      # Paketquellen können kurz nicht erreichbar sein (DNS beim Runner):
+      # Liste auffrischen und bis zu dreimal versuchen.
+      - run: |
+          if command -v apt-ftparchive >/dev/null && python3 -c 'import yaml' 2>/dev/null; then exit 0; fi
+          for i in 1 2 3; do
+            sudo apt-get update -qq || true
+            sudo apt-get install -y -qq apt-utils python3-yaml >/dev/null && exit 0
+            sleep $((i * 10))
+          done
+          exit 1
       - run: packaging/check.sh

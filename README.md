@@ -133,6 +133,17 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
     programs (vim, less, top), for private commands (leading space) or while goal/agent/plan runs; tag `begleiter-aus`
     (`companion-off`) turns it off per connection. *Companion only with your own AI* restricts it to your own endpoints,
     *Filters off with your own AI* skips secret removal, but only while every request goes to your own AI.
+  - **Task across several windows** (Alt+V): link the open tabs and panes that belong to one job (web server, database,
+    switch …) into a *task*. Windows get fixed numbers (tab bar, pane title, colored badge). The AI then sees all of them
+    at once; per window you choose what it sees (profile only, + commands, + output; tag `ki-aus` hides a window).
+    Ask a question and the answer names the window for every step (1…9 types a step into its window); `z` turns it into
+    a *route* that guides you window by window and carries values over (`{{web02-ip}}` read in window 2, used in
+    window 3); `p` shows the *plan in lanes*, one column per window, with undo steps; Tab lets the agent run read-only
+    commands on its own, every change is only typed ahead. Before anything is typed sshTermy checks the target window:
+    same host key, prompt shows the expected host, prompt free, command fits the system, otherwise it stops and inserts
+    nothing. Danger needs ⏎ in the task and ⏎ in the window. The companion connects failures across windows (“cause
+    probably in window 3”), and `r` writes a recap with a timeline of all windows, undo commands and open points
+    (change log as Markdown, or a runbook).
   - **Your own AI servers** (settings › AI): register hosts such as `llm.example.com` that run outside your network
     (reached via API); they count like local endpoints for “own AI only” and the companion's filter switch.
     Goal, agent and plan mode show their progress as a timeline: done steps with ✓ and duration plus the last output
@@ -328,6 +339,11 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
 | | Alt+E | log view: anomalies in the logs (⏎ lines, 1…4 check, k AI explains, b AI status report, x/X hide, n what's new, t timeline, z period, w log watch, s syslog setup on switches) |
 | | Alt+K / Alt+J | AI companion: level off · quiet · chatty · coach / companion sidebar |
+| | Alt+V | task across several windows: the AI sees all linked windows |
+| Task (Alt+V) | Space / ← → / ⏎ | choose windows / what the AI sees / start task, send question |
+| | 1…9 / z / p / Tab | type step into its window / route / plan in lanes / agent reads on its own |
+| | ⏎ / s / w / o / r | continue / skip / retry / open missing system / recap |
+| | Ctrl+E / Ctrl+D / Esc | change windows / end task / back to the terminal |
 | Companion sidebar | ↑↓ / ⏎ / a / c | choose suggestion / insert / run (dangerous ones twice) / copy |
 | | m / l / s / ? / r | mute topic / remember fact / level / last request sent / recap |
 | | p / g / n / x | spotted intent: plan / agent takes over / do it myself / don't ask again |

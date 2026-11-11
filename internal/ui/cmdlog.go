@@ -114,6 +114,7 @@ func (a *App) finishCommand(s *session) {
 	}
 	a.auditCommand(s, r, failed, f.Exit)
 	a.companionAfter(s, r, f, failed)
+	a.vgCommandDone(s, r, out, failed, f) // Vorgang über mehrere Fenster (vorgang_run.go)
 	if failed && !r.interrupted && !r.agent {
 		a.cardFailed(s, f) // Befehl aus einer Antwortkarte? (cardfix.go)
 	}

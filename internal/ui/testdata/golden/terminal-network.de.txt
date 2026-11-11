@@ -1,4 +1,4 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                     ▌● switch-core ×  +
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                   ▌● 1 switch-core ×  +
  ▲ root  manager@192.168.1.2:22                       ▤ F6 Übersicht   ↔ 0 Tunnel   ● ◆ qwen3-coder
 ┏━ switch-core ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃switch-core#                                                                                      ┃

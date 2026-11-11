@@ -42,6 +42,9 @@ type Client struct {
 	// Learned: NetDevice wurde erst durch den Rückfall erkannt (Verbindung
 	// starb nach der Systemabfrage). Die UI merkt sich das in der Verbindung.
 	Learned bool
+	// HostKey: Fingerprint (SHA256:…) des Host-Keys dieser Verbindung. Die
+	// UI prüft damit, ob ein Fenster noch dasselbe System ist (Vorgang).
+	HostKey string
 	cancel  context.CancelFunc
 
 	// Zustand der Leitung (Statuszeile, Auto-Reconnect)
@@ -339,6 +342,16 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 			o.Step(n)
 		}
 	}
+	var seenKey string
+	if cb := cfg.HostKeyCallback; cb != nil {
+		cfg.HostKeyCallback = func(host string, remote net.Addr, key ssh.PublicKey) error {
+			err := cb(host, remote, key)
+			if err == nil {
+				seenKey = ssh.FingerprintSHA256(key)
+			}
+			return err
+		}
+	}
 	if cb := cfg.HostKeyCallback; cb != nil && o.Step != nil {
 		cfg.HostKeyCallback = func(host string, remote net.Addr, key ssh.PublicKey) error {
 			step(StepHostKey)
@@ -401,7 +414,7 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 	_ = raw.SetDeadline(time.Time{})
 
 	kctx, cancel := context.WithCancel(context.Background())
-	cl := &Client{Client: ssh.NewClient(sc, chans, reqs), Conn: c, jump: jump, cancel: cancel, dead: make(chan struct{})}
+	cl := &Client{Client: ssh.NewClient(sc, chans, reqs), Conn: c, jump: jump, cancel: cancel, dead: make(chan struct{}), HostKey: seenKey}
 	go func() { _ = cl.Client.Wait(); close(cl.dead) }()
 	banner := string(sc.ServerVersion())
 	switch {
