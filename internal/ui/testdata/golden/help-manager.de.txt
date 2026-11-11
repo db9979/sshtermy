@@ -18,14 +18,14 @@
   │   e           bearbeiten               v           Skript des Agenten an…   /           suchen (auch Ausgabe)   │
   │   d           löschen                  r           Skripte des Agenten l…   ⏎ / → ←     auf-/zuklappen          │
   │   Leertaste   markieren (dann e, v,…   c / l       Ergebnis kopieren / g…   Tab         nach Zeit / nach Host   │
-  │   *           alle sichtbaren marki…   Bild↑ Bild↓ im Panel blättern (au…   f           Filter: heute · 7 Tag…  │
-  │   Strg+Z      Löschen rückgängig (1…   Leertaste   Plan: Schritt streich…   s           Hosts sortieren         │
-  │   Strg+T      im Formular: Verbindu…   ?           Plan: neu planen lass…   z           KI-Zusammenfassung      │
-  │   /           suchen (auch #tag)                                            Z           alle Treffer zusammen…  │
-  │   o           neuer Ordner (A / B v…  ◆ KI fragen F3                        b           Änderungsbericht        │
-  │   r           Ordner bearbeiten        ⏎           Frage senden             x           Export: md · txt · ca…  │
-  │   v           in Ordner verschieben    ⇧⏎ / Strg+J neue Zeile               d           löschen                 │
-  │   Shift+↑     nach oben schieben (↓…   1…9         Befehl einfügen          a           Mitschreiben an/aus     │
+  │   Rechtsklick Menü zu Verbindung od…   Bild↑ Bild↓ im Panel blättern (au…   f           Filter: heute · 7 Tag…  │
+  │   *           alle sichtbaren marki…   Leertaste   Plan: Schritt streich…   s           Hosts sortieren         │
+  │   Strg+Z      Löschen rückgängig (1…   ?           Plan: neu planen lass…   z           KI-Zusammenfassung      │
+  │   Strg+T      im Formular: Verbindu…                                        Z           alle Treffer zusammen…  │
+  │   /           suchen (auch #tag)      ◆ KI fragen F3                        b           Änderungsbericht        │
+  │   o           neuer Ordner (A / B v…   ⏎           Frage senden             x           Export: md · txt · ca…  │
+  │   r           Ordner bearbeiten        ⇧⏎ / Strg+J neue Zeile               d           löschen                 │
+  │   v           in Ordner verschieben    1…9         Befehl einfügen          a           Mitschreiben an/aus     │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

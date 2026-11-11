@@ -178,6 +178,14 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		a.modal = nil
 		return nil
 	}
+	// Dateien: Maustaste „Zurück“ = Betrachter zu bzw. eine Ebene hoch
+	if isClick && m.Button == tea.MouseBackward && a.scr == scrTerminal && s != nil && s.files.open && a.modal == nil && a.pal == nil && a.pick == nil {
+		return a.filesBack(s, m.X, m.Y)
+	}
+	// Markieren im Datei-Betrachter
+	if a.scr == scrTerminal && s != nil && s.files.open && s.files.view != nil && s.files.view.sel != nil && s.files.view.sel.dragging && !isClick {
+		return a.fileViewDrag(s, msg)
+	}
 	// Ziehen im Dateibrowser: Einträge auf die andere Seite kopieren
 	if a.scr == scrTerminal && s != nil && s.files.open && s.files.drag != nil && a.modal == nil && a.pal == nil && a.pick == nil && !isClick {
 		return a.filesDragMouse(s, msg)

@@ -320,31 +320,11 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		if have {
-			c := cur.conn
-			tr, err := a.st.DeleteConnectionTrash(c.ID)
-			if err != nil {
-				a.flashErr(err.Error())
-				return nil
-			}
-			a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung gelöscht")
-			m.sel = max(0, m.sel-1)
-			a.offerUndo(i18n.T("„")+c.Alias+i18n.T("“ gelöscht"), tr, func() {
-				if c.Keychain {
-					sshx.ForgetKeychain(c.ID)
-				}
-			}, func() {
-				a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung wiederhergestellt")
-				a.mgr.want = "c:" + c.ID
-				a.expandTo(c.Group)
-			})
+			a.mgrDeleteConn(cur.conn)
 		}
 	case "t":
-		if have && !cur.isFolder() && cur.conn.Protocol.Raw() {
-			a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
-			return nil
-		}
 		if have && !cur.isFolder() {
-			return a.openTunnelForm(domain.Tunnel{ConnectionID: cur.conn.ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
+			return a.mgrNewTunnel(cur.conn)
 		}
 	case "s":
 		return a.openSettings()
@@ -362,6 +342,36 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// mgrDeleteConn löscht eine Verbindung in den Papierkorb (Strg+Z holt sie
+// zurück).
+func (a *App) mgrDeleteConn(c domain.Connection) {
+	tr, err := a.st.DeleteConnectionTrash(c.ID)
+	if err != nil {
+		a.flashErr(err.Error())
+		return
+	}
+	a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung gelöscht")
+	a.mgr.sel = max(0, a.mgr.sel-1)
+	a.offerUndo(i18n.T("„")+c.Alias+i18n.T("“ gelöscht"), tr, func() {
+		if c.Keychain {
+			sshx.ForgetKeychain(c.ID)
+		}
+	}, func() {
+		a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung wiederhergestellt")
+		a.mgr.want = "c:" + c.ID
+		a.expandTo(c.Group)
+	})
+}
+
+// mgrNewTunnel öffnet das Formular für einen neuen Tunnel zu c.
+func (a *App) mgrNewTunnel(c domain.Connection) tea.Cmd {
+	if c.Protocol.Raw() {
+		a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
+		return nil
+	}
+	return a.openTunnelForm(domain.Tunnel{ConnectionID: c.ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
 }
 
 func (a *App) connect(c domain.Connection) tea.Cmd {
@@ -533,6 +543,13 @@ func (a *App) viewManager() string {
 				m.drag = nil
 				return a.connect(r.conn)
 			}
+			return nil
+		}, menu: func(ms tea.Mouse) tea.Cmd {
+			if ms.Button != tea.MouseRight {
+				return nil
+			}
+			m.sel = i
+			a.modal = a.mgrMenu(r, ms.X, ms.Y)
 			return nil
 		}})
 		lb.WriteString(line + "\n")

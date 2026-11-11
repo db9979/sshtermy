@@ -4,10 +4,10 @@
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
    ○ # switc│ // frequent                                                              │
  ▾ Produktio│ [+] New connection                                                     n │
-   ▾ Web    │ [#] Search session logs                                                l │
-▌    ○ · web│ [$] Open local shell                                               Alt+L │
+   ▾ Web    │ [$] Local shell in a new tab                                       Alt+L │
 ▌    ○ · web│ [*] Broadcast: command on several hosts                                m │
-▌  ○ · db-01│ [/] Network scan: find SSH devices                                     f │
+▌    ○ · web│ [/] Network scan: find SSH devices                                     f │
+▌  ○ · db-01│ [#] Search session logs                                                l │
  ○ · nas    │ [!] Folder scan: logs of all hosts in the folder …                  Logs │
  ○ · spark  │ // connections                                                           │
             │ [·] nas                                                  admin@nas.local │
@@ -17,12 +17,12 @@
             │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │r between
             │ [=] All 6 connections in the manager         type a name, folder or #tag │
             │ // all actions                                                           │
-            │ [|] View & split ›  split, zoom, workspaces                            1 │
-            │ [*] Several hosts ›  broadcast, schedules, scan                        5 │
-            │ [/] Network & switches ›  find device, topology                        2 │
+            │ [/] Search & logs ›  scrollback, all tabs, log glance, session logs    3 │
+            │ [T] Tabs & view ›  new, split, zoom, workspaces                        2 │
+            │ [*] Several hosts & network ›  broadcast, scan, schedules, switches    5 │
             │ [&] Team & sharing ›  live sharing, team folders                       4 │
-            │ [=] Connections & keys ›  manager, new, SSH key, logs                  5 │
-            │ [:] Settings ›  mouse, look, language, AI …                           39 │
+            │ [=] Connections & data ›  new, SSH key, import/export, backup          6 │
+            │ [:] Settings ›  mouse, look, language, AI …                           27 │
             │                                                                          │
             │  ↑↓ select    ⏎ run    Esc close                                         │
             └──────────────────────────────────────────────────────────────────────────┘

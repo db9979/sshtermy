@@ -30,7 +30,7 @@ type Server struct {
 
 	mu      sync.Mutex
 	st      *State
-	stMod   time.Time
+	stMod   stateStamp
 	anchors map[string]*anchorLink // Anker-ID → Steuerleitung
 	pending map[string]*pendingChan
 	active  map[string]*activeChan
@@ -148,7 +148,7 @@ func (s *Server) reload() {
 	if s.Dir == "" {
 		return // eingebauter Vermittler ohne Datenordner
 	}
-	if m := stateMtime(s.Dir); !m.Equal(s.stMod) {
+	if m := stateMtime(s.Dir); !m.mod.Equal(s.stMod.mod) || m.size != s.stMod.size {
 		if st, err := LoadState(s.Dir); err == nil {
 			s.st, s.stMod = st, m
 		}

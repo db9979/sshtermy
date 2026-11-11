@@ -42,6 +42,8 @@ type FS interface {
 	Create(p string, mode fs.FileMode) (io.WriteCloser, error)
 	Mkdir(p string) error
 	RemoveAll(p string) error
+	Rename(from, to string) error
+	Chmod(p string, mode fs.FileMode) error
 	Join(elem ...string) string
 	Dir(p string) string
 	Home() string
@@ -98,10 +100,17 @@ func (LocalFS) Open(p string) (io.ReadCloser, error) { return os.Open(p) }
 func (LocalFS) Create(p string, mode fs.FileMode) (io.WriteCloser, error) {
 	return os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode.Perm()|0o200)
 }
-func (LocalFS) Mkdir(p string) error       { return os.MkdirAll(p, 0o755) }
-func (LocalFS) RemoveAll(p string) error   { return os.RemoveAll(p) }
-func (LocalFS) Join(elem ...string) string { return filepath.Join(elem...) }
-func (LocalFS) Dir(p string) string        { return filepath.Dir(p) }
+func (LocalFS) Mkdir(p string) error     { return os.MkdirAll(p, 0o755) }
+func (LocalFS) RemoveAll(p string) error { return os.RemoveAll(p) }
+func (LocalFS) Rename(from, to string) error {
+	if _, err := os.Lstat(to); err == nil {
+		return fmt.Errorf(i18n.T("„%s“ gibt es schon"), filepath.Base(to))
+	}
+	return os.Rename(from, to)
+}
+func (LocalFS) Chmod(p string, mode fs.FileMode) error { return os.Chmod(p, mode) }
+func (LocalFS) Join(elem ...string) string             { return filepath.Join(elem...) }
+func (LocalFS) Dir(p string) string                    { return filepath.Dir(p) }
 func (LocalFS) Home() string {
 	if h, err := os.UserHomeDir(); err == nil {
 		return h
@@ -181,11 +190,20 @@ func (r *RemoteFS) Rewrite(p string, data []byte) error {
 	return f.Close()
 }
 
-func (r *RemoteFS) Mkdir(p string) error       { return r.c.MkdirAll(p) }
-func (r *RemoteFS) RemoveAll(p string) error   { return r.c.RemoveAll(p) }
-func (r *RemoteFS) Join(elem ...string) string { return path.Join(elem...) }
-func (r *RemoteFS) Dir(p string) string        { return path.Dir(p) }
-func (r *RemoteFS) Home() string               { return r.home }
+func (r *RemoteFS) Mkdir(p string) error     { return r.c.MkdirAll(p) }
+func (r *RemoteFS) RemoveAll(p string) error { return r.c.RemoveAll(p) }
+
+// Rename benennt um, überschreibt aber nie ein vorhandenes Ziel.
+func (r *RemoteFS) Rename(from, to string) error {
+	if _, err := r.c.Lstat(to); err == nil {
+		return fmt.Errorf(i18n.T("„%s“ gibt es schon"), path.Base(to))
+	}
+	return r.c.Rename(from, to)
+}
+func (r *RemoteFS) Chmod(p string, mode fs.FileMode) error { return r.c.Chmod(p, mode) }
+func (r *RemoteFS) Join(elem ...string) string             { return path.Join(elem...) }
+func (r *RemoteFS) Dir(p string) string                    { return path.Dir(p) }
+func (r *RemoteFS) Home() string                           { return r.home }
 
 // ---------------------------------------------------------------- Kopieren
 

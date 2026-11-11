@@ -86,6 +86,7 @@ var localSettings = map[string]bool{
 	"SyslogAny":      true,
 	"CmdSetApproved": true,
 	"Share":          true,
+	"FilesNoPeek":    true, // Vorschau im Dateibrowser: Platz je Bildschirm
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der

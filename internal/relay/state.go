@@ -103,12 +103,20 @@ func writeAtomic(path string, b []byte) error {
 	return os.Rename(tmp, path)
 }
 
-func stateMtime(dir string) time.Time {
+// stateStamp: Zeit und Größe von state.json. Die Größe zählt mit, weil
+// Windows zwei schnell aufeinanderfolgende Schreibvorgänge mit derselben
+// Zeit versehen kann; sonst bliebe ein gerade entferntes Gerät zugelassen.
+type stateStamp struct {
+	mod  time.Time
+	size int64
+}
+
+func stateMtime(dir string) stateStamp {
 	fi, err := os.Stat(filepath.Join(dir, stateFile))
 	if err != nil {
-		return time.Time{}
+		return stateStamp{}
 	}
-	return fi.ModTime()
+	return stateStamp{fi.ModTime(), fi.Size()}
 }
 
 // newID: kurze zufällige Kennung mit Präfix ("c_", "a_", "k_").

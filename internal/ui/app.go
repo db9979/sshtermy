@@ -159,8 +159,9 @@ type App struct {
 	restart        bool // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
 
-	hl    hlState       // Farbregeln (highlight.go)
-	edits []*remoteEdit // Server-Dateien im eigenen Editor (editor.go)
+	hl      hlState       // Farbregeln (highlight.go)
+	edits   []*remoteEdit // Server-Dateien im eigenen Editor (editor.go)
+	openTmp []string      // heruntergeladen zum Öffnen mit dem Standardprogramm (fileview.go)
 
 	formSched     domain.Schedule   // Zeitplan im Formular (schedule.go)
 	schedRBIDs    map[string]string // Runbook-Name → ID im Formular
@@ -739,6 +740,7 @@ func (a *App) quit() tea.Cmd {
 	a.finishUndo()     // offenes Löschen endgültig machen (undo.go)
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
 	a.cleanupEdits()
+	a.cleanupOpenTmp()
 	sshx.StopSKAgent() // eigener ssh-agent für Sicherheitsschlüssel
 	for _, s := range a.sessions {
 		a.endLog(s)
