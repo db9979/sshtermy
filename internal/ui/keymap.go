@@ -61,6 +61,7 @@ const (
 	actNewTab       action = "new_tab"
 	actCloseTab     action = "close_tab"
 	actTabList      action = "tab_list"
+	actSearchAll    action = "search_all"
 	actLocal        action = "local_shell"
 	actZoom         action = "zoom"
 	actGrowLeft     action = "pane_left"
@@ -116,6 +117,7 @@ var actionDefs = []actionDef{
 	{actQuick[6], "Schnellbefehl 7", "Terminal", []string{"shift+f7", "f19"}},
 	{actQuick[7], "Schnellbefehl 8", "Terminal", []string{"shift+f8", "f20"}},
 	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
+	{actSearchAll, "In allen Tabs suchen", "Terminal", []string{"alt+s"}},
 	{actSplit, "Ansicht teilen (Aufteilung wählen)", "Terminal", []string{"ctrl+t"}},
 	{actZoom, "Bereich zoomen / zurück", "Terminal", []string{"alt+z"}},
 	{actGrowLeft, "Trennlinie nach links", "Terminal", []string{"alt+shift+left"}},

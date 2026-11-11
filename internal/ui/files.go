@@ -34,6 +34,9 @@ type pane struct {
 	sel     int
 	err     string
 	marked  map[string]bool // mit Leertaste markierte Namen
+	sortBy  int             // sortName/sortSize/sortTime (filesmouse.go)
+	desc    bool
+	peek    *filePeek // Vorschau der Auswahl (fileview.go)
 }
 
 // fileDrag: Ziehen eines Eintrags mit der Maus.
@@ -51,6 +54,7 @@ type xfer struct {
 	start  time.Time
 	files  atomic.Int64 // Dateien insgesamt
 	speed  xferSpeed    // Tempo-Verlauf (xferview.go)
+	then   func()       // nach Erfolg (Öffnen mit dem Standardprogramm)
 }
 
 type filesState struct {
@@ -65,7 +69,8 @@ type filesState struct {
 	xfer    *xfer
 	last    string // Ergebnis der letzten Übertragung
 	drag    *fileDrag
-	pending []string // abgelegte Dateien, die nach dem Öffnen hochgeladen werden
+	pending []string  // abgelegte Dateien, die nach dem Öffnen hochgeladen werden
+	view    *fileView // Datei im Betrachter (fileview.go)
 }
 
 type filesOpenMsg struct {
@@ -86,7 +91,7 @@ func filesTick(sid int) tea.Cmd {
 func (a *App) toggleFiles(s *session) tea.Cmd {
 	f := &s.files
 	if f.open {
-		f.open = false
+		f.open, f.view = false, nil
 		return nil
 	}
 	if s.conn.Protocol.Raw() {
@@ -121,6 +126,7 @@ func (p *pane) load(hidden bool) {
 		out = append(out, e)
 	}
 	p.entries = out
+	p.sortEntries()
 	p.sel = min(p.sel, len(out)-1)
 	for n := range p.marked {
 		if !slicesContainsName(out, n) {
@@ -187,7 +193,7 @@ func (p *pane) cd(dir string, hidden bool) {
 		p.path = p.fs.Join(old, dir)
 	}
 	p.sel = 0
-	p.marked = nil
+	p.marked, p.peek = nil, nil
 	p.load(hidden)
 	if p.err != "" {
 		p.path = old
@@ -258,6 +264,9 @@ func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 		case m.err != nil:
 			f.last = a.s.Danger.Render("× " + x.what + ": " + m.err.Error())
 		default:
+			if x.then != nil {
+				x.then()
+			}
 			f.last = a.s.OK.Render(fmt.Sprintf("✓ %s · %s in %s (%s/s)", x.what, humanBytes(x.pr.Done.Load()),
 				shortDur(d), humanBytes(int64(float64(x.pr.Done.Load())/max(d.Seconds(), 0.001)))))
 			for _, p := range f.panes {
@@ -278,7 +287,7 @@ func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		return nil, true
 	}
-	return nil, false
+	return a.fileViewMsgs(msg)
 }
 
 // startCopy kopiert die markierten Einträge (oder den ausgewählten) der
@@ -480,7 +489,14 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
-	if key == "esc" || a.keys.is(actFiles, key) {
+	if a.keys.is(actFiles, key) {
+		f.open, f.view = false, nil
+		return nil
+	}
+	if f.view != nil {
+		return a.fileViewKey(s, k)
+	}
+	if key == "esc" {
 		f.open = false
 		return nil
 	}
@@ -491,6 +507,15 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 	if f.panes[0] == nil {
 		return nil
 	}
+	cmd := a.filesListKey(s, key)
+	if f.view != nil || a.modal != nil {
+		return cmd
+	}
+	return tea.Batch(cmd, a.filesPeek(s))
+}
+
+func (a *App) filesListKey(s *session, key string) tea.Cmd {
+	f := &s.files
 	p := f.panes[f.side]
 	page := max(1, a.h-10)
 	switch key {
@@ -508,29 +533,41 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		p.sel = 0
 	case "end":
 		p.sel = len(p.entries) - 1
-	case "enter", "right", "l":
+	case "enter":
+		return a.openEntry(s, f.side, p.sel)
+	case "right", "l":
 		if p.sel < len(p.entries) && p.entries[p.sel].IsDir {
 			p.cd(p.entries[p.sel].Name, f.hidden)
 		}
 	case "backspace", "left", "h":
 		p.cd("..", f.hidden)
 	case "~":
-		p.path, p.sel = p.fs.Home(), 0
-		p.load(f.hidden)
+		p.goTo(p.fs.Home(), f.hidden)
 	case ".":
-		f.hidden = !f.hidden
-		for _, x := range f.panes {
-			x.load(f.hidden)
+		a.filesToggleHidden(s)
+	case "o":
+		return a.openWithSystem(s, f.side, p.sel)
+	case "f2":
+		return a.askRename(s, f.side, p.sel)
+	case "y":
+		if p.sel > 0 && p.sel < len(p.entries) {
+			return a.copyPath(p.fs.Join(p.path, p.entries[p.sel].Name))
 		}
+		return a.copyPath(p.path)
+	case "s":
+		p.sortClick((p.sortBy+1)%3, f.hidden)
+		a.flash(i18n.T("Sortiert nach ") + sortLabel(p.sortBy))
+	case "v":
+		return a.togglePeek(s)
 	case "r":
 		p.load(f.hidden)
 	case "c", "f6":
 		return a.startCopy(s, false)
 	case "e":
-		if f.side == 1 && p.sel > 0 && p.sel < len(p.entries) && !p.entries[p.sel].IsDir {
-			return a.editRemote(s, p.fs.Join(p.path, p.entries[p.sel].Name))
+		if p.sel > 0 && p.sel < len(p.entries) && !p.entries[p.sel].IsDir {
+			return a.editPath(s, f.side, p.fs.Join(p.path, p.entries[p.sel].Name))
 		}
-		a.flash(i18n.T("e öffnet eine Datei auf der Server-Seite im eigenen Editor"))
+		a.flash(i18n.T("e öffnet eine Datei im eigenen Editor"))
 	case "space", "insert":
 		p.toggleMark(p.sel)
 		p.sel = min(len(p.entries)-1, p.sel+1)
@@ -543,37 +580,40 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			}
 		}
 	case "n":
-		in := newInput("", false)
-		in.Placeholder = i18n.T("Name des neuen Ordners")
-		f.mkdir = &in
-		return f.mkdir.Focus()
+		return a.filesMkdir(s)
 	case "d", "delete":
-		if p.sel <= 0 || p.sel >= len(p.entries) {
-			return nil
-		}
-		e := p.entries[p.sel]
-		target := p.fs.Join(p.path, e.Name)
-		what := i18n.T("Die Datei")
-		if e.IsDir {
-			what = i18n.T("Den Ordner mit allem darin")
-		}
-		a.modal = confirmModal(i18n.T("Löschen?"), fmt.Sprintf(i18n.T("%s: %s\n%s endgültig löschen?"), i18n.T(p.fs.Label()), target, what), func() tea.Cmd {
-			if err := p.fs.RemoveAll(target); err != nil {
-				p.err = err.Error()
-			}
-			p.load(f.hidden)
-			return nil
-		})
+		return a.askDelete(s, f.side, p.picked())
 	}
 	return nil
+}
+
+func (a *App) filesMkdir(s *session) tea.Cmd {
+	f := &s.files
+	in := newInput("", false)
+	in.Placeholder = i18n.T("Name des neuen Ordners")
+	f.mkdir = &in
+	return f.mkdir.Focus()
+}
+
+func (a *App) filesToggleHidden(s *session) {
+	f := &s.files
+	f.hidden = !f.hidden
+	for _, x := range f.panes {
+		if x != nil {
+			x.load(f.hidden)
+		}
+	}
 }
 
 func (a *App) filesKeys(s *session) [][2]string {
 	if s.files.mkdir != nil {
 		return [][2]string{{"⏎", i18n.T("anlegen")}, {"Esc", i18n.T("abbrechen")}}
 	}
-	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ↔")}, {"e", i18n.T("im Editor")}, {"Space", i18n.T("markieren")}, {"n", i18n.T("Ordner")}, {"d", i18n.T("löschen")},
-		{".", i18n.T("versteckte")}, {"~", "Home"}, {"r", i18n.T("neu laden")}, {"Esc/F5", "Terminal"}}
+	if s.files.view != nil {
+		return a.fileViewKeys(s.files.view)
+	}
+	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ↔")}, {"e", i18n.T("im Editor")}, {"o", i18n.T("Programm")}, {"Space", i18n.T("markieren")}, {"F2", i18n.T("umbenennen")},
+		{"n", i18n.T("Ordner")}, {"d", i18n.T("löschen")}, {"s", i18n.T("sortieren")}, {"v", i18n.T("Vorschau")}, {"Esc/F5", "Terminal"}}
 	if s.files.xfer != nil {
 		k = append([][2]string{{"x", i18n.T("abbrechen")}}, k...)
 	}
@@ -591,6 +631,8 @@ func (a *App) viewFiles(s *session, w, h int) string {
 			st.Danger.Render("× "+f.err)+"\n\n"+a.hints(st.Muted, [2]string{"Esc", i18n.T("zurück zum Terminal")}))
 	case f.panes[0] == nil:
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, st.Muted.Render(i18n.T("keine Verbindung")))
+	case f.view != nil && f.mkdir == nil:
+		return a.viewFileView(s, w, h)
 	}
 	// unten: Status/Fortschritt (2 Zeilen)
 	status := ""
@@ -609,43 +651,43 @@ func (a *App) viewFiles(s *session, w, h int) string {
 	case f.last != "":
 		status = " " + f.last
 	default:
-		status = st.Muted.Render(i18n.T(" c oder Ziehen kopiert auf die andere Seite (Leertaste markiert mehrere). Dateien aus dem Explorer/Finder hier ablegen lädt hoch"))
+		status = st.Muted.Render(i18n.T(" Doppelklick öffnet/zeigt an · Rechtsklick: Menü · Ziehen kopiert auf die andere Seite · Strg+Klick markiert · Dateien aus Explorer/Finder ablegen lädt hoch"))
 	}
 	ph := h - 1 - lipgloss.Height(status)
 	lw := (w - 1) / 2
 	rw := w - 1 - lw
 	sep := lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("│\n", ph-1) + "│")
-	cols := lipgloss.JoinHorizontal(lipgloss.Top, a.viewPane(f, 0, lw, ph), sep, a.viewPane(f, 1, rw, ph))
+	cols := lipgloss.JoinHorizontal(lipgloss.Top, a.viewPane(s, 0, lw, ph), sep, a.viewPane(s, 1, rw, ph))
 	return cols + "\n" + lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w)) + "\n" + ansiTruncate(status, w)
 }
 
-func (a *App) viewPane(f *filesState, side, w, h int) string {
+func (a *App) viewPane(s *session, side, w, h int) string {
 	st := a.s
+	f := &s.files
 	p, active := f.panes[side], f.side == side
 	var b strings.Builder
-	title := " " + i18n.T(p.fs.Label()) + " "
-	if n := len(p.marked); n > 0 {
-		title += fmt.Sprintf(i18n.T("· %d markiert "), n)
-	}
-	ts := st.Tab
-	if active {
-		ts = st.TabActive.Foreground(st.T.Accent)
-	}
 	_, dropDir := f.dragTarget()
 	dropping := dropDir != "" && f.drag.over == side
-	tr := ts.Render(title)
-	b.WriteString(tr + " " + st.Muted.Render(truncLeft(p.path, max(4, w-lipgloss.Width(tr)-1))) + "\n")
-	rows := h - 1
+	b.WriteString(a.filesPaneTitle(s, f, side, w) + "\n")
+	sizeW, dateW := 9, 12
+	nameW := max(8, w-sizeW-dateW-4)
+	b.WriteString(a.paneHeader(p, f, side, nameW, sizeW, dateW) + "\n")
+	rows := h - 2
 	if p.err != "" {
 		b.WriteString(st.Danger.Render(trunc(" × "+p.err, w)) + "\n")
 		rows--
+	}
+	// Vorschau unter der Liste: aktive Seite, Datei ausgewählt, genug Platz
+	peekH := 0
+	if active && a.peekOn() && p.peek != nil && p.sel > 0 && p.sel < len(p.entries) && !p.entries[p.sel].IsDir &&
+		p.peek.name == p.fs.Join(p.path, p.entries[p.sel].Name) && rows >= 14 {
+		peekH = min(rows/2, 20)
+		rows -= peekH
 	}
 	start := 0
 	if p.sel >= rows {
 		start = p.sel - rows + 1
 	}
-	sizeW, dateW := 9, 12
-	nameW := max(8, w-sizeW-dateW-4)
 	n := 0
 	for i := start; i < len(p.entries) && n < rows; i, n = i+1, n+1 {
 		e := p.entries[i]
@@ -681,27 +723,26 @@ func (a *App) viewPane(f *filesState, side, w, h int) string {
 		default:
 			line = st.Text.Render(line)
 		}
-		i, e := i, e
-		line = a.z.mark(line, zoneAction{pane: side + 1, row: i + 1, click: func(_ tea.Mouse, double bool) tea.Cmd {
-			f.side, p.sel = side, i
-			if double && e.IsDir {
-				f.drag = nil
-				p.cd(e.Name, f.hidden)
-				return nil
-			}
-			f.drag = &fileDrag{side: side, idx: i, over: side, overRow: i}
-			return nil
-		}})
+		i := i
+		line = a.z.mark(line, zoneAction{pane: side + 1, row: i + 1,
+			click: func(m tea.Mouse, double bool) tea.Cmd { return a.entryClick(s, side, i, m, double) },
+			menu:  func(m tea.Mouse) tea.Cmd { return a.fileMenu(s, side, i, m.X, m.Y) },
+		})
 		b.WriteString(line + "\n")
 	}
 	for ; n < rows; n++ {
 		b.WriteString("\n")
 	}
-	box := lipgloss.NewStyle().Width(w).Height(h).MaxHeight(h).Render(strings.TrimSuffix(b.String(), "\n"))
+	list := strings.TrimSuffix(b.String(), "\n")
+	if peekH > 0 {
+		list += "\n" + a.viewPeek(s, p, side, w, peekH)
+	}
+	box := lipgloss.NewStyle().Width(w).Height(h).MaxHeight(h).Render(list)
 	return a.z.mark(box, zoneAction{
 		block: true,
 		pane:  side + 1,
 		click: func(tea.Mouse, bool) tea.Cmd { f.side = side; return nil },
+		menu:  func(m tea.Mouse) tea.Cmd { return a.fileMenu(s, side, -1, m.X, m.Y) },
 		wheel: func(up bool) tea.Cmd {
 			f.side = side
 			if up {
@@ -709,7 +750,7 @@ func (a *App) viewPane(f *filesState, side, w, h int) string {
 			} else {
 				p.sel = min(len(p.entries)-1, p.sel+3)
 			}
-			return nil
+			return a.filesPeek(s)
 		},
 	})
 }

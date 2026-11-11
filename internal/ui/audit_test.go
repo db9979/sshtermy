@@ -15,7 +15,7 @@ func TestAuditToggleAndExport(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	a.palEnter("settings")
+	a.palEnter("settings/logs")
 	it, ok := hasLabel(a.paletteItems(), "Audit-Protokoll (wer")
 	if !ok || it.state != palOff {
 		t.Fatalf("Schalter: %+v", it)

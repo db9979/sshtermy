@@ -17,15 +17,15 @@
   │   n           neue Verbindung          ?           Agent anweisen          ≡ Sitzungsprotokolle l               │
   │   e           bearbeiten               v           Skript des Agenten an…   /           suchen (auch Ausgabe)   │
   │   d           löschen                  r           Skripte des Agenten l…   ⏎ / → ←     auf-/zuklappen          │
-  │   Strg+Z      Löschen rückgängig (1…   c / l       Ergebnis kopieren / g…   Tab         nach Zeit / nach Host   │
-  │   Strg+T      im Formular: Verbindu…   Bild↑ Bild↓ im Panel blättern (au…   f           Filter: heute · 7 Tag…  │
-  │   /           suchen (auch #tag)       Leertaste   Plan: Schritt streich…   s           Hosts sortieren         │
-  │   o           neuer Ordner (A / B v…   ?           Plan: neu planen lass…   z           KI-Zusammenfassung      │
-  │   r           Ordner bearbeiten                                             Z           alle Treffer zusammen…  │
-  │   v           in Ordner verschieben   ◆ KI fragen F3                        b           Änderungsbericht        │
-  │   Shift+↑     nach oben schieben (↓…   ⏎           Frage senden             x           Export: md · txt · ca…  │
-  │   ← / →       Ordner zu-/aufklappen    ⇧⏎ / Strg+J neue Zeile               d           löschen                 │
-  │   - / +       alle Ordner zu/auf       1…9         Befehl einfügen          a           Mitschreiben an/aus     │
+  │   Leertaste   markieren (dann e, v,…   c / l       Ergebnis kopieren / g…   Tab         nach Zeit / nach Host   │
+  │   Rechtsklick Menü zu Verbindung od…   Bild↑ Bild↓ im Panel blättern (au…   f           Filter: heute · 7 Tag…  │
+  │   *           alle sichtbaren marki…   Leertaste   Plan: Schritt streich…   s           Hosts sortieren         │
+  │   Strg+Z      Löschen rückgängig (1…   ?           Plan: neu planen lass…   z           KI-Zusammenfassung      │
+  │   Strg+T      im Formular: Verbindu…                                        Z           alle Treffer zusammen…  │
+  │   /           suchen (auch #tag)      ◆ KI fragen F3                        b           Änderungsbericht        │
+  │   o           neuer Ordner (A / B v…   ⏎           Frage senden             x           Export: md · txt · ca…  │
+  │   r           Ordner bearbeiten        ⇧⏎ / Strg+J neue Zeile               d           löschen                 │
+  │   v           in Ordner verschieben    1…9         Befehl einfügen          a           Mitschreiben an/aus     │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

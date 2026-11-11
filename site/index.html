@@ -95,7 +95,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>One palette for everything</h3>
-      <p><kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the command palette: frequent actions and recent connections on top, everything else sorted into folders (session, tabs, view, network, team …), typing finds it all at once. Plain text becomes a goal (Enter) or a question to the AI (Tab).</p>
+      <p><kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the command palette: frequent actions and recent connections on top, everything else sorted into folders (AI, session, search &amp; logs, tabs &amp; view, network, team …), typing finds it all at once. Plain text becomes a goal (Enter) or a question to the AI (Tab).</p>
     </div>
     <figure><img src="gifs/palette-en.gif" width="962" height="594" alt="Command palette filters actions, then a question goes to the AI with terminal context" loading="lazy"></figure>
   </div>
@@ -131,6 +131,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback, tabs, split view, search.</p></div>
     <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen. After sleep or a network change every line is checked within seconds.</p></div>
     <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right. <kbd>e</kbd> opens a server file in VS Code, Notepad++ or TextEdit, saving uploads it back. While copying: percent, MB/s, time left and a speed curve.</p></div>
+    <div class="card"><h3>Files with the mouse</h3><p>Double-click a file to view it right in sshTermy: colors, search, select and copy, follow like <code>tail -f</code>. Images and PDFs open with your default app. A single click shows a preview, right-click opens a menu with rename, permissions, copy path and <code>cd</code> here. Clickable path, sortable columns, Ctrl/Shift+click to mark.</p></div>
     <div class="card"><h3>Color rules</h3><p>Errors red, warnings yellow, IP blue, MAC purple, switch syslog by severity; your own rules, with <code>!</code> a hidden tab notifies you.</p></div>
     <div class="card"><h3>Images in the terminal</h3><p>Sixel, kitty graphics and iTerm2 images (img2sixel, icat, viu, imgcat) as colored half blocks, in any terminal; pixel-perfect in kitty, Ghostty and sshTermy's own window.</p></div>
     <div class="card"><h3>Containers</h3><p>Docker, Podman and Kubernetes pods in one list: shell in the container, live logs, AI log analysis.</p></div>
@@ -153,7 +154,9 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Command sets</h3><p>48 command sets built in (Cisco, Arista, Aruba, Comware, Huawei, Dell, Extreme, Ruckus, Palo Alto, Sophos, FortiGate, pfSense, Proxmox …). Add your own as YAML, test it on the device or let the AI draft it, synced to your other computers; own and team sets can never weaken the built-in safety rules.</p></div>
     <div class="card"><h3>AI companion</h3><p>Reads along and comments on its own: quiet (errors, risky lines before Enter, repeats), chatty (every command) or coach (spots your goal, recap with runbook). Your own AI servers, also external, can be registered. If a command from an answer card fails, the card shows the error and a corrected command; <kbd>u</kbd> takes it over and fixes the same mistake in the other cards.</p></div>
     <div class="card"><h3>Agent &amp; plan mode</h3><p>The AI works towards a goal on its own, writes and runs scripts; three levels, dangerous steps always wait for you. Plan first: review and approve the whole plan.</p></div>
-    <div class="card"><h3>Split view &amp; tabs</h3><p>Seven layouts with up to six sessions, zoom, swap, type into all; tab bar with <code>+</code>, <code>×</code>, right-click menu and tab list (<kbd>Alt</kbd>+<kbd>T</kbd>). Every tab gets a colored frame, its name in the same color; red only for production.</p></div>
+    <div class="card"><h3>Split view &amp; tabs</h3><p>Seven layouts with up to six sessions, zoom, swap, type into all; tab bar with <code>+</code>, <code>×</code>, right-click menu and tab list (<kbd>Alt</kbd>+<kbd>T</kbd>); drag tabs with the mouse, <kbd>Alt</kbd>+<kbd>S</kbd> searches all tabs. Every tab gets a colored frame, its name in the same color; red only for production.</p></div>
+    <div class="card"><h3>Bulk change</h3><p>Mark several connections in the manager (<kbd>Space</kbd>, <kbd>*</kbd> for all hits) and change tags, user, protection or color in one step, move or delete them.</p></div>
+    <div class="card"><h3>Note, start command, Wake-on-LAN</h3><p>Per connection a note just for you, a command typed after login, and waking powered-off machines; sshTermy remembers the MAC address itself.</p></div>
     <div class="card"><h3>Telnet &amp; serial</h3><p>Telnet and USB console cables (e.g. Aruba switches), cable picked automatically, login typed for you.</p></div>
     <div class="card"><h3>Remote PowerShell</h3><p>Log into Windows servers like <code>Enter-PSSession</code> over WinRM (NTLM or Kerberos, encrypted, or HTTPS), with history, Tab completion from the server and AI that speaks PowerShell.</p></div>
     <div class="card"><h3>Local shell</h3><p>Your own PowerShell, cmd, zsh or bash as a tab (<kbd>Alt</kbd>+<kbd>L</kbd>), with AI, agent and plan mode, split view and session log; danger rules apply here too.</p></div>
@@ -209,14 +212,19 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F7</kbd> / <kbd>F8</kbd></td><td>Previous / next tab</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>T</kbd> / <kbd>Alt</kbd>+<kbd>N</kbd> / <kbd>Alt</kbd>+<kbd>W</kbd></td><td>Tab list / new tab / close tab</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>L</kbd></td><td>Local shell in a new tab (PowerShell, zsh, bash)</td></tr>
-    <tr><td><kbd>F9</kbd>, <kbd>⇧</kbd>+<kbd>F1</kbd>…<kbd>F8</kbd></td><td>Quick commands</td></tr>
+    <tr><td><kbd>F9</kbd>, <kbd>⇧</kbd>+<kbd>F1</kbd>…<kbd>F8</kbd></td><td>Quick commands (<code>{{name}}</code> asks for a value)</td></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>T</kbd></td><td>Split view: choose a layout (1…7)</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>Alt</kbd>+<kbd>I</kbd></td><td>Zoom a pane / type into all panes</td></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>Search the scrollback</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>S</kbd></td><td>Search in all open tabs</td></tr>
+    <tr><td><kbd>Space</kbd> / <kbd>*</kbd></td><td>Manager: mark a connection / all visible; then <kbd>e</kbd>, <kbd>v</kbd>, <kbd>d</kbd> for all</td></tr>
+    <tr><td>Manager → right-click</td><td>Menu for a connection or folder: connect, edit, move, tunnel, SSH key, Wake-on-LAN, delete</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>c</kbd></td><td>Containers: Docker, Podman, Kubernetes (shell, logs, AI)</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>E</kbd> or <kbd>F6</kbd> → <kbd>l</kbd></td><td>Log view: <kbd>n</kbd> what's new, <kbd>t</kbd> timeline, <kbd>x</kbd>/<kbd>X</kbd> hide noise, <kbd>k</kbd> AI explains, <kbd>b</kbd> AI status report, <kbd>1</kbd>…<kbd>4</kbd> check command, <kbd>w</kbd> log watch alerts, <kbd>s</kbd> syslog setup (switch)</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>t</kbd> / <kbd>z</kbd></td><td>Live graphs: range 5 min / 1 h, large view</td></tr>
     <tr><td><kbd>F5</kbd> → <kbd>e</kbd></td><td>Server file in your own editor (saving uploads it)</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>⏎</kbd> / double-click</td><td>View file (<kbd>/</kbd> search, <kbd>f</kbd> follow, <kbd>w</kbd> wrap), <kbd>o</kbd> default app</td></tr>
+    <tr><td><kbd>F5</kbd> → right-click</td><td>Menu: rename (<kbd>F2</kbd>), permissions, copy path (<kbd>y</kbd>), <code>cd</code> here, delete · <kbd>s</kbd> sort, <kbd>v</kbd> preview</td></tr>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Session logs: AI change report</td></tr>
     <tr><td><kbd>z</kbd> (manager)</td><td>Schedules for broadcast and runbooks (<kbd>Ctrl</kbd>+<kbd>A</kbd> accepts new hosts)</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Move the tab to its own terminal window</td></tr>

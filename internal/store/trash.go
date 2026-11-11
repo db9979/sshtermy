@@ -165,3 +165,21 @@ func folderPathIn(fs []domain.Folder, path string) bool {
 	}
 	return false
 }
+
+// DeleteConnectionsTrash löscht mehrere Verbindungen (Mehrfachauswahl im
+// Manager) und liefert einen gemeinsamen Papierkorb für „Rückgängig“.
+func (s *Store) DeleteConnectionsTrash(ids []string) (*Trash, error) {
+	all := &Trash{localKeys: map[string]string{}}
+	for _, id := range ids {
+		t, err := s.DeleteConnectionTrash(id)
+		if err != nil {
+			return all, err
+		}
+		all.conns = append(all.conns, t.conns...)
+		all.tunnels = append(all.tunnels, t.tunnels...)
+		for k, v := range t.localKeys {
+			all.localKeys[k] = v
+		}
+	}
+	return all, nil
+}

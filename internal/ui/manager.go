@@ -19,8 +19,10 @@ import (
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/keychain"
 	"github.com/db9979/sshtermy/internal/pwsource"
+	"github.com/db9979/sshtermy/internal/safety"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
+	"github.com/db9979/sshtermy/internal/wol"
 )
 
 type managerState struct {
@@ -34,9 +36,10 @@ type managerState struct {
 	drag      *mgrDrag
 	rows      []mgrRow // Zeilen des letzten Aufrufs von mgrRows
 	tree      *domain.TreeNode
-	memo      mgrMemo   // mgrtree.go: Zeilen, solange Daten und Filter gleich sind
-	selAt     time.Time // Auswahl zuletzt gewechselt (Einblenden, Balken)
-	selSeen   int       // Auswahl im letzten Bild
+	memo      mgrMemo         // mgrtree.go: Zeilen, solange Daten und Filter gleich sind
+	selAt     time.Time       // Auswahl zuletzt gewechselt (Einblenden, Balken)
+	selSeen   int             // Auswahl im letzten Bild
+	marked    map[string]bool // Mehrfachauswahl: IDs markierter Verbindungen (bulk.go)
 }
 
 func newManager() managerState {
@@ -52,6 +55,9 @@ func (a *App) managerKeys() [][2]string {
 	m := &a.mgr
 	if m.searching {
 		return [][2]string{{"⏎", i18n.T("fertig")}, {"↑↓", i18n.T("zur Liste")}, {"Esc", i18n.T("Suche löschen")}, {km.label(actHelp), i18n.T("Hilfe")}}
+	}
+	if ids := a.mgrMarked(); len(ids) > 0 {
+		return a.bulkKeys(len(ids))
 	}
 	rows := a.mgrRows()
 	var cur mgrRow
@@ -143,6 +149,11 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	have := m.sel < len(rows)
 	if have {
 		cur = rows[m.sel]
+	}
+	if ids := a.mgrMarked(); len(ids) > 0 {
+		if done, cmd := a.bulkKey(k.String(), ids); done {
+			return cmd
+		}
 	}
 	switch a.keys.which(k.String(), actUndo, actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
 		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll, actWorkspace, actFolderGrid, actSchedule) {
@@ -275,7 +286,12 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	case "space":
 		if have && cur.isFolder() {
 			a.toggleFolder(cur.node.Path, !cur.node.Collapsed)
+		} else if have {
+			a.mgrToggleMark(cur.conn.ID)
+			m.sel = min(len(rows)-1, m.sel+1)
 		}
+	case "*":
+		a.mgrMarkAll(rows)
 	case "esc":
 		if m.tag != "" || m.search.Value() != "" {
 			m.tag = ""
@@ -304,31 +320,11 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		if have {
-			c := cur.conn
-			tr, err := a.st.DeleteConnectionTrash(c.ID)
-			if err != nil {
-				a.flashErr(err.Error())
-				return nil
-			}
-			a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung gelöscht")
-			m.sel = max(0, m.sel-1)
-			a.offerUndo(i18n.T("„")+c.Alias+i18n.T("“ gelöscht"), tr, func() {
-				if c.Keychain {
-					sshx.ForgetKeychain(c.ID)
-				}
-			}, func() {
-				a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung wiederhergestellt")
-				a.mgr.want = "c:" + c.ID
-				a.expandTo(c.Group)
-			})
+			a.mgrDeleteConn(cur.conn)
 		}
 	case "t":
-		if have && !cur.isFolder() && cur.conn.Protocol.Raw() {
-			a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
-			return nil
-		}
 		if have && !cur.isFolder() {
-			return a.openTunnelForm(domain.Tunnel{ConnectionID: cur.conn.ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
+			return a.mgrNewTunnel(cur.conn)
 		}
 	case "s":
 		return a.openSettings()
@@ -346,6 +342,36 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// mgrDeleteConn löscht eine Verbindung in den Papierkorb (Strg+Z holt sie
+// zurück).
+func (a *App) mgrDeleteConn(c domain.Connection) {
+	tr, err := a.st.DeleteConnectionTrash(c.ID)
+	if err != nil {
+		a.flashErr(err.Error())
+		return
+	}
+	a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung gelöscht")
+	a.mgr.sel = max(0, a.mgr.sel-1)
+	a.offerUndo(i18n.T("„")+c.Alias+i18n.T("“ gelöscht"), tr, func() {
+		if c.Keychain {
+			sshx.ForgetKeychain(c.ID)
+		}
+	}, func() {
+		a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung wiederhergestellt")
+		a.mgr.want = "c:" + c.ID
+		a.expandTo(c.Group)
+	})
+}
+
+// mgrNewTunnel öffnet das Formular für einen neuen Tunnel zu c.
+func (a *App) mgrNewTunnel(c domain.Connection) tea.Cmd {
+	if c.Protocol.Raw() {
+		a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
+		return nil
+	}
+	return a.openTunnelForm(domain.Tunnel{ConnectionID: c.ID, Kind: domain.TunnelLocal, TargetHost: "127.0.0.1"})
 }
 
 func (a *App) connect(c domain.Connection) tea.Cmd {
@@ -420,8 +446,11 @@ func (a *App) viewManager() string {
 	}
 	// zweite Zeile: aktiver Filter bzw. Position
 	info := ""
+	if n := len(a.mgrMarked()); n > 0 {
+		info = s.OK.Render(fmt.Sprintf(i18n.T("  ✓ %d markiert"), n)) // vorn: bleibt lesbar, wenn die Zeile voll ist
+	}
 	if m.tag != "" {
-		info = a.z.click(s.Accent.Render(" #"+m.tag+" ×"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
+		info += a.z.click(s.Accent.Render(" #"+m.tag+" ×"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
 	}
 	if a.mgrFiltering() {
 		n := 0
@@ -478,6 +507,9 @@ func (a *App) viewManager() string {
 			c := r.conn
 			pdot, dotC := a.reachDot(c)
 			picon, iconC := a.devIcon(c)
+			if m.marked[c.ID] {
+				picon, iconC = "✓", s.T.OK // Mehrfachauswahl (bulk.go)
+			}
 			stripe, _ := a.stripe(c, nil)
 			aw := max(8, min(18-2*min(r.depth, 5), (leftW-8-len(indent))*11/20))
 			hw := max(4, leftW-8-len(indent)-aw)
@@ -512,6 +544,13 @@ func (a *App) viewManager() string {
 				return a.connect(r.conn)
 			}
 			return nil
+		}, menu: func(ms tea.Mouse) tea.Cmd {
+			if ms.Button != tea.MouseRight {
+				return nil
+			}
+			m.sel = i
+			a.modal = a.mgrMenu(r, ms.X, ms.Y)
+			return nil
 		}})
 		lb.WriteString(line + "\n")
 	}
@@ -541,115 +580,7 @@ func (a *App) viewManager() string {
 	if m.sel < len(rows) && rows[m.sel].isFolder() {
 		rb.WriteString(a.viewFolderDetails(rows[m.sel].node, rightW))
 	} else if m.sel < len(rows) {
-		c := rows[m.sel].conn
-		head := s.Accent.Render(" " + trunc(c.Alias, max(8, rightW-4)))
-		if g := c.Group; g != "" && lipgloss.Width(head)+2+len([]rune(g)) < rightW-1 {
-			head += "  " + s.Muted.Render(g)
-		}
-		if acts := a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render(i18n.T("verbinden"))) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render(i18n.T("bearbeiten"))); lipgloss.Width(head)+3+lipgloss.Width(acts) < rightW {
-			head += "   " + acts
-		}
-		rb.WriteString(head + "\n\n")
-		label := detailLabel(s, rightW)
-		textW := max(10, rightW-2-label.GetWidth())
-		row := func(k, v string) {
-			rb.WriteString(" " + label.Render(k) + s.Text.Render(ansi.Truncate(v, textW, "…")) + "\n")
-		}
-		row(i18n.T("Ziel"), c.Target())
-		row(i18n.T("Status"), a.reachText(c))
-		if sp := a.reachSpark(c.ID); sp != "" && !a.connected(c.ID) {
-			row(i18n.T("Verlauf"), sp+s.Muted.Render(i18n.T("  je Minute")))
-		}
-		a.mgrLoad(&rb, c, rightW, now)
-		if d := deviceClass(c); d != devUnknown {
-			ic, col := a.devIcon(c)
-			row(i18n.T("Gerät"), glyph(ic, col, nil)+" "+devName(d))
-		}
-		if acc := a.accentOf(c); acc != nil {
-			lbl := envLabel(envKind(c))
-			if c.Color != accentAuto || lbl == "" {
-				lbl = i18n.T(accentLabel(connAccent(c)))
-			}
-			row(i18n.T("Farbe"), glyph("▌", acc, nil)+" "+lbl)
-		}
-		auth := map[domain.AuthMethod]string{domain.AuthPassword: i18n.T("Passwort (verschlüsselt)"), domain.AuthKeyFile: "Keyfile", domain.AuthAgent: i18n.T("SSH-Agent"), domain.AuthKerberos: "Kerberos"}[c.Auth]
-		if c.Auth == domain.AuthKeyFile {
-			if c.KeyPEM.IsSet() {
-				auth += i18n.T(" (eingebettet, verschlüsselt)")
-			} else {
-				auth += " " + c.KeyPath
-			}
-		}
-		if c.Keychain && c.Auth == domain.AuthPassword {
-			auth = i18n.T("Passwort") + " · " + i18n.T(keychainName())
-		} else if c.Keychain && c.Auth == domain.AuthKeyFile {
-			auth += " · " + i18n.T("Passphrase") + " " + i18n.T(keychainName())
-		}
-		if c.Protocol.Raw() {
-			auth = i18n.T("von Hand am Gerät")
-			if c.Username != "" || c.Password.IsSet() {
-				auth = i18n.T("automatisch, sobald das Gerät fragt")
-			}
-		}
-		if c.Protocol == domain.ProtoWinRM {
-			auth = winrmAuthText(c)
-		}
-		if c.Protocol == domain.ProtoLocal {
-			if c.LocalDir != "" {
-				row(i18n.T("Startordner"), c.LocalDir)
-			}
-		} else {
-			row(i18n.T("Anmeldung"), auth)
-		}
-		if c.JumpHostID != "" {
-			row(i18n.T("Jump-Host"), a.jumpChainText(c))
-		}
-		if len(c.Tags) > 0 {
-			row("Tags", strings.Join(c.Tags, ", "))
-		}
-		if c.Profile != nil && !c.Profile.Empty() {
-			sum := c.Profile.Summary()
-			if c.Profile.Manual {
-				sum += i18n.T("  (von Hand)")
-			}
-			row("System", trunc(sum, max(10, rightW-22)))
-			if c.Profile.Notes != "" {
-				row(i18n.T("Notizen"), trunc(c.Profile.Notes, max(10, rightW-22)))
-			}
-			if n := len(c.Profile.Failed); n > 0 {
-				row(i18n.T("Gelernt"), plural(n, i18n.T("abgelehnter Befehl"), i18n.T("abgelehnte Befehle"))+i18n.T(" · schlägt die KI nicht mehr vor"))
-			}
-			if n := len(c.Profile.Learned); n > 0 {
-				last := c.Profile.Learned[n-1]
-				row(i18n.T("Korrigiert"), trunc(plural(n, i18n.T("Korrektur"), i18n.T("Korrekturen"))+" · "+last.AI+" → "+last.Fixed, max(10, rightW-22)))
-			}
-		} else {
-			row("System", s.Muted.Render(i18n.T("wird beim ersten Verbinden erkannt")))
-		}
-		if !c.LastUsed.IsZero() {
-			row(i18n.T("Zuletzt"), c.LastUsed.Format("02.01.2006 15:04"))
-		}
-		tuns := a.st.Tunnels(c.ID)
-		rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render(i18n.T("t = neuer Tunnel"))) + s.Muted.Render(i18n.T(" · Klick = bearbeiten/löschen")) + "\n")
-		if len(tuns) == 0 {
-			rb.WriteString(s.Muted.Render(i18n.T("  noch keine · z. B. Weboberfläche oder Datenbank sicher auf diesen Rechner holen")) + "\n")
-		}
-		for _, t := range tuns {
-			icon := "↔"
-			if t.IsWebService() {
-				icon = "@"
-			}
-			auto := ""
-			if t.AutoStart {
-				auto = s.OK.Render(i18n.T(" auto"))
-			}
-			t := t
-			line := fmt.Sprintf("  %s %-20s %s%s", icon, trunc(t.Name, 20), s.Muted.Render(t.Spec()), auto)
-			rb.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd { return a.openTunnelForm(t) }) + "\n")
-		}
-		cfg := a.st.LLM()
-		rb.WriteString("\n " + s.PanelTitle.Render(i18n.T("KI-Copilot")) + "\n")
-		rb.WriteString("  " + s.Muted.Render(trunc(cfg.Model+" @ "+cfg.BaseURL, max(10, rightW-3))) + "\n")
+		rb.WriteString(a.mgrConnDetails(rows[m.sel].conn, rightW, now))
 	}
 	if len(rows) == 0 && !a.mgrFiltering() {
 		rb.WriteString(a.mgrLegend(rightW))
@@ -659,6 +590,141 @@ func (a *App) viewManager() string {
 	}
 	right := frameBlock(clipLines(rb.String(), rightW), rightW, h)
 	return beside(beside(left, leftW, sep), leftW+1, right) // perf.go
+}
+
+// mgrConnDetails: rechte Spalte des Managers für eine Verbindung (Ziel,
+// Status, Anmeldung, Notiz, Tunnel, KI).
+func (a *App) mgrConnDetails(c domain.Connection, rightW int, now time.Time) string {
+	s := a.s
+	var rb strings.Builder
+	head := s.Accent.Render(" " + trunc(c.Alias, max(8, rightW-4)))
+	if g := c.Group; g != "" && lipgloss.Width(head)+2+len([]rune(g)) < rightW-1 {
+		head += "  " + s.Muted.Render(g)
+	}
+	if acts := a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render(i18n.T("verbinden"))) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render(i18n.T("bearbeiten"))); lipgloss.Width(head)+3+lipgloss.Width(acts) < rightW {
+		head += "   " + acts
+	}
+	rb.WriteString(head + "\n\n")
+	label := detailLabel(s, rightW)
+	textW := max(10, rightW-2-label.GetWidth())
+	row := func(k, v string) {
+		rb.WriteString(" " + label.Render(k) + s.Text.Render(ansi.Truncate(v, textW, "…")) + "\n")
+	}
+	row(i18n.T("Ziel"), c.Target())
+	row(i18n.T("Status"), a.reachText(c))
+	if sp := a.reachSpark(c.ID); sp != "" && !a.connected(c.ID) {
+		row(i18n.T("Verlauf"), sp+s.Muted.Render(i18n.T("  je Minute")))
+	}
+	a.mgrLoad(&rb, c, rightW, now)
+	if d := deviceClass(c); d != devUnknown {
+		ic, col := a.devIcon(c)
+		row(i18n.T("Gerät"), glyph(ic, col, nil)+" "+devName(d))
+	}
+	if acc := a.accentOf(c); acc != nil {
+		lbl := envLabel(envKind(c))
+		if c.Color != accentAuto || lbl == "" {
+			lbl = i18n.T(accentLabel(connAccent(c)))
+		}
+		row(i18n.T("Farbe"), glyph("▌", acc, nil)+" "+lbl)
+	}
+	auth := map[domain.AuthMethod]string{domain.AuthPassword: i18n.T("Passwort (verschlüsselt)"), domain.AuthKeyFile: "Keyfile", domain.AuthAgent: i18n.T("SSH-Agent"), domain.AuthKerberos: "Kerberos"}[c.Auth]
+	if c.Auth == domain.AuthKeyFile {
+		if c.KeyPEM.IsSet() {
+			auth += i18n.T(" (eingebettet, verschlüsselt)")
+		} else {
+			auth += " " + c.KeyPath
+		}
+	}
+	if c.Keychain && c.Auth == domain.AuthPassword {
+		auth = i18n.T("Passwort") + " · " + i18n.T(keychainName())
+	} else if c.Keychain && c.Auth == domain.AuthKeyFile {
+		auth += " · " + i18n.T("Passphrase") + " " + i18n.T(keychainName())
+	}
+	if c.Protocol.Raw() {
+		auth = i18n.T("von Hand am Gerät")
+		if c.Username != "" || c.Password.IsSet() {
+			auth = i18n.T("automatisch, sobald das Gerät fragt")
+		}
+	}
+	if c.Protocol == domain.ProtoWinRM {
+		auth = winrmAuthText(c)
+	}
+	if c.Protocol == domain.ProtoLocal {
+		if c.LocalDir != "" {
+			row(i18n.T("Startordner"), c.LocalDir)
+		}
+	} else {
+		row(i18n.T("Anmeldung"), auth)
+	}
+	if c.JumpHostID != "" {
+		row(i18n.T("Jump-Host"), a.jumpChainText(c))
+	}
+	if len(c.Tags) > 0 {
+		row("Tags", strings.Join(c.Tags, ", "))
+	}
+	if c.Note != "" {
+		// eigene Notiz: ganz zeigen, auf bis zu vier Zeilen umbrochen
+		for i, l := range strings.Split(ansi.Wrap(c.Note, max(10, textW), " "), "\n") {
+			if i == 4 {
+				break
+			}
+			k := ""
+			if i == 0 {
+				k = i18n.T("Notiz")
+			}
+			row(k, l)
+		}
+	}
+	if c.StartCmd != "" {
+		row(i18n.T("Startbefehl"), c.StartCmd)
+	}
+	if canWake(c) && !a.connected(c.ID) {
+		rb.WriteString(" " + label.Render(i18n.T("Aufwecken")) + a.z.click(s.Key.Render(i18n.T("Wake-on-LAN senden")), func(tea.Mouse, bool) tea.Cmd { return a.wake(c) }) + s.Muted.Render("  "+c.MAC) + "\n")
+	}
+	if c.Profile != nil && !c.Profile.Empty() {
+		sum := c.Profile.Summary()
+		if c.Profile.Manual {
+			sum += i18n.T("  (von Hand)")
+		}
+		row("System", trunc(sum, max(10, rightW-22)))
+		if c.Profile.Notes != "" {
+			row(i18n.T("Notizen"), trunc(c.Profile.Notes, max(10, rightW-22)))
+		}
+		if n := len(c.Profile.Failed); n > 0 {
+			row(i18n.T("Gelernt"), plural(n, i18n.T("abgelehnter Befehl"), i18n.T("abgelehnte Befehle"))+i18n.T(" · schlägt die KI nicht mehr vor"))
+		}
+		if n := len(c.Profile.Learned); n > 0 {
+			last := c.Profile.Learned[n-1]
+			row(i18n.T("Korrigiert"), trunc(plural(n, i18n.T("Korrektur"), i18n.T("Korrekturen"))+" · "+last.AI+" → "+last.Fixed, max(10, rightW-22)))
+		}
+	} else {
+		row("System", s.Muted.Render(i18n.T("wird beim ersten Verbinden erkannt")))
+	}
+	if !c.LastUsed.IsZero() {
+		row(i18n.T("Zuletzt"), c.LastUsed.Format("02.01.2006 15:04"))
+	}
+	tuns := a.st.Tunnels(c.ID)
+	rb.WriteString("\n " + s.PanelTitle.Foreground(s.T.Accent).Render("Tunnel") + "  " + a.keyZone("t", s.Muted.Render(i18n.T("t = neuer Tunnel"))) + s.Muted.Render(i18n.T(" · Klick = bearbeiten/löschen")) + "\n")
+	if len(tuns) == 0 {
+		rb.WriteString(s.Muted.Render(i18n.T("  noch keine · z. B. Weboberfläche oder Datenbank sicher auf diesen Rechner holen")) + "\n")
+	}
+	for _, t := range tuns {
+		icon := "↔"
+		if t.IsWebService() {
+			icon = "@"
+		}
+		auto := ""
+		if t.AutoStart {
+			auto = s.OK.Render(i18n.T(" auto"))
+		}
+		t := t
+		line := fmt.Sprintf("  %s %-20s %s%s", icon, trunc(t.Name, 20), s.Muted.Render(t.Spec()), auto)
+		rb.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd { return a.openTunnelForm(t) }) + "\n")
+	}
+	cfg := a.st.LLM()
+	rb.WriteString("\n " + s.PanelTitle.Render(i18n.T("KI-Copilot")) + "\n")
+	rb.WriteString("  " + s.Muted.Render(trunc(cfg.Model+" @ "+cfg.BaseURL, max(10, rightW-3))) + "\n")
+	return rb.String()
 }
 
 // mgrLoad: Auslastung einer verbundenen Verbindung (aus der Host-Übersicht
@@ -813,6 +879,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		return "▸ " + v
 	}, func() tea.Cmd { return a.pickFolderField() }, i18n.T("Auswahl mit Suche; neuen Namen tippen legt einen Ordner an („A / B“ verschachtelt)"))
 	f.text("tags", "Tags", strings.Join(c.Tags, ", "), i18n.T("durch Komma getrennt, z. B. prod, linux · im Manager filtern mit #"))
+	f.text("note", i18n.T("Notiz"), c.Note, i18n.T("nur für dich, z. B. Ansprechpartner, Wartungsfenster, Standort · im Manager sichtbar und über / zu finden · geht nie an die KI"))
 	f.choice("color", i18n.T("Farbe"), accentLabels(), accentLabel(c.Color), i18n.T("Rahmen und Name im Tab, Statuszeile, Liste · automatisch: prod rot, test grün, labor blau, sonst je Tab eine eigene Farbe (nie Rot)")).swatch = func(t Theme, opt string) color.Color {
 		if id := accentFromLabel(opt); id != accentAuto && id != accentNone {
 			return accentColor(t, id)
@@ -854,6 +921,18 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 	f.text("otpsrc", i18n.T("2FA-Code aus"), c.OTPSource,
 		i18n.T("für Server, die nach einem Einmalcode fragen · op://Tresor/Eintrag · bw:Eintrag · keepassxc:… · leer = nachfragen")).hidden = raw
 	f.get("otpsrc").in.Placeholder = i18n.T("leer = beim Verbinden fragen")
+	f.text("startcmd", i18n.T("Startbefehl"), c.StartCmd,
+		i18n.T("wird nach dem Anmelden einmal sichtbar eingetippt, z. B. „cd /srv/app“ · nicht zusammen mit einer festen Sitzung · gefährliche Befehle werden abgelehnt")).hidden = func(f *form) bool {
+		return protoFromLabel(f.sel("proto")) == domain.ProtoLocal
+	}
+	f.get("startcmd").in.Placeholder = i18n.T("keiner")
+	f.text("mac", i18n.T("MAC-Adresse"), c.MAC,
+		i18n.T("für Wake-on-LAN (Aufwecken aus dem Manager) · leer = sshTermy merkt sie sich beim Verbinden, wenn es sie findet")).hidden = func(f *form) bool {
+		p := protoFromLabel(f.sel("proto"))
+		return p == domain.ProtoLocal || p == domain.ProtoSerial
+	}
+	f.get("mac").in.Placeholder = "aa:bb:cc:dd:ee:ff"
+	f.get("note").in.Placeholder = i18n.T("keine")
 	f.get("tags").in.Placeholder = i18n.T("keine")
 	f.get("p_os").in.Placeholder = i18n.T("noch nicht erkannt · wird beim Verbinden ermittelt")
 	f.get("p_notes").in.Placeholder = i18n.T("keine · z. B. „VLAN 99 = Management, nie reload“")
@@ -1012,6 +1091,8 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveMonitor()
 	case scrFolderForm:
 		err = a.saveFolderForm()
+	case scrBulkForm:
+		err = a.saveBulkForm()
 	case scrHighlightForm:
 		err = a.saveHighlight()
 	case scrScheduleForm:
@@ -1137,6 +1218,26 @@ func (a *App) connFromForm() (domain.Connection, error) {
 			c.Tags = append(c.Tags, t)
 		}
 	}
+	c.Note = strings.TrimSpace(f.str("note"))
+	c.StartCmd, c.MAC = "", ""
+	if c.Protocol != domain.ProtoLocal {
+		c.StartCmd = strings.TrimSpace(f.str("startcmd"))
+		if fs := safety.Check(c.StartCmd, ""); len(fs) > 0 {
+			return c, fmt.Errorf(i18n.T("Startbefehl abgelehnt (%s): Er würde ohne Rückfrage laufen. Bitte als Schnellbefehl anlegen."), fs[0].Reason)
+		}
+		if strings.ContainsAny(c.StartCmd, "\r\n") {
+			return c, errors.New(i18n.T("Startbefehl: nur eine Zeile"))
+		}
+	}
+	if !c.Protocol.NoHost() {
+		if m := strings.TrimSpace(f.str("mac")); m != "" {
+			hw, err := wol.ParseMAC(m)
+			if err != nil {
+				return c, fmt.Errorf(i18n.T("MAC-Adresse „%s“ ist ungültig (Beispiel: aa:bb:cc:dd:ee:ff)"), m)
+			}
+			c.MAC = hw.String()
+		}
+	}
 	c.Color = accentFromLabel(f.sel("color"))
 	c.GuardOff = !f.flag("guard")
 	c.Device = deviceFromLabel(f.sel("device"))
@@ -1255,6 +1356,10 @@ func (a *App) viewForm() string {
 		return ""
 	}
 	w := min(100, a.w-4)
+	a.form.maxH = a.h - 5 // Fenster ohne Kopf- und Fußzeile, Rahmen und die Leerzeile am Ende
+	if a.scr == scrSettings {
+		a.form.maxH = 0 // darunter steht noch der KI-Status
+	}
 	body := a.form.view(a.s, w-4, &a.z)
 	if a.scr == scrSettings {
 		body += a.viewLLMExtra(w - 4)

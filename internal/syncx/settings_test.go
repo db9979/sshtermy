@@ -81,10 +81,11 @@ func TestSettingsSyncNerdNeedsProbe(t *testing.T) {
 // scheitern: dann in SharedPrefs/SharedMore eintragen oder in localSettings
 // und Settings.SyncedPart.
 var localSettings = map[string]bool{
-	"UseDPAPI": true, "NoMouse": true, "LastVersion": true, "NerdFont": true,
+	"UseDPAPI": true, "NoMouse": true, "LastVersion": true, "NerdFont": true, "UpdateWaitH": true,
 	"LastLayout": true, "Editor": true, "KeysHere": true, "Debug": true, "Audit": true, "MCP": true, "SyslogPort": true,
 	"SyslogAny":      true,
 	"CmdSetApproved": true,
+	"FilesNoPeek":    true, // Vorschau im Dateibrowser: Platz je Bildschirm
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der

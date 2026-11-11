@@ -103,6 +103,15 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		return cmd
 	}
 
+	// Tab mit gedrückter Taste ziehen: Reihenfolge ändern (tabs.go)
+	if a.tabDrag != nil && !isClick && !isWheel {
+		if a.scr != scrTerminal || a.modal != nil || a.pal != nil || a.pick != nil {
+			a.tabDrag = nil
+		} else {
+			return a.tabDragMouse(msg)
+		}
+	}
+
 	// Terminalfläche zuerst: Markieren und Weiterleiten dürfen nicht an
 	// Zonen hängen bleiben (z. B. beim Ziehen über den Rand hinaus).
 	s := a.current()
@@ -168,6 +177,14 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	if isClick && a.modal != nil && (a.modal.kind == mMenu) && m.Button != tea.MouseLeft {
 		a.modal = nil
 		return nil
+	}
+	// Dateien: Maustaste „Zurück“ = Betrachter zu bzw. eine Ebene hoch
+	if isClick && m.Button == tea.MouseBackward && a.scr == scrTerminal && s != nil && s.files.open && a.modal == nil && a.pal == nil && a.pick == nil {
+		return a.filesBack(s, m.X, m.Y)
+	}
+	// Markieren im Datei-Betrachter
+	if a.scr == scrTerminal && s != nil && s.files.open && s.files.view != nil && s.files.view.sel != nil && s.files.view.sel.dragging && !isClick {
+		return a.fileViewDrag(s, msg)
 	}
 	// Ziehen im Dateibrowser: Einträge auf die andere Seite kopieren
 	if a.scr == scrTerminal && s != nil && s.files.open && s.files.drag != nil && a.modal == nil && a.pal == nil && a.pick == nil && !isClick {

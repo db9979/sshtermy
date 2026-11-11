@@ -45,7 +45,7 @@ const (
 )
 
 var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgQuick: "SCHNELLBEFEHLE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN", pgConns: "VERBINDUNGEN",
-	pgSetBehave: "VERHALTEN", pgSetSafe: "SICHERHEIT", pgSetLook: "AUSSEHEN & SPRACHE", pgSetSetup: "EINRICHTEN", pgHelp: "HILFE & INFO",
+	pgSetBehave: "ALLGEMEIN", pgSetSafe: "SICHERHEIT", pgSetLook: "AUSSEHEN", pgSetSetup: "EINRICHTEN", pgHelp: "HILFE & INFO",
 	pgTop: "HÄUFIG", pgAreas: "ALLE AKTIONEN"}
 
 type palItem struct {
@@ -114,26 +114,107 @@ func (a *App) paletteItems() []palItem {
 	ql := strings.ToLower(q)
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
 	if m := a.pal.menu; m != "" && !palIsArea(m) {
-		// Ohne Text: nur die Einträge dieser Ebene. Mit Text: Treffer auch
-		// aus den Unterordnern und die Einzelwerte hinter Durchschalt-Einträgen.
-		var items []palItem
-		for _, x := range a.palMenuItems() {
-			switch {
-			case ql == "":
-				if x.menu == m && !x.hidden {
-					items = append(items, x)
-				}
-			case x.open == "" && (x.menu == m || strings.HasPrefix(x.menu, m+"/")) && x.matches(match):
-				if x.menu != m {
-					x.sub = "· " + i18n.T(palMenuLabel(x.menu))
-				}
-				items = append(items, x)
-			}
-		}
-		return items
+		return a.palSubmenu(m, ql, match)
 	}
 	s := a.current()
 	inTerm := a.scr == scrTerminal && s != nil && s.state == stConnected
+	inMgr := a.scr == scrManager
+	items := a.palDirect(q, s, inTerm, match)
+	// Aktionen: jede gehört zu einem Bereich (palAreas). Ohne Text zeigt die
+	// Übersicht nur die häufigen (top) und je Bereich einen Ordner; mit Text
+	// kommen alle Treffer direkt.
+	var actions []palItem
+	add := func(area string, its ...palItem) {
+		for _, it := range its {
+			if it.area == "" {
+				it.area = area
+			}
+			actions = append(actions, it)
+		}
+	}
+	if inTerm {
+		a.palActsSession(add, s)
+	}
+	a.palActsGlobal(add, inMgr)
+	a.palActsFind(add, s, inTerm, inMgr)
+	a.palActsTerminal(add, s, inTerm)
+	if inMgr {
+		add("tabs", palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }})
+	}
+	add("", palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
+	actions = a.simpleHide(actions) // einfacher Modus (simple.go)
+	for i := range actions {
+		actions[i].group = pgAction
+	}
+	for i := range items {
+		if g := items[i].group; g == pgQuick || g == pgRunbook || g == pgTunnel {
+			items[i].area = "quick"
+		}
+	}
+	if area := a.pal.menu; area != "" {
+		// Ein Bereich ist offen: seine Einträge, gefiltert nach dem Text.
+		var out []palItem
+		for _, x := range append(items, actions...) {
+			if x.area == area && (!x.hidden || ql != "") && x.matches(match) {
+				x.top = false
+				out = append(out, x)
+			}
+		}
+		return out
+	}
+	if ql == "" {
+		return a.palOverview(items, actions)
+	}
+	for _, x := range actions {
+		if x.matches(match) {
+			items = append(items, x)
+		}
+	}
+	// Ordner (Bereiche, Einstellungen, Hilfe) mit passendem Namen, dazu die
+	// Treffer aus Einstellungen und Hilfe (mit dem Untermenü grau dahinter).
+	for _, f := range a.palFolders(append(items, actions...)) {
+		if match(f.label + " " + f.keys) {
+			items = append(items, f)
+		}
+	}
+	for _, x := range a.palMenuItems() {
+		if x.open == "" && x.matches(match) {
+			x.sub = "· " + palMenuPath(x.menu)
+			x.group = pgAction
+			items = append(items, x)
+		}
+	}
+	return items
+}
+
+// palAdd hängt Aktionen eines Bereichs an die Liste der Palette.
+type palAdd func(area string, its ...palItem)
+
+// palSubmenu: ein Untermenü (Einstellungen, Hilfe) ist offen.
+func (a *App) palSubmenu(m, ql string, match func(string) bool) []palItem {
+	// Ohne Text: nur die Einträge dieser Ebene. Mit Text: Treffer auch
+	// aus den Unterordnern und die Einzelwerte hinter Durchschalt-Einträgen.
+	var items []palItem
+	for _, x := range a.palMenuItems() {
+		switch {
+		case ql == "":
+			if x.menu == m && !x.hidden {
+				items = append(items, x)
+			}
+		case x.open == "" && (x.menu == m || strings.HasPrefix(x.menu, m+"/")) && x.matches(match):
+			if x.menu != m {
+				x.sub = "· " + i18n.T(palMenuLabel(x.menu))
+			}
+			items = append(items, x)
+		}
+	}
+	return items
+}
+
+// palDirect: Einträge, die sich aus dem getippten Text und der aktuellen
+// Sitzung ergeben (verbinden, KI, Vorschläge, Schnellbefehle, Runbooks,
+// Tunnel, Verbindungen).
+func (a *App) palDirect(q string, s *session, inTerm bool, match func(string) bool) []palItem {
 	var items []palItem
 	quick, quickFirst := a.quickItems(q)
 	if quickFirst {
@@ -231,74 +312,81 @@ func (a *App) paletteItems() []palItem {
 		items = append(items, quick...)
 	}
 	items = append(items, a.palConnItems(q)...)
-	// Aktionen: jede gehört zu einem Bereich (palAreas). Ohne Text zeigt die
-	// Übersicht nur die häufigen (top) und je Bereich einen Ordner; mit Text
-	// kommen alle Treffer direkt.
-	var actions []palItem
-	add := func(area string, its ...palItem) {
-		for _, it := range its {
-			if it.area == "" {
-				it.area = area
+	return items
+}
+
+// palActsSession: Aktionen der verbundenen Sitzung, die oben stehen.
+func (a *App) palActsSession(add palAdd, s *session) {
+	add("ai",
+		palItem{icon: ic("goal"), label: i18n.T("Ziel-Modus öffnen"), hint: a.keys.label(actGoal), top: true, run: func() tea.Cmd {
+			withPanel(s, panelGoal)
+			a.resize(s)
+			return a.panelOpened(s)
+		}},
+		palItem{icon: ic("goal"), label: i18n.T("Agent-Modus öffnen (läuft selbstständig)"), pro: true, run: func() tea.Cmd {
+			withPanel(s, panelGoal)
+			a.resize(s)
+			cmd := a.panelOpened(s)
+			if !s.goal.active {
+				s.goal.auto = true
 			}
-			actions = append(actions, it)
+			return cmd
+		}},
+		palItem{icon: ic("ai"), label: i18n.T("KI fragen"), hint: a.keys.label(actAsk), run: func() tea.Cmd { withPanel(s, panelAsk); a.resize(s); return a.panelOpened(s) }},
+		palItem{area: "session", icon: ic("open"), label: i18n.T("Dateien (SFTP)"), hint: a.keys.label(actFiles), run: func() tea.Cmd { return a.toggleFiles(s) }},
+		palItem{area: "session", icon: ic("host"), label: i18n.T("Host-Übersicht"), hint: a.keys.label(actHost), top: true, run: func() tea.Cmd {
+			withPanel(s, panelHost)
+			a.resize(s)
+			return a.panelOpened(s)
+		}},
+		palItem{icon: ic("ai"), label: i18n.T("KI-Begleiter: Stufe wechseln"), hint: companionLevelLabel(a.compLevel()) + " · " + a.keys.label(actCompanion),
+			keys: "begleiter companion mitlesen kommentar coach", run: func() tea.Cmd { return a.cycleCompanion(1) }},
+		palItem{icon: ic("ai"), label: i18n.T("Begleiter-Leiste"), pro: true, hint: a.keys.label(actCompanionBar),
+			keys: "begleiter companion leiste feed", run: func() tea.Cmd { return a.toggleCompanionBar(s) }},
+		palItem{icon: ic("ai"), label: i18n.T("Begleiter: Rückblick dieser Sitzung"), pro: true, hint: i18n.T("merken, Runbook"),
+			keys: "begleiter companion rückblick recap zusammenfassung runbook", run: func() tea.Cmd { return a.openRecap(s, false, nil) }})
+	add("quick",
+		palItem{icon: ic("tunnel"), label: i18n.T("Tunnel-Panel"), hint: a.keys.label(actTunnels), run: func() tea.Cmd {
+			withPanel(s, panelTunnels)
+			a.resize(s)
+			return nil
+		}},
+		palItem{icon: ic("quick"), label: i18n.T("Schnellbefehle bearbeiten"), hint: i18n.T("Liste"), run: func() tea.Cmd { return a.editQuickFor(s) }})
+}
+
+// palActsGlobal: Aktionen, die es überall gibt (Verbindungen, mehrere
+// Hosts, Netzwerk, Team).
+func (a *App) palActsGlobal(add palAdd, inMgr bool) {
+	mk := func(k string) string { // Manager-Tasten nur im Manager anzeigen
+		if inMgr {
+			return k
 		}
-	}
-	if inTerm {
-		add("session",
-			palItem{icon: ic("goal"), label: i18n.T("Ziel-Modus öffnen"), hint: a.keys.label(actGoal), top: true, run: func() tea.Cmd {
-				withPanel(s, panelGoal)
-				a.resize(s)
-				return a.panelOpened(s)
-			}},
-			palItem{icon: ic("goal"), label: i18n.T("Agent-Modus öffnen (läuft selbstständig)"), pro: true, run: func() tea.Cmd {
-				withPanel(s, panelGoal)
-				a.resize(s)
-				cmd := a.panelOpened(s)
-				if !s.goal.active {
-					s.goal.auto = true
-				}
-				return cmd
-			}},
-			palItem{icon: ic("host"), label: i18n.T("Host-Übersicht"), hint: a.keys.label(actHost), top: true, run: func() tea.Cmd {
-				withPanel(s, panelHost)
-				a.resize(s)
-				return a.panelOpened(s)
-			}},
-			palItem{icon: ic("errors"), label: i18n.T("Log-Blick: Auffälligkeiten in den Logs"), hint: a.keys.label(actLogScan), top: true,
-				keys: "logs log journal journalctl syslog eventlog ereignis ereignisanzeige auffälligkeiten fehler show logging", run: func() tea.Cmd { return a.openLogScan(s) }},
-			palItem{icon: ic("ai"), label: i18n.T("KI-Begleiter: Stufe wechseln"), hint: companionLevelLabel(a.compLevel()) + " · " + a.keys.label(actCompanion),
-				keys: "begleiter companion mitlesen kommentar coach", run: func() tea.Cmd { return a.cycleCompanion(1) }},
-			palItem{icon: ic("ai"), label: i18n.T("Begleiter-Leiste"), pro: true, hint: a.keys.label(actCompanionBar),
-				keys: "begleiter companion leiste feed", run: func() tea.Cmd { return a.toggleCompanionBar(s) }},
-			palItem{icon: ic("ai"), label: i18n.T("Begleiter: Rückblick dieser Sitzung"), pro: true, hint: i18n.T("merken, Runbook"),
-				keys: "begleiter companion rückblick recap zusammenfassung runbook", run: func() tea.Cmd { return a.openRecap(s, false, nil) }})
-		add("quick",
-			palItem{icon: ic("tunnel"), label: i18n.T("Tunnel-Panel"), hint: a.keys.label(actTunnels), run: func() tea.Cmd {
-				withPanel(s, panelTunnels)
-				a.resize(s)
-				return nil
-			}},
-			palItem{icon: ic("quick"), label: i18n.T("Schnellbefehle bearbeiten"), hint: i18n.T("Liste"), run: func() tea.Cmd { return a.editQuickFor(s) }})
+		return ""
 	}
 	if a.restartPending != "" {
 		add("", palItem{icon: ic("restart"), label: i18n.T("Neu starten (v") + a.restartPending + i18n.T(" aktivieren)"), hint: "Update", top: true, run: func() tea.Cmd { return a.askRestart() }})
 	}
-	inMgr := a.scr == scrManager
 	add("conns",
-		palItem{icon: ic("manager"), label: i18n.T("Verbindungs-Manager"), hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }},
-		palItem{icon: ic("new"), label: i18n.T("Neue Verbindung"), hint: "n", top: inMgr, run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
-		palItem{icon: ic("sshkey"), label: i18n.T("SSH-Schlüssel erzeugen / auf den Server übertragen"), hint: a.keys.label(actSSHKey), run: func() tea.Cmd {
+		palItem{icon: ic("new"), label: i18n.T("Neue Verbindung"), hint: mk("n"), top: inMgr, run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		palItem{icon: ic("sshkey"), label: i18n.T("SSH-Schlüssel erzeugen / auf den Server übertragen"), hint: mk(a.keys.label(actSSHKey)), run: func() tea.Cmd {
 			if c, ok := a.sshKeyTarget(); ok {
 				return a.openSSHKeyForm(c)
 			}
 			a.flash(i18n.T("Erst eine Verbindung im Manager wählen oder verbinden"))
 			return nil
-		}},
-		palItem{icon: ic("logs"), label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: "l", top: inMgr, run: func() tea.Cmd { return a.openLogs() }})
+		}})
+	if !inMgr {
+		add("conns", palItem{icon: ic("manager"), label: i18n.T("Verbindungs-Manager"), hint: a.keys.label(actManager), run: func() tea.Cmd { a.scr = scrManager; return nil }})
+	}
+	add("conns", a.palIOItems(inMgr)...)
 	if inMgr {
+		if c, ok := a.selectedConn(); ok && !c.Protocol.NoHost() && c.JumpHostID == "" && !a.connected(c.ID) {
+			add("conns", palItem{icon: ic("connect"), label: i18n.F("%s aufwecken (Wake-on-LAN)", c.Alias), hint: orDefault(c.MAC, i18n.T("MAC fehlt")), run: func() tea.Cmd { return a.wake(c) }})
+		}
 		for _, it := range a.localPalette() {
 			it.top = true
-			add("conns", it)
+			it.label = i18n.T("Lokale Shell in neuem Tab")
+			add("tabs", it)
 		}
 	}
 	if a.st.SyncConfig().Enabled() {
@@ -307,18 +395,10 @@ func (a *App) paletteItems() []palItem {
 			return a.runSync()
 		}})
 	}
-	add("multi",
-		palItem{icon: ic("broadcast"), label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: a.keys.label(actBroadcast), top: inMgr, run: func() tea.Cmd { return a.openBroadcast() }},
-		palItem{icon: ic("scan"), label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: a.keys.label(actScan), top: inMgr, run: func() tea.Cmd { return a.openScan() }},
-		palItem{icon: ic("runbook"), label: i18n.T("Zeitpläne: Broadcast/Runbook nach Uhrzeit"), hint: a.keys.label(actSchedule), run: func() tea.Cmd { return a.openSchedules() }},
-		palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: Logs aller Hosts im Ordner …"), hint: i18n.T("Logs"), top: inMgr,
-			keys: "ordner scan folder logs log blick alle hosts auffälligkeiten journal eventlog", run: func() tea.Cmd { return a.openFolderScan() }},
-		palItem{icon: ic("errors"), label: a.watchMenuLabel(), hint: watchLabel(a.watchLevel()),
-			keys: "logwache log watch syslog alarm meldungen journal überwachen", run: func() tea.Cmd { return a.openWatchList() }})
-	if len(a.lfold.hosts) > 0 {
-		add("multi", palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: letztes Ergebnis"), hint: a.lfold.folder,
-			keys: "ordner scan ergebnis folder logs", run: func() tea.Cmd { a.showFolderScan(); return nil }})
-	}
+	add("net",
+		palItem{icon: ic("broadcast"), label: i18n.T("Broadcast: Befehl auf mehreren Hosts"), hint: mk(a.keys.label(actBroadcast)), top: inMgr, run: func() tea.Cmd { return a.openBroadcast() }},
+		palItem{icon: ic("runbook"), label: i18n.T("Zeitpläne: Broadcast/Runbook nach Uhrzeit"), hint: mk(a.keys.label(actSchedule)), run: func() tea.Cmd { return a.openSchedules() }},
+		palItem{icon: ic("scan"), label: i18n.T("Netzwerk-Scan: SSH-Geräte finden"), hint: mk(a.keys.label(actScan)), top: inMgr, run: func() tea.Cmd { return a.openScan() }})
 	add("net",
 		palItem{icon: ic("scan"), label: i18n.T("Gerät finden: MAC/IP → Switch-Port …"), hint: i18n.T("Switches"),
 			keys: "mac ip port vlan switch finden suchen wo hängt locate find", run: func() tea.Cmd { return a.askNetFind() }},
@@ -330,6 +410,44 @@ func (a *App) paletteItems() []palItem {
 		palItem{icon: ic("team"), label: i18n.T("Mit dem Team teilen (verschlüsselt, ohne Passwörter)"), hint: "Team", run: func() tea.Cmd { a.scr = scrManager; return a.openTeamShare() }},
 		palItem{icon: ic("team"), label: i18n.T("Team-Paket übernehmen"), hint: "Team", run: func() tea.Cmd { return a.openTeamTake() }},
 		palItem{icon: ic("team"), label: i18n.T("Team-Ordner (veröffentlicht / abonniert)"), hint: "Team", run: func() tea.Cmd { return a.openTeamLinks() }})
+}
+
+// palActsFind: Bereich „Suchen & Logs“: die Suchen im Verlauf, Log-Blick,
+// Sitzungsprotokolle, Ordner-Scan und Logwache.
+func (a *App) palActsFind(add palAdd, s *session, inTerm, inMgr bool) {
+	if a.scr == scrTerminal && s != nil {
+		add("find",
+			palItem{icon: ic("search"), label: i18n.T("Im Verlauf suchen"), hint: "Strg+F", top: true, run: func() tea.Cmd { return a.openSearch(s) }},
+			palItem{icon: ic("search"), label: i18n.T("In allen Tabs suchen"), hint: a.keys.label(actSearchAll), keys: "suche find grep verlauf alle tabs", run: func() tea.Cmd { return a.openSearchAll() }},
+			palItem{icon: ic("errors"), label: i18n.T("Fehlerzeilen im Verlauf zeigen"), hint: i18n.T("Strg+F Strg+E"), run: func() tea.Cmd {
+				cmd := a.openSearch(s)
+				s.search.errors, s.search.list = true, true
+				a.refreshSearch(s, true)
+				return cmd
+			}})
+	}
+	if inTerm {
+		add("find", palItem{icon: ic("errors"), label: i18n.T("Log-Blick: Auffälligkeiten in den Logs"), hint: a.keys.label(actLogScan), top: true,
+			keys: "logs log journal journalctl syslog eventlog ereignis ereignisanzeige auffälligkeiten fehler show logging", run: func() tea.Cmd { return a.openLogScan(s) }})
+	}
+	logsKey := ""
+	if inMgr {
+		logsKey = "l"
+	}
+	add("find",
+		palItem{icon: ic("logs"), label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: logsKey, top: inMgr, run: func() tea.Cmd { return a.openLogs() }},
+		palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: Logs aller Hosts im Ordner …"), hint: i18n.T("Logs"), top: inMgr,
+			keys: "ordner scan folder logs log blick alle hosts auffälligkeiten journal eventlog", run: func() tea.Cmd { return a.openFolderScan() }})
+	if len(a.lfold.hosts) > 0 {
+		add("find", palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: letztes Ergebnis"), hint: a.lfold.folder,
+			keys: "ordner scan ergebnis folder logs", run: func() tea.Cmd { a.showFolderScan(); return nil }})
+	}
+	add("find", palItem{icon: ic("errors"), label: a.watchMenuLabel(), hint: watchLabel(a.watchLevel()),
+		keys: "logwache log watch syslog alarm meldungen journal überwachen", run: func() tea.Cmd { return a.openWatchList() }})
+}
+
+// palActsTerminal: weitere Aktionen der Sitzung, Ansicht und Tabs.
+func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 	if inTerm {
 		if s.isSerial() && s.state == stConnected {
 			add("session", palItem{icon: ic("break"), label: i18n.T("Break senden (serielle Konsole)"), hint: i18n.T("Konsole"), run: func() tea.Cmd { return a.sendBreak(s) }})
@@ -368,16 +486,17 @@ func (a *App) paletteItems() []palItem {
 		}
 	}
 	if a.scr == scrTerminal && s != nil {
-		add("session",
-			palItem{icon: ic("search"), label: i18n.T("Im Verlauf suchen"), hint: "Strg+F", top: true, run: func() tea.Cmd { return a.openSearch(s) }},
-			palItem{icon: ic("errors"), label: i18n.T("Fehlerzeilen im Verlauf zeigen"), hint: i18n.T("Strg+F Strg+E"), run: func() tea.Cmd {
-				cmd := a.openSearch(s)
-				s.search.errors, s.search.list = true, true
-				a.refreshSearch(s, true)
-				return cmd
-			}})
-		add("view", palItem{icon: ic("split"), label: i18n.T("Aufteilung wählen …"), hint: a.keys.label(actSplit), keys: "split teilen layout", top: true,
+		add("tabs", palItem{icon: ic("split"), label: i18n.T("Aufteilung wählen …"), hint: a.keys.label(actSplit), keys: "split teilen layout", top: true,
 			run: func() tea.Cmd { return a.openLayout() }})
+		cur := 0
+		for i, m := range layoutOrder {
+			if m == a.split {
+				cur = i
+			}
+		}
+		add("tabs", palItem{icon: ic("split"), label: i18n.T("Aufteilung"), hint: layoutOrder[cur].label(), keep: true,
+			cycle: func(d int) tea.Cmd { a.setSplit(layoutOrder[cycleIndex(cur, len(layoutOrder), d)]); return nil },
+			run:   func() tea.Cmd { a.setSplit(layoutOrder[cycleIndex(cur, len(layoutOrder), 1)]); return nil }})
 		for _, m := range layoutOrder {
 			if m == a.split {
 				continue
@@ -387,26 +506,26 @@ func (a *App) paletteItems() []palItem {
 			if m == splitOff {
 				label = i18n.T("Ansicht nicht mehr teilen")
 			}
-			add("view", palItem{icon: ic("split"), label: label, hint: a.keys.label(actSplit), run: func() tea.Cmd { a.setSplit(m); return nil }})
+			add("tabs", palItem{icon: ic("split"), label: label, hidden: true, run: func() tea.Cmd { a.setSplit(m); return nil }})
 		}
 		if a.split != splitOff {
 			zl := i18n.T("Bereich zoomen (ganzes Fenster)")
 			if a.zoom {
 				zl = i18n.T("Zoom beenden (alle Bereiche zeigen)")
 			}
-			add("view",
+			add("tabs",
 				palItem{icon: ic("split"), label: zl, hint: a.keys.label(actZoom), run: func() tea.Cmd { a.toggleZoom(); return nil }},
 				palItem{icon: ic("split"), label: i18n.T("Alle Bereiche gleich groß"), hint: "Strg+T =", run: func() tea.Cmd { a.equalize(); return nil }})
 		}
-		add("view",
-			palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }},
+		add("tabs",
+			palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }},
 			palItem{icon: ic("split"), label: i18n.T("Ansicht als Arbeitsplatz speichern"), keys: "workspace save", run: func() tea.Cmd { return a.saveWorkspaceAsk() }})
 		if a.split != splitOff {
 			label := i18n.T("Eingabe an alle geteilten Bereiche: einschalten")
 			if a.syncIn {
 				label = i18n.T("Eingabe an alle geteilten Bereiche: ausschalten")
 			}
-			add("view", palItem{icon: ic("broadcast"), label: label, hint: a.keys.label(actSyncInput), run: func() tea.Cmd { a.toggleSyncInput(); return nil }})
+			add("tabs", palItem{icon: ic("broadcast"), label: label, hint: a.keys.label(actSyncInput), run: func() tea.Cmd { a.toggleSyncInput(); return nil }})
 		}
 		for _, it := range a.persistPalette(s) {
 			it.pro = true
@@ -427,53 +546,6 @@ func (a *App) paletteItems() []palItem {
 			palItem{icon: ic("tabs"), label: i18n.T("Tab duplizieren"), hint: trunc(s.conn.Alias, 16), run: func() tea.Cmd { return a.duplicateTab(s) }},
 			palItem{icon: ic("close"), label: i18n.T("Tab schließen"), hint: a.keys.label(actCloseTab), run: func() tea.Cmd { return a.closeTabAsk(s, nil) }})
 	}
-	if inMgr {
-		add("view", palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }})
-	}
-	add("", palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
-	actions = a.simpleHide(actions) // einfacher Modus (simple.go)
-	for i := range actions {
-		actions[i].group = pgAction
-	}
-	for i := range items {
-		if g := items[i].group; g == pgQuick || g == pgRunbook || g == pgTunnel {
-			items[i].area = "quick"
-		}
-	}
-	if area := a.pal.menu; area != "" {
-		// Ein Bereich ist offen: seine Einträge, gefiltert nach dem Text.
-		var out []palItem
-		for _, x := range append(items, actions...) {
-			if x.area == area && (!x.hidden || ql != "") && x.matches(match) {
-				x.top = false
-				out = append(out, x)
-			}
-		}
-		return out
-	}
-	if ql == "" {
-		return a.palOverview(items, actions)
-	}
-	for _, x := range actions {
-		if x.matches(match) {
-			items = append(items, x)
-		}
-	}
-	// Ordner (Bereiche, Einstellungen, Hilfe) mit passendem Namen, dazu die
-	// Treffer aus Einstellungen und Hilfe (mit dem Untermenü grau dahinter).
-	for _, f := range a.palFolders(append(items, actions...)) {
-		if match(f.label + " " + f.keys) {
-			items = append(items, f)
-		}
-	}
-	for _, x := range a.palMenuItems() {
-		if x.open == "" && x.matches(match) {
-			x.sub = "· " + palMenuPath(x.menu)
-			x.group = pgAction
-			items = append(items, x)
-		}
-	}
-	return items
 }
 
 // ---------------------------------------------------------------- Untermenüs
@@ -491,13 +563,13 @@ var palMenus = []palMenu{
 // in der Palette; die Einträge darin tragen palItem.area.
 var palAreas = []palMenu{
 	{"quick", "quick", "Schnellbefehle & Tunnel", "Befehle, Runbooks, Tunnel", "schnellbefehle quick runbook tunnel"},
-	{"session", "host", "Diese Sitzung", "Agent, Container, Aufnahme, Export", "sitzung session"},
-	{"tabs", "tabs", "Tabs & Fenster", "neu, lokal, umbenennen, abtrennen", "tabs fenster window"},
-	{"view", "split", "Ansicht & Aufteilung", "teilen, Zoom, Arbeitsplätze", "ansicht aufteilung split view layout"},
-	{"multi", "broadcast", "Mehrere Hosts", "Broadcast, Zeitpläne, Scan", "mehrere hosts broadcast multi"},
-	{"net", "scan", "Netzwerk & Switches", "Gerät finden, Topologie", "netzwerk network switch"},
+	{"ai", "ai", "KI", "Ziel, Agent, Frage, Vorgang, Begleiter", "ki ai"},
+	{"session", "host", "Diese Sitzung", "Host, Dateien, Container, Aufnahme", "sitzung session"},
+	{"find", "search", "Suchen & Logs", "Verlauf, alle Tabs, Log-Blick, Protokolle", "suchen logs"},
+	{"tabs", "tabs", "Tabs & Ansicht", "neu, teilen, Zoom, Arbeitsplätze", "tabs fenster ansicht split"},
+	{"net", "broadcast", "Mehrere Hosts & Netzwerk", "Broadcast, Scan, Zeitpläne, Switches", "mehrere hosts netzwerk"},
 	{"team", "team", "Team & Teilen", "live teilen, Team-Ordner", "team teilen share"},
-	{"conns", "manager", "Verbindungen & Schlüssel", "Manager, neu, SSH-Key, Protokolle", "verbindungen connections schlüssel keys"},
+	{"conns", "manager", "Verbindungen & Daten", "neu, SSH-Key, Import/Export, Sicherung", "verbindungen import export"},
 }
 
 func palIsArea(id string) bool {
@@ -571,7 +643,9 @@ var palSubMenus = []palMenu{
 	{"settings/ki", "ai", "KI", "Endpunkt, Ersatz-Anbieter, Begleiter, Status", "ai llm ki"},
 	{"settings/ki/begleiter", "ai", "KI-Begleiter", "liest mit und kommentiert: Stufe, Grenzen, Datenschutz", "begleiter companion mitlesen kommentar coach"},
 	{"settings/relay", "relay", "Vermittler", "Server hinter NAT/Firewall", "relay vermittler"},
-	{"settings/io", "import", "Import / Export", "ssh-config, PuTTY, Ansible, CSV, Gesamtsicherung", "import export csv backup sicherung umzug"},
+	{"settings/logs", "sesslog", "Protokolle & Logs", "Sitzungsprotokoll, Logwache, Syslog, Audit", "protokoll logs syslog audit"},
+	{"settings/net", "backup", "Netzwerkgeräte", "Befehlssätze, Regeln für Switch-Configs", "switch netzwerk befehlssatz"},
+	{"help/debug", "sesslog", "Fehlersuche", "Debug-Protokoll, Leistungsanzeige", "debug fehler leistung"},
 }
 
 // palParent: übergeordnetes Menü ("settings/ki" → "settings", "settings" → "").
@@ -633,7 +707,11 @@ func palCycle(group palGroup, icon, label, value, keys string, set func(dir int)
 func (a *App) palFolder(id string) palItem {
 	for _, m := range palSubMenus {
 		if m.id == id {
-			return palItem{group: pgSetSetup, menu: palParent(id), icon: ic(m.icon), label: i18n.T(m.label), sub: i18n.T(m.hint), hint: "›",
+			g := pgSetSetup
+			if strings.HasPrefix(id, "help") {
+				g = pgHelp
+			}
+			return palItem{group: g, menu: palParent(id), icon: ic(m.icon), label: i18n.T(m.label), sub: i18n.T(m.hint), hint: "›",
 				keys: m.keys, keep: true, open: id, run: func() tea.Cmd { a.palEnter(id); return nil }}
 		}
 	}
@@ -666,52 +744,41 @@ func masterHint(dpapi bool) string {
 	return ""
 }
 
-// palMenuItems: Inhalt beider Untermenüs, in Anzeigereihenfolge.
+// palMenuItems: Inhalt der Untermenüs Einstellungen und Hilfe & Info samt
+// Unterordnern, in Anzeigereihenfolge. Einstellungen: Allgemein, Aussehen,
+// Sicherheit, Einrichten (Unterordner KI, Protokolle & Logs, Netzwerkgeräte,
+// Vermittler). Hilfe & Info hat den Unterordner Fehlersuche.
 func (a *App) palMenuItems() []palItem {
 	set := a.st.Settings()
 	safe := func(it palItem) palItem { it.group = pgSetSafe; return it }
 	hide := func(it palItem) palItem { it.hidden = true; return it }
 	look := func(it palItem) palItem { it.group = pgSetLook; return it }
+	sub := func(menu string, it palItem) palItem { it.menu, it.group = menu, pgSetSetup; return it }
+	help := func(menu string, it palItem) palItem { it.menu, it.group = menu, pgHelp; return it }
+	lang := "Deutsch"
+	if i18n.English() {
+		lang = "English"
+	}
+
+	// Allgemein
 	items := []palItem{
-		// Verhalten
+		palToggle(ic("explain"), i18n.T("Einfacher Modus: Profi-Funktionen ausblenden"), a.simple(),
+			"einfach simple anfänger beginner profi expert ausblenden weniger", func() tea.Cmd { return a.toggleSimple() }),
+		palCycle(pgSetBehave, ic("language"), "Sprache / Language", lang, "english deutsch german", func(int) tea.Cmd { return a.toggleLang() }),
 		palToggle(ic("mouse"), i18n.T("Maus: klicken, markieren, scrollen"), a.mouseEnabled(), "mouse", func() tea.Cmd { return a.toggleMouse() }),
 		palToggle(ic("reconnect"), i18n.T("Auto-Reconnect: nach Abbruch neu verbinden"), a.autoReconnect(), "reconnect", func() tea.Cmd { return a.toggleAutoReconnect() }),
 		palCycle(pgSetBehave, ic("reach"), i18n.T("Online-Punkt: Erreichbarkeit der Hosts prüfen"), reachLabel(a.reachMode()),
 			"online reach erreichbar ordner zugeklappt", func(dir int) tea.Cmd { return a.cycleReach(dir) }),
-		palToggle(ic("sesslog"), i18n.T("Sitzungsprotokoll schreiben"), a.logsEnabled(), "log protokoll", func() tea.Cmd { return a.toggleSessionLog() }),
 		palCycle(pgSetBehave, ic("news"), i18n.T("Meldung, wenn lange Befehle fertig sind"), notifyLabel(a.notifyLevel()),
 			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }),
-		palCycle(pgSetBehave, ic("errors"), i18n.T("Logwache: neue Log-Muster melden"), watchLabel(a.watchLevel()),
-			"logwache log watch journal überwachen fehler warnungen", func(dir int) tea.Cmd { return a.cycleWatch(dir) }),
-		proItem(palCycle(pgSetBehave, ic("errors"), i18n.T("Syslog-Empfang (Switches, Firewalls)"), syslogLabel(a.st.Settings().SyslogPort),
-			"syslog udp 514 5514 empfang switch firewall logwache", func(dir int) tea.Cmd { return a.cycleSyslog(dir) })),
-		proItem(palToggle(ic("errors"), i18n.T("Syslog auch von unbekannten Absendern annehmen"), a.st.Settings().SyslogAny,
-			"syslog absender unbekannt fremd alle", func() tea.Cmd { return a.toggleSyslogAny() })),
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
-		palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
-		look(palToggle(ic("split"), i18n.T("Farbiger Rahmen um jeden Tab"), a.tabFramesOn(), "rahmen farbe farbig tab umranden frame border color", func() tea.Cmd { return a.toggleTabFrames() })),
-		palToggle(ic("split"), i18n.T("Geteilte Ansicht: andere Bereiche abdunkeln"), a.dimPanes(), "split dim abdunkeln", func() tea.Cmd { return a.toggleDimPanes() }),
-		proItem(palToggle(ic("sesslog"), i18n.T("Debug-Protokoll für Fehlerberichte"), a.debugOn(), "debug log protokoll fehler bug support", func() tea.Cmd { return a.toggleDebug() })),
-		proItem(palToggle(ic("sesslog"), i18n.T("Leistungsanzeige (Bildrate, Zeichenzeit)"), a.perf.on, "leistung performance fps bildrate langsam ruckelt debug", func() tea.Cmd { return a.togglePerf() })),
-
-		// Sicherheit
-		safe(palToggle(ic("paste"), i18n.T("Einfügeschutz: Vorschau bei mehreren Zeilen"), a.pasteGuardEnabled(), "paste einfügen", func() tea.Cmd { return a.togglePasteGuard() })),
-		proItem(safe(palToggle(ic("paste"), i18n.T("Server darf in die Zwischenablage kopieren (OSC 52)"), a.osc52On(), "clipboard zwischenablage osc52 tmux vim", func() tea.Cmd { return a.toggleOSC52() }))),
-		palCycle(pgSetSafe, ic("sshkey"), i18n.T("Automatisch sperren bei Leerlauf"), lockLabel(set.LockAfterMin), "lock sperren idle leerlauf",
-			func(dir int) tea.Cmd { return a.cycleLockAfter(dir) }),
-		{group: pgSetSafe, menu: "settings", icon: ic("sshkey"), label: i18n.T("Master-Passwort ändern …"), hint: masterHint(a.st.V.HasDPAPI()),
-			keys: "master passwort password ändern change dpapi windows anmeldung", run: func() tea.Cmd { return a.openMasterForm() }},
-		proItem(safe(palToggle(ic("sesslog"), i18n.T("Audit-Protokoll (wer, wann, was; fälschungssicher)"), a.auditOn(), "audit protokoll revision compliance nachweis log", func() tea.Cmd { return a.toggleAudit() }))),
-		{group: pgSetSafe, menu: "settings", icon: ic("export"), label: i18n.T("Audit-Protokoll prüfen und speichern"), hint: ".txt", pro: true,
-			keys: "audit protokoll prüfen verify export revision", run: func() tea.Cmd { return a.exportAudit() }},
-		proItem(palCycle(pgSetSafe, ic("ai"), i18n.T("MCP-Zugriff für KI-Clients (Claude, …)"), mcpLabel(a.mcpLevel()),
-			"mcp claude model context protocol ki ai client server zugriff", func(dir int) tea.Cmd { return a.cycleMCP(dir) })),
+		palCycle(pgSetBehave, ic("split"), i18n.T("Fenster beim Start"), winStartLabel(a.winStart()), "fenster vollbild fullscreen maximiert start window f11",
+			func(dir int) tea.Cmd { return a.cycleWinStart(dir) }),
 	}
 
-	// Aussehen & Sprache: je ein Durchschalt-Eintrag, die Einzelwerte nur
-	// für die Suche.
+	// Aussehen: je ein Durchschalt-Eintrag, die Einzelwerte nur für die Suche.
 	cur := set.Theme
 	if cur != CustomName {
 		cur = ThemeByName(cur).Name
@@ -722,9 +789,41 @@ func (a *App) palMenuItems() []palItem {
 			themeIdx, themeVal = i, i18n.T(t.Label)
 		}
 	}
-	// Sichtbar ist die Auswahl mit Vorschau; Durchschalten nur über die Suche.
-	items = append(items, hide(palCycle(pgSetLook, ic("theme"), i18n.T("Farbschema"), themeVal, "theme farbe color aussehen",
-		func(dir int) tea.Cmd { return a.setTheme(Themes[cycleIndex(themeIdx, len(Themes), dir)].Name) })))
+	colHint := i18n.T("Editor")
+	if cur == CustomName {
+		colHint = "✓ " + i18n.T("aktiv")
+	}
+	iconIdx := -1
+	for i, st := range iconStyles {
+		if iconSet == st.id {
+			iconIdx = i
+		}
+	}
+	items = append(items,
+		// Sichtbar ist die Auswahl mit Vorschau; Durchschalten nur über die Suche.
+		palItem{group: pgSetLook, menu: "settings", icon: ic("theme"), label: i18n.T("Farbschema wählen …"),
+			hint: themeVal, keys: "theme farbe color aussehen vorschau preview schema",
+			run: func() tea.Cmd { return a.openThemes() }},
+		hide(palCycle(pgSetLook, ic("theme"), i18n.T("Farbschema"), themeVal, "theme farbe color aussehen",
+			func(dir int) tea.Cmd { return a.setTheme(Themes[cycleIndex(themeIdx, len(Themes), dir)].Name) })),
+		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farben anpassen (eigene Farben)"), hint: colHint,
+			keys: "theme farbe color colors eigene custom", run: func() tea.Cmd { return a.openColors() }},
+		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farbregeln für die Ausgabe …"), hint: hlHint(a.highlightOn()),
+			keys: "highlight farbregeln einfärben fehler ip mac syslog regeln", run: func() tea.Cmd { return a.openHighlightForm() }},
+		look(hide(palToggle(ic("split"), i18n.T("Farbiger Rahmen um jeden Tab"), a.tabFramesOn(), "rahmen farbe farbig tab umranden frame border color", func() tea.Cmd { return a.toggleTabFrames() }))),
+		look(hide(palToggle(ic("colors"), i18n.T("Farbregeln: Ausgabe einfärben"), a.highlightOn(), "highlight farbregeln einfärben", func() tea.Cmd { return a.toggleHighlight() }))),
+		palCycle(pgSetLook, ic("icons"), i18n.T("Symbole"), i18n.T(iconStyleLabel(iconSet)), "icons symbole nerd font unicode minimal tags",
+			func(dir int) tea.Cmd { return a.chooseIcons(iconStyles[cycleIndex(iconIdx, len(iconStyles), dir)].id) }),
+		palCycle(pgSetLook, ic("theme"), i18n.T("Fensterstil"), framesLabel(framesSetting), "fensterstil rahmen ecken rund eckig schatten dialog flach",
+			func(dir int) tea.Cmd { return a.cycleFrames(dir) }),
+		// Bewegung „aus“ schaltet auch die Startanimation ab (motion.go).
+		palCycle(pgSetLook, ic("intro"), i18n.T("Bewegung"), motionLabel(motionSetting), "bewegung animation motion animiert spinner puls hover karte ruhig startanimation intro",
+			func(dir int) tea.Cmd { return a.cycleMotion(dir) }),
+		look(hide(palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }))),
+		look(palToggle(ic("intro"), i18n.T("Barrierearm: keine Animationen, Formen statt nur Farben"), accessible,
+			"barrierefrei barrierearm accessibility a11y screenreader farbenblind animation ruhig", func() tea.Cmd { return a.toggleAccessible() })),
+		look(palToggle(ic("split"), i18n.T("Geteilte Ansicht: andere Bereiche abdunkeln"), a.dimPanes(), "split dim abdunkeln", func() tea.Cmd { return a.toggleDimPanes() })),
+	)
 	for _, t := range Themes {
 		t := t
 		hint := ""
@@ -734,32 +833,6 @@ func (a *App) palMenuItems() []palItem {
 		items = append(items, palItem{group: pgSetLook, menu: "settings", icon: ic("theme"), label: i18n.T("Aussehen: ") + i18n.T(t.Label), hint: hint,
 			keys: "theme farbe color", keep: true, hidden: true, run: func() tea.Cmd { return a.setTheme(t.Name) }})
 	}
-	items = append(items, palItem{group: pgSetLook, menu: "settings", icon: ic("theme"), label: i18n.T("Farbschema wählen …"),
-		hint: themeVal, keys: "theme farbe color aussehen vorschau preview schema",
-		run: func() tea.Cmd { return a.openThemes() }})
-	colHint := i18n.T("Editor")
-	if cur == CustomName {
-		colHint = "✓ " + i18n.T("aktiv")
-	}
-	items = append(items,
-		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farben anpassen (eigene Farben)"), hint: colHint,
-			keys: "theme farbe color colors eigene custom", run: func() tea.Cmd { return a.openColors() }},
-		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farbregeln für die Ausgabe …"), hint: hlHint(a.highlightOn()),
-			keys: "highlight farbregeln einfärben fehler ip mac syslog regeln", run: func() tea.Cmd { return a.openHighlightForm() }},
-		look(hide(palToggle(ic("colors"), i18n.T("Farbregeln: Ausgabe einfärben"), a.highlightOn(), "highlight farbregeln einfärben", func() tea.Cmd { return a.toggleHighlight() }))),
-		palItem{group: pgSetLook, menu: "settings", icon: ic("backup"), label: i18n.T("Regeln für Switch-Configs …"), hint: a.configRulesHint(),
-			keys: "config regeln rules compliance prüfen check ntp telnet snmp switch", run: func() tea.Cmd { return a.openConfigRulesForm() }},
-		palItem{group: pgSetLook, menu: "settings", icon: ic("backup"), label: i18n.T("Befehlssätze (Hersteller) …"), hint: a.cmdsetHint(),
-			keys: "befehlssatz befehlssätze hersteller vendor dialekt switch firewall router wlan yaml modell", run: func() tea.Cmd { return a.openCmdSets() }},
-	)
-	iconIdx := -1
-	for i, st := range iconStyles {
-		if iconSet == st.id {
-			iconIdx = i
-		}
-	}
-	items = append(items, palCycle(pgSetLook, ic("icons"), i18n.T("Symbole"), i18n.T(iconStyleLabel(iconSet)), "icons symbole nerd font unicode minimal tags",
-		func(dir int) tea.Cmd { return a.chooseIcons(iconStyles[cycleIndex(iconIdx, len(iconStyles), dir)].id) }))
 	for _, st := range iconStyles {
 		st := st
 		hint := i18n.T(st.sample)
@@ -769,76 +842,114 @@ func (a *App) palMenuItems() []palItem {
 		items = append(items, palItem{group: pgSetLook, menu: "settings", icon: ic("icons"), label: i18n.T("Symbole: ") + i18n.T(st.label), hint: hint,
 			keys: "icons symbole nerd font unicode minimal tags", keep: true, hidden: true, run: func() tea.Cmd { return a.chooseIcons(st.id) }})
 	}
-	lang := "Deutsch"
-	if i18n.English() {
-		lang = "English"
-	}
+
 	items = append(items,
-		look(palToggle(ic("intro"), i18n.T("Barrierearm: keine Animationen, Formen statt nur Farben"), accessible,
-			"barrierefrei barrierearm accessibility a11y screenreader farbenblind animation ruhig", func() tea.Cmd { return a.toggleAccessible() })),
-		palCycle(pgSetLook, ic("intro"), i18n.T("Bewegung"), motionLabel(motionSetting), "bewegung animation motion animiert spinner puls hover karte ruhig",
-			func(dir int) tea.Cmd { return a.cycleMotion(dir) }),
-		palCycle(pgSetLook, ic("theme"), i18n.T("Fensterstil"), framesLabel(framesSetting), "fensterstil rahmen ecken rund eckig schatten dialog flach",
-			func(dir int) tea.Cmd { return a.cycleFrames(dir) }),
-		palCycle(pgSetLook, ic("language"), "Sprache / Language", lang, "english deutsch german", func(int) tea.Cmd { return a.toggleLang() }),
-		look(palToggle(ic("explain"), i18n.T("Einfacher Modus: Profi-Funktionen ausblenden"), a.simple(),
-			"einfach simple anfänger beginner profi expert ausblenden weniger", func() tea.Cmd { return a.toggleSimple() })),
-		palCycle(pgSetLook, ic("split"), i18n.T("Fenster beim Start"), winStartLabel(a.winStart()), "fenster vollbild fullscreen maximiert start window f11",
-			func(dir int) tea.Cmd { return a.cycleWinStart(dir) }),
+		// Sicherheit
+		safe(palToggle(ic("paste"), i18n.T("Einfügeschutz: Vorschau bei mehreren Zeilen"), a.pasteGuardEnabled(), "paste einfügen", func() tea.Cmd { return a.togglePasteGuard() })),
+		proItem(safe(palToggle(ic("paste"), i18n.T("Server darf in die Zwischenablage kopieren (OSC 52)"), a.osc52On(), "clipboard zwischenablage osc52 tmux vim", func() tea.Cmd { return a.toggleOSC52() }))),
+		palCycle(pgSetSafe, ic("sshkey"), i18n.T("Automatisch sperren bei Leerlauf"), lockLabel(set.LockAfterMin), "lock sperren idle leerlauf",
+			func(dir int) tea.Cmd { return a.cycleLockAfter(dir) }),
+		palItem{group: pgSetSafe, menu: "settings", icon: ic("sshkey"), label: i18n.T("Master-Passwort ändern …"), hint: masterHint(a.st.V.HasDPAPI()),
+			keys: "master passwort password ändern change dpapi windows anmeldung", run: func() tea.Cmd { return a.openMasterForm() }},
 
 		// Einrichten: Verwandtes in Unterordnern
 		a.palFolder("settings/ki"),
+		a.palFolder("settings/logs"),
+		a.palFolder("settings/net"),
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("keys"), label: i18n.T("Tastenkürzel anpassen"), hint: a.keys.label(actKeys), keys: "keys", run: func() tea.Cmd { return a.openKeys() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("open"), label: i18n.T("Editor für Server-Dateien"), hint: trunc(orDefault(a.editorSetting(), i18n.T("Standard")), 18),
 			keys: "editor vscode code notepad bearbeiten", run: func() tea.Cmd { return a.askEditor() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("sync"), label: i18n.T("Sync zwischen Rechnern einrichten"), hint: "y", keys: "sync", run: func() tea.Cmd { return a.openSync() }},
 		a.palFolder("settings/relay"),
-		a.palFolder("settings/io"),
 
-		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Einstellungen"), hint: "s", keys: "ai llm", run: func() tea.Cmd { return a.openSettings() }},
+		// Einstellungen › KI
+		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Endpunkt & Modell …"), hint: "s", keys: "ai llm ki-einstellungen endpunkt modell model url", run: func() tea.Cmd { return a.openSettings() }},
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Ersatz-Anbieter (Ollama, OpenAI, Claude)"), keys: "ai llm fallback ollama openai claude", run: func() tea.Cmd { return a.openFallbackForm() }},
-		inMenu("settings/ki", palCycle(pgSetSetup, ic("ai"), i18n.T("KI-Datenschutz"), privacyLabel(a.st.LLM().Privacy),
+		sub("settings/ki", palCycle(pgSetSetup, ic("ai"), i18n.T("KI-Datenschutz"), privacyLabel(a.st.LLM().Privacy),
 			"ki ai datenschutz privacy lokal local cloud aus off kunde", func(dir int) tea.Cmd { return a.cyclePrivacy(dir) })),
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Eigene KI-Server (auch extern, per API) …"), hint: ownHostsHint(a.st.LLM().OwnHosts),
 			keys: "ki ai eigene own server privat private extern api datenschutz privacy lokal", run: func() tea.Cmd { return a.askOwnHosts() }},
 		a.palFolder("settings/ki/begleiter"),
-		inMenu("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Begleiter-Stufe"), companionLevelLabel(a.compLevel()),
-			"begleiter companion stufe aus leise gesprächig coach", func(dir int) tea.Cmd { return a.cycleCompanion(dir) })),
-		inMenu("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Höchstens KI-Anfragen pro Stunde"), fmt.Sprint(a.compCfg().Hour()),
-			"begleiter companion grenze limit stunde rate kosten", func(dir int) tea.Cmd { return a.cycleCompanionHour(dir) })),
-		inMenu("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Tagesbudget (geschätzte Tokens)"), kTok(a.compCfg().DayTokens()),
-			"begleiter companion budget tokens kosten tag", func(dir int) tea.Cmd { return a.cycleCompanionBudget(dir) })),
-		inMenu("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Begleiter nur mit eigener KI"), a.compCfg().OnlyLocal || a.compCfg().Raw,
-			"begleiter companion lokal eigene datenschutz privacy", func() tea.Cmd { return a.toggleCompanionLocal() })),
-		inMenu("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Filter aus bei eigener KI (Geheimnisse nicht entfernen)"), a.compCfg().Raw,
-			"begleiter companion filter datenschutz privacy roh raw geheimnisse eigene", func() tea.Cmd { return a.toggleCompanionRaw() })),
-		inMenu("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Coach: Rückblick beim Schließen des Tabs"), !a.compCfg().NoRecap,
-			"begleiter companion coach rückblick recap runbook merken", func() tea.Cmd {
-				a.setCompanion(func(c *domain.CompanionConfig) { c.NoRecap = !c.NoRecap })
-				return nil
-			})),
+		proItem(sub("settings/ki", palCycle(pgSetSetup, ic("ai"), i18n.T("MCP-Zugriff für KI-Clients (Claude, …)"), mcpLabel(a.mcpLevel()),
+			"mcp claude model context protocol ki ai client server zugriff", func(dir int) tea.Cmd { return a.cycleMCP(dir) }))),
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Letzte KI-Anfrage ansehen"), hint: i18n.T("was ging hinaus"),
 			keys: "ki ai datenschutz privacy anfrage request prompt gesendet", run: func() tea.Cmd { a.modal = a.lastRequestModal(); return nil }},
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), keys: "ai llm status",
 			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
+
+		// Einstellungen › KI › KI-Begleiter
+		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Begleiter-Stufe"), companionLevelLabel(a.compLevel()),
+			"begleiter companion stufe aus leise gesprächig coach", func(dir int) tea.Cmd { return a.cycleCompanion(dir) })),
+		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Höchstens KI-Anfragen pro Stunde"), fmt.Sprint(a.compCfg().Hour()),
+			"begleiter companion grenze limit stunde rate kosten", func(dir int) tea.Cmd { return a.cycleCompanionHour(dir) })),
+		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Tagesbudget (geschätzte Tokens)"), kTok(a.compCfg().DayTokens()),
+			"begleiter companion budget tokens kosten tag", func(dir int) tea.Cmd { return a.cycleCompanionBudget(dir) })),
+		sub("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Begleiter nur mit eigener KI"), a.compCfg().OnlyLocal || a.compCfg().Raw,
+			"begleiter companion lokal eigene datenschutz privacy", func() tea.Cmd { return a.toggleCompanionLocal() })),
+		sub("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Filter aus bei eigener KI (Geheimnisse nicht entfernen)"), a.compCfg().Raw,
+			"begleiter companion filter datenschutz privacy roh raw geheimnisse eigene", func() tea.Cmd { return a.toggleCompanionRaw() })),
+		sub("settings/ki/begleiter", palToggle(ic("ai"), i18n.T("Coach: Rückblick beim Schließen des Tabs"), !a.compCfg().NoRecap,
+			"begleiter companion coach rückblick recap runbook merken", func() tea.Cmd {
+				a.setCompanion(func(c *domain.CompanionConfig) { c.NoRecap = !c.NoRecap })
+				return nil
+			})),
+
+		// Einstellungen › Protokolle & Logs
+		sub("settings/logs", palToggle(ic("sesslog"), i18n.T("Sitzungsprotokoll schreiben"), a.logsEnabled(), "log protokoll", func() tea.Cmd { return a.toggleSessionLog() })),
+		sub("settings/logs", palCycle(pgSetSetup, ic("errors"), i18n.T("Logwache: neue Log-Muster melden"), watchLabel(a.watchLevel()),
+			"logwache log watch journal überwachen fehler warnungen", func(dir int) tea.Cmd { return a.cycleWatch(dir) })),
+		proItem(sub("settings/logs", palCycle(pgSetSetup, ic("errors"), i18n.T("Syslog-Empfang (Switches, Firewalls)"), syslogLabel(set.SyslogPort),
+			"syslog udp 514 5514 empfang switch firewall logwache", func(dir int) tea.Cmd { return a.cycleSyslog(dir) }))),
+		proItem(sub("settings/logs", palToggle(ic("errors"), i18n.T("Syslog auch von unbekannten Absendern annehmen"), set.SyslogAny,
+			"syslog absender unbekannt fremd alle", func() tea.Cmd { return a.toggleSyslogAny() }))),
+		proItem(sub("settings/logs", palToggle(ic("sesslog"), i18n.T("Audit-Protokoll (wer, wann, was; fälschungssicher)"), a.auditOn(), "audit protokoll revision compliance nachweis log", func() tea.Cmd { return a.toggleAudit() }))),
+		palItem{group: pgSetSetup, menu: "settings/logs", icon: ic("export"), label: i18n.T("Audit-Protokoll prüfen und speichern"), hint: ".txt", pro: true,
+			keys: "audit protokoll prüfen verify export revision", run: func() tea.Cmd { return a.exportAudit() }},
+
+		// Einstellungen › Netzwerkgeräte
+		palItem{group: pgSetSetup, menu: "settings/net", icon: ic("backup"), label: i18n.T("Befehlssätze (Hersteller) …"), hint: a.cmdsetHint(),
+			keys: "befehlssatz befehlssätze hersteller vendor dialekt switch firewall router wlan yaml modell", run: func() tea.Cmd { return a.openCmdSets() }},
+		palItem{group: pgSetSetup, menu: "settings/net", icon: ic("backup"), label: i18n.T("Regeln für Switch-Configs …"), hint: a.configRulesHint(),
+			keys: "config regeln rules compliance prüfen check ntp telnet snmp switch", run: func() tea.Cmd { return a.openConfigRulesForm() }},
+
+		// Einstellungen › Vermittler
 		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Systeme über Vermittler (Server hinter NAT/Firewall)"), keys: "relay", run: func() tea.Cmd { return a.openRelaySystems() }},
 		palItem{group: pgSetSetup, menu: "settings/relay", icon: ic("relay"), label: i18n.T("Vermittler koppeln / verwalten (eigener oder Speech on DGX Spark)"), keys: "relay", run: func() tea.Cmd { return a.openRelayManage() }},
-		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm, Ansible, CSV)"), hint: a.keys.label(actImport), keys: "import netbox", run: func() tea.Cmd { return a.openImport() }},
-		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("export"), label: i18n.T("Verbindungen als CSV exportieren (ohne Passwörter)"), hint: ".csv", keys: "export csv excel", run: func() tea.Cmd { return a.exportConnsCSV() }},
-		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("export"), label: i18n.T("Gesamtsicherung speichern (für Umzug/Sicherung) …"), hint: i18n.T("alles, verschlüsselt"), keys: "backup sicherung umzug neuer rechner migrate", run: func() tea.Cmd { return a.openBackupForm(false) }},
-		palItem{group: pgSetSetup, menu: "settings/io", icon: ic("import"), label: i18n.T("Gesamtsicherung einspielen …"), hint: fullbackup.Ext, keys: "restore backup sicherung umzug wiederherstellen migrate", run: func() tea.Cmd { return a.openBackupForm(true) }},
 
+		// Hilfe & Info
 		palItem{group: pgHelp, menu: "help", icon: ic("help"), label: i18n.T("Tastenkürzel anzeigen"), hint: a.keys.label(actHelp), keys: "help keys", run: func() tea.Cmd { a.modal = a.helpModal(); return nil }},
 		palItem{group: pgHelp, menu: "help", icon: ic("tour"), label: i18n.T("Einführungstour"), hint: i18n.T("5 Schritte"), keys: "tour", run: func() tea.Cmd { a.modal = a.tourModal(); return nil }},
 		palItem{group: pgHelp, menu: "help", icon: ic("help"), label: i18n.T("Handbuch & FAQ (Webseite)"), hint: "web", keys: "manual handbuch faq docs", run: func() tea.Cmd { openManual(); return nil }},
 		palItem{group: pgHelp, menu: "help", icon: ic("news"), label: i18n.T("Was ist neu (Changelog)"), hint: a.keys.label(actAbout) + " w", run: func() tea.Cmd { a.modal = a.changelogModal(nil); return nil }},
-		palItem{group: pgHelp, menu: "help", icon: ic("export"), label: i18n.T("Debug-Protokoll bereinigt speichern (für Fehlerbericht)"), hint: ".txt",
-			keys: "debug log protokoll fehler bug support issue", run: func() tea.Cmd { return a.exportDebug() }},
-		palItem{group: pgHelp, menu: "help", icon: ic("sesslog"), label: i18n.T("Debug-Protokoll leeren"), hidden: true,
-			keys: "debug log protokoll leeren löschen clear", run: func() tea.Cmd { return a.clearDebug() }},
 		palItem{group: pgHelp, menu: "help", icon: ic("about"), label: i18n.T("Über sshTermy / Update"), hint: a.keys.label(actAbout), keys: "about version", run: func() tea.Cmd { a.modal = a.aboutModal(); return nil }},
+		help("help", palCycle(pgHelp, ic("news"), i18n.T("Updates anbieten"), updateWaitLabel(set.UpdateWaitH), "update kanal channel stabil stable sofort neue version release",
+			func(dir int) tea.Cmd { return a.cycleUpdateWait(dir) })),
+		a.palFolder("help/debug"),
+
+		// Hilfe & Info › Fehlersuche
+		proItem(help("help/debug", palToggle(ic("sesslog"), i18n.T("Debug-Protokoll für Fehlerberichte"), a.debugOn(), "debug log protokoll fehler bug support", func() tea.Cmd { return a.toggleDebug() }))),
+		palItem{group: pgHelp, menu: "help/debug", icon: ic("export"), label: i18n.T("Debug-Protokoll bereinigt speichern (für Fehlerbericht)"), hint: ".txt",
+			keys: "debug log protokoll fehler bug support issue", run: func() tea.Cmd { return a.exportDebug() }},
+		palItem{group: pgHelp, menu: "help/debug", icon: ic("sesslog"), label: i18n.T("Debug-Protokoll leeren"), hidden: true,
+			keys: "debug log protokoll leeren löschen clear", run: func() tea.Cmd { return a.clearDebug() }},
+		proItem(help("help/debug", palToggle(ic("sesslog"), i18n.T("Leistungsanzeige (Bildrate, Zeichenzeit)"), a.perf.on, "leistung performance fps bildrate langsam ruckelt debug", func() tea.Cmd { return a.togglePerf() }))),
 	)
 	return a.simpleHide(items)
+}
+
+// palIOItems: Import, Export und Gesamtsicherung. Das sind Aktionen, keine
+// Einstellungen; sie stehen im Bereich „Verbindungen & Daten“.
+func (a *App) palIOItems(inMgr bool) []palItem {
+	imp := ""
+	if inMgr {
+		imp = a.keys.label(actImport)
+	}
+	return []palItem{
+		{icon: ic("import"), label: i18n.T("Verbindungen importieren (ssh-config, PuTTY, MobaXterm, Ansible, CSV)"), hint: imp, keys: "import netbox", run: func() tea.Cmd { return a.openImport() }},
+		{icon: ic("export"), label: i18n.T("Verbindungen als CSV exportieren (ohne Passwörter)"), hint: ".csv", keys: "export csv excel", run: func() tea.Cmd { return a.exportConnsCSV() }},
+		{icon: ic("export"), label: i18n.T("Gesamtsicherung speichern (für Umzug/Sicherung) …"), hint: i18n.T("alles, verschlüsselt"), keys: "backup sicherung umzug neuer rechner migrate", run: func() tea.Cmd { return a.openBackupForm(false) }},
+		{icon: ic("import"), label: i18n.T("Gesamtsicherung einspielen …"), hint: fullbackup.Ext, keys: "restore backup sicherung umzug wiederherstellen migrate", run: func() tea.Cmd { return a.openBackupForm(true) }},
+	}
 }
 
 // palRun führt einen Eintrag aus. Schalter (keep) lassen die Palette offen,

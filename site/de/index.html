@@ -95,7 +95,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>Eine Palette für alles</h3>
-      <p><kbd>Strg</kbd>+<kbd>Leertaste</kbd> öffnet die Befehlspalette: oben Häufiges und die letzten Verbindungen, alles andere in Ordnern (Sitzung, Tabs, Ansicht, Netzwerk, Team …), Tippen findet alles auf einmal. Freier Text wird ein Ziel (Enter) oder eine Frage an die KI (Tab).</p>
+      <p><kbd>Strg</kbd>+<kbd>Leertaste</kbd> öffnet die Befehlspalette: oben Häufiges und die letzten Verbindungen, alles andere in Ordnern (KI, Sitzung, Suchen &amp; Logs, Tabs &amp; Ansicht, Netzwerk, Team …), Tippen findet alles auf einmal. Freier Text wird ein Ziel (Enter) oder eine Frage an die KI (Tab).</p>
     </div>
     <figure><img src="../gifs/palette-de.gif" width="962" height="594" alt="Die Befehlspalette filtert Aktionen, dann geht eine Frage mit Terminal-Kontext an die KI" loading="lazy"></figure>
   </div>
@@ -131,6 +131,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Echtes Terminal</h3><p>xterm-256color, Truecolor, vim, htop und tmux, Scrollback, Tabs, geteilte Ansicht, Suche.</p></div>
     <div class="card"><h3>Auto-Reconnect</h3><p>Reißt WLAN oder VPN ab, kommt die Sitzung von selbst zurück, mit Tunneln und tmux/screen. Nach Ruhezustand oder Netzwechsel wird jede Leitung binnen Sekunden geprüft.</p></div>
     <div class="card"><h3>Dateien (F5)</h3><p>SFTP über dieselbe Verbindung: links lokal, rechts der Server. <kbd>e</kbd> öffnet eine Server-Datei in VS Code, Notepad++ oder TextEdit, Speichern lädt sie zurück. Beim Kopieren: Prozent, MB/s, Restzeit und Tempo-Kurve.</p></div>
+    <div class="card"><h3>Dateien mit der Maus</h3><p>Doppelklick auf eine Datei zeigt sie direkt in sshTermy: Farben, Suche, markieren und kopieren, mitlesen wie <code>tail -f</code>. Bilder und PDFs öffnen sich mit dem Standardprogramm. Ein Einfachklick zeigt eine Vorschau, Rechtsklick ein Menü mit Umbenennen, Rechten, Pfad kopieren und <code>cd</code> hierhin. Klickbarer Pfad, sortierbare Spalten, Strg/Umschalt+Klick markiert.</p></div>
     <div class="card"><h3>Farbregeln</h3><p>Fehler rot, Warnungen gelb, IP blau, MAC lila, Switch-Syslog nach Schwere; eigene Regeln, mit <code>!</code> meldet sich ein verdeckter Tab.</p></div>
     <div class="card"><h3>Bilder im Terminal</h3><p>Sixel, kitty-Grafik und iTerm2-Bilder (img2sixel, icat, viu, imgcat) als farbige Halbblöcke, in jedem Terminal; in kitty, Ghostty und im eigenen Fenster pixelgenau.</p></div>
     <div class="card"><h3>Container</h3><p>Docker, Podman und Kubernetes-Pods in einer Liste: Shell im Container, Logs live, KI-Auswertung der Logs.</p></div>
@@ -153,7 +154,9 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Befehlssätze</h3><p>48 Befehlssätze eingebaut (Cisco, Arista, Aruba, Comware, Huawei, Dell, Extreme, Ruckus, Palo Alto, Sophos, FortiGate, pfSense, Proxmox …). Eigene als YAML ergänzen, am Gerät testen oder von der KI entwerfen lassen, per Sync auf allen Rechnern; eigene und Team-Sätze können die eingebauten Sicherheitsregeln nie abschwächen.</p></div>
     <div class="card"><h3>KI-Begleiter</h3><p>Liest mit und kommentiert von selbst: leise (Fehler, riskante Zeilen vor Enter, Wiederholungen), gesprächig (jeder Befehl) oder Coach (erkennt dein Ziel, Rückblick mit Runbook). Eigene KI-Server, auch extern, lassen sich eintragen. Schlägt ein Befehl aus einer Antwortkarte fehl, zeigt die Karte den Fehler und einen korrigierten Befehl; <kbd>u</kbd> übernimmt ihn und korrigiert denselben Fehler in den anderen Karten mit.</p></div>
     <div class="card"><h3>Agent- &amp; Plan-Modus</h3><p>Die KI arbeitet selbstständig aufs Ziel hin, legt Skripte an und führt sie aus; drei Stufen, gefährliche Schritte warten immer auf dich. Erst planen: den ganzen Plan prüfen und freigeben.</p></div>
-    <div class="card"><h3>Geteilte Ansicht &amp; Tabs</h3><p>Sieben Aufteilungen mit bis zu sechs Sitzungen, Zoom, Tauschen, Eingabe an alle; Tab-Leiste mit <code>+</code>, <code>×</code>, Rechtsklick-Menü und Tab-Liste (<kbd>Alt</kbd>+<kbd>T</kbd>). Jeder Tab bekommt einen farbigen Rahmen, sein Name dieselbe Farbe; Rot nur für produktiv.</p></div>
+    <div class="card"><h3>Geteilte Ansicht &amp; Tabs</h3><p>Sieben Aufteilungen mit bis zu sechs Sitzungen, Zoom, Tauschen, Eingabe an alle; Tab-Leiste mit <code>+</code>, <code>×</code>, Rechtsklick-Menü und Tab-Liste (<kbd>Alt</kbd>+<kbd>T</kbd>); Tabs mit der Maus ziehen, <kbd>Alt</kbd>+<kbd>S</kbd> sucht in allen Tabs. Jeder Tab bekommt einen farbigen Rahmen, sein Name dieselbe Farbe; Rot nur für produktiv.</p></div>
+    <div class="card"><h3>Sammeländerung</h3><p>Im Manager mehrere Verbindungen markieren (<kbd>Leertaste</kbd>, <kbd>*</kbd> für alle Treffer) und in einem Schritt Tags, Benutzer, Schutz oder Farbe ändern, verschieben oder löschen.</p></div>
+    <div class="card"><h3>Notiz, Startbefehl, Wake-on-LAN</h3><p>Je Verbindung eine Notiz nur für dich, ein Befehl, der nach dem Anmelden getippt wird, und Aufwecken ausgeschalteter Rechner; die MAC-Adresse merkt sich sshTermy selbst.</p></div>
     <div class="card"><h3>Telnet &amp; Konsole</h3><p>Telnet und USB-Konsolenkabel (z. B. Aruba-Switches), Kabel wird automatisch gewählt, Anmeldung getippt.</p></div>
     <div class="card"><h3>PowerShell-Fernzugriff</h3><p>Auf Windows-Server einloggen wie mit <code>Enter-PSSession</code> über WinRM (NTLM oder Kerberos, verschlüsselt, oder HTTPS), mit Verlauf, Tab-Ergänzung vom Server und KI, die PowerShell spricht.</p></div>
     <div class="card"><h3>Lokale Shell</h3><p>Deine eigene PowerShell, cmd, zsh oder bash als Tab (<kbd>Alt</kbd>+<kbd>L</kbd>), mit KI, Agent- und Plan-Modus, geteilter Ansicht und Protokoll; der Gefahren-Check gilt auch hier.</p></div>
@@ -210,14 +213,19 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F7</kbd> / <kbd>F8</kbd></td><td>Tab zurück / vor</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>T</kbd> / <kbd>Alt</kbd>+<kbd>N</kbd> / <kbd>Alt</kbd>+<kbd>W</kbd></td><td>Tab-Liste / neuer Tab / Tab schließen</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>L</kbd></td><td>Lokale Shell in neuem Tab (PowerShell, zsh, bash)</td></tr>
-    <tr><td><kbd>F9</kbd>, <kbd>⇧</kbd>+<kbd>F1</kbd>…<kbd>F8</kbd></td><td>Schnellbefehle</td></tr>
+    <tr><td><kbd>F9</kbd>, <kbd>⇧</kbd>+<kbd>F1</kbd>…<kbd>F8</kbd></td><td>Schnellbefehle (<code>{{name}}</code> fragt nach einem Wert)</td></tr>
     <tr><td><kbd>Strg</kbd>+<kbd>T</kbd></td><td>Geteilte Ansicht: Aufteilung wählen (1…7)</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>Alt</kbd>+<kbd>I</kbd></td><td>Bereich zoomen / in alle Bereiche tippen</td></tr>
     <tr><td><kbd>Strg</kbd>+<kbd>F</kbd></td><td>Im Verlauf suchen</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>S</kbd></td><td>In allen offenen Tabs suchen</td></tr>
+    <tr><td><kbd>Leertaste</kbd> / <kbd>*</kbd></td><td>Manager: Verbindung markieren / alle sichtbaren; dann <kbd>e</kbd>, <kbd>v</kbd>, <kbd>d</kbd> für alle</td></tr>
+    <tr><td>Manager → Rechtsklick</td><td>Menü zu Verbindung oder Ordner: verbinden, bearbeiten, verschieben, Tunnel, SSH-Key, Wake-on-LAN, löschen</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>c</kbd></td><td>Container: Docker, Podman, Kubernetes (Shell, Logs, KI)</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>E</kbd> oder <kbd>F6</kbd> → <kbd>l</kbd></td><td>Log-Blick: <kbd>n</kbd> Was ist neu?, <kbd>t</kbd> Zeitleiste, <kbd>x</kbd>/<kbd>X</kbd> Rauschen ausblenden, <kbd>k</kbd> KI erklärt, <kbd>b</kbd> KI-Lagebericht, <kbd>1</kbd>…<kbd>4</kbd> Prüfbefehl, <kbd>w</kbd> Meldungen der Logwache, <kbd>s</kbd> Syslog einrichten (Switch)</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>t</kbd> / <kbd>z</kbd></td><td>Live-Graphen: Zeitraum 5 min / 1 h, groß</td></tr>
     <tr><td><kbd>F5</kbd> → <kbd>e</kbd></td><td>Server-Datei im eigenen Editor (Speichern lädt hoch)</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>⏎</kbd> / Doppelklick</td><td>Datei ansehen (<kbd>/</kbd> suchen, <kbd>f</kbd> mitlesen, <kbd>w</kbd> umbrechen), <kbd>o</kbd> Standardprogramm</td></tr>
+    <tr><td><kbd>F5</kbd> → Rechtsklick</td><td>Menü: umbenennen (<kbd>F2</kbd>), Rechte, Pfad kopieren (<kbd>y</kbd>), <code>cd</code> hierhin, löschen · <kbd>s</kbd> sortieren, <kbd>v</kbd> Vorschau</td></tr>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Sitzungsprotokolle: KI-Änderungsbericht</td></tr>
     <tr><td><kbd>z</kbd> (Manager)</td><td>Zeitpläne für Broadcast und Runbooks (<kbd>Strg</kbd>+<kbd>A</kbd> übernimmt neue Hosts)</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Tab in ein eigenes Terminalfenster</td></tr>

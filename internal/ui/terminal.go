@@ -194,7 +194,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll = 0
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList, actSearchAll) {
+		case actSearchAll:
+			return a.openSearchAll()
 		case actNewTab:
 			return a.openNewTab()
 		case actCloseTab:
@@ -850,8 +852,10 @@ func (a *App) tabStrip() string {
 			end = ""
 		}
 		tab := a.z.mark(ts.Render(stripe+dot+ts.UnsetPadding().Render(text+end)), zoneAction{
-			click: func(tea.Mouse, bool) tea.Cmd {
+			tab: i + 1,
+			click: func(m tea.Mouse, _ bool) tea.Cmd {
 				a.focusSession(i)
+				a.tabDrag = &tabDrag{id: x.id, x: m.X} // Ziehen sortiert um (tabs.go)
 				return nil
 			},
 			menu: func(m tea.Mouse) tea.Cmd {

@@ -21,8 +21,15 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Local shell** (Alt+L): your own PowerShell (Windows, via ConPTY), zsh or bash (macOS/Linux) as a tab, with AI help, goal/agent/plan mode, split view, tabs and session log. Danger rules and agent levels apply on your own computer too; the agent drops its scripts in `~/.sshtermy-agent`. Or save it as a connection (“Connect via: Local”) with its own shell (`pwsh`, `cmd`, `wsl`, `bash -l` …) and start folder
 - **Remote PowerShell (WinRM)**: log into Windows servers like `Enter-PSSession`, without SSH on the server (“Connection type: PowerShell”, ports 5985/5986). NTLM also for domain accounts, Kerberos for servers without NTLM, messages encrypted over HTTP, or HTTPS; own input line with history, Tab completion via the server and multi-line input. The AI suggests PowerShell commands, danger rules for Windows apply. Palette: `Enter-PSSession srv01` or `winrm admin@srv01`
 - **Forgiving everyday use**: Ctrl+Q and closing the window ask first when connections are still open; deleting a connection, folder or runbook happens right away and a toast offers **undo** for 10 s (Ctrl+Z in the manager or click); **Ctrl+T in the connection form tests** reachability, host key and login before you save; failed connections say in **plain language** what's wrong and what helps (“Login rejected”, “No answer from sw1:22 … VPN or jump host?”, `e` edits the connection), the original error stays below in gray. If a server shows a **new host key** (reinstall, factory reset), `k` compares old and new fingerprint and accepts the new one after a second confirmation
-- **Simple mode** (palette › Settings › Appearance): hides pro features (broadcast, network, team, agent, recording, MCP, audit …) from the palette overview, settings and key bar; searching in the palette still finds everything
+- **Simple mode** (palette › Settings › General): hides pro features (broadcast, network, team, agent, recording, MCP, audit …) from the palette overview, settings and key bar; searching in the palette still finds everything
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
+- **Change several connections at once**: in the manager Space marks a connection, `*` all visible ones (with a search or `#tag`, all hits). After that `e` (bulk change: add or remove tags, user, protection, color), `v` (move) and `d` (delete, with undo) apply to all marked ones; Esc clears the selection.
+- **Note per connection**: a free field just for you (contact person, maintenance window, location). It shows in the manager on the right, the search finds it, and it is never sent to the AI. “AI notes” remain the field for hints to the AI.
+- **Start command per connection** (form › Advanced): typed visibly once after login, e.g. `cd /srv/app` or `sudo -i`. The form rejects dangerous commands; a start command is never taken over from a team package.
+- **Wake-on-LAN**: a powered-off machine in your own network can be woken from the manager (click “Send Wake-on-LAN”, palette “wake”, or `w` in a disconnected tab). sshTermy remembers the MAC address on the first connect, or you enter it under Advanced.
+- **Placeholders in quick commands**: `systemctl restart {{service}}` asks for the value when run, `{{service:nginx}}` suggests one; the last value is prefilled next time. If only the inserted value makes the command dangerous, sshTermy asks first.
+- **Search across all tabs** (Alt+S): one search term, the hits from the scrollback of all open tabs in one list; ⏎ jumps to the tab at exactly that line.
+- **Drag tabs with the mouse**: a tab can be dragged to another position in the tab bar.
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
 - **X11 forwarding** per connection (like `ssh -X`): graphical programs from the server open here; needs a local X server (XQuartz, VcXsrv, WSLg), the X cookie never leaves your computer
@@ -42,6 +49,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Screen lock**: palette “Lock now” or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen. **Change master password** (palette → Settings › Security) also switches the Windows sign-in (DPAPI) on or off later
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag “Produktion”, “prod”, “live”) get a red line
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal. While copying, a bar shows percent, MB/s, time left and “file 2 of 5”, with a small speed curve
+- **Files with the mouse**: double-click a file to view it right in sshTermy (line numbers, colors, wheel scrolls, drag selects and copies, `/` searches, `f` follows like `tail -f`, `w` wraps; big files load beginning and end). Images, PDFs and Office files open with the default app of your computer (server files are downloaded first). A single click shows the start of a text file below the list (`v` turns that off). Right-click opens a menu: view, edit, open with default app, copy, download/upload to …, rename (`F2`), change permissions, copy path (`y`), `cd` here in the terminal, delete. Click a part of the path (/ › etc › nginx) to jump there, buttons for ↑ ~ reload, new folder and hidden files, click a column header to sort (`s`), Ctrl+click marks one by one, Shift+click a range, the mouse back button goes up a level
 - **Server file in your own editor**: `e` in F5 (server side) or the palette entry “Open server file in your own editor” with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › “Editor for server files” (e.g. `code --new-window`)
 - **Color rules for output**: text without its own color gets colored, errors red, warnings yellow, ok/up green, IP addresses blue, MAC addresses purple, switch syslog (`%LINK-3-UPDOWN`) by severity; never in vim/htop. Own rules “color pattern” (colors in English or German; palette → “Color rules for output”); with `!` in front sshTermy notifies you when the pattern shows up in a hidden tab (the tab gets a `!`, a toast, a desktop notification if you like)
 - **Host overview (F6)**: servers show CPU, load, RAM, every disk (all real file systems; tmpfs, overlay, snap and the like are left out), uptime and pending updates when you connect. The disk warning limit (`g`) applies to each disk separately.
@@ -50,8 +58,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   exec session, closing the panel ends it). Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS/NX-OS/ASA/Small Business, Arista, Juniper, HPE Comware, Huawei, Dell, Extreme, Ruckus, Allied Telesis, Netgear, Zyxel, TP-Link, Lancom, MikroTik, FortiGate, Palo Alto, Sophos, Check Point, SonicWall, WatchGuard, pfSense/OPNsense, VyOS/EdgeOS, UniFi and more; see *Command sets*) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Containers** (`c` in F6 or palette “docker”): Docker and Podman containers and Kubernetes pods of the server in one list. ⏎ opens a shell in the container, Ctrl+L follows the logs, Ctrl+K lets the AI analyze the last 400 log lines. Restart and start/stop are only inserted at the prompt, ⏎ runs them. Uses `sudo -n` when docker needs root and sudo works without a password
 - **Log view (Alt+E, or `l` in F6)**: reads the logs of the system you are on, read-only, and shows anomalies instead of lines. Linux/BSD: journalctl (or syslog files), failed units and package updates; Windows (PowerShell/WinRM): event logs System/Application, failed sign-ins 4625/4740 and stopped automatic services; switches and firewalls: the log commands typed visibly at the prompt (ProCurve/CX, Cisco, Junos, RouterOS, FortiOS, UniFi) plus a port bar. Same lines are grouped into patterns locally, without AI (numbers, IPs, MACs replaced), known patterns get a plain title, hint and read-only check commands (`1`…`4` insert them). `n` *What's new?* compares with your last look (new, much more frequent, gone; the baseline stays encrypted on this computer), `x`/`X` hides noise for the host or the whole folder (synced). `t` timeline: errors and warnings per time slot with marks for reboots, package updates, config changes and your own commands; ←→ picks a slot, `k` asks the AI what happened there. `k` lets the AI explain a pattern, `b` writes an AI status report from the condensed patterns only (cause, connections, what to check). `z` period 1 h … 7 days, `w` log watch alerts, `c` copies as Markdown. On switches and firewalls `s` sets up syslog to sshTermy: it shows the vendor's commands with your own IP and types them visibly after you confirm (nothing is saved on the device; `write memory` stays with you). Syslog received by sshTermy is merged into the switch's log view, so it reaches further back than the device's own buffer.
-- **Log watch** (Settings › *Log watch*: errors or errors + warnings): while a tab is open, sshTermy follows its logs in the background (Linux `journalctl -f`, Windows over WinRM every minute) and reports only what is new compared with the last log view or critical, each pattern at most once an hour: toast, ▲ on the tab, desktop notification when sshTermy is in the background. Hidden noise stays quiet. *Syslog receiver* (UDP 5514, 1514 or 514) takes syslog from switches and firewalls and assigns it to the matching connection by IP or host name. Senders that match no saved connection are dropped
-(a toast names the IP once), because UDP senders can be spoofed; Settings › *Accept syslog from unknown senders too*
+- **Log watch** (Settings › Logs & audit › *Log watch*: errors or errors + warnings): while a tab is open, sshTermy follows its logs in the background (Linux `journalctl -f`, Windows over WinRM every minute) and reports only what is new compared with the last log view or critical, each pattern at most once an hour: toast, ▲ on the tab, desktop notification when sshTermy is in the background. Hidden noise stays quiet. *Syslog receiver* (UDP 5514, 1514 or 514) takes syslog from switches and firewalls and assigns it to the matching connection by IP or host name. Senders that match no saved connection are dropped
+(a toast names the IP once), because UDP senders can be spoofed; Settings › Logs & audit › *Accept syslog from unknown senders too*
 lets them in. The AI status report treats syslog lines as hints, not as proof. The list: palette *Log watch: alerts* or `w` in the log view; ⏎ jumps to the pattern in the host's log view, `x` hides it as noise. Failed sign-ins (SSH, Windows 4625) count as an error from 20 in 10 minutes; link-down messages keep the device's severity (Cisco `LINK-3` = error).
 - **Folder scan** (palette *Folder scan*): the log view for every host in a folder at once, read-only and without prompts (6 at a time; servers over SSH, Windows over WinRM, switches via their shell). One line per host with critical/errors/warnings, new patterns and the top pattern, plus *Shared*: patterns that show up on several hosts. `c` copies the result as Markdown; the baseline for *What's new?* is saved per host. As a schedule (kind *Folder scan (logs)*) it runs e.g. every night; the result is in the schedule and under *Folder scan: last result*.
 - **Config backup for switches**: `b` saves the running configuration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`, UniFi `cat /tmp/system.cfg`) encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
@@ -95,7 +103,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
 - **Relay for servers behind NAT/firewall**: the server itself connects out to a relay (`sshtermy anker`), sshTermy reaches its sshd through it without an open port. SSH runs end to end, files and tunnels work as usual. sshTermy brings its own relay (`sshtermy relay`, also `sshtermy vermittler`); Speech on DGX Spark can serve as a relay too ([guide, German](docs/vermittler.md))
 - **Share a session live** (palette “share”): over your own relay a tab becomes visible to colleagues, the link (in the clipboard) is all they need, pasted into their sshTermy palette. Viewers only watch, their keys go nowhere. Every piece is encrypted with a key that is only in the link (after `#`), the relay sees nothing but ciphertext. Up to 10 viewers, a newcomer gets the current screen first
 - **AI copilot** for any OpenAI-compatible endpoint (`/v1/chat/completions`: OpenAI, vLLM, SGLang, Ollama, LiteLLM, LocalAI)
-  - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question; without text only frequent actions, connections and one folder per area (session, tabs, view, network, team …), typing finds everything directly
+  - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question; without text only frequent actions, connections and one folder per area (AI, session, search & logs, tabs & view, network, team …), typing finds everything directly; right-click in the manager opens a menu for the connection or folder
   - **Ghost text** while typing (Tab accepts)
   - **Follow-up commands** after every Enter (Alt+1…4 inserts)
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm. Text in the panel (goal, steps, output, error messages) can be selected with the mouse and is copied right away.
@@ -143,7 +151,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
     older or newer firmware. 48 built in: switches (Cisco, Arista, Aruba, HPE Comware, Huawei, Dell, Extreme, Ruckus,
     Allied Telesis, Netgear, Zyxel, TP-Link, Lancom …), firewalls (FortiGate, Palo Alto, Sophos, Check Point, SonicWall,
     WatchGuard, Cisco ASA, pfSense, OPNsense, VyOS, EdgeOS), WLAN controllers (Aruba, Cisco WLC) and appliances
-    (Proxmox, ESXi, Synology, QNAP, TrueNAS, iLO, iDRAC). Palette › Settings › *Command sets*: `n` new set based on a
+    (Proxmox, ESXi, Synology, QNAP, TrueNAS, iLO, iDRAC). Palette › Settings › Network devices › *Command sets*: `n` new set based on a
     built-in one, `e`/`o` edit in the form or the file, `t` test on the open device, `k` AI draft from the terminal,
     `l` take over the commands you corrected on a device, `x`/`i` export/import; sets used by shared connections travel
     with the team share, your own sets also with the sync (taken over on the other computer with `f`). Safety: own sets only type read commands, can only add danger rules (never weaken the built-in
@@ -164,7 +172,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   (OneDrive, Dropbox, iCloud, Syncthing) or directly via your NAS (Synology, QNAP, Nextcloud, any WebDAV server)
 - **Import** of existing connections from `~/.ssh/config`, PuTTY (registry or `.reg` export), MobaXterm
   (`MobaXterm.ini`, `.mxtsessions`), Ansible inventories (INI or YAML) and CSV (also the NetBox device export), with jump hosts and folders, one key press (i in the manager). `e` there exports all connections as CSV (without passwords)
-- **Full backup / move to a new computer** (Settings › Import / Export or `sshtermy backup`): the whole data folder
+- **Full backup / move to a new computer** (palette › Connections & data or `sshtermy backup`): the whole data folder
   (connections, keys, logs, switch backups, known_hosts, settings) as one file encrypted with the master password
   (Argon2id + AES-256-GCM). Restoring replaces everything after a confirmation and a restart; the previous state stays
   next to it as `….vorher-<date>`
@@ -189,7 +197,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   lights up, and a frame glides along when you switch panes or zoom (Alt+Z). Redraws only happen while
   something moves; accessible mode turns it all off
 - **MCP server** (`sshtermy mcp`): Claude and other AI clients can list your connections and run read-only commands, anything else only after you confirm in sshTermy
-- **Audit log** (Settings › Security): who did what and when, on which host: connections, commands (also from the
+- **Audit log** (Settings › Logs & audit): who did what and when, on which host: connections, commands (also from the
   agent mode and broadcast), file transfers, config backups, changed connections, master password, full backups and
   AI requests (host/model only). Each line is chained and signed with a key from the store, so changes, deleted or
   reordered lines are detected. “Verify and save audit log” writes the check result and a readable copy to Downloads.
@@ -202,7 +210,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   every frame. Palette “Performance display” rates the draw time in words (smooth/good/a bit slow/choppy), shows a bar per
   frame, frames per second (1 at rest is normal: it only draws on change), the possible frame rate and the output rate;
   in the terminal it sits left of the F6 sidebar
-- **Versioning and auto-update** from GitHub Releases (signed). Before the swap the new program file is started once and must report the announced version; if it then fails to start cleanly twice, sshTermy restores the previous version by itself
+- **Versioning and auto-update** from GitHub Releases (signed). Before the swap the new program file is started once and must report the announced version; if it then fails to start cleanly twice, sshTermy restores the previous version by itself **Update channel** (Settings › Security › “Offer updates”): “immediately” shows every new version, “stable” only versions that have been published for a day or a week. `sshtermy -update` always takes the newest.
 - **Two sshTermy at once** (second window, second start): each one notices when the other has saved and reloads connections and settings instead of overwriting them. If saving fails (disk full, read-only folder), a message appears
 
 The AI interaction concept (suggestions, goal mode, fixed danger rules) comes from the remote access assistant of
@@ -265,7 +273,7 @@ sshtermy --version    # version, commit, build date
 sshtermy --update     # update to the newest version
 sshtermy -window      # own window instead of the terminal (automatic when started without a terminal)
 sshtermy -tui         # always in the terminal, never an own window
-sshtermy --no-intro   # without the start animation (permanently: palette “Start animation off”)
+sshtermy --no-intro   # without the start animation (permanently: Settings › Motion “off”)
 sshtermy --debug      # write a debug log for this run (debug.log in the config folder)
 sshtermy backup [file]   # full backup of all data (asks for the master password)
 sshtermy restore <file>  # restore a full backup (replaces all data, keeps the old folder)
@@ -281,9 +289,11 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | Where | Key | Effect |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | connect / new / edit / delete / search / tunnel / AI settings / sync / session logs |
+| | Space / * | mark a connection / mark all visible ones; then e (bulk change), v and d apply to all marked ones, Esc clears |
+| | right-click | menu for a connection or folder: connect, edit, move, tunnel, SSH key, quick commands, Wake-on-LAN, mark, delete; for folders expand/collapse, new connection here, open as grid |
 | | Ctrl+Z | undo the last delete (connection, folder, runbook; 10 s, or click the toast) |
 | Connection form | Ctrl+T / Ctrl+S | test the connection (reachable, host key, login) / save |
-| Closed tab | ⏎ / e / k / x | reconnect / edit the connection / compare and accept a changed host key / close the tab |
+| Closed tab | ⏎ / e / k / x / w | reconnect / edit the connection / compare and accept a changed host key / close the tab / wake up (Wake-on-LAN) |
 | | i / a / b | import connections / choose a color scheme (26 themes, live preview) / customize shortcuts |
 | | c / q | create or copy an SSH key / edit quick commands |
 | | m / f / z | broadcast to several hosts / network scan / schedules (Ctrl+N new, Ctrl+E edit, Ctrl+R now, Ctrl+O on/off, ⏎ last result) |
@@ -298,13 +308,14 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | Terminal | F2 | goal mode (agent) |
 | | F3 | ask AI (Esc stops the answer, n new question, f follow-up, u use the fix after an error) |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
-| | F5 | files (SFTP): Tab side, c copy (up/down), e server file in your own editor, Space/a mark, drag copies, n folder, d delete, . hidden |
+| | F5 | files (SFTP): Tab side, ⏎/double-click open or view, c copy (up/down), e own editor, o default app, Space/a mark, Ctrl/Shift+click mark, drag copies, right-click menu, F2 rename, y copy path, s sort, v preview, n folder, d delete, . hidden; in the viewer / search, f follow, w wrap |
 | | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, l log view, c containers, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
+| | Alt+S | search in all open tabs, ⏎ jumps to the matching line |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu, hover it for target, duration and latency) |
 | | Alt+L | local shell in a new tab (also in the manager; palette: `local`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
-| | F9 / ⇧F1…F8 | quick commands: list / run directly |
+| | F9 / ⇧F1…F8 | quick commands: list / run directly (`{{name}}` in the command asks for a value) |
 | | F10 | back to the manager (sessions keep running) |
 | | ⇧F9 | key bar explains the keys of the current area |
 | | ⇧F10 | move the tab to its own terminal window (Windows Terminal/console, Terminal.app/iTerm2, Linux terminals, tmux; in sshTermy's own window a second own window); the session stays open, closing the window or ⏎ brings it back. Own terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
@@ -424,8 +435,8 @@ The screenshots show the German interface; the English one looks the same.
 | **Ask AI** | **Tunnels & web services** |
 | ![](docs/bilder/05-frage.png) | ![](docs/bilder/06-tunnel.png) |
 
-**Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question. Without text it stays short: **Frequent** on top (in the terminal goal mode, host overview, search, split, new tab), then the recently used connections and one folder per area: **Quick commands & tunnels ›, This session ›, Tabs & windows ›, View & split ›, Several hosts ›, Network & switches ›, Team & sharing ›, Connections & keys ›** (the number of entries on the right). ⏎ or → opens a folder, Esc or ← goes back. Typing shows matches from all folders directly.
-Toggles, look, language and setup live in the **[:] Settings ›** submenu (each toggle shows "on"/"off" and the palette stays open while you flip them); shortcuts, tour, news and update are under **[?] Help & info ›**. Entries with several values show them as ‹ value ›: ⏎, → or a click moves to the next one, ← back. AI, relay and import have their own subfolders. Typing still finds items inside the submenus directly, even single values like “Matrix”; Esc or ← goes back.
+**Command palette (Ctrl+Space):** one field for everything; text becomes a goal or a question. Without text it stays short: **Frequent** on top (in the terminal goal mode, host overview, search, split, new tab), then the recently used connections and one folder per area: **Quick commands & tunnels ›, AI › (goal, agent, ask AI, task, companion), This session › (host, files, containers, recording), Search & logs › (scrollback, all tabs, error lines, log glance, session logs, folder scan, log watch), Tabs & view › (tabs, split ‹ value ›, zoom, workspaces), Several hosts & network ›, Team & sharing ›, Connections & data › (new, SSH key, import, export, full backup)** (the number of entries on the right). Keys that only work in the manager are not shown in the terminal. ⏎ or → opens a folder, Esc or ← goes back. Typing shows matches from all folders directly.
+Toggles live in the **[:] Settings ›** submenu in four groups: General, Appearance, Security, Setup (each toggle shows "on"/"off" and the palette stays open while you flip them). Shortcuts, tour, news, update and “Offer updates” are under **[?] Help & info ›**, the debug log and performance overlay there under **Troubleshooting ›**. Entries with several values show them as ‹ value ›: ⏎, → or a click moves to the next one, ← back. AI, Logs & audit (session log, log watch, syslog, audit), Network devices (command sets, config rules) and relay have their own subfolders. Motion “off” also turns off the start animation. Typing still finds items inside the submenus directly, even single values like “Matrix”; Esc or ← goes back.
 
 ![Command palette](docs/bilder/09-palette.png)
 
@@ -573,7 +584,7 @@ Windows login ──DPAPI CryptProtectData────────────�
 ### sshTermy as MCP server
 
 AI clients such as Claude Desktop or Claude Code can use your saved connections through the Model Context Protocol.
-Turn it on in Settings › Security › “MCP access for AI clients”: **read only** (list connections and open tabs,
+Turn it on in Settings › AI › “MCP access for AI clients”: **read only** (list connections and open tabs,
 read a tab, run read-only commands like `df -h` or `show interfaces`) or **with confirmation** (any other command
 runs only after you press `y` in sshTermy; dangerous commands need `y` twice). Commands with `sudo` or that read secrets (`/etc/shadow`, keys, `.env`, `show running-config` …) always ask, even if they only read. sshTermy must be running and unlocked;
 `sshtermy mcp` is only a bridge and holds no data. Connections tagged `no-ai`/`ai-local`, or AI privacy “AI off”, are
@@ -762,7 +773,7 @@ does not count as a change. This way changes on two computers are not lost as lo
 Syncing happens at start, a few seconds after every change and every 5 minutes; manually via the palette
 (“Sync now”). All settings travel along: look, colors, icons, language, keys, AI, lock, notifications, monitoring
 limits, danger check, paste preview, session logs, intro animation and so on. Your own command sets sync too; on another computer
-a changed or new set only takes effect after you take it over there (Settings › Command sets, `f`, with a diff), and a
+a changed or new set only takes effect after you take it over there (Settings › Network devices › Command sets, `f`, with a diff), and a
 set deleted on one computer is moved aside to `befehlssaetze/.geloescht` on the others. Only computer-specific things stay local:
 DPAPI, the sync settings themselves, key file paths, paired relays, team folder paths, the "mouse" switch (depends on
 the terminal program), audit/debug log, MCP server, editor, the font size of the own window and everything marked

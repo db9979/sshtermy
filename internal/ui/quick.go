@@ -162,11 +162,19 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 		return nil
 	}
 	s.quickArmed = -1
+	if names := quickPlaceholders(cmd); len(names) > 0 {
+		return a.askQuickValues(s, cmd, names, nil) // Platzhalter {{name}} abfragen (quickvars.go)
+	}
+	a.sendQuick(s, cmd)
+	return nil
+}
+
+// sendQuick tippt den fertigen Befehl.
+func (a *App) sendQuick(s *session, cmd string) {
 	a.clearToasts()
 	s.sel, s.scroll, s.ghost, s.chips = nil, 0, "", nil
 	s.term.SendText(cmd + "\r")
 	s.history = append(s.history, cmd)
-	return nil
 }
 
 // ---------------------------------------------------------------- Liste (F9)
@@ -406,7 +414,7 @@ func (a *App) openQuickForm(c domain.Connection, remote string) tea.Cmd {
 		if i < len(cur) {
 			v = cur[i]
 		}
-		h := i18n.T("wird mit ⏎ ausgeführt; rote Befehle brauchen zwei Drücke · leer = frei")
+		h := i18n.T("wird mit ⏎ ausgeführt; rote Befehle brauchen zwei Drücke · {{name}} fragt beim Ausführen nach einem Wert · leer = frei")
 		if i == 0 {
 			h = i18n.T("Strg+R = Vorbelegung „") + p.name + i18n.T("“ wiederherstellen · Strg+S speichern")
 		}
