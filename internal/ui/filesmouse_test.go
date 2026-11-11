@@ -3,6 +3,7 @@ package ui
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -222,7 +223,7 @@ func TestFilesRightClickMenu(t *testing.T) {
 	// Rechte
 	a.askChmod(s, 1, p.sel)
 	a.modal.onText("600")
-	if fi, _ := os.Stat(filepath.Join(r, "nginx.conf.bak")); fi.Mode().Perm() != 0o600 {
+	if fi, _ := os.Stat(filepath.Join(r, "nginx.conf.bak")); runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600 { // Windows kennt nur schreibgeschützt
 		t.Fatalf("Rechte = %o", fi.Mode().Perm())
 	}
 	// leerer Platz: Ordner-Menü
