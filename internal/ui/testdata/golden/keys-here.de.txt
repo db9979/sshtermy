@@ -14,6 +14,7 @@
  KI fragen                     F3
  KI-Begleiter: Stufe wechseln  Alt+K
  Begleiter-Leiste              Alt+J
+ Vorgang über mehrere Fenster (KI sieht alle)  Alt+V
  Tunnel                        F4
  Dateien (SFTP)                F5
  Host-Übersicht                F6
@@ -26,7 +27,6 @@
  Schnellbefehle (Liste)        F9
  Schnellbefehl 1               Shift+F1 / F13
  Schnellbefehl 2               Shift+F2 / F14
- Schnellbefehl 3               Shift+F3 / F15
 
  Alt+⏎ ist gesperrt: Windows Terminal schaltet damit auf Vollbild.
  Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)

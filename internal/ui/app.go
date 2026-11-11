@@ -199,6 +199,7 @@ type App struct {
 
 	blurred bool       // Terminalfenster nicht im Vordergrund (Fokus-Meldungen)
 	lock    *lockState // Bildschirmsperre bei offenen Sitzungen (lock.go)
+	vg      *vorgang   // Vorgang über mehrere Fenster (vorgang.go)
 }
 
 func New(st *store.Store) (*App, error) {
@@ -566,6 +567,9 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 	}
 
 	// Nachrichten der Sitzungen (KI, Ziel, Frage)
+	if cmd, ok := a.vgMsg(msg); ok {
+		return cmd, true
+	}
 	if cmd, ok := a.companionMsg(msg); ok {
 		return cmd, true
 	}
@@ -780,6 +784,9 @@ func (a *App) onTick() tea.Cmd {
 		cmds = append(cmds, c)
 	}
 	a.watchTick()
+	if c := a.vgTick(); c != nil {
+		cmds = append(cmds, c)
+	}
 	for _, s := range a.sessions {
 		if s.term != nil && s.term.TakeBell() {
 			a.noticeBell(s)

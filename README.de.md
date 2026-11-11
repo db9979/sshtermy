@@ -127,6 +127,18 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
     Strg+S speichert den Plan als Runbook.
     Ziel-, Agent- und Plan-Modus zeigen den Fortschritt als Zeitleiste: erledigte Schritte mit ✓ und Dauer samt letzter
     Ausgabezeile, der laufende Schritt mit Lichtlauf, geplante Schritte als ○.
+  - **Vorgang über mehrere Fenster** (Alt+V): die offenen Tabs und Bereiche, die zu einer Arbeit gehören (Webserver,
+    Datenbank, Switch …), zu einem *Vorgang* verbinden. Fenster bekommen feste Nummern (Tab-Leiste, Bereichstitel,
+    farbiges Kennzeichen). Die KI sieht dann alle zugleich; je Fenster wählst du, was sie sieht (nur Profil, + Befehle,
+    + Ausgabe; Tag `ki-aus` blendet ein Fenster aus). Eine Frage bekommt eine Antwort, die bei jedem Schritt das Fenster
+    nennt (1…9 tippt einen Schritt in sein Fenster vor); `z` macht daraus einen *Fahrplan*, der Fenster für Fenster
+    führt und Werte mitnimmt (`{{web02-ip}}` in Fenster 2 gelesen, in Fenster 3 verwendet); `p` zeigt den *Plan in
+    Bahnen*, je Fenster eine Spalte, mit Rückweg; Tab lässt den Agenten Lesendes allein ausführen, jede Änderung wird
+    nur vorgetippt. Vor jedem Vortippen prüft sshTermy das Zielfenster: gleicher Host-Key, Prompt zeigt den erwarteten
+    Rechner, Prompt frei, Befehl passt zum System, sonst hält es an und fügt nichts ein. Gefahr braucht ⏎ im Vorgang und
+    ⏎ im Fenster. Der Begleiter verbindet Fehler über Fenster hinweg („Ursache vermutlich in Fenster 3“), und `r`
+    schreibt einen Rückblick mit Zeitleiste aller Fenster, Rückweg und offenen Punkten (Change-Protokoll als Markdown
+    oder Runbook).
   - **KI-Begleiter** (Alt+K wählt die Stufe, Alt+J öffnet seine Leiste): Die KI liest mit und meldet sich von selbst.
     Feste Regeln entscheiden, *wann*; die KI nur, *was* sie sagt (sie darf auch still bleiben). *Leise*: eine Zeile unter
     dem Terminal nur, wenn ein Befehl fehlschlägt, eine getippte Zeile vor ⏎ riskant ist (`chmod 777`, `rm -rf`,
@@ -336,6 +348,11 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
 | | Alt+E | Log-Blick: Auffälligkeiten in den Logs (⏎ Zeilen, 1…4 prüfen, k KI erklärt, b KI-Lagebericht, x/X ausblenden, n Was ist neu?, t Zeitleiste, z Zeitraum, w Logwache, s Syslog am Switch einrichten) |
 | | Alt+K / Alt+J | KI-Begleiter: Stufe Aus · Leise · Gesprächig · Coach / Begleiter-Leiste |
+| | Alt+V | Vorgang über mehrere Fenster: die KI sieht alle verbundenen Fenster |
+| Vorgang (Alt+V) | Leertaste / ← → / ⏎ | Fenster wählen / was die KI sieht / Vorgang starten, Frage senden |
+| | 1…9 / z / p / Tab | Schritt im Fenster vortippen / Fahrplan / Plan in Bahnen / Agent liest allein |
+| | ⏎ / s / w / o / r | weiter / überspringen / nochmal / fehlendes System öffnen / Rückblick |
+| | Strg+E / Strg+D / Esc | Fenster ändern / Vorgang beenden / zurück zum Terminal |
 | Begleiter-Leiste | ↑↓ / ⏎ / a / c | Vorschlag wählen / einfügen / ausführen (gefährliche zweimal) / kopieren |
 | | m / l / s / ? / r | Thema stumm / Tatsache merken / Stufe / zuletzt gesendet / Rückblick |
 | | p / g / n / x | erkannte Absicht: Plan / Agent übernimmt / selbst machen / nicht mehr fragen |
