@@ -152,7 +152,8 @@
     <li><b>Syslog-Empfang:</b> nimmt nur Meldungen von Geräten an, die als Verbindung gespeichert sind; fremde Absender werden verworfen und einmal gemeldet. Wer alle zulassen will: Einstellungen › „Syslog auch von unbekannten Absendern annehmen“.</li>
     <li><b>Sperre:</b> sofort oder nach Leerlauf; Sitzungen laufen dahinter weiter.</li>
     <li><b>Audit-Protokoll</b> (Einstellungen › Sicherheit): wer hat wann auf welchem Host was getan. Jede Zeile ist verkettet und signiert; „Audit-Protokoll prüfen und speichern“ meldet geänderte, gelöschte oder umsortierte Zeilen. Befehle mit führendem Leerzeichen erscheinen nur als „(privat)“.</li>
-    <li><b>Updates</b> sind mit Ed25519 signiert; ein Update ohne gültige Signatur wird abgelehnt. Ein selbst gebautes sshTermy ohne Schlüssel sagt das im Über-Dialog (<kbd>F12</kbd>) und fragt vor jedem Update.</li>
+    <li><b>Updates</b> sind mit Ed25519 signiert; ein Update ohne gültige Signatur wird abgelehnt. Ein selbst gebautes sshTermy ohne Schlüssel sagt das im Über-Dialog (<kbd>F12</kbd>) und fragt vor jedem Update. Vor dem Austausch wird die neue Programmdatei einmal gestartet und muss die angekündigte Version nennen. Startet sie danach zweimal nicht sauber, stellt sshTermy die alte Version von selbst wieder her und bietet die fehlerhafte nicht erneut an.</li>
+    <li><b>Zwei sshTermy gleichzeitig</b> (zweites Fenster, zweiter Start): Jedes bemerkt, wenn das andere gespeichert hat, und lädt Verbindungen und Einstellungen neu, statt sie zu überschreiben. Schlägt das Speichern fehl, erscheint eine Meldung.</li>
   </ul>
 </section>
 

@@ -89,7 +89,7 @@ func main() {
 		fmt.Println(version.Long())
 		return
 	}
-	update.Cleanup()
+	update.Guard() // räumt auf; nimmt ein Update zurück, das zweimal nicht sauber gestartet ist
 	if *doUpdate {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
@@ -155,6 +155,7 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
+	update.Confirm() // sauber beendet: die Version funktioniert
 	if app.Restart() {
 		// Update installiert: Terminal ist wiederhergestellt, Sitzungen sind
 		// zu, Store ist gesperrt. Jetzt die neue Programmdatei starten.

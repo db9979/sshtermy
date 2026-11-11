@@ -326,11 +326,6 @@ var (
 	zoneRe = regexp.MustCompile(`\x1b\[\d+z`)
 )
 
-func rgbOf(c color.Color) [3]int {
-	r, g, b, _ := c.RGBA()
-	return [3]int{int(r >> 8), int(g >> 8), int(b >> 8)}
-}
-
 func mix(to, from [3]int, k float64) [3]int {
 	var o [3]int
 	for i := range o {

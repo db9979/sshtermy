@@ -10,6 +10,7 @@ import (
 func (e *Emulator) nextTab(n int) {
 	x, y := e.scr.CursorPosition()
 	scroll := e.scr.ScrollRegion()
+	n = min(n, e.Width()) // sshTermy: mehr Tabstopps als Spalten gibt es nicht
 	for range n {
 		ts := e.tabstops.Next(x)
 		if ts < x {
@@ -39,6 +40,7 @@ func (e *Emulator) prevTab(n int) {
 		leftmargin = scroll.Min.X
 	}
 
+	n = min(n, e.Width()) // sshTermy: mehr Tabstopps als Spalten gibt es nicht
 	for range n {
 		ts := e.tabstops.Prev(x)
 		if ts > x {
@@ -104,6 +106,9 @@ func (e *Emulator) repeatPreviousCharacter(n int) {
 	if e.lastChar == 0 {
 		return
 	}
+	// sshTermy: höchstens ein voller Bildschirm. Ohne Grenze hält
+	// "CSI 2147483647 b" den Emulator minutenlang fest (Fund des Fuzz-Tests).
+	n = min(n, e.Width()*e.Height())
 	for range n {
 		e.handlePrint(e.lastChar)
 	}
