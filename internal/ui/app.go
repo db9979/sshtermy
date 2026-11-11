@@ -57,6 +57,7 @@ const (
 	scrLogs
 	scrQuickForm
 	scrMonitorForm // Grenzwerte der Überwachung (monitor.go)
+	scrBulkForm    // Sammeländerung an markierten Verbindungen (bulk.go)
 	scrFolderForm  // Ordner bearbeiten: Name und KI-Hausregeln (mgrtree.go)
 	scrImport
 	scrKeys
@@ -89,6 +90,7 @@ type App struct {
 	cmds          cmdsetState       // Befehlssätze (cmdsets.go)
 	lwatch        logWatchState     // Logwache + Syslog-Empfang (logwatch.go)
 	fresh         storeFresh        // zweites sshTermy hat gespeichert (storefresh.go)
+	quickVals     map[string]string // zuletzt eingegebene Platzhalter-Werte (quickvars.go)
 	lfold         folderScanState   // Ordner-Scan (logfolder.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
@@ -116,6 +118,9 @@ type App struct {
 	formKC           [2]string // Verbindungsformular: Werte aus dem Schlüsselbund beim Öffnen
 	formTunnel       domain.Tunnel
 	formFolder       string   // Pfad des Ordners im Ordner-Formular
+	formBulk         []string // Verbindungen der Sammeländerung (bulk.go)
+	searchAllLast    string   // letzter Suchbegriff der Suche über alle Tabs
+	tabDrag          *tabDrag // Tab wird mit der Maus gezogen (tabs.go)
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
 	returnToTerminal bool
@@ -226,14 +231,21 @@ type updateMsg struct {
 	err error
 }
 
-func checkUpdate() tea.Cmd {
+// checkUpdate fragt nach einer neuen Version. Mit dem Kanal „stabil“
+// (Einstellungen, updatechannel.go) zählen nur Versionen, die schon eine
+// Weile veröffentlicht sind.
+func (a *App) checkUpdate() tea.Cmd {
+	wait := time.Duration(a.st.Settings().UpdateWaitH) * time.Hour
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
-		r, err := update.Check(ctx)
+		r, err := checkRelease(ctx, wait)
 		return updateMsg{r, err}
 	}
 }
+
+// checkRelease: Variable für Tests.
+var checkRelease = update.CheckAged
 
 func (a *App) Init() tea.Cmd {
 	var intro tea.Cmd
@@ -322,25 +334,40 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.introMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.coreMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.featureMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.overlayMsg(msg); ok {
+		return a, cmd
+	}
+	return a, a.screenMsg(msg)
+}
+
+// coreMsg: Fenster, Takt, Verbindungsaufbau, Maus, Update. ok = false:
+// die Nachricht gehört einem der Bereiche in featureMsg oder der Ansicht.
+func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 	switch m := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.w, a.h = m.Width, m.Height
 		for _, s := range a.sessions {
 			a.resize(s)
 		}
-		return a, nil
+		return nil, true
 
 	case tickMsg:
 		a.freshTick()
-		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick(), a.crashTestTick(), a.netWatchTick())
+		return tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick(), a.crashTestTick(), a.netWatchTick()), true
 	case crashTestMsg:
 		panic("sshTermy crash test (ui) password=hunter2")
 	case llmProbeMsg:
 		a.lh.probing = false
-		return a, nil
+		return nil, true
 	case reachMsg:
 		a.onReach(m)
-		return a, nil
+		return nil, true
 
 	case outputMsg:
 		var clip tea.Cmd
@@ -352,29 +379,29 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			clip = a.takeClipboard(s)
 		}
-		return a, tea.Batch(a.listen(), clip, a.onOutputFrame(time.Now()), a.takePixels(m.sid))
+		return tea.Batch(a.listen(), clip, a.onOutputFrame(time.Now()), a.takePixels(m.sid)), true
 	case tea.FocusMsg:
 		a.blurred = false
 		a.clearNotices()
-		return a, nil
+		return nil, true
 	case tea.BlurMsg:
 		a.blurred = true
-		return a, nil
+		return nil, true
 
 	case mcpCallMsg:
-		return a, tea.Batch(a.onMCP(m), a.listen())
+		return tea.Batch(a.onMCP(m), a.listen()), true
 	case connTestMsg:
 		if a.modal != nil && a.modal.kind == mBusy {
 			a.modal = nil
 		}
 		a.connTestResult(m)
-		return a, nil
+		return nil, true
 	case hostKeyAskMsg:
 		a.showAsync(hostKeyModal(m))
-		return a, a.listen()
+		return a.listen(), true
 	case secretAskMsg:
 		a.showAsync(secretModal(m))
-		return a, a.listen()
+		return a.listen(), true
 	case connectStepMsg:
 		if s := a.byID(m.sid); s != nil && m.step >= 0 && m.step < len(s.connStepAt) {
 			s.connStep = m.step
@@ -385,18 +412,24 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s.connStepAt[m.step] = time.Now()
 			}
 		}
-		return a, a.listen()
+		return a.listen(), true
 	case connectNoticeMsg:
 		if s := a.byID(m.sid); s != nil {
 			s.connNote = m.text
 		}
-		return a, a.listen()
+		return a.listen(), true
 	case sshKeyDoneMsg:
-		return a, a.sshKeyDone(m)
+		return a.sshKeyDone(m), true
 	case relayMsg:
-		return a, m.apply(a)
+		return m.apply(a), true
 	case teamLinkMsg:
-		return a, m.apply(a)
+		return m.apply(a), true
+	case macLearnedMsg:
+		a.onMACLearned(m)
+		return nil, true
+	case wakeDoneMsg:
+		a.onWakeDone(m)
+		return nil, true
 
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
@@ -436,17 +469,18 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = a.onReconnected(s)
 			}
 			a.resize(s)
-			return a, tea.Batch(cmd, a.hostOnConnect(s), a.persistOnConnect(s))
+			a.armStartCmd(s)
+			return tea.Batch(cmd, a.hostOnConnect(s), a.persistOnConnect(s), a.learnMAC(s)), true
 		}
-		return a, nil
+		return nil, true
 	case adaptMsg:
 		a.onAdapt(m)
-		return a, nil
+		return nil, true
 	case muxProbeMsg:
 		a.onMuxProbe(m)
-		return a, nil
+		return nil, true
 	case persistMsg:
-		return a, a.onPersist(m)
+		return a.onPersist(m), true
 	case connectErrMsg:
 		if s := a.byID(m.sid); s != nil {
 			if s.rc.active {
@@ -456,11 +490,11 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s.flashTab(a.s.T.Danger)
 				var km *sshx.KeyMissingError
 				if errors.As(m.err, &km) && a.form == nil && a.modal == nil && a.pick == nil && a.pal == nil && a.scr == scrTerminal {
-					return a, a.openKeyFix(s.id, km)
+					return a.openKeyFix(s.id, km), true
 				}
 			}
 		}
-		return a, nil
+		return nil, true
 	case shellClosedMsg:
 		if s := a.byID(m.sid); s != nil {
 			a.onShellClosed(s, m)
@@ -468,154 +502,165 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s.detachNotice(i18n.T("Verbindung abgerissen, verbinde neu …"))
 			}
 		}
-		return a, a.listen()
+		return a.listen(), true
 	case detachConnMsg:
 		a.onDetachConn(m)
-		return a, a.listen()
+		return a.listen(), true
 	case detachResizeMsg:
 		a.onDetachResize(m)
-		return a, a.listen()
+		return a.listen(), true
 	case detachEndMsg:
 		a.onDetachEnd(m)
-		return a, a.listen()
+		return a.listen(), true
 
 	case tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg, tea.MouseWheelMsg:
 		if a.lock != nil {
-			return a, nil
+			return nil, true
 		}
-		return a, a.mouse(msg.(tea.MouseMsg))
+		return a.mouse(msg.(tea.MouseMsg)), true
 	case pasteMsg:
-		return a, a.onPaste(m)
+		return a.onPaste(m), true
 	case pingDoneMsg:
 		a.onPingDone(m)
-		return a, nil
+		return nil, true
 
 	case updateMsg:
 		if m.rel != nil {
 			a.rel = m.rel
 			a.flash(i18n.T("Update auf v") + m.rel.Version + i18n.T(" verfügbar (") + a.keys.label(actAbout) + ")")
 		}
-		return a, nil
+		return nil, true
 	case applyDoneMsg:
 		a.modal = nil
 		if m.err != nil {
 			a.flashErr(i18n.T("Update fehlgeschlagen: ") + m.err.Error())
-			return a, nil
+			return nil, true
 		}
 		if a.rel != nil {
 			a.restartPending = a.rel.Version
 		}
 		a.rel = nil
-		return a, a.askRestart()
+		return a.askRestart(), true
 	}
+	return nil, false
+}
 
+// featureMsg reicht die Nachricht an die Bereiche weiter (Broadcast, Sync,
+// KI, Dateien …); jeder nimmt nur seine eigenen.
+func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if cmd, ok := a.trzMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	// Broadcast und Netzwerk-Scan (Fortschritt kommt über a.events)
 	if cmd, ok := a.bcMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.scanMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 
 	// Sync zwischen Rechnern
 	if cmd, ok := a.syncMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 
 	// Nachrichten der Sitzungen (KI, Ziel, Frage)
 	if cmd, ok := a.companionMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.sessionMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.llmMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.reportMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.cmdsetMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.logsMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.scheduleMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.netMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.schedLogsMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.syslogSetupMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.folderScanMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.watchMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.logScanResult(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.containerMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.shareMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.editMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.filesMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 	if cmd, ok := a.hostMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
 
 	if cmd, ok := a.lockMsg(msg); ok {
-		return a, cmd
+		return cmd, true
 	}
+	return nil, false
+}
+
+// overlayMsg: Tasten und Einfügen, die vor der Ansicht kommen (Beenden,
+// Dialog, Auswahlliste, Palette, Hilfe).
+func (a *App) overlayMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if k, ok := msg.(tea.KeyPressMsg); ok {
 		a.lastKey = time.Now()
 		if a.scr == scrColors && a.colEd.editing && a.modal == nil {
-			return a, a.updateColors(k) // Hex-Eingabe: Buchstaben gehören dem Feld
+			return a.updateColors(k), true // Hex-Eingabe: Buchstaben gehören dem Feld
 		}
 		if a.scr == scrKeys && a.keyEd.capturing && a.modal == nil {
-			return a, a.updateKeys(k) // neue Taste: nichts anderes darf sie abfangen
+			return a.updateKeys(k), true // neue Taste: nichts anderes darf sie abfangen
 		}
 		if a.keys.is(actQuit, k.String()) {
 			if a.modal != nil && a.modal.quit {
-				return a, a.quit() // zweimal Strg+Q = beenden
+				return a.quit(), true // zweimal Strg+Q = beenden
 			}
-			return a, a.askQuit()
+			return a.askQuit(), true
 		}
 		if a.modal != nil {
-			return a, a.modalKey(k)
+			return a.modalKey(k), true
 		}
 		if a.pick != nil {
-			return a, a.pickerKey(k)
+			return a.pickerKey(k), true
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrFolderForm || a.scr == scrHighlightForm || a.scr == scrScheduleForm || a.scr == scrRulesForm || a.scr == scrCmdSetForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrMasterForm || a.scr == scrBackupForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrFolderForm || a.scr == scrHighlightForm || a.scr == scrScheduleForm || a.scr == scrRulesForm || a.scr == scrCmdSetForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrMasterForm || a.scr == scrBackupForm || a.scr == scrBulkForm) {
 			a.modal = a.helpModal()
-			return a, nil
+			return nil, true
 		}
 		if a.pal != nil {
-			return a, a.paletteKey(k)
+			return a.paletteKey(k), true
 		}
 		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs || a.scr == scrLogScan) {
-			return a, a.openPalette()
+			return a.openPalette(), true
 		}
 		if a.keys.is(actLocal, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) && a.lock == nil {
-			return a, a.openLocal("")
+			return a.openLocal(""), true
 		}
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.modal != nil {
@@ -623,58 +668,63 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.modal.kind == mSecret || a.modal.kind == mInput {
 			var cmd tea.Cmd
 			a.modal.in, cmd = a.modal.in.Update(pm)
-			return a, cmd
+			return cmd, true
 		}
-		return a, nil
+		return nil, true
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.pick != nil {
 		var cmd tea.Cmd
 		a.pick.in, cmd = a.pick.in.Update(pm)
 		a.pick.sel, a.pick.top = 0, 0
-		return a, cmd
+		return cmd, true
 	}
 	if pm, ok := msg.(tea.PasteMsg); ok && a.pal != nil && a.modal == nil {
 		var cmd tea.Cmd
 		a.pal.in, cmd = a.pal.in.Update(pm)
 		a.pal.sel, a.pal.armed = 0, -1
-		return a, cmd
+		return cmd, true
 	}
 
+	return nil, false
+}
+
+// screenMsg gibt die Nachricht an die Ansicht, die gerade zu sehen ist.
+func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 	switch a.scr {
 	case scrUnlock:
-		return a, a.updateUnlock(msg)
+		return a.updateUnlock(msg)
 	case scrManager:
-		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm:
-		return a, a.updateForm(msg)
+		return a.updateManager(msg)
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrBulkForm:
+		return a.updateForm(msg)
 	case scrTerminal:
-		return a, a.updateTerminal(msg)
+		return a.updateTerminal(msg)
 	case scrSync:
-		return a, a.updateSync(msg)
+		return a.updateSync(msg)
 	case scrLogs:
-		return a, a.updateLogs(msg)
+		return a.updateLogs(msg)
 	case scrLogScan:
-		return a, a.updateLogScan(msg)
+		return a.updateLogScan(msg)
 	case scrCmdSets:
-		return a, a.updateCmdSets(msg)
+		return a.updateCmdSets(msg)
 	case scrImport:
-		return a, a.updateImport(msg)
+		return a.updateImport(msg)
 	case scrTeam:
-		return a, a.updateTeam(msg)
+		return a.updateTeam(msg)
 	case scrTeamForm:
-		return a, a.updateTeamForm(msg)
+		return a.updateTeamForm(msg)
 	case scrKeys:
-		return a, a.updateKeys(msg)
+		return a.updateKeys(msg)
 	case scrColors:
-		return a, a.updateColors(msg)
+		return a.updateColors(msg)
 	case scrThemes:
-		return a, a.updateThemes(msg)
+		return a.updateThemes(msg)
 	case scrBroadcast:
-		return a, a.updateBroadcast(msg)
+		return a.updateBroadcast(msg)
 	case scrScan:
-		return a, a.updateScan(msg)
+		return a.updateScan(msg)
 	}
-	return a, nil
+	return nil
 }
 
 // WindowClosedMsg: Das eigene Fenster (internal/gui) wurde geschlossen.
@@ -787,7 +837,7 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewForm(), append(k, [2]string{"Esc", i18n.T("abbrechen")}))
 	case scrConnForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+T", i18n.T("testen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
-	case scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm:
+	case scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrBulkForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})

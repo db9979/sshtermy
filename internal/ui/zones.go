@@ -27,6 +27,7 @@ type zoneAction struct {
 	block bool                                   // rechteckiger Block (Box), sonst Fließtext
 	row   int                                    // Manager: Zeile+1 als Ziel beim Ziehen (0 = keins); Dateien: Eintrag+1
 	pane  int                                    // Dateien: Seite+1 (0 = keine)
+	tab   int                                    // Tab-Leiste: Tab+1 als Ziel beim Ziehen (0 = keins)
 	tip   func() string                          // Karte beim Verweilen der Maus (motion.go)
 }
 
@@ -183,6 +184,16 @@ func (z *zones) rowAt(x, y int) int {
 		if y >= r.y0 && y <= r.y1 && z.acts[r.id].row > 0 && z.acts[r.id].pane == 0 { // nur die Zeile zählt
 			_ = x
 			return z.acts[r.id].row - 1
+		}
+	}
+	return -1
+}
+
+// tabAt: Tab (tab-1) unter x/y für das Ziehen in der Tab-Leiste, sonst -1.
+func (z *zones) tabAt(x, y int) int {
+	for _, r := range z.rects {
+		if z.acts[r.id].tab > 0 && r.contains(x, y) {
+			return z.acts[r.id].tab - 1
 		}
 	}
 	return -1

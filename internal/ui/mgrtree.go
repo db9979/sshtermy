@@ -77,7 +77,7 @@ func (a *App) mgrFilter() (words, tags []string) {
 }
 
 func connMatches(c domain.Connection, words, tags []string) bool {
-	hay := strings.ToLower(c.Alias + " " + c.Host + " " + c.Group + " " + c.Username + " " + strings.Join(c.Tags, " "))
+	hay := strings.ToLower(c.Alias + " " + c.Host + " " + c.Group + " " + c.Username + " " + strings.Join(c.Tags, " ") + " " + c.Note)
 	for _, w := range words {
 		if !strings.Contains(hay, w) {
 			return false

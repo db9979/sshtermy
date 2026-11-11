@@ -17,15 +17,15 @@ de│   F12 w       What's new               s           skip                   
   │   n           new connection           ?           Instruct agent          ≡ Session logs l                     │
   │   e           edit                     v           view the agent's scri…   /           search (output too)     │
   │   d           delete                   r           delete the agent's sc…   ⏎ / → ←     expand/collapse         │
-  │   Ctrl+Z      undo delete (10 s)       c / l       copy result / read all   Tab         by time / by host       │
-  │   Ctrl+T      in the form: test con…   PgUp PgDn   scroll the panel (mou…   f           filter: today · 7 day…  │
-  │   /           search (also #tag)       Space       plan: remove step        s           sort hosts              │
-  │   o           new folder (A / B nes…   ?           plan: re-plan            z           AI summary              │
-  │   r           Edit folder                                                   Z           summarize all matches   │
-  │   v           move to folder          ◆ Ask AI F3                           b           Change report           │
-  │   Shift+↑     move up (↓ down)         ⏎           send question            x           export: md · txt · ca…  │
-  │   ← / →       collapse/expand folder   ⇧⏎ / Ctrl+J new line                 d           delete                  │
-  │   - / +       collapse/expand all      1…9         insert command           a           recording on/off        │
+  │   Space       mark (then e, v, d fo…   c / l       copy result / read all   Tab         by time / by host       │
+  │   *           mark all visible         PgUp PgDn   scroll the panel (mou…   f           filter: today · 7 day…  │
+  │   Ctrl+Z      undo delete (10 s)       Space       plan: remove step        s           sort hosts              │
+  │   Ctrl+T      in the form: test con…   ?           plan: re-plan            z           AI summary              │
+  │   /           search (also #tag)                                            Z           summarize all matches   │
+  │   o           new folder (A / B nes…  ◆ Ask AI F3                           b           Change report           │
+  │   r           Edit folder              ⏎           send question            x           export: md · txt · ca…  │
+  │   v           move to folder           ⇧⏎ / Ctrl+J new line                 d           delete                  │
+  │   Shift+↑     move up (↓ down)         1…9         insert command           a           recording on/off        │
   │                                                                                                                 │
   │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
   │  Esc leads back to the terminal from every panel.                                                               │

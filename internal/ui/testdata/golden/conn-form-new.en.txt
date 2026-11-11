@@ -16,17 +16,17 @@
   │ ━━ Organize ──────────────────────────────────────────────────────────────────────────────── │
   │ │ Folder                 ▸ Netzwerk ▾                                                        │
   │ │ Tags                   none                                                                │
+  │ │ Note                   none                                                                │
   │ │ Color                  automatic                                                           │
   │ │ Protection             ● on                                                                │
   │                                                                                              │
   │ ━━ Device & AI ───────────────────────────────────────────────────────────────────────────── │
   │ │ Device type            automatic                                                           │
-  │ │ System                 not detected yet · determined on connect                            │
-  │ │ Command set            automatic                                                           │
-  │ │ AI notes               none · e.g. “VLAN 99 = management, never reload”                    │
-  │                                                                                              │
-  │  ▸ Advanced  all off ─────────────────────────────────────────────────────────────────────── │
+  │   ↓ …                                                                                        │
   │                                                                                              │
   │ ──────────────────────────────────────────────────────────────────────────────────────────── │
   │ Display name, e.g. “DGX Spark”                                                               │
+  │                                                                                              │
+  │                                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘
  Tab next  ←/→ select  Ctrl+T test  Ctrl+S save  Esc cancel

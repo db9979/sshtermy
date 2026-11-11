@@ -23,6 +23,13 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Forgiving everyday use**: Ctrl+Q and closing the window ask first when connections are still open; deleting a connection, folder or runbook happens right away and a toast offers **undo** for 10 s (Ctrl+Z in the manager or click); **Ctrl+T in the connection form tests** reachability, host key and login before you save; failed connections say in **plain language** what's wrong and what helps (“Login rejected”, “No answer from sw1:22 … VPN or jump host?”, `e` edits the connection), the original error stays below in gray. If a server shows a **new host key** (reinstall, factory reset), `k` compares old and new fingerprint and accepts the new one after a second confirmation
 - **Simple mode** (palette › Settings › Appearance): hides pro features (broadcast, network, team, agent, recording, MCP, audit …) from the palette overview, settings and key bar; searching in the palette still finds everything
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
+- **Change several connections at once**: in the manager Space marks a connection, `*` all visible ones (with a search or `#tag`, all hits). After that `e` (bulk change: add or remove tags, user, protection, color), `v` (move) and `d` (delete, with undo) apply to all marked ones; Esc clears the selection.
+- **Note per connection**: a free field just for you (contact person, maintenance window, location). It shows in the manager on the right, the search finds it, and it is never sent to the AI. “AI notes” remain the field for hints to the AI.
+- **Start command per connection** (form › Advanced): typed visibly once after login, e.g. `cd /srv/app` or `sudo -i`. The form rejects dangerous commands; a start command is never taken over from a team package.
+- **Wake-on-LAN**: a powered-off machine in your own network can be woken from the manager (click “Send Wake-on-LAN”, palette “wake”, or `w` in a disconnected tab). sshTermy remembers the MAC address on the first connect, or you enter it under Advanced.
+- **Placeholders in quick commands**: `systemctl restart {{service}}` asks for the value when run, `{{service:nginx}}` suggests one; the last value is prefilled next time. If only the inserted value makes the command dangerous, sshTermy asks first.
+- **Search across all tabs** (Alt+S): one search term, the hits from the scrollback of all open tabs in one list; ⏎ jumps to the tab at exactly that line.
+- **Drag tabs with the mouse**: a tab can be dragged to another position in the tab bar.
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
 - **X11 forwarding** per connection (like `ssh -X`): graphical programs from the server open here; needs a local X server (XQuartz, VcXsrv, WSLg), the X cookie never leaves your computer
@@ -201,7 +208,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   every frame. Palette “Performance display” rates the draw time in words (smooth/good/a bit slow/choppy), shows a bar per
   frame, frames per second (1 at rest is normal: it only draws on change), the possible frame rate and the output rate;
   in the terminal it sits left of the F6 sidebar
-- **Versioning and auto-update** from GitHub Releases (signed). Before the swap the new program file is started once and must report the announced version; if it then fails to start cleanly twice, sshTermy restores the previous version by itself
+- **Versioning and auto-update** from GitHub Releases (signed). Before the swap the new program file is started once and must report the announced version; if it then fails to start cleanly twice, sshTermy restores the previous version by itself **Update channel** (Settings › Security › “Offer updates”): “immediately” shows every new version, “stable” only versions that have been published for a day or a week. `sshtermy -update` always takes the newest.
 - **Two sshTermy at once** (second window, second start): each one notices when the other has saved and reloads connections and settings instead of overwriting them. If saving fails (disk full, read-only folder), a message appears
 
 The AI interaction concept (suggestions, goal mode, fixed danger rules) comes from the remote access assistant of
@@ -280,9 +287,10 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | Where | Key | Effect |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | connect / new / edit / delete / search / tunnel / AI settings / sync / session logs |
+| | Space / * | mark a connection / mark all visible ones; then e (bulk change), v and d apply to all marked ones, Esc clears |
 | | Ctrl+Z | undo the last delete (connection, folder, runbook; 10 s, or click the toast) |
 | Connection form | Ctrl+T / Ctrl+S | test the connection (reachable, host key, login) / save |
-| Closed tab | ⏎ / e / k / x | reconnect / edit the connection / compare and accept a changed host key / close the tab |
+| Closed tab | ⏎ / e / k / x / w | reconnect / edit the connection / compare and accept a changed host key / close the tab / wake up (Wake-on-LAN) |
 | | i / a / b | import connections / choose a color scheme (26 themes, live preview) / customize shortcuts |
 | | c / q | create or copy an SSH key / edit quick commands |
 | | m / f / z | broadcast to several hosts / network scan / schedules (Ctrl+N new, Ctrl+E edit, Ctrl+R now, Ctrl+O on/off, ⏎ last result) |
@@ -301,9 +309,10 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, l log view, c containers, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
+| | Alt+S | search in all open tabs, ⏎ jumps to the matching line |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu, hover it for target, duration and latency) |
 | | Alt+L | local shell in a new tab (also in the manager; palette: `local`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
-| | F9 / ⇧F1…F8 | quick commands: list / run directly |
+| | F9 / ⇧F1…F8 | quick commands: list / run directly (`{{name}}` in the command asks for a value) |
 | | F10 | back to the manager (sessions keep running) |
 | | ⇧F9 | key bar explains the keys of the current area |
 | | ⇧F10 | move the tab to its own terminal window (Windows Terminal/console, Terminal.app/iTerm2, Linux terminals, tmux; in sshTermy's own window a second own window); the session stays open, closing the window or ⏎ brings it back. Own terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |

@@ -59,6 +59,8 @@ type form struct {
 	focus  int
 	err    string
 	minH   int // höchste bisher gezeigte Höhe: das Formular schrumpft nicht (kein Springen)
+	maxH   int // so viele Zeilen passen ins Fenster (0 = unbegrenzt); darüber blättert das Formular
+	top    int // erste gezeigte Feldzeile, wenn geblättert wird
 }
 
 func newInput(val string, secret bool) textinput.Model {
@@ -272,10 +274,16 @@ func (f *form) update(msg tea.Msg) (submit bool, cmd tea.Cmd) {
 func (f *form) view(s Styles, width int, z *zones) string {
 	var b strings.Builder
 	lines := 0
-	put := func(str string) { b.WriteString(str + "\n"); lines++ }
+	out := func(str string) { b.WriteString(str + "\n"); lines++ }
 	if f.title != "" {
-		put(s.Accent.Render(f.title))
+		out(s.Accent.Render(f.title))
 	}
+	// Felder erst sammeln: passt das Formular nicht ins Fenster (maxH),
+	// zeigt es einen Ausschnitt um das aktive Feld; Titel und Hilfezone
+	// bleiben stehen.
+	var body []string
+	focusLine := 0
+	put := func(str string) { body = append(body, str) }
 	const labelW = 22
 	inW := max(20, width-labelW-4)
 	first := true
@@ -291,6 +299,9 @@ func (f *form) view(s Styles, width int, z *zones) string {
 			tint = s.T.Muted
 			if fl.tint != nil {
 				tint = fl.tint(s.T)
+			}
+			if focused {
+				focusLine = len(body)
 			}
 			put(f.headerRow(s, i, fl, focused, tint, width, z))
 			continue
@@ -343,6 +354,9 @@ func (f *form) view(s Styles, width int, z *zones) string {
 				return f.setFocus(i)
 			})
 		}
+		if focused {
+			focusLine = len(body)
+		}
 		put(row)
 	}
 	// Feste Hilfezone: immer zwei Zeilen, damit nichts nachrutscht.
@@ -354,17 +368,44 @@ func (f *form) view(s Styles, width int, z *zones) string {
 	for len(hl) < 2 {
 		hl = append(hl, "")
 	}
-	put("")
-	put(s.Muted.Render(strings.Repeat("─", max(10, width))))
+	tail := 4
+	if f.err != "" {
+		tail += 2
+	}
+	focusLine = min(focusLine, len(body)-1)
+	if room := f.maxH - lines - tail; f.maxH > 0 && room >= 3 && len(body) > room {
+		if focusLine < f.top+1 {
+			f.top = focusLine - 1
+		}
+		if focusLine > f.top+room-2 {
+			f.top = focusLine - room + 2
+		}
+		f.top = clamp(f.top, 0, len(body)-room)
+		above, below := f.top, len(body)-f.top-room
+		body = append([]string(nil), body[f.top:f.top+room]...)
+		if above > 0 {
+			body[0] = s.Muted.Render("  ↑ …")
+		}
+		if below > 0 {
+			body[len(body)-1] = s.Muted.Render("  ↓ …")
+		}
+	} else {
+		f.top = 0
+	}
+	for _, l := range body {
+		out(l)
+	}
+	out("")
+	out(s.Muted.Render(strings.Repeat("─", max(10, width))))
 	for _, l := range hl[:2] {
-		put(s.Muted.Render(strings.TrimRight(l, " ")))
+		out(s.Muted.Render(strings.TrimRight(l, " ")))
 	}
 	if f.err != "" {
-		put("")
-		put(s.Danger.Render("× " + f.err))
+		out("")
+		out(s.Danger.Render("× " + f.err))
 	}
-	for lines < f.minH {
-		put("")
+	for lines < f.minH && (f.maxH <= 0 || lines < f.maxH) {
+		out("")
 	}
 	f.minH = lines
 	return b.String()

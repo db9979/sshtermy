@@ -123,6 +123,38 @@ func (a *App) moveTabTo(i, j int) {
 	}
 }
 
+// tabDrag: ein Tab wird mit gedrückter Maustaste in der Leiste gezogen.
+type tabDrag struct {
+	id    int // Sitzung
+	x     int // letzte Mausspalte (Richtung des Ziehens)
+	moved bool
+}
+
+// tabDragMouse sortiert den gezogenen Tab um, sobald die Maus über einem
+// anderen Tab steht. Getauscht wird nur in Zugrichtung, sonst spränge ein
+// schmaler Tab unter der Maus zwischen zwei breiten hin und her.
+func (a *App) tabDragMouse(msg tea.MouseMsg) tea.Cmd {
+	d := a.tabDrag
+	m := msg.Mouse()
+	switch msg.(type) {
+	case tea.MouseReleaseMsg:
+		a.tabDrag = nil
+	case tea.MouseMotionMsg:
+		i := a.indexOf(a.byID(d.id))
+		j := a.z.tabAt(m.X, m.Y)
+		if i < 0 {
+			a.tabDrag = nil
+			return nil
+		}
+		if j >= 0 && ((j > i && m.X > d.x) || (j < i && m.X < d.x)) {
+			a.moveTabTo(i, j)
+			d.moved = true
+		}
+		d.x = m.X
+	}
+	return nil
+}
+
 // reopenTab verbindet einen getrennten Tab neu.
 func (a *App) reopenTab(s *session) tea.Cmd {
 	switch s.state {
