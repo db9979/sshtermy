@@ -80,6 +80,7 @@ func (s *Store) lockData() error {
 
 // CreateFolder legt einen (auch leeren) Ordner an.
 func (s *Store) CreateFolder(path string) (string, error) {
+	s.Fresh()
 	path = domain.NormPath(path)
 	if path == "" {
 		return "", errors.New(i18n.T("Name fehlt"))
@@ -109,6 +110,7 @@ func (s *Store) hasConnIn(path string) bool {
 // Unterordnern und Verbindungen. Gibt es das Ziel schon, werden beide
 // zusammengelegt.
 func (s *Store) MoveFolder(old, neu string) error {
+	s.Fresh()
 	old, neu = domain.NormPath(old), domain.NormPath(neu)
 	switch {
 	case old == "":
@@ -131,6 +133,7 @@ func (s *Store) MoveFolder(old, neu string) error {
 // DeleteFolder löst einen Ordner auf: Inhalt und Unterordner rücken eine
 // Ebene nach oben, Verbindungen werden nicht gelöscht.
 func (s *Store) DeleteFolder(path string) error {
+	s.Fresh()
 	path = domain.NormPath(path)
 	if path == "" {
 		return errors.New(i18n.T("kein Ordner gewählt"))
@@ -195,6 +198,7 @@ func (s *Store) reparent(old, neu string, now time.Time) {
 
 // SetCollapsed klappt Ordner ein oder aus (paths leer = alle).
 func (s *Store) SetCollapsed(collapsed bool, paths ...string) error {
+	s.Fresh()
 	if err := s.lockData(); err != nil {
 		return err
 	}
@@ -225,6 +229,7 @@ func (s *Store) SetCollapsed(collapsed bool, paths ...string) error {
 
 // OrderFolders setzt die Reihenfolge der Ordner paths (Geschwister).
 func (s *Store) OrderFolders(paths []string) error {
+	s.Fresh()
 	if err := s.lockData(); err != nil {
 		return err
 	}
@@ -243,6 +248,7 @@ func (s *Store) OrderFolders(paths []string) error {
 // group (alle übrigen dort behalten ihren Platz dahinter nicht: ids sollte
 // den ganzen Ordnerinhalt enthalten, wenn umsortiert wird).
 func (s *Store) PlaceConns(group string, ids []string) error {
+	s.Fresh()
 	group = domain.NormPath(group)
 	if err := s.lockData(); err != nil {
 		return err
@@ -268,6 +274,7 @@ func (s *Store) PlaceConns(group string, ids []string) error {
 
 // MoveConns verschiebt Verbindungen in einen anderen Ordner (hinten an).
 func (s *Store) MoveConns(group string, ids ...string) error {
+	s.Fresh()
 	group = domain.NormPath(group)
 	if err := s.lockData(); err != nil {
 		return err
@@ -290,6 +297,7 @@ func (s *Store) MoveConns(group string, ids ...string) error {
 
 // SetFolderRules setzt die KI-Hausregeln eines Ordners (leer = keine).
 func (s *Store) SetFolderRules(path, rules string) error {
+	s.Fresh()
 	path = domain.NormPath(path)
 	if path == "" {
 		return errors.New(i18n.T("kein Ordner gewählt"))

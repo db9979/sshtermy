@@ -56,6 +56,13 @@ type Store struct {
 	// OnChange wird nach jeder lokalen Änderung aufgerufen (nicht nach dem
 	// Übernehmen eines Sync-Stands), z. B. um einen Abgleich anzustoßen.
 	OnChange func()
+	// OnSaveError: Schreiben auf die Platte ist gescheitert (Platte voll,
+	// Ordner schreibgeschützt). Viele Aufrufer verwerfen den Fehler; über
+	// diesen Haken erfährt es der Nutzer trotzdem.
+	OnSaveError func(error)
+	// OnReload: ein anderes sshTermy hat gespeichert, die Daten sind neu
+	// geladen (Fresh).
+	OnReload func()
 	rev      uint64 // zählt lokale Änderungen
 
 	// Zwischenspeicher für Connections(): bei 500 Verbindungen kostet das
@@ -119,6 +126,7 @@ func (s *Store) Init(password []byte, useDPAPI bool) error {
 // das Entsperren per Windows-Anmeldung (DPAPI) ein oder aus. Beides nur mit
 // dem bisherigen Passwort.
 func (s *Store) ChangeMaster(oldPw, newPw []byte, dpapi bool) error {
+	s.Fresh()
 	if err := s.V.CheckPassword(oldPw); err != nil {
 		return err
 	}
@@ -139,6 +147,33 @@ func (s *Store) ChangeMaster(oldPw, newPw []byte, dpapi bool) error {
 	s.mu.Unlock()
 	s.changed()
 	return s.save()
+}
+
+// Fresh lädt die Daten neu, wenn ein anderes sshTermy (zweites Fenster,
+// zweiter Start) die Datei inzwischen geschrieben hat. Jede ändernde Methode
+// ruft das zuerst auf, die Oberfläche zusätzlich im Sekundentakt: so baut
+// eine Änderung immer auf dem aktuellen Stand auf, statt die des anderen
+// Programms still zu überschreiben. true = es wurde neu geladen.
+func (s *Store) Fresh() bool {
+	if s.V == nil || !s.V.ChangedOnDisk() { // V fehlt nur in Tests
+		return false
+	}
+	d := domain.NewData()
+	if err := s.V.Load(d); err != nil {
+		return false // gerade unlesbar (z. B. anderes Passwort): Stand im Speicher behalten
+	}
+	s.mu.Lock()
+	if s.data == nil {
+		s.mu.Unlock()
+		return false
+	}
+	s.data = d
+	s.mu.Unlock()
+	s.changed()
+	if s.OnReload != nil {
+		s.OnReload()
+	}
+	return true
 }
 
 // AfterUnlock lädt die Daten, nachdem der Vault entsperrt wurde.
@@ -166,6 +201,9 @@ func (s *Store) Lock() {
 
 func (s *Store) save() error {
 	if err := s.persist(); err != nil {
+		if s.OnSaveError != nil && !errors.Is(err, vault.ErrLocked) {
+			s.OnSaveError(err)
+		}
 		return err
 	}
 	s.mu.Lock()
@@ -298,6 +336,7 @@ func (s *Store) ConnHere(id string) (domain.ConnHere, bool) {
 // die Verbindung im Sync behält ihre bisherigen Werte. here == nil: die
 // Werte gehen mit dem Sync, eine lokale Abweichung entfällt.
 func (s *Store) UpsertConnectionHere(c domain.Connection, here *domain.ConnHere) (domain.Connection, error) {
+	s.Fresh()
 	if here != nil {
 		s.mu.RLock()
 		var old domain.Connection
@@ -333,6 +372,7 @@ func (s *Store) UpsertConnectionHere(c domain.Connection, here *domain.ConnHere)
 // diesem Rechner liegt. Der synchronisierte Pfad (für die anderen Rechner)
 // bleibt unverändert. Leer = wieder den synchronisierten Pfad nehmen.
 func (s *Store) SetLocalKeyPath(id, path string) error {
+	s.Fresh()
 	home, _ := os.UserHomeDir()
 	s.mu.Lock()
 	if s.data == nil {
@@ -418,6 +458,7 @@ func Validate(c domain.Connection) error {
 
 // UpsertConnection legt an (ID leer) oder ändert.
 func (s *Store) UpsertConnection(c domain.Connection) (domain.Connection, error) {
+	s.Fresh()
 	if err := Validate(c); err != nil {
 		return c, err
 	}
@@ -460,6 +501,7 @@ func (s *Store) UpsertConnection(c domain.Connection) (domain.Connection, error)
 // Felder bleiben, wie sie im Store stehen, auch wenn sie inzwischen jemand
 // bearbeitet hat).
 func (s *Store) SetProfile(id string, p domain.SystemProfile) error {
+	s.Fresh()
 	s.mu.Lock()
 	found := false
 	for i := range s.data.Connections {
@@ -483,6 +525,7 @@ func (s *Store) SetProfile(id string, p domain.SystemProfile) error {
 // speichert nur einmal. Vorbelegte IDs bleiben erhalten (damit Jump-Hosts
 // innerhalb des Imports aufeinander zeigen können).
 func (s *Store) AddConnections(cs []domain.Connection) ([]domain.Connection, error) {
+	s.Fresh()
 	for _, c := range cs {
 		if err := Validate(c); err != nil {
 			return nil, errors.New(c.Alias + ": " + err.Error())
@@ -519,6 +562,7 @@ func NewID() string { return newID() }
 
 // DeleteConnection entfernt auch die Tunnel dieser Verbindung.
 func (s *Store) DeleteConnection(id string) error {
+	s.Fresh()
 	s.mu.Lock()
 	cs := s.data.Connections[:0]
 	for _, c := range s.data.Connections {
@@ -546,6 +590,7 @@ func (s *Store) DeleteConnection(id string) error {
 
 // Touch merkt die letzte Nutzung.
 func (s *Store) Touch(id string) {
+	s.Fresh()
 	s.mu.Lock()
 	for i := range s.data.Connections {
 		if s.data.Connections[i].ID == id {
@@ -573,6 +618,7 @@ func (s *Store) Tunnels(connID string) []domain.Tunnel {
 }
 
 func (s *Store) UpsertTunnel(t domain.Tunnel) (domain.Tunnel, error) {
+	s.Fresh()
 	if t.BindHost == "" {
 		t.BindHost = "127.0.0.1"
 	}
@@ -593,6 +639,7 @@ func (s *Store) UpsertTunnel(t domain.Tunnel) (domain.Tunnel, error) {
 }
 
 func (s *Store) DeleteTunnel(id string) error {
+	s.Fresh()
 	s.mu.Lock()
 	ts := s.data.Tunnels[:0]
 	for _, t := range s.data.Tunnels {
@@ -616,6 +663,7 @@ func (s *Store) LLM() domain.LLMConfig {
 }
 
 func (s *Store) SetLLM(c domain.LLMConfig) error {
+	s.Fresh()
 	s.mu.Lock()
 	s.data.LLM = c
 	s.data.LLMUpdatedAt = time.Now().UTC()
@@ -646,6 +694,7 @@ func (s *Store) SyncConfig() domain.SyncConfig {
 
 // SetSyncConfig speichert die Sync-Einstellungen (löst keinen Abgleich aus).
 func (s *Store) SetSyncConfig(c domain.SyncConfig) error {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()
@@ -660,6 +709,7 @@ func (s *Store) SetSyncConfig(c domain.SyncConfig) error {
 // hier gelöscht wurde, damit er auch im Sync-Archiv und auf den anderen
 // Rechnern verschwindet. key: syncx.ArchiveTombstone(...).
 func (s *Store) ForgetArchived(key string) error {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()
@@ -693,6 +743,7 @@ func (s *Store) Snapshot() (*domain.Data, uint64, error) {
 // lokale Änderungen, wird stattdessen merge auf den aktuellen Stand
 // angewendet und changed = true gemeldet (dann bitte erneut abgleichen).
 func (s *Store) ApplySync(rev uint64, apply func(d *domain.Data)) (changed bool, err error) {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()
@@ -707,6 +758,7 @@ func (s *Store) ApplySync(rev uint64, apply func(d *domain.Data)) (changed bool,
 // Update ändert den Stand in einem Schritt und speichert einmal (z. B. bei
 // der Übernahme eines Team-Pakets).
 func (s *Store) Update(f func(d *domain.Data)) error {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()
@@ -719,6 +771,7 @@ func (s *Store) Update(f func(d *domain.Data)) error {
 
 // UpdateSettings ändert die Einstellungen und speichert.
 func (s *Store) UpdateSettings(f func(*domain.Settings)) error {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()
@@ -736,6 +789,7 @@ func (s *Store) UpdateSettings(f func(*domain.Settings)) error {
 // UpdateSchedules ändert die Zeitpläne. Geänderte Einträge bekommen einen
 // neuen UpdatedAt (Sync pro Eintrag), entfernte einen Grabstein.
 func (s *Store) UpdateSchedules(f func([]domain.Schedule) []domain.Schedule) error {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()
@@ -797,6 +851,7 @@ func (s *Store) Runbooks(connID string) []domain.Runbook {
 }
 
 func (s *Store) UpsertRunbook(r domain.Runbook) (domain.Runbook, error) {
+	s.Fresh()
 	r.Name, r.Goal = strings.TrimSpace(r.Name), strings.TrimSpace(r.Goal)
 	if r.Goal == "" {
 		return r, errors.New(i18n.T("Ziel fehlt"))
@@ -821,6 +876,7 @@ func (s *Store) UpsertRunbook(r domain.Runbook) (domain.Runbook, error) {
 }
 
 func (s *Store) DeleteRunbook(id string) error {
+	s.Fresh()
 	s.mu.Lock()
 	rs := s.data.Runbooks[:0]
 	for _, r := range s.data.Runbooks {
@@ -837,6 +893,7 @@ func (s *Store) DeleteRunbook(id string) error {
 // UseRunbook zählt eine Benutzung (für die Sortierung). Wer es startet, hat
 // die Schritte gesehen: die Team-Markierung fällt weg.
 func (s *Store) UseRunbook(id string) {
+	s.Fresh()
 	s.mu.Lock()
 	for i := range s.data.Runbooks {
 		if s.data.Runbooks[i].ID == id {

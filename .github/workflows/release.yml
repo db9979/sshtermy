@@ -23,11 +23,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26.x"
           check-latest: true
@@ -62,6 +62,15 @@ jobs:
             CGO_ENABLED=0 GOARM=7 GOOS=$os GOARCH=$arch go build -trimpath -ldflags "$LDF" -o "dist/sshtermy_${os}_${arch}${ext}" ./cmd/sshtermy
           done
           cd dist && sha256sum sshtermy_* > checksums.txt && cat checksums.txt
+
+      # Sicherheitsnetz: was gleich an alle Installationen geht, muss starten
+      # und die richtige Version nennen (derselbe Test läuft vor jedem
+      # Austausch in der App, internal/update/guard.go).
+      - name: Selbsttest der gebauten Programmdatei
+        run: |
+          OUT="$(dist/sshtermy_linux_amd64 -version)"
+          echo "$OUT"
+          echo "$OUT" | grep -q "v${{ steps.v.outputs.version }} " || { echo "::error::gebaute Datei meldet nicht v${{ steps.v.outputs.version }}"; exit 1; }
 
       - name: Debian-Pakete (amd64, arm64, armhf, riscv64)
         run: |

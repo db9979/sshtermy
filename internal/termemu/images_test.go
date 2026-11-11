@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 type lockedBuf struct {
@@ -80,6 +81,7 @@ func TestImageKitty(t *testing.T) {
 	raw := base64.StdEncoding.EncodeToString([]byte{0, 255, 0, 0, 255, 0, 0, 255, 0, 0, 255, 0})
 	// Abfrage: sshTermy antwortet OK
 	feed(tm, "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\", 5)
+	tm.Flush(time.Second)
 	if !strings.Contains(host.String(), "\x1b_Gi=31;OK\x1b\\") {
 		t.Fatalf("keine Antwort: %q", host.String())
 	}

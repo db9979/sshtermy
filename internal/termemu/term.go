@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unicode/utf8"
 
 	uv "github.com/charmbracelet/ultraviolet"
@@ -29,7 +30,7 @@ type Term struct {
 	mouse map[ansi.DECMode]bool // vom Programm angeforderte Maus-Modi
 
 	sb    *scrollback // Verlauf, kompakt statt im Emulator (scrollback.go)
-	host  io.Writer
+	host  *hostQueue  // Weg zum Server, kehrt sofort zurück (hostqueue.go)
 	muted atomic.Bool // Antworten auf Abfragen verwerfen (MuteReplies)
 
 	// Shell-Integration (OSC 133 / OSC 633): Exit-Code des letzten Befehls
@@ -52,7 +53,7 @@ func (t *Term) Gen() uint64 { return t.gen.Load() }
 // New erzeugt das Terminal. toHost bekommt alle Bytes, die zum Server sollen
 // (kodierte Tasten, Paste, Antworten auf Abfragen).
 func New(cols, rows int, toHost io.Writer) *Term {
-	t := &Term{emu: vt.NewSafeEmulator(cols, rows), host: toHost, sb: newScrollback(ScrollbackLines)}
+	t := &Term{emu: vt.NewSafeEmulator(cols, rows), host: newHostQueue(toHost), sb: newScrollback(ScrollbackLines)}
 	// Zeilen, die oben hinauslaufen, landen direkt im kompakten Verlauf
 	// (läuft innerhalb von Write, push kopiert die Zellen).
 	t.emu.SetScrollbackHook(t.sb.push)
@@ -108,7 +109,7 @@ func New(cols, rows int, toHost io.Writer) *Term {
 		for {
 			n, err := t.emu.Read(buf)
 			if n > 0 && !t.muted.Load() {
-				if _, werr := toHost.Write(buf[:n]); werr != nil {
+				if _, werr := t.host.Write(buf[:n]); werr != nil {
 					return
 				}
 			}
@@ -263,7 +264,11 @@ func (t *Term) Cursor() (x, y int, visible bool) {
 }
 
 // Close beendet den Ausgabe-Kopierer.
-func (t *Term) Close() { _ = t.emu.Close() }
+// Flush wartet, bis alles Geschriebene (Tasten, Antworten) beim Server
+// angekommen ist, höchstens d. Für Tests und geordnetes Beenden.
+func (t *Term) Flush(d time.Duration) bool { return t.host.flush(d) }
+
+func (t *Term) Close() { _ = t.emu.Close(); t.host.close() }
 
 // View rendert das Raster als ANSI-String mit genau Höhe Zeilen. ghost wird
 // (gedimmt) hinter dem Cursor eingeblendet, wenn dort nichts steht.

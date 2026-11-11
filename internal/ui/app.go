@@ -88,6 +88,7 @@ type App struct {
 	lscan         logScanState      // Log-Blick (logscan.go)
 	cmds          cmdsetState       // Befehlssätze (cmdsets.go)
 	lwatch        logWatchState     // Logwache + Syslog-Empfang (logwatch.go)
+	fresh         storeFresh        // zweites sshTermy hat gespeichert (storefresh.go)
 	lfold         folderScanState   // Ordner-Scan (logfolder.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
@@ -204,6 +205,7 @@ func New(st *store.Store) (*App, error) {
 	a.unlock = newUnlock(st)
 	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
+	a.hookFresh()
 	if IntroEnabled(st.Dir) {
 		a.intro = &introState{}
 	}
@@ -329,6 +331,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case tickMsg:
+		a.freshTick()
 		return a, tea.Batch(tick(), a.onTick(), a.llmTick(), a.reachTick(), a.crashTestTick(), a.netWatchTick())
 	case crashTestMsg:
 		panic("sshTermy crash test (ui) password=hunter2")
@@ -397,7 +400,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
-			s.client, s.shell, s.state, s.connNote, s.errv = m.client, m.shell, stConnected, "", nil
+			s.client, s.state, s.connNote, s.errv = m.client, stConnected, "", nil
+			s.setShell(m.shell)
 			s.connectedAt = time.Now()
 			s.flashTab(a.s.T.OK)
 			if !s.rc.active {

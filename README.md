@@ -201,7 +201,8 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   every frame. Palette “Performance display” rates the draw time in words (smooth/good/a bit slow/choppy), shows a bar per
   frame, frames per second (1 at rest is normal: it only draws on change), the possible frame rate and the output rate;
   in the terminal it sits left of the F6 sidebar
-- **Versioning and auto-update** from GitHub Releases (signed)
+- **Versioning and auto-update** from GitHub Releases (signed). Before the swap the new program file is started once and must report the announced version; if it then fails to start cleanly twice, sshTermy restores the previous version by itself
+- **Two sshTermy at once** (second window, second start): each one notices when the other has saved and reloads connections and settings instead of overwriting them. If saving fails (disk full, read-only folder), a message appears
 
 The AI interaction concept (suggestions, goal mode, fixed danger rules) comes from the remote access assistant of
 [speech-on-dgx-spark](https://github.com/db9979/speech-on-dgx-spark); the technology was rebuilt from scratch in Go.
