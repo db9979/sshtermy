@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -86,8 +87,12 @@ func (a *App) scheduleItems() []pickItem {
 		if sc.Off {
 			hint = i18n.T("aus")
 		}
+		detail := a.schedTargetText(sc)
+		if !sc.RunsOn(deviceName()) {
+			detail += " · " + i18n.T("läuft auf ") + sc.Machine
+		}
 		out = append(out, pickItem{value: sc.ID, label: sc.At + " " + i18n.T(daysLabel(sc.Days)) + " · " + sc.Name,
-			detail: a.schedTargetText(sc), hint: hint})
+			detail: detail, hint: hint})
 	}
 	return out
 }
@@ -149,13 +154,13 @@ func (a *App) openSchedules() tea.Cmd {
 			p.items = a.scheduleItems()
 			return nil, true
 		case "ctrl+d", "delete":
-			_ = a.st.UpdateSettings(func(s *domain.Settings) {
-				for i, x := range s.Schedules {
+			_ = a.st.UpdateSchedules(func(list []domain.Schedule) []domain.Schedule {
+				for i, x := range list {
 					if x.ID == sc.ID {
-						s.Schedules = append(s.Schedules[:i], s.Schedules[i+1:]...)
-						break
+						return append(list[:i], list[i+1:]...)
 					}
 				}
+				return list
 			})
 			p.items = a.scheduleItems()
 			p.sel = clamp(p.sel, 0, max(0, len(p.items)-1))
@@ -189,12 +194,13 @@ func (a *App) scheduleByID(id string) (domain.Schedule, bool) {
 }
 
 func (a *App) updateSchedule(id string, fn func(*domain.Schedule)) {
-	_ = a.st.UpdateSettings(func(s *domain.Settings) {
-		for i := range s.Schedules {
-			if s.Schedules[i].ID == id {
-				fn(&s.Schedules[i])
+	_ = a.st.UpdateSchedules(func(list []domain.Schedule) []domain.Schedule {
+		for i := range list {
+			if list[i].ID == id {
+				fn(&list[i])
 			}
 		}
+		return list
 	})
 }
 
@@ -276,6 +282,34 @@ func (a *App) openScheduleForm(sc domain.Schedule) tea.Cmd {
 	f.text("steps", i18n.T("Befehle"), strings.Join(sc.Steps, " "+schedStepSep+" "), i18n.T("mehrere Schritte mit ;; trennen · {{host}} {{alias}} werden je Host eingesetzt · Gefährliches geht nie")).hidden = func(f *form) bool {
 		return isBackup(f) || f.sel("runbook") != rbs[0]
 	}
+	here := deviceName()
+	machines := []string{here + i18n.T(" (dieser Rechner)")}
+	a.schedMachines = map[string]string{machines[0]: here}
+	mcur := machines[0]
+	others := map[string]bool{}
+	for d := range a.st.SyncConfig().Devices {
+		others[d] = true
+	}
+	if sc.Machine != "" {
+		others[sc.Machine] = true
+	}
+	var names []string
+	for d := range others {
+		if !strings.EqualFold(d, here) {
+			names = append(names, d)
+		}
+	}
+	sort.Strings(names)
+	for _, d := range names {
+		machines = append(machines, d)
+		a.schedMachines[d] = d
+		if d == sc.Machine {
+			mcur = d
+		}
+	}
+	f.choice("machine", i18n.T("Läuft auf"), machines, mcur, i18n.T("Zeitpläne gehen mit dem Sync, laufen aber nur auf diesem einen Rechner (sonst liefe derselbe Job überall)")).hidden = func(*form) bool {
+		return len(machines) < 2
+	}
 	f.get("conns").in.Placeholder = "sw-core, sw-etage1"
 	f.get("steps").in.Placeholder = "show running-config ;; show vlan"
 	a.formSched = sc
@@ -354,14 +388,15 @@ func (a *App) saveScheduleForm() error {
 		// erst ab jetzt: nicht sofort einen „verpassten“ Termin von heute nachholen
 		sc.LastRun = time.Now()
 	}
-	return a.st.UpdateSettings(func(s *domain.Settings) {
-		for i := range s.Schedules {
-			if s.Schedules[i].ID == sc.ID {
-				s.Schedules[i] = sc
-				return
+	sc.Machine = a.schedMachines[f.sel("machine")]
+	return a.st.UpdateSchedules(func(list []domain.Schedule) []domain.Schedule {
+		for i := range list {
+			if list[i].ID == sc.ID {
+				list[i] = sc
+				return list
 			}
 		}
-		s.Schedules = append(s.Schedules, sc)
+		return append(list, sc)
 	})
 }
 
@@ -525,10 +560,12 @@ func (a *App) scheduleTick() tea.Cmd {
 	if a.st == nil || a.scr == scrUnlock {
 		return nil
 	}
+	a.claimSchedules()
 	now := time.Now()
+	dev := deviceName()
 	var cmds []tea.Cmd
 	for _, sc := range a.schedules() {
-		if !sc.Due(now) || a.schedRun[sc.ID] {
+		if !sc.RunsOn(dev) || !sc.Due(now) || a.schedRun[sc.ID] {
 			continue
 		}
 		if late := now.Sub(sc.DueAt(now)); late > domain.ScheduleLate && sc.Kind == "" {
@@ -605,6 +642,26 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 			backup.apply(conns, job.PerHost, res)
 		}
 		return schedDoneMsg{id: id, results: res}
+	}
+}
+
+// claimSchedules: Zeitpläne ohne Rechner (vor v1.0.312 angelegt) gehören
+// diesem Rechner. Läuft vor jedem Abgleich, damit kein Zeitplan ohne
+// Rechner auf einem anderen Rechner ankommt und dort mitläuft.
+func (a *App) claimSchedules() {
+	for _, sc := range a.schedules() {
+		if sc.Machine == "" {
+			dev := deviceName()
+			_ = a.st.UpdateSchedules(func(list []domain.Schedule) []domain.Schedule {
+				for i := range list {
+					if list[i].Machine == "" {
+						list[i].Machine = dev
+					}
+				}
+				return list
+			})
+			return
+		}
 	}
 }
 

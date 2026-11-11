@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -48,7 +49,8 @@ type syncDoneMsg struct {
 	err    error
 }
 
-func deviceName() string {
+// deviceName: Name dieses Rechners im Sync (in Tests austauschbar).
+var deviceName = func() string {
 	if h, err := os.Hostname(); err == nil {
 		return h
 	}
@@ -95,6 +97,7 @@ func (a *App) runSync() tea.Cmd {
 		a.sync.again = true
 		return nil
 	}
+	a.claimSchedules()
 	d, rev, err := a.st.Snapshot()
 	if err != nil {
 		return nil
@@ -104,6 +107,11 @@ func (a *App) runSync() tea.Cmd {
 		kh = a.hostKeys.Lines()
 	}
 	local := syncx.FromData(d, kh)
+	if cfg.ShareCmdStats() {
+		if own, ok := a.st.LocalCmdStats(); ok && !own.At.IsZero() {
+			local.CmdStats = map[string]domain.CmdStatsSet{deviceName(): own}
+		}
+	}
 	local.CmdSets = a.syncCmdSets() // eigene Befehlssätze (Dateien)
 	var book *sessionlog.Book
 	if cfg.Archive {
@@ -178,9 +186,24 @@ func (a *App) syncDone(m syncDoneMsg) tea.Cmd {
 		cur := syncx.FromData(d, nil)
 		syncx.Merge(cur, m.merged, now).ApplyTo(d)
 		d.Sync.LastSync, d.Sync.LastError = now, ""
+		d.Sync.Devices = map[string]time.Time{}
+		for n, t := range m.merged.Devices {
+			d.Sync.Devices[n] = t
+		}
 	})
 	if err != nil {
 		return nil
+	}
+	if cfg.ShareCmdStats() {
+		others := map[string]domain.CmdStatsSet{}
+		for dev, set := range m.merged.CmdStats {
+			if !strings.EqualFold(dev, deviceName()) {
+				others[dev] = set
+			}
+		}
+		_ = a.st.SetRemoteCmdStats(others)
+	} else {
+		_ = a.st.SetRemoteCmdStats(nil)
 	}
 	if cfg.HostKeys {
 		_, _ = a.hostKeys.AddLines(m.merged.KnownHosts)
@@ -353,6 +376,7 @@ func (a *App) openSync() tea.Cmd {
 	f.choice("archivedays", i18n.T("Aufbewahren"), dayLabels, archiveDaysLabel(days), i18n.T("so lange bleiben Einträge im Archiv; lokale Kopien bleiben")).hidden = func(f *form) bool {
 		return off(f) || !f.flag("archive")
 	}
+	f.toggle("cmdstats", i18n.T("Befehlsverlauf"), cfg.ShareCmdStats(), i18n.T("Zählung der Befehle je Verbindung mitnehmen: Favoriten-Vorschläge (F9) kommen dann von allen Rechnern")).hidden = off
 	f.toggle("auto", i18n.T("Automatisch"), cfg.Auto || !cfg.Enabled(), i18n.T("beim Start, nach Änderungen und alle 5 Minuten")).hidden = off
 	w.f = f
 	a.wiz, a.form, a.scr = w, f, scrSync
@@ -579,6 +603,8 @@ func (a *App) wizSave() tea.Cmd {
 	nc := cfg
 	nc.Preset, nc.HostKeys, nc.Auto = w.presetKey(), f.flag("hostkeys"), f.flag("auto")
 	nc.Archive = f.flag("archive")
+	share := f.flag("cmdstats")
+	nc.CmdStats = &share
 	for _, d := range archiveDayOptions {
 		if archiveDaysLabel(d) == f.sel("archivedays") {
 			nc.ArchiveDays = d
@@ -694,6 +720,9 @@ func (a *App) viewSync() string {
 	b.WriteString(s.Muted.Render(i18n.T("Verbindungen, Tunnel, Runbooks, KI und alle Einstellungen landen als Ende-zu-Ende verschlüsselte Datei am\n")+
 		i18n.T("gewählten Ort. Der Speicherort sieht nie Klartext; DPAPI und Master-Passwort bleiben pro Rechner.")) + "\n")
 	b.WriteString(w.f.view(s, width-4, &a.z))
+	if w.f.sel("mode") != modeOff && w.cfg.Enabled() {
+		b.WriteString(a.viewSyncOverview(width - 4))
+	}
 
 	b.WriteString("\n" + s.PanelTitle.Foreground(s.T.Accent).Render(i18n.T("Live-Test")) + "\n")
 	steps := []syncx.Step{}
@@ -737,4 +766,32 @@ func (a *App) syncKeys() [][2]string {
 		return [][2]string{{"⏎/Esc", i18n.T("fertig")}, {"Strg+T", i18n.T("erneut testen")}}
 	}
 	return [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+T", i18n.T("testen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("schließen")}}
+}
+
+// viewSyncOverview: welche Rechner im Sync sind und was wo bleibt.
+func (a *App) viewSyncOverview(width int) string {
+	s := a.s
+	var b strings.Builder
+	b.WriteString("\n" + s.PanelTitle.Foreground(s.T.Accent).Render(i18n.T("Rechner im Sync")) + "\n")
+	devs := a.st.SyncConfig().Devices
+	here := deviceName()
+	names := make([]string, 0, len(devs))
+	for n := range devs {
+		names = append(names, n)
+	}
+	sort.Slice(names, func(i, j int) bool { return devs[names[i]].After(devs[names[j]]) })
+	if len(names) == 0 {
+		b.WriteString(s.Muted.Render(i18n.T(" noch kein Abgleich")) + "\n")
+	}
+	for _, n := range names {
+		mark := ""
+		if strings.EqualFold(n, here) {
+			mark = s.AI.Render(i18n.T("  ← dieser Rechner"))
+		}
+		b.WriteString(" " + s.OK.Render("●") + " " + s.Text.Render(lipgloss.NewStyle().Width(24).Render(trunc(n, 23))) + s.Muted.Render(ago(devs[n])) + mark + "\n")
+	}
+	wrap := lipgloss.NewStyle().PaddingLeft(1).Width(width)
+	b.WriteString(wrap.Render(s.OK.Render(i18n.T("Geht mit: "))+s.Muted.Render(i18n.T("Verbindungen, Ordner, Tunnel, Runbooks, Arbeitsplätze, Zeitpläne (laufen nur auf ihrem Rechner), KI samt Hausregeln, alle Einstellungen und Tasten."))) + "\n")
+	b.WriteString(wrap.Render(s.Warn.Render(i18n.T("Bleibt hier: "))+s.Muted.Render(i18n.T("Sync-Ort, eigene Key-Pfade, Shell/Schnittstelle „nur dieser Rechner“, Tasten „nur hier“, Passwörter im Schlüsselbund, Team-Ordner, Vermittler, Audit, Debug, MCP, Editor, Schriftgröße im Fenster."))) + "\n")
+	return b.String()
 }

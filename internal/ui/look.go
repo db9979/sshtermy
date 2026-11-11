@@ -35,7 +35,7 @@ func (a *App) applyLook() {
 	accessible = set.Accessible
 	motionSetting = set.Motion
 	setFrames(set.Frames)
-	sig, _ := json.Marshal([]any{set.Theme, set.Keys, set.Colors, set.Icons, set.NerdFont, set.Frames})
+	sig, _ := json.Marshal([]any{set.Theme, set.Keys, set.KeysHere, set.Colors, set.Icons, set.NerdFont, set.Frames})
 	if string(sig) == a.lookSig {
 		return
 	}
@@ -49,7 +49,7 @@ func (a *App) applyLook() {
 	iconSet = set.IconsNow()
 	activeTheme = t
 	a.setStyles(t)
-	a.keys = newKeymap(set.Keys)
+	a.keys = newKeymap(set.KeysNow())
 	activeKeys = a.keys
 	// Felder, die schon existieren, bekommen die neuen Farben.
 	a.mgr.search.SetStyles(inputStyles(t))
@@ -70,6 +70,7 @@ func (a *App) setTheme(name string) tea.Cmd {
 type keyEditor struct {
 	sel       int
 	capturing bool
+	here      bool // neue Tasten nur für diesen Rechner (Settings.KeysHere)
 	err       string
 }
 
@@ -92,18 +93,32 @@ func (a *App) setKey(id action, key string) error {
 			return fmt.Errorf(i18n.T("%s ist im Manager schon belegt"), key)
 		}
 	}
-	over := a.keys.overrides()
-	if over == nil {
-		over = map[string]string{}
+	here := a.keyEd.here
+	set := a.st.Settings()
+	src := set.Keys
+	if here {
+		src = set.KeysHere
+	}
+	over := map[string]string{}
+	for k, v := range src {
+		over[k] = v
 	}
 	delete(over, string(id))
-	if key != "" && !(len(d.def) == 1 && d.def[0] == key) {
+	// nur hier: auch die Standardtaste merken, sie geht dann vor einer
+	// geänderten Taste aus dem Sync
+	if key != "" && (here || !(len(d.def) == 1 && d.def[0] == key)) {
 		over[string(id)] = key
 	}
 	if len(over) == 0 {
 		over = nil
 	}
-	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Keys = over }); err != nil {
+	if err := a.st.UpdateSettings(func(s *domain.Settings) {
+		if here {
+			s.KeysHere = over
+		} else {
+			s.Keys = over
+		}
+	}); err != nil {
 		return err
 	}
 	a.applyLook()
@@ -114,7 +129,11 @@ func (a *App) keysKeys() [][2]string {
 	if a.keyEd.capturing {
 		return [][2]string{{i18n.T("neue Taste"), i18n.T("drücken")}, {"Esc", i18n.T("abbrechen")}}
 	}
-	return [][2]string{{"⏎", i18n.T("neu belegen")}, {i18n.T("Entf"), i18n.T("Standard")}, {"r", i18n.T("alle zurücksetzen")}, {"Esc", i18n.T("zurück")}}
+	where := i18n.T("nur dieser Rechner")
+	if a.keyEd.here {
+		where = i18n.T("alle Rechner")
+	}
+	return [][2]string{{"⏎", i18n.T("neu belegen")}, {i18n.T("Entf"), i18n.T("Standard")}, {"l", where}, {"r", i18n.T("alle zurücksetzen")}, {"Esc", i18n.T("zurück")}}
 }
 
 func (a *App) updateKeys(msg tea.Msg) tea.Cmd {
@@ -150,13 +169,26 @@ func (a *App) updateKeys(msg tea.Msg) tea.Cmd {
 		e.sel = min(len(actionDefs)-1, e.sel+1)
 	case "enter":
 		e.capturing, e.err = true, ""
+	case "l":
+		e.here, e.err = !e.here, ""
 	case "delete", "backspace":
 		if err := a.setKey(actionDefs[e.sel].id, ""); err != nil {
 			e.err = err.Error()
 		}
 	case "r":
-		a.modal = confirmModal(i18n.T("Tastenkürzel"), i18n.T("Alle Tastenkürzel auf Standard zurücksetzen?"), func() tea.Cmd {
-			if err := a.st.UpdateSettings(func(s *domain.Settings) { s.Keys = nil }); err != nil {
+		q := i18n.T("Alle Tastenkürzel auf Standard zurücksetzen?")
+		if e.here {
+			q = i18n.T("Eigene Tasten dieses Rechners entfernen? Dann gilt die Belegung aus dem Sync.")
+		}
+		here := e.here
+		a.modal = confirmModal(i18n.T("Tastenkürzel"), q, func() tea.Cmd {
+			if err := a.st.UpdateSettings(func(s *domain.Settings) {
+				if here {
+					s.KeysHere = nil
+				} else {
+					s.Keys = nil
+				}
+			}); err != nil {
 				a.flashErr(err.Error())
 			}
 			a.applyLook()
@@ -172,6 +204,7 @@ func (a *App) viewKeys() string {
 	var lines []string
 	selLine := 0
 	conf := a.keys.conflicts()
+	hereKeys := a.st.Settings().KeysHere
 	area := ""
 	for i, d := range actionDefs {
 		if d.area != area {
@@ -183,7 +216,9 @@ func (a *App) viewKeys() string {
 			cur += " / " + keyLabel(a.keys.keys[d.id][1])
 		}
 		mark := ""
-		if _, ok := a.keys.overrides()[string(d.id)]; ok {
+		if _, ok := hereKeys[string(d.id)]; ok {
+			mark = s.Warn.Render(i18n.T(" ◆ nur hier")) + s.Muted.Render(i18n.T(" Standard: ")+keyLabel(d.def[0]))
+		} else if _, ok := a.keys.overrides()[string(d.id)]; ok {
 			mark = s.AI.Render(" ●") + s.Muted.Render(i18n.T(" Standard: ")+keyLabel(d.def[0]))
 		}
 		if o, ok := conf[d.id]; ok {
@@ -212,7 +247,11 @@ func (a *App) viewKeys() string {
 		}))
 	}
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(i18n.T(" ▪ Tastenkürzel anpassen")) + s.Muted.Render(i18n.T("   ⏎ oder Doppelklick belegt neu · werden mit dem Sync übernommen")) + "\n\n")
+	scope := s.Muted.Render(i18n.T("   ⏎/Doppelklick belegt neu · gilt auf allen Rechnern · l = nur hier"))
+	if e.here {
+		scope = s.Warn.Render(i18n.T("   ◆ neue Tasten gelten nur auf diesem Rechner")) + s.Muted.Render(i18n.T(" · l = wieder alle Rechner"))
+	}
+	b.WriteString(s.Accent.Render(i18n.T(" ▪ Tastenkürzel anpassen")) + scope + "\n\n")
 	rows := max(5, a.h-2-2-4)
 	start := 0
 	if selLine >= rows {

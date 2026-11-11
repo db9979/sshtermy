@@ -1,5 +1,5 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ● KI
- ▪ Tastenkürzel anpassen   ⏎ oder Doppelklick belegt neu · werden mit dem Sync übernommen
+ ▪ Tastenkürzel anpassen   ⏎/Doppelklick belegt neu · gilt auf allen Rechnern · l = nur hier
 
  ÜBERALL
 ▶Befehlspalette                Strg+Space / Strg+@
@@ -31,4 +31,4 @@
  Alt+⏎ ist gesperrt: Windows Terminal schaltet damit auf Vollbild.
  Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)
 
- ⏎ neu belegen  Entf Standard  r alle zurücksetzen  Esc zurück
+ ⏎ neu belegen  Entf Standard  l nur dieser Rechner  r alle zurücksetzen  Esc zurück

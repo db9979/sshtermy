@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/x/term"
 
 	"github.com/db9979/sshtermy/internal/gui"
+	"github.com/db9979/sshtermy/internal/winstate"
 )
 
 // wantWindow: eigenes Fenster (internal/gui) statt Terminal?
@@ -33,4 +34,14 @@ func wantWindow(forceWindow, forceTUI bool) bool {
 		return os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != ""
 	}
 	return true
+}
+
+// attachFont: das abgetrennte Fenster (⇧F10) übernimmt die gemerkte
+// Schriftgröße des Hauptfensters (internal/winstate), merkt selbst aber
+// nichts, damit es Größe und Position des Hauptfensters nicht überschreibt.
+func attachFont(dir string) float64 {
+	if f := winstate.Load(dir).Font; f >= 8 && f <= 40 {
+		return f
+	}
+	return 0
 }

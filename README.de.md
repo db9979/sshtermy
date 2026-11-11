@@ -73,8 +73,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   Hosts, die später im Ziel-Ordner auftauchen (etwa aus einem Team-Ordner), laufen erst nach `Strg+A` in der Liste mit; ein Runbook, das geändert aus einem Team-Ordner kam, wartet, bis du es einmal im Broadcast gestartet hast.
   Ohne Aufsicht gibt es keine Rückfragen: unbekannte Host-Keys und fehlende Passwörter lassen den Host scheitern,
   Gefährliches und Runbooks mit Variablen lassen sich gar nicht einplanen. Das Ergebnis je Host steht in der Liste
-  (⏎), dazu eine Einblendung bzw. Desktop-Meldung. Zeitpläne bleiben auf dem Rechner (kein Sync), damit nicht zwei
-  Rechner denselben Lauf starten
+  (⏎), dazu eine Einblendung bzw. Desktop-Meldung. Zeitpläne gehen mit dem Sync, laufen aber nur auf einem Rechner
+  („Läuft auf“ im Formular, Standard: der Rechner, der ihn angelegt hat), damit nicht zwei Rechner denselben Lauf starten
 - **Runbooks mit Variablen:** `{{vlan}}` oder `{{vlan=20}}` in einem Schritt wird vor dem Start abgefragt, `{{host}}`,
   `{{alias}}`, `{{user}}`, `{{port}}` setzt sshTermy pro Host ein. Im Broadcast lädt `e` ein Runbook zum Bearbeiten,
   `Strg+R` speichert, `Strg+D` löscht. Vor dem Start prüft die KI mit `k` gegen das Systemprofil jedes Hosts, ob die
@@ -341,7 +341,9 @@ belegt nur Tasten, die Shells und Vollbildprogramme praktisch nie brauchen.
 
 **Tasten anpassen** (b im Manager oder Palette → „Tastenkürzel anpassen“): Aktion wählen, ⏎, neue Taste drücken.
 Entf setzt eine Aktion zurück, r alle. Doppelte Belegungen werden rot markiert. Alt+⏎ ist gesperrt, weil
-Windows Terminal damit auf Vollbild schaltet. Die Belegung wandert mit dem Sync auf deine anderen Rechner.
+Windows Terminal damit auf Vollbild schaltet. Die Belegung wandert mit dem Sync auf deine anderen Rechner. `l`
+schaltet auf „nur dieser Rechner“: dann gelten neue Tasten nur hier (markiert mit ◆) und gehen vor der Belegung aus
+dem Sync, z. B. auf der uConsole ohne F-Reihe oder im Mac-Terminal ohne Alt; r entfernt sie in diesem Modus wieder.
 
 **Sprache:** Palette (Strg+Leertaste) → „Sprache“ oder F12 → `l` schaltet zwischen Deutsch und Englisch um, sofort
 und ohne Neustart. Die Wahl steht in den Einstellungen (geht mit dem Sync auf andere Rechner) und zusätzlich
@@ -374,7 +376,8 @@ PuTTY-Export (`reg export HKCU\Software\SimonTatham\PuTTY putty.reg`), eine port
 **Telnet und serielle Konsole:** Im Verbindungsformular wählt „Verbindungsart“ zwischen SSH, Telnet und
 „Seriell (Konsolenkabel)“, z. B. für einen Aruba-Switch am USB-Konsolenkabel. Schnittstelle „automatisch“ nimmt das
 einzige eingesteckte USB-Konsolenkabel, so klappt eine synchronisierte Verbindung auch auf dem anderen Rechner (COM5
-unter Windows, `/dev/cu.usbserial-…` unter macOS, `/dev/ttyUSB0` unter Linux). Standard 9600 Baud 8N1. Sind Benutzer
+unter Windows, `/dev/cu.usbserial-…` unter macOS, `/dev/ttyUSB0` unter Linux). Mit „Nur dieser Rechner“ gilt eine
+fest gewählte Schnittstelle nur hier, die anderen Rechner behalten ihre. Standard 9600 Baud 8N1. Sind Benutzer
 und Passwort hinterlegt, tippt sshTermy sie ein, sobald das Gerät fragt (und beantwortet „Press any key to
 continue“). In der Palette verbindet `telnet 10.0.0.5`, `COM3` oder `konsole /dev/ttyUSB0 115200` sofort;
 Palette → „Break senden“ schickt ein serielles Break. Host-Übersicht (F6), Config-Sicherung, Schnellbefehle und KI
@@ -386,7 +389,8 @@ des eigenen Rechners in einem Tab: unter Windows PowerShell 7 (`pwsh`), sonst Wi
 Windows 10 1809), unter macOS die Login-Shell, unter Linux `$SHELL`. `pwsh`, `cmd`, `wsl -d Ubuntu` oder `zsh` in der
 Palette startet genau diese. Als gespeicherte Verbindung („Verbindungsart: Lokal“) lassen sich Shell
 und Startordner einstellen; leer nimmt jeder Rechner seinen eigenen Standard, ein gesyncter Eintrag passt also unter
-Windows wie auf dem Mac. Die KI weiß, ob sie mit PowerShell, cmd oder einer Unix-Shell spricht; Gefahren-Check und
+Windows wie auf dem Mac. Mit „Nur dieser Rechner“ gilt eine Shell wie `pwsh` nur auf diesem Rechner, die anderen
+behalten ihre. Die KI weiß, ob sie mit PowerShell, cmd oder einer Unix-Shell spricht; Gefahren-Check und
 Agent-Stufen arbeiten wie auf einem Server. Dateien (F5), Tunnel und Broadcast brauchen SSH.
 
 **PowerShell-Fernzugriff (WinRM):** für Windows-Server ohne SSH. Im Verbindungsformular „Verbindungsart: PowerShell“
@@ -755,8 +759,14 @@ Meldungen, Grenzwerte der Überwachung, Gefahren-Check, Einfüge-Vorschau, Proto
 mit; auf einem anderen Rechner wirkt ein neuer oder geänderter Satz erst, wenn du ihn dort übernimmst (Einstellungen ›
 Befehlssätze, `f`, mit Diff), und ein anderswo gelöschter Satz wird nach `befehlssaetze/.geloescht` gelegt.
 Nur rechnerspezifische Dinge bleiben lokal: DPAPI, die Sync-Einstellungen selbst, Schlüsseldatei-Pfade, gekoppelte
-Vermittler, Team-Ordner-Pfade und der Schalter „Maus“ (hängt vom Terminalprogramm ab). Nerd-Font-Symbole gehen
-ebenfalls mit, schalten sich auf einem anderen Rechner aber erst nach der Probe ein, weil die Schrift dort fehlen kann.
+Vermittler, Team-Ordner-Pfade, der Schalter „Maus“ (hängt vom Terminalprogramm ab), Audit-/Debug-Protokoll,
+MCP-Server, Editor, die Schriftgröße im eigenen Fenster und alles, was auf „nur dieser Rechner“ steht (Tasten, Shell,
+Schnittstelle). Passwörter im Schlüsselbund des Betriebssystems bleiben auf jedem Rechner; nur der Schalter wandert
+mit, jeder Rechner fragt einmal. Nerd-Font-Symbole gehen ebenfalls mit, schalten sich auf einem anderen Rechner aber
+erst nach der Probe ein, weil die Schrift dort fehlen kann. Zeitpläne gehen pro Eintrag mit und laufen nur auf ihrem
+Rechner. Mit „Befehlsverlauf“ (Standard an) zählen die Favoriten-Vorschläge (F9) die Befehle aller Rechner; jeder
+Rechner schreibt nur seine eigene Zählung. Unter dem Formular zeigt der Assistent die Rechner im Sync mit ihrem
+letzten Abgleich und was mitgeht bzw. hier bleibt.
 
 **Archiv (zuschaltbar):** Mit dem Schalter „Archiv“ im Sync-Assistenten (y) wandern auch die Config-Sicherungen der
 Switches (F6) und die Sitzungsprotokolle auf die anderen Rechner. Sie liegen im Unterordner `sshtermy-archiv/` neben der

@@ -12,7 +12,7 @@ export const de = {
   sub: 'SSH-Terminal mit KI-Copilot · Windows · macOS · Linux',
   credit: 'Idee: Dominik Bornhäußer',
   stand: 'Stand November 2026',
-  hint: 'Alle Tasten lassen sich ändern: <b>b</b> im Manager. Hilfe in der App: <b>F1</b>, Tastenzeile erklären: <b>⇧F9</b>.',
+  hint: 'Alle Tasten lassen sich ändern: <b>b</b> im Manager (<b>l</b> = nur dieser Rechner). Hilfe in der App: <b>F1</b>, Tastenzeile erklären: <b>⇧F9</b>.',
   web: 'db9979.github.io/sshtermy',
   page1: [
     { t: 'Überall', ic: '◆', rows: [
@@ -205,7 +205,7 @@ export const en = {
   sub: 'SSH terminal with an AI copilot · Windows · macOS · Linux',
   credit: 'Idea: Dominik Bornhäußer',
   stand: 'As of November 2026',
-  hint: 'Every key can be changed: <b>b</b> in the manager. Help in the app: <b>F1</b>, explain the key bar: <b>⇧F9</b>.',
+  hint: 'Every key can be changed: <b>b</b> in the manager (<b>l</b> = this computer only). Help in the app: <b>F1</b>, explain the key bar: <b>⇧F9</b>.',
   web: 'db9979.github.io/sshtermy',
   page1: [
     { t: 'Everywhere', ic: '◆', rows: [
