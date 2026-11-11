@@ -131,6 +131,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback, tabs, split view, search.</p></div>
     <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen. After sleep or a network change every line is checked within seconds.</p></div>
     <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right. <kbd>e</kbd> opens a server file in VS Code, Notepad++ or TextEdit, saving uploads it back. While copying: percent, MB/s, time left and a speed curve.</p></div>
+    <div class="card"><h3>Files with the mouse</h3><p>Double-click a file to view it right in sshTermy: colors, search, select and copy, follow like <code>tail -f</code>. Images and PDFs open with your default app. A single click shows a preview, right-click opens a menu with rename, permissions, copy path and <code>cd</code> here. Clickable path, sortable columns, Ctrl/Shift+click to mark.</p></div>
     <div class="card"><h3>Color rules</h3><p>Errors red, warnings yellow, IP blue, MAC purple, switch syslog by severity; your own rules, with <code>!</code> a hidden tab notifies you.</p></div>
     <div class="card"><h3>Images in the terminal</h3><p>Sixel, kitty graphics and iTerm2 images (img2sixel, icat, viu, imgcat) as colored half blocks, in any terminal; pixel-perfect in kitty, Ghostty and sshTermy's own window.</p></div>
     <div class="card"><h3>Containers</h3><p>Docker, Podman and Kubernetes pods in one list: shell in the container, live logs, AI log analysis.</p></div>
@@ -217,6 +218,8 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Alt</kbd>+<kbd>E</kbd> or <kbd>F6</kbd> → <kbd>l</kbd></td><td>Log view: <kbd>n</kbd> what's new, <kbd>t</kbd> timeline, <kbd>x</kbd>/<kbd>X</kbd> hide noise, <kbd>k</kbd> AI explains, <kbd>b</kbd> AI status report, <kbd>1</kbd>…<kbd>4</kbd> check command, <kbd>w</kbd> log watch alerts, <kbd>s</kbd> syslog setup (switch)</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>t</kbd> / <kbd>z</kbd></td><td>Live graphs: range 5 min / 1 h, large view</td></tr>
     <tr><td><kbd>F5</kbd> → <kbd>e</kbd></td><td>Server file in your own editor (saving uploads it)</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>⏎</kbd> / double-click</td><td>View file (<kbd>/</kbd> search, <kbd>f</kbd> follow, <kbd>w</kbd> wrap), <kbd>o</kbd> default app</td></tr>
+    <tr><td><kbd>F5</kbd> → right-click</td><td>Menu: rename (<kbd>F2</kbd>), permissions, copy path (<kbd>y</kbd>), <code>cd</code> here, delete · <kbd>s</kbd> sort, <kbd>v</kbd> preview</td></tr>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Session logs: AI change report</td></tr>
     <tr><td><kbd>z</kbd> (manager)</td><td>Schedules for broadcast and runbooks (<kbd>Ctrl</kbd>+<kbd>A</kbd> accepts new hosts)</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Move the tab to its own terminal window</td></tr>

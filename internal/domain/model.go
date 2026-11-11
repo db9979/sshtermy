@@ -513,6 +513,7 @@ type Settings struct {
 	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
 	Language     string `json:"language"`                 // "de" | "en"
 	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
+	FilesNoPeek  bool   `json:"files_no_peek,omitempty"`  // Dateien (F5): keine Vorschau unter der Liste
 	NoSessionLog bool   `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
 	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
 	DangerAll    bool   `json:"danger_all,omitempty"`     // Gefahren-Check beim Tippen auf allen Hosts, nicht nur Produktiv
@@ -674,13 +675,13 @@ type Workspace struct {
 }
 
 // SyncedPart: die Einstellungen ohne die rein lokalen Felder (DPAPI, Maus,
-// Version, Nerd-Font-Probe, letzte Aufteilung, Editor, eigene Tasten
+// Version, Nerd-Font-Probe, Dateivorschau, letzte Aufteilung, Editor, eigene Tasten
 // dieses Rechners, Debug, Audit, MCP) und ohne die Zeitpläne, die pro
 // Eintrag abgeglichen werden. Nur eine Änderung hier macht die Einstellungen für den Sync
 // „neuer“; sonst gewänne z. B. das Merken der Aufteilung beim Beenden gegen
 // ein Theme, das auf einem anderen Rechner gerade umgestellt wurde.
 func (s Settings) SyncedPart() Settings {
-	s.UseDPAPI, s.NoMouse, s.LastVersion, s.NerdFont = false, false, "", ""
+	s.UseDPAPI, s.NoMouse, s.LastVersion, s.NerdFont, s.FilesNoPeek = false, false, "", "", false
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false

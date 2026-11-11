@@ -85,6 +85,7 @@ var localSettings = map[string]bool{
 	"LastLayout": true, "Editor": true, "KeysHere": true, "Debug": true, "Audit": true, "MCP": true, "SyslogPort": true,
 	"SyslogAny":      true,
 	"CmdSetApproved": true,
+	"FilesNoPeek":    true, // Vorschau im Dateibrowser: Platz je Bildschirm
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der
