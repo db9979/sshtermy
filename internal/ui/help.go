@@ -61,6 +61,7 @@ var helpSections = []helpSection{
 		{"e", "bearbeiten"},
 		{"d", "löschen"},
 		{"Leertaste", "markieren (dann e, v, d für alle)"},
+		{"Rechtsklick", "Menü zu Verbindung oder Ordner"},
 		{"*", "alle sichtbaren markieren"},
 		{"Strg+Z", "Löschen rückgängig (10 s)"},
 		{"Strg+T", "im Formular: Verbindung testen"},
