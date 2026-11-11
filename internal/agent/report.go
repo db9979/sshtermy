@@ -50,7 +50,7 @@ func (a *Agent) Report(ctx context.Context, transcript string) (string, error) {
 	}
 	out := strings.TrimSpace(Clean(stripThink(res.Content)))
 	if out == "" {
-		return "", unreadable(res)
+		return "", unreadable(res, nil)
 	}
 	return out, nil
 }

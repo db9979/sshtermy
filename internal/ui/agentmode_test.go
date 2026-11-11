@@ -255,3 +255,49 @@ func TestAgentViewRenders(t *testing.T) {
 		t.Error("Tab nach „Erst planen“ muss zu Schritt für Schritt wechseln")
 	}
 }
+
+// Ziel-Modus (Schritt für Schritt): mehrzeilige Inhalte kommen als Datei,
+// ⏎ legt sie an, danach geht es ohne Agent-Pause weiter.
+func TestGoalFileStep(t *testing.T) {
+	a := dangerApp(t)
+	s, _ := typedSession(domain.Connection{Alias: "gitea-host"}, "dominik@gitea:~$ ", "")
+	a.sessions = []*session{s}
+	withPanel(s, panelGoal)
+	a.panelOpened(s)
+	a.startGoal(s, "app.ini ergänzen")
+	g := &s.goal
+	if g.auto || g.runID == "" {
+		t.Fatalf("Ziel-Modus braucht einen Arbeitsordner: %+v", g)
+	}
+	f := agent.FileAction{Name: "gitea-extra.ini", Content: "[migrations]\nALLOW_LOCALNETWORKS = true\n"}
+	g.busy = false
+	a.sessionMsg(stepMsg(s, agent.Step{File: &f}))
+	if g.cur == nil || g.cur.File == nil {
+		t.Fatalf("Datei-Schritt fehlt: %+v", g.cur)
+	}
+	keys := a.panelKeys(s)
+	if len(keys) == 0 || keys[0][1] != "Datei anlegen" {
+		t.Errorf("Tasten: %v", keys)
+	}
+	a.panelMsg(s, runeKey('e')) // Dateien nicht in einer Zeile bearbeiten
+	if g.editing {
+		t.Fatal("e darf eine Datei nicht als Befehl bearbeiten")
+	}
+	a.panelMsg(s, enterKey)
+	// ohne SSH-Client keine Dateien: vermerkt, kein Agent-Halt
+	if n := len(g.steps); n != 1 || g.steps[0].File != f.Name || g.steps[0].ExitHint == "" || g.paused {
+		t.Fatalf("Datei ohne SFTP: %+v", g)
+	}
+	// erfolgreiche Ablage (wie nach SFTP)
+	g.steps, g.writing, g.busy = nil, true, false
+	a.agentFileDone(agentFileMsg{sid: s.id, seq: g.seq, file: f})
+	if len(g.files) != 1 || g.paused || g.writing || !strings.Contains(g.steps[0].Command, g.agentDir()+"/gitea-extra.ini") {
+		t.Fatalf("Datei nicht vermerkt: %+v", g)
+	}
+	a.sessionMsg(stepMsg(s, agent.Step{Done: true, Suggestion: agent.Suggestion{Reason: "ergänzt"}}))
+	var b strings.Builder
+	a.viewGoal(&b, s, 80)
+	if !strings.Contains(b.String(), "Arbeitsordner löschen") {
+		t.Errorf("Aufräum-Hinweis fehlt:\n%s", b.String())
+	}
+}

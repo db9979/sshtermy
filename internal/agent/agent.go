@@ -243,7 +243,20 @@ const sysGoal = "Du begleitest einen Admin auf einem Server oder Netzwerkgerät 
 	`Brauchst du eine Entscheidung des Menschen ` +
 	`(z. B. Domainname, oder ob etwas Bestehendes gelöscht werden darf): {"frage": "…", "optionen": ["…", "…"]} ` +
 	"mit frage in höchstens 300 Zeichen und optionen als 2 bis 4 kurze mögliche Antworten (z. B. Ja/Nein); " +
-	"optionen weglassen, wenn nur eine freie Antwort passt." + guard
+	"optionen weglassen, wenn nur eine freie Antwort passt. " +
+	`Steht unten ein Arbeitsordner, darfst du auch {"datei": {"name": "x.conf", "inhalt": "…"}, "grund": "…"} vorschlagen: ` +
+	"sshTermy legt die Datei nach Bestätigung per SFTP dort an (name ist nur ein Dateiname); im nächsten Schritt setzt du sie mit einem befehl ein." +
+	multiLineRule + guard
+
+// multiLineRule: mehrzeilige Inhalte nie in einen befehl packen und
+// Konfigurationsdateien ergänzen statt ersetzen. Sonst schickte ein Modell
+// z. B. „docker cp /dev/stdin gitea:/data/gitea/conf/app.ini << 'EOF' …“:
+// mehrzeilig (nicht ausführbar) und hätte die app.ini ganz ersetzt.
+const multiLineRule = " Mehrzeilige Inhalte (Konfigurationsabschnitte, Skripte) nie in den befehl packen, auch nicht als Heredoc (<< EOF) " +
+	"oder echo mit \\n: lege sie als datei an oder, wenn es keinen Arbeitsordner gibt, schreib sie Zeile für Zeile mit " +
+	"printf '%s\\n' 'zeile 1' 'zeile 2' >> ziel. Bestehende Konfigurationsdateien nie komplett ersetzen (kein docker cp, kein > darauf): " +
+	"erst sichern (cp datei datei.bak-sshtermy, im Container per docker exec), mit grep prüfen, ob der Abschnitt schon da ist, " +
+	"dann nur ergänzen (>>, im Container: docker exec -i <container> sh -c 'cat >> <pfad>' < <datei>) oder gezielt ändern."
 
 // Step ist die Antwort des Modells im Ziel-Modus.
 type Step struct {
@@ -269,9 +282,16 @@ type DoneStep struct {
 
 var ErrUnreadable = errors.New("Antwort des Modells nicht lesbar")
 
-func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist []DoneStep, answers []string, c Context) (Step, error) {
+// NextStep fragt den nächsten Schritt im Ziel-Modus an. dir ist der
+// Arbeitsordner für Dateien auf dem Host (leer = nur Befehle).
+func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist []DoneStep, answers []string, dir string, c Context) (Step, error) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Ziel: %s\n", Redact(goal))
+	if dir != "" {
+		fmt.Fprintf(&b, "Arbeitsordner für Dateien: %s (Dateien legst du nur mit \"datei\" an)\n", dir)
+	} else {
+		b.WriteString("Dateien anlegen ist hier nicht möglich (kein \"datei\"), nur einzeilige Befehle.\n")
+	}
 	if len(recipe) > 0 {
 		b.WriteString("Vorlage aus einem gespeicherten Runbook (so hat es früher geklappt; an die aktuelle Lage anpassen, Erledigtes weglassen):\n")
 		for i, r := range recipe {
@@ -298,30 +318,10 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 		{Role: "system", Content: a.sys(sysGoal)},
 		{Role: "user", Content: b.String()},
 	}
-	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal})
-	if err != nil {
-		return Step{}, err
-	}
-	st, err := parseStep(res.Content, c.kind())
-	if err == nil {
-		return st, nil
-	}
-	if res.Truncated() && strings.TrimSpace(stripThink(res.Content)) == "" {
-		return Step{}, unreadable(res) // nochmal fragen hilft nicht, nur mehr Tokens
-	}
-	// Ein zweiter Versuch mit klarer Korrektur; danach eine Fehlermeldung, die
-	// zeigt, was das Modell geschickt hat (statt nur "nicht lesbar").
-	msgs = append(msgs,
-		llm.Message{Role: "assistant", Content: tail(stripThink(res.Content), 1500)},
-		llm.Message{Role: "user", Content: retryHint})
-	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.1, NoThink: true, Task: TaskGoal})
-	if err2 == nil {
-		if st, err := parseStep(res2.Content, c.kind()); err == nil {
-			return st, nil
-		}
-		res = res2
-	}
-	return Step{}, unreadable(res)
+	files := dir != ""
+	kind := c.kind()
+	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
+	return a.completeWith(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal}, retryHint, files, parse)
 }
 
 // Reasoning-Modelle (Qwen3, DeepSeek-R1, gpt-oss) denken vor der Antwort oft
@@ -332,12 +332,85 @@ const (
 )
 
 const retryHint = "Deine letzte Antwort war kein gültiges JSON-Objekt im verlangten Format. " +
-	`Antworte jetzt NUR mit dem JSON-Objekt ({"befehl": …, "grund": …, "plan": […]} oder {"fertig": true, "grund": …} ` +
-	`oder {"frage": …}), ohne Text davor oder danach.`
+	`Antworte jetzt NUR mit dem JSON-Objekt ({"befehl": …, "grund": …, "plan": […]}, {"datei": {"name": …, "inhalt": …}} (nur mit Arbeitsordner), ` +
+	`{"fertig": true, "grund": …} oder {"frage": …}), ohne Text davor oder danach.`
+
+// completeWith: Anfrage mit einem Korrekturversuch bei unlesbarer Antwort.
+// Der Korrekturtext nennt den konkreten Fehler (mehrzeiliger oder zu langer
+// Befehl), sonst schickt das Modell oft dasselbe noch einmal.
+func (a *Agent) completeWith(ctx context.Context, msgs []llm.Message, o llm.Opts, retry string, files bool, parse func(string) (Step, error)) (Step, error) {
+	res, err := a.C.CompleteResult(ctx, msgs, o)
+	if err != nil {
+		return Step{}, err
+	}
+	st, perr := parse(res.Content)
+	if perr == nil {
+		return st, nil
+	}
+	if res.Truncated() && strings.TrimSpace(stripThink(res.Content)) == "" {
+		return Step{}, unreadable(res, nil) // nochmal fragen hilft nicht, nur mehr Tokens
+	}
+	msgs = append(msgs,
+		llm.Message{Role: "assistant", Content: tail(stripThink(res.Content), 1500)},
+		llm.Message{Role: "user", Content: retryFor(retry, perr, files)})
+	o.Temperature = 0.1
+	res2, err2 := a.C.CompleteResult(ctx, msgs, o)
+	if err2 == nil {
+		st, perr2 := parse(res2.Content)
+		if perr2 == nil {
+			return st, nil
+		}
+		res, perr = res2, perr2
+	}
+	// Fehlermeldung zeigt, was das Modell geschickt hat (statt nur "nicht lesbar").
+	return Step{}, unreadable(res, perr)
+}
+
+// StepError: das JSON war lesbar, der Befehl darin aber nicht ausführbar.
+type StepError struct {
+	Why string // für die Anzeige
+	fix string // Korrekturhinweis ans Modell
+}
+
+func (e *StepError) Error() string { return ErrUnreadable.Error() + ": " + e.Why }
+func (e *StepError) Unwrap() error { return ErrUnreadable }
+
+const (
+	fixMultiFiles = "Dein befehl hatte Zeilenumbrüche (z. B. ein Heredoc mit << EOF). Ein befehl ist immer GENAU EINE Zeile. " +
+		`Lege den mehrzeiligen Inhalt zuerst mit {"datei": {"name": "…", "inhalt": "…"}, "grund": "…"} im Arbeitsordner an ` +
+		"und setze ihn im nächsten Schritt mit einem einzeiligen befehl ein. Bestehende Dateien nicht ersetzen, sondern sichern und ergänzen " +
+		"(>>, im Container: docker exec -i <container> sh -c 'cat >> <pfad>' < <datei>)."
+	fixMultiLines = "Dein befehl hatte Zeilenumbrüche (z. B. ein Heredoc mit << EOF). Ein befehl ist immer GENAU EINE Zeile, und Dateien " +
+		"anlegen geht hier nicht. Zerlege den Inhalt: erst sichern, dann Zeile für Zeile ergänzen, z. B. printf '%s\\n' 'zeile 1' 'zeile 2' >> ziel, " +
+		"bei langen Inhalten in mehreren Schritten."
+	fixLong = "Dein befehl war länger als 300 Zeichen. Teile ihn in mehrere kürzere Schritte"
+)
+
+// retryFor: Korrekturtext passend zum Fehler.
+func retryFor(base string, err error, files bool) string {
+	var se *StepError
+	if !errors.As(err, &se) || se.fix == "" {
+		return base
+	}
+	fix := se.fix
+	switch {
+	case fix == fixMultiLines && files:
+		fix = fixMultiFiles
+	case fix == fixLong && files:
+		fix += ` oder lege ein Skript mit {"datei": …} an.`
+	case fix == fixLong:
+		fix += "."
+	}
+	return fix + " Antworte jetzt NUR mit dem JSON-Objekt, ohne Text davor oder danach."
+}
 
 // unreadable baut eine Fehlermeldung mit Ursache und Ausschnitt der Antwort.
-func unreadable(r llm.Result) error {
+func unreadable(r llm.Result, perr error) error {
 	body := strings.Join(strings.Fields(Clean(stripThink(r.Content))), " ")
+	var se *StepError
+	if errors.As(perr, &se) && !r.Truncated() {
+		return fmt.Errorf("%w: %s, auch nach Nachfrage: „%s“", ErrUnreadable, se.Why, short(body, 140))
+	}
 	switch {
 	case r.Truncated() && body == "":
 		return fmt.Errorf("%w: Token-Limit erreicht, bevor das Modell geantwortet hat (es denkt sehr lange nach). Max-Tokens in den KI-Einstellungen erhöhen oder Thinking abschalten", ErrUnreadable)
@@ -404,8 +477,14 @@ func parseStep(out, kind string) (Step, error) {
 	if q := flatText(str("frage"), maxQuestion); q != "" {
 		return Step{Question: q, Options: parseOptions(v["optionen"])}, nil
 	}
-	cmd, ok := oneLine(str("befehl"), maxCmd)
-	if !ok || cmd == "" {
+	raw := str("befehl")
+	cmd, ok := oneLine(raw, maxCmd)
+	switch {
+	case !ok && strings.ContainsAny(raw, "\r\n"):
+		return Step{}, &StepError{Why: "Befehl hat mehrere Zeilen (z. B. Heredoc)", fix: fixMultiLines}
+	case !ok && len([]rune(raw)) > maxCmd:
+		return Step{}, &StepError{Why: fmt.Sprintf("Befehl zu lang (%d Zeichen, höchstens %d)", len([]rune(raw)), maxCmd), fix: fixLong}
+	case !ok || cmd == "":
 		return Step{}, ErrUnreadable
 	}
 	var plan []string
@@ -660,7 +739,58 @@ func stripThink(s string) string {
 // Objekt bzw. erste Liste im Text (Modelle schreiben gern einen Satz davor).
 // Der Inhalt wird danach von den Aufrufern streng geprüft.
 func strictJSON(s string, v any) bool {
-	t := stripThink(s)
+	if jsonIn(stripThink(s), v) {
+		return true
+	}
+	// Manche Modelle schreiben Zeilenumbrüche roh in Strings oder lassen ein
+	// Komma vor } stehen: reparieren und noch einmal lesen.
+	r, ok := repairJSON(stripThink(s))
+	return ok && jsonIn(r, v)
+}
+
+// repairJSON maskiert rohe Steuerzeichen in Strings (Zeilenumbruch, Tab) und
+// streicht Kommas direkt vor } oder ]. ok=false: nichts zu reparieren.
+func repairJSON(s string) (string, bool) {
+	var b strings.Builder
+	inStr, esc, changed := false, false, false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case inStr && esc:
+			esc = false
+		case inStr && c == '\\':
+			esc = true
+		case inStr && c == '"':
+			inStr = false
+		case inStr && c < 0x20:
+			changed = true
+			switch c {
+			case '\n':
+				b.WriteString(`\n`)
+			case '\t':
+				b.WriteString(`\t`)
+			case '\r':
+				b.WriteString(`\r`)
+			}
+			continue
+		case c == '"':
+			inStr = true
+		case c == ',':
+			j := i + 1
+			for j < len(s) && strings.IndexByte(" \t\r\n", s[j]) >= 0 {
+				j++
+			}
+			if j < len(s) && (s[j] == '}' || s[j] == ']') {
+				changed = true
+				continue
+			}
+		}
+		b.WriteByte(c)
+	}
+	return b.String(), changed
+}
+
+func jsonIn(t string, v any) bool {
 	try := func(x string) bool {
 		dec := json.NewDecoder(strings.NewReader(strings.TrimSpace(x)))
 		return dec.Decode(v) == nil && !dec.More()

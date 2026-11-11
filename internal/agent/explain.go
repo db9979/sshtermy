@@ -94,7 +94,7 @@ func (a *Agent) Explain(ctx context.Context, f Failure, c Context) (string, erro
 	}
 	out := strings.TrimSpace(Clean(stripThink(res.Content)))
 	if out == "" {
-		return "", unreadable(res)
+		return "", unreadable(res, nil)
 	}
 	return out, nil
 }
@@ -118,7 +118,7 @@ func (a *Agent) Summarize(ctx context.Context, transcript string) (string, error
 	}
 	out := strings.TrimSpace(Clean(stripThink(res.Content)))
 	if out == "" {
-		return "", unreadable(res)
+		return "", unreadable(res, nil)
 	}
 	return out, nil
 }

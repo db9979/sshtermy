@@ -59,7 +59,7 @@ func parseCardFix(res llm.Result, failed, kind string) (CardFix, error) {
 		Grund  string `json:"grund"`
 	}
 	if !strictJSON(res.Content, &v) {
-		return CardFix{}, unreadable(res)
+		return CardFix{}, unreadable(res, nil)
 	}
 	reason := flatText(Clean(v.Grund), maxReason)
 	if v.Keiner {

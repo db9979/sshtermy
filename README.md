@@ -98,7 +98,10 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   - **Command palette** (Ctrl+Space): one input field for everything; text becomes a goal or a question; without text only frequent actions, connections and one folder per area (session, tabs, view, network, team …), typing finds everything directly
   - **Ghost text** while typing (Tab accepts)
   - **Follow-up commands** after every Enter (Alt+1…4 inserts)
-  - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
+  - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm.
+    Multi-line content (config sections, scripts) comes as a file that sshTermy creates via SFTP in `~/.sshtermy-agent/<run>/`
+    after ⏎, never as a heredoc in the command; config files are backed up and extended, not replaced
+    (`docker cp` into a container counts as dangerous). If the model's answer is unusable, sshTermy asks once more and names the problem.
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
     Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),
@@ -318,6 +321,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Ctrl+click / right-click | open URL in the browser / menu for a link, IP or host: connect (directly or via the server), ping from the server or from here, copy |
 | | Paste | multi-line shows a preview first (⏎ paste, o without the last Enter, Esc cancel); palette “Paste guard off” |
 | Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |
+| Goal mode, file step | ⏎ / v / s | create the file on the host / view it / skip; at the end `r` deletes the work folder |
 | | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |
 | | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
 | Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host, `c` copy the result, `l` read it in full |

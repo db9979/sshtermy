@@ -377,9 +377,13 @@ func (a *App) requestStep(s *session) tea.Cmd {
 			return goalStepMsg{sid, seq, st, err}
 		}
 	}
+	dir := ""
+	if a.agentFilesOK(s) {
+		dir = g.agentDir() // mehrzeilige Inhalte als Datei statt Heredoc
+	}
 	return func() tea.Msg {
 		defer cancel()
-		st, err := ag.NextStep(ctx, goal, recipe, hist, ans, c)
+		st, err := ag.NextStep(ctx, goal, recipe, hist, ans, dir, c)
 		return goalStepMsg{sid, seq, st, err}
 	}
 }
@@ -519,6 +523,8 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		case "l":
 			a.readDone(s)
 			return nil
+		case "r":
+			return a.agentCleanup(s)
 		}
 		if key == "enter" || key == "x" {
 			g.done, g.rbSel, g.runbookID, g.recipe = false, -1, "", nil
@@ -633,6 +639,22 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		return a.requestStep(s)
 	}
 	if g.cur == nil || g.busy {
+		return nil
+	}
+	if g.cur.File != nil { // Datei anlegen: ⏎, ansehen (v), weglassen (s)
+		switch key {
+		case "enter":
+			if len(g.cur.Danger) > 0 && !g.armed {
+				g.armed = true
+				return nil
+			}
+			return a.writeAgentFile(s)
+		case "v":
+			a.agentView(s)
+		case "s":
+			g.steps = append(g.steps, agent.DoneStep{Command: g.cur.CommandOrFile(), Skipped: true})
+			return a.requestStep(s)
+		}
 		return nil
 	}
 	switch key {
@@ -784,6 +806,10 @@ func (a *App) panelKeys(s *session) [][2]string {
 		}
 		if g.editing {
 			return [][2]string{{"⏎", i18n.T("übernehmen")}, {"Esc", "Terminal"}}
+		}
+		if g.cur != nil && g.cur.File != nil {
+			return [][2]string{{"⏎", i18n.T("Datei anlegen")}, {"v", i18n.T("ansehen")}, {"s", i18n.T("überspringen")},
+				{"r", i18n.T("neu")}, {"x", i18n.T("Ziel beenden")}, {"Esc", "Terminal"}}
 		}
 		return [][2]string{{"⏎", i18n.T("ausführen")}, {"i", i18n.T("nur einfügen")}, {"e", i18n.T("bearbeiten")}, {"s", i18n.T("überspringen")},
 			{"r", i18n.T("neu")}, {"x", i18n.T("Ziel beenden")}, {"Strg+S", "Runbook"}, {"Esc", "Terminal"}}
@@ -976,7 +1002,11 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		}
 	case g.done:
 		markPanel(s, b.String())
-		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, [2]string{"c", i18n.T("kopieren")}, [2]string{"l", i18n.T("ganz lesen")}, [2]string{"Strg+S", i18n.T("als Runbook merken")}, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{a.keys.label(actGoal), i18n.T("schließen")}))
+		hk := [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"Strg+S", i18n.T("als Runbook merken")}, {"⏎", i18n.T("neues Ziel")}, {a.keys.label(actGoal), i18n.T("schließen")}}
+		if len(g.files) > 0 && !g.cleaned {
+			hk = append(hk[:3:3], append([][2]string{{"r", i18n.T("Arbeitsordner löschen")}}, hk[3:]...)...)
+		}
+		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, hk...))
 		if s.panelFocus && g.done {
 			g.active = false
 		}
@@ -1254,6 +1284,11 @@ func (a *App) startGoalWith(s *session, text string, rb *domain.Runbook) tea.Cmd
 	g.planning = pf && rb == nil
 	if g.auto || g.planning || fromPlan {
 		a.agentInit(s, rb)
+	} else {
+		g.runID = newRunID() // Arbeitsordner für Dateien des Ziel-Modus
+		for i := range g.recipe {
+			g.recipe[i] = strings.ReplaceAll(g.recipe[i], domain.AgentDirToken, g.agentDir())
+		}
 	}
 	if fromPlan {
 		g.planOK = true // der Plan ist schon freigegeben
@@ -1336,7 +1371,7 @@ func (a *App) saveRunbook(s *session) {
 		}
 		if !d.Skipped && d.File == "" {
 			cmd := d.Command
-			if g.auto && g.runID != "" {
+			if g.runID != "" {
 				cmd = strings.ReplaceAll(cmd, g.agentDir(), domain.AgentDirToken)
 			}
 			steps = append(steps, cmd)

@@ -115,7 +115,7 @@ func (a *Agent) Comment(ctx context.Context, ev CompanionEvent, c Context) (Rema
 		Merken string `json:"merken"`
 	}
 	if !strictJSON(res.Content, &v) {
-		return r, unreadable(res)
+		return r, unreadable(res, nil)
 	}
 	text := flatText(Clean(v.Kommentar), maxRemark)
 	if v.Still || text == "" {
@@ -179,7 +179,7 @@ func (a *Agent) GuessIntent(ctx context.Context, c Context) (Intent, error) {
 		} `json:"schritte"`
 	}
 	if !strictJSON(res.Content, &v) {
-		return in, unreadable(res)
+		return in, unreadable(res, nil)
 	}
 	goal := flatText(Clean(v.Absicht), 80)
 	if v.Keine || goal == "" {
@@ -243,7 +243,7 @@ func (a *Agent) RecapSession(ctx context.Context, log string, c Context) (Recap,
 		Runbook         string   `json:"runbook"`
 	}
 	if !strictJSON(res.Content, &v) {
-		return r, unreadable(res)
+		return r, unreadable(res, nil)
 	}
 	for _, p := range v.Zusammenfassung {
 		if p = flatText(Clean(p), maxShown); p != "" && len(r.Points) < 5 {

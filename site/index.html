@@ -42,7 +42,7 @@
   </div>
   <figure>
     <img src="gifs/goal-en.gif" width="962" height="594" alt="Goal mode: the AI sets up nginx step by step, each command is confirmed with Enter">
-    <figcaption>Goal mode (F2): describe a goal, the AI suggests exactly one command at a time, you confirm.</figcaption>
+    <figcaption>Goal mode (F2): describe a goal, the AI suggests exactly one command at a time, you confirm. Multi-line content such as config sections arrives as a file (created via SFTP after ⏎), and config files are extended, not replaced.</figcaption>
   </figure>
 </section>
 
@@ -201,6 +201,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>Command palette</td></tr>
     <tr><td><kbd>F1</kbd></td><td>Help</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Goal mode (agent)</td></tr>
+    <tr><td><kbd>F2</kbd> → <kbd>v</kbd> / <kbd>s</kbd> / <kbd>r</kbd></td><td>Goal mode, file step: view the file / skip it; at the end delete the work folder (<kbd>⏎</kbd> creates the file)</td></tr>
     <tr><td><kbd>F2</kbd> → <kbd>c</kbd> / <kbd>l</kbd></td><td>Agent finished: copy the result / read it in full; <kbd>PgUp</kbd>/<kbd>PgDn</kbd> or the mouse wheel scroll the panel</td></tr>
     <tr><td><kbd>F3</kbd></td><td>Ask AI with terminal context; <kbd>Esc</kbd> stops the answer, <kbd>n</kbd> new question, <kbd>f</kbd> follow-up, <kbd>u</kbd> use the fix after a failed card command</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>K</kbd> / <kbd>Alt</kbd>+<kbd>J</kbd></td><td>AI companion: level (off, quiet, chatty, coach) / companion sidebar</td></tr>

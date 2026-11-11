@@ -93,35 +93,15 @@ func (a *Agent) PlanNext(ctx context.Context, goal string, hist []DoneStep, answ
 	}
 	kind, files := c.kind(), info.Dir != ""
 	parse := func(out string) (Step, error) { return parsePlan(out, kind, files) }
-	return a.completeStep(ctx, msgs, retryPlan, parse)
+	return a.completeStep(ctx, msgs, retryPlan, files, parse)
 }
 
 const retryPlan = "Deine letzte Antwort war kein gültiges JSON-Objekt im verlangten Format. " +
 	`Antworte jetzt NUR mit einem JSON-Objekt ({"befehl": …}, {"planfertig": {…}} oder {"frage": …}).`
 
 // completeStep: Anfrage mit einem Korrekturversuch bei unlesbarer Antwort.
-func (a *Agent) completeStep(ctx context.Context, msgs []llm.Message, retry string, parse func(string) (Step, error)) (Step, error) {
-	res, err := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskPlan})
-	if err != nil {
-		return Step{}, err
-	}
-	if st, err := parse(res.Content); err == nil {
-		return st, nil
-	}
-	if res.Truncated() && strings.TrimSpace(stripThink(res.Content)) == "" {
-		return Step{}, unreadable(res)
-	}
-	msgs = append(msgs,
-		llm.Message{Role: "assistant", Content: tail(stripThink(res.Content), 1500)},
-		llm.Message{Role: "user", Content: retry})
-	res2, err2 := a.C.CompleteResult(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.1, NoThink: true, Task: TaskPlan})
-	if err2 == nil {
-		if st, err := parse(res2.Content); err == nil {
-			return st, nil
-		}
-		res = res2
-	}
-	return Step{}, unreadable(res)
+func (a *Agent) completeStep(ctx context.Context, msgs []llm.Message, retry string, files bool, parse func(string) (Step, error)) (Step, error) {
+	return a.completeWith(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskPlan}, retry, files, parse)
 }
 
 // text: der Plan als Text für den Prompt (Überarbeiten).
