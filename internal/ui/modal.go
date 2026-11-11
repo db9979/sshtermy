@@ -228,7 +228,7 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		case "c":
 			a.modal = nil
 			a.flash(i18n.T("Suche nach Updates …"))
-			return checkUpdate()
+			return a.checkUpdate()
 		case "r":
 			if a.restartPending != "" {
 				return a.askRestart()

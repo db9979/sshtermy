@@ -135,6 +135,9 @@ func (a *App) closedView(s *session, cols, rows int) string {
 			wrap(st.Muted, raw)
 		}
 		keys = append(p.keys, keys...)
+		if canWake(s.conn) {
+			keys = append(keys, [2]string{"w", i18n.T("aufwecken")})
+		}
 	} else {
 		wrap(st.Danger, "× "+orDefault(s.err, i18n.T("getrennt")))
 	}
@@ -149,6 +152,11 @@ func (a *App) closedKey(s *session, key string) (tea.Cmd, bool) {
 		return nil, false
 	}
 	switch key {
+	case "w":
+		if s.errv == nil || !canWake(s.conn) {
+			return nil, false
+		}
+		return a.wake(s.conn), true
 	case "e":
 		if s.conn.Protocol == domain.ProtoWatch {
 			return nil, false

@@ -221,10 +221,10 @@ func (s *Store) SetCollapsed(collapsed bool, paths ...string) error {
 		}
 	}
 	s.mu.Unlock()
-	if !changed {
-		return nil
+	if changed {
+		s.saveSoon()
 	}
-	return s.save()
+	return nil
 }
 
 // OrderFolders setzt die Reihenfolge der Ordner paths (Geschwister).
@@ -341,4 +341,32 @@ func (s *Store) FolderRules(group string) []string {
 		}
 	}
 	return out
+}
+
+// ChangeConns ändert mehrere Verbindungen in einem Schritt (Sammeländerung
+// im Manager). f meldet, ob es etwas geändert hat; nur dann bekommt die
+// Verbindung einen neuen Änderungszeitpunkt. Liefert die Zahl der geänderten.
+func (s *Store) ChangeConns(ids []string, f func(c *domain.Connection) bool) (int, error) {
+	s.Fresh()
+	if err := s.lockData(); err != nil {
+		return 0, err
+	}
+	now := time.Now().UTC()
+	want := map[string]bool{}
+	for _, id := range ids {
+		want[id] = true
+	}
+	n := 0
+	for i := range s.data.Connections {
+		c := &s.data.Connections[i]
+		if want[c.ID] && f(c) {
+			c.UpdatedAt = now
+			n++
+		}
+	}
+	s.mu.Unlock()
+	if n == 0 {
+		return 0, nil
+	}
+	return n, s.save()
 }

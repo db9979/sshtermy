@@ -334,7 +334,7 @@ func (s *session) suspend() {
 // reconnectTick startet fällige Versuche (aus onTick, einmal pro Sekunde).
 func (a *App) reconnectTick(s *session) tea.Cmd {
 	if s.state == stConnected {
-		return a.resumeMux(s)
+		return tea.Batch(a.resumeMux(s), a.runStartCmd(s))
 	}
 	if s.state != stReconnect || s.rc.dialing || time.Now().Before(s.rc.due) {
 		return nil

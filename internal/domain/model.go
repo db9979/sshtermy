@@ -70,6 +70,18 @@ type Connection struct {
 	Group    string     `json:"group,omitempty"` // Ordner, verschachtelt mit „ / “, z. B. "Produktion / Web"
 	Tags     []string   `json:"tags,omitempty"`
 	Order    float64    `json:"order,omitempty"` // Reihenfolge im Ordner (0 = alphabetisch)
+	// Note: eigene Notiz zur Verbindung (Ansprechpartner, Wartungsfenster,
+	// Standort). Nur für Menschen: Sie geht nie an die KI (dafür gibt es die
+	// KI-Notizen im Systemprofil) und nicht in ein Team-Paket.
+	Note string `json:"note,omitempty"`
+	// StartCmd: Befehl, den sshTermy nach dem Anmelden einmal sichtbar am
+	// Prompt eintippt (z. B. „cd /srv/app“). Nicht zusammen mit einer festen
+	// Sitzung. Gefährliche Befehle lehnt das Formular ab; aus einem
+	// Team-Paket wird er nie übernommen.
+	StartCmd string `json:"start_cmd,omitempty"`
+	// MAC: Hardware-Adresse für Wake-on-LAN (aa:bb:cc:dd:ee:ff). Leer =
+	// sshTermy merkt sie sich beim Verbinden selbst, wenn es sie findet.
+	MAC string `json:"mac,omitempty"`
 	// GuardOff: Schutz für dieses System aus (Test-/Laborrechner). Standard
 	// ist an: Jede Verbindung gilt als produktiv (Gefahren-Check beim Tippen,
 	// Agent fragt bei Änderungen). Nur einzeln im Formular abschaltbar.
@@ -508,8 +520,11 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`                    // Name aus ui.Themes (z. B. "nacht", "polar", "papier") oder "eigene"
-	UseDPAPI     bool   `json:"use_dpapi"`                // Windows: Store-Schlüssel zusätzlich per DPAPI
+	Theme    string `json:"theme"`     // Name aus ui.Themes (z. B. "nacht", "polar", "papier") oder "eigene"
+	UseDPAPI bool   `json:"use_dpapi"` // Windows: Store-Schlüssel zusätzlich per DPAPI
+	// UpdateWaitH: Updates erst anbieten, wenn sie so viele Stunden
+	// veröffentlicht sind (Kanal „stabil“). 0 = sofort.
+	UpdateWaitH  int    `json:"update_wait_h,omitempty"`
 	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
 	Language     string `json:"language"`                 // "de" | "en"
 	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
@@ -685,6 +700,7 @@ func (s Settings) SyncedPart() Settings {
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false
+	s.UpdateWaitH = 0      // Update-Kanal gilt je Rechner
 	s.CmdSetApproved = nil // Freigaben gelten für die Team-Dateien dieses Rechners
 	return s
 }

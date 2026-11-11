@@ -16,17 +16,17 @@
   │ ━━ Einordnung ────────────────────────────────────────────────────────────────────────────── │
   │ │ Ordner                 ▸ Netzwerk ▾                                                        │
   │ │ Tags                   keine                                                               │
+  │ │ Notiz                  keine                                                               │
   │ │ Farbe                  automatisch                                                         │
   │ │ Schutz                 ● an                                                                │
   │                                                                                              │
   │ ━━ Gerät & KI ────────────────────────────────────────────────────────────────────────────── │
   │ │ Gerätetyp              automatisch                                                         │
-  │ │ System                 noch nicht erkannt · wird beim Verbinden ermittelt                  │
-  │ │ Befehlssatz            automatisch                                                         │
-  │ │ KI-Notizen             keine · z. B. „VLAN 99 = Management, nie reload“                    │
-  │                                                                                              │
-  │  ▸ Erweitert  alles aus ──────────────────────────────────────────────────────────────────── │
+  │   ↓ …                                                                                        │
   │                                                                                              │
   │ ──────────────────────────────────────────────────────────────────────────────────────────── │
   │ Anzeigename, z. B. „DGX Spark“                                                               │
+  │                                                                                              │
+  │                                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────────────────────┘
  Tab weiter  ←/→ wählen  Strg+T testen  Strg+S speichern  Esc abbrechen

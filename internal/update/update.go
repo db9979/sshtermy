@@ -144,38 +144,32 @@ func AssetName() string {
 	return n
 }
 
-// Check fragt das neueste Release ab. nil, nil = schon aktuell.
-func Check(ctx context.Context) (*Release, error) {
-	raw, err := get(ctx, "https://api.github.com/repos/"+version.Repo+"/releases/latest", acceptJSON, 1<<20)
-	if err != nil {
-		return nil, err
-	}
-	var r struct {
-		Tag    string `json:"tag_name"`
-		Body   string `json:"body"`
-		HTML   string `json:"html_url"`
-		Draft  bool   `json:"draft"`
-		Pre    bool   `json:"prerelease"`
-		Assets []struct {
-			Name string `json:"name"`
-			API  string `json:"url"`
-			URL  string `json:"browser_download_url"`
-		} `json:"assets"`
-	}
-	if err := json.Unmarshal(raw, &r); err != nil {
-		return nil, err
-	}
-	if r.Draft || r.Pre {
-		return nil, nil
-	}
+// apiBase: GitHub-API. Variable für Tests.
+var apiBase = "https://api.github.com"
+
+type ghRelease struct {
+	Tag       string    `json:"tag_name"`
+	Body      string    `json:"body"`
+	HTML      string    `json:"html_url"`
+	Draft     bool      `json:"draft"`
+	Pre       bool      `json:"prerelease"`
+	Published time.Time `json:"published_at"`
+	Assets    []struct {
+		Name string `json:"name"`
+		API  string `json:"url"`
+		URL  string `json:"browser_download_url"`
+	} `json:"assets"`
+}
+
+// usable: ein fertiges Release, neuer als dieses Programm und nicht das
+// zurückgenommene (guard.go).
+func (r ghRelease) usable() bool {
 	v := strings.TrimPrefix(r.Tag, "v")
-	if !Newer(v, version.Version) {
-		return nil, nil
-	}
-	if v == skipped() {
-		return nil, nil // nach dem Update nicht gestartet und zurückgenommen (guard.go): erst die nächste Version
-	}
-	rel := &Release{Version: v, Notes: r.Body, URL: r.HTML, assets: map[string][]string{}}
+	return !r.Draft && !r.Pre && Newer(v, version.Version) && v != skipped()
+}
+
+func (r ghRelease) release() *Release {
+	rel := &Release{Version: strings.TrimPrefix(r.Tag, "v"), Notes: r.Body, URL: r.HTML, assets: map[string][]string{}}
 	for _, a := range r.Assets {
 		// Der API-Weg ist verlässlicher; github.com/…/releases/download
 		// antwortet zeitweise mit 504.
@@ -185,8 +179,59 @@ func Check(ctx context.Context) (*Release, error) {
 			}
 		}
 	}
-	return rel, nil
+	return rel
 }
+
+// Check fragt das neueste Release ab. nil, nil = schon aktuell.
+func Check(ctx context.Context) (*Release, error) {
+	raw, err := get(ctx, apiBase+"/repos/"+version.Repo+"/releases/latest", acceptJSON, 1<<20)
+	if err != nil {
+		return nil, err
+	}
+	var r ghRelease
+	if err := json.Unmarshal(raw, &r); err != nil {
+		return nil, err
+	}
+	if !r.usable() {
+		return nil, nil
+	}
+	return r.release(), nil
+}
+
+// CheckAged ist der Kanal „stabil“: das neueste Release, das seit
+// mindestens minAge veröffentlicht ist. Jede Änderung wird sofort ein
+// Release; wer wartet, bekommt nur Versionen, die andere schon eine Weile
+// benutzen und die nicht gleich wieder ersetzt wurden. minAge <= 0 = Check.
+func CheckAged(ctx context.Context, minAge time.Duration) (*Release, error) {
+	if minAge <= 0 {
+		return Check(ctx)
+	}
+	raw, err := get(ctx, apiBase+"/repos/"+version.Repo+"/releases?per_page=50", acceptJSON, 8<<20)
+	if err != nil {
+		return nil, err
+	}
+	var list []ghRelease
+	if err := json.Unmarshal(raw, &list); err != nil {
+		return nil, err
+	}
+	var best *ghRelease
+	for i := range list {
+		r := &list[i]
+		if !r.usable() || r.Published.IsZero() || now().Sub(r.Published) < minAge {
+			continue
+		}
+		if best == nil || Newer(strings.TrimPrefix(r.Tag, "v"), strings.TrimPrefix(best.Tag, "v")) {
+			best = r
+		}
+	}
+	if best == nil {
+		return nil, nil
+	}
+	return best.release(), nil
+}
+
+// now: Variable für Tests.
+var now = time.Now
 
 // Newer: ist a > b? (semver MAJOR.MINOR.PATCH; "dev" ist immer älter)
 func Newer(a, b string) bool {

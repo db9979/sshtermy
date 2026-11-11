@@ -103,6 +103,15 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		return cmd
 	}
 
+	// Tab mit gedrückter Taste ziehen: Reihenfolge ändern (tabs.go)
+	if a.tabDrag != nil && !isClick && !isWheel {
+		if a.scr != scrTerminal || a.modal != nil || a.pal != nil || a.pick != nil {
+			a.tabDrag = nil
+		} else {
+			return a.tabDragMouse(msg)
+		}
+	}
+
 	// Terminalfläche zuerst: Markieren und Weiterleiten dürfen nicht an
 	// Zonen hängen bleiben (z. B. beim Ziehen über den Rand hinaus).
 	s := a.current()

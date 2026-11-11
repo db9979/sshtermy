@@ -23,6 +23,13 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Fehlerverzeihend im Alltag**: Strg+Q und das Schließen des Fensters fragen nach, wenn noch Verbindungen offen sind; Verbindung, Ordner oder Runbook löschen geht sofort, ein Hinweis bietet 10 Sekunden lang **Rückgängig** an (Strg+Z im Manager oder Klick); **Strg+T im Verbindungsformular testet** Erreichbarkeit, Host-Key und Anmeldung vor dem Speichern; fehlgeschlagene Verbindungen sagen **in Klartext**, was los ist und was hilft („Anmeldung abgelehnt“, „Keine Antwort von sw1:22 … VPN oder Jump-Host?“, `e` bearbeitet die Verbindung), der Originalfehler steht grau darunter. Zeigt ein Server einen **neuen Host-Key** (Neuinstallation, Werksreset), vergleicht `k` alten und neuen Fingerprint und übernimmt den neuen nach zweiter Bestätigung
 - **Einfacher Modus** (Palette › Einstellungen › Aussehen): blendet Profi-Funktionen (Broadcast, Netzwerk, Team, Agent, Aufzeichnung, MCP, Audit …) aus Palette-Übersicht, Einstellungen und Tastenzeile aus; die Suche in der Palette findet weiter alles
 - **Schnellverbinden**: `user@host:port` oder `ssh -p 2222 user@host` in die Palette tippen, ohne die Verbindung anzulegen (Agent/Standard-Keys, sonst Passwort)
+- **Mehrere Verbindungen auf einmal ändern**: Im Manager markiert die Leertaste eine Verbindung, `*` alle sichtbaren (mit Suche oder `#tag` also alle Treffer). Danach gelten `e` (Sammeländerung: Tags hinzufügen oder entfernen, Benutzer, Schutz, Farbe), `v` (verschieben) und `d` (löschen, mit Rückgängig) für alle markierten; Esc hebt die Auswahl auf.
+- **Notiz je Verbindung**: ein freies Feld nur für dich (Ansprechpartner, Wartungsfenster, Standort). Steht im Manager rechts, die Suche findet es, an die KI geht es nie. Die „KI-Notizen“ bleiben das Feld für Hinweise an die KI.
+- **Startbefehl je Verbindung** (Formular › Erweitert): wird nach dem Anmelden einmal sichtbar eingetippt, z. B. `cd /srv/app` oder `sudo -i`. Gefährliche Befehle lehnt das Formular ab; aus einem Team-Paket wird ein Startbefehl nie übernommen.
+- **Wake-on-LAN**: Ein ausgeschalteter Rechner im eigenen Netz lässt sich aus dem Manager wecken (Klick auf „Wake-on-LAN senden“, Palette „aufwecken“ oder `w` im getrennten Tab). Die MAC-Adresse merkt sich sshTermy beim ersten Verbinden von selbst oder du trägst sie unter Erweitert ein.
+- **Platzhalter in Schnellbefehlen**: `systemctl restart {{dienst}}` fragt beim Ausführen nach dem Wert, `{{dienst:nginx}}` schlägt einen vor; der letzte Wert steht beim nächsten Mal schon da. Macht erst der eingesetzte Wert den Befehl gefährlich, fragt sshTermy nach.
+- **Suche über alle Tabs** (Alt+S): ein Suchbegriff, die Treffer aus dem Verlauf aller offenen Tabs in einer Liste; ⏎ springt in den Tab an genau diese Zeile.
+- **Tabs mit der Maus ziehen**: Ein Tab lässt sich in der Tab-Leiste an eine andere Stelle ziehen.
 - **Fertig im Hintergrund**: Ein Befehl, der 10 s oder länger in einem verdeckten Tab lief, markiert den Tab (✓ / ×) und meldet sich mit einer Einblendung; ist das sshTermy-Fenster im Hintergrund, kommt zusätzlich eine Desktop-Benachrichtigung (Windows, macOS, Linux). Die Terminal-Glocke markiert den Tab ebenso. Beides ist in der Palette abschaltbar
 - **Agent-Weiterleitung** pro Verbindung (wie `ssh -A`): `git pull`, `ssh` und `scp` auf dem Server nutzen deine lokalen Keys aus ssh-agent, Pageant oder dem Windows-OpenSSH-Agent, die Keys verlassen deinen Rechner nie
 - **X11-Weiterleitung** pro Verbindung (wie `ssh -X`): Grafische Programme vom Server öffnen sich hier; braucht lokal einen X-Server (XQuartz, VcXsrv, WSLg), das X-Cookie verlässt deinen Rechner nie
@@ -210,7 +217,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   für jedes Bild neu aufgebaut. Palette „Leistungsanzeige“ bewertet die Zeichenzeit in Worten (flüssig/gut/etwas
   träge/ruckelt), zeigt je Bild einen Balken, Bilder pro Sekunde (1 im Leerlauf ist normal: gezeichnet wird nur bei
   Änderung), die mögliche Bildrate und die Ausgaberate; im Terminal steht sie links neben der F6-Leiste
-- **Versionierung und Auto-Update** aus GitHub Releases (signiert). Vor dem Austausch wird die neue Programmdatei einmal gestartet und muss die angekündigte Version nennen; startet sie danach zweimal nicht sauber, stellt sshTermy die alte Version von selbst wieder her
+- **Versionierung und Auto-Update** aus GitHub Releases (signiert). Vor dem Austausch wird die neue Programmdatei einmal gestartet und muss die angekündigte Version nennen; startet sie danach zweimal nicht sauber, stellt sshTermy die alte Version von selbst wieder her **Update-Kanal** (Einstellungen › Sicherheit › „Updates anbieten“): „sofort“ zeigt jede neue Version, „stabil“ erst Versionen, die seit einem Tag oder einer Woche veröffentlicht sind. `sshtermy -update` nimmt immer die neueste.
 - **Zwei sshTermy gleichzeitig** (zweites Fenster, zweiter Start): Jedes bemerkt, wenn das andere gespeichert hat, und lädt Verbindungen und Einstellungen neu, statt sie zu überschreiben. Schlägt das Speichern fehl (Platte voll, Ordner schreibgeschützt), erscheint eine Meldung
 
 Das Bedienkonzept der KI (Vorschläge, Ziel-Modus, feste Gefahrenregeln) stammt aus dem Fernzugang-Assistenten von
@@ -290,9 +297,10 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | Wo | Taste | Wirkung |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
+| | Leertaste / * | Verbindung markieren / alle sichtbaren markieren; danach wirken e (Sammeländerung), v und d auf alle markierten, Esc hebt auf |
 | | Strg+Z | letztes Löschen rückgängig (Verbindung, Ordner, Runbook; 10 s, oder Klick auf den Hinweis) |
 | Verbindungsformular | Strg+T / Strg+S | Verbindung testen (erreichbar, Host-Key, Anmeldung) / speichern |
-| Getrennter Tab | ⏎ / e / k / x | neu verbinden / Verbindung bearbeiten / geänderten Host-Key vergleichen und übernehmen / Tab schließen |
+| Getrennter Tab | ⏎ / e / k / x / w | neu verbinden / Verbindung bearbeiten / geänderten Host-Key vergleichen und übernehmen / Tab schließen / aufwecken (Wake-on-LAN) |
 | | i / a / b | Verbindungen importieren / Farbschema wählen (26 Themes, Vorschau) / Tastenkürzel anpassen |
 | | c / q | SSH-Schlüssel erzeugen oder übertragen / Schnellbefehle bearbeiten |
 | | m / f / z | Broadcast an mehrere Hosts / Netzwerk-Scan / Zeitpläne (Strg+N neu, Strg+E bearbeiten, Strg+R jetzt, Strg+O an/aus, ⏎ letztes Ergebnis) |
@@ -311,9 +319,10 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | F6 | Host-Übersicht: r/⏎ abfragen, t Zeitraum der Graphen 5 min/1 h, z groß, l Log-Blick, c Container, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
+| | Alt+S | in allen offenen Tabs suchen, ⏎ springt zur Trefferzeile |
 | | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
 | | Alt+L | lokale Shell in neuem Tab (auch im Manager; Palette: `lokal`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
-| | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen |
+| | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen (`{{name}}` im Befehl fragt nach einem Wert) |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
 | | ⇧F9 | Tastenzeile erklärt die Tasten des Bereichs |
 | | ⇧F10 | Tab in ein eigenes Terminalfenster abtrennen (Windows Terminal/Konsole, Terminal.app/iTerm2, Linux-Terminals, tmux; im eigenen Fenster von sshTermy ein zweites eigenes Fenster); die Sitzung bleibt offen, Fenster schließen oder ⏎ holt sie zurück. Eigenes Terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |

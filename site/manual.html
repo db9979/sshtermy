@@ -71,6 +71,8 @@
     <li><b>Telnet, serial, local:</b> “Connection type” picks Telnet, a USB console cable or this computer's shell (<kbd>Alt</kbd>+<kbd>L</kbd>).</li>
     <li><b>PowerShell (WinRM):</b> Windows servers without SSH. “negotiate” (NTLM) works with domain accounts too; “kerberos” for servers that block NTLM: enter the computer name instead of an IP (<code>srv01.corp.local</code>), the user as <code>name@corp.local</code>. On Linux/macOS a ticket from <code>kinit</code> is enough, otherwise sshTermy asks for the password.</li>
     <li><b>Protection:</b> every connection counts as a production system (danger check, the agent asks before changes). Turn the “Protection” switch under “Organize” off only for test and lab systems.</li>
+    <li><b>Note, start command, wake-up:</b> “Note” is just for you (the AI never sees it). Under “Advanced”: a start command typed once after login, and the MAC address for Wake-on-LAN (sshTermy usually remembers it when connecting).</li>
+    <li><b>Several at once:</b> <kbd>Space</kbd> marks, <kbd>*</kbd> marks all visible; then <kbd>e</kbd>, <kbd>v</kbd> and <kbd>d</kbd> change all marked ones.</li>
     <li><b>Persistent session:</b> always land in the same tmux/screen session for a connection, even from another computer.</li>
   </ul>
 </section>
@@ -81,7 +83,7 @@
     <li><kbd>F7</kbd>/<kbd>F8</kbd> switch tabs, <kbd>Alt</kbd>+<kbd>T</kbd> lists them all, <kbd>Alt</kbd>+<kbd>N</kbd>/<kbd>Alt</kbd>+<kbd>W</kbd> open and close.</li>
     <li><kbd>Ctrl</kbd>+<kbd>T</kbd> splits the view (2 to 6 panes), <kbd>Alt</kbd>+<kbd>I</kbd> types into all visible panes at once.</li>
     <li><kbd>⇧F10</kbd> moves a tab into its own terminal window.</li>
-    <li><kbd>Ctrl</kbd>+<kbd>F</kbd> searches the scrollback, <kbd>Ctrl</kbd>+<kbd>E</kbd> jumps to error lines.</li>
+    <li><kbd>Ctrl</kbd>+<kbd>F</kbd> searches the scrollback, <kbd>Ctrl</kbd>+<kbd>E</kbd> jumps to error lines. <kbd>Alt</kbd>+<kbd>S</kbd> searches all open tabs.</li>
     <li><kbd>F9</kbd> and <kbd>⇧F1</kbd>…<kbd>⇧F8</kbd>: quick commands, preset for the device (Linux, Windows, Aruba, Cisco, Juniper, MikroTik, FortiGate …).</li>
     <li><kbd>F6</kbd> host overview: CPU, RAM, disk, updates on servers, live graphs on Linux (<kbd>t</kbd> 5 min / 1 h, <kbd>z</kbd> large); firmware, ports and VLANs on network devices; <kbd>c</kbd> containers.</li>
     <li>If the line drops (Wi-Fi, VPN, standby), sshTermy reconnects by itself, restarts tunnels and re-attaches tmux/screen. After waking up or a network change all connections are checked right away.</li>
@@ -252,7 +254,7 @@
   <details><summary>The AI does not answer.</summary><p>The dot at the top right shows the status. <kbd>s</kbd> → <kbd>Ctrl</kbd>+<kbd>T</kbd> tests the endpoint. If AI privacy is set to “local AI only” or “AI off”, or the connection has the tag <code>ki-aus</code>, that is intended.</p></details>
   <details><summary>Are my commands sent anywhere?</summary><p>Only to the AI provider you set up, and only cleaned. sshTermy has no telemetry. The update check only asks GitHub for the latest version.</p></details>
   <details><summary>Can I use sshTermy without AI?</summary><p>Yes. Without a provider (or with “AI off”) it is a complete SSH terminal with manager, SFTP, tunnels, broadcast and backups.</p></details>
-  <details><summary>How do I get updates?</summary><p>sshTermy checks on start and shows new versions; <kbd>F12</kbd> → <kbd>u</kbd> installs. With Homebrew, apt or winget updates come through the package manager.</p></details>
+  <details><summary>How do I get updates?</summary><p>sshTermy checks on start and shows new versions; <kbd>F12</kbd> → <kbd>u</kbd> installs. If you do not want every version right away, set “Offer updates” under Settings › Security to “stable” (only after a day or a week). With Homebrew, apt or winget updates come through the package manager.</p></details>
 </section>
 </article>
 </main>

@@ -217,6 +217,7 @@ func Strip(c domain.Connection, o Options) domain.Connection {
 		c.Profile = &pr
 	}
 	c.LastUsed = time.Time{}
+	c.Note, c.StartCmd = "", "" // eigene Notiz und Startbefehl bleiben hier
 	return c
 }
 
@@ -229,6 +230,7 @@ func safeIncoming(c domain.Connection) domain.Connection {
 	c.ForwardAgent, c.ForwardX11 = false, false
 	c.GuardOff = false // Schutz abschalten geht nur hier im Formular
 	c.LocalShell, c.LocalDir = "", ""
+	c.StartCmd = "" // würde nach dem Anmelden von selbst getippt
 	for _, src := range []*string{&c.PassSource, &c.OTPSource} {
 		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(*src)), "cmd:") {
 			*src = ""
