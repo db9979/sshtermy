@@ -40,7 +40,7 @@ func TestTrzszTriggerAndCancel(t *testing.T) {
 	a.intro = nil
 	s, _ := typedSession(domain.Connection{Alias: "srv"}, "$ ", "")
 	sh := &fakeShell{}
-	s.shell = sh
+	s.setShell(sh)
 	a.sessions, a.cur = []*session{s}, 0
 	ev := make(chan tea.Msg, 10)
 	w := outWriter{s, ev}
@@ -121,7 +121,7 @@ func TestZmodemHint(t *testing.T) {
 	a := dangerApp(t)
 	s, _ := typedSession(domain.Connection{Alias: "srv"}, "$ ", "")
 	sh := &fakeShell{}
-	s.shell = sh
+	s.setShell(sh)
 	a.sessions = []*session{s}
 	a.events = make(chan tea.Msg, 4)
 	ev := make(chan tea.Msg, 4)

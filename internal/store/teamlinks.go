@@ -19,6 +19,7 @@ func (s *Store) TeamLinks() []domain.TeamLink {
 
 // UpsertTeamLink legt an (ID leer) oder ersetzt.
 func (s *Store) UpsertTeamLink(l domain.TeamLink) (domain.TeamLink, error) {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()
@@ -39,6 +40,7 @@ func (s *Store) UpsertTeamLink(l domain.TeamLink) (domain.TeamLink, error) {
 }
 
 func (s *Store) DeleteTeamLink(id string) error {
+	s.Fresh()
 	s.mu.Lock()
 	if s.data == nil {
 		s.mu.Unlock()

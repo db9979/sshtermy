@@ -11,6 +11,7 @@ func (e *Emulator) eraseCharacter(n int) {
 		n = 1
 	}
 	x, y := e.scr.CursorPosition()
+	n = min(n, e.Width()-x) // sshTermy: nicht über den Zeilenrand hinaus füllen
 	rect := uv.Rect(x, y, n, 1)
 	e.scr.FillArea(e.scr.blankCell(), rect)
 	e.atPhantom = false

@@ -324,7 +324,7 @@ func (s *session) suspend() {
 	s.files.open, s.panelFocus = false, false
 	if s.shell != nil {
 		s.shell.Close()
-		s.shell = nil
+		s.setShell(nil)
 	}
 	if s.client != nil {
 		s.client.Close() // Zeiger bleibt für Anzeige (Remote-Info) bis zur neuen Verbindung

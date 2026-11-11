@@ -53,7 +53,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
+	"time"
 
 	"golang.org/x/crypto/argon2"
 
@@ -129,6 +131,33 @@ type Vault struct {
 	path string
 	hdr  header
 	dek  []byte // nil = gesperrt
+	seen stamp  // Stand der Datei, wie wir sie zuletzt gelesen/geschrieben haben
+}
+
+// stamp: woran wir erkennen, dass ein anderes sshTermy die Datei ersetzt hat.
+type stamp struct {
+	mod  time.Time
+	size int64
+}
+
+func stampOf(path string) stamp {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return stamp{}
+	}
+	return stamp{fi.ModTime(), fi.Size()}
+}
+
+// ChangedOnDisk: Hat ein anderes sshTermy (zweites Fenster, zweiter Start)
+// die Datei seit unserem letzten Lesen oder Schreiben ersetzt?
+func (v *Vault) ChangedOnDisk() bool {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.dek == nil || v.seen == (stamp{}) {
+		return false
+	}
+	now := stampOf(v.path)
+	return now != (stamp{}) && now != v.seen
 }
 
 // Open liest nur den Header; entschlüsselt wird erst mit Unlock*.
@@ -324,6 +353,7 @@ func (v *Vault) Load(out any) error {
 	if v.dek == nil {
 		return ErrLocked
 	}
+	st := stampOf(v.path) // vor dem Lesen: ändert sich die Datei dabei, fällt es beim nächsten Mal auf
 	raw, err := os.ReadFile(v.path)
 	if err != nil {
 		return err
@@ -341,7 +371,13 @@ func (v *Vault) Load(out any) error {
 		return ErrWrongPassword
 	}
 	defer wipe(plain)
-	return json.Unmarshal(plain, out)
+	if err := json.Unmarshal(plain, out); err != nil {
+		return err
+	}
+	// Kopf übernehmen: hat ein anderes sshTermy das Master-Passwort oder
+	// DPAPI geändert, darf unser nächstes Speichern das nicht zurückdrehen.
+	v.hdr, v.seen = f.header, st
+	return nil
 }
 
 // Save verschlüsselt in und schreibt atomar (temporäre Datei + Rename), damit
@@ -372,11 +408,51 @@ func (v *Vault) Save(in any) error {
 	if err := os.MkdirAll(filepath.Dir(v.path), 0o700); err != nil {
 		return err
 	}
-	tmp := v.path + ".tmp"
-	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+	if err := writeDurable(v.path, raw); err != nil {
 		return err
 	}
-	return os.Rename(tmp, v.path)
+	v.seen = stampOf(v.path)
+	return nil
+}
+
+// writeDurable schreibt atomar und erst, wenn die Daten wirklich auf der
+// Platte sind: eigene temporäre Datei (zwei sshTermy kommen sich nicht in die
+// Quere), fsync, Rename, fsync des Ordners. Ohne fsync kann nach einem
+// Stromausfall eine leere Datei unter dem endgültigen Namen stehen.
+func writeDurable(path string, raw []byte) error {
+	dir := filepath.Dir(path)
+	f, err := os.CreateTemp(dir, filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	fail := func(err error) error {
+		f.Close()
+		os.Remove(tmp)
+		return err
+	}
+	if err := f.Chmod(0o600); err != nil && runtime.GOOS != "windows" {
+		return fail(err)
+	}
+	if _, err := f.Write(raw); err != nil {
+		return fail(err)
+	}
+	if err := f.Sync(); err != nil {
+		return fail(err)
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	if d, err := os.Open(dir); err == nil { // Ordnereintrag sichern (unter Windows nicht möglich, Fehler egal)
+		_ = d.Sync()
+		d.Close()
+	}
+	return nil
 }
 
 func payloadAAD(h header) ([]byte, error) {

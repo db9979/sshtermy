@@ -85,6 +85,7 @@ func (s *Store) DeleteFolderTrash(path string) (*Trash, error) {
 
 // Restore macht ein Löschen rückgängig.
 func (s *Store) Restore(t *Trash) error {
+	s.Fresh()
 	if t == nil {
 		return nil
 	}

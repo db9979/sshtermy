@@ -152,7 +152,8 @@
     <li><b>Syslog receiver:</b> accepts messages only from devices saved as a connection; unknown senders are dropped and reported once. To let all in: Settings › “Accept syslog from unknown senders too”.</li>
     <li><b>Lock:</b> immediately or after idle time; sessions keep running behind it.</li>
     <li><b>Audit log</b> (Settings › Security): who did what on which host and when. Every line is chained and signed; “Verify and save audit log” reports changed, deleted or reordered lines. Commands with a leading space appear only as “(private)”.</li>
-    <li><b>Updates</b> are signed with Ed25519; an update without a valid signature is rejected. A self-built sshTermy without the key says so in the About dialog (<kbd>F12</kbd>) and asks before every update.</li>
+    <li><b>Updates</b> are signed with Ed25519; an update without a valid signature is rejected. A self-built sshTermy without the key says so in the About dialog (<kbd>F12</kbd>) and asks before every update. Before the swap the new program file is started once and must report the announced version. If it then fails to start cleanly twice, sshTermy restores the previous version by itself and does not offer the faulty one again.</li>
+    <li><b>Two sshTermy at once</b> (second window, second start): each one notices when the other has saved and reloads connections and settings instead of overwriting them. If saving fails, a message appears.</li>
   </ul>
 </section>
 
