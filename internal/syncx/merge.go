@@ -149,7 +149,19 @@ type Payload struct {
 	Deleted     map[string]time.Time `json:"deleted,omitempty"`
 	KnownHosts  []string             `json:"known_hosts,omitempty"`
 	Devices     map[string]time.Time `json:"devices,omitempty"` // Rechnername → letzter Abgleich
+	CmdSets     []CmdSet             `json:"cmdsets,omitempty"` // eigene Befehlssätze (Dateien, kein Teil des Stores)
 }
+
+// CmdSet: eigener Befehlssatz im Sync. Beim anderen Rechner wirkt er erst,
+// wenn man ihn dort übernimmt (Einstellungen › Befehlssätze).
+type CmdSet struct {
+	ID        string    `json:"id"`
+	YAML      string    `json:"yaml"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// CmdSetTombstone: Grabstein eines gelöschten eigenen Befehlssatzes.
+func CmdSetTombstone(id string) string { return "befehlssatz:" + id }
 
 // FromData baut den Sync-Inhalt aus dem lokalen Store.
 func FromData(d *domain.Data, knownHosts []string) *Payload {
@@ -269,6 +281,11 @@ func Merge(a, b *Payload, now time.Time) *Payload {
 		out.Folders = append(out.Folders, f)
 	}
 	sort.SliceStable(out.Folders, func(i, j int) bool { return out.Folders[i].ID < out.Folders[j].ID })
+
+	out.CmdSets = mergeByID(a.CmdSets, b.CmdSets, out.Deleted,
+		func(c CmdSet) string { return CmdSetTombstone(c.ID) },
+		func(c CmdSet) time.Time { return c.UpdatedAt }, nil)
+	sort.SliceStable(out.CmdSets, func(i, j int) bool { return out.CmdSets[i].ID < out.CmdSets[j].ID })
 
 	out.LLM, out.LLMAt = pick(a.LLM, a.LLMAt, b.LLM, b.LLMAt)
 	out.Settings, out.SettingsAt = pick(a.Settings, a.SettingsAt, b.Settings, b.SettingsAt)

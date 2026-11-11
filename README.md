@@ -139,7 +139,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     (Proxmox, ESXi, Synology, QNAP, TrueNAS, iLO, iDRAC). Palette › Settings › *Command sets*: `n` new set based on a
     built-in one, `e`/`o` edit in the form or the file, `t` test on the open device, `k` AI draft from the terminal,
     `l` take over the commands you corrected on a device, `x`/`i` export/import; sets used by shared connections travel
-    with the team share. Safety: own sets only type read commands, can only add danger rules (never weaken the built-in
+    with the team share, your own sets also with the sync (taken over on the other computer with `f`). Safety: own sets only type read commands, can only add danger rules (never weaken the built-in
     ones), only detect a device when no built-in set matches, syslog steps are shown and danger-checked every time,
     and team sets stay inactive until you approve them (and again after every change, with a diff).
   - **Explain errors**: when a command fails, the suggestion line offers “Why? & Fix” (Alt+0). The AI gets the
@@ -741,7 +741,9 @@ wins per entry, deleted entries are remembered as tombstones (180 days), and “
 does not count as a change. This way changes on two computers are not lost as long as they affect different entries.
 Syncing happens at start, a few seconds after every change and every 5 minutes; manually via the palette
 (“Sync now”). All settings travel along: look, colors, icons, language, keys, AI, lock, notifications, monitoring
-limits, danger check, paste preview, session logs, intro animation and so on. Only computer-specific things stay local:
+limits, danger check, paste preview, session logs, intro animation and so on. Your own command sets sync too; on another computer
+a changed or new set only takes effect after you take it over there (Settings › Command sets, `f`, with a diff), and a
+set deleted on one computer is moved aside to `befehlssaetze/.geloescht` on the others. Only computer-specific things stay local:
 DPAPI, the sync settings themselves, key file paths, paired relays, team folder paths and the "mouse" switch (depends on
 the terminal program). Nerd Font icons sync too, but on another computer they only turn on after the test, since the
 font may be missing there.

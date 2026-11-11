@@ -104,6 +104,7 @@ func (a *App) runSync() tea.Cmd {
 		kh = a.hostKeys.Lines()
 	}
 	local := syncx.FromData(d, kh)
+	local.CmdSets = a.syncCmdSets() // eigene Befehlssätze (Dateien)
 	var book *sessionlog.Book
 	if cfg.Archive {
 		book, _ = a.logBook() // gesperrt/Fehler: nur Sicherungen
@@ -184,6 +185,7 @@ func (a *App) syncDone(m syncDoneMsg) tea.Cmd {
 	if cfg.HostKeys {
 		_, _ = a.hostKeys.AddLines(m.merged.KnownHosts)
 	}
+	a.applySyncCmdSets(m.merged)
 	if n := len(a.st.Connections()); a.mgr.sel >= n {
 		a.mgr.sel = max(0, n-1)
 	}

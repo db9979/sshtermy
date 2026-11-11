@@ -141,7 +141,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     (Aruba, Cisco WLC) und Appliances (Proxmox, ESXi, Synology, QNAP, TrueNAS, iLO, iDRAC). Palette › Einstellungen ›
     *Befehlssätze*: `n` neuer Satz auf Basis eines eingebauten, `e`/`o` im Formular oder in der Datei bearbeiten, `t` am
     offenen Gerät testen, `k` KI-Entwurf aus dem Terminal, `l` die am Gerät korrigierten Befehle übernehmen, `x`/`i`
-    Export/Import; Sätze geteilter Verbindungen gehen mit der Team-Freigabe mit. Sicherheit: eigene Sätze tippen nur
+    Export/Import; Sätze geteilter Verbindungen gehen mit der Team-Freigabe mit, eigene Sätze auch mit dem Sync (am anderen Rechner mit `f` übernehmen). Sicherheit: eigene Sätze tippen nur
     Lesebefehle, können Gefahrenregeln nur ergänzen (eingebaute nie abschwächen), erkennen ein Gerät erst, wenn kein
     eingebauter Satz passt, Syslog-Schritte werden jedes Mal gezeigt und geprüft, und Team-Sätze bleiben aus, bis du sie
     freigibst (nach jeder Änderung erneut, mit Diff).
@@ -751,7 +751,9 @@ pro Eintrag die neuere Änderung, gelöschte Einträge werden als Grabstein geme
 zählt nicht als Änderung. So gehen Änderungen auf zwei Rechnern nicht verloren, solange sie verschiedene Einträge
 betreffen. Abgeglichen wird beim Start, wenige Sekunden nach jeder Änderung und alle 5 Minuten; manuell über die Palette
 („Jetzt synchronisieren“). Alle Einstellungen gehen mit: Aussehen, Farben, Symbole, Sprache, Tasten, KI, Sperre,
-Meldungen, Grenzwerte der Überwachung, Gefahren-Check, Einfüge-Vorschau, Protokolle, Startanimation usw.
+Meldungen, Grenzwerte der Überwachung, Gefahren-Check, Einfüge-Vorschau, Protokolle, Startanimation usw. Eigene Befehlssätze gehen ebenfalls
+mit; auf einem anderen Rechner wirkt ein neuer oder geänderter Satz erst, wenn du ihn dort übernimmst (Einstellungen ›
+Befehlssätze, `f`, mit Diff), und ein anderswo gelöschter Satz wird nach `befehlssaetze/.geloescht` gelegt.
 Nur rechnerspezifische Dinge bleiben lokal: DPAPI, die Sync-Einstellungen selbst, Schlüsseldatei-Pfade, gekoppelte
 Vermittler, Team-Ordner-Pfade und der Schalter „Maus“ (hängt vom Terminalprogramm ab). Nerd-Font-Symbole gehen
 ebenfalls mit, schalten sich auf einem anderen Rechner aber erst nach der Probe ein, weil die Schrift dort fehlen kann.
