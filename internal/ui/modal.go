@@ -102,12 +102,21 @@ func (a *App) aboutModal() *modal {
 		b += i18n.T("↑ Neue Version v") + a.rel.Version + i18n.T(" verfügbar.\n") + firstLines(a.rel.Notes, 6)
 		if cmd := update.Managed(); cmd != "" {
 			b += "\n\n" + i18n.T("Aktualisieren mit: ") + cmd
+		} else if !update.Signed() {
+			b += "\n\n" + unsignedNote()
 		}
 	} else if a.restartPending != "" {
 		b += "v" + a.restartPending + i18n.T(" ist installiert.")
 	}
 	b = strings.TrimRight(b, "\n")
 	return &modal{kind: mAbout, title: i18n.T("Über ") + version.Name, body: b}
+}
+
+// unsignedNote: Hinweis für Builds ohne eingebauten Update-Schlüssel.
+func unsignedNote() string {
+	return i18n.T("▲ Dieser Build prüft die Signatur von Updates nicht (selbst gebaut, ohne UPDATE_PUBKEY).\n") +
+		i18n.T("  Geprüft wird nur die Prüfsumme; wer das GitHub-Konto übernimmt, könnte ein Update unterschieben.\n") +
+		i18n.T("  Sicherer: die offizielle Version installieren (github.com/db9979/sshtermy/releases).")
 }
 
 func firstLines(s string, n int) string {
@@ -205,8 +214,16 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		case "u":
 			if a.rel != nil && update.Managed() == "" {
 				rel := a.rel
-				a.modal = &modal{kind: mBusy, title: "Update", body: i18n.T("Lade v") + rel.Version + i18n.T(", prüfe Signatur und Prüfsumme …")}
-				return func() tea.Msg { return applyDoneMsg{update.Apply(context.Background(), rel)} }
+				apply := func() tea.Cmd {
+					a.modal = &modal{kind: mBusy, title: "Update", body: i18n.T("Lade v") + rel.Version + i18n.T(", prüfe Signatur und Prüfsumme …")}
+					return func() tea.Msg { return applyDoneMsg{update.Apply(context.Background(), rel)} }
+				}
+				if !update.Signed() {
+					a.modal = confirmModal(i18n.T("Update ohne Signaturprüfung?"), unsignedNote()+"\n\n"+
+						i18n.T("j = trotzdem installieren · n = abbrechen"), apply)
+					return nil
+				}
+				return apply()
 			}
 		case "c":
 			a.modal = nil

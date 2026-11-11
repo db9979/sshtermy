@@ -39,6 +39,9 @@ func winrmPassword(c domain.Connection, ask sshx.SecretPrompt, notice func(strin
 		}
 		notice(pwsource.Label(c.PassSource) + ": " + err.Error())
 	}
+	if pw == "" && c.WinRMAuth == psremote.AuthKerberos && psremote.HasKerberosTicket() {
+		return "", nil // Ticket von kinit
+	}
 	if pw == "" && ask != nil {
 		return ask(sshx.PasswordLabel(c))
 	}
@@ -116,6 +119,14 @@ func winrmError(err error, c domain.Connection) error {
 		hint = i18n.T("Zertifikat des Servers ist nicht vertrauenswürdig (oft selbst signiert). In der Verbindung „Zertifikat nicht prüfen“ einschalten oder ein Zertifikat der eigenen CA einrichten.")
 	case errors.Is(err, psremote.ErrUnreadable):
 		hint = i18n.T("Unerwartete Antwort: passt HTTP/HTTPS zum Port? 5985 = HTTP, 5986 = HTTPS.")
+	case errors.Is(err, psremote.ErrKerberosIP):
+		return errors.New(i18n.T("Kerberos braucht den Rechnernamen (z. B. server.firma.local), keine IP-Adresse"))
+	case errors.Is(err, psremote.ErrKerberosRealm):
+		return errors.New(i18n.T("Kerberos: Domäne unbekannt, Benutzer als name@firma.local angeben"))
+	case errors.Is(err, psremote.ErrKerberosSPN):
+		hint = i18n.T("Kerberos: Der Domänencontroller kennt HTTP/<Rechnername> nicht. Den vollen Rechnernamen aus dem AD eintragen (kein Alias/CNAME).")
+	case errors.Is(err, psremote.ErrKerberosKDC):
+		hint = i18n.T("Kerberos: kein Domänencontroller erreichbar. DNS der Domäne nötig (SRV _kerberos._tcp) oder eine krb5.conf (KRB5_CONFIG).")
 	case errors.Is(err, psremote.ErrBasicHTTP):
 		return errors.New(i18n.T("Basic-Anmeldung nur über HTTPS (sonst geht das Passwort lesbar übers Netz)"))
 	case errors.Is(err, psremote.ErrStartup):
@@ -152,8 +163,11 @@ func winrmProfile(st *psremote.Stream) domain.SystemProfile {
 // winrmAuthText: Anmeldung in den Details der Verbindung.
 func winrmAuthText(c domain.Connection) string {
 	t := "NTLM"
-	if c.WinRMAuth == "basic" {
+	switch c.WinRMAuth {
+	case "basic":
 		t = "Basic"
+	case "kerberos":
+		t = "Kerberos"
 	}
 	if c.WinRMHTTPS {
 		t += " · HTTPS"

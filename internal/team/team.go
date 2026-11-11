@@ -227,6 +227,7 @@ func Strip(c domain.Connection, o Options) domain.Connection {
 // den eigenen SSH-Agent an einen fremden Server hängen.
 func safeIncoming(c domain.Connection) domain.Connection {
 	c.ForwardAgent, c.ForwardX11 = false, false
+	c.GuardOff = false // Schutz abschalten geht nur hier im Formular
 	c.LocalShell, c.LocalDir = "", ""
 	for _, src := range []*string{&c.PassSource, &c.OTPSource} {
 		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(*src)), "cmd:") {
@@ -366,7 +367,7 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 					Old: addrOf(cur.Host, cur.Port), New: addrOf(in.Host, in.Port), Host: in.Host, Port: in.Port, Jump: in.JumpHostID})
 				in.Host, in.Port, in.JumpHostID = cur.Host, cur.Port, cur.JumpHostID
 			}
-			wasProd, wasNet := domain.IsProduction(cur), cur.Device == domain.DeviceNetwork
+			wasProd, wasNet := domain.LooksProduction(cur), cur.Device == domain.DeviceNetwork
 			cur.Alias, cur.Host, cur.Port = in.Alias, in.Host, in.Port
 			if cur.Group != in.Group {
 				cur.Group, cur.Order = in.Group, nextOrder(in.Group)
@@ -379,7 +380,7 @@ func Apply(d *domain.Data, p *Package, ids map[string]bool, folder, user string,
 				cur.Device = domain.DeviceNetwork
 				st.KeptGuard++
 			}
-			if wasProd && !domain.IsProduction(cur) {
+			if wasProd && !domain.LooksProduction(cur) {
 				cur.Tags = append(append([]string(nil), cur.Tags...), "prod")
 				st.KeptGuard++
 			}

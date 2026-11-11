@@ -280,8 +280,8 @@ var helpSections = []helpSection{
 		{"KI-Befehl korrigiert", "Korrektur wird gemerkt"},
 	}},
 	{hcNone, "▲", "Gefahren & Aufnahme", "", false, [][2]string{
-		{"Produktiv", "riskanter Befehl: ⏎ halten / j"},
-		{"Palette", "„Gefahren-Check“"},
+		{"Gefahr", "riskanter Befehl: ⏎ halten / j"},
+		{"e (Manager)", "„Schutz“ aus: nur Test-/Laborsysteme"},
 		{"Palette", "„Aufnahme starten“"},
 		{"Palette", "„Verlauf als Text“"},
 	}},

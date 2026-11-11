@@ -13,7 +13,7 @@ import (
 func planSession(t *testing.T) (*App, *session, *syncBuf) {
 	t.Helper()
 	a := dangerApp(t)
-	s, out := typedSession(domain.Connection{Alias: "lab-01"}, "dominik@lab:~$ ", "")
+	s, out := typedSession(domain.Connection{GuardOff: true, Alias: "lab-01"}, "dominik@lab:~$ ", "")
 	a.sessions = []*session{s}
 	withPanel(s, panelGoal)
 	a.panelOpened(s)

@@ -83,6 +83,7 @@ func TestSettingsSyncNerdNeedsProbe(t *testing.T) {
 var localSettings = map[string]bool{
 	"UseDPAPI": true, "NoMouse": true, "LastVersion": true, "NerdFont": true,
 	"LastLayout": true, "Editor": true, "Schedules": true, "Debug": true, "Audit": true, "MCP": true, "SyslogPort": true,
+	"SyslogAny":      true,
 	"CmdSetApproved": true,
 }
 

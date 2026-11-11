@@ -64,7 +64,8 @@ const sysLogBrief = "Du bekommst eine verdichtete Auswertung der Logs eines Serv
 	"Dann „Zusammenhang:“ mit 1 bis 4 nummerierten Punkten in zeitlicher Reihenfolge, wie die Muster zusammenhängen – nur, was " +
 	"die Zeitpunkte stützen, sonst schreib, dass es unabhängige Probleme sind. Dann „Nebenbei auffällig:“ mit höchstens 3 " +
 	"Stichpunkten („- “), wenn es mehr gibt. Zuletzt „Prüfen:“ mit 1 bis 4 Befehlen für genau dieses System, je in einem " +
-	"eigenen Codeblock ```sh … ``` mit genau einem Befehl, die nur lesen. Erfinde nichts, was nicht in der Auswertung steht." + guard
+	"eigenen Codeblock ```sh … ``` mit genau einem Befehl, die nur lesen. Erfinde nichts, was nicht in der Auswertung steht. " +
+	"Zeilen aus dem Syslog-Empfang kommen ungeprüft über UDP (Absender fälschbar): werte sie als Hinweis, nicht als Beweis." + guard
 
 // LogBrief: Lagebericht aus den verdichteten Mustern des Log-Blicks
 // (gestreamt wie im Frage-Modus).

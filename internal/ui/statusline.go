@@ -16,7 +16,7 @@ import (
 
 // Statuszeile pro Sitzung (zweite Zeile im Terminal): wer@wo und System
 // links, rechts Verbindungsdauer, Latenz, Zeichensatz, Ziel/Tunnel/KI.
-// Auf Produktiv-Hosts (Gruppe, Tag oder Alias mit „prod“, Tag „live“) ist
+// Mit „prod“/„live“ in Gruppe, Tag oder Alias (domain.LooksProduction) ist
 // die Zeile rot, und als root gibt es immer eine deutliche Warnung.
 
 // isProduction: Verbindung gehört zu einem Produktivsystem.
@@ -49,7 +49,7 @@ func fmtDuration(d time.Duration) string {
 
 func (a *App) sessionBar(s *session) string {
 	st := a.s
-	prod := isProduction(s.conn)
+	prod := domain.LooksProduction(s.conn)
 	bg := st.Header
 	if prod {
 		bg = lipgloss.NewStyle().Background(st.T.Danger).Foreground(st.T.Bg).Bold(true)
@@ -59,6 +59,9 @@ func (a *App) sessionBar(s *session) string {
 	var left strings.Builder
 	if prod {
 		left.WriteString(lipgloss.NewStyle().Background(st.T.Bg).Foreground(st.T.Danger).Bold(true).Padding(0, 1).Render(i18n.T("PRODUKTIV")))
+	}
+	if s.conn.GuardOff {
+		left.WriteString(lipgloss.NewStyle().Background(st.T.Warn).Foreground(st.T.Bg).Padding(0, 1).Render(i18n.T("Schutz aus")))
 	}
 	if col := a.accentOf(s.conn); col != nil && !prod {
 		// Akzentfarbe (accent.go): Umgebung als Schild, sonst ein Farbblock

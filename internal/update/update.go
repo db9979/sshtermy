@@ -350,3 +350,9 @@ func Cleanup() {
 		}
 	}
 }
+
+// Signed: prüft dieser Build die Signatur von Updates? Offizielle Releases
+// tragen den Schlüssel (release.yml, UPDATE_PUBKEY); wer selbst baut, ohne
+// ihn zu setzen, bekommt Updates nur mit Prüfsumme. Die Oberfläche warnt
+// dann und fragt vor dem Austausch nach.
+func Signed() bool { return version.UpdatePubKey != "" }

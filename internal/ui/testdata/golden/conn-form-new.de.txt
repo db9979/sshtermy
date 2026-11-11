@@ -17,6 +17,7 @@
   │ │ Ordner                 ▸ Netzwerk ▾                                                        │
   │ │ Tags                   keine                                                               │
   │ │ Farbe                  automatisch                                                         │
+  │ │ Schutz                 ● an                                                                │
   │                                                                                              │
   │ ━━ Gerät & KI ────────────────────────────────────────────────────────────────────────────── │
   │ │ Gerätetyp              automatisch                                                         │
@@ -28,5 +29,4 @@
   │                                                                                              │
   │ ──────────────────────────────────────────────────────────────────────────────────────────── │
   │ Anzeigename, z. B. „DGX Spark“                                                               │
-  │                                                                                              │
  Tab weiter  ←/→ wählen  Strg+T testen  Strg+S speichern  Esc abbrechen

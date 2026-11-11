@@ -5,7 +5,8 @@
 //
 // Anmeldung: Negotiate/NTLM (Standard, auch Domänenkonten als DOMÄNE\name
 // oder name@domäne) – über HTTP verschlüsselt NTLM jede Nachricht, über
-// HTTPS übernimmt das TLS. Basic nur über HTTPS (lokale Konten).
+// HTTPS übernimmt das TLS. Basic nur über HTTPS (lokale Konten). Kerberos
+// für Server ohne NTLM (kerberos.go).
 package psremote
 
 import (
@@ -38,7 +39,7 @@ type Config struct {
 	Port     int // 0 = 5985 bzw. 5986
 	HTTPS    bool
 	Insecure bool   // Zertifikat nicht prüfen (selbst signiert)
-	Auth     string // AuthNegotiate, AuthBasic
+	Auth     string // AuthNegotiate, AuthBasic, AuthKerberos
 	User     string
 	Password string
 	Timeout  time.Duration // Verbindungsaufbau, 0 = 30 s
@@ -115,6 +116,8 @@ type wsman struct {
 
 func newTransport(cfg Config) (winrm.Transporter, error) {
 	switch {
+	case cfg.Auth == AuthKerberos:
+		return kerberosTransport(cfg)
 	case cfg.Auth == AuthBasic:
 		return winrm.NewClientWithDial(dialer(cfg)), nil
 	case cfg.HTTPS:
@@ -316,6 +319,12 @@ func explain(err error, cfg Config) error {
 	switch {
 	case errors.As(err, &ua) || errors.As(err, &hn) || errors.As(err, &ci) || strings.Contains(s, "x509:") || strings.Contains(s, "certificate"):
 		return &Error{ErrCert, err}
+	case strings.Contains(s, "KDC_ERR_S_PRINCIPAL_UNKNOWN"):
+		return &Error{ErrKerberosSPN, err}
+	case strings.Contains(s, "KDC_ERR_PREAUTH_FAILED") || strings.Contains(s, "KDC_ERR_C_PRINCIPAL_UNKNOWN") || strings.Contains(s, "KDC_ERR_CLIENT_REVOKED"):
+		return &Error{ErrAuth, err}
+	case cfg.Auth == AuthKerberos && (strings.Contains(s, "KDC") || strings.Contains(s, "kdc") || strings.Contains(s, "_kerberos")):
+		return &Error{ErrKerberosKDC, err}
 	case strings.Contains(s, "401") || strings.Contains(s, "Unauthorized") || strings.Contains(s, "Access is denied") || strings.Contains(s, "logon failure"):
 		return &Error{ErrAuth, err}
 	case strings.Contains(s, "connection refused") || strings.Contains(s, "i/o timeout") || strings.Contains(s, "no such host") ||

@@ -42,6 +42,7 @@
   <a href="#move">Backup and moving</a>
   <a href="#mcp">MCP for AI clients</a>
   <a href="#bugs">Reporting bugs</a>
+  <a href="#keys">More keys</a>
   <a href="#faq">FAQ</a>
 </aside>
 
@@ -68,6 +69,8 @@
     <li><b>Folders and tags:</b> <kbd>o</kbd> creates folders (“Customer / Site” nests), drag with the mouse to reorder. <code>#tag</code> in the search filters.</li>
     <li><b>Jump host:</b> connect through another server; sshTermy remembers which jump host fits which network.</li>
     <li><b>Telnet, serial, local:</b> “Connection type” picks Telnet, a USB console cable or this computer's shell (<kbd>Alt</kbd>+<kbd>L</kbd>).</li>
+    <li><b>PowerShell (WinRM):</b> Windows servers without SSH. “negotiate” (NTLM) works with domain accounts too; “kerberos” for servers that block NTLM: enter the computer name instead of an IP (<code>srv01.corp.local</code>), the user as <code>name@corp.local</code>. On Linux/macOS a ticket from <code>kinit</code> is enough, otherwise sshTermy asks for the password.</li>
+    <li><b>Protection:</b> every connection counts as a production system (danger check, the agent asks before changes). Turn the “Protection” switch under “Organize” off only for test and lab systems.</li>
     <li><b>Persistent session:</b> always land in the same tmux/screen session for a connection, even from another computer.</li>
   </ul>
 </section>
@@ -103,8 +106,8 @@
   <table>
     <tr><th>Level</th><th>What runs without asking</th></tr>
     <tr><td>Careful</td><td>read-only commands only</td></tr>
-    <tr><td>Normal</td><td>everything except dangerous commands, sudo and inline code</td></tr>
-    <tr><td>Full</td><td>everything except dangerous commands</td></tr>
+    <tr><td>Normal</td><td>everything except dangerous commands, sudo and inline code – only on connections with “Protection” off</td></tr>
+    <tr><td>Full</td><td>everything except dangerous commands – only on connections with “Protection” off</td></tr>
     <tr><td>Plan first</td><td>the AI presents a plan, you edit and approve it</td></tr>
   </table>
   <p>Dangerous commands (e.g. <code>rm -rf</code>, formatting, switch reload) <b>never</b> run automatically. Successful goals can be saved as a runbook and later run on many hosts.</p>
@@ -145,10 +148,11 @@
   <h2>Security</h2>
   <ul>
     <li><b>Store:</b> all passwords, keys and API keys encrypted; unreadable without the master password.</li>
-    <li><b>Danger check:</b> on production hosts (or everywhere) risky commands need a second confirmation, also when pasted; hold ⏎ until the bar is full or press <kbd>y</kbd>.</li>
+    <li><b>Danger check:</b> on every connection risky commands need a second confirmation, also when pasted; hold ⏎ until the bar is full or press <kbd>y</kbd>. Turn it off only per connection (form › “Protection”).</li>
+    <li><b>Syslog receiver:</b> accepts messages only from devices saved as a connection; unknown senders are dropped and reported once. To let all in: Settings › “Accept syslog from unknown senders too”.</li>
     <li><b>Lock:</b> immediately or after idle time; sessions keep running behind it.</li>
     <li><b>Audit log</b> (Settings › Security): who did what on which host and when. Every line is chained and signed; “Verify and save audit log” reports changed, deleted or reordered lines. Commands with a leading space appear only as “(private)”.</li>
-    <li><b>Updates</b> are signed with Ed25519; an update without a valid signature is rejected.</li>
+    <li><b>Updates</b> are signed with Ed25519; an update without a valid signature is rejected. A self-built sshTermy without the key says so in the About dialog (<kbd>F12</kbd>) and asks before every update.</li>
   </ul>
 </section>
 
@@ -199,6 +203,41 @@
     <li>Open an <a href="https://github.com/db9979/sshtermy/issues/new">issue on GitHub</a> and attach the file.</li>
   </ol>
   <p>If sshTermy crashes, it offers a cleaned crash report on the next start.</p>
+</section>
+
+<section id="keys">
+  <h2>More keys</h2>
+  <p>What no longer fits on the printed quick reference. In the app <kbd>F1</kbd> always shows the keys of the current area.</p>
+  <h3>Plan mode (<kbd>F2</kbd> → <kbd>Tab</kbd>)</h3>
+  <table>
+    <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>choose a step</td></tr>
+    <tr><td><kbd>Space</kbd></td><td>remove / restore a step</td></tr>
+    <tr><td><kbd>e</kbd> / <kbd>v</kbd></td><td>edit step / view script</td></tr>
+    <tr><td><kbd>?</kbd></td><td>have it re-planned</td></tr>
+    <tr><td><kbd>Tab</kbd></td><td>run: step by step / agent level</td></tr>
+    <tr><td><kbd>⏎</kbd></td><td>approve the plan and run it</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd> / <kbd>x</kbd></td><td>save as runbook / discard</td></tr>
+  </table>
+  <p>Agent limits: 25 steps, 15 minutes, 3 failures in a row. <kbd>PgUp</kbd>/<kbd>PgDn</kbd> and the mouse wheel scroll the panel.</p>
+  <h3>Session logs (<kbd>l</kbd> in the manager)</h3>
+  <table>
+    <tr><td><kbd>/</kbd></td><td>search (output too)</td></tr>
+    <tr><td><kbd>Tab</kbd> / <kbd>f</kbd> / <kbd>s</kbd></td><td>by time ↔ host / filter / sort</td></tr>
+    <tr><td><kbd>z</kbd> / <kbd>Z</kbd></td><td>AI summary / of all matches</td></tr>
+    <tr><td><kbd>b</kbd></td><td>change report for ticket or docs (AI)</td></tr>
+    <tr><td><kbd>x</kbd> / <kbd>d</kbd></td><td>export md · txt · cast / delete</td></tr>
+    <tr><td><kbd>a</kbd></td><td>recording on / off</td></tr>
+  </table>
+  <h3>Start and tips</h3>
+  <table>
+    <tr><td><code>sshtermy backup</code> · <code>sshtermy mcp</code></td><td>full backup · MCP server for AI clients</td></tr>
+    <tr><td><code>--no-intro</code> · <code>--debug</code></td><td>no start animation · debug log</td></tr>
+    <tr><td><code>-window</code> · <code>-tui</code></td><td>own window · always in the terminal</td></tr>
+    <tr><td><code>tsz</code> / <code>trz</code></td><td>file from / to the server (trzsz)</td></tr>
+    <tr><td>palette “share”</td><td>show a tab live</td></tr>
+    <tr><td><kbd>Fn</kbd>+<kbd>1</kbd> … <kbd>Fn</kbd>+<kbd>=</kbd></td><td>uConsole: F1 … F12</td></tr>
+    <tr><td><kbd>⇧F9</kbd></td><td>key bar with explanations</td></tr>
+  </table>
 </section>
 
 <section id="faq">

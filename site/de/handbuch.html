@@ -42,6 +42,7 @@
   <a href="#umzug">Sicherung und Umzug</a>
   <a href="#mcp">MCP für KI-Clients</a>
   <a href="#hilfe">Fehler melden</a>
+  <a href="#tasten">Weitere Tasten</a>
   <a href="#faq">FAQ</a>
 </aside>
 
@@ -68,6 +69,8 @@
     <li><b>Ordner und Tags:</b> <kbd>o</kbd> legt Ordner an („Kunde / Standort“ verschachtelt), Ziehen mit der Maus sortiert. <code>#tag</code> in der Suche filtert.</li>
     <li><b>Jump-Host:</b> Verbindung über einen anderen Server; sshTermy merkt sich, welcher Jump-Host für welches Netz passt.</li>
     <li><b>Telnet, seriell, lokal:</b> „Verbindungsart“ wählt Telnet, ein USB-Konsolenkabel oder die Shell dieses Rechners (<kbd>Alt</kbd>+<kbd>L</kbd>).</li>
+    <li><b>PowerShell (WinRM):</b> Windows-Server ohne SSH. „negotiate“ (NTLM) geht auch mit Domänenkonten; „kerberos“ für Server, die NTLM gesperrt haben: Rechnernamen statt IP eintragen (<code>srv01.firma.local</code>), Benutzer als <code>name@firma.local</code>. Unter Linux/macOS reicht ein Ticket von <code>kinit</code>, sonst fragt sshTermy nach dem Passwort.</li>
+    <li><b>Schutz:</b> Jede Verbindung gilt als Produktivsystem (Gefahren-Check, Agent fragt bei Änderungen). Nur für Test- und Laborsysteme den Schalter „Schutz“ unter „Einordnung“ ausschalten.</li>
     <li><b>Feste Sitzung:</b> pro Verbindung immer in derselben tmux/screen-Sitzung landen, auch von einem anderen Rechner.</li>
   </ul>
 </section>
@@ -103,8 +106,8 @@
   <table>
     <tr><th>Stufe</th><th>Was ohne Rückfrage läuft</th></tr>
     <tr><td>Vorsichtig</td><td>nur lesende Befehle</td></tr>
-    <tr><td>Normal</td><td>alles außer Gefährlichem, sudo und Inline-Code</td></tr>
-    <tr><td>Voll</td><td>alles außer Gefährlichem</td></tr>
+    <tr><td>Normal</td><td>alles außer Gefährlichem, sudo und Inline-Code – nur auf Verbindungen mit „Schutz“ aus</td></tr>
+    <tr><td>Voll</td><td>alles außer Gefährlichem – nur auf Verbindungen mit „Schutz“ aus</td></tr>
     <tr><td>Erst planen</td><td>die KI legt einen Plan vor, du bearbeitest und gibst frei</td></tr>
   </table>
   <p>Gefährliche Befehle (z. B. <code>rm -rf</code>, Formatieren, Switch-Neustart) laufen <b>nie</b> automatisch. Erfolgreiche Ziele lassen sich als Runbook speichern und später auf vielen Hosts ausführen.</p>
@@ -145,10 +148,11 @@
   <h2>Sicherheit</h2>
   <ul>
     <li><b>Store:</b> alle Passwörter, Schlüssel und API-Keys verschlüsselt; ohne Master-Passwort unlesbar.</li>
-    <li><b>Gefahren-Check:</b> auf Produktiv-Hosts (oder überall) müssen riskante Befehle zweimal bestätigt werden; auch beim Einfügen. ⏎ gedrückt halten, bis der Balken voll ist, oder <kbd>j</kbd>.</li>
+    <li><b>Gefahren-Check:</b> auf jeder Verbindung müssen riskante Befehle zweimal bestätigt werden, auch beim Einfügen. ⏎ gedrückt halten, bis der Balken voll ist, oder <kbd>j</kbd>. Abschalten nur einzeln (Formular › „Schutz“).</li>
+    <li><b>Syslog-Empfang:</b> nimmt nur Meldungen von Geräten an, die als Verbindung gespeichert sind; fremde Absender werden verworfen und einmal gemeldet. Wer alle zulassen will: Einstellungen › „Syslog auch von unbekannten Absendern annehmen“.</li>
     <li><b>Sperre:</b> sofort oder nach Leerlauf; Sitzungen laufen dahinter weiter.</li>
     <li><b>Audit-Protokoll</b> (Einstellungen › Sicherheit): wer hat wann auf welchem Host was getan. Jede Zeile ist verkettet und signiert; „Audit-Protokoll prüfen und speichern“ meldet geänderte, gelöschte oder umsortierte Zeilen. Befehle mit führendem Leerzeichen erscheinen nur als „(privat)“.</li>
-    <li><b>Updates</b> sind mit Ed25519 signiert; ein Update ohne gültige Signatur wird abgelehnt.</li>
+    <li><b>Updates</b> sind mit Ed25519 signiert; ein Update ohne gültige Signatur wird abgelehnt. Ein selbst gebautes sshTermy ohne Schlüssel sagt das im Über-Dialog (<kbd>F12</kbd>) und fragt vor jedem Update.</li>
   </ul>
 </section>
 
@@ -199,6 +203,41 @@
     <li>Ein <a href="https://github.com/db9979/sshtermy/issues/new">Issue auf GitHub</a> öffnen und die Datei anhängen.</li>
   </ol>
   <p>Stürzt sshTermy ab, bietet es beim nächsten Start einen bereinigten Absturzbericht an.</p>
+</section>
+
+<section id="tasten">
+  <h2>Weitere Tasten</h2>
+  <p>Was nicht mehr auf die gedruckte Kurzreferenz passt. In der App zeigt <kbd>F1</kbd> immer die Tasten des aktuellen Bereichs.</p>
+  <h3>Plan-Modus (<kbd>F2</kbd> → <kbd>Tab</kbd>)</h3>
+  <table>
+    <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Schritt wählen</td></tr>
+    <tr><td><kbd>Space</kbd></td><td>Schritt streichen / zurückholen</td></tr>
+    <tr><td><kbd>e</kbd> / <kbd>v</kbd></td><td>Schritt ändern / Skript ansehen</td></tr>
+    <tr><td><kbd>?</kbd></td><td>neu planen lassen</td></tr>
+    <tr><td><kbd>Tab</kbd></td><td>Ausführung: Schritt für Schritt / Agent-Stufe</td></tr>
+    <tr><td><kbd>⏎</kbd></td><td>Plan freigeben und ausführen</td></tr>
+    <tr><td><kbd>Strg</kbd>+<kbd>S</kbd> / <kbd>x</kbd></td><td>als Runbook speichern / verwerfen</td></tr>
+  </table>
+  <p>Agent-Grenzen: 25 Schritte, 15 Minuten, 3 Fehler in Folge. <kbd>Bild↑</kbd>/<kbd>Bild↓</kbd> und das Mausrad blättern im Panel.</p>
+  <h3>Sitzungsprotokolle (<kbd>l</kbd> im Manager)</h3>
+  <table>
+    <tr><td><kbd>/</kbd></td><td>suchen (auch in der Ausgabe)</td></tr>
+    <tr><td><kbd>Tab</kbd> / <kbd>f</kbd> / <kbd>s</kbd></td><td>nach Zeit ↔ Host / Filter / sortieren</td></tr>
+    <tr><td><kbd>z</kbd> / <kbd>Z</kbd></td><td>KI-Zusammenfassung / über alle Treffer</td></tr>
+    <tr><td><kbd>b</kbd></td><td>Änderungsbericht für Ticket oder Doku (KI)</td></tr>
+    <tr><td><kbd>x</kbd> / <kbd>d</kbd></td><td>Export md · txt · cast / löschen</td></tr>
+    <tr><td><kbd>a</kbd></td><td>Mitschreiben an / aus</td></tr>
+  </table>
+  <h3>Start und Tipps</h3>
+  <table>
+    <tr><td><code>sshtermy backup</code> · <code>sshtermy mcp</code></td><td>alles sichern · MCP-Server für KI-Clients</td></tr>
+    <tr><td><code>--no-intro</code> · <code>--debug</code></td><td>ohne Startanimation · Debug-Protokoll</td></tr>
+    <tr><td><code>-window</code> · <code>-tui</code></td><td>eigenes Fenster · immer im Terminal</td></tr>
+    <tr><td><code>tsz</code> / <code>trz</code></td><td>Datei vom / zum Server (trzsz)</td></tr>
+    <tr><td>Palette „teilen“</td><td>Tab live zeigen</td></tr>
+    <tr><td><kbd>Fn</kbd>+<kbd>1</kbd> … <kbd>Fn</kbd>+<kbd>=</kbd></td><td>uConsole: F1 … F12</td></tr>
+    <tr><td><kbd>⇧F9</kbd></td><td>Tastenzeile mit Erklärungen</td></tr>
+  </table>
 </section>
 
 <section id="faq">

@@ -61,7 +61,7 @@ func (a *App) viewModeChoice(b *strings.Builder, s *session, w int) {
 		b.WriteString(st.Muted.Render(i18n.T("  hier nur Befehle, keine Skripte")) + "\n")
 	}
 	if isProduction(s.conn) {
-		b.WriteString(st.Warn.Render(i18n.T("▲ Produktiv-Host: jede Änderung fragt nach")) + "\n")
+		b.WriteString(st.Warn.Render(i18n.T("▲ Schutz an: jede Änderung fragt nach (Formular › Schutz)")) + "\n")
 	} else if s.netDevice() {
 		b.WriteString(st.Warn.Render(i18n.T("▲ Netzwerkgerät: Konfiguration fragt immer nach")) + "\n")
 	}
