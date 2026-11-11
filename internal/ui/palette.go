@@ -344,7 +344,9 @@ func (a *App) palActsSession(add palAdd, s *session) {
 		palItem{icon: ic("ai"), label: i18n.T("Begleiter-Leiste"), pro: true, hint: a.keys.label(actCompanionBar),
 			keys: "begleiter companion leiste feed", run: func() tea.Cmd { return a.toggleCompanionBar(s) }},
 		palItem{icon: ic("ai"), label: i18n.T("Begleiter: Rückblick dieser Sitzung"), pro: true, hint: i18n.T("merken, Runbook"),
-			keys: "begleiter companion rückblick recap zusammenfassung runbook", run: func() tea.Cmd { return a.openRecap(s, false, nil) }})
+			keys: "begleiter companion rückblick recap zusammenfassung runbook", run: func() tea.Cmd { return a.openRecap(s, false, nil) }},
+		palItem{icon: ic("ai"), label: i18n.T("Vorgang über mehrere Fenster (KI sieht alle)"), hint: a.keys.label(actVorgang), top: true,
+			keys: "vorgang mehrere fenster multi window alle tabs fahrplan bahnen task", run: func() tea.Cmd { return a.toggleVorgang() }})
 	add("quick",
 		palItem{icon: ic("tunnel"), label: i18n.T("Tunnel-Panel"), hint: a.keys.label(actTunnels), run: func() tea.Cmd {
 			withPanel(s, panelTunnels)

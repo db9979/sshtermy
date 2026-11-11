@@ -14,6 +14,7 @@
  Ask AI                        F3
  AI companion: change level    Alt+K
  Companion sidebar             Alt+J
+ Task across several windows (AI sees all)  Alt+V
  Tunnel                        F4
  Files (SFTP)                  F5
  Host overview                 F6
@@ -26,7 +27,6 @@
  Quick commands (list)         F9
  Quick command 1               Shift+F1 / F13
  Quick command 2               Shift+F2 / F14
- Quick command 3               Shift+F3 / F15
 
  Alt+⏎ is blocked: Windows Terminal uses it for full screen.
  Font size: Ctrl + plus/minus in the terminal window (macOS: ⌘ + / −)

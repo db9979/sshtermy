@@ -1,6 +1,6 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                      ▌● web-01   ▌● web-02 ×  +
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                  ▌● 1 web-01   ▌● 2 web-02 ×  +
  PRODUKTIV  deploy@10.0.0.12:22                                                                                ↔ 0 Tunnel   ● ◆ qwen3-coder
- ● web-02  deploy@10.0.0.12                                                              ┌────────────────────────────────────────────────┐
+ ● 2 · web-02  deploy@10.0.0.12                                                          ┌────────────────────────────────────────────────┐
 Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64                                      │ i Zoom: Alt+Z holt die anderen Bereiche zurück │
                                                                                          └────────────────────────────────────────────────┘
 deploy@web-02:~$ systemctl status nginx --no-pager | head -3                             ┌────────────────────────────────────────────────┐

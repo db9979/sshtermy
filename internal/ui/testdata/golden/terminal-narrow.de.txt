@@ -1,4 +1,4 @@
- >_ sshTermy  Idee: Dominik Bornhäußer                           ▌● web-01 ×  +
+ >_ sshTermy  Idee: Dominik Bornhäußer                         ▌● 1 web-01 ×  +
  PRODUKTIV  deploy@10.0.0.11:22                    ↔ 0 Tunnel   ● ◆ qwen3-coder
 Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64
 

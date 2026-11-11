@@ -123,6 +123,13 @@ export const de = {
       ['m / l / r', 'stumm / merken / Rückblick'],
       ['p / g', 'Absicht: Plan / Agent übernimmt'],
     ]},
+    { t: 'Vorgang über Fenster', ic: '◆', key: 'Alt+V', ai: true, rows: [
+      ['Leertaste / ← →', 'Fenster wählen / was die KI sieht'],
+      ['1 … 9', 'Schritt im Fenster vortippen'],
+      ['z / p / Tab', 'Fahrplan / Plan in Bahnen / Agent liest'],
+      ['⏎ / s / w / o', 'weiter / überspringen / nochmal / öffnen'],
+      ['r / Strg+D', 'Rückblick / Vorgang beenden'],
+    ]},
     { t: 'Befehlspalette', ic: '❯', key: 'Strg+Space', rows: [
       ['_tippen_ ⏎ / Tab', 'filtern · als Ziel starten / KI fragen'],
       ['user@host', 'verbinden (telnet, COM3, winrm)'],
@@ -296,6 +303,13 @@ export const en = {
       ['Alt+K', 'level: off · quiet · chatty · coach'],
       ['m / l / r', 'mute topic / remember / recap'],
       ['p / g', 'intent: plan / agent takes over'],
+    ]},
+    { t: 'Task across windows', ic: '◆', key: 'Alt+V', ai: true, rows: [
+      ['Space / ← →', 'choose windows / what the AI sees'],
+      ['1 … 9', 'type step into its window'],
+      ['z / p / Tab', 'route / plan in lanes / agent reads'],
+      ['⏎ / s / w / o', 'continue / skip / retry / open'],
+      ['r / Ctrl+D', 'recap / end task'],
     ]},
     { t: 'Command palette', ic: '❯', key: 'Ctrl+Space', rows: [
       ['_type_ ⏎ / Tab', 'filter · start as goal / ask AI'],

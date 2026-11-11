@@ -380,6 +380,10 @@ func (s *Stream) handleMarker(m []byte) {
 			s.buf, s.cur, s.busyBuf = nil, 0, typed
 			s.ready, s.shown, s.atBOL = false, false, true
 		}
+		// Vorweg getippte Zeile wie eine normale prüfen: ist sie unvollständig
+		// (function x {), meldet das Skript 'M' und die nächsten Zeilen hängen
+		// sich an, statt dass sie einzeln mit Parserfehler ausgeführt wird.
+		s.more = []string{v}
 		if t := strings.TrimSpace(v); t != "" && (len(s.hist) == 0 || s.hist[len(s.hist)-1] != v) {
 			s.hist = append(s.hist, v)
 		}

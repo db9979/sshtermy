@@ -1,4 +1,4 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ▌● web-01 ×  +
+ >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                            ▌● 1 web-01 ×  +
  PRODUCTION  deploy@10.0.0.11:22                                                          ↔ 0 tunnels   ● ◆ qwen3-coder
 Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                     ┌──────────────────────────────────────────────┐
                                                                         │ ↔ Tunnels & web services                     │

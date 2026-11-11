@@ -155,6 +155,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if s.search.open && !s.panelFocus && !s.files.open {
 			return a.searchPaste(s, m)
 		}
+		if g := a.vg; g != nil && g.focus && g.open {
+			return a.vgPaste(m)
+		}
 		if s.files.open {
 			return a.filesPaste(s, m)
 		}
@@ -192,6 +195,12 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		s.sel, s.selecting = nil, false
 		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
 			s.scroll = 0
+		}
+		if a.keys.is(actVorgang, key) {
+			return a.toggleVorgang()
+		}
+		if g := a.vg; g != nil && g.focus && g.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
+			return a.vgKey(m) // Leiste „Vorgang“ hat die Tasten (vorgang_view.go)
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
 		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList, actSearchAll) {
@@ -326,6 +335,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 }
 
 func (a *App) closeTab(s *session) {
+	a.vgForget(s)
 	a.endLog(s)
 	a.stopRecording(s)
 	s.close()
@@ -559,6 +569,12 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 	if line := a.companionLine(s); line != "" {
 		bottom = line + "\n" + bottom
 	}
+	if dock := a.viewVorgang(); dock != "" {
+		body += "\n" + dock // Vorgang über mehrere Fenster (vorgang_view.go)
+		if a.vg.focus {
+			cur = nil
+		}
+	}
 	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, bottom, a.footer(a.simpleKeys(a.terminalKeys(s)))), cur
 }
 
@@ -683,6 +699,9 @@ func (a *App) chipList(s *session, b *strings.Builder) {
 }
 
 func (a *App) terminalKeys(s *session) [][2]string {
+	if g := a.vg; g != nil && g.focus && g.open {
+		return a.vgKeys()
+	}
 	if s.files.open {
 		return a.filesKeys(s)
 	}
@@ -756,9 +775,9 @@ func (a *App) tabStrip() string {
 	label := func(i, l int) string {
 		x := a.sessions[i]
 		if l == 0 {
-			return " " + strconv.Itoa(i+1)
+			return " " + strconv.Itoa(a.winNo(x))
 		}
-		return " " + trunc(x.tabName(), l)
+		return " " + strconv.Itoa(a.winNo(x)) + " " + trunc(x.tabName(), l) // Fensternummer (vorgang.go)
 	}
 	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven
 		w := 1 + lipgloss.Width(label(i, l)) + 3

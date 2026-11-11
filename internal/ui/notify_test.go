@@ -40,7 +40,7 @@ func TestNoticeDoneInHiddenTab(t *testing.T) {
 	if len(sent) != 0 {
 		t.Fatalf("Desktop-Meldung, obwohl das Fenster vorn ist: %v", sent)
 	}
-	if !strings.Contains(ansi.Strip(a.tabStrip()), "× db1") {
+	if !strings.Contains(ansi.Strip(a.tabStrip()), "× 2 db1") {
 		t.Fatalf("Tab ohne Markierung: %q", ansi.Strip(a.tabStrip()))
 	}
 	// Fenster im Hintergrund: Desktop-Benachrichtigung, auch für den sichtbaren Tab

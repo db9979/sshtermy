@@ -48,6 +48,7 @@ type session struct {
 	panelSeen  panelKind    // Panel im letzten Bild (blendet beim Wechsel ein)
 	panelAt    time.Time
 	id         int
+	winNo      int // feste Fensternummer im Vorgang (vorgang.go), 0 = noch keine
 	conn       domain.Connection
 	errv       error  // letzter Verbindungsfehler (Klartext in connerr.go)
 	title      string // eigener Tab-Name (tabs.go), "" = Alias

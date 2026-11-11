@@ -33,6 +33,7 @@ const (
 	hcHost
 	hcCompanion
 	hcLogScan
+	hcVorgang
 )
 
 type helpSection struct {
@@ -105,6 +106,7 @@ var helpSections = []helpSection{
 		{"F3", "KI fragen"},
 		{"Alt+K", "KI-Begleiter: Aus/Leise/Gesprächig/Coach"},
 		{"Alt+J", "Begleiter-Leiste"},
+		{"Alt+V", "Vorgang über mehrere Fenster (KI sieht alle)"},
 		{"F4", "Tunnel"},
 		{"F5", "Dateien (SFTP)"},
 		{"Strg+T", "Aufteilung wählen (1…7)"},
@@ -169,6 +171,19 @@ var helpSections = []helpSection{
 		{"p / g", "Absicht: Plan / Agent übernimmt"},
 		{"r", "Rückblick (merken, Runbook)"},
 		{"?", "zuletzt gesendet"},
+	}},
+	{hcVorgang, "◆", "Vorgang über mehrere Fenster", "Alt+V", true, [][2]string{
+		{"Leertaste / ← →", "Fenster wählen / was die KI sieht"},
+		{"⏎", "Vorgang starten / Frage senden"},
+		{"1…9", "Schritt im Fenster vortippen"},
+		{"z", "Fahrplan (Schritt für Schritt)"},
+		{"p", "Plan in Bahnen (je Fenster eine Spalte)"},
+		{"Tab", "Agent: Lesendes läuft allein"},
+		{"⏎ / s / w", "weiter / überspringen / nochmal"},
+		{"o", "fehlendes System öffnen"},
+		{"r", "Rückblick (Change-Protokoll, Runbook)"},
+		{"Strg+E / Strg+D", "Fenster ändern / Vorgang beenden"},
+		{"Esc", "zum Terminal"},
 	}},
 	{hcTunnel, "↔", "Tunnel", "F4", false, [][2]string{
 		{"⏎ / Klick", "starten / stoppen"},
@@ -353,6 +368,9 @@ func (a *App) helpContext() helpCtx {
 		}
 		if s := a.current(); s != nil && s.search.open && !s.panelFocus {
 			return hcSearch
+		}
+		if a.vg != nil && a.vg.focus {
+			return hcVorgang
 		}
 		if s := a.current(); s != nil && s.panelFocus {
 			switch s.panel {

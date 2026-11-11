@@ -58,7 +58,7 @@ while($true){
  $__l=[Console]::In.ReadLine()
  if($null -eq $__l){break}
  if($__l.Length -eq 0){continue}
- if($__l[0] -ne [char]30){__m 'R' $__l;$__l=[string][char]30+'X'+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($__l))}
+ if($__l[0] -ne [char]30){__m 'R' $__l;$__l=[string][char]30+'C'+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($__l))}
  if($__l.Length -lt 2){continue}
  $__k=[string]$__l[1];$__a=$__l.Substring(2)
  if($__k -eq 'W'){try{$__w=[int]$__a}catch{};continue}

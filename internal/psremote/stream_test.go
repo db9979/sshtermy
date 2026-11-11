@@ -102,7 +102,7 @@ func (p *fakeProc) line(l string) {
 			return
 		}
 		p.h.out([]byte("\x01R" + l + "\x02"))
-		l = "\x1eX" + base64.StdEncoding.EncodeToString([]byte(l))
+		l = "\x1eC" + base64.StdEncoding.EncodeToString([]byte(l)) // wie script.go: erst auf Vollständigkeit prüfen
 	}
 	k, a := l[1], l[2:]
 	switch k {
@@ -456,4 +456,23 @@ func TestTypeAhead(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	t.Fatalf("ausgeführt: %q\n%s", h.f.ran, h.screen())
+}
+
+// Eine während eines Befehls vorweg getippte, unvollständige Zeile
+// (function f {) wartet auf ihre Fortsetzung statt einzeln zu laufen.
+// So scheiterte TestRealPowerShell auf macOS, wenn die Zeile vor dem Prompt kam.
+func TestTypeAheadMultiLine(t *testing.T) {
+	h := newHarness(t, 80)
+	h.wait("> ")
+	h.typ("sleep 1\r")
+	h.typ("function f {\r") // während sleep getippt
+	h.wait(">> ")
+	h.typ("'x' }\r")
+	h.until("ausgeführt", func() bool { return len(h.f.ran) > 1 })
+	h.f.mu.Lock()
+	ran := append([]string(nil), h.f.ran...)
+	h.f.mu.Unlock()
+	if len(ran) != 2 || ran[1] != "function f {\n'x' }" {
+		t.Fatalf("ausgeführt: %q", ran)
+	}
 }
