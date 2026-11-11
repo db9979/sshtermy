@@ -1,32 +1,32 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ▌● web-01 ×  +
  PRODUCTION  deploy@10.0.0.11:22                                                          ↔ 0 tunnels   ● ◆ qwen3-coder
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                     ┌──────────────────────────────────────────────┐
-                                                                        │ ↔ Tunnels & web services                     │
-deploy@web-01:~$ systemctl status nginx --no-pager | head -3            │                                              │
-● nginx.service - A high performance web server and a reverse proxy serv│ ○ off Grafana                                │
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)        │   -L 3000:localhost:3000                     │
-     Active: active (running) since Mon 2026-11-02 08:15:00 UTC         │                                              │
-deploy@web-01:~$                                                        │ Click on/off to toggle.                      │
-                                                                        │ ◌ = starts with the connection (a).          │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        └──────────────────────────────────────────────┘
+┏━ web-01 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                   ┌──────────────────────────────────────────────┐┃
+┃                                                                      │ ↔ Tunnels & web services                     │┃
+┃deploy@web-01:~$ systemctl status nginx --no-pager | head -3          │                                              │┃
+┃● nginx.service - A high performance web server and a reverse proxy se│ ○ off Grafana                                │┃
+┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)      │   -L 3000:localhost:3000                     │┃
+┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC       │                                              │┃
+┃deploy@web-01:~$                                                      │ Click on/off to toggle.                      │┃
+┃                                                                      │ ◌ = starts with the connection (a).          │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      └──────────────────────────────────────────────┘┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  ⏎ on/off  a automatic  n new  e edit  d delete  Esc back

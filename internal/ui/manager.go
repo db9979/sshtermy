@@ -813,7 +813,7 @@ func (a *App) openConnForm(c domain.Connection) tea.Cmd {
 		return "▸ " + v
 	}, func() tea.Cmd { return a.pickFolderField() }, i18n.T("Auswahl mit Suche; neuen Namen tippen legt einen Ordner an („A / B“ verschachtelt)"))
 	f.text("tags", "Tags", strings.Join(c.Tags, ", "), i18n.T("durch Komma getrennt, z. B. prod, linux · im Manager filtern mit #"))
-	f.choice("color", i18n.T("Farbe"), accentLabels(), accentLabel(c.Color), i18n.T("Streifen in Tab, Statuszeile und Liste · automatisch: prod rot, test grün, labor blau")).swatch = func(t Theme, opt string) color.Color {
+	f.choice("color", i18n.T("Farbe"), accentLabels(), accentLabel(c.Color), i18n.T("Rahmen und Name im Tab, Statuszeile, Liste · automatisch: prod rot, test grün, labor blau, sonst je Tab eine eigene Farbe (nie Rot)")).swatch = func(t Theme, opt string) color.Color {
 		if id := accentFromLabel(opt); id != accentAuto && id != accentNone {
 			return accentColor(t, id)
 		}

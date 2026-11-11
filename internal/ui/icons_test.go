@@ -16,7 +16,7 @@ import (
 // hat. Alles andere holt Windows aus einer Ersatzschrift: andere Breite und
 // Strichstärke, der Rahmen verrutscht. ⇧ und ⌘ sind Tastennamen und dürfen
 // bleiben. Nerd-Font-Zeichen stehen nur in icons.go.
-const cascadiaGlyphs = "·»«ÄÖ×ÜßäöøØüé–—‘’“”„•…‹›←↑→↓↔↕⇡∆−≈≠≡⏎␣─━│┃┄┆┌┐└┘├┤┬┴┼║╔╗╦╩╭╮╰╯▁▂▃▀▄▅▆▇█▉▊▋▌▍▎▏▐░▒▓■□▣▤▦▪▲▶▸►▾◂◆◇◈◉○◌◎●◐◦◷♥♦✓❯⠇⠋⠏⠙⠦⠧⠴⠸⠹⠼⠿" + "⇧⌘"
+const cascadiaGlyphs = "·»«ÄÖ×ÜßäöøØüé–—‘’“”„•…‹›←↑→↓↔↕⇡∆−≈≠≡⏎␣─━│┃┄┆┌┐└┘┏┓┗┛├┤┬┴┼║╔╗╦╩╭╮╰╯▁▂▃▀▄▅▆▇█▉▊▋▌▍▎▏▐░▒▓■□▣▤▦▪▲▶▸►▾◂◆◇◈◉○◌◎●◐◦◷♥♦✓❯⠇⠋⠏⠙⠦⠧⠴⠸⠹⠼⠿" + "⇧⌘"
 
 func TestGlyphsInCascadia(t *testing.T) {
 	var files []string

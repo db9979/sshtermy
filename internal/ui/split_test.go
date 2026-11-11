@@ -83,10 +83,10 @@ func TestSplitTermSize(t *testing.T) {
 	a := splitApp(2)
 	a.setSplit(splitCols)
 	c, r := a.termSize(a.sessions[0])
-	if c != 60 || r != a.h-topRows-bottomRows-1 {
+	if c != 58 || r != a.h-topRows-bottomRows-2 { // 60×… minus farbiger Rahmen (tabframe.go)
 		t.Fatalf("pane term size %dx%d", c, r)
 	}
-	if x := a.termRect(a.sessions[1]).x; x != 61 {
+	if x := a.termRect(a.sessions[1]).x; x != 62 {
 		t.Fatalf("right pane x = %d", x)
 	}
 	a.sessions[0].panel = panelGoal
@@ -94,14 +94,14 @@ func TestSplitTermSize(t *testing.T) {
 	if pw := a.panelWidth(a.sessions[0]); pw != panelRailW {
 		t.Fatalf("panel width in pane = %d", pw)
 	}
-	if c, _ := a.termSize(a.sessions[0]); c != 60-panelRailW {
+	if c, _ := a.termSize(a.sessions[0]); c != 58-panelRailW {
 		t.Fatalf("term width with collapsed panel = %d", c)
 	}
 	a.sessions[0].panelFocus = true
 	if pw := a.panelShown(a.sessions[0]); pw != 44 {
 		t.Fatalf("expanded panel = %d", pw)
 	}
-	if c, _ := a.termSize(a.sessions[0]); c != 60-panelRailW {
+	if c, _ := a.termSize(a.sessions[0]); c != 58-panelRailW {
 		t.Fatal("focus must not resize the terminal")
 	}
 }

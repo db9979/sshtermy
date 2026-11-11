@@ -1,36 +1,36 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                  ▌● web-01   ▌● web-02 ×  +
  PRODUKTIV  deploy@10.0.0.12:22                                                            ↔ 0 Tunnel   ● ◆ qwen3-coder
-Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64
-
-deploy@web-02:~$ systemctl status nginx --no-pager | head -3
-● nginx.service - A high performance web server and a reverse proxy server
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)
-     Active: active (running) since Mon 2026-11-02 08:15:00 UTC
-deploy@web-02:~$
-                     ┌─ ▦ Aufteilung  Strg+T ───────────────────────────────────────────────── × ─┐
-                     │                                                                            │
-                     │      ┌────────┐        ┌───┬────┐        ┌────────┐        ┌────┬───┐      │
-                     │      │        │        │   │    │        ├────────┤        │    ├───┤      │
-                     │      │        │        │   │    │        │        │        │    │   │      │
-                     │      └────────┘        └───┴────┘        └────────┘        └────┴───┘      │
-                     │       1 ✓ eine      2 nebeneinander   3 untereinander    4 groß + zwei     │
-                     │                                                                            │
-                     │      ┌──┬──┬──┐        ┌───┬────┐        ┌──┬──┬──┐                        │
-                     │      │  │  │  │        ├───┬────┤        ├──┬──┬──┤                        │
-                     │      │  │  │  │        │   │    │        │  │  │  │                        │
-                     │      └──┴──┴──┘        └───┴────┘        └──┴──┴──┘                        │
-                     │        5 drei            6 vier           7 sechs                          │
-                     │                                                                            │
-                     │   1…7 wählen    w Arbeitsplätze    Esc schließen                           │
-                     │                                                                            │
-                     └────────────────────────────────────────────────────────────────────────────┘
-
-
-
-
-
-
-
-
+┏━ web-02 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64                                                                   ┃
+┃                                                                                                                      ┃
+┃deploy@web-02:~$ systemctl status nginx --no-pager | head -3                                                          ┃
+┃● nginx.service - A high performance web server and a reverse proxy server                                            ┃
+┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)                                                      ┃
+┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC                                                       ┃
+┃deploy@web-02:~$    ┌─ ▦ Aufteilung  Strg+T ───────────────────────────────────────────────── × ─┐                    ┃
+┃                    │                                                                            │                    ┃
+┃                    │      ┌────────┐        ┌───┬────┐        ┌────────┐        ┌────┬───┐      │                    ┃
+┃                    │      │        │        │   │    │        ├────────┤        │    ├───┤      │                    ┃
+┃                    │      │        │        │   │    │        │        │        │    │   │      │                    ┃
+┃                    │      └────────┘        └───┴────┘        └────────┘        └────┴───┘      │                    ┃
+┃                    │       1 ✓ eine      2 nebeneinander   3 untereinander    4 groß + zwei     │                    ┃
+┃                    │                                                                            │                    ┃
+┃                    │      ┌──┬──┬──┐        ┌───┬────┐        ┌──┬──┬──┐                        │                    ┃
+┃                    │      │  │  │  │        ├───┬────┤        ├──┬──┬──┤                        │                    ┃
+┃                    │      │  │  │  │        │   │    │        │  │  │  │                        │                    ┃
+┃                    │      └──┴──┴──┘        └───┴────┘        └──┴──┴──┘                        │                    ┃
+┃                    │        5 drei            6 vier           7 sechs                          │                    ┃
+┃                    │                                                                            │                    ┃
+┃                    │   1…7 wählen    w Arbeitsplätze    Esc schließen                           │                    ┃
+┃                    │                                                                            │                    ┃
+┃                    └────────────────────────────────────────────────────────────────────────────┘                    ┃
+┃                                                                                                                      ┃
+┃                                                                                                                      ┃
+┃                                                                                                                      ┃
+┃                                                                                                                      ┃
+┃                                                                                                                      ┃
+┃                                                                                                                      ┃
+┃                                                                                                                      ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  Strg+Space Befehle  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  F9 Schnellbefehle  ⇧F9 erklären

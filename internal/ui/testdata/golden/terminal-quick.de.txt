@@ -1,30 +1,30 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                          ▌● web-01 ×  +
  PRODUKTIV  deploy@10.0.0.11:22                                        ↔ 0 Tunnel   ● ◆ qwen3-coder
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64
-
-deploy@web-01:~$ systemctl status nginx --no-pager | head -3
-● nginx.service - A high performance web server and a reverse proxy server
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)
-     Active: active (running) since Mon 2026-11-02 08:15:00 UTC
-deploy@web-01:┌─ ► Schnellbefehle  web-01 · Vorbelegung „Linux-Server“ ────────── × ─┐
-              │                                                                      │
-              │   ⇧F1    df -h                                                       │
-              │   ⇧F2    free -h                                                     │
-              │   ⇧F3    uptime                                                      │
-              │   ⇧F4    ip -br a                                                    │
-              │   ⇧F5    systemctl --failed                                          │
-              │   ⇧F6    journalctl -p err -b -n 50 --no-pager                       │
-              │   ⇧F7    docker ps                                                   │
-              │   ⇧F8    top -bn1 | head -20                                         │
-              │                                                                      │
-              │   ⏎ ausführen    1…8    ↑↓ wählen    e bearbeiten    Esc schließen   │
-              │                                                                      │
-              └──────────────────────────────────────────────────────────────────────┘
-
-
-
-
-
-
+┏━ web-01 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                                               ┃
+┃                                                                                                  ┃
+┃deploy@web-01:~$ systemctl status nginx --no-pager | head -3                                      ┃
+┃● nginx.service - A high performance web server and a reverse proxy server                        ┃
+┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)                                  ┃
+┃     Active: ┌─ ► Schnellbefehle  web-01 · Vorbelegung „Linux-Server“ ────────── × ─┐             ┃
+┃deploy@web-01│                                                                      │             ┃
+┃             │   ⇧F1    df -h                                                       │             ┃
+┃             │   ⇧F2    free -h                                                     │             ┃
+┃             │   ⇧F3    uptime                                                      │             ┃
+┃             │   ⇧F4    ip -br a                                                    │             ┃
+┃             │   ⇧F5    systemctl --failed                                          │             ┃
+┃             │   ⇧F6    journalctl -p err -b -n 50 --no-pager                       │             ┃
+┃             │   ⇧F7    docker ps                                                   │             ┃
+┃             │   ⇧F8    top -bn1 | head -20                                         │             ┃
+┃             │                                                                      │             ┃
+┃             │   ⏎ ausführen    1…8    ↑↓ wählen    e bearbeiten    Esc schließen   │             ┃
+┃             │                                                                      │             ┃
+┃             └──────────────────────────────────────────────────────────────────────┘             ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  Strg+Space Befehle  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  ⇧F9 erklären

@@ -51,6 +51,7 @@ type session struct {
 	conn       domain.Connection
 	errv       error  // letzter Verbindungsfehler (Klartext in connerr.go)
 	title      string // eigener Tab-Name (tabs.go), "" = Alias
+	autoCol    string // automatische Tab-Farbe (tabframe.go), "" = noch keine
 	client     *sshx.Client
 	shell      termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
 	term       *termemu.Term

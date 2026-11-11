@@ -197,7 +197,7 @@ func (a *App) sessionBar(s *session) string {
 	fill := bg.Render(text + strings.Repeat(" ", gap))
 	if !prod { // Hauch der Umgebungsfarbe, läuft nach rechts aus (gradient.go)
 		var tint color.Color = st.T.Accent
-		if col := a.accentOf(s.conn); col != nil {
+		if col := a.tabColor(s); col != nil {
 			tint = col
 		}
 		fill = tintRun(text+strings.Repeat(" ", gap), lipgloss.Width(l), bg, barTint(tint, st.T.Surface, 0.38, max(24, a.w/3)))

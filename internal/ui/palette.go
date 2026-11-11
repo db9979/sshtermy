@@ -691,6 +691,7 @@ func (a *App) palMenuItems() []palItem {
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
 		palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
+		look(palToggle(ic("split"), i18n.T("Farbiger Rahmen um jeden Tab"), a.tabFramesOn(), "rahmen farbe farbig tab umranden frame border color", func() tea.Cmd { return a.toggleTabFrames() })),
 		palToggle(ic("split"), i18n.T("Geteilte Ansicht: andere Bereiche abdunkeln"), a.dimPanes(), "split dim abdunkeln", func() tea.Cmd { return a.toggleDimPanes() }),
 		proItem(palToggle(ic("sesslog"), i18n.T("Debug-Protokoll für Fehlerberichte"), a.debugOn(), "debug log protokoll fehler bug support", func() tea.Cmd { return a.toggleDebug() })),
 		proItem(palToggle(ic("sesslog"), i18n.T("Leistungsanzeige (Bildrate, Zeichenzeit)"), a.perf.on, "leistung performance fps bildrate langsam ruckelt debug", func() tea.Cmd { return a.togglePerf() })),

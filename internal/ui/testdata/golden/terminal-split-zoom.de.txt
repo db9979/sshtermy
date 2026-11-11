@@ -1,36 +1,36 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                      ▌● web-01   ▌● web-02 ×  +
  PRODUKTIV  deploy@10.0.0.12:22                                                                                ↔ 0 Tunnel   ● ◆ qwen3-coder
- ● web-02  deploy@10.0.0.12                                                              ┌────────────────────────────────────────────────┐
-Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64                                      │ i Zoom: Alt+Z holt die anderen Bereiche zurück │
-                                                                                         └────────────────────────────────────────────────┘
-deploy@web-02:~$ systemctl status nginx --no-pager | head -3                             ┌────────────────────────────────────────────────┐
-● nginx.service - A high performance web server and a reverse proxy s                    │ i Ansicht: zwei nebeneinander                  │
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)                         └────────────────────────────────────────────────┘
-     Active: active (running) since Mon 2026-11-02 08:15:00 UTC
-deploy@web-02:~$
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ ● web-02  deploy@10.0.0.12                                                        ▲ PROD┌────────────────────────────────────────────────┐
+┃Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64                                     │ i Zoom: Alt+Z holt die anderen Bereiche zurück │┃
+┃                                                                                        └────────────────────────────────────────────────┘┃
+┃deploy@web-02:~$ systemctl status nginx --no-pager | head -3                            ┌────────────────────────────────────────────────┐┃
+┃● nginx.service - A high performance web server and a reverse proxy                     │ i Ansicht: zwei nebeneinander                  │┃
+┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)                        └────────────────────────────────────────────────┘┃
+┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC                                                                           ┃
+┃deploy@web-02:~$                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┃                                                                                                                                          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  Strg+Space Befehle  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  F7/F8 Tabs  F9 Schnellbefehle  ⇧F9 erklären

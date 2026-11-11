@@ -1,32 +1,32 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                              ▌● web-01 ×  +
  PRODUCTION  deploy@10.0.0.11:22                                                          ↔ 0 tunnels   ● ◆ qwen3-coder
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                     ┌──────────────────────────────────────────────┐
-                                                                        │ ◎ Goal mode  AI agent                        │
-deploy@web-01:~$ systemctl status nginx --no-pager | head -3            │                                              │
-● nginx.service - A high performance web server and a reverse proxy serv│ What do you want to achieve on web-01?       │
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)        │                                              │
-     Active: active (running) since Mon 2026-11-02 08:15:00 UTC         │ › e.g. Install Docker and set up Nginx as a  │
-deploy@web-01:~$                                                        │                                              │
-                                                                        │ MODE  Tab switch                             │
-                                                                        │ ● Step by step                               │
-                                                                        │ ○ Agent · Careful                            │
-                                                                        │ ○ Agent · Normal                             │
-                                                                        │ ○ Agent · Full                               │
-                                                                        │ ○ Plan first                                 │
-                                                                        │   you confirm every command                  │
-                                                                        │                                              │
-                                                                        │ The AI breaks the goal into single commands, │
-                                                                        │ explains each briefly and waits for your     │
-                                                                        │ confirmation. It never types by itself.      │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        └──────────────────────────────────────────────┘
+┏━ web-01 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                   ┌──────────────────────────────────────────────┐┃
+┃                                                                      │ ◎ Goal mode  AI agent                        │┃
+┃deploy@web-01:~$ systemctl status nginx --no-pager | head -3          │                                              │┃
+┃● nginx.service - A high performance web server and a reverse proxy se│ What do you want to achieve on web-01?       │┃
+┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)      │                                              │┃
+┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC       │ › e.g. Install Docker and set up Nginx as a  │┃
+┃deploy@web-01:~$                                                      │                                              │┃
+┃                                                                      │ MODE  Tab switch                             │┃
+┃                                                                      │ ● Step by step                               │┃
+┃                                                                      │ ○ Agent · Careful                            │┃
+┃                                                                      │ ○ Agent · Normal                             │┃
+┃                                                                      │ ○ Agent · Full                               │┃
+┃                                                                      │ ○ Plan first                                 │┃
+┃                                                                      │   you confirm every command                  │┃
+┃                                                                      │                                              │┃
+┃                                                                      │ The AI breaks the goal into single commands, │┃
+┃                                                                      │ explains each briefly and waits for your     │┃
+┃                                                                      │ confirmation. It never types by itself.      │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      └──────────────────────────────────────────────┘┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  ⏎ start goal  Esc Terminal  F2 close

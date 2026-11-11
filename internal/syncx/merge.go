@@ -65,6 +65,7 @@ type SharedMore struct {
 	Companion   domain.CompanionConfig `json:"companion,omitempty"`
 	ConfigRules []string               `json:"config_rules,omitempty"`
 	Simple      bool                   `json:"simple,omitempty"` // einfacher Modus
+	NoTabFrames bool                   `json:"no_tab_frames,omitempty"`
 	LogScan     *domain.LogScanConfig  `json:"log_scan,omitempty"`
 }
 
@@ -80,7 +81,7 @@ func sharedSettings(s domain.Settings) SharedSettings {
 			DimPanes: s.DimPanes, Accessible: s.Accessible, Motion: s.Motion, Frames: s.Frames, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
 			Highlight: copyHighlight(s.Highlight),
 			More: &SharedMore{
-				Companion: s.Companion, ConfigRules: append([]string(nil), s.ConfigRules...), Simple: s.Simple,
+				Companion: s.Companion, ConfigRules: append([]string(nil), s.ConfigRules...), Simple: s.Simple, NoTabFrames: s.NoTabFrames,
 				LogScan: copyLogScan(s.LogScan),
 			},
 		},
@@ -113,6 +114,7 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 		d.Companion = x.More.Companion
 		d.ConfigRules = append([]string(nil), x.More.ConfigRules...)
 		d.Simple = x.More.Simple
+		d.NoTabFrames = x.More.NoTabFrames
 		if x.More.LogScan != nil {
 			d.LogScan = *copyLogScan(*x.More.LogScan)
 		}

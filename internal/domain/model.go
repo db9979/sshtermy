@@ -571,6 +571,8 @@ type Settings struct {
 
 	// DimPanes: in der geteilten Ansicht die nicht aktiven Bereiche abdunkeln.
 	DimPanes bool `json:"dim_panes,omitempty"`
+	// NoTabFrames: keine farbigen Rahmen um die Terminals (ui/tabframe.go).
+	NoTabFrames bool `json:"no_tab_frames,omitempty"`
 	// Workspaces: gespeicherte Arbeitsplätze (Aufteilung + Verbindungen),
 	// LastLayout: Aufteilung beim letzten Beenden (Eintrag „Zuletzt“).
 	// Arbeitsplätze gehen mit dem Sync, „Zuletzt“ bleibt auf dem Rechner.
