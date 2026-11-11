@@ -1,0 +1,21 @@
+id: lancom
+name: LANCOM LCOS
+order: 270
+hint: "LANCOM LCOS (Router, Access Points, Switches mit LCOS): sysinfo, ls /Status, ls /Setup, show bootlog, readconfig (ganze Konfiguration als Skript), cd /Setup/… und set …; gespeichert wird sofort. LCOS SX-Switches haben eine eigene IOS-ähnliche CLI (show running-config, copy running-config startup-config). Meist besser mit LANconfig."
+detect:
+  banner: ['(?i)lancom']
+  screen: ['(?i)\blancom\b']
+  version: ['(?i)\blancom\b|\bLCOS\b']
+commands:
+  version: sysinfo
+  config: readconfig
+read: ['^sysinfo$', '^readconfig$']
+parse:
+  firmware: '(?im)^VERSION:\s*(\S+)'
+  model: '(?im)^DEVICE:\s*(.+?)\s*$'
+  name: '(?im)^NAME:\s*(\S+)'
+syslog:
+  note: "LANCOM: in LANconfig unter Meldungen/Protokolle › SYSLOG einen Server mit IP und Port eintragen."
+danger:
+  - rx: '^\s*do\s+/Other/(Reboot|Cold-Boot|Factory)'
+    reason: startet das Gerät neu

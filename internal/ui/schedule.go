@@ -16,6 +16,7 @@ import (
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/netmap"
 	"github.com/db9979/sshtermy/internal/runbook"
+	"github.com/db9979/sshtermy/internal/safety"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 )
@@ -77,6 +78,9 @@ func (a *App) scheduleItems() []pickItem {
 				hint += fmt.Sprintf(" ×%d", sc.LastFail)
 			}
 		}
+		if _, fresh := a.schedTargets(sc); len(fresh) > 0 {
+			hint += fmt.Sprintf(i18n.T(" · %d neue Hosts warten (Strg+A)"), len(fresh))
+		}
 		if a.schedRun[sc.ID] {
 			hint = i18n.T("läuft …")
 		}
@@ -110,10 +114,10 @@ func (a *App) openSchedules() tea.Cmd {
 	p := newPicker(i18n.T("Zeitpläne"), i18n.T("Name, Zeit oder Ziel"), a.scheduleItems(), "\x00", func(it pickItem) tea.Cmd {
 		return a.showScheduleResult(it.value)
 	})
-	p.help = i18n.T("Läuft, solange sshTermy offen ist; Verpasstes holt es innerhalb von 12 h nach. Nur Hosts mit gespeichertem Passwort oder Key.")
+	p.help = i18n.T("Läuft, solange sshTermy offen ist; Verpasstes holt es nach (Lesendes bis 12 h, Änderndes bis 10 min). Neue Hosts im Ordner erst nach Strg+A. Nur Hosts mit gespeichertem Passwort oder Key.")
 	p.reload = a.scheduleItems
 	p.keys = [][2]string{{"⏎", i18n.T("letztes Ergebnis")}, {"Strg+N", i18n.T("neu")}, {"Strg+E", i18n.T("bearbeiten")},
-		{"Strg+R", i18n.T("jetzt ausführen")}, {"Strg+O", i18n.T("an/aus")}, {"Strg+D", i18n.T("löschen")}, {"Esc", i18n.T("zurück")}}
+		{"Strg+R", i18n.T("jetzt ausführen")}, {"Strg+A", i18n.T("neue Hosts übernehmen")}, {"Strg+O", i18n.T("an/aus")}, {"Strg+D", i18n.T("löschen")}, {"Esc", i18n.T("zurück")}}
 	p.onKey = func(key string, it *pickItem) (tea.Cmd, bool) {
 		if key == "ctrl+n" {
 			a.pick = nil
@@ -134,6 +138,17 @@ func (a *App) openSchedules() tea.Cmd {
 			cmd := a.startSchedule(sc)
 			p.items = a.scheduleItems()
 			return cmd, true
+		case "ctrl+a":
+			_, fresh := a.schedTargets(sc)
+			if len(fresh) == 0 {
+				a.flash(i18n.T("Keine neuen Hosts im Ziel"))
+				return nil, true
+			}
+			all := connIDs(a.schedConns(sc))
+			a.updateSchedule(sc.ID, func(x *domain.Schedule) { x.Known = all })
+			p.items = a.scheduleItems()
+			a.flashOK(fmt.Sprintf(i18n.T("%d neue Hosts laufen ab jetzt mit"), len(fresh)))
+			return nil, true
 		case "ctrl+o":
 			a.updateSchedule(sc.ID, func(x *domain.Schedule) { x.Off = !x.Off })
 			p.items = a.scheduleItems()
@@ -212,13 +227,16 @@ func (a *App) openScheduleForm(sc domain.Schedule) tea.Cmd {
 	}
 	f := &form{title: title}
 	f.text("name", "Name", sc.Name, i18n.T("z. B. „Switch-Configs sichern“"))
-	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)")}
+	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)"), i18n.T("Ordner-Scan (Logs)")}
 	kindCur := kinds[0]
-	if sc.Kind == domain.ScheduleBackup {
+	switch sc.Kind {
+	case domain.ScheduleBackup:
 		kindCur = kinds[1]
+	case domain.ScheduleLogs:
+		kindCur = kinds[2]
 	}
-	f.choice("kind", i18n.T("Art"), kinds, kindCur, i18n.T("Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert, mit den Regeln für Switch-Configs geprüft"))
-	isBackup := func(f *form) bool { return f.sel("kind") == kinds[1] }
+	f.choice("kind", i18n.T("Art"), kinds, kindCur, i18n.T("Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert · Ordner-Scan: Log-Blick je Host, Ergebnis mit neuen Mustern"))
+	isBackup := func(f *form) bool { return f.sel("kind") != kinds[0] }
 	f.text("at", i18n.T("Uhrzeit"), sc.At, i18n.T("HH:MM, Ortszeit dieses Rechners"))
 	var days []string
 	for _, d := range dayChoices {
@@ -327,11 +345,14 @@ func (a *App) saveScheduleForm() error {
 		}
 	}
 	sc.Kind = ""
-	if f.sel("kind") == i18n.T("Config-Sicherung (Switches)") {
+	switch f.sel("kind") {
+	case i18n.T("Config-Sicherung (Switches)"):
 		sc.Kind = domain.ScheduleBackup
+	case i18n.T("Ordner-Scan (Logs)"):
+		sc.Kind = domain.ScheduleLogs
 	}
 	sc.RunbookID, sc.Steps = a.schedRBIDs[f.sel("runbook")], nil
-	if sc.Kind == domain.ScheduleBackup {
+	if sc.Kind == domain.ScheduleBackup || sc.Kind == domain.ScheduleLogs {
 		sc.RunbookID = ""
 	} else if sc.RunbookID == "" {
 		for _, st := range strings.Split(f.str("steps"), schedStepSep) {
@@ -342,6 +363,9 @@ func (a *App) saveScheduleForm() error {
 	}
 	if sc.Name == "" && sc.Kind == domain.ScheduleBackup {
 		sc.Name = i18n.T("Switch-Configs sichern")
+	}
+	if sc.Name == "" && sc.Kind == domain.ScheduleLogs {
+		sc.Name = i18n.T("Ordner-Scan (Logs)")
 	}
 	if sc.Name == "" {
 		sc.Name = orDefault(firstOf(sc.Steps), i18n.T("Zeitplan"))
@@ -354,6 +378,10 @@ func (a *App) saveScheduleForm() error {
 	}
 	if _, err := a.schedSteps(sc); err != nil {
 		return err
+	}
+	sc.Known = nil
+	if sc.Folder != "" && sc.Kind == "" {
+		sc.Known = connIDs(a.schedConns(sc)) // was du beim Speichern im Ordner hast
 	}
 	if sc.ID == "" {
 		sc.ID = fmt.Sprintf("sch-%d", time.Now().UnixNano())
@@ -388,6 +416,52 @@ func (a *App) connByAlias(alias string) (domain.Connection, bool) {
 	return domain.Connection{}, false
 }
 
+// schedTargets: Ziel ohne die Hosts, die neu im Ordner sind und noch nicht
+// bestätigt wurden (fresh). Gilt für Befehle und Runbooks; Sicherung und
+// Ordner-Scan lesen nur.
+func (a *App) schedTargets(sc domain.Schedule) (run, fresh []domain.Connection) {
+	all := a.schedConns(sc)
+	if sc.Folder == "" || sc.Kind != "" || sc.Known == nil {
+		return all, nil
+	}
+	known := map[string]bool{}
+	for _, id := range sc.Known {
+		known[id] = true
+	}
+	for _, c := range all {
+		if known[c.ID] {
+			run = append(run, c)
+		} else {
+			fresh = append(fresh, c)
+		}
+	}
+	return run, fresh
+}
+
+func connIDs(cs []domain.Connection) []string {
+	out := make([]string, 0, len(cs))
+	for _, c := range cs {
+		out = append(out, c.ID)
+	}
+	return out
+}
+
+// stepsReadOnly: ändert keiner der Schritte etwas (für irgendein System)?
+func stepsReadOnly(steps []string) bool {
+	for _, st := range steps {
+		ro := false
+		for _, k := range safety.Kinds {
+			if safety.ReadOnly(st, k) {
+				ro = true
+			}
+		}
+		if !ro {
+			return false
+		}
+	}
+	return true
+}
+
 // schedConns: Ziel-Verbindungen (nur SSH; Telnet/Konsole/Lokal brauchen
 // einen Tab).
 func (a *App) schedConns(sc domain.Schedule) []domain.Connection {
@@ -407,6 +481,12 @@ func (a *App) schedConns(sc domain.Schedule) []domain.Connection {
 	}
 	out := list[:0]
 	for _, c := range list {
+		if sc.Kind == domain.ScheduleLogs {
+			if folderScanable(c) {
+				out = append(out, c)
+			}
+			continue
+		}
 		if c.Protocol.Raw() {
 			continue
 		}
@@ -434,6 +514,9 @@ func (a *App) schedSteps(sc domain.Schedule) ([]string, error) {
 	if sc.Kind == domain.ScheduleBackup {
 		return []string{"show running-config"}, nil
 	}
+	if sc.Kind == domain.ScheduleLogs {
+		return []string{"log-scan"}, nil
+	}
 	steps := sc.Steps
 	if sc.RunbookID != "" {
 		var found bool
@@ -441,6 +524,9 @@ func (a *App) schedSteps(sc domain.Schedule) ([]string, error) {
 			if rb.ID == sc.RunbookID {
 				if len(rb.Files) > 0 {
 					return nil, errors.New(i18n.T("Runbooks mit Skripten des Agenten lassen sich nicht einplanen"))
+				}
+				if rb.TeamChanged {
+					return nil, fmt.Errorf(i18n.T("Runbook „%s“ kam neu oder geändert aus dem Team: einmal im Broadcast ansehen und starten, dann läuft der Zeitplan wieder"), rb.Name)
 				}
 				steps, found = rb.Steps, true
 			}
@@ -479,9 +565,18 @@ func (a *App) scheduleTick() tea.Cmd {
 	dev := deviceName()
 	var cmds []tea.Cmd
 	for _, sc := range a.schedules() {
-		if sc.RunsOn(dev) && sc.Due(now) && !a.schedRun[sc.ID] {
-			cmds = append(cmds, a.startSchedule(sc))
+		if !sc.RunsOn(dev) || !sc.Due(now) || a.schedRun[sc.ID] {
+			continue
 		}
+		if late := now.Sub(sc.DueAt(now)); late > domain.ScheduleLate && sc.Kind == "" {
+			if steps, err := a.schedSteps(sc); err == nil && !stepsReadOnly(steps) {
+				text := fmt.Sprintf(i18n.T("Termin %s verpasst (sshTermy war zu). Die Schritte ändern etwas, darum nicht nachgeholt: Strg+R führt sie jetzt aus."), sc.At)
+				a.updateSchedule(sc.ID, func(x *domain.Schedule) { x.LastRun, x.LastOK, x.LastFail, x.LastText = now, 0, 0, text })
+				a.pushToast(toastWarn, i18n.T("Zeitplan „")+sc.Name+i18n.T("“: ")+text)
+				continue
+			}
+		}
+		cmds = append(cmds, a.startSchedule(sc))
 	}
 	return tea.Batch(cmds...)
 }
@@ -493,7 +588,21 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 	}
 	a.updateSchedule(sc.ID, func(x *domain.Schedule) { x.LastRun = time.Now() })
 	steps, err := a.schedSteps(sc)
-	conns := a.schedConns(sc)
+	if sc.Folder != "" && sc.Kind == "" && sc.Known == nil {
+		// alter Zeitplan: was jetzt im Ordner ist, gilt als bestätigt
+		sc.Known = connIDs(a.schedConns(sc))
+		known := sc.Known
+		a.updateSchedule(sc.ID, func(x *domain.Schedule) { x.Known = known })
+	}
+	conns, fresh := a.schedTargets(sc)
+	if len(fresh) > 0 {
+		var names []string
+		for _, c := range fresh {
+			names = append(names, c.Alias)
+		}
+		a.pushToast(toastWarn, fmt.Sprintf(i18n.T("Zeitplan „%s“: %d neue Hosts im Ordner laufen erst nach deiner Bestätigung (Zeitpläne › Strg+A): %s"),
+			sc.Name, len(fresh), trunc(strings.Join(names, ", "), 80)))
+	}
 	if err == nil && len(conns) == 0 {
 		err = errors.New(i18n.T("keine SSH-Verbindung im Ziel"))
 	}
@@ -504,7 +613,13 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 		a.schedRun = map[string]bool{}
 	}
 	a.schedRun[sc.ID] = true
+	if sc.Kind == domain.ScheduleLogs {
+		return a.startScheduleLogs(sc, conns)
+	}
 	job := broadcast.Job{Conns: conns, Steps: steps}
+	if sc.Kind == "" && !stepsReadOnly(steps) {
+		job.Canary, job.StopAfter = true, bcStopAfter // ohne Aufsicht erst recht
+	}
 	var backup *schedBackup
 	if sc.Kind == domain.ScheduleBackup {
 		backup = &schedBackup{st: a.st, rules: a.configRules()}

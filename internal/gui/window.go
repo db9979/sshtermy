@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
@@ -25,6 +26,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"github.com/db9979/sshtermy/internal/termemu"
+	"github.com/db9979/sshtermy/internal/winstate"
 )
 
 // Cascadia Mono mit Nerd-Font-Symbolen (SIL OFL 1.1, fonts/LICENSE-CascadiaCode.txt):
@@ -125,13 +127,17 @@ func newWindow(opts Options, in io.Writer) (*window, error) {
 		}
 		fallbacks = append(fallbacks, fb)
 	}
+	saved := winstate.Load(opts.StateDir)
+	if opts.FontSize <= 0 && saved.Font >= 8 && saved.Font <= 40 {
+		opts.FontSize = saved.Font
+	}
 	if opts.FontSize <= 0 {
 		opts.FontSize = defaultFontSize
 	}
 	if opts.Title == "" {
 		opts.Title = "sshTermy"
 	}
-	w := &window{src: src, fallbacks: fallbacks, fontSize: opts.FontSize, opts: opts, in: in, done: make(chan struct{})}
+	w := &window{src: src, fallbacks: fallbacks, fontSize: opts.FontSize, opts: opts, in: in, done: make(chan struct{}), saved: saved}
 	w.term = termemu.New(startCols, startRows, in)
 	w.images = newImageLayer()
 	w.script = newScript(os.Getenv(opts.scriptEnv()))
@@ -161,6 +167,7 @@ func (w *window) run() error {
 	ebiten.SetWindowTitle(w.opts.Title)
 	ebiten.SetWindowSize(int(float64(startCols)*w.cellW+2*padding), int(float64(startRows)*w.cellH+2*padding))
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	w.applySaved() // Vollbild, maximiert oder wie zuletzt (geometry.go)
 	ebiten.SetWindowClosingHandled(true)
 	// Bild bleibt stehen; Draw zeichnet nur neu, wenn sich etwas geändert hat
 	// (Akku, GPU).
@@ -209,7 +216,10 @@ type window struct {
 	forceDraw  bool
 	cells      []uv.Cell
 
-	closing   bool
+	closeAt time.Time // letzter Schließversuch
+
+	saved     winstate.State // Fensterzustand (geometry.go)
+	savedAt   time.Time
 	mouseX    int
 	mouseY    int
 	mouseBtn  uv.MouseButton
@@ -306,8 +316,11 @@ func (w *window) Update() error {
 		return ebiten.Termination
 	default:
 	}
-	if ebiten.IsWindowBeingClosed() && !w.closing {
-		w.closing = true
+	// Das Programm darf das Schließen ablehnen (Rückfrage bei offenen
+	// Verbindungen), deshalb jeden Versuch melden, nur nicht doppelt.
+	if ebiten.IsWindowBeingClosed() && time.Since(w.closeAt) > 300*time.Millisecond {
+		w.closeAt = time.Now()
+		w.rememberGeometry(true)
 		if w.onClose != nil {
 			w.onClose()
 		}
@@ -315,6 +328,7 @@ func (w *window) Update() error {
 	if w.script != nil {
 		w.script.step(w)
 	}
+	w.rememberGeometry(false)
 	w.keyboard()
 	w.mouse()
 	if files := ebiten.DroppedFiles(); files != nil {
@@ -420,7 +434,11 @@ func (w *window) keyboard() {
 		case shortcut && (k == ebiten.KeyDigit0 || k == ebiten.KeyNumpad0):
 			w.fontSize = defaultFontSize
 			w.setFaces(w.scale)
-			w.fontChanged()
+			w.cols, w.rows = 0, 0
+			w.rememberFont()
+			return
+		case k == ebiten.KeyF11 && !ctrl && !shift && !alt && !cmd:
+			w.toggleFullscreen()
 			return
 		}
 	}
@@ -511,13 +529,7 @@ func (w *window) zoom(d float64) {
 	w.fontSize = math.Max(8, math.Min(40, w.fontSize+d))
 	w.setFaces(w.scale)
 	w.cols, w.rows = 0, 0 // nächstes Layout rechnet die Größe neu
-	w.fontChanged()
-}
-
-func (w *window) fontChanged() {
-	if w.opts.OnFontSize != nil {
-		w.opts.OnFontSize(w.fontSize)
-	}
+	w.rememberFont()
 }
 
 func (w *window) cellAt(px, py int) (int, int) {

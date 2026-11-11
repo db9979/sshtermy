@@ -1,5 +1,5 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
- Verbindunge┌─ ◆ Befehlspalette  19 Einträge ────────────────────────────────────── × ─┐
+ Verbindunge┌─ ◆ Befehlspalette  20 Einträge ────────────────────────────────────── × ─┐
             │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
    ○ # switc│ // häufig                                                                │
@@ -8,21 +8,21 @@
 ▌    ○ · web│ [$] Lokale Shell öffnen                                            Alt+L │
 ▌    ○ · web│ [*] Broadcast: Befehl auf mehreren Hosts                               m │
 ▌  ○ · db-01│ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
- ○ · nas    │ // verbindungen                                                          │
- ○ · spark  │ [·] nas                                                  admin@nas.local │
+ ○ · nas    │ [!] Ordner-Scan: Logs aller Hosts im Ordner …                       Logs │
+ ○ · spark  │ // verbindungen                                                          │
+            │ [·] nas                                                  admin@nas.local │
             │ [·] spark                                              dominik@spark.lan │
             │ [#] switch-core  Netzwerk                            manager@192.168.1.2 │
             │ [·] db-01  Produktion                                  postgres@10.0.1.5 │
-            │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
-            │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │ oder
+            │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │ oder
+            │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │
             │ // alle aktionen                                                         │
             │ [|] Ansicht & Aufteilung ›  teilen, Zoom, Arbeitsplätze                1 │
-            │ [*] Mehrere Hosts ›  Broadcast, Zeitpläne, Scan                        3 │
+            │ [*] Mehrere Hosts ›  Broadcast, Zeitpläne, Scan                        5 │
             │ [/] Netzwerk & Switches ›  Gerät finden, Topologie                     2 │
             │ [&] Team & Teilen ›  live teilen, Team-Ordner                          4 │
             │ [=] Verbindungen & Schlüssel ›  Manager, neu, SSH-Key, Protokolle      5 │
-            │ [:] Einstellungen ›  Maus, Aussehen, Sprache, KI …                    33 │
-            │ [?] Hilfe & Info ›  Tasten, Tour, Neues, Update                        6 │
+            │ [:] Einstellungen ›  Maus, Aussehen, Sprache, KI …                    38 │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘

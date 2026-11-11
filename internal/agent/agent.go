@@ -64,6 +64,12 @@ const (
 	// ausgeführt, also kürzen statt verwerfen.
 	maxQuestion = 600
 	maxOptions  = 4
+	// Gründe und Stichpunkte: Der Prompt verlangt kurze Texte, gekürzt wird
+	// aber erst deutlich später, damit eine etwas zu lange Antwort lesbar bleibt.
+	maxShown = 400
+	// Abschlusszusammenfassung (fertig, Plan): wird vollständig angezeigt
+	// (Panel blättert), Absätze bleiben erhalten.
+	maxSummary = 4000
 )
 
 // Agent kapselt den LLM-Client.
@@ -204,7 +210,9 @@ const sysGoal = "Du begleitest einen Admin auf einem Server oder Netzwerkgerät 
 	`Antworte nur mit einem JSON-Objekt: {"befehl": "…", "grund": "…", "plan": ["…"]} ` +
 	"mit befehl in einer Zeile (höchstens 300 Zeichen, nicht-interaktiv, z. B. apt-get -y), grund in einer Zeile " +
 	"(höchstens 160 Zeichen, was der Befehl tut und warum) und plan als 1 bis 8 kurze Stichpunkte der restlichen Schritte. " +
-	`Ist das Ziel erreicht: {"fertig": true, "grund": "…"}. Brauchst du eine Entscheidung des Menschen ` +
+	`Ist das Ziel erreicht: {"fertig": true, "grund": "…"} mit grund als vollständiger Zusammenfassung ` +
+	"(was jetzt anders ist, wie du es geprüft hast, wichtige Funde; gern mehrere Sätze, Absätze mit \\n, nichts weglassen). " +
+	`Brauchst du eine Entscheidung des Menschen ` +
 	`(z. B. Domainname, oder ob etwas Bestehendes gelöscht werden darf): {"frage": "…", "optionen": ["…", "…"]} ` +
 	"mit frage in höchstens 300 Zeichen und optionen als 2 bis 4 kurze mögliche Antworten (z. B. Ja/Nein); " +
 	"optionen weglassen, wenn nur eine freie Antwort passt." + guard
@@ -345,6 +353,10 @@ func parseStep(out, kind string) (Step, error) {
 		if q, ok := salvageQuestion(out); ok {
 			return Step{Question: q}, nil
 		}
+		// Abgeschnittene Abschlussmeldung: ebenfalls nur Text ⇒ retten.
+		if r, ok := salvageDone(out); ok {
+			return Step{Done: true, Suggestion: Suggestion{Reason: r}}, nil
+		}
 		return Step{}, ErrUnreadable
 	}
 	str := func(k string) string {
@@ -352,14 +364,14 @@ func parseStep(out, kind string) (Step, error) {
 		_ = json.Unmarshal(v[k], &s)
 		return strings.TrimSpace(s)
 	}
-	reason, ok := oneLine(str("grund"), maxReason)
-	if !ok {
-		reason = short(strings.Join(strings.Fields(Clean(str("grund"))), " "), maxReason)
-	}
 	var done bool
 	_ = json.Unmarshal(v["fertig"], &done)
-	if done {
-		return Step{Done: true, Suggestion: Suggestion{Reason: reason}}, nil
+	if done { // Zusammenfassung: vollständig, mit Absätzen
+		return Step{Done: true, Suggestion: Suggestion{Reason: summaryText(str("grund"))}}, nil
+	}
+	reason, ok := oneLine(str("grund"), maxReason)
+	if !ok {
+		reason = flatText(str("grund"), maxShown)
 	}
 	if q := flatText(str("frage"), maxQuestion); q != "" {
 		return Step{Question: q, Options: parseOptions(v["optionen"])}, nil
@@ -388,6 +400,29 @@ func flatText(s string, n int) string {
 	return short(strings.Join(strings.Fields(Clean(s)), " "), n)
 }
 
+// summaryText: Zusammenfassung säubern, Absätze und Aufzählungen behalten
+// (je Zeile Leerraum zusammenfassen, höchstens eine Leerzeile in Folge).
+func summaryText(s string) string {
+	var out []string
+	blank := false
+	for _, l := range strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n") {
+		l = strings.Join(strings.Fields(Clean(l)), " ")
+		if l == "" {
+			blank = len(out) > 0
+			continue
+		}
+		if blank {
+			out = append(out, "")
+			blank = false
+		}
+		out = append(out, l)
+	}
+	return short(strings.Join(out, "\n"), maxSummary)
+}
+
+// SummaryText macht summaryText für die UI und Tests zugänglich.
+func SummaryText(s string) string { return summaryText(s) }
+
 func parseOptions(raw json.RawMessage) []string {
 	if len(raw) == 0 {
 		return nil
@@ -410,18 +445,65 @@ var questionStart = regexp.MustCompile(`"frage"\s*:\s*"`)
 // salvageQuestion liest den Text einer Rückfrage aus einer abgeschnittenen
 // Antwort wie {"frage": "Soll ich 172.31.5.10 entfernen und … (Ende).
 func salvageQuestion(out string) (string, bool) {
-	t := stripThink(out)
-	loc := questionStart.FindStringIndex(t)
-	if loc == nil {
+	raw, closed, ok := salvageString(stripThink(out), questionStart, false)
+	if !ok {
 		return "", false
 	}
-	rest := t[loc[1]:]
+	q := flatText(raw, maxQuestion)
+	if len([]rune(q)) < 10 {
+		return "", false
+	}
+	if !closed && !strings.HasSuffix(q, "…") {
+		q += " …"
+	}
+	return q, true
+}
+
+var (
+	doneMark    = regexp.MustCompile(`"fertig"\s*:\s*true`)
+	reasonStart = regexp.MustCompile(`"grund"\s*:\s*"`)
+)
+
+// salvageDone rettet die Zusammenfassung einer abgeschnittenen
+// {"fertig": true, "grund": …}-Antwort (Token-Limit). Sie wird nur angezeigt.
+func salvageDone(out string) (string, bool) {
+	t := stripThink(out)
+	if !doneMark.MatchString(t) {
+		return "", false
+	}
+	raw, closed, ok := salvageString(t, reasonStart, true)
+	if !ok {
+		return "", false
+	}
+	r := summaryText(raw)
+	if len([]rune(r)) < 10 {
+		return "", false
+	}
+	if !closed {
+		r += " …"
+	}
+	return r, true
+}
+
+// salvageString liest einen JSON-String ab der Stelle hinter start, auch wenn
+// er nicht geschlossen ist. lines=true behält \n als Zeilenumbruch.
+func salvageString(t string, start *regexp.Regexp, lines bool) (string, bool, bool) {
+	loc := start.FindStringIndex(t)
+	if loc == nil {
+		return "", false, false
+	}
 	var b strings.Builder
 	esc, closed := false, false
-	for _, r := range rest {
+	for _, r := range t[loc[1]:] {
 		if esc {
 			switch r {
-			case 'n', 'r', 't':
+			case 'n':
+				if lines {
+					b.WriteByte('\n')
+				} else {
+					b.WriteByte(' ')
+				}
+			case 'r', 't':
 				b.WriteByte(' ')
 			default:
 				b.WriteRune(r)
@@ -439,14 +521,7 @@ func salvageQuestion(out string) (string, bool) {
 		}
 		b.WriteRune(r)
 	}
-	q := flatText(b.String(), maxQuestion)
-	if len([]rune(q)) < 10 {
-		return "", false
-	}
-	if !closed && !strings.HasSuffix(q, "…") {
-		q += " …"
-	}
-	return q, true
+	return b.String(), closed, true
 }
 
 // ---------------------------------------------------------------- Befehl anpassen

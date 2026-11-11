@@ -1,0 +1,14 @@
+id: sophos-sfos
+name: Sophos Firewall (SFOS)
+order: 285
+hint: "Sophos Firewall (SFOS): nach der Anmeldung ein Menü; 4 = Device Console (console>), 5 = Device Management › Advanced Shell (Linux, nur zur Fehlersuche). In der Console: system diagnostics show version-info, show advanced-firewall, system diagnostics utilities ping/traceroute, show … . Konfiguration fast nur über die Weboberfläche oder Sophos Central."
+detect:
+  screen: ['(?i)sophos firewall|\bSFOS\b|sophos xg|sophos firmware version']
+  version: ['(?i)\bSFOS\b|sophos']
+commands:
+  version: system diagnostics show version-info
+read: ['^system diagnostics show version-info$']
+parse:
+  firmware: '(?i)(SFOS\s+[\d.]+(?:\s+MR-\d+)?)'
+syslog:
+  note: "Sophos Firewall: System services › Log settings › Syslog servers › Hinzufügen (IP, UDP, Port)."

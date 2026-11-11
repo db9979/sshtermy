@@ -51,7 +51,7 @@ const sysAuto = "Du bist ein Agent, der ein Ziel auf einem entfernten System sel
 	`2) {"datei": {"name": "x.sh", "inhalt": "…"}, "grund": "…"}: legt eine Datei im Arbeitsordner an (nur wenn erlaubt, siehe unten). ` +
 	"name ist nur ein Dateiname. Danach führst du sie mit einem befehl aus (z. B. bash <ordner>/x.sh). " +
 	"Skripte mit set -euo pipefail; bei Änderungen erst einen Probelauf (--dry-run), wenn es sinnvoll ist.\n" +
-	`3) {"fertig": true, "grund": "…"}: Ziel erreicht und geprüft. grund = kurze Zusammenfassung, was jetzt anders ist und wie du es geprüft hast.` + "\n" +
+	`3) {"fertig": true, "grund": "…"}: Ziel erreicht und geprüft. grund = vollständige Zusammenfassung: was jetzt anders ist, wie du es geprüft hast und alle wichtigen Funde (gern mehrere Sätze, Absätze mit \n, nichts weglassen).` + "\n" +
 	`4) {"frage": "…", "optionen": ["…", "…"]}: nur wenn eine Entscheidung des Menschen fehlt.` + "\n" +
 	"Regeln: Erst schauen, dann ändern. Prüfe nach jeder Änderung, ob sie gewirkt hat. Sichere eine Datei, bevor du sie änderst " +
 	"(cp datei datei.bak-sshtermy). Schlägt ein Schritt fehl, lies die Ausgabe und versuche einen anderen Weg; wiederhole nie " +
@@ -177,23 +177,12 @@ func parseAuto(out, kind string, files bool) (Step, error) {
 			var reason string
 			_ = json.Unmarshal(v["grund"], &reason)
 			st := Step{File: &fa}
-			st.Reason = flatText(reason, maxReason)
+			st.Reason = flatText(reason, maxShown)
 			st.Danger, st.Elevated = FileDanger(fa.Content, kind)
 			return st, nil
 		}
 	}
-	st, err := parseStep(out, kind)
-	if err != nil {
-		return st, err
-	}
-	if st.Done && v != nil { // Zusammenfassung darf länger sein als ein Grund
-		var g string
-		_ = json.Unmarshal(v["grund"], &g)
-		if t := flatText(g, maxQuestion); t != "" {
-			st.Reason = t
-		}
-	}
-	return st, nil
+	return parseStep(out, kind)
 }
 
 // CheckFile prüft Name und Inhalt einer Datei des Agenten.

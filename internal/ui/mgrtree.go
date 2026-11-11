@@ -281,23 +281,17 @@ func (a *App) saveFolderForm() error {
 	return a.st.SetFolderRules(neu, a.form.str("rules"))
 }
 
+// deleteFolderDialog löst einen Ordner sofort auf (der Inhalt rückt eine
+// Ebene hoch, keine Verbindung wird gelöscht); der Hinweis bietet
+// „Rückgängig“ an (undo.go).
 func (a *App) deleteFolderDialog(n *domain.TreeNode) {
 	path := n.Path
-	parent := domain.PathParent(path)
-	where := i18n.T("die oberste Ebene")
-	if parent != "" {
-		where = i18n.T("„") + parent + i18n.T("“")
+	tr, err := a.st.DeleteFolderTrash(path)
+	if err != nil {
+		a.flashErr(err.Error())
+		return
 	}
-	body := i18n.T("Ordner „") + path + i18n.T("“ auflösen?")
-	if n.Total > 0 || len(n.Folders) > 0 {
-		body += fmt.Sprintf(i18n.T("\nDer Inhalt (%s) rückt in %s. Es wird keine Verbindung gelöscht."), plural(n.Total, i18n.T("Verbindung"), i18n.T("Verbindungen")), where)
-	}
-	a.modal = confirmModal(i18n.T("Ordner auflösen"), body, func() tea.Cmd {
-		if err := a.st.DeleteFolder(path); err != nil {
-			a.flashErr(err.Error())
-		}
-		return nil
-	})
+	a.offerUndo(i18n.T("Ordner „")+path+i18n.T("“ aufgelöst"), tr, nil, func() { a.expandTo(path) })
 }
 
 // folderItems: Ordner für die Auswahlliste; skip sperrt einen Teilbaum.

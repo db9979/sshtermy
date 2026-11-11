@@ -1,0 +1,32 @@
+id: proxmox
+name: Proxmox VE
+family: linux
+order: 101
+hint: "Proxmox VE (Debian): qm list/status/start/shutdown (VMs), pct list/enter (Container), pvesm status (Speicher), pvecm status (Cluster), pveversion -v, vzdump (Sicherung), zfs/zpool, ha-manager status. Updates nur mit apt dist-upgrade und passenden Proxmox-Repos, nie apt upgrade allein. Netzwerk in /etc/network/interfaces (ifreload -a)."
+detect:
+  probe: [/usr/bin/pveversion]
+commands:
+  extra:
+    - label: VMs aktiv
+      label_en: VMs running
+      cmd: qm list
+      count: '(?m)^\s*\d+\s+\S+\s+running\b'
+    - label: Container
+      label_en: Containers
+      cmd: pct list
+      count: '(?m)^\d+\s+running\b'
+    - label: Speicher
+      label_en: Storage
+      cmd: pvesm status
+      count: '(?m)^\S+\s+\S+\s+active\b'
+    - label: Version
+      cmd: pveversion
+      pick: 'pve-manager/(\S+)'
+read: ['^qm list$', '^pct list$', '^pvesm status$', '^pveversion$', '^pvecm status$']
+danger:
+  - rx: '\b(qm|pct)\s+(destroy|stop|reset|rollback|unlock)\b'
+    reason: schaltet VMs ab oder löscht sie
+    reason_en: stops or deletes VMs
+  - rx: '\bpvecm\s+(delnode|expected)\b'
+    reason: ändert den Cluster
+    reason_en: changes the cluster

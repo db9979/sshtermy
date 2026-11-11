@@ -93,3 +93,21 @@ func TestReadOnlyWriters(t *testing.T) {
 		t.Error("Format-Table/Sort-Object sollten nur lesen")
 	}
 }
+
+func TestSensitive(t *testing.T) {
+	yes := []string{"sudo cat /etc/shadow", "cat ~/.ssh/id_ed25519", "cat .env", "cat /srv/app/.env", "kubectl get secret db -o yaml",
+		"docker inspect web", "cat /proc/1/environ", "printenv", "env", "show running-config", "sh run", "display current-configuration",
+		"cat ~/.aws/credentials", "less /etc/ssl/private/server.key", "Get-ChildItem env:"}
+	no := []string{"ls -la ~/.ssh", "cat ~/.ssh/id_ed25519.pub", "cat /etc/passwd", "df -h", "show vlans", "show interfaces brief",
+		"env LANG=C ls", "kubectl get pods", "docker ps", "cat README.md", "grep key config.yaml"}
+	for _, c := range yes {
+		if Sensitive(c) == "" {
+			t.Errorf("nicht erkannt: %q", c)
+		}
+	}
+	for _, c := range no {
+		if s := Sensitive(c); s != "" {
+			t.Errorf("falscher Alarm: %q %s", c, s)
+		}
+	}
+}

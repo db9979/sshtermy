@@ -1,0 +1,40 @@
+ >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ● KI
+     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │ Befehlssatz                                                                                      │
+     │                                                                                                  │
+     │ ━━ Befehlssatz ───────────────────────────────────────────────────────────────────────────────── │
+     │ ▌ Kennung                posix-eigen                                                             │
+     │ │ Name                   Linux/Unix-Shell (eigen)                                                │
+     │ │ Basiert auf            posix                                                                   │
+     │ │ Familie                linux                                                                   │
+     │ │ Hinweis für die KI                                                                             │
+     │                                                                                                  │
+     │ ━━ Erkennung (reguläre Ausdrücke, mehrere mit ||) ────────────────────────────────────────────── │
+     │ │ Bildschirm                                                                                     │
+     │ │ Versionsausgabe                                                                                │
+     │ │ SSH-Kennung                                                                                    │
+     │                                                                                                  │
+     │ ━━ Befehle, die sshTermy tippt (nur lesend) ──────────────────────────────────────────────────── │
+     │ │ Blättern aus                                                                                   │
+     │ │ Version                                                                                        │
+     │ │ System (CPU)                                                                                   │
+     │ │ Speicher                                                                                       │
+     │ │ Ports                                                                                          │
+     │ │ VLANs                                                                                          │
+     │ │ Konfiguration                                                                                  │
+     │ │ Logs                                                                                           │
+     │                                                                                                  │
+     │ ━━ Lesen (reguläre Ausdrücke, eine Klammer = Wert) ───────────────────────────────────────────── │
+     │ │ Firmware                                                                                       │
+     │ │ Modell                                                                                         │
+     │ │ Name                                                                                           │
+     │ │ CPU                                                                                            │
+     │ │ RAM                                                                                            │
+     │                                                                                                  │
+     │ ━━ Syslog einrichten (ändert das Gerät, wird jedes Mal gezeigt) ──────────────────────────────── │
+     │ │ Schritte                                                                                       │
+     │ │ Speichern mit                                                                                  │
+     │                                                                                                  │
+     │ ━━ Zusätzliche Gefahrenregel (nur ergänzen) ──────────────────────────────────────────────────── │
+     │ │ Muster                                                                                         │
+ Tab weiter  ←/→ wählen  Strg+S speichern  Esc abbrechen

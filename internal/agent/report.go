@@ -54,3 +54,29 @@ func (a *Agent) Report(ctx context.Context, transcript string) (string, error) {
 	}
 	return out, nil
 }
+
+// ---------------------------------------------------------------- KI-Lagebericht (Log-Blick)
+
+const sysLogBrief = "Du bekommst eine verdichtete Auswertung der Logs eines Servers oder Netzwerkgeräts: gleiche Meldungen " +
+	"sind zu Mustern mit Anzahl, erstem und letztem Zeitpunkt und einer Beispielzeile zusammengefasst, dazu Ereignisse wie " +
+	"Neustarts, Updates oder Konfigurationsänderungen. Schreibe für einen Admin, kurz und konkret, als schlichter Text ohne " +
+	"Fettdruck und Überschriften. Zuerst eine Zeile „Lage:“ mit einem Satz zum wichtigsten Problem (oder dass alles ruhig ist). " +
+	"Dann „Zusammenhang:“ mit 1 bis 4 nummerierten Punkten in zeitlicher Reihenfolge, wie die Muster zusammenhängen – nur, was " +
+	"die Zeitpunkte stützen, sonst schreib, dass es unabhängige Probleme sind. Dann „Nebenbei auffällig:“ mit höchstens 3 " +
+	"Stichpunkten („- “), wenn es mehr gibt. Zuletzt „Prüfen:“ mit 1 bis 4 Befehlen für genau dieses System, je in einem " +
+	"eigenen Codeblock ```sh … ``` mit genau einem Befehl, die nur lesen. Erfinde nichts, was nicht in der Auswertung steht." + guard
+
+// LogBrief: Lagebericht aus den verdichteten Mustern des Log-Blicks
+// (gestreamt wie im Frage-Modus).
+func (a *Agent) LogBrief(ctx context.Context, brief string, c Context, onDelta func(string)) error {
+	c.Screen = ""
+	body := brief
+	if !c.Raw {
+		body = Redact(body)
+	}
+	body = strings.NewReplacer("<<<", "‹‹‹", ">>>", "›››").Replace(body)
+	return a.C.Stream(ctx, []llm.Message{
+		{Role: "system", Content: a.sys(sysLogBrief)},
+		{Role: "user", Content: material(c) + "\n\nLog-Auswertung:\n<<<\n" + body + "\n>>>\n\nBitte einen Lagebericht schreiben."},
+	}, llm.Opts{MaxTokens: 1000, Temperature: 0.2, Task: TaskLogs}, func(d string) { onDelta(Clean(d)) })
+}

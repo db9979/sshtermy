@@ -49,6 +49,7 @@ type session struct {
 	panelAt    time.Time
 	id         int
 	conn       domain.Connection
+	errv       error  // letzter Verbindungsfehler (Klartext in connerr.go)
 	title      string // eigener Tab-Name (tabs.go), "" = Alias
 	client     *sshx.Client
 	shell      termStream // SSH-Shell, Telnet oder serielle Konsole (rawconn.go)
@@ -73,9 +74,10 @@ type session struct {
 	detOut atomic.Pointer[detach.Conn] // dorthin geht die Ausgabe mit
 	share  atomic.Pointer[shareOut]    // Sitzung live teilen (share.go)
 
-	fixedCols, fixedRows int       // Zuschauer: Größe des Gastgebers (0 = Fenster)
-	viewMemo             termMemo  // letztes Terminalbild (perf.go: termView)
-	panelMemo            panelMemo // letzte Seitenleiste (panels.go: viewPanel)
+	fixedCols, fixedRows int         // Zuschauer: Größe des Gastgebers (0 = Fenster)
+	viewMemo             termMemo    // letztes Terminalbild (perf.go: termView)
+	panelMemo            panelMemo   // letzte Seitenleiste (panels.go: viewPanel)
+	pscroll              panelScroll // Blättern in der Seitenleiste (panelscroll.go)
 
 	notice   noticeKind  // Markierung im Tab: Befehl fertig, Glocke (notify.go)
 	unseen   bool        // neue Ausgabe, solange der Tab verdeckt war (motion.go)

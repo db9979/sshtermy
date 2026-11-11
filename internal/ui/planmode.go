@@ -45,6 +45,11 @@ func (a *App) planStepMsg(s *session, st agent.Step) tea.Cmd {
 			ExitHint: i18n.T("nicht ausgeführt: beim Planen nur lesende Befehle")})
 		return a.requestStep(s)
 	}
+	if why := safety.Sensitive(st.Command); why != "" {
+		g.steps = append(g.steps, agent.DoneStep{Command: st.Command, Skipped: true,
+			ExitHint: i18n.T("nicht ausgeführt: ") + why + i18n.T(" (Ausgabe ginge an die KI)")})
+		return a.requestStep(s)
+	}
 	if s.state != stConnected || s.term == nil {
 		g.err = i18n.T("keine Verbindung: erst neu verbinden")
 		return nil
@@ -250,6 +255,9 @@ func (a *App) viewPlan(b *strings.Builder, s *session, w int) {
 			}
 			return nil
 		}) + "\n")
+		if i == g.planSel && ps.File == nil && text != label { // ausgewählt: ganzer Befehl
+			b.WriteString(lipglossIndent(wrap(st.Code.Render(label), max(4, w-5)), 5) + "\n")
+		}
 		if i == g.planSel {
 			if len(ps.Danger) > 0 {
 				b.WriteString("     " + st.Danger.Render(trunc(i18n.T("Gefahr: ")+ps.Danger[0].Reason, max(4, w-5))) + "\n")

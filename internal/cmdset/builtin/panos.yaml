@@ -1,0 +1,57 @@
+id: panos
+name: Palo Alto PAN-OS
+order: 280
+hint: "Palo Alto PAN-OS, kein IOS: Betriebsmodus mit show system info, show interface all, show routing route, show session info, show running security-policy, show log system, show config running; Blättern aus mit set cli pager off; Konfiguration mit configure · set …/delete … · commit (erst commit macht Änderungen wirksam), Ausgabe als Befehle mit set cli config-output-format set."
+detect:
+  screen: ['(?i)palo alto networks|\bPAN-OS\b|^\S+@PA-[\w-]+(?:\(\w+\))?[>#]\s*$']
+  version: ['(?im)^sw-version:\s|^family:\s+\S+']
+commands:
+  paging_off: set cli pager off
+  version: show system info
+  system: show system resources
+  ports: show interface all
+  config: show config running
+  extra:
+    - label: Sitzungen
+      label_en: Sessions
+      cmd: show session info
+      pick: '(?im)^\s*Number of active sessions:\s*(\d+)'
+parse:
+  firmware: '(?im)^sw-version:\s*(\S+)'
+  model: '(?im)^model:\s*(\S+)'
+  name: '(?im)^hostname:\s*(\S+)'
+  uptime: '(?im)^uptime:\s*(.+?)\s*$'
+  cpu: '(?i)%cpu\(s\):.*?(?P<idle>\d{1,3})(?:\.\d+)?\s+id'
+  mem: '(?i)MiB Mem\s*:\s*(?P<total>[\d.]+)\s+total,\s*(?P<free>[\d.]+)\s+free'
+  port_up: '(?i)^ethernet\S+\s+\d+\s+\S*/up\b'
+  port_down: '(?i)^ethernet\S+\s+\d+\s+\S*/down\b'
+logs:
+  commands: [show log system direction equal backward]
+  reader: generic
+syslog:
+  note: "PAN-OS: Device › Server Profiles › Syslog anlegen (IP, UDP, Port), unter Device › Log Settings zuweisen, dann Commit."
+danger:
+  - rx: '^\s*request\s+(restart\s+(system|dataplane)|shutdown\s+system)\b'
+    reason: startet das Gerät neu
+  - rx: '^\s*(request\s+system\s+private-data-reset|load\s+config\b)'
+    reason: überschreibt die Gerätekonfiguration
+  - rx: '^\s*commit\s+force\b'
+    reason: übernimmt Änderungen ohne Prüfung
+    reason_en: commits changes without checks
+samples:
+  - name: PA-220
+    version: |
+      hostname: PA-220
+      model: PA-220
+      sw-version: 10.2.4
+      uptime: 12 days, 3:04:05
+      family: 220
+    system: |
+      %Cpu(s):  2.3 us,  1.1 sy,  0.0 ni, 96.0 id,  0.4 wa,  0.0 hi,  0.2 si,  0.0 st
+      MiB Mem :   3911.6 total,    977.9 free,   2047.5 used,    886.2 buff/cache
+    expect:
+      firmware: 10.2.4
+      model: PA-220
+      name: PA-220
+      cpu: 4
+      mem: 75

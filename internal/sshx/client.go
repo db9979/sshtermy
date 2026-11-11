@@ -636,7 +636,7 @@ func (c *Client) probe() (prof domain.SystemProfile, locale, refused string) {
 	}
 	defer s.Close()
 	done := make(chan []byte, 1)
-	go func() { out, _ := s.Output(sysprof.ProbeCommand); done <- out }()
+	go func() { out, _ := s.Output(sysprof.Probe()); done <- out }()
 	select {
 	case out := <-done:
 		if msg := sysprof.ProbeRejected(string(out)); msg != "" {

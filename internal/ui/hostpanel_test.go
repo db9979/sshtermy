@@ -19,7 +19,12 @@ import (
 // laufen über die interaktive Shell (keine Exec-Kanäle), "-- MORE --" wird
 // weitergeblättert, ein zweiter Stand ergibt einen Diff, ein dritter
 // unveränderter wird nicht gespeichert.
-func TestHostPanelSwitchOverShell(t *testing.T) {
+func TestHostPanelSwitchOverShell(t *testing.T) { hostPanelSwitch(t, false) }
+
+// wie ein echter ArubaOS-Switch: Zeilen per Cursor-Sprung
+func TestHostPanelSwitchPositioned(t *testing.T) { hostPanelSwitch(t, true) }
+
+func hostPanelSwitch(t *testing.T, positioned bool) {
 	t.Setenv("SSHTERMY_HOME", t.TempDir())
 	st, err := store.Open()
 	if err != nil {
@@ -34,6 +39,7 @@ func TestHostPanelSwitchOverShell(t *testing.T) {
 	}
 	defer sw.Close()
 	sw.PressAnyKey = true
+	sw.Positioned = positioned
 
 	a, err := New(st)
 	if err != nil {

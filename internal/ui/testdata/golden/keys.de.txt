@@ -17,6 +17,7 @@
  Tunnel                        F4
  Dateien (SFTP)                F5
  Host-Übersicht                F6
+ Log-Blick (Auffälligkeiten in den Logs)  Alt+E
  Tab zurück                    F7
  Tab vor                       F8
  Neuer Tab                     Alt+N
@@ -26,7 +27,6 @@
  Schnellbefehl 1               Shift+F1 / F13
  Schnellbefehl 2               Shift+F2 / F14
  Schnellbefehl 3               Shift+F3 / F15
- Schnellbefehl 4               Shift+F4 / F16
 
  Alt+⏎ ist gesperrt: Windows Terminal schaltet damit auf Vollbild.
  Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)

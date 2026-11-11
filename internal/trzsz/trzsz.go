@@ -425,7 +425,10 @@ func (t *Transfer) Download(dir string) ([]string, error) {
 	}
 	var out []string
 	for i := int64(0); i < num; i++ {
-		p, err := t.recvFile(dir, cfg.Overwrite)
+		// Überschreiben wünscht der Server; vorhandene Dateien bleiben trotzdem
+		// (neuer Name). Sonst ersetzte ein Server still etwas in Downloads.
+		_ = cfg.Overwrite
+		p, err := t.recvFile(dir, false)
 		if err != nil {
 			return out, t.fail(err)
 		}

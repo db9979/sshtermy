@@ -1,0 +1,29 @@
+id: unifi
+name: UniFi-Switch (Ubiquiti)
+name_en: UniFi switch (Ubiquiti)
+order: 205
+# BusyBox-Shell: Lesebefehle wie auf einem Server prüfen.
+read_check: unix
+hint: "Ubiquiti-UniFi-Switch: Anmeldung landet in einer BusyBox-Linux-Shell (ash), keine Cisco-Syntax. Die Konfiguration kommt vom UniFi-Controller (Network-App) und wird beim nächsten Provisionieren überschrieben; dauerhaft also dort ändern. Shell: info (Modell, Firmware, Controller-Status), swctrl port show, swctrl poe show, swctrl mac show, cat /tmp/system.cfg (laufende Konfiguration), logread, set-inform http://<controller>:8080/inform. Ältere Modelle (US-…) haben zusätzlich eine EdgeSwitch-/FASTPATH-CLI über cli bzw. telnet localhost (Prompt (UBNT) >): enable, show running-config, show interfaces status all, show vlan brief, show mac-addr-table, show lldp remote-device all, zurück mit exit. syswrapper.sh restore-default setzt das Gerät zurück."
+detect:
+  screen: ['(?im)welcome to unifi\s+us[^g\s!]|^\(UBNT\)\s*[>#]|^\s*model:\s+us[^g\s!][\w-]*\s*$']
+  version: ['(?im)^\s*model:\s+US[^Gg\s][\w-]*\s*$|^\s*status:\s+.*?/inform\b']
+commands:
+  version: info
+  system: free; top -bn1 | head -n 3
+  ports: swctrl port show
+  config: cat /tmp/system.cfg
+parse:
+  reader: unifi
+read:
+  - '^info$'
+  - '^swctrl [\w-]+ show$'
+  - '^free; top -bn1 \| head -n 3$'
+logs:
+  commands: [tail -n 600 /var/log/messages]
+  reader: busybox
+syslog:
+  note: "UniFi-Switches stellt man im UniFi-Controller ein: Einstellungen › System › Remote Logging (Syslog)."
+danger:
+  - rx: '(\bsyswrapper\.sh\s+restore-default\b|^\s*set-default\s*$)'
+    reason: löscht Konfiguration oder Speicher des Geräts

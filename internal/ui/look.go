@@ -65,17 +65,6 @@ func (a *App) setTheme(name string) tea.Cmd {
 	return nil
 }
 
-// cycleTheme: Dunkel → Hell → Hochkontrast → Hochkontrast hell → Dunkel.
-func (a *App) cycleTheme() tea.Cmd {
-	cur := ThemeByName(a.st.Settings().Theme).Name
-	for i, t := range Themes {
-		if t.Name == cur {
-			return a.setTheme(Themes[(i+1)%len(Themes)].Name)
-		}
-	}
-	return a.setTheme(Nacht.Name)
-}
-
 // ---------------------------------------------------------------- Tasten-Editor
 
 type keyEditor struct {

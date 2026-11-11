@@ -79,6 +79,11 @@ type Job struct {
 	PerHost  [][]string
 	Parallel int           // gleichzeitige Hosts, Standard 8
 	Timeout  time.Duration // pro Host, Standard 5 min
+	// Canary: erst der erste Host allein; scheitert er, startet kein weiterer.
+	Canary bool
+	// StopAfter: nach so vielen gescheiterten Hosts startet kein weiterer
+	// (0 = nie aufhören). Laufende Hosts laufen zu Ende.
+	StopAfter int
 }
 
 // Run startet alle Hosts und meldet jede Zustandsänderung an update (aus
@@ -100,27 +105,67 @@ func Run(ctx context.Context, j Job, dial Dialer, update func(i int, r Result)) 
 	}
 	sem := make(chan struct{}, par)
 	var wg sync.WaitGroup
-	for i, c := range j.Conns {
+	var mu sync.Mutex
+	failed, stop := 0, ""
+	// halted: kein weiterer Host startet mehr (Probelauf gescheitert oder
+	// zu viele Fehler); der Host wird mit Grund übersprungen.
+	halted := func() string {
+		mu.Lock()
+		defer mu.Unlock()
+		return stop
+	}
+	done := func(r *Result) {
+		if r.OK() || r.State == Canceled {
+			return
+		}
+		mu.Lock()
+		failed++
+		if j.StopAfter > 0 && failed >= j.StopAfter && stop == "" {
+			stop = fmt.Sprintf(i18n.T("nicht gestartet: schon %d Hosts gescheitert"), failed)
+		}
+		mu.Unlock()
+	}
+	start := func(i int, c domain.Connection) {
+		defer wg.Done()
+		r := &res[i]
+		select {
+		case sem <- struct{}{}:
+			defer func() { <-sem }()
+		case <-ctx.Done():
+			r.State, r.Err = Canceled, i18n.T("abgebrochen")
+			update(i, *r)
+			return
+		}
+		if why := halted(); why != "" {
+			r.State, r.Err = Canceled, why
+			update(i, *r)
+			return
+		}
+		hctx, cancel := context.WithTimeout(ctx, tmo)
+		defer cancel()
+		steps := j.Steps
+		if i < len(j.PerHost) && len(j.PerHost[i]) > 0 {
+			steps = j.PerHost[i]
+		}
+		runHost(hctx, c, steps, dial, r, func() { update(i, *r) })
+		done(r)
+	}
+	first := 0
+	if j.Canary && len(j.Conns) > 1 {
 		wg.Add(1)
-		go func(i int, c domain.Connection) {
-			defer wg.Done()
-			r := &res[i]
-			select {
-			case sem <- struct{}{}:
-				defer func() { <-sem }()
-			case <-ctx.Done():
-				r.State, r.Err = Canceled, i18n.T("abgebrochen")
-				update(i, *r)
-				return
+		start(0, j.Conns[0]) // Probelauf: erst ein Host
+		if r := res[0]; !r.OK() && r.State != Canceled {
+			mu.Lock()
+			if stop == "" {
+				stop = fmt.Sprintf(i18n.T("nicht gestartet: Probelauf auf %s gescheitert"), r.Alias)
 			}
-			hctx, cancel := context.WithTimeout(ctx, tmo)
-			defer cancel()
-			steps := j.Steps
-			if i < len(j.PerHost) && len(j.PerHost[i]) > 0 {
-				steps = j.PerHost[i]
-			}
-			runHost(hctx, c, steps, dial, r, func() { update(i, *r) })
-		}(i, c)
+			mu.Unlock()
+		}
+		first = 1
+	}
+	for i := first; i < len(j.Conns); i++ {
+		wg.Add(1)
+		go start(i, j.Conns[i])
 	}
 	wg.Wait()
 	return res

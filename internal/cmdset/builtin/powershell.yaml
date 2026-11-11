@@ -1,0 +1,5 @@
+id: powershell
+name: Windows PowerShell
+family: windows
+order: 4
+hint: "Windows mit PowerShell: Get-Service, Get-Process, Get-ChildItem, Get-NetIPAddress; keine Unix-Befehle."

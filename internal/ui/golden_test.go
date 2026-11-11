@@ -46,8 +46,9 @@ var updateGolden = flag.Bool("update", os.Getenv("UPDATE_GOLDEN") != "", "Golden
 // gold ist eine App im Testaufbau: eigener Store-Ordner, feste Daten, keine
 // Netzwerkzugriffe (Kommandos aus Update werden verworfen, nicht ausgeführt).
 type gold struct {
-	t *testing.T
-	a *App
+	t   *testing.T
+	a   *App
+	dir string // Konfigordner (temporär), im Bild als ~/.config/sshtermy
 }
 
 // goldenConns: feste Beispielverbindungen (Ordner, Tags, Netzwerkgerät,
@@ -122,7 +123,7 @@ func newGold(t *testing.T, lang string, w, h int, seed bool) *gold {
 		t.Fatal(err)
 	}
 	a.intro = nil
-	g := &gold{t: t, a: a}
+	g := &gold{t: t, a: a, dir: dir}
 	g.send(tea.WindowSizeMsg{Width: w, Height: h})
 	if seed {
 		g.send(unlockedMsg{})
@@ -227,6 +228,9 @@ func (g *gold) screen() string {
 	v := g.a.View()
 	out := ansi.Strip(v.Content)
 	out = strings.ReplaceAll(out, runtime.GOOS+"/"+runtime.GOARCH, "linux/amd64") // Über-Dialog
+	if g.dir != "" {
+		out = strings.ReplaceAll(out, g.dir, "~/.config/sshtermy")
+	}
 	lines := strings.Split(out, "\n")
 	for i, l := range lines {
 		lines[i] = strings.TrimRight(l, " ")
@@ -337,6 +341,7 @@ var goldenCases = []goldenCase{
 	{name: "import", w: 100, h: 30, setup: func(g *gold) { g.keys("i") }},
 	{name: "keys", w: 110, h: 34, setup: func(g *gold) { g.keys("b") }},
 	{name: "keys-here", w: 110, h: 34, setup: func(g *gold) { g.keys("b", "l", "down", "down", "down", "down", "enter", "alt+m") }},
+	{name: "themes", w: 120, h: 36, setup: func(g *gold) { g.keys("a", "down", "down") }},
 	{name: "broadcast", w: 120, h: 32, setup: func(g *gold) { g.keys("m") }},
 	{name: "scan", w: 100, h: 30, setup: func(g *gold) { g.keys("f") }},
 	{name: "sync", w: 100, h: 30, setup: func(g *gold) { g.keys("y") }},
@@ -352,6 +357,8 @@ var goldenCases = []goldenCase{
 	{name: "about", w: 100, h: 30, setup: func(g *gold) { g.keys("f12") }},
 	{name: "palette", w: 100, h: 30, setup: func(g *gold) { g.keys("ctrl+space") }},
 	{name: "palette-filter", w: 100, h: 30, setup: func(g *gold) { g.keys("ctrl+space").typ("tunnel") }},
+	{name: "cmdsets", w: 110, h: 34, setup: func(g *gold) { g.a.openCmdSets() }},
+	{name: "cmdset-form", w: 110, h: 40, setup: func(g *gold) { g.a.openCmdSets(); g.keys("n") }},
 	{name: "llm-status", w: 100, h: 30, setup: func(g *gold) { llm.ResetTaskStats(); g.a.openLLMStatus() }},
 	{name: "tour", w: 100, h: 30, setup: func(g *gold) { g.a.modal = g.a.tourModal() }},
 	{name: "hostkey", w: 100, h: 30, setup: func(g *gold) {

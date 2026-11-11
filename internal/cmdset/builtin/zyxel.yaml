@@ -1,0 +1,27 @@
+id: zyxel
+name: Zyxel (Switch / Firewall)
+order: 260
+hint: "Zyxel: Switches (GS/XGS, ZyNOS) mit show system-information, show running-config, show interfaces status, show vlan, show mac address-table, write memory; Firewalls (USG FLEX/ATP, ZLD) mit show version, show interface all, show running-config, configure terminal … exit, write. Nicht alle Befehle gibt es auf allen Modellen; im Zweifel mit ? nachsehen."
+detect:
+  screen: ['(?i)\bzyxel\b|\bzynos\b']
+  version: ['(?i)\bzyxel\b|\bzynos\b']
+commands:
+  version: show system-information
+  config: show running-config
+parse:
+  firmware: '(?im)^\s*(?:ZyNOS )?F/W Version\s*:\s*(\S+)'
+  model: '(?im)^\s*Product Model\s*:\s*(\S+)'
+  name: '(?im)^\s*System Name\s*:\s*(\S+)'
+  uptime: '(?im)^\s*System up Time\s*:\s*(.+?)\s*$'
+variants:
+  - name: Firewall (ZLD)
+    model: '(?i)^(USG|ATP|VPN|ZyWALL)'
+    commands:
+      version: show version
+      system: show cpu status
+      config: show running-config
+logs:
+  commands: [show logging]
+  reader: generic
+syslog:
+  note: "Zyxel: in der Weboberfläche unter Management › Syslog Setup (Switch) bzw. Log & Report › Log Settings (Firewall)."

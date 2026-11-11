@@ -1,0 +1,15 @@
+id: watchguard
+name: WatchGuard Fireware
+order: 300
+hint: "WatchGuard Fireware: CLI mit show sysinfo, show interface, show route, show log, configure … exit; Regelwerk meist über Policy Manager oder Weboberfläche."
+detect:
+  screen: ['(?i)watchguard|fireware']
+  version: ['(?i)watchguard|fireware']
+commands:
+  version: show sysinfo
+parse:
+  firmware: '(?im)^\s*version\s*:\s*(\S+)'
+  model: '(?im)^\s*model\s*:\s*(\S+)'
+  name: '(?im)^\s*system name\s*:\s*(\S+)'
+syslog:
+  note: "WatchGuard: Policy Manager › Setup › Logging › Syslog-Server (IP, Port)."

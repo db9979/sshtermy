@@ -17,9 +17,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **echtem SSH-Terminal** (xterm-256color, Truecolor, vim/htop/tmux, Scrollback, Tabs, Jump-Host)
 - **Auto-Reconnect**: reißt die Leitung ab (WLAN, VPN, Standby), verbindet sshTermy die Sitzung von selbst neu, startet laufende Tunnel wieder und hängt tmux/screen wieder an (abschaltbar über die Palette). Nach **Ruhezustand oder Netzwechsel** (anderes WLAN, VPN an/aus) prüft sshTermy jede Leitung binnen Sekunden, statt auf den Keepalive-Ablauf zu warten; solange gar kein Netz da ist, wartet es, ohne Versuche zu verbrauchen
 - **Feste Sitzung** (Idee: Dominik Bornhäußer): pro Verbindung beim Verbinden immer in dieselbe tmux-/screen-Sitzung, auch von einem anderen Rechner aus. Laufen schon andere Sitzungen, fragt sshTermy, welche. Gleicher Sitzungsname in zwei Tabs oder auf zwei Rechnern = gespiegelter Bildschirm; „nur zuschauen“ hängt tmux schreibgeschützt an. Die Palette öffnet einen zweiten Tab zum Zuschauen oder kopiert einen `ssh … tmux attach -r`-Befehl für Kollegen. Nicht bei Switches, Telnet und Konsole.
-- **Eigenes Fenster** (ohne Terminal): Doppelklick auf `sshtermy.exe` im Explorer, `sshTermy.app` auf dem Mac oder `sshtermy -window`, und sshTermy öffnet ein eigenes Fenster mit eingebauter Cascadia Mono samt Nerd-Font-Symbolen und Emoji. Bilder vom Server erscheinen pixelgenau, ins Fenster gezogene Dateien werden zum Hochladen angeboten, ⇧F10 holt einen Tab in ein zweites eigenes Fenster. Alle Tasten kommen an (Alt+⏎, ⇧F1 … ⇧F12, Strg+Leertaste), Strg+⇧V oder ⇧Einfg fügen ein (Windows auch Strg+V, Mac ⌘V), Strg + / Strg − / Strg 0 oder Strg + Mausrad ändern die Schriftgröße. Im Terminal gestartet läuft sshTermy wie bisher im Terminal; `-tui` erzwingt das
+- **Eigenes Fenster** (ohne Terminal): Doppelklick auf `sshtermy.exe` im Explorer, `sshTermy.app` auf dem Mac oder `sshtermy -window`, und sshTermy öffnet ein eigenes Fenster mit eingebauter Cascadia Mono samt Nerd-Font-Symbolen und Emoji. Bilder vom Server erscheinen pixelgenau, ins Fenster gezogene Dateien werden zum Hochladen angeboten, ⇧F10 holt einen Tab in ein zweites eigenes Fenster. Alle Tasten kommen an (Alt+⏎, ⇧F1 … ⇧F12, Strg+Leertaste), Strg+⇧V oder ⇧Einfg fügen ein (Windows auch Strg+V, Mac ⌘V), Strg + / Strg − / Strg 0 oder Strg + Mausrad ändern die Schriftgröße (wird gemerkt), F11 schaltet Vollbild um. Das Fenster startet standardmäßig im **Vollbild**; Palette › Einstellungen › „Fenster beim Start“ stellt auf maximiert oder „wie zuletzt“ um (Größe und Position werden gemerkt). Im Terminal gestartet läuft sshTermy wie bisher im Terminal; `-tui` erzwingt das
 - **Lokale Shell** (Alt+L): deine eigene PowerShell (Windows, über ConPTY), zsh oder bash (macOS/Linux) als Tab, mit KI-Hilfe, Ziel-/Agent-/Plan-Modus, geteilter Ansicht, Tabs und Sitzungsprotokoll. Gefahren-Check und Agent-Stufen gelten auch auf dem eigenen Rechner; der Agent legt seine Skripte in `~/.sshtermy-agent` ab. Oder als Verbindung speichern („Verbindung über: Lokal“) mit eigener Shell (`pwsh`, `cmd`, `wsl`, `bash -l` …) und Startordner
 - **PowerShell-Fernzugriff (WinRM)**: auf Windows-Server einloggen wie mit `Enter-PSSession`, ohne SSH auf dem Server („Verbindungsart: PowerShell“, Port 5985/5986). NTLM auch für Domänenkonten, Nachrichten über HTTP verschlüsselt, oder HTTPS; eigene Eingabezeile mit Verlauf, Tab-Ergänzung vom Server und mehrzeiliger Eingabe. Die KI schlägt PowerShell-Befehle vor, der Gefahren-Check nimmt die Windows-Regeln. Palette: `Enter-PSSession srv01` oder `winrm admin@srv01`
+- **Fehlerverzeihend im Alltag**: Strg+Q und das Schließen des Fensters fragen nach, wenn noch Verbindungen offen sind; Verbindung, Ordner oder Runbook löschen geht sofort, ein Hinweis bietet 10 Sekunden lang **Rückgängig** an (Strg+Z im Manager oder Klick); **Strg+T im Verbindungsformular testet** Erreichbarkeit, Host-Key und Anmeldung vor dem Speichern; fehlgeschlagene Verbindungen sagen **in Klartext**, was los ist und was hilft („Anmeldung abgelehnt“, „Keine Antwort von sw1:22 … VPN oder Jump-Host?“, `e` bearbeitet die Verbindung), der Originalfehler steht grau darunter. Zeigt ein Server einen **neuen Host-Key** (Neuinstallation, Werksreset), vergleicht `k` alten und neuen Fingerprint und übernimmt den neuen nach zweiter Bestätigung
+- **Einfacher Modus** (Palette › Einstellungen › Aussehen): blendet Profi-Funktionen (Broadcast, Netzwerk, Team, Agent, Aufzeichnung, MCP, Audit …) aus Palette-Übersicht, Einstellungen und Tastenzeile aus; die Suche in der Palette findet weiter alles
 - **Schnellverbinden**: `user@host:port` oder `ssh -p 2222 user@host` in die Palette tippen, ohne die Verbindung anzulegen (Agent/Standard-Keys, sonst Passwort)
 - **Fertig im Hintergrund**: Ein Befehl, der 10 s oder länger in einem verdeckten Tab lief, markiert den Tab (✓ / ×) und meldet sich mit einer Einblendung; ist das sshTermy-Fenster im Hintergrund, kommt zusätzlich eine Desktop-Benachrichtigung (Windows, macOS, Linux). Die Terminal-Glocke markiert den Tab ebenso. Beides ist in der Palette abschaltbar
 - **Agent-Weiterleitung** pro Verbindung (wie `ssh -A`): `git pull`, `ssh` und `scp` auf dem Server nutzen deine lokalen Keys aus ssh-agent, Pageant oder dem Windows-OpenSSH-Agent, die Keys verlassen deinen Rechner nie
@@ -36,7 +38,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Geteilte Ansicht** (Strg+T): bis zu sechs Sitzungen gleichzeitig in sieben Aufteilungen, Größe per Maus oder Alt+⇧+Pfeil, Zoom auf einen Bereich (Alt+Z), Bereiche per Titel tauschen, andere Bereiche auf Wunsch abdunkeln. Die Aufteilung übersteht Updates; **Arbeitsplätze** (w im Manager) speichern Aufteilung und Verbindungen zum Wiederöffnen mit einem Klick, „Zuletzt“ merkt sich sshTermy beim Beenden selbst, `g` auf einem Ordner öffnet alle Verbindungen darin als Raster
 - **Eingabe an alle geteilten Bereiche** (Alt+I in der geteilten Ansicht): Was du tippst, geht live an jeden sichtbaren Host, z. B. dieselbe Änderung auf vier Switches. Enter geht nur durch, wenn die Zeile auf keinem Host gefährlich ist
 - **SSH-Zertifikate**: Von einer Firmen-CA signierte Keys (`id_ed25519-cert.pub` neben dem Key oder ein eigener Pfad in der Verbindung) werden automatisch genutzt; ein abgelaufenes Zertifikat meldet sshTermy mit Datum
-- **Dateien direkt im Terminal (trzsz)**: `tsz datei` auf dem Server lädt in deinen Downloads-Ordner, `trz` lädt hoch; klappt auch nach `sudo su`, über mehrere Sprünge und auf Geräten ohne SFTP. ZMODEM (`sz`/`rz`) wird erkannt und mit Hinweis abgebrochen, statt zu hängen
+- **Dateien direkt im Terminal (trzsz)**: `tsz datei` auf dem Server lädt in deinen Downloads-Ordner (sshTermy fragt vorher und überschreibt nie eine vorhandene Datei), `trz` lädt hoch; klappt auch nach `sudo su`, über mehrere Sprünge und auf Geräten ohne SFTP. ZMODEM (`sz`/`rz`) wird erkannt und mit Hinweis abgebrochen, statt zu hängen
 - **Bildschirmsperre**: Palette „Jetzt sperren“ oder automatisch bei Leerlauf (5/15/30/60 min). Offene Sitzungen laufen hinter der Sperre weiter, nur das Master-Passwort entsperrt. **Master-Passwort ändern** (Palette → Einstellungen › Sicherheit) schaltet auch die Windows-Anmeldung (DPAPI) nachträglich ein oder aus
 - **Statuszeile pro Sitzung**: Verbindungsdauer, Latenz, Zeichensatz, Warnung bei root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) bekommen eine rote Zeile
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen, mit der Maus auf die andere Seite ziehen, mehrere mit der Leertaste markieren. Dateien aus Explorer/Finder ins Fenster ziehen lädt sie hoch, auch direkt im Terminal. Beim Kopieren zeigt ein Balken Prozent, MB/s, Restzeit und „Datei 2 von 5“, dazu eine kleine Tempo-Kurve
@@ -45,8 +47,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Host-Übersicht (F6)**: Server zeigen beim Verbinden CPU, Last, RAM, alle Platten (jedes echte Dateisystem; tmpfs, overlay, snap und Ähnliches bleiben weg), Laufzeit und offene Updates. Der Grenzwert für Platten (`g`) gilt für jede Platte einzeln.
   Bei Linux-Servern laufen, solange F6 offen ist, Live-Graphen aus Braille-Punkten für CPU, RAM, Netz und Platte
   (alle 2 s, `t` wechselt 5 min / 1 h, `z` zeigt sie groß über dem Terminal mit den Top-Prozessen; ein kleines,
-  nur lesendes Skript in einer eigenen Exec-Sitzung, Panel zu = Skript beendet). Switches, Router und Firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate, Ubiquiti-UniFi-Switches) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
+  nur lesendes Skript in einer eigenen Exec-Sitzung, Panel zu = Skript beendet). Switches, Router und Firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS/NX-OS/ASA/Small Business, Arista, Juniper, HPE Comware, Huawei, Dell, Extreme, Ruckus, Allied Telesis, Netgear, Zyxel, TP-Link, Lancom, MikroTik, FortiGate, Palo Alto, Sophos, Check Point, SonicWall, WatchGuard, pfSense/OPNsense, VyOS/EdgeOS, UniFi u. a.; siehe *Befehlssätze*) zeigen auf Abruf Firmware, Ports und VLANs; die show-Befehle laufen sichtbar am Prompt, nie als versteckte Exec-Sitzung
 - **Container** (`c` in F6 oder Palette „docker“): Docker- und Podman-Container und Kubernetes-Pods des Servers in einer Liste. ⏎ öffnet eine Shell im Container, Strg+L verfolgt die Logs, Strg+K lässt die KI die letzten 400 Log-Zeilen auswerten. Neustart und Start/Stopp werden nur am Prompt eingefügt, ⏎ führt sie aus. Braucht docker root und geht sudo ohne Passwort, nimmt sshTermy `sudo -n`
+- **Log-Blick (Alt+E oder `l` in F6)**: liest die Logs des Systems, auf dem du gerade bist, nur lesend, und zeigt Auffälligkeiten statt Zeilen. Linux/BSD: journalctl (oder Syslog-Dateien), fehlgeschlagene Units und Paket-Updates; Windows (PowerShell/WinRM): Ereignisprotokolle System/Application, Fehlanmeldungen 4625/4740 und gestoppte automatische Dienste; Switches und Firewalls: die Log-Befehle sichtbar am Prompt getippt (ProCurve/CX, Cisco, Junos, RouterOS, FortiOS, UniFi) und eine Port-Leiste. Gleiche Zeilen werden lokal ohne KI zu Mustern zusammengefasst (Zahlen, IPs, MACs ersetzt), bekannte Muster bekommen einen Klartext-Titel, einen Hinweis und lesende Prüfbefehle (`1`…`4` fügen sie ein). `n` *Was ist neu?* vergleicht mit deinem letzten Blick (neu, deutlich häufiger, verschwunden; die Grundlinie liegt verschlüsselt nur auf diesem Rechner), `x`/`X` blendet Rauschen für den Host oder den ganzen Ordner aus (wird gesynct). `t` Zeitleiste: Fehler und Warnungen pro Zeitabschnitt mit Marken für Neustarts, Paket-Updates, Konfigurationsänderungen und deine eigenen Befehle; ←→ wählt einen Abschnitt, `k` fragt die KI, was dort passierte. `k` lässt die KI ein Muster erklären, `b` schreibt einen KI-Lagebericht nur aus den verdichteten Mustern (Ursache, Zusammenhang, was prüfen). `z` Zeitraum 1 h … 7 Tage, `w` Meldungen der Logwache, `c` kopiert als Markdown. Bei Switches und Firewalls richtet `s` Syslog an sshTermy ein: Es zeigt die Befehle des Herstellers mit deiner eigenen IP und tippt sie nach Bestätigung sichtbar ein (am Gerät wird nichts gespeichert, `write memory` bleibt bei dir). Von sshTermy empfangenes Syslog fließt in den Log-Blick des Switches ein und reicht so weiter zurück als der Puffer im Gerät.
+- **Logwache** (Einstellungen › *Logwache*: Fehler oder Fehler + Warnungen): Solange ein Tab offen ist, folgt sshTermy im Hintergrund seinen Logs (Linux `journalctl -f`, Windows über WinRM jede Minute) und meldet nur, was gegenüber dem letzten Log-Blick neu oder kritisch ist, jedes Muster höchstens einmal pro Stunde: Toast, ▲ am Tab, Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist. Ausgeblendetes Rauschen bleibt still. *Syslog-Empfang* (UDP 5514, 1514 oder 514) nimmt Syslog von Switches und Firewalls an und ordnet es über IP oder Hostnamen der passenden Verbindung zu. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick; ⏎ springt zum Muster im Log-Blick des Hosts, `x` blendet es als Rauschen aus. Fehlanmeldungen (SSH, Windows 4625) zählen ab 20 in 10 Minuten als Fehler; Link-down-Meldungen behalten die Schwere des Geräts (Cisco `LINK-3` = Fehler).
+- **Ordner-Scan** (Palette *Ordner-Scan*): der Log-Blick für alle Hosts eines Ordners auf einmal, nur lesend und ohne Rückfragen (6 gleichzeitig; Server über SSH, Windows über WinRM, Switches über ihre Shell). Eine Zeile pro Host mit kritisch/Fehler/Warnungen, neuen Mustern und dem wichtigsten Muster, dazu *Gemeinsam*: Muster, die auf mehreren Hosts auftauchen. `c` kopiert das Ergebnis als Markdown; die Grundlinie für *Was ist neu?* wird pro Host gespeichert. Als Zeitplan (Art *Ordner-Scan (Logs)*) läuft er z. B. jede Nacht; das Ergebnis steht im Zeitplan und unter *Ordner-Scan: letztes Ergebnis*.
 - **Config-Sicherung für Switches**: `b` sichert die laufende Konfiguration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`, UniFi `cat /tmp/system.cfg`) verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert.
   Nächtlich geht es per Zeitplan (`z`, Art „Config-Sicherung“) für einen ganzen Ordner. **Regeln für Switch-Configs**
   (Palette → Einstellungen): `+^ntp server` muss vorkommen, `-telnet-server` darf nicht; jede Sicherung wird geprüft,
@@ -60,10 +65,12 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   welchem Port von wem, APs und Telefone gedimmt im Switch-Kasten, Ringverbindungen darunter; passt es nicht, ein Baum), dazu ein Mermaid-Diagramm in Downloads für Doku, Wiki oder GitHub
 - **Broadcast** (m im Manager): ein Befehl oder Runbook läuft parallel auf einer Gruppe (z. B. alle Aruba-Switches),
   jeder Host bekommt eine eigene Kachel (grün umrandet wenn fertig, rot bei Fehler, pulsierend solange er läuft; `z` vergrößert eine). Gefahrenregeln gelten auch hier: Rot braucht zweimal ⏎.
+  Ändernde Schritte laufen erst auf einem Host als Probelauf, dann auf dem Rest; nach 3 gescheiterten Hosts startet kein weiterer (`p` schaltet den Probelauf ab).
   Server bekommen jeden Schritt per Exec (mit Exit-Code), Netzwerkgeräte die Befehle in die Shell getippt („-- MORE --“ wird weitergeblättert).
 - **Zeitpläne** (z im Manager): Ein Broadcast oder Runbook läuft zu einer Uhrzeit auf einem Ordner oder einzelnen
   Verbindungen, täglich, Mo–Fr, am Wochenende oder an einem Wochentag, z. B. „3:00 Mo–Fr `show running-config` auf
-  allen Switches“. Läuft, solange sshTermy offen ist (auch gesperrt), Verpasstes holt es innerhalb von 12 Stunden nach.
+  allen Switches“. Läuft, solange sshTermy offen ist (auch gesperrt), verpasste lesende Läufe holt es innerhalb von 12 Stunden nach, ändernde nur innerhalb von 10 Minuten (eine Wartung für 3:00 läuft nie mittags).
+  Hosts, die später im Ziel-Ordner auftauchen (etwa aus einem Team-Ordner), laufen erst nach `Strg+A` in der Liste mit; ein Runbook, das geändert aus einem Team-Ordner kam, wartet, bis du es einmal im Broadcast gestartet hast.
   Ohne Aufsicht gibt es keine Rückfragen: unbekannte Host-Keys und fehlende Passwörter lassen den Host scheitern,
   Gefährliches und Runbooks mit Variablen lassen sich gar nicht einplanen. Das Ergebnis je Host steht in der Liste
   (⏎), dazu eine Einblendung bzw. Desktop-Meldung. Zeitpläne gehen mit dem Sync, laufen aber nur auf einem Rechner
@@ -90,10 +97,11 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst
   - **Agent-Modus** (F2, Tab wählt den Modus): Der Agent arbeitet selbstständig bis zum Ziel. Er führt Befehle aus,
     sieht Ausgabe und Exit-Code, legt Skripte per SFTP in `~/.sshtermy-agent/<lauf>/` an und führt sie aus (erst Probelauf).
-    Stufen: *Vorsichtig* (nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`), *Voll* (auch sudo).
+    Stufen: *Vorsichtig* (Standard; nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`; als root angemeldet oder unter Windows fragt jede Änderung, weil es dort kein sudo zum Anhalten gibt), *Voll* (auch sudo).
     Gefahrenbefehle, auch jede Zeile eines Skripts, warten immer auf dich; auf Produktiv-Hosts und Netzwerkgeräten fragt
     jede Änderung nach. Grenzen: 25 Schritte, 15 Minuten, 3 Fehler in Folge. Esc oder Tippen im Terminal hält ihn an,
-    `?` gibt ihm eine Anweisung. Am Ende: Zusammenfassung, geänderte Dateien, `s` speichert den Lauf als Runbook samt
+    `?` gibt ihm eine Anweisung. Am Ende: die vollständige Zusammenfassung (blättern mit Bild↑/Bild↓ oder Mausrad, `c`
+    kopiert sie, `l` zeigt sie groß), geänderte Dateien, `s` speichert den Lauf als Runbook samt
     Skripten, `r` löscht die Skripte auf dem Host. Jeder Schritt steht als „Agent“ im Sitzungsprotokoll.
   - **Plan-Modus** (F2, Tab bis „Erst planen“): Die KI sieht sich erst nur mit lesenden Befehlen um und schreibt dann
     einen vollständigen Plan (Schritte, Skripte, Risiken, Prüfung). Schritte streichen (Leertaste), ändern (`e`), neu
@@ -125,6 +133,18 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
     Das Profil geht in jeden KI-Prompt; Befehle, die das Gerät mit „% Invalid input“ ablehnt, merkt es sich und die
     KI schlägt sie nicht mehr vor. Im Manager editierbar (System, Befehlssatz, KI-Notizen). In der Palette schreibt
     „Für dieses System umschreiben“ einen Befehl in den passenden Dialekt um.
+  - **Befehlssätze je Hersteller**: Was sshTermy an einem Gerät tippt (Blättern aus, Version, CPU/RAM, Ports, VLANs,
+    Konfiguration, Logs, Syslog einrichten), wie es die Ausgabe liest und was es der KI sagt, steht je Hersteller in
+    einer YAML-Datei, mit Varianten für ältere oder neuere Firmware. 48 eingebaut: Switches (Cisco, Arista, Aruba, HPE
+    Comware, Huawei, Dell, Extreme, Ruckus, Allied Telesis, Netgear, Zyxel, TP-Link, Lancom …), Firewalls (FortiGate,
+    Palo Alto, Sophos, Check Point, SonicWall, WatchGuard, Cisco ASA, pfSense, OPNsense, VyOS, EdgeOS), WLAN-Controller
+    (Aruba, Cisco WLC) und Appliances (Proxmox, ESXi, Synology, QNAP, TrueNAS, iLO, iDRAC). Palette › Einstellungen ›
+    *Befehlssätze*: `n` neuer Satz auf Basis eines eingebauten, `e`/`o` im Formular oder in der Datei bearbeiten, `t` am
+    offenen Gerät testen, `k` KI-Entwurf aus dem Terminal, `l` die am Gerät korrigierten Befehle übernehmen, `x`/`i`
+    Export/Import; Sätze geteilter Verbindungen gehen mit der Team-Freigabe mit, eigene Sätze auch mit dem Sync (am anderen Rechner mit `f` übernehmen). Sicherheit: eigene Sätze tippen nur
+    Lesebefehle, können Gefahrenregeln nur ergänzen (eingebaute nie abschwächen), erkennen ein Gerät erst, wenn kein
+    eingebauter Satz passt, Syslog-Schritte werden jedes Mal gezeigt und geprüft, und Team-Sätze bleiben aus, bis du sie
+    freigibst (nach jeder Änderung erneut, mit Diff).
   - **Fehler erklären**: schlägt ein Befehl fehl, bietet die Vorschlagszeile „Warum? & Fix“ an (Alt+0). Die KI bekommt
     Befehl, Exit-Code und Ausgabe und antwortet mit Ursache und einfügbaren Befehlen
   - **Log-Diagnose**: Palette „KI: Log/Ausgabe auswerten“ (oder Text markieren, dann Palette): Die KI liest die Markierung
@@ -144,7 +164,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
   ganze Datenordner (Verbindungen, Schlüssel, Protokolle, Switch-Sicherungen, known_hosts, Einstellungen) als eine
   mit dem Master-Passwort verschlüsselte Datei (Argon2id + AES-256-GCM). Einspielen ersetzt nach Rückfrage und
   Neustart alles; der bisherige Stand bleibt daneben als `….vorher-<Datum>`
-- **Themes** Dunkel, Hell, Hochkontrast, Farbenblind (dunkel und hell), Matrix, Bernstein und Neon (a im Manager), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
+- **26 Themes** mit Live-Vorschau (a im Manager): dunkle wie Nacht, Polarnacht, Tiefsee, Graphit, Vampir, Kirschblüte, Abendrot, Neon, Tusche, Wald, Kreide, Lagune, Solar, Lagerfeuer, Bernstein und Matrix, helle wie Hell, Papier, Frost, Sand, Morgenrot und Minze, dazu Hochkontrast und Farbenblind (dunkel und hell), **eigene Farben** und einheitliche Menüsymbole (Text-Tags oder Nerd Font) und **frei belegbare Tastenkürzel** (b im Manager)
 - **Deutsch und Englisch**: Sprache in der Palette („Sprache“/„Language“) oder im Über-Dialog (F12 → `l`) umschalten;
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Fensterstil** (Palette „Fensterstil“): Dialoge, Palette und Auswahl werfen einen Schatten, dahinter wird es etwas
@@ -259,7 +279,10 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | Wo | Taste | Wirkung |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
-| | i / a / b | Verbindungen importieren / Aussehen wechseln / Tastenkürzel anpassen |
+| | Strg+Z | letztes Löschen rückgängig (Verbindung, Ordner, Runbook; 10 s, oder Klick auf den Hinweis) |
+| Verbindungsformular | Strg+T / Strg+S | Verbindung testen (erreichbar, Host-Key, Anmeldung) / speichern |
+| Getrennter Tab | ⏎ / e / k / x | neu verbinden / Verbindung bearbeiten / geänderten Host-Key vergleichen und übernehmen / Tab schließen |
+| | i / a / b | Verbindungen importieren / Farbschema wählen (26 Themes, Vorschau) / Tastenkürzel anpassen |
 | | c / q | SSH-Schlüssel erzeugen oder übertragen / Schnellbefehle bearbeiten |
 | | m / f / z | Broadcast an mehrere Hosts / Netzwerk-Scan / Zeitpläne (Strg+N neu, Strg+E bearbeiten, Strg+R jetzt, Strg+O an/aus, ⏎ letztes Ergebnis) |
 | | w / g | Arbeitsplätze (gespeicherte Aufteilungen) / Ordner als Raster öffnen |
@@ -267,14 +290,14 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | ← → Space / - + | Ordner zu-/aufklappen / alle zu bzw. auf |
 | | Shift+↑↓ (Alt+↑↓), Maus ziehen | Reihenfolge ändern, in einen Ordner ziehen |
 | | # , /#tag | nach Tag filtern, Suche über Name, Host, Ordner, Tags |
-| Broadcast | Space / g / a, Tab, Strg+S | Host / Ordner / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen |
+| Broadcast | Space / g / a, Tab, Strg+S, p | Host / Ordner / alle wählen, Hosts·Quelle·Befehl, prüfen und bestätigen, Probelauf an/aus |
 | | ←→ / ↑↓ / z / c / r / x | Host-Spalte / blättern / groß / Ausgabe kopieren / nochmal / abbrechen |
 | Netzwerk-Scan | Strg+S, Space / a, ⏎ | Scan starten, Funde wählen, als Verbindungen anlegen |
 | Terminal | F2 | Ziel-Modus (Agent) |
 | | F3 | KI fragen (Esc bricht die Antwort ab, n neue Frage, f Folgefrage) |
 | | F4 | Tunnel an/aus (⏎ oder Klick), a mit Verbindung starten, Web-Service im Browser öffnen |
 | | F5 | Dateien (SFTP): Tab Seite, c kopieren (hoch/runter), e Server-Datei im eigenen Editor, Leertaste/a markieren, Ziehen kopiert, n Ordner, d löschen, . versteckte |
-| | F6 | Host-Übersicht: r/⏎ abfragen, t Zeitraum der Graphen 5 min/1 h, z groß, c Container, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
+| | F6 | Host-Übersicht: r/⏎ abfragen, t Zeitraum der Graphen 5 min/1 h, z groß, l Log-Blick, c Container, b Switch-Config sichern, ↑↓ Stand, d Diff, v ansehen |
 | | F7 / F8 | vorheriger / nächster Tab |
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
 | | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
@@ -290,6 +313,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Tab oder → | Ghost-Text übernehmen |
 | | Alt+1…4 | Folgebefehl einfügen (ohne Enter; rote zweimal) |
 | | Alt+0 | nach einem Fehlschlag: KI erklärt Ursache und schlägt einen Fix vor |
+| | Alt+E | Log-Blick: Auffälligkeiten in den Logs (⏎ Zeilen, 1…4 prüfen, k KI erklärt, b KI-Lagebericht, x/X ausblenden, n Was ist neu?, t Zeitleiste, z Zeitraum, w Logwache, s Syslog am Switch einrichten) |
 | | Alt+K / Alt+J | KI-Begleiter: Stufe Aus · Leise · Gesprächig · Coach / Begleiter-Leiste |
 | Begleiter-Leiste | ↑↓ / ⏎ / a / c | Vorschlag wählen / einfügen / ausführen (gefährliche zweimal) / kopieren |
 | | m / l / s / ? / r | Thema stumm / Tatsache merken / Stufe / zuletzt gesendet / Rückblick |
@@ -299,7 +323,8 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
 | | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |
 | | Tab | Schritt für Schritt → Agent *Vorsichtig* → *Normal* → *Voll* → *Erst planen* |
-| Agent-Modus | Esc / ? / v / x | anhalten / Anweisung geben / Skript ansehen / beenden; am Ende `s` als Runbook speichern, `r` Skripte auf dem Host löschen |
+| Agent-Modus | Esc / ? / v / x | anhalten / Anweisung geben / Skript ansehen / beenden; am Ende `s` als Runbook speichern, `r` Skripte auf dem Host löschen, `c` Ergebnis kopieren, `l` ganz lesen |
+| Ziel-/Agent-/Plan-Panel, KI fragen | Bild↑ / Bild↓, Mausrad | langen Inhalt blättern (Zusammenfassung, Plan, Antwort) |
 | Plan-Modus | ↑↓ / Leertaste / e / v / ? | Schritt wählen / streichen oder zurückholen / ändern / Skript ansehen / neu planen |
 | | Tab / ⏎ / x | Ausführung (Schritt für Schritt oder Agent-Stufe) / freigeben und ausführen / verwerfen; Strg+S speichert den Plan als Runbook |
 | KI-Eingaben | ⇧⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |
@@ -307,9 +332,9 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | z / Z / b / x / d / a | KI-Zusammenfassung / alle Treffer zusammenfassen / Änderungsbericht / Export (md, txt, cast) / löschen / Mitschreiben an/aus |
 | KI-Einstellungen | Strg+T / Strg+L | Endpunkt testen / Modell aus der Liste des Endpunkts wählen |
 | Überall | Strg+Leertaste | Befehlspalette: ⏎ als Ziel starten, Tab KI fragen, ↑↓ Vorschlag/Tunnel/Verbindung wählen; `log` = KI wertet Ausgabe aus, `farb` = Farbregeln |
-| | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden |
+| | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden (fragt bei offenen Verbindungen; Strg+Q nochmal = beenden) |
 | | F12 → l / F12 → w | Sprache wechseln (Deutsch ↔ Englisch) / Was ist neu |
-| Eigenes Fenster | Strg+⇧V · ⇧Einfg (Windows auch Strg+V, Mac ⌘V) / Strg + · Strg − · Strg 0 (Mac: ⌘) | einfügen / Schrift größer · kleiner · Standard (auch Strg + Mausrad); auf dem Mac wirkt ⌘ als Alt, ⌥ schreibt weiter @ [ ] { } \| ~ |
+| Eigenes Fenster | Strg+⇧V · ⇧Einfg (Windows auch Strg+V, Mac ⌘V) / Strg + · Strg − · Strg 0 (Mac: ⌘) | einfügen / Schrift größer · kleiner · Standard (auch Strg + Mausrad, wird gemerkt); F11 Vollbild; auf dem Mac wirkt ⌘ als Alt, ⌥ schreibt weiter @ [ ] { } \| ~ |
 
 Warum F-Tasten statt `Strg+A`? `Strg+A` ist in bash/zsh „Zeilenanfang“ und das Präfix von GNU screen. sshTermy
 belegt nur Tasten, die Shells und Vollbildprogramme praktisch nie brauchen.
@@ -516,8 +541,12 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 - Die KI **tippt nie selbst**. Jeder Befehl ist ein Vorschlag; erst deine Bestätigung sendet ihn ans PTY.
 - **Feste Gefahrenregeln** (`internal/safety`), nie das Modell, entscheiden über Rot: `rm -rf`, `find -delete`, `dd`, `mkfs`,
   `curl | sh`, `… | base64 -d | sh`, Neustart, Firewall leeren, Benutzer ändern, `git reset --hard`, Pakete entfernen, Docker prune,
-  SSH-Dienst stoppen; für Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)` u. a.
+  SSH-Dienst stoppen, Systemdateien löschen, Netzwerk abschalten, `iptables -P … DROP`, `kubectl delete`, `DROP DATABASE`, `zfs destroy`, `rsync --delete`;
+  für Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)`, WinRM stoppen, `Disable-NetAdapter` u. a.
+  Jeder Befehl wird gegen alle Regelgruppen geprüft (Unix, Windows, Netzwerkgeräte), Mehrzeiliges Zeile für Zeile: ein Switch, der für einen Server gehalten wurde, versteckt kein `erase startup-config`.
   Rote Befehle brauchen zwei Bestätigungen; bearbeitete Befehle werden neu geprüft. `sudo` wird markiert, auch hinter `&&`, `;` oder `|`.
+- **Geheimnisse lesen fragt auch:** `/etc/shadow`, private Schlüssel, `.env`, `kubectl get secret`, `docker inspect`, `printenv` oder `show running-config` am Switch ändern nichts, ihre Ausgabe ginge aber an die KI. Agent und MCP fragen deshalb immer; der Plan-Modus lässt sie beim Erkunden aus.
+- **Dialoge, die von selbst aufgehen** (Host-Key, Passwort, MCP-Anfrage, Dateien vom Server), nehmen eine Sekunde lang keine Tasten an: ein `j` aus `journalctl`, das du gerade tippst, bestätigt nichts. Ist schon ein Dialog offen, warten sie, statt ihn zu ersetzen.
 - **Einfügeschutz:** Dieselben Regeln prüfen jede eingefügte Zeile. Ein Treffer zeigt die Vorschau mit der
   roten Zeile und braucht zwei Bestätigungen, auch wenn die Mehrzeilen-Vorschau abgeschaltet ist.
 - **Prompt Injection:** alles aus dem Terminal steht als Material in einem Block `<<< … >>>`, dessen Marker im
@@ -539,7 +568,7 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
 KI-Clients wie Claude Desktop oder Claude Code können deine gespeicherten Verbindungen über das Model Context
 Protocol nutzen. Einschalten unter Einstellungen › Sicherheit › „MCP-Zugriff für KI-Clients“: **nur lesen**
 (Verbindungen und offene Tabs auflisten, einen Tab lesen, lesende Befehle wie `df -h` oder `show interfaces`) oder
-**mit Rückfrage** (jeder andere Befehl läuft erst, wenn du in sshTermy `j` drückst; gefährliche sind rot markiert).
+**mit Rückfrage** (jeder andere Befehl läuft erst, wenn du in sshTermy `j` drückst; gefährliche brauchen `j` zweimal). Befehle mit `sudo` oder solche, die Geheimnisse lesen (`/etc/shadow`, Schlüssel, `.env`, `show running-config` …), fragen immer, auch wenn sie nur lesen.
 sshTermy muss laufen und entsperrt sein; `sshtermy mcp` ist nur die Brücke und hält keine Daten. Verbindungen mit Tag
 `ki-aus`/`ki-lokal` oder KI-Datenschutz „KI aus“ tauchen nie auf. Geheimnisse in Ausgaben werden entfernt, jeder
 Aufruf steht im Audit-Protokoll.
@@ -726,7 +755,9 @@ pro Eintrag die neuere Änderung, gelöschte Einträge werden als Grabstein geme
 zählt nicht als Änderung. So gehen Änderungen auf zwei Rechnern nicht verloren, solange sie verschiedene Einträge
 betreffen. Abgeglichen wird beim Start, wenige Sekunden nach jeder Änderung und alle 5 Minuten; manuell über die Palette
 („Jetzt synchronisieren“). Alle Einstellungen gehen mit: Aussehen, Farben, Symbole, Sprache, Tasten, KI, Sperre,
-Meldungen, Grenzwerte der Überwachung, Gefahren-Check, Einfüge-Vorschau, Protokolle, Startanimation usw.
+Meldungen, Grenzwerte der Überwachung, Gefahren-Check, Einfüge-Vorschau, Protokolle, Startanimation usw. Eigene Befehlssätze gehen ebenfalls
+mit; auf einem anderen Rechner wirkt ein neuer oder geänderter Satz erst, wenn du ihn dort übernimmst (Einstellungen ›
+Befehlssätze, `f`, mit Diff), und ein anderswo gelöschter Satz wird nach `befehlssaetze/.geloescht` gelegt.
 Nur rechnerspezifische Dinge bleiben lokal: DPAPI, die Sync-Einstellungen selbst, Schlüsseldatei-Pfade, gekoppelte
 Vermittler, Team-Ordner-Pfade, der Schalter „Maus“ (hängt vom Terminalprogramm ab), Audit-/Debug-Protokoll,
 MCP-Server, Editor, die Schriftgröße im eigenen Fenster und alles, was auf „nur dieser Rechner“ steht (Tasten, Shell,
@@ -770,7 +801,10 @@ einem Ordner im Manager geteilt hat, teilt den ganzen Ordner: Neue Verbindungen 
 
 Kollegen lassen beim Übernehmen „Abonnieren“ an. sshTermy liest die Datei dann alle 5 Minuten und übernimmt
 Änderungen: neue Verbindungen kommen dazu, geänderte werden aktualisiert, beim Absender gelöschte verschwinden auch
-hier. Eigene Passwörter, Keys und Benutzernamen bleiben. Strg+Leertaste → „Team-Ordner“ zeigt den Stand, gleicht
+hier. Eigene Passwörter, Keys und Benutzernamen bleiben. Ein Paket nimmt nie Schutz weg: ein Tag „prod“ oder der
+Gerätetyp „Netzwerkgerät“ bleibt, auch wenn der Absender ihn entfernt hat. Geänderte Schnellbefehle zeigen beim ersten
+Druck nur den Befehl und laufen erst beim zweiten; neue oder geänderte Runbooks warten, bevor ein Zeitplan sie
+ausführt; Tunnel aus dem Team starten nie von selbst. Strg+Leertaste → „Team-Ordner“ zeigt den Stand, gleicht
 sofort ab oder beendet ein Abo (die Verbindungen bleiben dann). Team-Ordner sind rein lokal und gehen nicht in den Sync.
 
 ## Lizenz

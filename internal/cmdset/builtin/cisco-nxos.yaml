@@ -1,0 +1,48 @@
+id: cisco-nxos
+name: Cisco NX-OS (Nexus)
+order: 214
+hint: "Cisco NX-OS (Nexus), kein IOS: show running-config, show interface brief, show vlan brief, show mac address-table, show cdp neighbors, show version, show system resources; Blättern aus mit terminal length 0; Konfiguration mit configure terminal … end, speichern mit copy running-config startup-config. Viele Funktionen müssen erst mit feature … eingeschaltet werden."
+detect:
+  screen: ['(?i)cisco nexus|\bNX-OS\b']
+  version: ['(?i)cisco nexus|\bNX-OS\b|nxos']
+commands:
+  paging_off: terminal length 0
+  version: show version
+  system: show system resources
+  ports: show interface brief
+  vlans: show vlan brief
+  config: show running-config
+parse:
+  firmware: '(?im)^\s*(?:NXOS|system):\s+version\s+(\S+)'
+  model: '(?im)^\s*cisco\s+(Nexus\s*\S+.*?)\s+(?:chassis|Chassis)'
+  name: '(?im)^\s*Device name:\s*(\S+)'
+  uptime: '(?im)^Kernel uptime is\s+(.+)$'
+  cpu: '(?im)^CPU states\s*:.*?(?P<idle>\d{1,3})(?:\.\d+)?%\s+idle'
+  mem: '(?im)^Memory usage:\s*(?P<total>\d+)K total,\s*(?P<used>\d+)K used'
+logs:
+  commands: [show logging last 600]
+  ports: show interface brief
+  reader: generic
+syslog:
+  steps: [configure terminal, 'logging server {{ip}} 4 port {{port}}', end]
+  save: copy running-config startup-config
+danger:
+  - rx: '^\s*no\s+feature\s+\S+'
+    reason: entfernt Konfiguration (VLAN, Routing, Zugang)
+samples:
+  - name: Nexus 9000
+    version: |
+      Cisco Nexus Operating System (NX-OS) Software
+      NXOS: version 9.3(10)
+      cisco Nexus9000 C93180YC-EX chassis
+      Device name: leaf1
+      Kernel uptime is 120 day(s), 3 hour(s), 4 minute(s), 5 second(s)
+    system: |
+      CPU states  :   3.55% user,   1.27% kernel,   95.18% idle
+      Memory usage:   24633028K total,   8613540K used,   16019488K free
+    expect:
+      firmware: 9.3(10)
+      model: Nexus9000 C93180YC-EX
+      name: leaf1
+      cpu: 5
+      mem: 34

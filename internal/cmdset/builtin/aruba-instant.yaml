@@ -1,0 +1,29 @@
+id: aruba-instant
+name: Aruba Instant (IAP)
+order: 207
+hint: "Aruba Instant Access Points (IAP-Cluster, kein Controller): show aps, show clients, show version, show running-config, show log system, show ap-env; Konfiguration am virtuellen Controller mit configure terminal … end und commit apply. Mit Aruba Central verwaltete APs nehmen Änderungen dort zurück."
+detect:
+  screen: ['(?i)ArubaOS \(MODEL:\s*\d{3}[\w-]*\)|aruba instant']
+  version: ['(?i)ArubaOS \(MODEL:\s*\d{3}[\w-]*\)']
+commands:
+  version: show version
+  system: show cpu
+  memory: show memory
+  config: show running-config
+  extra:
+    - label: APs
+      cmd: show aps
+      count: '(?m)^\S+\s+\d{1,3}(?:\.\d{1,3}){3}\s'
+    - label: Clients
+      cmd: show clients
+      pick: '(?i)Number of Clients\s*:\s*(\d+)'
+parse:
+  firmware: '(?i)ArubaOS \(MODEL:[^)]*\),\s*Version\s+(\S+)'
+  model: '(?i)ArubaOS \(MODEL:\s*([^)]+)\)'
+  cpu: '(?i)idle\s+(?P<idle>\d{1,3})(?:\.\d+)?%'
+  mem: '(?is)MemTotal:\s*(?P<total>\d+).*?MemFree:\s*(?P<free>\d+)'
+logs:
+  commands: [show log system]
+  reader: generic
+syslog:
+  note: "Aruba Instant: Konfiguration › System › Monitoring › Syslog-Server (IP); oder in Aruba Central."

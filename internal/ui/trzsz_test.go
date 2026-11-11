@@ -67,9 +67,14 @@ func TestTrzszTriggerAndCancel(t *testing.T) {
 		<-ev
 	}
 	a.events = ev
-	cmd, ok := a.trzMsg(start)
-	if !ok || cmd == nil {
-		t.Fatal("Start nicht behandelt")
+	_, ok := a.trzMsg(start)
+	if !ok || a.modal == nil || a.modal.kind != mConfirm {
+		t.Fatal("Server schickt Dateien: Rückfrage fehlt")
+	}
+	a.modal.guardUntil = time.Time{} // Tastensperre nach dem Aufgehen vorbei
+	cmd := a.modalKey(tea.KeyPressMsg{Code: 'j', Text: "j"})
+	if cmd == nil {
+		t.Fatal("Annehmen startet nichts")
 	}
 	done := make(chan tea.Msg, 4)
 	go func() {

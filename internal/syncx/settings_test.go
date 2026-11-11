@@ -82,7 +82,8 @@ func TestSettingsSyncNerdNeedsProbe(t *testing.T) {
 // und Settings.SyncedPart.
 var localSettings = map[string]bool{
 	"UseDPAPI": true, "NoMouse": true, "LastVersion": true, "NerdFont": true,
-	"LastLayout": true, "Editor": true, "KeysHere": true, "Debug": true, "Audit": true, "MCP": true,
+	"LastLayout": true, "Editor": true, "KeysHere": true, "Debug": true, "Audit": true, "MCP": true, "SyslogPort": true,
+	"CmdSetApproved": true,
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der

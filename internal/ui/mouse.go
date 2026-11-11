@@ -143,11 +143,18 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 			return nil
 		}
 		switch a.scr {
-		case scrManager:
+		case scrManager, scrThemes:
 			return a.pressKey(wheelKey(up))
 		case scrTerminal:
 			if s != nil && s.panel != panelNone && !s.files.open {
 				s.panelFocus = true
+				d := 3
+				if up {
+					d = -3
+				}
+				if s.scrollPanel(d) { // langer Inhalt: blättern statt Auswahl
+					return nil
+				}
 				return a.pressKey(wheelKey(up))
 			}
 		}

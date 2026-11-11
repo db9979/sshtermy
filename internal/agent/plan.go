@@ -174,7 +174,7 @@ func parseFullPlan(raw json.RawMessage, kind string, files bool) (*FullPlan, err
 	if json.Unmarshal(raw, &x) != nil {
 		return nil, ErrUnreadable
 	}
-	p := &FullPlan{Summary: flatText(x.Zusammenfassung, maxQuestion)}
+	p := &FullPlan{Summary: summaryText(x.Zusammenfassung)}
 	for _, r := range x.Schritte {
 		if len(p.Steps) == maxPlanSteps {
 			break
@@ -190,7 +190,7 @@ func parseFullPlan(raw json.RawMessage, kind string, files bool) (*FullPlan, err
 		if json.Unmarshal(r, &st) != nil {
 			return nil, ErrUnreadable
 		}
-		reason := flatText(st.Grund, maxReason)
+		reason := flatText(st.Grund, maxShown)
 		if st.Datei != nil {
 			if !files {
 				return nil, fmt.Errorf("%w: Plan legt Dateien an, das geht hier nicht", ErrUnreadable)
@@ -222,7 +222,7 @@ func parseFullPlan(raw json.RawMessage, kind string, files bool) (*FullPlan, err
 func notes(xs []string) []string {
 	var out []string
 	for _, x := range xs {
-		if t := flatText(x, maxReason); t != "" && len(out) < maxPlanNotes {
+		if t := flatText(x, maxShown); t != "" && len(out) < maxPlanNotes {
 			out = append(out, t)
 		}
 	}

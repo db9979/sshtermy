@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 	"strings"
 	"sync"
@@ -27,6 +28,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/db9979/sshtermy/internal/audit"
+	"github.com/db9979/sshtermy/internal/cmdset"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -66,6 +68,45 @@ type shellCap struct {
 	on   bool
 	buf  bytes.Buffer
 	last time.Time
+	// held: eine Folge von Befehlen läuft (auch zwischen zwei Befehlen);
+	// solange nimmt der Tab keine Tasten an, sonst mischten sich deine
+	// Eingaben in die Zeile, die sshTermy gerade tippt (shelllock.go).
+	held    int
+	stopped bool // Esc: Folge abbrechen
+}
+
+func (c *shellCap) hold() {
+	c.mu.Lock()
+	c.held++
+	c.stopped = false
+	c.mu.Unlock()
+}
+
+func (c *shellCap) release() {
+	c.mu.Lock()
+	if c.held > 0 {
+		c.held--
+	}
+	c.mu.Unlock()
+}
+
+// active: tippt sshTermy gerade in diese Shell?
+func (c *shellCap) active() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.on || c.held > 0
+}
+
+func (c *shellCap) abort() {
+	c.mu.Lock()
+	c.stopped = true
+	c.mu.Unlock()
+}
+
+func (c *shellCap) aborted() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.stopped
 }
 
 func (c *shellCap) feed(p []byte) {
@@ -185,6 +226,10 @@ func (a *App) hostServerCmd(s *session, mode hostMode) tea.Cmd {
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	h.cancelFn = cancel
 	sid, seq, cl := s.id, h.seq, s.client
+	var extras []cmdset.Extra
+	if set := cmdset.Resolve(s.prof.Dialect, s.prof.Model, s.prof.Version); set != nil && set.EffFamily() != cmdset.FamilyNetwork {
+		extras = set.Commands.Extra // geprüft: nur Lesebefehle
+	}
 	return func() tea.Msg {
 		defer cancel()
 		out, err := cl.RunScript(ctx, hostinfo.ServerScript)
@@ -192,6 +237,15 @@ func (a *App) hostServerCmd(s *session, mode hostMode) tea.Cmd {
 			return hostSrvMsg{sid: sid, seq: seq, err: err, mode: mode}
 		}
 		srv, err := hostinfo.ParseServer(out)
+		for _, e := range extras {
+			eo, err := cl.RunScript(ctx, e.Cmd+" 2>/dev/null\n")
+			if err != nil {
+				continue
+			}
+			if v := hostinfo.ExtraValue(e, eo); v != "" {
+				srv.Extras = append(srv.Extras, hostinfo.Extra{Label: hostinfo.ExtraLabel(e), Value: v})
+			}
+		}
 		return hostSrvMsg{sid: sid, seq: seq, srv: srv, err: err, mode: mode}
 	}
 }
@@ -211,6 +265,10 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 		h.err = i18n.T("Abfrage nur an einem leeren Prompt (z. B. switch#). Bitte erst Eingabe beenden oder ⏎ drücken.")
 		return nil
 	}
+	if configPrompt(prompt) {
+		h.err = i18n.T("Der Switch ist im Konfigurationsmodus. Erst mit end bzw. exit zurück an den normalen Prompt.")
+		return nil
+	}
 	h.seq++
 	h.busy, h.err, h.note = true, "", ""
 	if backup {
@@ -228,10 +286,13 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 	if vendor == hostinfo.VendorUnknown {
 		vendor = hostVendor(s.prof) // aus dem Systemprofil
 	}
+	model, firmware := s.prof.Model, s.prof.Version
 	st := a.st
 	connID := s.conn.ID
 	rules := a.configRules()
+	s.cap.hold() // ab jetzt keine Tasten an diese Shell, bis alles getippt ist
 	return func() tea.Msg {
+		defer s.cap.release()
 		defer cancel()
 		r := netResult{vendor: vendor, pagingOff: pagingOff}
 		run := func(cmd string, limit time.Duration) (string, error) {
@@ -242,7 +303,11 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 
 		var ver string
 		if info || r.vendor == hostinfo.VendorUnknown {
-			out, err := run(r.vendor.VersionCommand(), 20*time.Second)
+			vcmd := hostinfo.SetOf(r.vendor, model, firmware).Commands.Version
+			if vcmd == "" {
+				vcmd = r.vendor.VersionCommand()
+			}
+			out, err := run(vcmd, 20*time.Second)
 			if err != nil {
 				return fail(err)
 			}
@@ -250,31 +315,52 @@ func (a *App) hostNetCmd(s *session, info, backup bool) tea.Cmd {
 			if v := hostinfo.DetectVendor(out); v != hostinfo.VendorUnknown {
 				r.vendor = v
 			}
+			// Modell und Firmware entscheiden über die Variante des Satzes.
+			if sw := hostinfo.ParseWith(hostinfo.SetOf(r.vendor, "", ""), ver, "", "", ""); sw.Model != "" || sw.Firmware != "" {
+				model, firmware = orDefault(sw.Model, model), orDefault(sw.Firmware, firmware)
+			}
 		}
-		if p := r.vendor.PagingOff(); p != "" && !r.pagingOff {
+		set := hostinfo.SetOf(r.vendor, model, firmware)
+		if p := set.Commands.PagingOff; p != "" && !r.pagingOff {
 			if _, err := run(p, 10*time.Second); err != nil {
 				return fail(err)
 			}
 			r.pagingOff = true
 		}
 		if info {
-			sysCmd, portCmd, vlanCmd := r.vendor.InfoCommands()
-			outs := make([]string, 3)
-			for i, c := range []string{sysCmd, portCmd, vlanCmd} {
-				if c == "" {
+			c := set.Commands
+			outs := make([]string, 4)
+			for i, cmd := range []string{c.System, c.Ports, c.VLANs, c.Memory} {
+				if cmd == "" {
 					continue
 				}
-				out, err := run(c, 30*time.Second)
+				out, err := run(cmd, 30*time.Second)
 				if err != nil {
 					return fail(err)
 				}
 				outs[i] = out
 			}
-			sw := hostinfo.ParseSwitch(r.vendor, ver, outs[0], outs[1], outs[2])
+			system := outs[0]
+			if outs[3] != "" {
+				system += "\n" + outs[3]
+			}
+			sw := hostinfo.ParseWith(set, ver, system, outs[1], outs[2])
+			for _, e := range c.Extra {
+				out, err := run(e.Cmd, 30*time.Second)
+				if err != nil {
+					continue
+				}
+				if v := hostinfo.ExtraValue(e, out); v != "" {
+					sw.Extras = append(sw.Extras, hostinfo.Extra{Label: hostinfo.ExtraLabel(e), Value: v})
+				}
+			}
 			r.sw = &sw
 		}
 		if backup {
-			cfgCmd := r.vendor.ConfigCommand()
+			cfgCmd := set.Commands.Config
+			if cfgCmd == "" {
+				return fail(errors.New(i18n.T("Für dieses Gerät kennt der Befehlssatz keinen Befehl für die Konfiguration (Einstellungen › Befehlssätze).")))
+			}
 			cfg, err := run(cfgCmd, 2*time.Minute)
 			if err != nil {
 				return fail(err)
@@ -335,6 +421,9 @@ func shellRun(ctx context.Context, s *session, prompt, cmd string, limit time.Du
 			return nil, errors.New(i18n.T("abgebrochen"))
 		case <-t.C:
 		}
+		if s.cap.aborted() {
+			return nil, errors.New(i18n.T("abgebrochen"))
+		}
 		raw, last := s.cap.peek()
 		if len(raw) > answered && hostinfo.HasMore(raw) {
 			if _, err := s.shell.Write([]byte(" ")); err != nil {
@@ -348,12 +437,38 @@ func shellRun(ctx context.Context, s *session, prompt, cmd string, limit time.Du
 		switch {
 		case done && idle > 300*time.Millisecond:
 			return lines, nil
+		case raw != "" && idle > 800*time.Millisecond && time.Since(start) > time.Second && atPrompt(s, prompt):
+			// Der Emulator sieht den Prompt wieder, auch wenn die Ausgabe
+			// anders aussieht als erwartet (Cursor-Sprünge, Neuzeichnen).
+			return trimPromptLines(lines, prompt), nil
+		case raw != "" && idle > 800*time.Millisecond && time.Since(start) > time.Second && s.term != nil &&
+			hostinfo.IsPrompt(strings.TrimSpace(s.term.CursorLine())):
+			// anderer Prompt: der Befehl hat den Modus gewechselt
+			// (configure terminal → switch(config)#, end → switch#)
+			return trimPromptLines(lines, strings.TrimSpace(s.term.CursorLine())), nil
 		case raw == "" && time.Since(start) > 10*time.Second:
 			return nil, fmt.Errorf(i18n.T("„%s“: keine Antwort"), cmd)
 		case time.Since(start) > limit || (raw != "" && idle > 10*time.Second):
 			return lines, fmt.Errorf(i18n.T("„%s“: Prompt kam nicht zurück"), cmd)
 		}
 	}
+}
+
+// atPrompt: steht der Cursor wieder hinter dem leeren Prompt?
+func atPrompt(s *session, prompt string) bool {
+	return s.term != nil && strings.TrimSpace(s.term.CursorLine()) == prompt
+}
+
+// trimPromptLines: Prompt-Zeilen am Ende weg (auch „prompt# befehl“).
+func trimPromptLines(lines []string, prompt string) []string {
+	for len(lines) > 0 {
+		l := strings.TrimSpace(lines[len(lines)-1])
+		if l != prompt && !strings.HasSuffix(l, prompt) {
+			break
+		}
+		lines = lines[:len(lines)-1]
+	}
+	return lines
 }
 
 // hostMsg verarbeitet die Ergebnisse.
@@ -512,6 +627,10 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		if !net && a.containersOK(s) {
 			return a.openContainers(s)
 		}
+	case "l":
+		if !h.busy {
+			return a.openLogScan(s)
+		}
 	case "b":
 		if net && !h.busy {
 			s.panelFocus = false
@@ -592,7 +711,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		if len(s.host.backups) > 0 {
 			k = append(k, [2]string{"↑↓", i18n.T("Stand")}, [2]string{"v", i18n.T("ansehen")})
 		}
-		return append(k, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+		return append(k, [2]string{"l", "Logs"}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 	}
 	k := [][2]string{{"r", i18n.T("aktualisieren")}}
 	if s.host.live.hasLive() {
@@ -605,7 +724,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		}
 		k = append(k, [2]string{"t", span}, [2]string{"z", size})
 	}
-	return append(k, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+	return append(k, [2]string{"l", "Logs"}, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -716,6 +835,9 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		if srv.RebootNeeded {
 			b.WriteString(st.Warn.Render(i18n.T("◌ Neustart erforderlich")) + "\n")
 		}
+		for _, e := range srv.Extras {
+			row(trunc(e.Label, 9), e.Value)
+		}
 		a.viewAlerts(b, s, w)
 		b.WriteString("\n" + st.Muted.Render(i18n.T("Stand ")+srv.At.Format("15:04:05")+i18n.T(" · r aktualisieren")) + "\n")
 		b.WriteString(st.Muted.Render(wrap(a.monitorLine(false), w)) + "\n")
@@ -755,6 +877,9 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 				vs = append(vs, fmt.Sprintf("%d %s", v.ID, v.Name))
 			}
 			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "VLANs")) + st.Text.Render(lipgloss.NewStyle().Width(w-10).Render(trunc(strings.Join(vs, ", "), 3*(w-10)))) + "\n")
+		}
+		for _, e := range sw.Extras {
+			row(trunc(e.Label, 9), e.Value)
 		}
 		a.viewAlerts(b, s, w)
 		b.WriteString(st.Muted.Render(i18n.T("Stand ")+sw.At.Format("15:04:05")) + "\n")
@@ -931,6 +1056,9 @@ func (m *modal) textView(s Styles, w, h int) string {
 		body = append(body, trunc(l, width))
 	}
 	keys := [][2]string{{"Esc", i18n.T("schließen")}}
+	if m.copy != "" {
+		keys = append([][2]string{{"c", i18n.T("kopieren")}}, keys...)
+	}
 	info := ""
 	if total > maxBody {
 		info = fmt.Sprintf(i18n.T("Zeile %d–%d von %d"), m.scroll+1, end, total)
@@ -953,6 +1081,11 @@ func (m *modal) textKey(key string) (closeIt bool) {
 		m.scroll = 0
 	case "end", "G":
 		m.scroll = len(m.lines)
+	case "c":
+		if m.copy != "" {
+			txt := m.copy
+			go func() { _ = clipboard.WriteAll(txt) }()
+		}
 	case "esc", "q", "enter":
 		return true
 	}

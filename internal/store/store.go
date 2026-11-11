@@ -67,6 +67,7 @@ type Store struct {
 	conns connCache
 
 	stats cmdStats // Befehlsstatistik (cmdstats.go), nur lokal
+	lbase logBase  // Grundlinie des Log-Blicks (logbase.go), nur lokal
 }
 
 type connCache struct {
@@ -833,13 +834,15 @@ func (s *Store) DeleteRunbook(id string) error {
 	return s.save()
 }
 
-// UseRunbook zählt eine Benutzung (für die Sortierung).
+// UseRunbook zählt eine Benutzung (für die Sortierung). Wer es startet, hat
+// die Schritte gesehen: die Team-Markierung fällt weg.
 func (s *Store) UseRunbook(id string) {
 	s.mu.Lock()
 	for i := range s.data.Runbooks {
 		if s.data.Runbooks[i].ID == id {
 			s.data.Runbooks[i].Uses++
 			s.data.Runbooks[i].LastUsed = time.Now()
+			s.data.Runbooks[i].TeamChanged = false // angesehen und bewusst gestartet
 		}
 	}
 	s.mu.Unlock()

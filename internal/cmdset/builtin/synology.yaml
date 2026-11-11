@@ -1,0 +1,19 @@
+id: synology
+name: Synology DSM
+family: linux
+order: 103
+hint: "Synology DSM (Linux ohne apt/dnf): synopkg list/start/stop, synosystemctl bzw. synoservice, cat /etc.defaults/VERSION, cat /proc/mdstat (RAID), btrfs/mdadm; Daten unter /volume1/…; root mit sudo -i. Viele Einstellungen nur in der Weboberfläche, Änderungen an Systemdateien überleben Updates oft nicht."
+detect:
+  probe: [/etc.defaults/synoinfo.conf]
+commands:
+  extra:
+    - label: DSM
+      cmd: cat /etc.defaults/VERSION
+      pick: 'productversion="([^"]+)"'
+    - label: RAID aktiv
+      label_en: RAID active
+      cmd: cat /proc/mdstat
+      count: '(?m)^md\d+\s*:\s*active'
+danger:
+  - rx: '\bsynopkg\s+uninstall\b'
+    reason: entfernt Pakete

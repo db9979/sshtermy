@@ -32,6 +32,7 @@ const (
 	hcScan
 	hcHost
 	hcCompanion
+	hcLogScan
 )
 
 type helpSection struct {
@@ -51,13 +52,16 @@ var helpSections = []helpSection{
 		{"F12", "Über & Update"},
 		{"F12 w", "Was ist neu"},
 		{"F12 l", "Sprache: Deutsch/English"},
-		{"Strg+Q", "beenden"},
+		{"Strg+Q", "beenden (fragt bei offenen Verbindungen)"},
+		{"F11", "Vollbild an/aus (eigenes Fenster)"},
 	}},
 	{hcManager, "≡", "Verbindungs-Manager", "F10", false, [][2]string{
 		{"⏎", "verbinden"},
 		{"n", "neue Verbindung"},
 		{"e", "bearbeiten"},
 		{"d", "löschen"},
+		{"Strg+Z", "Löschen rückgängig (10 s)"},
+		{"Strg+T", "im Formular: Verbindung testen"},
 		{"/", "suchen (auch #tag)"},
 		{"o", "neuer Ordner (A / B verschachtelt)"},
 		{"r", "Ordner bearbeiten"},
@@ -75,7 +79,7 @@ var helpSections = []helpSection{
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
 		{"i", "Verbindungen importieren"},
-		{"a", "Aussehen wechseln"},
+		{"a", "Farbschema wählen"},
 		{"b", "Tastenkürzel anpassen"},
 		{"l", "Sitzungsprotokolle"},
 		{"F10", "zurück zum Terminal"},
@@ -108,6 +112,7 @@ var helpSections = []helpSection{
 		{"⇧F10", "Tab in eigenes Fenster (Sitzung bleibt offen)"},
 		{"Strg+F", "im Verlauf suchen"},
 		{"F6", "Host-Übersicht"},
+		{"Alt+E", "Log-Blick: Auffälligkeiten"},
 		{"F7 / F8", "Tab wechseln"},
 		{"Alt+T", "alle Tabs (Liste)"},
 		{"Alt+N", "neuer Tab"},
@@ -115,6 +120,7 @@ var helpSections = []helpSection{
 		{"Alt+W", "Tab schließen"},
 		{"F10", "zum Manager"},
 		{"Abbruch", "verbindet neu (⏎ / Esc)"},
+		{"getrennt: e / k", "Verbindung bearbeiten / neuen Host-Key prüfen"},
 	}},
 	{hcGoal, "◎", "Ziel-Modus", "F2", true, [][2]string{
 		{"⏎", "Ziel starten / ausführen"},
@@ -132,6 +138,8 @@ var helpSections = []helpSection{
 		{"?", "Agent anweisen"},
 		{"v", "Skript des Agenten ansehen"},
 		{"r", "Skripte des Agenten löschen (am Ende)"},
+		{"c / l", "Ergebnis kopieren / ganz lesen"},
+		{"Bild↑ Bild↓", "im Panel blättern (auch Mausrad)"},
 		{"Leertaste", "Plan: Schritt streichen"},
 		{"?", "Plan: neu planen lassen"},
 	}},
@@ -169,6 +177,7 @@ var helpSections = []helpSection{
 		{"r / ⏎", "abfragen"},
 		{"b", "Switch-Config sichern"},
 		{"c", "Container (Docker, Podman, k8s)"},
+		{"l", "Log-Blick"},
 		{"↑ ↓", "Sicherung wählen"},
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},
@@ -199,6 +208,19 @@ var helpSections = []helpSection{
 		{"Tab", "Fehlerliste / Verlauf"},
 		{"Esc", "schließen"},
 	}},
+	{hcLogScan, "▲", "Log-Blick", "Alt+E", false, [][2]string{
+		{"⏎", "Zeilen des Musters"},
+		{"1…4", "Prüfbefehl einfügen"},
+		{"k", "KI erklärt das Muster"},
+		{"b", "KI-Lagebericht"},
+		{"x / X", "ausblenden: Host / Ordner"},
+		{"n", "Was ist neu? (u zurückholen)"},
+		{"t", "Zeitleiste (←→, ⏎, k)"},
+		{"z", "Zeitraum 1 h … 7 Tage"},
+		{"w", "Logwache: Meldungen"},
+		{"s", "Switch: Syslog an sshTermy senden"},
+		{"r / c", "neu lesen / kopieren"},
+	}},
 	{hcLogs, "≡", "Sitzungsprotokolle", "l", false, [][2]string{
 		{"/", "suchen (auch Ausgabe)"},
 		{"⏎ / → ←", "auf-/zuklappen"},
@@ -227,6 +249,7 @@ var helpSections = []helpSection{
 		{"Strg+R", "als Runbook speichern"},
 		{"e / Strg+D", "ändern / löschen"},
 		{"k / a", "KI prüft / übernehmen"},
+		{"p", "Probelauf an/aus"},
 	}},
 	{hcScan, "/", "Netzwerk-Scan", "f", false, [][2]string{
 		{"Strg+S", "Scan starten"},
@@ -306,6 +329,8 @@ func (a *App) helpContext() helpCtx {
 		return hcSettings
 	case scrLogs:
 		return hcLogs
+	case scrLogScan:
+		return hcLogScan
 	case scrBroadcast:
 		return hcBroadcast
 	case scrScan:

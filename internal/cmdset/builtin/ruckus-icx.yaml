@@ -1,0 +1,29 @@
+id: ruckus-icx
+name: Ruckus ICX / Brocade FastIron
+order: 245
+hint: "Ruckus ICX bzw. Brocade FastIron: show running-config, show interfaces brief, show vlan brief, show mac-address, show lldp neighbors, show version, show logging; Blättern aus mit skip-page-display; Konfiguration mit configure terminal … end, speichern mit write memory. Ports heißen ethernet 1/1/1."
+detect:
+  screen: ['(?i)ruckus networks|brocade communications|\bfastiron\b|\bICX\d{4}']
+  version: ['(?i)ruckus|brocade|fastiron|\bICX\d{4}']
+commands:
+  paging_off: skip-page-display
+  version: show version
+  system: show cpu-utilization
+  memory: show memory
+  ports: show interfaces brief
+  vlans: show vlan brief
+  config: show running-config
+parse:
+  firmware: '(?i)SW:\s*Version\s+(\S+)'
+  model: '(?im)HW:\s*Stackable\s+(\S+)|HW:\s*(\S+)'
+  uptime: '(?i)system uptime is\s+(.+?)\s*$'
+  cpu: '(?i)(\d{1,3}) percent busy'
+  mem: '(?i)(\d{1,3})% used'
+  vlan: '^\s*(\d{1,4})\s+(\S+)'
+logs:
+  commands: [show logging]
+  ports: show interfaces brief
+  reader: generic
+syslog:
+  steps: [configure terminal, 'logging host {{ip}} udp-port {{port}}', end]
+  save: write memory

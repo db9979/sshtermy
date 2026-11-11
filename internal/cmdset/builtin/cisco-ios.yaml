@@ -1,0 +1,38 @@
+id: cisco-ios
+name: Cisco IOS / IOS-XE
+order: 220
+hint: "Cisco-IOS-CLI, kein Linux: show running-config, show ip interface brief, show interfaces status, show vlan brief, show mac address-table, show cdp neighbors, show version; Blättern aus mit terminal length 0; Konfiguration mit configure terminal … end, speichern mit write memory."
+detect:
+  banner: ['(?i)cisco']
+  screen: ['(?i)cisco ios|cisco internetwork operating system|IOS-XE']
+  version: ['(?i)cisco ios|cisco internetwork']
+commands:
+  paging_off: terminal length 0
+  version: show version
+  system: show processes cpu | include CPU utilization
+  ports: show interfaces status
+  vlans: show vlan brief
+  config: show running-config
+logs:
+  commands: [show logging]
+  ports: show interfaces status
+  reader: generic
+syslog:
+  steps: [configure terminal, 'logging host {{ip}} transport udp port {{port}}', logging trap warnings, end]
+  save: write memory
+variants:
+  - name: IOS 12.x
+    firmware: '^1[0-2]\.'
+    hint: "Alte IOS-Version 12.x: logging host kennt keinen Port (immer UDP 514)."
+    syslog:
+      steps: [configure terminal, 'logging {{ip}}', logging trap warnings, end]
+samples:
+  - name: Catalyst 2960
+    version: |
+      Cisco IOS Software, C2960X Software (C2960X-UNIVERSALK9-M), Version 15.2(7)E4, RELEASE SOFTWARE (fc2)
+      sw1 uptime is 1 year, 2 weeks, 3 days, 4 hours, 5 minutes
+      cisco WS-C2960X-48FPD-L (APM86XXX) processor (revision M0) with 524288K bytes of memory.
+    expect:
+      firmware: 15.2(7)E4
+      model: WS-C2960X-48FPD-L
+      name: sw1

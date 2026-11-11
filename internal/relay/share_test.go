@@ -41,7 +41,7 @@ func TestShareEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv.Logf = t.Logf
+	srv.Logf = testLogf(t)
 	ts := httptest.NewTLSServer(srv.Handler())
 	defer ts.Close()
 	fp := CertFP(ts.Certificate().Raw)
@@ -116,7 +116,19 @@ func TestShareEndToEnd(t *testing.T) {
 	if _, _, err := view.Next(ctx); err != io.EOF {
 		t.Fatalf("Ende: %v", err)
 	}
-	if _, err := WatchShare(ctx, link); err == nil {
-		t.Fatal("beendete Freigabe noch offen")
+	// Der Zuschauer sieht das Ende schon am weitergereichten Ende-Rahmen; der
+	// Vermittler räumt die Freigabe erst auf, wenn die Leitung des Gastgebers
+	// zu ist. Darum kurz warten statt sofort prüfen.
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		v, err := WatchShare(ctx, link)
+		if err != nil {
+			break
+		}
+		v.Close()
+		if time.Now().After(deadline) {
+			t.Fatal("beendete Freigabe noch offen")
+		}
+		time.Sleep(100 * time.Millisecond) // unter der Grenze von 30 Abrufen je Minute
 	}
 }

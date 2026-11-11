@@ -132,6 +132,9 @@ type Connection struct {
 
 	// QuickCmds: Schnellbefehle (⇧F1 …). Leer = Vorbelegung je Gerätetyp.
 	QuickCmds []string `json:"quick_cmds,omitempty"`
+	// QuickTeamChanged: Schnellbefehle kamen geändert aus dem Team; der erste
+	// Druck zeigt den Befehl nur an, erst der zweite führt ihn aus.
+	QuickTeamChanged bool `json:"quick_team_changed,omitempty"`
 
 	// Protocol: SSH (leer), Telnet oder serielle Konsole (USB-Konsolenkabel).
 	// Bei Telnet und seriell meldet sshTermy sich selbst an, wenn Benutzer
@@ -501,7 +504,7 @@ func DefaultLLM() LLMConfig {
 
 // Settings: Oberflächen-Einstellungen.
 type Settings struct {
-	Theme        string `json:"theme"`                    // "nacht" | "hell" | "kontrast" | "kontrasthell" | "matrix" | "bernstein" | "neon" | "eigene"
+	Theme        string `json:"theme"`                    // Name aus ui.Themes (z. B. "nacht", "polar", "papier") oder "eigene"
 	UseDPAPI     bool   `json:"use_dpapi"`                // Windows: Store-Schlüssel zusätzlich per DPAPI
 	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
 	Language     string `json:"language"`                 // "de" | "en"
@@ -534,6 +537,12 @@ type Settings struct {
 	// Companion: der KI-Begleiter liest im Terminal mit und kommentiert
 	// (Stufe, Grenzen, Datenschutz). Geht mit dem Sync.
 	Companion CompanionConfig `json:"companion,omitempty"`
+	// LogScan: Log-Blick (Zeitraum, als Rauschen ausgeblendete Meldungen)
+	// und Logwache. Geht mit dem Sync.
+	LogScan LogScanConfig `json:"log_scan,omitempty"`
+	// SyslogPort: Syslog-Empfänger der Logwache auf diesem Rechner (UDP),
+	// 0 = aus. Nur lokal: jeder Rechner hat seinen eigenen Port.
+	SyslogPort int `json:"syslog_port,omitempty"`
 
 	// Colors: eigene Farben (Theme "eigene"), wird mit dem Sync übertragen.
 	Colors *CustomColors `json:"colors,omitempty"`
@@ -573,12 +582,20 @@ type Settings struct {
 	// Geht mit dem Sync.
 	ConfigRules []string `json:"config_rules,omitempty"`
 
+	// CmdSetApproved: freigegebene Team-Befehlssätze (Kennung → Prüfsumme des
+	// Inhalts). Ändert das Team die Datei, ist der Satz bis zur neuen Freigabe aus.
+	CmdSetApproved map[string]string `json:"cmdset_approved,omitempty"`
+
 	// Highlight: Farbregeln für die Ausgabe im Terminal (highlight-Paket).
 	Highlight HighlightConfig `json:"highlight,omitempty"`
 
 	// Accessible: barrierearm. Keine Animationen, Formen und Wörter statt
 	// nur Farbe (z. B. Online-Punkt). Geht mit dem Sync.
 	Accessible bool `json:"accessible,omitempty"`
+	// Simple: einfacher Modus. Profi-Funktionen (Agent, Broadcast, Team,
+	// Netzwerk, Aufzeichnung …) verschwinden aus Übersicht und Tastenzeile,
+	// bleiben aber über die Suche in der Palette und ihre Tasten erreichbar.
+	Simple bool `json:"simple,omitempty"`
 	// Motion: Bewegung der Oberfläche (ui/motion.go). "" = voll (Spinner,
 	// Pulsieren, Atmen, Hover-Karten), "dezent" = nur kurze Übergänge,
 	// "aus" = keine. Barrierearm schaltet sie immer ab. Geht mit dem Sync.
@@ -657,6 +674,8 @@ func (s Settings) SyncedPart() Settings {
 	s.UseDPAPI, s.NoMouse, s.LastVersion, s.NerdFont = false, false, "", ""
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
+	s.SyslogPort = 0
+	s.CmdSetApproved = nil // Freigaben gelten für die Team-Dateien dieses Rechners
 	return s
 }
 
@@ -941,6 +960,9 @@ type Runbook struct {
 	LastUsed     time.Time     `json:"last_used,omitempty"`
 	Uses         int           `json:"uses,omitempty"`
 	UpdatedAt    time.Time     `json:"updated_at,omitempty"` // letzte Änderung (Sync)
+	// TeamChanged: ein abonnierter Team-Ordner hat die Schritte geändert und
+	// noch niemand hat sie hier angesehen. Zeitpläne lassen es so lange liegen.
+	TeamChanged bool `json:"team_changed,omitempty"`
 }
 
 // RunbookFile: eine Datei, die der Agent-Modus angelegt hat. Pfade in den
@@ -973,7 +995,7 @@ type Schedule struct {
 	Days      []int     `json:"days,omitempty"` // 0 = Sonntag … 6; leer = täglich
 	Folder    string    `json:"folder,omitempty"`
 	Conns     []string  `json:"conns,omitempty"`
-	Kind      string    `json:"kind,omitempty"` // "" = Befehle/Runbook, "backup" = Switch-Configs sichern
+	Kind      string    `json:"kind,omitempty"` // "" = Befehle/Runbook, "backup" = Switch-Configs sichern, "logs" = Ordner-Scan
 	RunbookID string    `json:"runbook_id,omitempty"`
 	Steps     []string  `json:"steps,omitempty"` // ohne Runbook
 	Off       bool      `json:"off,omitempty"`
@@ -987,18 +1009,31 @@ type Schedule struct {
 	// zugeordnet (vor v1.0.312), sshTermy setzt den eigenen Namen.
 	Machine   string    `json:"machine,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"` // letzte Änderung (Sync: neuere gewinnt)
+	// Known: Verbindungen im Ziel-Ordner, die du bestätigt hast (beim Speichern
+	// oder mit Strg+A). Neue Hosts im Ordner – etwa aus einem Team-Abo – laufen
+	// erst danach mit. nil = alter Zeitplan, beim nächsten Lauf übernommen.
+	Known []string `json:"known,omitempty"`
 }
 
 // RunsOn: läuft der Zeitplan auf dem Rechner mit diesem Namen?
 func (s Schedule) RunsOn(device string) bool {
 	return s.Machine == "" || strings.EqualFold(s.Machine, device)
+
 }
 
 // ScheduleBackup: Zeitplan sichert die running-config aller Switches im Ziel.
 const ScheduleBackup = "backup"
 
+// ScheduleLogs: Zeitplan macht einen Ordner-Scan der Logs (Log-Blick je Host).
+const ScheduleLogs = "logs"
+
 // ScheduleCatchUp: so lange nach dem Termin wird ein verpasster Lauf nachgeholt.
+// Was etwas ändert, holt sshTermy nur bis ScheduleLate nach (eine Wartung für
+// 3 Uhr soll nicht mitten am Tag laufen); Lesendes bis ScheduleCatchUp.
 const ScheduleCatchUp = 12 * time.Hour
+
+// ScheduleLate: ab dieser Verspätung gilt ein Lauf als nachgeholt.
+const ScheduleLate = 10 * time.Minute
 
 // DueAt: Termin des Tages von now (zero, wenn heute kein Lauftag ist oder
 // die Zeit unlesbar).
@@ -1048,4 +1083,64 @@ func ParseClock(v string) (h, m int, ok bool) {
 		return 0, 0, false
 	}
 	return h, m, true
+}
+
+// LogScanConfig: Einstellungen des Log-Blicks.
+type LogScanConfig struct {
+	Hours int        `json:"hours,omitempty"` // Zeitraum in Stunden, 0 = 24
+	Noise []LogNoise `json:"noise,omitempty"` // als Rauschen ausgeblendet
+	// Watch: Logwache – liest bei offenen Tabs mit und meldet neue Fehler.
+	Watch bool `json:"watch,omitempty"`
+	// WatchWarn: auch Warnungen melden (sonst ab Fehler).
+	WatchWarn bool `json:"watch_warn,omitempty"`
+}
+
+// LogHours: Zeitraum des Log-Blicks.
+func (c LogScanConfig) LogHours() int {
+	if c.Hours <= 0 {
+		return 24
+	}
+	return c.Hours
+}
+
+// LogNoise: eine als Rauschen ausgeblendete Meldung. Conn und Folder leer =
+// überall; Until leer = für immer.
+type LogNoise struct {
+	Key    string    `json:"key"`
+	Title  string    `json:"title,omitempty"`
+	Conn   string    `json:"conn,omitempty"`
+	Folder string    `json:"folder,omitempty"`
+	Until  time.Time `json:"until,omitempty"`
+}
+
+// Hides: blendet die Regel die Meldung key auf der Verbindung c aus?
+func (n LogNoise) Hides(key string, c Connection, now time.Time) bool {
+	if n.Key != key || (!n.Until.IsZero() && now.After(n.Until)) {
+		return false
+	}
+	switch {
+	case n.Conn != "":
+		return n.Conn == c.ID
+	case n.Folder != "":
+		return InFolder(c.Group, n.Folder)
+	}
+	return true
+}
+
+// IsProduction: Produktiv-Host? Ordner, Tag („prod“, „live“) oder Alias mit
+// „prod“. Der Gefahren-Check beim Tippen und der Agent sind hier strenger.
+func IsProduction(c Connection) bool {
+	has := func(s string) bool {
+		l := strings.ToLower(s)
+		return strings.Contains(l, "prod") || l == "live"
+	}
+	if has(c.Group) || strings.Contains(strings.ToLower(c.Alias), "prod") {
+		return true
+	}
+	for _, t := range c.Tags {
+		if has(t) {
+			return true
+		}
+	}
+	return false
 }

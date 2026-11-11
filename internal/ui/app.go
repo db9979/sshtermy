@@ -68,15 +68,27 @@ const (
 	scrMasterForm    // Master-Passwort ändern, DPAPI (master.go)
 	scrBackupForm    // Gesamtsicherung speichern/einspielen (fullbackup.go)
 	scrColors        // Farben anpassen (colors.go)
+	scrThemes        // Farbschema wählen mit Vorschau (themepick.go)
 	scrTeam          // Team-Freigabe: Auswahl bzw. Vorschau (team.go)
 	scrTeamForm      // Team-Freigabe: Passwort, Datei, Optionen
 	scrHighlightForm // Farbregeln (highlight.go)
 	scrScheduleForm  // Zeitplan (schedule.go)
 	scrRulesForm     // Regeln für Switch-Configs (configrules.go)
+	scrLogScan       // Log-Blick (logscan.go)
+	scrCmdSets       // Befehlssätze (cmdsets.go)
+	scrCmdSetForm    // eigener Befehlssatz bearbeiten
 )
 
 // App ist das Wurzel-Modell.
 type App struct {
+	// asyncModals: Rückfragen, die von selbst kamen, während schon ein Dialog
+	// offen war (modalguard.go). Sie überschreiben ihn nicht, sie warten.
+	asyncModals []*modal
+
+	lscan         logScanState      // Log-Blick (logscan.go)
+	cmds          cmdsetState       // Befehlssätze (cmdsets.go)
+	lwatch        logWatchState     // Logwache + Syslog-Empfang (logwatch.go)
+	lfold         folderScanState   // Ordner-Scan (logfolder.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -106,6 +118,7 @@ type App struct {
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
 	returnToTerminal bool
+	undo             *undoState // Löschen rückgängig machen (undo.go)
 
 	sessions []*session
 	cur      int
@@ -151,15 +164,16 @@ type App struct {
 	book *sessionlog.Book // Sitzungsprotokolle (Schlüssel nur bei entsperrtem Store)
 	logs logsState
 
-	sync    syncState
-	wiz     *syncWizard
-	imp     importState   // Import aus ssh-config, PuTTY, MobaXterm
-	team    teamState     // Team-Freigabe (team.go)
-	tl      teamLinkState // Team-Ordner: veröffentlichen/abonnieren (teamlink.go)
-	keyEd   keyEditor     // Tastenkürzel anpassen
-	colEd   colorEditor   // Farben anpassen
-	keys    keymap        // aktuelle Tastenbelegung
-	lookSig string        // Theme+Tasten, zuletzt übernommen
+	sync      syncState
+	wiz       *syncWizard
+	imp       importState   // Import aus ssh-config, PuTTY, MobaXterm
+	team      teamState     // Team-Freigabe (team.go)
+	tl        teamLinkState // Team-Ordner: veröffentlichen/abonnieren (teamlink.go)
+	keyEd     keyEditor     // Tastenkürzel anpassen
+	colEd     colorEditor   // Farben anpassen
+	themePick themePicker   // Farbschema wählen
+	keys      keymap        // aktuelle Tastenbelegung
+	lookSig   string        // Theme+Tasten, zuletzt übernommen
 
 	z     zones      // klickbare Bereiche des letzten Bildes
 	click clickState // für Doppel-/Dreifachklick
@@ -248,7 +262,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.perf.skip = false // jede Nachricht außer Ausgabeflut zeichnet sofort (perf.go)
 	switch msg.(type) {
 	case WindowClosedMsg:
-		return a, a.quit()
+		return a, a.askQuit() // quitask.go
 	case perfRedrawMsg:
 		a.perf.redraw = false
 		return a, nil
@@ -264,6 +278,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 	case toastTickMsg:
 		a.toastTicking = false
+		a.expireUndo(time.Now())
 		a.liveToasts(time.Now())
 		return a, a.toastTick()
 	case animMsg:
@@ -283,6 +298,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.debugMsg(msg)
 	a.auditMsg(msg)
 	m, cmd := a.update(msg)
+	a.popAsyncModal() // modalguard.go
 	a.clearNotices()
 	if c := a.trackFade(); c != nil {
 		cmd = tea.Batch(cmd, c)
@@ -344,11 +360,17 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case mcpCallMsg:
 		return a, tea.Batch(a.onMCP(m), a.listen())
+	case connTestMsg:
+		if a.modal != nil && a.modal.kind == mBusy {
+			a.modal = nil
+		}
+		a.connTestResult(m)
+		return a, nil
 	case hostKeyAskMsg:
-		a.modal = hostKeyModal(m)
+		a.showAsync(hostKeyModal(m))
 		return a, a.listen()
 	case secretAskMsg:
-		a.modal = secretModal(m)
+		a.showAsync(secretModal(m))
 		return a, a.listen()
 	case connectStepMsg:
 		if s := a.byID(m.sid); s != nil && m.step >= 0 && m.step < len(s.connStepAt) {
@@ -375,7 +397,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case connectedMsg:
 		if s := a.byID(m.sid); s != nil {
-			s.client, s.shell, s.state, s.connNote = m.client, m.shell, stConnected, ""
+			s.client, s.shell, s.state, s.connNote, s.errv = m.client, m.shell, stConnected, "", nil
 			s.connectedAt = time.Now()
 			s.flashTab(a.s.T.OK)
 			if !s.rc.active {
@@ -426,7 +448,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s.rc.active {
 				a.onReconnectErr(s, m.err)
 			} else {
-				s.state, s.err = stClosed, m.err.Error()
+				s.state, s.err, s.errv = stClosed, m.err.Error(), m.err
 				s.flashTab(a.s.T.Danger)
 				var km *sshx.KeyMissingError
 				if errors.As(m.err, &km) && a.form == nil && a.modal == nil && a.pick == nil && a.pal == nil && a.scr == scrTerminal {
@@ -512,6 +534,9 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if cmd, ok := a.reportMsg(msg); ok {
 		return a, cmd
 	}
+	if cmd, ok := a.cmdsetMsg(msg); ok {
+		return a, cmd
+	}
 	if cmd, ok := a.logsMsg(msg); ok {
 		return a, cmd
 	}
@@ -519,6 +544,21 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, cmd
 	}
 	if cmd, ok := a.netMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.schedLogsMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.syslogSetupMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.folderScanMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.watchMsg(msg); ok {
+		return a, cmd
+	}
+	if cmd, ok := a.logScanResult(msg); ok {
 		return a, cmd
 	}
 	if cmd, ok := a.containerMsg(msg); ok {
@@ -549,7 +589,10 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, a.updateKeys(k) // neue Taste: nichts anderes darf sie abfangen
 		}
 		if a.keys.is(actQuit, k.String()) {
-			return a, a.quit()
+			if a.modal != nil && a.modal.quit {
+				return a, a.quit() // zweimal Strg+Q = beenden
+			}
+			return a, a.askQuit()
 		}
 		if a.modal != nil {
 			return a, a.modalKey(k)
@@ -557,14 +600,14 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.pick != nil {
 			return a, a.pickerKey(k)
 		}
-		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrFolderForm || a.scr == scrHighlightForm || a.scr == scrScheduleForm || a.scr == scrRulesForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrMasterForm || a.scr == scrBackupForm) {
+		if a.keys.is(actHelp, k.String()) && (a.pal != nil || a.scr == scrConnForm || a.scr == scrSettings || a.scr == scrTunnelForm || a.scr == scrImport || a.scr == scrKeys || a.scr == scrBroadcast || a.scr == scrScan || a.scr == scrQuickForm || a.scr == scrMonitorForm || a.scr == scrFolderForm || a.scr == scrHighlightForm || a.scr == scrScheduleForm || a.scr == scrRulesForm || a.scr == scrCmdSetForm || a.scr == scrKeyForm || a.scr == scrSSHKeyForm || a.scr == scrRelayForm || a.scr == scrMasterForm || a.scr == scrBackupForm) {
 			a.modal = a.helpModal()
 			return a, nil
 		}
 		if a.pal != nil {
 			return a, a.paletteKey(k)
 		}
-		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs) {
+		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs || a.scr == scrLogScan) {
 			return a, a.openPalette()
 		}
 		if a.keys.is(actLocal, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) && a.lock == nil {
@@ -598,7 +641,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateUnlock(msg)
 	case scrManager:
 		return a, a.updateManager(msg)
-	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm:
+	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm:
 		return a, a.updateForm(msg)
 	case scrTerminal:
 		return a, a.updateTerminal(msg)
@@ -606,6 +649,10 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateSync(msg)
 	case scrLogs:
 		return a, a.updateLogs(msg)
+	case scrLogScan:
+		return a, a.updateLogScan(msg)
+	case scrCmdSets:
+		return a, a.updateCmdSets(msg)
 	case scrImport:
 		return a, a.updateImport(msg)
 	case scrTeam:
@@ -616,6 +663,8 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.updateKeys(msg)
 	case scrColors:
 		return a, a.updateColors(msg)
+	case scrThemes:
+		return a, a.updateThemes(msg)
 	case scrBroadcast:
 		return a, a.updateBroadcast(msg)
 	case scrScan:
@@ -630,6 +679,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 type WindowClosedMsg struct{}
 
 func (a *App) quit() tea.Cmd {
+	a.finishUndo()     // offenes Löschen endgültig machen (undo.go)
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
 	a.cleanupEdits()
 	sshx.StopSKAgent() // eigener ssh-agent für Sicherheitsschlüssel
@@ -638,6 +688,7 @@ func (a *App) quit() tea.Cmd {
 		a.stopRecording(s)
 		s.close()
 	}
+	a.stopWatch()
 	a.closeBook()
 	a.stopMCP()
 	a.st.Lock()
@@ -672,6 +723,7 @@ func (a *App) onTick() tea.Cmd {
 	if c := a.teamLinkTick(); c != nil {
 		cmds = append(cmds, c)
 	}
+	a.watchTick()
 	for _, s := range a.sessions {
 		if s.term != nil && s.term.TakeBell() {
 			a.noticeBell(s)
@@ -719,14 +771,16 @@ func (a *App) viewFrame() tea.View {
 	case scrUnlock:
 		body = a.viewUnlock()
 	case scrManager:
-		body = a.frame(a.viewManager(), a.managerKeys())
+		body = a.frame(a.viewManager(), a.simpleKeys(a.managerKeys()))
 	case scrTunnelForm:
 		k := [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}}
 		if a.formTunnel.ID != "" {
 			k = append(k, [2]string{"Strg+D", i18n.T("löschen")})
 		}
 		body = a.frame(a.viewForm(), append(k, [2]string{"Esc", i18n.T("abbrechen")}))
-	case scrConnForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm:
+	case scrConnForm:
+		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+T", i18n.T("testen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
+	case scrKeyForm, scrSSHKeyForm, scrRelayForm, scrMasterForm, scrBackupForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"←/→", i18n.T("wählen")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
 	case scrQuickForm:
 		body = a.frame(a.viewForm(), [][2]string{{"Tab", i18n.T("weiter")}, {"Strg+R", i18n.T("Vorbelegung")}, {"Strg+S", i18n.T("speichern")}, {"Esc", i18n.T("abbrechen")}})
@@ -738,6 +792,10 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewSync(), a.syncKeys())
 	case scrLogs:
 		body = a.frame(a.viewLogs(), a.logsKeys())
+	case scrLogScan:
+		body = a.frame(a.viewLogScan(), a.logScanKeys())
+	case scrCmdSets:
+		body = a.frame(a.viewCmdSets(), a.cmdSetsKeys())
 	case scrImport:
 		body = a.frame(a.viewImport(), a.importKeys())
 	case scrTeam:
@@ -748,6 +806,8 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewKeys(), a.keysKeys())
 	case scrColors:
 		body = a.frame(a.viewColors(), a.colorsKeys())
+	case scrThemes:
+		body = a.frame(a.viewThemes(), a.themesKeys())
 	case scrBroadcast:
 		body = a.frame(a.viewBroadcast(), a.broadcastKeys())
 	case scrScan:

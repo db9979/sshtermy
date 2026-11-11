@@ -102,7 +102,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>Agent mode: reach the goal on its own</h3>
-      <p>In goal mode (<kbd>F2</kbd>) <kbd>Tab</kbd> switches to the agent. It runs commands, reads their output, writes scripts via SFTP and runs them, dry run first. You pick the level: <em>Careful</em> (read-only on its own), <em>Normal</em> or <em>Full</em> (sudo too). Dangerous commands always wait for you, <kbd>Esc</kbd> pauses, <kbd>?</kbd> gives an instruction. With <em>Plan first</em> it only looks around read-only, writes a full plan, and you remove or change steps before you approve it with <kbd>⏎</kbd>.</p>
+      <p>In goal mode (<kbd>F2</kbd>) <kbd>Tab</kbd> switches to the agent. It runs commands, reads their output, writes scripts via SFTP and runs them, dry run first. You pick the level: <em>Careful</em> (default, read-only on its own), <em>Normal</em> (signed in as root every change asks) or <em>Full</em> (sudo too). Dangerous commands and anything that reads secrets always wait for you, <kbd>Esc</kbd> pauses, <kbd>?</kbd> gives an instruction. At the end you get the complete summary: scroll it, copy it with <kbd>c</kbd> or read it in full with <kbd>l</kbd>. With <em>Plan first</em> it only looks around read-only, writes a full plan, and you remove or change steps before you approve it with <kbd>⏎</kbd>.</p>
     </div>
     <figure><img src="bilder/16-agent.png" alt="Agent mode compresses old logs: plan on the right, a script ran as a dry run" loading="lazy"></figure>
   </div>
@@ -126,27 +126,31 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <h2>Features</h2>
   <div class="features">
     <div class="card"><h3>Connection manager</h3><p>Folders, tags, jump hosts, import from <code>~/.ssh/config</code>, PuTTY and MobaXterm.</p></div>
-    <div class="card"><h3>Own window</h3><p>No terminal needed: double-click the <code>.exe</code>, open the <code>.app</code> or run <code>sshtermy -window</code>. Font, Nerd Font symbols and emoji are built in, every key arrives (Alt+⏎, ⇧F-keys, Ctrl+Space), images show pixel-perfect, dropped files are uploaded, ⇧F10 opens a second window. From a terminal it runs in the terminal as before.</p></div>
+    <div class="card"><h3>Forgiving</h3><p>Quitting asks while connections are open, deleting offers undo for 10 s, <kbd>Ctrl</kbd>+<kbd>T</kbd> in the form tests the connection before saving, and failed connections explain in plain language what's wrong (with a key to fix it, e.g. accept a new host key after a reinstall). Simple mode hides the pro features.</p></div>
+    <div class="card"><h3>Own window</h3><p>No terminal needed: double-click the <code>.exe</code>, open the <code>.app</code> or run <code>sshtermy -window</code>. Font, Nerd Font symbols and emoji are built in, every key arrives (Alt+⏎, ⇧F-keys, Ctrl+Space), images show pixel-perfect, dropped files are uploaded, ⇧F10 opens a second window. Starts in full screen (<kbd>F11</kbd> toggles; maximized or “as last time” in the settings), font size and window position are remembered. From a terminal it runs in the terminal as before.</p></div>
     <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback, tabs, split view, search.</p></div>
     <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen. After sleep or a network change every line is checked within seconds.</p></div>
     <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right. <kbd>e</kbd> opens a server file in VS Code, Notepad++ or TextEdit, saving uploads it back. While copying: percent, MB/s, time left and a speed curve.</p></div>
     <div class="card"><h3>Color rules</h3><p>Errors red, warnings yellow, IP blue, MAC purple, switch syslog by severity; your own rules, with <code>!</code> a hidden tab notifies you.</p></div>
     <div class="card"><h3>Images in the terminal</h3><p>Sixel, kitty graphics and iTerm2 images (img2sixel, icat, viu, imgcat) as colored half blocks, in any terminal; pixel-perfect in kitty, Ghostty and sshTermy's own window.</p></div>
     <div class="card"><h3>Containers</h3><p>Docker, Podman and Kubernetes pods in one list: shell in the container, live logs, AI log analysis.</p></div>
-    <div class="card"><h3>Host overview (F6)</h3><p>CPU, load, RAM, every disk and updates for servers, live Braille graphs over 5 min or 1 h with top processes; firmware, ports and VLANs for Aruba, Cisco, Juniper, MikroTik, FortiGate and UniFi switches, with config backup and diff.</p></div>
+    <div class="card"><h3>Host overview (F6)</h3><p>CPU, load, RAM, every disk and updates for servers, live Braille graphs over 5 min or 1 h with top processes; firmware, ports and VLANs for more than 35 switch, router and firewall systems, with config backup and diff.</p></div>
     <div class="card"><h3>Tunnels</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) and web services with one click.</p></div>
-    <div class="card"><h3>Broadcast</h3><p>One command or runbook on a whole group in parallel, one tile per host: green when done, red on failure, pulsing while running.</p></div>
+    <div class="card"><h3>Broadcast</h3><p>One command or runbook on a whole group in parallel, one tile per host: green when done, red on failure, pulsing while running. Changes run on one host first as a trial run and stop after 3 failures.</p></div>
     <div class="card"><h3>Share live</h3><p>Colleagues watch a tab live through your own relay, end-to-end encrypted, the key is only in the link.</p></div>
     <div class="card"><h3>Find device</h3><p>MAC or IP in, switch, port and VLAN out: sshTermy reads the MAC, ARP and LLDP tables of all switches, or only those in one folder if you look after several networks.</p></div>
     <div class="card"><h3>Network topology</h3><p>LLDP/CDP neighbors become a picture with boxes, lines and port numbers, plus a Mermaid diagram; config rules check every backup.</p></div>
-    <div class="card"><h3>Schedules</h3><p>Broadcast or runbook at a set time on a folder, e.g. nightly <code>show running-config</code> on all switches.</p></div>
+    <div class="card"><h3>Schedules</h3><p>Broadcast or runbook at a set time on a folder, e.g. nightly <code>show running-config</code> on all switches. New hosts in the folder only join once you confirm them.</p></div>
     <div class="card"><h3>Password manager</h3><p>Passwords and 2FA codes from 1Password, Bitwarden, KeePassXC or <code>pass</code>; only the reference is stored.</p></div>
     <div class="card"><h3>Network scan</h3><p>Find SSH devices in a subnet and create them as connections.</p></div>
-    <div class="card"><h3>Danger rules</h3><p>Fixed rules mark risky commands red; they need Enter twice, also when pasted. On production hosts hold Enter until the bar is full.</p></div>
+    <div class="card"><h3>Danger rules</h3><p>Fixed rules mark risky commands red; they need Enter twice, also when pasted. On production hosts hold Enter until the bar is full. All rule groups always apply, so a misdetected switch cannot hide <code>erase</code>.</p></div>
     <div class="card"><h3>Session log</h3><p>Encrypted, searchable, with AI summary, Markdown export and an AI change report (<kbd>b</kbd>) for tickets or docs. An activity calendar shows which days and hours you worked.</p></div>
     <div class="card"><h3>AI log diagnosis</h3><p>A selection or the last 400 lines (journalctl, <code>show logging</code>): situation, what stands out with timestamps, cause, commands to check.</p></div>
+    <div class="card"><h3>Log view</h3><p><kbd>Alt</kbd>+<kbd>E</kbd> reads the logs of the system you are on (Linux, Windows, switches, firewalls), read-only, and shows patterns instead of lines: what is new since your last look, a timeline with reboots, updates and your own commands, hide noise per host or folder, and an AI status report from the condensed patterns only.</p></div>
+    <div class="card"><h3>Log watch &amp; folder scan</h3><p>Follows the logs of open tabs in the background and reports only new or critical patterns; receives syslog from switches and firewalls. The folder scan checks every host of a folder at once (also nightly as a schedule) and shows what several hosts share. <kbd>s</kbd> in a switch's log view sets up syslog to sshTermy.</p></div>
     <div class="card"><h3>Sync</h3><p>End-to-end encrypted via OneDrive, Dropbox, iCloud, Syncthing or WebDAV (Synology, Nextcloud). Keys, shell and serial port can be set per computer, schedules run only on their computer, favorites count across all.</p></div>
     <div class="card"><h3>System profile</h3><p>Knows Linux distributions, macOS, Windows and network OS dialects (Aruba, Cisco, Juniper, MikroTik, FortiGate, UniFi …), so the AI suggests matching commands.</p></div>
+    <div class="card"><h3>Command sets</h3><p>48 command sets built in (Cisco, Arista, Aruba, Comware, Huawei, Dell, Extreme, Ruckus, Palo Alto, Sophos, FortiGate, pfSense, Proxmox …). Add your own as YAML, test it on the device or let the AI draft it, synced to your other computers; own and team sets can never weaken the built-in safety rules.</p></div>
     <div class="card"><h3>AI companion</h3><p>Reads along and comments on its own: quiet (errors, risky lines before Enter, repeats), chatty (every command) or coach (spots your goal, recap with runbook). Your own AI servers, also external, can be registered.</p></div>
     <div class="card"><h3>Agent &amp; plan mode</h3><p>The AI works towards a goal on its own, writes and runs scripts; three levels, dangerous steps always wait for you. Plan first: review and approve the whole plan.</p></div>
     <div class="card"><h3>Split view &amp; tabs</h3><p>Seven layouts with up to six sessions, zoom, swap, type into all; tab bar with <code>+</code>, <code>×</code>, right-click menu and tab list (<kbd>Alt</kbd>+<kbd>T</kbd>).</p></div>
@@ -156,7 +160,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Pro SSH</h3><p>Agent forwarding, X11 forwarding, FIDO2 security keys, Kerberos/GSSAPI, SSH certificates, persistent tmux/screen sessions.</p></div>
     <div class="card"><h3>Files in the terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) through <code>sudo su</code> and several hops, clipboard from the server via OSC 52.</p></div>
     <div class="card"><h3>Team sharing</h3><p>Encrypted <code>.sshteam</code> packages and team folders that keep everyone's connections up to date, without passwords.</p></div>
-    <div class="card"><h3>Look &amp; keys</h3><p>Nine themes including Matrix, Amber, Neon and two for color blindness, your own colors, four icon styles, every shortcut can be changed.</p></div>
+    <div class="card"><h3>Look &amp; keys</h3><p>26 themes with live preview, from Polar night, Synthwave and Ink to Paper and Mint, plus high contrast and color blindness, your own colors, four icon styles, every shortcut can be changed.</p></div>
     <div class="card"><h3>Lively interface</h3><p>Connecting as a card with steps and a light sweep, tabs flash on success and errors, a card when hovering a tab, breathing online dots (only visible connections are checked) and load bars, the AI answer types out, palette matches light up, latency curve in the status line, a frame gliding between split panes, dialogs with shadows and optional round corners. Full, subtle or off.</p></div>
     <div class="card"><h3>Accessible &amp; supportable</h3><p>Accessible mode without animations and with shapes instead of color only. Debug log for bug reports (<code>--debug</code>), saved cleaned of hosts, IPs and passwords. Adaptive frame rate when output floods, plus a performance display in the palette that rates draw time in plain words.</p></div>
     <div class="card"><h3>Screen lock</h3><p>Lock now or after 5 to 60 minutes idle; sessions keep running behind the lock. Change the master password or the Windows sign-in any time.</p></div>
@@ -197,6 +201,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>Command palette</td></tr>
     <tr><td><kbd>F1</kbd></td><td>Help</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Goal mode (agent)</td></tr>
+    <tr><td><kbd>F2</kbd> → <kbd>c</kbd> / <kbd>l</kbd></td><td>Agent finished: copy the result / read it in full; <kbd>PgUp</kbd>/<kbd>PgDn</kbd> or the mouse wheel scroll the panel</td></tr>
     <tr><td><kbd>F3</kbd></td><td>Ask AI with terminal context; <kbd>Esc</kbd> stops the answer, <kbd>n</kbd> new question, <kbd>f</kbd> follow-up</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>K</kbd> / <kbd>Alt</kbd>+<kbd>J</kbd></td><td>AI companion: level (off, quiet, chatty, coach) / companion sidebar</td></tr>
     <tr><td><kbd>F4</kbd> / <kbd>F5</kbd> / <kbd>F6</kbd></td><td>Tunnels / files (SFTP) / host overview</td></tr>
@@ -208,18 +213,23 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>Alt</kbd>+<kbd>I</kbd></td><td>Zoom a pane / type into all panes</td></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>Search the scrollback</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>c</kbd></td><td>Containers: Docker, Podman, Kubernetes (shell, logs, AI)</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>E</kbd> or <kbd>F6</kbd> → <kbd>l</kbd></td><td>Log view: <kbd>n</kbd> what's new, <kbd>t</kbd> timeline, <kbd>x</kbd>/<kbd>X</kbd> hide noise, <kbd>k</kbd> AI explains, <kbd>b</kbd> AI status report, <kbd>1</kbd>…<kbd>4</kbd> check command, <kbd>w</kbd> log watch alerts, <kbd>s</kbd> syslog setup (switch)</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>t</kbd> / <kbd>z</kbd></td><td>Live graphs: range 5 min / 1 h, large view</td></tr>
     <tr><td><kbd>F5</kbd> → <kbd>e</kbd></td><td>Server file in your own editor (saving uploads it)</td></tr>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Session logs: AI change report</td></tr>
-    <tr><td><kbd>z</kbd> (manager)</td><td>Schedules for broadcast and runbooks</td></tr>
+    <tr><td><kbd>z</kbd> (manager)</td><td>Schedules for broadcast and runbooks (<kbd>Ctrl</kbd>+<kbd>A</kbd> accepts new hosts)</td></tr>
     <tr><td><kbd>⇧</kbd>+<kbd>F10</kbd></td><td>Move the tab to its own terminal window</td></tr>
-    <tr><td><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Own window: font size bigger / smaller / default (Mac: <kbd>⌘</kbd>)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></td><td>Own window: font size bigger / smaller / default (Mac: <kbd>⌘</kbd>), remembered</td></tr>
+    <tr><td><kbd>F11</kbd></td><td>Own window: full screen on / off</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> (manager)</td><td>Undo the last delete (10 s)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>T</kbd> (connection form)</td><td>Test the connection: reachable, host key, login</td></tr>
+    <tr><td><kbd>e</kbd> / <kbd>k</kbd> (closed tab)</td><td>Edit the connection / compare and accept a changed host key</td></tr>
     <tr><td><kbd>F10</kbd></td><td>Back to the manager (sessions keep running)</td></tr>
     <tr><td><kbd>F12</kbd></td><td>About and update</td></tr>
     <tr><td><kbd>Tab</kbd> / <kbd>→</kbd></td><td>Accept ghost text</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd></td><td>Insert follow-up command</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>After a failure: cause and fix</td></tr>
-    <tr><td><kbd>Ctrl</kbd>+<kbd>Q</kbd></td><td>Quit</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Q</kbd></td><td>Quit (asks while connections are open)</td></tr>
   </table>
   <p>All shortcuts can be changed: <kbd>b</kbd> in the manager. The full list is in the <a href="https://github.com/db9979/sshtermy#usage">README</a> and in the app (<kbd>F1</kbd>).</p>
 </section>

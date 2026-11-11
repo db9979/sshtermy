@@ -141,9 +141,20 @@ func (a *App) trzMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		switch m.mode {
 		case 'S':
+			// Der Server will Dateien schicken: erst fragen. Das kann jeder
+			// Server auslösen, auch ohne dass du tsz getippt hast.
 			dir := exportDir()
-			a.flash(i18n.T("Datei vom Server wird übertragen (tsz) nach ") + dir)
-			return tea.Batch(a.listen(), a.trzRunCmd(s, r, func() ([]string, error) { return r.t.Download(dir) })), true
+			md := confirmModal(i18n.T("Dateien vom Server annehmen?"),
+				fmt.Sprintf(i18n.T("%s möchte Dateien schicken (tsz).\n\nZiel: %s\nVorhandene Dateien werden nie überschrieben (neuer Name).\n\nj = annehmen · n = ablehnen"), s.conn.Alias, dir),
+				func() tea.Cmd {
+					a.flash(i18n.T("Datei vom Server wird übertragen (tsz) nach ") + dir)
+					return a.trzRunCmd(s, r, func() ([]string, error) { return r.t.Download(dir) })
+				})
+			md.onCancel = func() tea.Cmd {
+				return a.trzRunCmd(s, r, func() ([]string, error) { return nil, r.t.Decline() })
+			}
+			a.showAsync(md)
+			return a.listen(), true
 		case 'D':
 			a.flashErr(i18n.T("Ordner per trz -d geht nicht; Dateien einzeln mit trz oder Ordner mit F5 (SFTP)"))
 			return tea.Batch(a.listen(), a.trzRunCmd(s, r, func() ([]string, error) { return nil, r.t.Decline() })), true

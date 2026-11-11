@@ -79,3 +79,51 @@ func TestDoneStepStatus(t *testing.T) {
 		}
 	}
 }
+
+// Die Abschlusszusammenfassung kommt vollständig an (früher nach 600 Zeichen
+// „Server ist…“), Absätze bleiben, im Ziel-Modus galt sogar nur 160.
+func TestDoneSummaryComplete(t *testing.T) {
+	long := strings.Repeat("Cron-Jobs sind nur Standard (e2scrub, popularity-contest). ", 20) + "Server ist sauber."
+	in := `{"fertig": true, "grund": "Absatz eins.\n\n\n` + long + `"}`
+	for _, parse := range []func(string) (Step, error){
+		func(s string) (Step, error) { return ParseAuto(s, "unix", true) },
+		func(s string) (Step, error) { return ParseStep(s, "Ubuntu") },
+	} {
+		st, err := parse(in)
+		if err != nil || !st.Done {
+			t.Fatal(err)
+		}
+		if !strings.HasSuffix(st.Reason, "Server ist sauber.") {
+			t.Errorf("Ende fehlt: …%q", tail(st.Reason, 40))
+		}
+		if !strings.HasPrefix(st.Reason, "Absatz eins.\n\nCron") {
+			t.Errorf("Absätze nicht erhalten: %q", short(st.Reason, 40))
+		}
+	}
+}
+
+// Abgeschnittene Abschlussmeldung (Token-Limit): Text retten statt Fehler.
+func TestDoneSummarySalvaged(t *testing.T) {
+	st, err := ParseAuto(`{"fertig": true, "grund": "Logrotation eingerichtet.\nGeprüft mit logrotate -d, alles in Ord`, "unix", true)
+	if err != nil || !st.Done {
+		t.Fatalf("abgeschnittene Zusammenfassung nicht gerettet: %v", err)
+	}
+	if !strings.Contains(st.Reason, "eingerichtet.\nGeprüft") || !strings.HasSuffix(st.Reason, "…") {
+		t.Errorf("gerettet: %q", st.Reason)
+	}
+	// ein abgeschnittener Befehl wird weiterhin nie ergänzt
+	if _, err := ParseAuto(`{"befehl": "rm -rf /var/log/old`, "unix", true); err == nil {
+		t.Error("abgeschnittener Befehl darf nicht durchgehen")
+	}
+}
+
+func TestPlanSummaryComplete(t *testing.T) {
+	long := strings.Repeat("Erst sichern, dann ändern. ", 40) + "ENDE"
+	st, err := ParsePlan(`{"planfertig": {"zusammenfassung": "`+long+`", "schritte": [{"befehl": "df -h", "grund": "Platz prüfen"}]}}`, "unix", true)
+	if err != nil || st.Full == nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(st.Full.Summary, "ENDE") {
+		t.Errorf("Plan-Zusammenfassung gekürzt: …%q", tail(st.Full.Summary, 30))
+	}
+}

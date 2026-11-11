@@ -134,7 +134,7 @@ func (a *App) reopenTab(s *session) tea.Cmd {
 	if fresh, ok := a.st.Connection(s.conn.ID); ok {
 		s.conn = fresh
 	}
-	s.state, s.err = stConnecting, ""
+	s.state, s.err, s.errv = stConnecting, "", nil
 	return a.connectCmd(s)
 }
 

@@ -1,0 +1,12 @@
+# Unbekanntes Netzwerkgerät: was die meisten CLIs verstehen.
+id: network
+name: Netzwerkgerät (unbekannt)
+name_en: Network device (unknown)
+order: 9999
+hint: "Netzwerkgerät mit eigener CLI, kein Linux. Erst mit Befehlen wie show version oder ? herausfinden, was es kann."
+commands:
+  version: show version
+  config: show running-config
+logs:
+  commands: [show logging]
+  reader: generic

@@ -76,6 +76,10 @@ func (a *App) guardedPaste(s *session, text string) tea.Cmd {
 	if s.term == nil || s.state != stConnected || text == "" {
 		return nil
 	}
+	if s.cap.active() {
+		a.flash(i18n.T("sshTermy tippt gerade in diese Shell, nichts eingefügt · Esc bricht ab"))
+		return nil
+	}
 	if s.term.AltScreen() {
 		s.sel, s.scroll = nil, 0
 		s.term.Paste(text)

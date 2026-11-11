@@ -161,7 +161,7 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 			s.goal.input = newAIInput(i18n.T("z. B. Installiere Docker und richte Nginx als Reverse Proxy ein"))
 			s.goal.edit, s.goal.answer = newCommandInput(), newAIInput("")
 			s.goal.inited, s.goal.rbSel = true, -1
-			s.goal.level = lvlNormal
+			s.goal.level = lvlCareful // Standard seit 2026-11-10: nur Lesendes läuft allein
 		}
 		if !s.goal.active {
 			return s.goal.input.Focus()
@@ -449,6 +449,9 @@ func (a *App) panelMsg(s *session, msg tea.Msg) tea.Cmd {
 			return nil
 		}
 	}
+	if isKey && (k.String() == "pgup" || k.String() == "pgdown") && s.panelPage(k.String() == "pgdown") {
+		return nil
+	}
 	if isKey && k.String() == "esc" {
 		s.panelFocus = false
 		if s.panel == panelTunnels || s.panel == panelHost || (s.panel == panelAsk && !s.ask.busy && s.ask.answer.Len() == 0) {
@@ -501,6 +504,13 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	}
 	// 1) noch kein Ziel: Eingabe, darunter die gespeicherten Runbooks
 	if !g.active && g.done {
+		switch key {
+		case "c":
+			return a.copyDone(s)
+		case "l":
+			a.readDone(s)
+			return nil
+		}
 		if key == "enter" || key == "x" {
 			g.done, g.rbSel, g.runbookID, g.recipe = false, -1, "", nil
 			g.input.SetValue("")
@@ -530,12 +540,14 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		case "ctrl+d":
 			if g.rbSel >= 0 && g.rbSel < len(rbs) {
 				rb := rbs[g.rbSel]
-				a.modal = confirmModal(i18n.T("Runbook löschen?"), "„"+rb.Name+i18n.T("“ löschen?"), func() tea.Cmd {
-					_ = a.st.DeleteRunbook(rb.ID)
-					g.rbSel = -1
-					g.input.SetValue("")
+				tr, err := a.st.DeleteRunbookTrash(rb.ID)
+				if err != nil {
+					a.flashErr(err.Error())
 					return nil
-				})
+				}
+				g.rbSel = -1
+				g.input.SetValue("")
+				a.offerUndo(i18n.T("Runbook „")+rb.Name+i18n.T("“ gelöscht"), tr, nil, nil) // Klick auf den Hinweis (Strg+Z gehört hier der Shell)
 			}
 			return nil
 		case "enter":
@@ -748,7 +760,7 @@ func (a *App) panelKeys(s *session) [][2]string {
 		g := s.goal
 		if !g.active {
 			if g.done {
-				return [][2]string{{"Strg+S", i18n.T("als Runbook merken")}, {"⏎", i18n.T("neues Ziel")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
+				return [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"Strg+S", i18n.T("als Runbook merken")}, {"⏎", i18n.T("neues Ziel")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
 			}
 			if len(a.st.Runbooks(s.conn.ID)) == 0 {
 				return [][2]string{{"⏎", i18n.T("Ziel starten")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
@@ -820,9 +832,11 @@ func (a *App) viewPanel(s *session, w, h int) string {
 	st := a.s
 	if s.panel != s.panelSeen {
 		s.panelSeen, s.panelAt = s.panel, time.Now()
+		s.pscroll = panelScroll{}
 	}
 	inner := w - 4
 	var b strings.Builder
+	s.pscroll.mark = -1
 	switch s.panel {
 	case panelGoal:
 		a.viewGoal(&b, s, inner)
@@ -840,8 +854,13 @@ func (a *App) viewPanel(s *session, w, h int) string {
 	raw := b.String()
 	top := (s.panel == panelGoal && s.goal.planReview()) || (s.panel == panelHost && s.host.live.wide)
 	m := &s.panelMemo
+	ps := &s.pscroll
+	if ps.mark != ps.markSeen { // neue Zusammenfassung: dort anfangen
+		ps.markSeen, ps.pinned = ps.mark, false
+	}
 	var out string
-	if m.ok && m.raw == raw && m.w == w && m.h == h && m.focus == s.panelFocus && m.style == a.styleGen && m.kind == s.panel && m.top == top {
+	if m.ok && m.raw == raw && m.w == w && m.h == h && m.focus == s.panelFocus && m.style == a.styleGen && m.kind == s.panel && m.top == top &&
+		m.pinned == ps.pinned && m.start == ps.start {
 		out = m.out
 	} else {
 		style := st.Panel
@@ -849,14 +868,10 @@ func (a *App) viewPanel(s *session, w, h int) string {
 			style = st.PanelFocus
 		}
 		content := lipgloss.NewStyle().Width(inner).Render(raw)
-		lines := strings.Split(content, "\n")
-		if len(lines) > h-2 && top {
-			lines = lines[:h-2] // Plan: Anfang mit den Schritten sichtbar halten
-		} else if len(lines) > h-2 {
-			lines = lines[len(lines)-(h-2):] // Ende sichtbar halten
-		}
+		lines := a.scrollPanelLines(s, strings.Split(content, "\n"), h-2, top, inner)
 		out = style.Width(w).Height(h).MaxHeight(h).Render(strings.Join(lines, "\n"))
-		*m = panelMemo{raw: raw, w: w, h: h, focus: s.panelFocus, style: a.styleGen, kind: s.panel, top: top, out: out, ok: true}
+		*m = panelMemo{raw: raw, w: w, h: h, focus: s.panelFocus, style: a.styleGen, kind: s.panel, top: top, out: out, ok: true,
+			pinned: ps.pinned, start: ps.start}
 	}
 	if d := time.Since(s.panelAt); motionLevel() > 0 && d < fadeInDur*2 {
 		out = fadeANSI(out, st.T, easeOut(float64(d)/float64(fadeInDur*2))) // Panel blendet ein
@@ -874,6 +889,9 @@ type panelMemo struct {
 	top   bool
 	out   string
 	ok    bool
+	// Blättern (panelscroll.go)
+	pinned bool
+	start  int
 }
 
 func wrap(s string, w int) string { return lipgloss.NewStyle().Width(w).Render(s) }
@@ -942,12 +960,14 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	b.WriteString("\n")
 	switch {
 	case g.done && g.auto:
+		markPanel(s, b.String()) // Zusammenfassung oben anfangen, Rest per Blättern
 		a.viewAgentDone(b, s, w)
 		if s.panelFocus {
 			g.active = false
 		}
 	case g.done:
-		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, [2]string{"Strg+S", i18n.T("als Runbook merken")}, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{a.keys.label(actGoal), i18n.T("schließen")}))
+		markPanel(s, b.String())
+		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, [2]string{"c", i18n.T("kopieren")}, [2]string{"l", i18n.T("ganz lesen")}, [2]string{"Strg+S", i18n.T("als Runbook merken")}, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{a.keys.label(actGoal), i18n.T("schließen")}))
 		if s.panelFocus && g.done {
 			g.active = false
 		}

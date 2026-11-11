@@ -1,0 +1,18 @@
+id: checkpoint-gaia
+name: Check Point Gaia
+order: 290
+hint: "Check Point Gaia: clish (Prompt host>) mit show version all, show interfaces all, show route, show configuration, set …/add …/delete … (wirkt sofort), save config (dauerhaft). expert öffnet die Linux-Shell (cpstat, fw stat, cphaprob state, fw ctl pstat). Regelwerk über SmartConsole, nicht per CLI."
+detect:
+  screen: ['(?i)\bgaia\b|check point']
+  version: ['(?i)check point gaia']
+commands:
+  version: show version all
+  config: show configuration
+parse:
+  firmware: '(?i)Check Point Gaia\s+(R[\d.]+)'
+syslog:
+  steps: ['add syslog log-remote-address {{ip}} level warning']
+  save: save config
+danger:
+  - rx: '^\s*(fw\s+unloadlocal|cpstop|set\s+expert-password|delete\s+user)\b'
+    reason: leert oder deaktiviert die Firewall

@@ -1,0 +1,25 @@
+id: ilo
+name: HPE iLO
+order: 310
+hint: "HPE iLO (Fernwartung, SMASH-CLP, Prompt </>hpiLO->): show /system1, show /map1/firmware1, show /system1/log1 (IML), show /map1/log1, power (Zustand), vsp (serielle Konsole, zurück mit Esc+( ). power on/off/reset und reset /map1 wirken sofort."
+detect:
+  banner: ['(?i)mpSSH']
+  screen: ['(?i)hpiLO->|integrated lights-out']
+  version: ['(?i)hpiLO|integrated lights-out|/map1/firmware1']
+commands:
+  version: show /map1/firmware1
+  system: show /system1
+  extra:
+    - label: Strom
+      label_en: Power
+      cmd: show /system1
+      pick: '(?im)^\s*(?:power|enabled_state)=(\S+)'
+parse:
+  firmware: '(?im)^\s*version=(\S+)'
+  model: '(?im)^\s*name=(.+?)\s*$'
+danger:
+  - rx: '^\s*(power\s+(off|reset|warm)|reset\s+/system1|stop\s+/system1|reset\s+/map1)\b'
+    reason: schaltet den Server aus oder startet ihn neu
+    reason_en: powers the server off or restarts it
+  - rx: '^\s*(delete\s+/map1/accounts1|set\s+/map1/config1\s+oemhp_)'
+    reason: ändert Benutzer oder Passwörter

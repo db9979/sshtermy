@@ -1,0 +1,24 @@
+id: netgear
+name: NETGEAR (M4250/M4300/M4500)
+order: 255
+hint: "NETGEAR managed Switches (FASTPATH-ähnlich): show running-config, show port all, show vlan brief, show mac-addr-table, show lldp remote-device all, show version, show logging buffered; Blättern aus mit terminal length 0; Konfiguration mit configure … exit, speichern mit write memory. Ports heißen 1/0/1."
+detect:
+  screen: ['(?i)netgear|prosafe|\((?:M4[235]\d\d|GSM\d{4})[\w-]*\)\s*[>#]']
+  version: ['(?i)netgear|prosafe']
+commands:
+  paging_off: terminal length 0
+  version: show version
+  ports: show port all
+  vlans: show vlan brief
+  config: show running-config
+parse:
+  firmware: '(?im)^Software Version\.*\s*(\S+)'
+  model: '(?im)^Machine Model\.*\s*(\S+)|^Machine Type\.*\s*(\S+)'
+logs:
+  commands: [show logging buffered]
+  ports: show port all
+  reader: generic
+syslog:
+  steps: [configure, 'logging host {{ip}} ipv4 {{port}} warning', logging syslog, exit]
+  abort: [exit]
+  save: write memory

@@ -1,0 +1,23 @@
+id: extreme-voss
+name: Extreme VOSS / Fabric Engine
+order: 241
+hint: "Extreme VOSS / Fabric Engine (VSP): show running-config, show interfaces gigabitEthernet, show vlan basic, show sys-info, show isis adjacencies, show logging file; Blättern aus mit terminal more disable; Konfiguration mit enable · configure terminal … end, speichern mit save config."
+detect:
+  screen: ['(?i)\bVOSS\b|\bVSP-\d{4}|virtual services platform|fabric engine']
+  version: ['(?i)\bVOSS\b|virtual services platform|\bVSP-\d{4}']
+commands:
+  paging_off: terminal more disable
+  version: show sys-info
+  vlans: show vlan basic
+  config: show running-config
+parse:
+  firmware: '(?im)^\s*SysDescr\s*:\s*\S+\s+\(([\d.]+)\)'
+  model: '(?im)^\s*SysDescr\s*:\s*(\S+)'
+  name: '(?im)^\s*SysName\s*:\s*(\S+)'
+  uptime: '(?im)^\s*SysUpTime\s*:\s*(.+?)\s*$'
+logs:
+  commands: [show logging file tail]
+  reader: generic
+syslog:
+  note: "VOSS: syslog host 1 address <IP> · syslog host 1 udp-port <Port> · syslog host 1 enable (Port nur 514–530)."
+  save: save config

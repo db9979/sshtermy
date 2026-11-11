@@ -1,0 +1,29 @@
+id: extreme-exos
+name: Extreme EXOS (Switch-Engine)
+name_en: Extreme EXOS (Switch Engine)
+order: 240
+hint: "ExtremeXOS / Switch Engine, kein IOS: show configuration, show ports information, show vlan, show fdb, show lldp neighbors, show switch, show version, show log; Blättern aus mit disable clipaging; Änderungen mit configure …/enable …/disable …, speichern mit save configuration. VLANs haben Namen (configure vlan <name> add ports …)."
+detect:
+  screen: ['(?i)extremexos|\bswitch engine\b.*extreme|extreme networks']
+  version: ['(?i)extremexos version|\bExtremeXOS\b']
+commands:
+  paging_off: disable clipaging
+  version: show version
+  system: show switch
+  vlans: show vlan
+  config: show configuration
+parse:
+  firmware: '(?i)ExtremeXOS version\s+(\S+)'
+  model: '(?im)^System Type:\s*(\S+)'
+  name: '(?im)^SysName:\s*(\S+)'
+  uptime: '(?im)^System UpTime:\s*(.+?)\s*$'
+  vlan: '^(?P<name>[A-Za-z][\w.-]*)\s+(?P<id>\d{1,4})\s'
+logs:
+  commands: [show log]
+  reader: generic
+syslog:
+  note: "EXOS: configure syslog add <IP>:<Port> vr VR-Default local0 · enable log target syslog <IP>:<Port> vr VR-Default local0 · configure log target syslog <IP>:<Port> vr VR-Default local0 severity warning. Das virtuelle Netz (VR-Default oder VR-Mgmt) hängt vom Anschluss ab, deshalb von Hand."
+  save: save configuration
+danger:
+  - rx: '^\s*(unconfigure\s+switch|delete\s+vlan|unconfigure\s+vlan|use\s+image)\b'
+    reason: löscht Konfiguration oder Speicher des Geräts

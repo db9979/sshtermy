@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -28,6 +29,9 @@ type Switch struct {
 	vlans []int
 	// PressAnyKey: nach dem Login erst "Press any key to continue" zeigen.
 	PressAnyKey bool
+	// Positioned: wie echte ArubaOS-Switches neue Zeilen per Cursor-
+	// Position (ESC[24;1H) beginnen statt mit "\r\n".
+	Positioned bool
 }
 
 // StartSwitch lauscht auf addr ("127.0.0.1:0" für einen freien Port).
@@ -131,8 +135,19 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 		}
 	}
 	page := true
-	w(prompt)
+	pr, nl := prompt, "\r\n"
+	if sw.Positioned {
+		pr, nl = "\x1b[24;1H\x1b[2Ksw-buero# ", "\x1b[24;1H"
+	}
+	w(pr)
 	var line []byte
+	conf := false // Konfigurationsmodus: Prompt sw-buero(config)#
+	cur := func() string {
+		if conf {
+			return strings.Replace(pr, "sw-buero# ", "sw-buero(config)# ", 1)
+		}
+		return pr
+	}
 	for {
 		if _, err := ch.Read(key); err != nil {
 			return
@@ -141,18 +156,26 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 		case '\r', '\n':
 			cmd := strings.TrimSpace(string(line))
 			line = line[:0]
-			w("\r\n")
-			if cmd == "exit" || cmd == "logout" {
+			w(nl)
+			var out string
+			switch {
+			case conf && (cmd == "end" || cmd == "exit"):
+				conf = false
+			case cmd == "exit" || cmd == "logout":
 				return
+			case cmd == "configure terminal" || cmd == "configure" || cmd == "conf t":
+				conf = true
+			case conf && strings.HasPrefix(cmd, "logging "):
+			default:
+				if cmd == "no page" {
+					page = false
+				}
+				out = sw.run(cmd)
 			}
-			if cmd == "no page" {
-				page = false
-			}
-			out := sw.run(cmd)
 			if !sw.pageOut(ch, out, page) {
 				return
 			}
-			w(prompt)
+			w(cur())
 		case 0x7f, 0x08:
 			if len(line) > 0 {
 				line = line[:len(line)-1]
@@ -160,7 +183,7 @@ func (sw *Switch) shell(ch io.ReadWriteCloser) {
 			}
 		case 0x03:
 			line = line[:0]
-			w("\r\n" + prompt)
+			w(nl + cur())
 		default:
 			if c >= 0x20 {
 				line = append(line, c)
@@ -232,6 +255,18 @@ func (sw *Switch) run(cmd string) string {
 		for _, v := range sw.vlanList() {
 			fmt.Fprintf(&b, "  %-7d %-32s | Port-based No    No\n", v, vlanName(v))
 		}
+		return b.String()
+	case "show logging -r":
+		var b strings.Builder
+		b.WriteString(" Keys:   W=Warning   I=Information\n         M=Major     D=Debug E=Error\n ----  Reverse event Log listing: Events Since Boot  ----\n")
+		now := time.Now()
+		for i := 0; i < 8; i++ {
+			t := now.Add(-time.Duration(i*7+1) * time.Minute)
+			fmt.Fprintf(&b, " I %s 00076 ports: port 23 is now on-line\n", t.Format("01/02/06 15:04:05"))
+			fmt.Fprintf(&b, " W %s 00077 ports: port 23 is now off-line\n", t.Add(-3*time.Second).Format("01/02/06 15:04:05"))
+		}
+		fmt.Fprintf(&b, " M %s 00921 loop-protect: port 17 disabled - loop detected on VLAN 20\n", now.Add(-2*time.Hour).Format("01/02/06 15:04:05"))
+		fmt.Fprintf(&b, " I %s 00422 mgr: SME SSH from 10.0.0.50 - MANAGER Mode\n", now.Add(-3*time.Hour).Format("01/02/06 15:04:05"))
 		return b.String()
 	case "show mac-address":
 		return " Status and Counters - Port Address Table\n\n  MAC Address   Port  VLAN\n  ------------- ----- ----\n  001122-aabbcc 4     1\n  941882-000001 25    1\n  941882-000002 25    1\n"

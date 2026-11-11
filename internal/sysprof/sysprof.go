@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/db9979/sshtermy/internal/cmdset"
 	"github.com/db9979/sshtermy/internal/domain"
 )
 
@@ -27,22 +28,16 @@ func FromBanner(banner string) domain.SystemProfile {
 	p := domain.SystemProfile{Banner: strings.TrimSpace(banner)}
 	l := strings.ToLower(banner)
 	set := func(fam, os, dia string) { p.Family, p.OS, p.Dialect = fam, os, dia }
-	switch {
-	case strings.Contains(l, "openssh_for_windows"):
+	if strings.Contains(l, "openssh_for_windows") {
 		set(domain.FamilyWindows, "Windows (OpenSSH)", "")
-	case strings.Contains(l, "rosssh") || strings.Contains(l, "mikrotik"):
-		set(domain.FamilyNetwork, "MikroTik RouterOS", "routeros")
-	case strings.Contains(l, "mocana") || strings.Contains(l, "procurve"):
-		// HPE/Aruba ProCurve (ArubaOS-Switch) meldet sich mit Mocana SSH.
-		set(domain.FamilyNetwork, "ArubaOS-Switch (ProCurve)", "procurve")
-	case strings.Contains(l, "cisco"):
-		set(domain.FamilyNetwork, "Cisco IOS", "cisco-ios")
-	case strings.Contains(l, "huawei"):
-		set(domain.FamilyNetwork, "Huawei VRP", "huawei-vrp")
-	case strings.Contains(l, "comware") || strings.Contains(l, "h3c"):
-		set(domain.FamilyNetwork, "HPE Comware", "comware")
-	case strings.Contains(l, "fortissh"):
-		set(domain.FamilyNetwork, "FortiOS", "fortios")
+		return p
+	}
+	// Netzwerkgeräte: Merkmale aus den Befehlssätzen
+	if s := cmdset.DetectBanner(banner); s != nil {
+		set(s.EffFamily(), s.Name, s.ID)
+		return p
+	}
+	switch {
 	case strings.Contains(l, "ubuntu"):
 		set(domain.FamilyLinux, "Ubuntu", "posix")
 	case strings.Contains(l, "debian"):
@@ -93,7 +88,39 @@ func FromProbe(out string) domain.SystemProfile {
 		p.OS = firstWord(p.Version)
 	}
 	p.Init = initName(p.Init)
+	// Zeile 8: Merkmal-Datei eines Server-Befehlssatzes (Proxmox, ESXi, …)
+	if id := probeSet(get(7)); id != "" {
+		p.Dialect = id
+	}
 	return p
+}
+
+// probeSet: Kennung des Befehlssatzes zur gefundenen Merkmal-Datei.
+func probeSet(path string) string {
+	if path == "" {
+		return ""
+	}
+	for _, pp := range cmdset.ProbePaths() {
+		if pp[0] == path {
+			return pp[1]
+		}
+	}
+	return ""
+}
+
+// Probe: ProbeCommand plus Zeile 8, die erste vorhandene Merkmal-Datei der
+// Server-Befehlssätze (nur Pfade, die cmdset geprüft hat: keine Leer- oder
+// Sonderzeichen, die das Skript verändern könnten).
+func Probe() string {
+	var paths []string
+	for _, pp := range cmdset.ProbePaths() {
+		paths = append(paths, pp[0])
+	}
+	if len(paths) == 0 {
+		return ProbeCommand
+	}
+	loop := `; m=; for f in ` + strings.Join(paths, " ") + `; do if [ -e "$f" ]; then m=$f; break; fi; done; echo "$m"'`
+	return strings.TrimSuffix(ProbeCommand, "'") + loop
 }
 
 // probeLines: so viele Zeilen hat die Ausgabe von ProbeCommand mindestens
@@ -182,16 +209,6 @@ type screenRule struct {
 // sicher erkennt (Login-Banner, „show version“, typische Prompts). Reihenfolge
 // zählt: Spezifisches zuerst.
 var screenRules = []screenRule{
-	{regexp.MustCompile(`(?i)arubaos-cx|\baos-cx\b`), domain.FamilyNetwork, "ArubaOS-CX", "arubaos-cx"},
-	{regexp.MustCompile(`(?i)arubaos-switch|procurve|image stamp:|\bsoftware revision\s+:?\s*[A-Z]{1,2}\.\d{2}\.`), domain.FamilyNetwork, "ArubaOS-Switch (ProCurve)", "procurve"},
-	{regexp.MustCompile(`(?i)cisco nexus|\bNX-OS\b`), domain.FamilyNetwork, "Cisco NX-OS", "cisco-ios"},
-	{regexp.MustCompile(`(?i)cisco ios|cisco internetwork operating system|IOS-XE`), domain.FamilyNetwork, "Cisco IOS", "cisco-ios"},
-	{regexp.MustCompile(`(?i)\bjunos\b`), domain.FamilyNetwork, "Juniper Junos", "junos"},
-	{regexp.MustCompile(`(?i)mikrotik routeros|\[[\w.-]+@[\w.-]+\] >`), domain.FamilyNetwork, "MikroTik RouterOS", "routeros"},
-	{regexp.MustCompile(`(?i)huawei versatile routing platform`), domain.FamilyNetwork, "Huawei VRP", "huawei-vrp"},
-	{regexp.MustCompile(`(?i)comware`), domain.FamilyNetwork, "HPE Comware", "comware"},
-	{regexp.MustCompile(`(?i)fortigate|fortios`), domain.FamilyNetwork, "FortiOS", "fortios"},
-	{regexp.MustCompile(`(?im)welcome to unifi\s+us[^g\s!]|^\(UBNT\)\s*[>#]|^\s*model:\s+us[^g\s!][\w-]*\s*$`), domain.FamilyNetwork, unifiName, "unifi"},
 	{regexp.MustCompile(`(?m)^PS [A-Z]:\\[^>]*> ?$`), domain.FamilyWindows, "", "powershell"},
 	{regexp.MustCompile(`(?m)^[A-Z]:\\[^>]*> ?$`), domain.FamilyWindows, "", "cmd"},
 }
@@ -212,10 +229,14 @@ var (
 // wird nur, was eindeutig ist; sonst bleibt das Ergebnis leer.
 func FromScreen(text string) domain.SystemProfile {
 	var p domain.SystemProfile
-	for _, r := range screenRules {
-		if r.rx.MatchString(text) {
-			p.Family, p.OS, p.Dialect = r.family, r.os, r.dialect
-			break
+	if set := cmdset.DetectScreen(text); set != nil {
+		p.Family, p.OS, p.Dialect = set.EffFamily(), set.Name, set.ID
+	} else {
+		for _, r := range screenRules {
+			if r.rx.MatchString(text) {
+				p.Family, p.OS, p.Dialect = r.family, r.os, r.dialect
+				break
+			}
 		}
 	}
 	sub := func(rx *regexp.Regexp) string {
@@ -239,8 +260,29 @@ func FromScreen(text string) domain.SystemProfile {
 		p.Version, p.Model = sub(rxUniFiVersion), sub(rxUniFiModel)
 	case "powershell", "cmd":
 		p.OS = "Windows"
+	default:
+		// andere Befehlssätze: Muster für Firmware und Modell aus der Datei
+		if set := cmdset.Resolve(p.Dialect, "", ""); set != nil {
+			if rx := compileOr(set.Parse.Firmware); rx != nil {
+				p.Version = sub(rx)
+			}
+			if rx := compileOr(set.Parse.Model); rx != nil {
+				p.Model = sub(rx)
+			}
+		}
 	}
 	return p
+}
+
+func compileOr(p string) *regexp.Regexp {
+	if p == "" {
+		return nil
+	}
+	rx, err := regexp.Compile(p)
+	if err != nil || rx.NumSubexp() == 0 {
+		return nil
+	}
+	return rx
 }
 
 // ---------------------------------------------------------------- Ablehnung

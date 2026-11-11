@@ -38,7 +38,7 @@ var unixRules = []rule{
 	r(`>\s*/dev/(sd|hd|vd|xvd|nvme|mmcblk|disk)`, "überschreibt einen Datenträger"),
 	r(`\b(shutdown|reboot|poweroff|halt)\b|\binit\s+[06]\b`, "fährt den Server herunter oder neu"),
 	r(`\b(ip6?tables|nft)\s+(\S+\s+)*(-F\b|--flush\b|flush\b)|\bufw\s+(disable|reset)\b`, "leert oder deaktiviert die Firewall"),
-	r(`\b(userdel|deluser|passwd|chpasswd|usermod)\b`, "ändert Benutzer oder Passwörter"),
+	r(`(^|[^/.\w-])(userdel|deluser|passwd|chpasswd|usermod)\b`, "ändert Benutzer oder Passwörter"),
 	r(`:\(\)\s*\{`, "Fork-Bombe"),
 	r(`\bgit\s+(reset\s+--hard|clean\s+-[A-Za-z]*f|push\s+(\S+\s+)*(-f\b|--force\b))`, "verwirft Änderungen"),
 	r(`\b(apt|apt-get|dnf|yum|zypper|pacman)\s+(\S+\s+)*(remove|purge|autoremove|erase|-R)\b`, "entfernt Pakete"),
@@ -46,6 +46,18 @@ var unixRules = []rule{
 	r(`\bmv\s+(\S+\s+)+/dev/null\b|>\s*/etc/(passwd|shadow|sudoers|ssh/sshd_config)\b`, "überschreibt Systemdateien"),
 	r(`\bsystemctl\s+(stop|disable|mask)\s+(ssh|sshd)\b`, "sperrt dich aus (SSH-Dienst)"),
 	r(`\bcrontab\s+-r\b`, "löscht alle Cron-Jobs"),
+	// Seit der Prüfung 2026-11-10: was als root ohne sudo sonst durchrutschte
+	r(`(^|[;&|(]|\$\(|\b(sudo|xargs|exec|then|do|nohup|env|time)\s)\s*(\S*/)?rm\s[^|;&]*\s(-[A-Za-z]*[rRf]|--recursive|--force)\b|-exec(dir)?\s+(sudo\s+)?\S*/rm\b`, "löscht Dateien"),
+	r(`\b(rm|unlink|truncate|shred)\b[^|;&]*\s/(etc|boot|bin|sbin|lib|lib64|usr|var/lib)(/|\s|$)|\bcp\s+(-\S+\s+)*/dev/null\s+/|(^|[^2&>])>\s*/(etc|boot)/`, "löscht oder überschreibt Systemdateien"),
+	r(`\bmv\s+(-\S+\s+)*/(etc|boot|bin|sbin|usr|lib|lib64|var|home|root)/?(\s|$)`, "verschiebt einen Systemordner"),
+	r(`\bip6?tables\s+(\S+\s+)*-P\s+(INPUT|OUTPUT|FORWARD)\s+(DROP|REJECT)\b`, "Firewall sperrt dann alles (auch dich)"),
+	r(`\bip\s+(link|l)\s+set\s+(dev\s+)?\S+\s+down\b|\bifdown\b|\bifconfig\s+\S+\s+down\b|\bnmcli\s+(\S+\s+)*(down|delete|off)\b|\bsystemctl\s+(stop|restart|disable|mask)\s+(\S+\s+)*(networking|network|NetworkManager|systemd-networkd)(\.service)?\b`, "nimmt das Netzwerk weg (Verbindung bricht ab)"),
+	r(`\bkubectl\s+(\S+\s+)*delete\b|\bhelm\s+(uninstall|delete)\b`, "löscht Kubernetes-Objekte"),
+	r(`\b(drop\s+(database|schema|table)|truncate\s+table)\b|\bdropdb\b|\bflushall\b|\bflushdb\b`, "löscht Datenbankinhalte"),
+	r(`\bzfs\s+destroy\b|\bzpool\s+(destroy|labelclear)\b|\b(lvremove|vgremove|pvremove)\b`, "löscht Datenträger oder Volumes"),
+	r(`\bdocker(-compose|\s+compose)\s+(\S+\s+)*down\b[^|;&]*\s(-v|--volumes)\b|\bdocker\s+volume\s+(rm|remove)\b`, "löscht Docker-Volumes"),
+	r(`\brsync\b[^|;&]*\s--delete`, "löscht am Ziel, was in der Quelle fehlt"),
+	r(`\bkill\s+(-\S+\s+)*-1\b|\bkillall5\b`, "beendet alle Prozesse"),
 }
 
 var windowsRules = []rule{
@@ -58,6 +70,11 @@ var windowsRules = []rule{
 	r(`\b(Set-NetFirewallProfile[^|;&]*-Enabled\s+(False|0)|netsh\s+advfirewall\s+set\s+\S+\s+state\s+off)\b`, "schaltet die Firewall ab"),
 	r(`\b(Remove-ItemProperty|reg\s+delete)\b[^|;&]*\bHKLM\b|\bbcdedit\b`, "ändert die Systemeinstellungen tief"),
 	r(`\bvssadmin\s+delete\s+shadows\b|\bwbadmin\s+delete\b`, "löscht Sicherungen"),
+	r(`\b(Remove-Item|ri|rm|del|erase|rd|rmdir)\b[^|;&]*\b[A-Za-z]:\\+(Windows|Program Files|ProgramData|Users)(\\|\s|$|")`, "löscht einen Systemordner"),
+	r(`\b(Stop-Service|Set-Service|Disable-Service)\b[^|;&]*\b(WinRM|sshd|TermService|LanmanServer|mpssvc)\b|\bnet\s+stop\s+(WinRM|sshd|TermService)\b`, "sperrt dich aus (Fernzugang-Dienst)"),
+	r(`\b(Disable-NetAdapter|Remove-NetIPAddress|Remove-NetRoute)\b|\bnetsh\s+interface\b[^|;&]*\bdisable(d)?\b`, "nimmt das Netzwerk weg (Verbindung bricht ab)"),
+	r(`\b(Uninstall-WindowsFeature|Remove-WindowsFeature|Disable-WindowsOptionalFeature)\b`, "entfernt Windows-Funktionen"),
+	r(`\bClear-EventLog\b|\bwevtutil(\.exe)?\s+(cl|clear-log)\b`, "löscht Ereignisprotokolle"),
 }
 
 // networkRules: Switches, Router, Firewalls (ArubaOS, Cisco, Comware, Junos,
@@ -65,10 +82,10 @@ var windowsRules = []rule{
 // „show reload“ oder „no shutdown“ nicht anschlagen.
 var networkRules = []rule{
 	r(`^\s*(do\s+)?(reload|reboot|boot(\s+system)?)\b|^\s*(execute|exec)\s+(reboot|shutdown)\b|^\s*request\s+system\s+(reboot|halt|power-off)\b|^\s*/?system\s+(reboot|shutdown)\b`, "startet das Gerät neu"),
-	r(`^\s*(do\s+)?(write\s+erase|erase\b|delete\b|format\b)|^\s*reset\s+saved-configuration\b|^\s*execute\s+(factoryreset|formatlogdisk)\b|^\s*request\s+system\s+zeroize\b|^\s*/?system\s+reset-configuration\b|\bfactory[- ]?reset\b|\bzeroize\b|\b(restore|set)-default\b`, "löscht Konfiguration oder Speicher des Geräts"),
+	r(`^\s*(do\s+)?(write\s+erase|erase\b|delete\b|format\b)|^\s*reset\s+saved-configuration\b|^\s*execute\s+(factoryreset|formatlogdisk)\b|^\s*request\s+system\s+zeroize\b|^\s*/?system\s+reset-configuration\b|\bfactory[- ]?reset\b|\bzeroize\b|\brestore-default\b|^\s*set-default\s*$`, "löscht Konfiguration oder Speicher des Geräts"),
 	r(`^\s*(do\s+)?copy\s+(tftp|scp|sftp|ftp|https?|usb|flash|xmodem)\S*(\s+\S+)?\s+(startup-config|running-config)\b`, "überschreibt die Gerätekonfiguration"),
-	r(`^\s*shut(down)?\s*$|^\s*(interface\s+\S+\s+)?disable\s*$`, "schaltet eine Schnittstelle ab"),
-	r(`^\s*no\s+(vlan|interface|router|ip\s+route|spanning-tree|aaa|username|ip\s+address|ip\s+ssh|crypto)\b`, "entfernt Konfiguration (VLAN, Routing, Zugang)"),
+	r(`^\s*shut(down)?\s*$|^\s*(int(erface)?\s+\S+\s+)?(disable|shut(down)?)\s*$`, "schaltet eine Schnittstelle ab"),
+	r(`^\s*no\s+(vlan|interface|router|ip\s+route|spanning-tree|aaa|username|ip\s+address|ip\s+ssh|crypto|password|enable\s+secret)\b`, "entfernt Konfiguration (VLAN, Routing, Zugang)"),
 	r(`^\s*clear\s+(config|crypto|counters\s+all|arp|ip\s+bgp\s+\*)`, "setzt Gerätezustand zurück"),
 }
 
@@ -83,21 +100,42 @@ func Kind(osText string) string {
 // Check liefert alle zutreffenden Regeln (leer = keine bekannte Gefahr).
 // Auch "sudo" allein macht einen Befehl nicht gefährlich; aber jeder
 // Befehl mit sudo wird in der Oberfläche zusätzlich markiert (Elevated).
+//
+// Geprüft wird nicht nur die Gruppe von kind: ein falsch erkanntes Gerät
+// (Switch als Server, Windows als Unix) darf keine Gefahr verstecken. Bei
+// Servern gelten deshalb auch die Netzwerkregeln (am Zeilenanfang verankert,
+// passen kaum auf Shell-Befehle) und die Regeln des anderen Betriebssystems.
+// Nur bei Netzwerkgeräten bleiben die Shell-Regeln weg („no shutdown“).
+// Mehrzeiliges wird zusätzlich Zeile für Zeile geprüft.
 func Check(cmd, kind string) []Finding {
-	rules := unixRules
+	groups := [][]rule{unixRules, windowsRules, networkRules}
 	switch kind {
 	case "windows":
-		rules = windowsRules
+		groups = [][]rule{windowsRules, unixRules, networkRules}
 	case Network:
-		rules = networkRules
+		groups = [][]rule{networkRules}
+	}
+	parts := []string{cmd}
+	if strings.ContainsAny(cmd, "\r\n") {
+		parts = append(parts, strings.FieldsFunc(cmd, func(r rune) bool { return r == '\n' || r == '\r' })...)
 	}
 	var out []Finding
-	for _, ru := range rules {
-		if ru.rx.MatchString(cmd) {
-			out = append(out, Finding{i18n.T(ru.reason)})
+	seen := map[string]bool{}
+	for _, rules := range groups {
+		for _, ru := range rules {
+			if seen[ru.reason] {
+				continue
+			}
+			for _, p := range parts {
+				if ru.rx.MatchString(p) {
+					seen[ru.reason] = true
+					out = append(out, Finding{i18n.T(ru.reason)})
+					break
+				}
+			}
 		}
 	}
-	return out
+	return withSetRules(out, cmd)
 }
 
 // Network ist die Regelgruppe für Switches und Router.

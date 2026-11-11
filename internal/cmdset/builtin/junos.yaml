@@ -1,0 +1,23 @@
+id: junos
+name: Juniper Junos
+order: 240
+hint: "Junos-CLI: show configuration | display set, show interfaces terse, show version, show chassis hardware; Konfiguration mit configure, set …, commit."
+detect:
+  screen: ['(?i)\bjunos\b']
+  version: ['(?i)junos']
+commands:
+  paging_off: set cli screen-length 0
+  version: show version
+  system: show chassis routing-engine
+  ports: show interfaces terse
+  vlans: show vlans brief
+  config: show configuration | display set
+parse:
+  reader: junos
+logs:
+  commands: [show log messages | last 600 | no-more]
+  ports: show interfaces terse | no-more
+  reader: junos
+syslog:
+  steps: [configure, 'set system syslog host {{ip}} any warning', 'set system syslog host {{ip}} port {{port}}', commit and-quit]
+  abort: [rollback, exit configuration-mode]

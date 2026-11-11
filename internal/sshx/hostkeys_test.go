@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"errors"
 	"net"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,7 +77,7 @@ func TestCallbackPromptDoesNotHoldLock(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Anderer Schlüssel: Warnung statt Rückfrage.
-	if err := hs.Callback(nil)("10.0.0.1:22", remote, testKey(t)); err != ErrHostKeyChanged {
+	if err := hs.Callback(nil)("10.0.0.1:22", remote, testKey(t)); !errors.Is(err, ErrHostKeyChanged) {
 		t.Fatalf("erwartet ErrHostKeyChanged, bekam %v", err)
 	}
 }
@@ -112,4 +114,45 @@ func TestSlowHostKeyAnswerKeepsHandshake(t *testing.T) {
 		t.Fatalf("Dial nach langsamer Antwort: %v", err)
 	}
 	cl.Close()
+}
+
+// Geänderter Schlüssel: Fehler trägt alten und neuen Fingerprint, Replace
+// tauscht nur die Zeilen dieses Hosts aus.
+func TestHostKeyChangedReplace(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "known_hosts")
+	hs, err := NewHostKeyStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, other, fresh := testKey(t), testKey(t), testKey(t)
+	remote := &net.TCPAddr{IP: net.IPv4(10, 0, 0, 1), Port: 22}
+	yes := func(string, string, string) bool { return true }
+	if err := hs.Callback(yes)("sw1:22", remote, old); err != nil {
+		t.Fatal(err)
+	}
+	otherRemote := &net.TCPAddr{IP: net.IPv4(10, 0, 0, 2), Port: 22}
+	if err := hs.Callback(yes)("sw2:22", otherRemote, other); err != nil {
+		t.Fatal(err)
+	}
+	err = hs.Callback(yes)("sw1:22", remote, fresh)
+	var hc *HostKeyChangedError
+	if !errors.As(err, &hc) || !errors.Is(err, ErrHostKeyChanged) {
+		t.Fatalf("erwartet HostKeyChangedError, bekam %v", err)
+	}
+	if len(hc.Old) == 0 || !strings.Contains(hc.Old[0], ssh.FingerprintSHA256(old)) || hc.Fingerprint() != ssh.FingerprintSHA256(fresh) {
+		t.Fatalf("Fingerprints falsch: %+v", hc)
+	}
+	n, err := hs.Replace(hc.Host, hc.Remote, hc.Key)
+	if err != nil || n == 0 {
+		t.Fatalf("Replace: %d %v", n, err)
+	}
+	if err := hs.Callback(nil)("sw1:22", remote, fresh); err != nil {
+		t.Fatalf("neuer Schlüssel nicht übernommen: %v", err)
+	}
+	if err := hs.Callback(nil)("sw1:22", remote, old); err == nil {
+		t.Fatal("alter Schlüssel gilt noch")
+	}
+	if err := hs.Callback(nil)("sw2:22", otherRemote, other); err != nil {
+		t.Fatalf("anderer Host verloren: %v", err)
+	}
 }

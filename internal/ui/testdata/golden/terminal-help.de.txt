@@ -1,31 +1,31 @@
  >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ▌● web-01 ×  +
  P┌─ ? Tastenkürzel  sshTermy vdev ───────────────────────────────────────────────────────────────────────────── × ─┐er
 Li│                                                                                                                 │
-  │  ◆ Überall                            ◎ Ziel-Modus F2                      ≡ Sitzungsprotokolle l               │
-de│   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   /           suchen (auch Ausgabe)   │
-● │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       ⏎ / → ←     auf-/zuklappen          │
-  │   F12         Über & Update            i           nur einfügen (Dry-Run)   Tab         nach Zeit / nach Host   │
-  │   F12 w       Was ist neu              e           bearbeiten               f           Filter: heute · 7 Tag…  │
-de│   F12 l       Sprache: Deutsch/Engl…   s           überspringen             s           Hosts sortieren         │
-  │   ⇧F9         Tastenzeile erklären     r           neu vorschlagen          z           KI-Zusammenfassung      │
-  │   Strg+Q      beenden                  x           Ziel beenden             Z           alle Treffer zusammen…  │
-  │                                        ↑ ↓         Runbook wählen           b           Änderungsbericht        │
-  │  ≡ Verbindungs-Manager F10             Strg+S      als Runbook speichern    x           Export: md · txt · ca…  │
-  │   F10         zurück zum Terminal      Strg+D      Runbook löschen          d           löschen                 │
-  │   ⏎           verbinden                Tab         Schritt für Schritt o…   a           Mitschreiben an/aus     │
-  │   n           neue Verbindung          Esc         Agent anhalten           ␣ Befehl    nicht protokollieren    │
-  │   e           bearbeiten               ?           Agent anweisen                                               │
-  │   d           löschen                  v           Skript des Agenten an…  » Broadcast m                        │
-  │   /           suchen (auch #tag)       r           Skripte des Agenten l…   Space / g / a Host / Ordner / alle  │
-  │   o           neuer Ordner (A / B v…   Leertaste   Plan: Schritt streich…   Tab         Hosts · Quelle · Befe…  │
-  │   r           Ordner bearbeiten        ?           Plan: neu planen lass…   ⇧⏎          weiterer Schritt        │
-  │   v           in Ordner verschieben                                         Strg+S      prüfen, dann ⏎          │
-  │   Shift+↑     nach oben schieben (↓…  ◆ KI fragen F3                        ← / →       Host-Spalte wählen      │
-  │   ← / →       Ordner zu-/aufklappen    ⏎           Frage senden             ↑ ↓ Bild↑↓  Ausgabe blättern        │
-  │   - / +       alle Ordner zu/auf       ⇧⏎ / Strg+J neue Zeile               z / c       groß / kopieren         │
-  │   #           nach Tag filtern         1…9         Befehl einfügen          r / e / x   nochmal / ändern / St…  │
-  │   t           Tunnel anlegen           ↑ ↓         Befehlskarte wählen      {{name}}    Variable, wird abgefr…  │
-  │   c           SSH-Schlüssel erzeuge…   a           Befehl ausführen (rot…   {{host}}    je Host eingesetzt      │
+  │  ◆ Überall                            ◎ Ziel-Modus F2                      ▲ Log-Blick Alt+E                    │
+de│   Strg+Space  Befehlspalette           ⏎           Ziel starten / ausfüh…   ⏎           Zeilen des Musters      │
+● │   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile im Ziel       1…4         Prüfbefehl einfügen     │
+  │   F11         Vollbild an/aus (eige…   i           nur einfügen (Dry-Run)   k           KI erklärt das Muster   │
+  │   F12         Über & Update            e           bearbeiten               b           KI-Lagebericht          │
+de│   F12 w       Was ist neu              s           überspringen             x / X       ausblenden: Host / Or…  │
+  │   F12 l       Sprache: Deutsch/Engl…   r           neu vorschlagen          n           Was ist neu? (u zurüc…  │
+  │   ⇧F9         Tastenzeile erklären     x           Ziel beenden             t           Zeitleiste (←→, ⏎, k)   │
+  │   Strg+Q      beenden (fragt bei of…   ↑ ↓         Runbook wählen           z           Zeitraum 1 h … 7 Tage   │
+  │                                        Strg+S      als Runbook speichern    w           Logwache: Meldungen     │
+  │  ≡ Verbindungs-Manager F10             Strg+D      Runbook löschen          s           Switch: Syslog an ssh…  │
+  │   F10         zurück zum Terminal      Tab         Schritt für Schritt o…   r / c       neu lesen / kopieren    │
+  │   ⏎           verbinden                Esc         Agent anhalten                                               │
+  │   n           neue Verbindung          ?           Agent anweisen          ≡ Sitzungsprotokolle l               │
+  │   e           bearbeiten               v           Skript des Agenten an…   /           suchen (auch Ausgabe)   │
+  │   d           löschen                  r           Skripte des Agenten l…   ⏎ / → ←     auf-/zuklappen          │
+  │   Strg+Z      Löschen rückgängig (1…   c / l       Ergebnis kopieren / g…   Tab         nach Zeit / nach Host   │
+  │   Strg+T      im Formular: Verbindu…   Bild↑ Bild↓ im Panel blättern (au…   f           Filter: heute · 7 Tag…  │
+  │   /           suchen (auch #tag)       Leertaste   Plan: Schritt streich…   s           Hosts sortieren         │
+  │   o           neuer Ordner (A / B v…   ?           Plan: neu planen lass…   z           KI-Zusammenfassung      │
+  │   r           Ordner bearbeiten                                             Z           alle Treffer zusammen…  │
+  │   v           in Ordner verschieben   ◆ KI fragen F3                        b           Änderungsbericht        │
+  │   Shift+↑     nach oben schieben (↓…   ⏎           Frage senden             x           Export: md · txt · ca…  │
+  │   ← / →       Ordner zu-/aufklappen    ⇧⏎ / Strg+J neue Zeile               d           löschen                 │
+  │   - / +       alle Ordner zu/auf       1…9         Befehl einfügen          a           Mitschreiben an/aus     │
   │                                                                                                                 │
   │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
   │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │

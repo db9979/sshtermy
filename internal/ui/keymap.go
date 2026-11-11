@@ -21,6 +21,7 @@ const (
 	actHelp      action = "help"
 	actAbout     action = "about"
 	actQuit      action = "quit"
+	actUndo      action = "undo"
 	actGoal      action = "goal"
 	actAsk       action = "ask"
 	actTunnels   action = "tunnels"
@@ -71,6 +72,7 @@ const (
 	actSchedule     action = "schedules"
 	actCompanion    action = "companion"
 	actCompanionBar action = "companion_bar"
+	actLogScan      action = "log_scan"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -98,6 +100,7 @@ var actionDefs = []actionDef{
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
 	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},
+	{actLogScan, "Log-Blick (Auffälligkeiten in den Logs)", "Terminal", []string{"alt+e"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},
 	{actNewTab, "Neuer Tab", "Terminal", []string{"alt+n"}},
@@ -126,8 +129,9 @@ var actionDefs = []actionDef{
 	{actChip3, "Folgebefehl 3 einfügen", "Terminal", []string{"alt+3"}},
 	{actChip4, "Folgebefehl 4 einfügen", "Terminal", []string{"alt+4"}},
 	{actNewline, "Neue Zeile in KI-Eingabe", "KI-Eingabe", []string{"shift+enter", "ctrl+j"}},
+	{actUndo, "Löschen rückgängig machen", "Manager", []string{"ctrl+z"}},
 	{actImport, "Verbindungen importieren", "Manager", []string{"i"}},
-	{actNextLook, "Aussehen wechseln", "Manager", []string{"a"}},
+	{actNextLook, "Farbschema wählen", "Manager", []string{"a"}},
 	{actKeys, "Tastenkürzel anpassen", "Manager", []string{"b"}},
 	{actQuickEdit, "Schnellbefehle bearbeiten", "Manager", []string{"q"}},
 	{actSSHKey, "SSH-Schlüssel erzeugen / übertragen", "Manager", []string{"c"}},

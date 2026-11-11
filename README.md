@@ -17,9 +17,11 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **a real SSH terminal** (xterm-256color, truecolor, vim/htop/tmux, scrollback, tabs, jump hosts)
 - **Auto-reconnect**: if the line drops (Wi-Fi, VPN, standby), sshTermy reconnects the session by itself, restarts running tunnels and reattaches tmux/screen (can be turned off in the palette). After **sleep or a network change** (other Wi-Fi, VPN on/off) every line is checked within seconds instead of waiting for the keepalive timeout; while there is no network at all, sshTermy waits without using up its attempts
 - **Persistent session** (idea: Dominik Bornhäußer): per connection, always land in the same tmux/screen session on connect, even from another computer. Other sessions already running? sshTermy asks which one. Same session name in two tabs or on two computers = mirrored screen; "view only" attaches tmux read-only. The palette opens a second watching tab or copies an `ssh … tmux attach -r` command for colleagues. Not on switches, Telnet or console.
-- **Own window** (no terminal needed): double-click `sshtermy.exe` in Explorer, open `sshTermy.app` on the Mac or run `sshtermy -window`, and sshTermy opens its own window with Cascadia Mono, Nerd Font symbols and emoji built in. Images from the server show pixel-perfect, files dragged onto the window are offered for upload, ⇧F10 moves a tab into a second window of its own. All keys arrive (Alt+⏎, ⇧F1 … ⇧F12, Ctrl+Space), Ctrl+⇧V or ⇧Insert paste (Windows also Ctrl+V, Mac ⌘V), Ctrl + / Ctrl − / Ctrl 0 or Ctrl + mouse wheel change the font size. Started from a terminal, sshTermy runs in that terminal as before; `-tui` forces it
+- **Own window** (no terminal needed): double-click `sshtermy.exe` in Explorer, open `sshTermy.app` on the Mac or run `sshtermy -window`, and sshTermy opens its own window with Cascadia Mono, Nerd Font symbols and emoji built in. Images from the server show pixel-perfect, files dragged onto the window are offered for upload, ⇧F10 moves a tab into a second window of its own. All keys arrive (Alt+⏎, ⇧F1 … ⇧F12, Ctrl+Space), Ctrl+⇧V or ⇧Insert paste (Windows also Ctrl+V, Mac ⌘V), Ctrl + / Ctrl − / Ctrl 0 or Ctrl + mouse wheel change the font size (remembered), F11 toggles full screen. The window starts in **full screen** by default; palette › Settings › “Window at startup” switches to maximized or “as last time” (size and position are remembered). Started from a terminal, sshTermy runs in that terminal as before; `-tui` forces it
 - **Local shell** (Alt+L): your own PowerShell (Windows, via ConPTY), zsh or bash (macOS/Linux) as a tab, with AI help, goal/agent/plan mode, split view, tabs and session log. Danger rules and agent levels apply on your own computer too; the agent drops its scripts in `~/.sshtermy-agent`. Or save it as a connection (“Connect via: Local”) with its own shell (`pwsh`, `cmd`, `wsl`, `bash -l` …) and start folder
 - **Remote PowerShell (WinRM)**: log into Windows servers like `Enter-PSSession`, without SSH on the server (“Connection type: PowerShell”, ports 5985/5986). NTLM also for domain accounts, messages encrypted over HTTP, or HTTPS; own input line with history, Tab completion via the server and multi-line input. The AI suggests PowerShell commands, danger rules for Windows apply. Palette: `Enter-PSSession srv01` or `winrm admin@srv01`
+- **Forgiving everyday use**: Ctrl+Q and closing the window ask first when connections are still open; deleting a connection, folder or runbook happens right away and a toast offers **undo** for 10 s (Ctrl+Z in the manager or click); **Ctrl+T in the connection form tests** reachability, host key and login before you save; failed connections say in **plain language** what's wrong and what helps (“Login rejected”, “No answer from sw1:22 … VPN or jump host?”, `e` edits the connection), the original error stays below in gray. If a server shows a **new host key** (reinstall, factory reset), `k` compares old and new fingerprint and accepts the new one after a second confirmation
+- **Simple mode** (palette › Settings › Appearance): hides pro features (broadcast, network, team, agent, recording, MCP, audit …) from the palette overview, settings and key bar; searching in the palette still finds everything
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
@@ -36,7 +38,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Split view** (Ctrl+T): up to six sessions at once in seven layouts, resize with the mouse or Alt+⇧+arrow, zoom one pane (Alt+Z), swap panes by dragging their title, optionally dim the other panes. The layout survives updates; **workspaces** (w in the manager) save layout and connections to reopen in one go, “Last used” is remembered on quit, `g` on a folder opens all its connections as a grid
 - **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
 - **SSH certificates**: keys signed by a company CA (`id_ed25519-cert.pub` next to the key, or any path in the connection) are used automatically; an expired certificate is reported with its date
-- **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder, or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
+- **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder (sshTermy asks first and never overwrites an existing file), or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
 - **Screen lock**: palette “Lock now” or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen. **Change master password** (palette → Settings › Security) also switches the Windows sign-in (DPAPI) on or off later
 - **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag “Produktion”, “prod”, “live”) get a red line
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal. While copying, a bar shows percent, MB/s, time left and “file 2 of 5”, with a small speed curve
@@ -45,8 +47,11 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Host overview (F6)**: servers show CPU, load, RAM, every disk (all real file systems; tmpfs, overlay, snap and the like are left out), uptime and pending updates when you connect. The disk warning limit (`g`) applies to each disk separately.
   On Linux servers, while F6 is open, live Braille graphs show CPU, RAM, network and disk (every 2 s, `t` switches
   5 min / 1 h, `z` shows them large over the terminal with the top processes; a small read-only script in its own
-  exec session, closing the panel ends it). Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, Fortinet FortiGate, Ubiquiti UniFi switches) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
+  exec session, closing the panel ends it). Switches, routers and firewalls (ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS/NX-OS/ASA/Small Business, Arista, Juniper, HPE Comware, Huawei, Dell, Extreme, Ruckus, Allied Telesis, Netgear, Zyxel, TP-Link, Lancom, MikroTik, FortiGate, Palo Alto, Sophos, Check Point, SonicWall, WatchGuard, pfSense/OPNsense, VyOS/EdgeOS, UniFi and more; see *Command sets*) show firmware, ports and VLANs on request; the show commands run visibly at the prompt, never as a hidden exec session
 - **Containers** (`c` in F6 or palette “docker”): Docker and Podman containers and Kubernetes pods of the server in one list. ⏎ opens a shell in the container, Ctrl+L follows the logs, Ctrl+K lets the AI analyze the last 400 log lines. Restart and start/stop are only inserted at the prompt, ⏎ runs them. Uses `sudo -n` when docker needs root and sudo works without a password
+- **Log view (Alt+E, or `l` in F6)**: reads the logs of the system you are on, read-only, and shows anomalies instead of lines. Linux/BSD: journalctl (or syslog files), failed units and package updates; Windows (PowerShell/WinRM): event logs System/Application, failed sign-ins 4625/4740 and stopped automatic services; switches and firewalls: the log commands typed visibly at the prompt (ProCurve/CX, Cisco, Junos, RouterOS, FortiOS, UniFi) plus a port bar. Same lines are grouped into patterns locally, without AI (numbers, IPs, MACs replaced), known patterns get a plain title, hint and read-only check commands (`1`…`4` insert them). `n` *What's new?* compares with your last look (new, much more frequent, gone; the baseline stays encrypted on this computer), `x`/`X` hides noise for the host or the whole folder (synced). `t` timeline: errors and warnings per time slot with marks for reboots, package updates, config changes and your own commands; ←→ picks a slot, `k` asks the AI what happened there. `k` lets the AI explain a pattern, `b` writes an AI status report from the condensed patterns only (cause, connections, what to check). `z` period 1 h … 7 days, `w` log watch alerts, `c` copies as Markdown. On switches and firewalls `s` sets up syslog to sshTermy: it shows the vendor's commands with your own IP and types them visibly after you confirm (nothing is saved on the device; `write memory` stays with you). Syslog received by sshTermy is merged into the switch's log view, so it reaches further back than the device's own buffer.
+- **Log watch** (Settings › *Log watch*: errors or errors + warnings): while a tab is open, sshTermy follows its logs in the background (Linux `journalctl -f`, Windows over WinRM every minute) and reports only what is new compared with the last log view or critical, each pattern at most once an hour: toast, ▲ on the tab, desktop notification when sshTermy is in the background. Hidden noise stays quiet. *Syslog receiver* (UDP 5514, 1514 or 514) takes syslog from switches and firewalls and assigns it to the matching connection by IP or host name. The list: palette *Log watch: alerts* or `w` in the log view; ⏎ jumps to the pattern in the host's log view, `x` hides it as noise. Failed sign-ins (SSH, Windows 4625) count as an error from 20 in 10 minutes; link-down messages keep the device's severity (Cisco `LINK-3` = error).
+- **Folder scan** (palette *Folder scan*): the log view for every host in a folder at once, read-only and without prompts (6 at a time; servers over SSH, Windows over WinRM, switches via their shell). One line per host with critical/errors/warnings, new patterns and the top pattern, plus *Shared*: patterns that show up on several hosts. `c` copies the result as Markdown; the baseline for *What's new?* is saved per host. As a schedule (kind *Folder scan (logs)*) it runs e.g. every night; the result is in the schedule and under *Folder scan: last result*.
 - **Config backup for switches**: `b` saves the running configuration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`, UniFi `cat /tmp/system.cfg`) encrypted on your computer, `d` shows the diff to the previous state, unchanged states are not stored twice.
   Nightly runs go through a schedule (`z`, type “Config backup”) for a whole folder. **Switch config rules**
   (palette → Settings): `+^ntp server` must appear, `-telnet-server` must not; every backup is checked,
@@ -60,10 +65,12 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   which port of whom, APs and phones listed dimmed inside the switch box, ring links below; a plain tree if it does not fit), plus a Mermaid diagram in Downloads for docs, wiki or GitHub
 - **Broadcast** (m in the manager): one command or runbook runs in parallel on a group (e.g. all Aruba switches),
   every host gets its own tile (framed green when done, red on failure, pulsing while running; `z` enlarges one). The danger rules apply here too: red needs ⏎ twice.
+  Steps that change something first run on one host as a trial run, then on the rest; after 3 failed hosts no further host starts (`p` turns the trial run off).
   Servers get every step via exec (with exit code), network devices get the commands typed into their shell (“-- MORE --” is paged automatically).
 - **Schedules** (z in the manager): a broadcast or runbook runs at a set time on a folder or single connections,
   daily, Mon–Fri, on weekends or on one weekday, e.g. “3:00 Mon–Fri `show running-config` on all switches”.
-  Runs while sshTermy is open (also when locked), missed runs are caught up within 12 hours.
+  Runs while sshTermy is open (also when locked), missed read-only runs are caught up within 12 hours; steps that change something only within 10 minutes (a 3:00 maintenance never runs at noon).
+  New hosts that appear in the target folder later (e.g. from a team folder) only join after `Ctrl+A` in the list, and a runbook that came changed from a team folder waits until you have started it once in the broadcast.
   Unattended there are no questions: unknown host keys and missing passwords make that host fail,
   dangerous steps and runbooks with variables cannot be scheduled at all. The result per host is in the list
   (⏎), plus a toast or desktop notification. Schedules travel with the sync but run only on one computer
@@ -90,10 +97,11 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
-    Levels: *Careful* (only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`),
+    Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),
     *Full* (sudo too). Dangerous commands, including every line of a script, always wait for you; on production hosts
     and network devices every change asks. Limits: 25 steps, 15 minutes, 3 failures in a row. Esc or typing in the
-    terminal pauses it, `?` gives it an instruction. At the end: summary, changed files, `s` saves the run as a runbook
+    terminal pauses it, `?` gives it an instruction. At the end: the full summary (scroll with PgUp/PgDn or the mouse wheel,
+    `c` copies it, `l` opens it in full), changed files, `s` saves the run as a runbook
     including its scripts, `r` deletes the scripts on the host. Every step is marked "Agent" in the session log.
   - **Plan mode** (F2, Tab until "Plan first"): the AI first looks around with read-only commands only, then writes a
     complete plan (steps, scripts, risks, checks). Remove steps (Space), change them (`e`), have it re-planned (`?`),
@@ -123,6 +131,17 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
     The profile goes into every AI prompt; commands the device rejects with “% Invalid input” are remembered and the
     AI stops suggesting them. Editable in the manager (system, command set, AI notes). In the palette,
     “Rewrite for this system” rewrites a command into the matching dialect.
+  - **Command sets per vendor**: what sshTermy types on a device (paging off, version, CPU/RAM, ports, VLANs, config, logs,
+    syslog setup), how it reads the output and what it tells the AI lives in one YAML file per vendor, with variants for
+    older or newer firmware. 48 built in: switches (Cisco, Arista, Aruba, HPE Comware, Huawei, Dell, Extreme, Ruckus,
+    Allied Telesis, Netgear, Zyxel, TP-Link, Lancom …), firewalls (FortiGate, Palo Alto, Sophos, Check Point, SonicWall,
+    WatchGuard, Cisco ASA, pfSense, OPNsense, VyOS, EdgeOS), WLAN controllers (Aruba, Cisco WLC) and appliances
+    (Proxmox, ESXi, Synology, QNAP, TrueNAS, iLO, iDRAC). Palette › Settings › *Command sets*: `n` new set based on a
+    built-in one, `e`/`o` edit in the form or the file, `t` test on the open device, `k` AI draft from the terminal,
+    `l` take over the commands you corrected on a device, `x`/`i` export/import; sets used by shared connections travel
+    with the team share, your own sets also with the sync (taken over on the other computer with `f`). Safety: own sets only type read commands, can only add danger rules (never weaken the built-in
+    ones), only detect a device when no built-in set matches, syslog steps are shown and danger-checked every time,
+    and team sets stay inactive until you approve them (and again after every change, with a diff).
   - **Explain errors**: when a command fails, the suggestion line offers “Why? & Fix” (Alt+0). The AI gets the
     command, exit code and output and answers with the cause and commands you can insert
   - **Log diagnosis**: palette “AI: analyze log/output” (or select text first): the AI reads the selection or the last
@@ -142,7 +161,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
   (connections, keys, logs, switch backups, known_hosts, settings) as one file encrypted with the master password
   (Argon2id + AES-256-GCM). Restoring replaces everything after a confirmation and a restart; the previous state stays
   next to it as `….vorher-<date>`
-- **Themes** dark, light, high contrast, color-blind (dark and light), Matrix, Amber and Neon (a in the manager), **custom colors** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
+- **26 themes** with live preview (a in the manager): dark ones like Night, Polar night, Deep sea, Graphite, Vampire, Cherry blossom, Sunset, Neon, Ink, Forest, Chalk, Lagoon, Solar, Campfire, Amber and Matrix, light ones like Light, Paper, Frost, Sand, Dawn and Mint, plus high contrast and color-blind (dark and light), **custom colors** and consistent menu icons (text tags or Nerd Font) and **freely assignable keyboard shortcuts** (b in the manager)
 - **English and German**: switch the language in the palette (“Language”/“Sprache”) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Window style** (palette “Window style”): dialogs, palette and pickers cast a shadow and the background dims a
@@ -253,7 +272,10 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | Where | Key | Effect |
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | connect / new / edit / delete / search / tunnel / AI settings / sync / session logs |
-| | i / a / b | import connections / switch appearance / customize shortcuts |
+| | Ctrl+Z | undo the last delete (connection, folder, runbook; 10 s, or click the toast) |
+| Connection form | Ctrl+T / Ctrl+S | test the connection (reachable, host key, login) / save |
+| Closed tab | ⏎ / e / k / x | reconnect / edit the connection / compare and accept a changed host key / close the tab |
+| | i / a / b | import connections / choose a color scheme (26 themes, live preview) / customize shortcuts |
 | | c / q | create or copy an SSH key / edit quick commands |
 | | m / f / z | broadcast to several hosts / network scan / schedules (Ctrl+N new, Ctrl+E edit, Ctrl+R now, Ctrl+O on/off, ⏎ last result) |
 | | w / g | workspaces (saved split layouts) / open a folder as a grid |
@@ -261,14 +283,14 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | ← → Space / - + | collapse/expand folder / collapse or expand all |
 | | Shift+↑↓ (Alt+↑↓), drag with the mouse | change the order, drag into a folder |
 | | # , /#tag | filter by tag, search by name, host, folder, tags |
-| Broadcast | Space / g / a, Tab, Ctrl+S | select host / folder / all, hosts·source·command, check and confirm |
+| Broadcast | Space / g / a, Tab, Ctrl+S, p | select host / folder / all, hosts·source·command, check and confirm, trial run on/off |
 | | ←→ / ↑↓ / z / c / r / x | host column / scroll / enlarge / copy output / again / cancel |
 | Network scan | Ctrl+S, Space / a, ⏎ | start scan, select hits, create as connections |
 | Terminal | F2 | goal mode (agent) |
 | | F3 | ask AI (Esc stops the answer, n new question, f follow-up) |
 | | F4 | tunnels on/off (⏎ or click), a start with connection, open a web service in the browser |
 | | F5 | files (SFTP): Tab side, c copy (up/down), e server file in your own editor, Space/a mark, drag copies, n folder, d delete, . hidden |
-| | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, c containers, b back up switch config, ↑↓ state, d diff, v view |
+| | F6 | host overview: r/⏎ query, t graph range 5 min/1 h, z large, l log view, c containers, b back up switch config, ↑↓ state, d diff, v view |
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu, hover it for target, duration and latency) |
@@ -284,6 +306,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Tab or → | accept ghost text |
 | | Alt+1…4 | insert follow-up command (without Enter; red ones twice) |
 | | Alt+0 | after a failure: the AI explains the cause and suggests a fix |
+| | Alt+E | log view: anomalies in the logs (⏎ lines, 1…4 check, k AI explains, b AI status report, x/X hide, n what's new, t timeline, z period, w log watch, s syslog setup on switches) |
 | | Alt+K / Alt+J | AI companion: level off · quiet · chatty · coach / companion sidebar |
 | Companion sidebar | ↑↓ / ⏎ / a / c | choose suggestion / insert / run (dangerous ones twice) / copy |
 | | m / l / s / ? / r | mute topic / remember fact / level / last request sent / recap |
@@ -293,7 +316,8 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |
 | | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |
 | | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
-| Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host |
+| Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host, `c` copy the result, `l` read it in full |
+| Goal/agent/plan panel, Ask AI | PgUp / PgDn, mouse wheel | scroll long content (summary, plan, answer) |
 | Plan mode | ↑↓ / Space / e / v / ? | choose step / remove or restore / edit / view script / re-plan |
 | | Tab / ⏎ / x | how it runs (step by step or agent level) / approve and run / discard; Ctrl+S saves the plan as a runbook |
 | AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |
@@ -301,9 +325,9 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | z / Z / b / x / d / a | AI summary / summarize all matches / change report / export (md, txt, cast) / delete / recording on/off |
 | AI settings | Ctrl+T / Ctrl+L | test endpoint / choose a model from the endpoint's list |
 | Everywhere | Ctrl+Space | command palette: ⏎ start as goal, Tab ask AI, ↑↓ choose suggestion/tunnel/connection; `log` = AI analyzes output, `color` = color rules |
-| | F1 / F12 / Ctrl+Q | help / about + update / quit |
+| | F1 / F12 / Ctrl+Q | help / about + update / quit (asks while connections are open; Ctrl+Q again = quit) |
 | | F12 → l / F12 → w | switch language (English ↔ German) / what's new |
-| Own window | Ctrl+⇧V · ⇧Insert (Windows also Ctrl+V, Mac ⌘V) / Ctrl + · Ctrl − · Ctrl 0 (Mac: ⌘) | paste / font size bigger · smaller · default (also Ctrl + mouse wheel); on the Mac ⌘ acts as Alt, ⌥ keeps typing @ [ ] { } \| ~ |
+| Own window | Ctrl+⇧V · ⇧Insert (Windows also Ctrl+V, Mac ⌘V) / Ctrl + · Ctrl − · Ctrl 0 (Mac: ⌘) | paste / font size bigger · smaller · default (also Ctrl + mouse wheel, remembered); F11 full screen; on the Mac ⌘ acts as Alt, ⌥ keeps typing @ [ ] { } \| ~ |
 
 Why function keys instead of `Ctrl+A`? In bash/zsh `Ctrl+A` means “beginning of line” and it is the prefix of GNU screen.
 sshTermy only binds keys that shells and full-screen programs practically never need.
@@ -511,8 +535,12 @@ Windows login ──DPAPI CryptProtectData────────────�
 - The AI **never types by itself**. Every command is a suggestion; only your confirmation sends it to the PTY.
 - **Fixed danger rules** (`internal/safety`), never the model, decide what is red: `rm -rf`, `find -delete`, `dd`, `mkfs`,
   `curl | sh`, `… | base64 -d | sh`, reboot, flushing the firewall, changing users, `git reset --hard`, removing packages, Docker prune,
-  stopping the SSH service; on Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)` and more.
+  stopping the SSH service, deleting system files, taking the network down, `iptables -P … DROP`, `kubectl delete`, `DROP DATABASE`, `zfs destroy`, `rsync --delete`;
+  on Windows `Remove-Item -Recurse`, `Format-Volume`, `iex (iwr …)`, stopping WinRM, `Disable-NetAdapter` and more.
+  Every command is checked against all rule groups (Unix, Windows, network devices), multi-line input line by line: a switch that was taken for a server cannot hide `erase startup-config`.
   Red commands need two confirmations; edited commands are checked again. `sudo` is marked, also behind `&&`, `;` or `|`.
+- **Reading secrets asks too:** `/etc/shadow`, private keys, `.env`, `kubectl get secret`, `docker inspect`, `printenv` or a switch's `show running-config` change nothing, but their output would go to the AI. The agent and MCP always ask first; plan mode skips them while exploring.
+- **Dialogs that pop up by themselves** (host key, password, MCP request, files from the server) ignore keys for one second, so a `j` from `journalctl` you were typing confirms nothing. If another dialog is open, they wait instead of replacing it.
 - **Paste guard:** the same rules check every pasted line. A hit shows the preview with the
   red line and needs two confirmations, even if the multi-line preview is turned off.
 - **Prompt injection:** everything from the terminal is passed as material in a `<<< … >>>` block whose markers are
@@ -533,7 +561,7 @@ Windows login ──DPAPI CryptProtectData────────────�
 AI clients such as Claude Desktop or Claude Code can use your saved connections through the Model Context Protocol.
 Turn it on in Settings › Security › “MCP access for AI clients”: **read only** (list connections and open tabs,
 read a tab, run read-only commands like `df -h` or `show interfaces`) or **with confirmation** (any other command
-runs only after you press `y` in sshTermy; dangerous commands are marked red). sshTermy must be running and unlocked;
+runs only after you press `y` in sshTermy; dangerous commands need `y` twice). Commands with `sudo` or that read secrets (`/etc/shadow`, keys, `.env`, `show running-config` …) always ask, even if they only read. sshTermy must be running and unlocked;
 `sshtermy mcp` is only a bridge and holds no data. Connections tagged `no-ai`/`ai-local`, or AI privacy “AI off”, are
 never shown. Secrets in output are redacted, every call lands in the audit log.
 
@@ -717,7 +745,9 @@ wins per entry, deleted entries are remembered as tombstones (180 days), and “
 does not count as a change. This way changes on two computers are not lost as long as they affect different entries.
 Syncing happens at start, a few seconds after every change and every 5 minutes; manually via the palette
 (“Sync now”). All settings travel along: look, colors, icons, language, keys, AI, lock, notifications, monitoring
-limits, danger check, paste preview, session logs, intro animation and so on. Only computer-specific things stay local:
+limits, danger check, paste preview, session logs, intro animation and so on. Your own command sets sync too; on another computer
+a changed or new set only takes effect after you take it over there (Settings › Command sets, `f`, with a diff), and a
+set deleted on one computer is moved aside to `befehlssaetze/.geloescht` on the others. Only computer-specific things stay local:
 DPAPI, the sync settings themselves, key file paths, paired relays, team folder paths, the "mouse" switch (depends on
 the terminal program), audit/debug log, MCP server, editor, the font size of the own window and everything marked
 “this computer only” (keys, shell, serial port). Passwords in the OS keychain stay on each computer; only the switch
@@ -759,7 +789,10 @@ manager, the whole folder is shared: new connections in it are included automati
 
 Colleagues leave “Subscribe” on when importing. sshTermy then re-reads the file every 5 minutes and applies changes:
 new connections are added, changed ones updated, and ones the sender deleted disappear here too. Their own
-passwords, keys and user names stay. Ctrl+Space → “Team folders” shows the status, checks right away or ends a
+passwords, keys and user names stay. A package never removes protection: a “prod” tag or the device type
+“network device” stays even if the sender removed it. Changed quick commands show the command on the first key
+press and only run on the second; new or changed runbooks wait before any schedule runs them; tunnels from the
+team never start by themselves. Ctrl+Space → “Team folders” shows the status, checks right away or ends a
 subscription (the connections stay). Team folders are local only and not part of the sync.
 
 ## License

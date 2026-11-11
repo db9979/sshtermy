@@ -63,6 +63,7 @@ type bcState struct {
 	review           map[string]*hostReview // KI-Prüfung pro Verbindung
 	reviewSeq        int
 	useAdapted       bool // Vorschläge der KI ausführen
+	noCanary         bool // p: Probelauf (erst ein Host) abgeschaltet
 
 	// Lauf
 	targets []domain.Connection
@@ -161,7 +162,11 @@ func (b *bcState) stepList() []string {
 func (b *bcState) sourceNames() []string {
 	out := []string{i18n.T("eigener Befehl")}
 	for _, r := range b.books {
-		out = append(out, "▶ "+r.Name)
+		n := "▶ " + r.Name
+		if r.TeamChanged {
+			n += i18n.T(" (neu vom Team, ansehen)")
+		}
+		out = append(out, n)
 	}
 	return out
 }
@@ -207,6 +212,9 @@ func (a *App) updateBroadcast(msg tea.Msg) tea.Cmd {
 		return a.bcRunKey(k)
 	}
 	key := k.String()
+	if a.undo != nil && a.keys.is(actUndo, key) {
+		return a.doUndo()
+	}
 	switch key {
 	case "esc":
 		a.scr = scrManager
@@ -311,6 +319,8 @@ func (a *App) bcConfirmKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.bcStart(hosts, b.stepList(), per)
 	case "k":
 		return a.bcReview()
+	case "p":
+		b.noCanary = !b.noCanary
 	case "a":
 		if b.review != nil {
 			b.useAdapted, b.armed = !b.useAdapted, false
@@ -348,11 +358,31 @@ func (a *App) bcStart(targets []domain.Connection, steps []string, per [][]strin
 	ev := a.events
 	dial := a.bcDialer()
 	job := broadcast.Job{Conns: targets, Steps: steps, PerHost: per}
+	if bcChanges(per, steps) {
+		// Änderndes: erst ein Host als Probelauf, nach 3 Fehlern keine weiteren
+		job.Canary, job.StopAfter = !b.noCanary, bcStopAfter
+	}
 	go func() {
 		broadcast.Run(ctx, job, dial, func(i int, r broadcast.Result) { ev <- bcUpdateMsg{seq, i, r} })
 		ev <- bcDoneMsg{seq}
 	}()
 	return nil
+}
+
+// bcStopAfter: nach so vielen gescheiterten Hosts startet kein weiterer.
+const bcStopAfter = 3
+
+// bcChanges: ändert ein Schritt etwas (auf irgendeinem Host)?
+func bcChanges(per [][]string, steps []string) bool {
+	if !stepsReadOnly(steps) {
+		return true
+	}
+	for _, p := range per {
+		if !stepsReadOnly(p) {
+			return true
+		}
+	}
+	return false
 }
 
 // bcDialer verbindet wie ein Tab, aber Rückfragen (Host-Key, Passwort)
@@ -515,7 +545,7 @@ func (a *App) broadcastKeys() [][2]string {
 	case bcVars:
 		return [][2]string{{"⏎", i18n.T("nächstes Feld")}, {"Strg+S", i18n.T("weiter")}, {"Esc", i18n.T("zurück")}}
 	case bcConfirm:
-		k := [][2]string{{"⏎", i18n.T("ausführen")}, {"k", i18n.T("KI prüft gegen Systemprofil")}}
+		k := [][2]string{{"⏎", i18n.T("ausführen")}, {"k", i18n.T("KI prüft gegen Systemprofil")}, {"p", i18n.T("Probelauf an/aus")}}
 		if b.review != nil {
 			k = append(k, [2]string{"a", i18n.T("KI-Vorschläge an/aus")})
 		}
@@ -721,6 +751,13 @@ func (a *App) viewBcConfirm() string {
 	}
 	if nets > 0 {
 		o.WriteString(s.Muted.Render(i18n.T("Netzwerkgeräte bekommen die Befehle in die Shell getippt (ohne Exit-Code).")) + "\n")
+	}
+	if len(hosts) > 1 && bcChanges(per, b.stepList()) {
+		line := fmt.Sprintf(i18n.T("Probelauf: erst %s allein, dann der Rest · stoppt nach %d Fehlern · p = aus"), hosts[0].Alias, bcStopAfter)
+		if b.noCanary {
+			line = fmt.Sprintf(i18n.T("Alle Hosts gleichzeitig · stoppt nach %d Fehlern · p = Probelauf an"), bcStopAfter)
+		}
+		o.WriteString(s.Warn.Render(line) + "\n")
 	}
 	back := s.Muted.Render(" · ") + a.hints(s.Muted, [2]string{"Esc", i18n.T("zurück")})
 	hint := a.hints(s.Muted, [2]string{"⏎", i18n.T("ausführen")}) + back

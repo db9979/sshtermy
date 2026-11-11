@@ -1,0 +1,24 @@
+id: dell-nseries
+name: Dell N-Serie / PowerConnect
+name_en: Dell N-Series / PowerConnect
+order: 236
+hint: "Dell Networking N1500/N2000/N3000 und ältere PowerConnect (DNOS 6, IOS-ähnlich): show running-config, show interfaces status, show vlan, show mac address-table, show lldp remote-device all, show version, show switch; Blättern aus mit terminal length 0; Konfiguration mit configure … exit, speichern mit copy running-config startup-config."
+detect:
+  screen: ['(?i)dell networking n\d{4}|powerconnect']
+  version: ['(?im)^(?:Machine Description|System Description)\.*\s*Dell Networking N\d|powerconnect']
+commands:
+  paging_off: terminal length 0
+  version: show version
+  ports: show interfaces status
+  vlans: show vlan
+  config: show running-config
+parse:
+  firmware: '(?im)^System Description\.*\s*[^,]+,\s*([\d.]+)'
+  model: '(?im)^Machine Model\.*\s*(\S+)'
+logs:
+  commands: [show logging]
+  ports: show interfaces status
+  reader: generic
+syslog:
+  steps: [configure, 'logging {{ip}}', 'port {{port}}', level warning, exit, exit]
+  save: copy running-config startup-config

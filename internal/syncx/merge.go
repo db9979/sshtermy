@@ -64,6 +64,8 @@ type SharedPrefs struct {
 type SharedMore struct {
 	Companion   domain.CompanionConfig `json:"companion,omitempty"`
 	ConfigRules []string               `json:"config_rules,omitempty"`
+	Simple      bool                   `json:"simple,omitempty"` // einfacher Modus
+	LogScan     *domain.LogScanConfig  `json:"log_scan,omitempty"`
 }
 
 func sharedSettings(s domain.Settings) SharedSettings {
@@ -78,7 +80,8 @@ func sharedSettings(s domain.Settings) SharedSettings {
 			DimPanes: s.DimPanes, Accessible: s.Accessible, Motion: s.Motion, Frames: s.Frames, Workspaces: append([]domain.Workspace(nil), s.Workspaces...),
 			Highlight: copyHighlight(s.Highlight),
 			More: &SharedMore{
-				Companion: s.Companion, ConfigRules: append([]string(nil), s.ConfigRules...),
+				Companion: s.Companion, ConfigRules: append([]string(nil), s.ConfigRules...), Simple: s.Simple,
+				LogScan: copyLogScan(s.LogScan),
 			},
 		},
 	}
@@ -109,6 +112,10 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 	if x.More != nil {
 		d.Companion = x.More.Companion
 		d.ConfigRules = append([]string(nil), x.More.ConfigRules...)
+		d.Simple = x.More.Simple
+		if x.More.LogScan != nil {
+			d.LogScan = *copyLogScan(*x.More.LogScan)
+		}
 	}
 	// Nerd-Font-Symbole von einem anderen Rechner: hier erst nach der Probe,
 	// sonst stünden in jedem Menü Kästchen.
@@ -116,6 +123,11 @@ func applyShared(p SharedSettings, d *domain.Settings) {
 		d.NerdFont = "nein"
 	}
 	d.Icons = x.Icons
+}
+
+func copyLogScan(c domain.LogScanConfig) *domain.LogScanConfig {
+	c.Noise = append([]domain.LogNoise(nil), c.Noise...)
+	return &c
 }
 
 func copyHighlight(h domain.HighlightConfig) *domain.HighlightConfig {
@@ -143,7 +155,19 @@ type Payload struct {
 	// CmdStats: Befehlsstatistik je Rechnername; jeder Rechner schreibt nur
 	// seine eigene, die Vorschläge zählen alle zusammen.
 	CmdStats map[string]domain.CmdStatsSet `json:"cmd_stats,omitempty"`
+	CmdSets  []CmdSet                      `json:"cmdsets,omitempty"` // eigene Befehlssätze (Dateien, kein Teil des Stores)
 }
+
+// CmdSet: eigener Befehlssatz im Sync. Beim anderen Rechner wirkt er erst,
+// wenn man ihn dort übernimmt (Einstellungen › Befehlssätze).
+type CmdSet struct {
+	ID        string    `json:"id"`
+	YAML      string    `json:"yaml"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// CmdSetTombstone: Grabstein eines gelöschten eigenen Befehlssatzes.
+func CmdSetTombstone(id string) string { return "befehlssatz:" + id }
 
 // FromData baut den Sync-Inhalt aus dem lokalen Store.
 func FromData(d *domain.Data, knownHosts []string) *Payload {
@@ -281,6 +305,10 @@ func Merge(a, b *Payload, now time.Time) *Payload {
 			}
 		}
 	}
+	out.CmdSets = mergeByID(a.CmdSets, b.CmdSets, out.Deleted,
+		func(c CmdSet) string { return CmdSetTombstone(c.ID) },
+		func(c CmdSet) time.Time { return c.UpdatedAt }, nil)
+	sort.SliceStable(out.CmdSets, func(i, j int) bool { return out.CmdSets[i].ID < out.CmdSets[j].ID })
 
 	out.LLM, out.LLMAt = pick(a.LLM, a.LLMAt, b.LLM, b.LLMAt)
 	out.Settings, out.SettingsAt = pick(a.Settings, a.SettingsAt, b.Settings, b.SettingsAt)

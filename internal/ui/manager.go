@@ -144,8 +144,10 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	if have {
 		cur = rows[m.sel]
 	}
-	switch a.keys.which(k.String(), actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
+	switch a.keys.which(k.String(), actUndo, actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
 		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll, actWorkspace, actFolderGrid, actSchedule) {
+	case actUndo:
+		return a.doUndo()
 	case actSchedule:
 		return a.openSchedules()
 	case actWorkspace:
@@ -184,7 +186,7 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	case actImport:
 		return a.openImport()
 	case actNextLook:
-		return a.cycleTheme()
+		return a.openThemes()
 	case actKeys:
 		return a.openKeys()
 	case actBroadcast:
@@ -303,17 +305,21 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		}
 		if have {
 			c := cur.conn
-			a.modal = confirmModal(i18n.T("Verbindung löschen"), "„"+c.Alias+i18n.T("“ und ihre Tunnel wirklich löschen?"), func() tea.Cmd {
-				if err := a.st.DeleteConnection(c.ID); err != nil {
-					a.flashErr(err.Error())
-					return nil
-				}
-				a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung gelöscht")
+			tr, err := a.st.DeleteConnectionTrash(c.ID)
+			if err != nil {
+				a.flashErr(err.Error())
+				return nil
+			}
+			a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung gelöscht")
+			m.sel = max(0, m.sel-1)
+			a.offerUndo(i18n.T("„")+c.Alias+i18n.T("“ gelöscht"), tr, func() {
 				if c.Keychain {
 					sshx.ForgetKeychain(c.ID)
 				}
-				m.sel = max(0, m.sel-1)
-				return nil
+			}, func() {
+				a.auditAdd(audit.EvSettings, auditConn(c), "Verbindung wiederhergestellt")
+				a.mgr.want = "c:" + c.ID
+				a.expandTo(c.Group)
 			})
 		}
 	case "t":
@@ -953,8 +959,15 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrQuickForm && a.quickFormKey(k) {
 		return nil
 	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrConnForm && k.String() == "ctrl+t" {
+		return a.startConnTest() // conntest.go
+	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrTunnelForm && k.String() == "ctrl+d" && a.formTunnel.ID != "" {
 		a.confirmDeleteTunnel(a.formTunnel)
+		return nil
+	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" && a.scr == scrCmdSetForm {
+		a.form, a.scr = nil, scrCmdSets
 		return nil
 	}
 	if k, ok := msg.(tea.KeyPressMsg); ok && k.String() == "esc" {
@@ -1002,10 +1015,16 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 		err = a.saveScheduleForm()
 	case scrRulesForm:
 		err = a.saveConfigRules()
+	case scrCmdSetForm:
+		err = a.saveCmdSetForm()
 	}
 	if err != nil {
 		a.form.err = err.Error()
 		return nil
+	}
+	if a.scr == scrCmdSetForm {
+		a.form, a.scr = nil, scrCmdSets
+		return next
 	}
 	a.form = nil
 	a.scr = scrManager
@@ -1019,6 +1038,16 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 }
 
 func (a *App) saveConn() error {
+	c, err := a.connFromForm()
+	if err != nil {
+		return err
+	}
+	return a.storeConn(c)
+}
+
+// connFromForm: Verbindung aus dem Formular, ohne zu speichern (auch für
+// „Testen“, conntest.go).
+func (a *App) connFromForm() (domain.Connection, error) {
 	f := a.form
 	c := a.formBase
 	c.Alias, c.Host, c.Port, c.Username = f.str("alias"), f.str("host"), f.num("port"), f.str("user")
@@ -1084,7 +1113,7 @@ func (a *App) saveConn() error {
 	if c.Protocol == domain.ProtoWinRM {
 		c.PassSource = f.str("pwsrc")
 		if err := pwsource.Valid(c.PassSource); err != nil {
-			return err
+			return c, err
 		}
 	}
 	if !c.Protocol.Raw() {
@@ -1094,7 +1123,7 @@ func (a *App) saveConn() error {
 		c.OTPSource = f.str("otpsrc")
 		for _, k := range []string{c.PassSource, c.OTPSource} {
 			if err := pwsource.Valid(k); err != nil {
-				return err
+				return c, err
 			}
 		}
 	}
@@ -1118,15 +1147,19 @@ func (a *App) saveConn() error {
 	a.applyRelayField(f, &c)
 	if c.JumpHostID != "" {
 		if _, ok := a.st.Connection(c.JumpHostID); !ok {
-			return errors.New(i18n.T("Jump-Host gibt es nicht mehr"))
+			return c, errors.New(i18n.T("Jump-Host gibt es nicht mehr"))
 		}
 		if c.ID != "" && domain.JumpCreatesCycle(c.ID, c.JumpHostID, a.st.Connection) {
-			return errors.New(i18n.T("Jump-Host würde einen Kreis bilden"))
+			return c, errors.New(i18n.T("Jump-Host würde einen Kreis bilden"))
 		}
 	}
+	return c, nil
+}
+
+func (a *App) storeConn(c domain.Connection) error {
 	secret := a.connFormKeychain(&c)
 	var here *domain.ConnHere
-	if f.flag("connhere") && (c.Protocol == domain.ProtoLocal || c.Protocol == domain.ProtoSerial) {
+	if a.form != nil && a.form.flag("connhere") && (c.Protocol == domain.ProtoLocal || c.Protocol == domain.ProtoSerial) {
 		here = &domain.ConnHere{LocalShell: c.LocalShell, LocalDir: c.LocalDir, SerialPort: c.SerialPort}
 	}
 	saved, err := a.st.UpsertConnectionHere(c, here)
@@ -1257,7 +1290,7 @@ const dialectAuto = "automatisch"
 
 func dialectLabels() []string {
 	l := []string{dialectAuto}
-	for _, d := range domain.Dialects {
+	for _, d := range domain.Dialects() {
 		l = append(l, d.Name)
 	}
 	return l
