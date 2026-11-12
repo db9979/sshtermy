@@ -95,7 +95,7 @@ func TestDangerGuardProduction(t *testing.T) {
 
 	// Esc: nichts geht raus
 	s2, out2 := typedSession(prod, "admin@web-prod:~$ ", "sudo reboot")
-	a.sessions = []*session{s2}
+	a.sessions, a.cur = []*session{s2}, 0
 	a.terminalKey(s2, enter)
 	a.dangerKey(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if a.modal != nil || out2.sent() {
@@ -126,7 +126,7 @@ func TestDangerGuardSwitchAndScope(t *testing.T) {
 	// jede Verbindung ist geschützt, auch ohne „prod“ im Namen
 	lab := domain.Connection{Alias: "lab-sw", Device: domain.DeviceNetwork}
 	s2, _ := typedSession(lab, "lab-sw# ", "reload")
-	a.sessions = []*session{s2}
+	a.sessions, a.cur = []*session{s2}, 0
 	a.terminalKey(s2, enter)
 	if a.modal == nil || a.modal.kind != mDanger {
 		t.Fatal("Verbindung ohne prod im Namen nicht geschützt")
@@ -140,5 +140,77 @@ func TestDangerGuardSwitchAndScope(t *testing.T) {
 	a.terminalKey(s3, enter)
 	if a.modal != nil || !out3.sent() {
 		t.Fatal("Schutz aus, trotzdem abgefangen")
+	}
+}
+
+// Nach dem Bestätigen durch Halten: weitere Wiederholungen derselben Taste
+// kommen nicht als zusätzliche Enter (bzw. jjj) beim Server an.
+func TestDangerHeldKeyEaten(t *testing.T) {
+	a := dangerApp(t)
+	enter := tea.KeyPressMsg{Code: tea.KeyEnter}
+	prod := domain.Connection{Alias: "web-prod", Host: "10.0.0.5", Username: "admin"}
+	s, out := typedSession(prod, "admin@web-prod:~$ ", "rm -rf /srv/www")
+	a.sessions = []*session{s}
+
+	a.terminalKey(s, enter)
+	d := a.modal.danger
+	d.hold.last = time.Now().Add(-time.Second) // Dialog-⏎ ist längst losgelassen
+	d.hold.press(time.Now())                   // neuer Druck
+	d.hold.start = time.Now().Add(-2 * holdFill)
+	a.dangerKey(enter) // Wiederholung, Balken voll
+	if a.modal != nil || !out.sent() {
+		t.Fatalf("Halten hat nicht ausgeführt: %q", out.String())
+	}
+	time.Sleep(50 * time.Millisecond)
+	n := strings.Count(out.String(), "\r")
+
+	now := time.Now()
+	for i := 0; i < 20; i++ { // Taste noch unten
+		if !a.heldEat.eat(tea.KeyPressMsg{Code: tea.KeyEnter, IsRepeat: i%2 == 0}, now.Add(time.Duration(i)*30*time.Millisecond)) {
+			t.Fatalf("Wiederholung %d nicht verschluckt", i)
+		}
+	}
+	if c := strings.Count(out.String(), "\r"); c != n {
+		t.Fatalf("Wiederholungen gingen an den Server: %d statt %d", c, n)
+	}
+	// nach der Pause zählt ⏎ wieder
+	if a.heldEat.eat(enter, now.Add(time.Second+20*30*time.Millisecond)) {
+		t.Fatal("neues ⏎ nach dem Loslassen verschluckt")
+	}
+	// Loslass-Ereignis beendet sofort
+	a.heldEat.arm("enter", now, true)
+	a.heldEat.release(tea.KeyReleaseMsg{Code: tea.KeyEnter})
+	if a.heldEat.eat(enter, now.Add(10*time.Millisecond)) {
+		t.Fatal("⏎ nach Loslassen verschluckt")
+	}
+
+	// j: erste Wiederholung kommt später (Tastatur-Verzögerung), auch verschlucken
+	a.heldEat.arm("j", now, false)
+	if !a.heldEat.eat(tea.KeyPressMsg{Code: 'j', Text: "j"}, now.Add(500*time.Millisecond)) {
+		t.Fatal("j-Wiederholung nicht verschluckt")
+	}
+	if a.heldEat.eat(tea.KeyPressMsg{Code: 'k', Text: "k"}, now.Add(520*time.Millisecond)) {
+		t.Fatal("andere Taste verschluckt")
+	}
+	if a.heldEat.key != "" {
+		t.Fatal("andere Taste beendet das Verschlucken nicht")
+	}
+
+	// über Update: Wiederholung landet nicht im Terminal, nach Loslassen schon
+	a = dangerApp(t)
+	s2, out2 := typedSession(prod, "admin@web-prod:~$ ", "ls")
+	a.sessions, a.cur = []*session{s2}, 0
+	a.Update(tea.KeyPressMsg{Code: 'a', Text: "a"}) // erste Taste nach dem Start geht nicht ans Terminal
+	jKey := tea.KeyPressMsg{Code: 'x', Text: "x"}
+	a.heldEat.arm("x", time.Now(), false)
+	a.Update(jKey)
+	time.Sleep(50 * time.Millisecond)
+	if strings.Contains(out2.String(), "x") {
+		t.Fatal("verschluckte Wiederholung kam über Update ans Terminal")
+	}
+	a.Update(tea.KeyReleaseMsg{Code: 'x', Text: "x"}) // losgelassen
+	a.Update(jKey)
+	if !out2.has("x") {
+		t.Fatalf("Taste nach dem Loslassen kam nicht an: %q", out2.String())
 	}
 }

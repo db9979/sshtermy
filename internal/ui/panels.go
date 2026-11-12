@@ -18,7 +18,10 @@ import (
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
-const maxGoalSteps = 40
+// maxGoalSteps: harte Obergrenze pro Ziel (Ziel- und Agent-Modus). So hoch,
+// dass man sie beim normalen Arbeiten nicht erreicht; an die KI gehen ohnehin
+// nur die letzten Schritte (agent.histLines).
+const maxGoalSteps = 500
 
 // ---------------------------------------------------------------- Zustände
 
@@ -71,6 +74,23 @@ type goalState struct {
 	planSel, explored   int
 	planOff             []bool
 	recipeFiles         []agent.FileAction
+
+	// Bedienung im Einsatz (goalux.go)
+	prior     []agent.DoneStep // Schritte früherer Ziele (Folgeziel, f)
+	priorGoal string           // das Ziel davor (Anzeige)
+	inputWait agent.InputKind  // laufender Befehl wartet auf eine Eingabe
+	inputLine string
+	lost      bool // Verbindung war weg: wartet auf ⏎ zum Fortsetzen
+	manualNew bool // du hast nach dem Vorschlag selbst etwas ausgeführt
+	backups   []fileBackup
+	backingUp bool
+	undoing   bool // stellt gerade die Sicherungen wieder her
+	undoBack  bool // nach Abbruch zurück zu „Ziel erreicht“
+	attnKey   string
+	attnDesk  time.Time
+	doneSeen  bool
+	recorded  bool
+	goalAt    time.Time
 }
 
 func (g *goalState) cancel() {
@@ -235,6 +255,8 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 		switch {
 		case m.step.Done:
 			g.done, g.active, g.doneReason, g.cur = true, false, m.step.Reason, nil
+			g.doneSeen = a.sessionVisible(s) && !a.blurred && s.panel == panelGoal
+			a.recordGoal(s, "done")
 			if g.auto {
 				a.agentFinished(s)
 				a.flash(i18n.T("Agent: Ziel erreicht"))
@@ -267,6 +289,10 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return nil, true
 	case agentFileMsg:
 		return a.agentFileDone(m), true
+	case goalBackupMsg:
+		return a.goalBackupDone(m), true
+	case goalUndoMsg:
+		return a.goalUndoDone(m), true
 	case agentCleanMsg:
 		a.agentCleanDone(m)
 		return nil, true
@@ -336,7 +362,7 @@ func (a *App) requestStep(s *session) tea.Cmd {
 		return nil
 	}
 	if len(g.steps) >= maxGoalSteps {
-		g.err = i18n.T("Maximal 40 Schritte pro Ziel. Ziel neu setzen (x).")
+		g.err = fmt.Sprintf(i18n.T("Maximal %d Schritte pro Ziel. Ziel neu setzen (x)."), maxGoalSteps)
 		return nil
 	}
 	ag, err := a.agentClientFor(s.conn)
@@ -352,7 +378,8 @@ func (a *App) requestStep(s *session) tea.Cmd {
 	g.seq++
 	g.busy, g.cur, g.err = true, nil, ""
 	sid, seq := s.id, g.seq
-	goal, hist, ans := g.goal, append([]agent.DoneStep(nil), g.steps...), append([]string(nil), g.answers...)
+	g.manualNew = false
+	goal, hist, ans := g.goal, append(append([]agent.DoneStep(nil), g.prior...), g.steps...), append([]string(nil), g.answers...)
 	recipe := g.recipe
 	c := a.agentContext(s, true)
 	if g.planning {
@@ -393,12 +420,22 @@ func (a *App) requestStep(s *session) tea.Cmd {
 // angefragt, wenn die Ausgabe ruht und wieder ein Prompt steht.
 func (a *App) goalTick(s *session) tea.Cmd {
 	g := &s.goal
+	a.goalNotifyTick(s) // wartet das Ziel auf dich? (goalux.go)
 	if !g.active || !g.waiting || s.term == nil {
 		return nil
 	}
 	quiet := time.Since(s.lastOutput) > 1500*time.Millisecond && time.Since(g.waitSince) > time.Second
+	a.inputWaitTick(s, quiet) // [Y/n], Pager, „Press any key“ (goalux.go)
+	if quiet && s.run != nil && (s.run.contWhy != "" || (s.run.sent && a.atContinuation(s))) {
+		return nil // hängt am „>“: commandTick bricht ab, dann geht es mit dem Fehler weiter (contprompt.go)
+	}
 	if quiet && s.term.AtIdlePrompt() {
 		g.waiting = false
+		g.inputWait = ""
+		if g.undoing {
+			a.undoFinished(s)
+			return nil
+		}
 		if g.planning {
 			return a.requestStep(s)
 		}
@@ -437,7 +474,7 @@ func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 	if g.auto && s.run != nil {
 		s.run.agent = true
 	}
-	s.term.SendText(cmd + "\r")
+	a.sendLine(s, cmd)
 	s.noteAI(cmd, false)
 	a.profileCommand(s, cmd)
 	g.startWait()
@@ -509,6 +546,28 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		a.saveRunbook(s)
 		return nil
 	}
+	// Bedienung im Einsatz (goalux.go): Verbindung weg, Zurückholen,
+	// Befehl wartet auf Eingabe, Sicherung läuft
+	if g.lost && isKey && g.active {
+		switch key {
+		case "enter":
+			return a.resumeLost(s)
+		case "x":
+		default:
+			return nil
+		}
+	}
+	if g.undoing && isKey {
+		return a.undoKey(s, key)
+	}
+	if g.inputWait != "" && g.waiting && isKey {
+		if cmd, ok := a.inputWaitKey(s, key); ok {
+			return cmd
+		}
+	}
+	if g.backingUp && isKey {
+		return nil
+	}
 	if g.planReview() && isKey {
 		return a.planKey(s, key)
 	}
@@ -529,6 +588,10 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 			return nil
 		case "r":
 			return a.agentCleanup(s)
+		case "f":
+			return a.startFollowGoal(s)
+		case "u":
+			return a.startUndo(s)
 		}
 		if key == "enter" || key == "x" {
 			g.done, g.rbSel, g.runbookID, g.recipe = false, -1, "", nil
@@ -538,25 +601,29 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		return nil
 	}
 	if !g.active {
-		rbs := a.st.Runbooks(s.conn.ID)
+		rbs, hist := a.goalPickCount(s)
 		switch key {
 		case "up", "down":
-			if len(rbs) == 0 {
+			n := len(rbs) + len(hist)
+			if n == 0 {
 				return nil
 			}
 			if key == "down" {
-				g.rbSel = min(len(rbs)-1, g.rbSel+1)
+				a.goalPickSet(s, min(n-1, g.rbSel+1))
 			} else {
-				g.rbSel = max(-1, g.rbSel-1)
+				a.goalPickSet(s, max(-1, g.rbSel-1))
 			}
-			if g.rbSel >= 0 {
-				g.input.SetValue(rbs[g.rbSel].Goal)
-				g.input.CursorEnd()
-			} else {
-				g.input.SetValue("")
+			return nil
+		case "ctrl+r":
+			if len(g.backups) > 0 {
+				return a.startUndo(s)
 			}
 			return nil
 		case "ctrl+d":
+			if i := g.rbSel - len(rbs); i >= 0 && i < len(hist) {
+				a.deleteGoalRun(s, hist[i])
+				return nil
+			}
 			if g.rbSel >= 0 && g.rbSel < len(rbs) {
 				rb := rbs[g.rbSel]
 				tr, err := a.st.DeleteRunbookTrash(rb.ID)
@@ -576,6 +643,9 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 			}
 			if g.rbSel >= 0 && g.rbSel < len(rbs) && rbs[g.rbSel].Goal == text {
 				return a.startRunbook(s, rbs[g.rbSel])
+			}
+			if i := g.rbSel - len(rbs); i >= 0 && i < len(hist) && hist[i].Goal == text {
+				return a.startGoalRun(s, hist[i])
 			}
 			return a.startGoal(s, text)
 		}
@@ -603,7 +673,8 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		if key == "x" && g.answer.Value() == "" {
-			g.active = false
+			a.recordGoal(s, "stopped")
+			g.active, g.lost = false, false
 			return nil
 		}
 		var cmd tea.Cmd
@@ -636,11 +707,21 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 	switch key {
 	case "x":
 		g.cancel()
-		g.active, g.busy, g.cur, g.rbSel = false, false, nil, -1
+		state := "stopped"
+		if g.lost {
+			state = "lost"
+		}
+		a.recordGoal(s, state)
+		g.active, g.busy, g.cur, g.rbSel, g.lost = false, false, nil, -1, false
+		g.waiting, g.inputWait, g.manualPending = false, "", false
 		g.input.SetValue("")
 		return g.input.Focus()
 	case "r":
 		return a.requestStep(s)
+	case "?":
+		if !g.auto {
+			return a.goalInstruct(s)
+		}
 	}
 	if g.cur == nil || g.busy {
 		return nil
@@ -658,6 +739,8 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 		case "s":
 			g.steps = append(g.steps, agent.DoneStep{Command: g.cur.CommandOrFile(), Skipped: true})
 			return a.requestStep(s)
+		case "S":
+			return a.goalSkipWhy(s)
 		}
 		return nil
 	}
@@ -667,12 +750,14 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 			g.armed = true // erster Druck: nur scharf schalten
 			return nil
 		}
-		a.runProposal(s, g.cur.Command, false)
+		return a.execProposal(s, g.cur.Command, false) // ändert er Dateien, erst sichern (goalux.go)
 	case "i":
-		a.runProposal(s, g.cur.Command, true)
+		return a.execProposal(s, g.cur.Command, true)
 	case "s":
 		g.steps = append(g.steps, agent.DoneStep{Command: g.cur.Command, Skipped: true})
 		return a.requestStep(s)
+	case "S":
+		return a.goalSkipWhy(s)
 	case "e":
 		g.editing = true
 		g.edit.SetValue(g.cur.Command)
@@ -786,6 +871,9 @@ func (a *App) toggleTunnelAuto(t domain.Tunnel) {
 func (a *App) panelKeys(s *session) [][2]string {
 	switch s.panel {
 	case panelGoal:
+		if k := a.goalUXKeys(s); k != nil {
+			return k
+		}
 		if k := a.planPanelKeys(s); k != nil {
 			return k
 		}
@@ -795,7 +883,11 @@ func (a *App) panelKeys(s *session) [][2]string {
 		g := s.goal
 		if !g.active {
 			if g.done {
-				return [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"Strg+S", i18n.T("als Runbook merken")}, {"⏎", i18n.T("neues Ziel")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
+				k := [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"Strg+S", i18n.T("als Runbook merken")}, {"f", i18n.T("Folgeziel")}}
+				if len(g.backups) > 0 {
+					k = append(k, [2]string{"u", i18n.T("zurückholen")})
+				}
+				return append(k, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actGoal), i18n.T("schließen")})
 			}
 			if len(a.st.Runbooks(s.conn.ID)) == 0 {
 				return [][2]string{{"⏎", i18n.T("Ziel starten")}, {"Esc", "Terminal"}, {a.keys.label(actGoal), i18n.T("schließen")}}
@@ -816,7 +908,7 @@ func (a *App) panelKeys(s *session) [][2]string {
 				{"r", i18n.T("neu")}, {"x", i18n.T("Ziel beenden")}, {"Esc", "Terminal"}}
 		}
 		return [][2]string{{"⏎", i18n.T("ausführen")}, {"i", i18n.T("nur einfügen")}, {"e", i18n.T("bearbeiten")}, {"s", i18n.T("überspringen")},
-			{"r", i18n.T("neu")}, {"x", i18n.T("Ziel beenden")}, {"Strg+S", "Runbook"}, {"Esc", "Terminal"}}
+			{"?", i18n.T("anweisen")}, {"r", i18n.T("neu")}, {"x", i18n.T("Ziel beenden")}, {"Strg+S", "Runbook"}, {"Esc", "Terminal"}}
 	case panelAsk:
 		q := &s.ask
 		switch {
@@ -991,7 +1083,12 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 				}) + "\n")
 			}
 		}
+		a.viewGoalHist(b, s, w, len(a.st.Runbooks(s.conn.ID))) // Zielverlauf (goalhistory.go)
+		a.viewBackups(b, s, w, "Strg+R")
 		return
+	}
+	if g.priorGoal != "" {
+		b.WriteString(st.Muted.Render(i18n.T("→ Folgeziel nach: ")+trunc(g.priorGoal, max(8, w-20))) + "\n")
 	}
 	switch {
 	case len(g.recipe) > 0:
@@ -1012,6 +1109,12 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	a.viewTimeline(b, s, w) // Fortschritt als Zeitleiste (timeline.go)
 	b.WriteString("\n")
 	switch {
+	case g.lost && g.active:
+		a.viewLost(b, s, w)
+	case g.inputWait != "" && g.waiting:
+		a.viewInputWait(b, s, w)
+	case g.backingUp:
+		b.WriteString(st.AI.Render(i18n.T("▪ sichert die Dateien, die der Schritt ändert …")))
 	case g.done && g.auto:
 		markPanel(s, b.String()) // Zusammenfassung oben anfangen, Rest per Blättern
 		a.viewAgentDone(b, s, w)
@@ -1020,11 +1123,12 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		}
 	case g.done:
 		markPanel(s, b.String())
-		hk := [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"Strg+S", i18n.T("als Runbook merken")}, {"⏎", i18n.T("neues Ziel")}, {a.keys.label(actGoal), i18n.T("schließen")}}
+		hk := [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"Strg+S", i18n.T("als Runbook merken")}, {"f", i18n.T("Folgeziel")}, {"⏎", i18n.T("neues Ziel")}, {a.keys.label(actGoal), i18n.T("schließen")}}
 		if len(g.files) > 0 && !g.cleaned {
 			hk = append(hk[:3:3], append([][2]string{{"r", i18n.T("Arbeitsordner löschen")}}, hk[3:]...)...)
 		}
 		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, hk...))
+		a.viewBackups(b, s, w, "u")
 		if s.panelFocus && g.done {
 			g.active = false
 		}
@@ -1059,6 +1163,9 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 	case g.cur != nil:
 		c := g.cur
 		head := st.AI.Render(i18n.T("◆ Nächster Schritt"))
+		if g.undoing {
+			head = st.Warn.Render(i18n.T("← Änderungen des Ziels zurückholen"))
+		}
 		box := st.Panel
 		if len(c.Danger) > 0 {
 			head = st.Danger.Render(i18n.T("▲ Vorsicht: ") + c.Danger[0].Reason)
@@ -1078,6 +1185,9 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 		}
 		if c.Elevated {
 			b.WriteString(st.Warn.Render(i18n.T("↑ läuft mit erhöhten Rechten (sudo)")) + "\n")
+		}
+		if g.manualNew {
+			b.WriteString(st.Warn.Render(i18n.T("• Du hast inzwischen selbst etwas ausgeführt, r holt einen neuen Vorschlag")) + "\n")
 		}
 		if g.armed {
 			b.WriteString("\n" + st.Danger.Render(i18n.T("Nochmal ⏎ zum Ausführen. Esc/s zum Abbrechen.")) + "\n")
@@ -1286,12 +1396,27 @@ func (a *App) startRunbook(s *session, rb domain.Runbook) tea.Cmd {
 }
 
 func (a *App) startGoalWith(s *session, text string, rb *domain.Runbook) tea.Cmd {
+	return a.startGoalCarry(s, text, rb, nil)
+}
+
+// startGoalCarry: wie startGoalWith; carry (Folgeziel) bringt die Schritte
+// und Sicherungen des Ziels davor mit (goalux.go).
+func (a *App) startGoalCarry(s *session, text string, rb *domain.Runbook, carry *goalCarry) tea.Cmd {
 	a.panelOpened(withPanel(s, panelGoal))
 	g := &s.goal
 	g.cancel()
+	if g.active {
+		a.recordGoal(s, "stopped") // ein laufendes Ziel wird ersetzt
+	}
 	auto, level, pf := g.auto, g.level, g.planFirst
 	*g = goalState{input: g.input, edit: g.edit, answer: g.answer, inited: true,
-		goal: strings.TrimSpace(text), active: true, rbSel: -1, auto: auto, level: level, planFirst: pf}
+		goal: strings.TrimSpace(text), active: true, rbSel: -1, auto: auto, level: level, planFirst: pf,
+		goalAt: time.Now(), seq: g.seq + 1}
+	if carry != nil {
+		g.prior, g.priorGoal = carry.prior, carry.priorGoal
+		g.answers = append(g.answers, carry.notes...)
+		g.backups = carry.backups
+	}
 	fromPlan := rb != nil && rb.ID == planRunbookID
 	if rb != nil {
 		g.recipe, g.runbookID = append([]string(nil), rb.Steps...), rb.ID

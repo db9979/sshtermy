@@ -243,8 +243,13 @@ func (a *App) companionRun(s *session) tea.Cmd {
 		s.term.SendText("\x15") // getippte Zeile ersetzen
 	}
 	a.clearToasts()
+	if why := a.aiIncomplete(s, cmd); why != "" {
+		s.term.SendText(cmd) // nur einfügen: mit Enter bliebe die Shell am „>“ hängen
+		a.flash(i18n.F("Befehl unvollständig (%s): nur eingefügt, bitte ergänzen", why))
+		return nil
+	}
 	a.beginCommand(s, cmd)
-	s.term.SendText(cmd + "\r")
+	a.sendLine(s, cmd)
 	s.noteAI(cmd, false)
 	s.history = append(s.history, cmd)
 	a.profileCommand(s, cmd)

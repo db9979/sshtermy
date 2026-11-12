@@ -86,6 +86,10 @@ type App struct {
 	// offen war (modalguard.go). Sie überschreiben ihn nicht, sie warten.
 	asyncModals []*modal
 
+	// heldEat: Taste (⏎ oder j), die gerade einen riskanten Befehl bestätigt
+	// hat. Ihre weiteren Wiederholungen werden verschluckt (dangerguard.go).
+	heldEat heldKeyEat
+
 	lscan         logScanState      // Log-Blick (logscan.go)
 	cmds          cmdsetState       // Befehlssätze (cmdsets.go)
 	lwatch        logWatchState     // Logwache + Syslog-Empfang (logwatch.go)
@@ -306,6 +310,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if _, ok := msg.(tea.KeyPressMsg); ok {
 		a.hov = hoverState{} // Karte weg, sobald getippt wird
+	}
+	if k, ok := msg.(tea.KeyPressMsg); ok && a.heldEat.eat(k, time.Now()) {
+		return a, nil // Taste noch vom Bestätigen gehalten: nicht ans Terminal
+	}
+	if k, ok := msg.(tea.KeyReleaseMsg); ok {
+		a.heldEat.release(k)
 	}
 	if k, ok := msg.(tea.KeyReleaseMsg); ok && a.modal != nil && a.modal.kind == mDanger && k.String() == "enter" {
 		a.modal.danger.hold.release(time.Now())

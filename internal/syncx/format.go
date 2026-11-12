@@ -45,7 +45,7 @@ const (
 	// beim Bearbeiten weglassen und den Verlust zurück in den Sync schreiben.
 	// Mit der höheren Zahl verweigert es stattdessen den Abgleich (ErrTooNew),
 	// bis es aktualisiert ist. TestPayloadFields erinnert daran.
-	payloadFormat = 3
+	payloadFormat = 4
 	aadWrap       = "sshtermy/v1/sync/wrap"
 	aadPayload    = "sshtermy/v1/sync/payload"
 	minPassLen    = 8

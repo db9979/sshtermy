@@ -42,7 +42,7 @@
   </div>
   <figure>
     <img src="../gifs/goal-de.gif" width="962" height="594" alt="Ziel-Modus: die KI richtet Nginx Schritt für Schritt ein, jeder Befehl wird mit Enter bestätigt">
-    <figcaption>Ziel-Modus (F2): Ziel beschreiben, die KI schlägt immer genau einen Befehl vor, du bestätigst. Mehrzeilige Inhalte wie Konfigurationsabschnitte kommen als Datei (nach ⏎ per SFTP angelegt), Konfigurationsdateien werden ergänzt statt ersetzt.</figcaption>
+    <figcaption>Ziel-Modus (F2): Ziel beschreiben, die KI schlägt immer genau einen Befehl vor, du bestätigst. Mehrzeilige Inhalte wie Konfigurationsabschnitte kommen als Datei (nach ⏎ per SFTP angelegt), Konfigurationsdateien werden ergänzt statt ersetzt. Bleibt ein Befehl am Fortsetzungs-Prompt <code>&gt;</code> der Shell hängen, bricht sshTermy ihn mit Strg+C ab und sagt es der KI, damit der nächste Befehl nicht verschluckt wird.</figcaption>
   </figure>
 </section>
 
@@ -128,6 +128,8 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Verbindungsmanager</h3><p>Ordner, Tags, Jump-Hosts, Import aus <code>~/.ssh/config</code>, PuTTY und MobaXterm.</p></div>
     <div class="card"><h3>Fehlerverzeihend</h3><p>Beenden fragt bei offenen Verbindungen nach, Löschen lässt sich 10 Sekunden lang rückgängig machen, <kbd>Strg</kbd>+<kbd>T</kbd> im Formular testet die Verbindung vor dem Speichern, und fehlgeschlagene Verbindungen erklären in Klartext, was los ist (mit Taste zum Beheben, z. B. neuen Host-Key nach Neuinstallation übernehmen). Der einfache Modus blendet Profi-Funktionen aus.</p></div>
     <div class="card"><h3>Eigenes Fenster</h3><p>Kein Terminal nötig: Doppelklick auf die <code>.exe</code>, die <code>.app</code> öffnen oder <code>sshtermy -window</code>. Schrift, Nerd-Font-Symbole und Emoji sind eingebaut, jede Taste kommt an (Alt+⏎, ⇧F-Tasten, Strg+Leertaste), Bilder erscheinen pixelgenau, abgelegte Dateien werden hochgeladen, ⇧F10 öffnet ein zweites Fenster. Startet im Vollbild (<kbd>F11</kbd> schaltet um; maximiert oder „wie zuletzt“ in den Einstellungen), Schriftgröße und Fensterposition werden gemerkt. Im Terminal gestartet läuft es wie bisher im Terminal.</p></div>
+    <div class="card"><h3>Ziel-Modus im Einsatz</h3><p><kbd>?</kbd> gibt der KI mitten im Ziel eine Anweisung, <kbd>⇧S</kbd> überspringt einen Schritt mit Grund. Fragt ein Befehl <code>[Y/n]</code> oder wartet ein Pager, zeigt das Panel Antwort-Knöpfe. Dateien, die ein Schritt ändert, werden vorher gesichert, <kbd>u</kbd> holt alle zurück; <kbd>f</kbd> startet ein Folgeziel, frühere Ziele stehen im Verlauf. Nach einem Verbindungsabbruch setzt <kbd>⏎</kbd> fort, und der Tab zeigt, wenn ein Ziel auf dich wartet.</p></div>
+    <div class="card"><h3>Befehle als Blöcke</h3><p><kbd>Alt</kbd>+<kbd>Bild↑</kbd>/<kbd>Bild↓</kbd> springt im Verlauf von Befehl zu Befehl. <kbd>Alt</kbd>+<kbd>O</kbd> listet die Befehle des Tabs mit Uhrzeit, Dauer und Ergebnis: genau eine Ausgabe kopieren, an die KI geben oder groß lesen.</p></div>
     <div class="card"><h3>Echtes Terminal</h3><p>xterm-256color, Truecolor, vim, htop und tmux, Scrollback, Tabs, geteilte Ansicht, Suche.</p></div>
     <div class="card"><h3>Auto-Reconnect</h3><p>Reißt WLAN oder VPN ab, kommt die Sitzung von selbst zurück, mit Tunneln und tmux/screen. Nach Ruhezustand oder Netzwechsel wird jede Leitung binnen Sekunden geprüft.</p></div>
     <div class="card"><h3>Dateien (F5)</h3><p>SFTP über dieselbe Verbindung: links lokal, rechts der Server. <kbd>e</kbd> öffnet eine Server-Datei in VS Code, Notepad++ oder TextEdit, Speichern lädt sie zurück. Beim Kopieren: Prozent, MB/s, Restzeit und Tempo-Kurve.</p></div>
@@ -207,6 +209,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>Nach einem Fehler: Ursache und Fix</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Ziel-Modus (Agent)</td></tr>
     <tr><td><kbd>F2</kbd> → <kbd>v</kbd> / <kbd>s</kbd> / <kbd>r</kbd></td><td>Ziel-Modus, Datei-Schritt: Datei ansehen / überspringen; am Ende Arbeitsordner löschen (<kbd>⏎</kbd> legt die Datei an)</td></tr>
+    <tr><td><kbd>F2</kbd> → <kbd>?</kbd> / <kbd>⇧S</kbd> / <kbd>f</kbd> / <kbd>u</kbd></td><td>Ziel-Modus: KI anweisen / mit Grund überspringen / Folgeziel / vom Ziel geänderte Dateien zurückholen; <kbd>↑</kbd><kbd>↓</kbd> im leeren Zielfeld wählt ein früheres Ziel; fragt ein Befehl nach: <kbd>j</kbd> <kbd>n</kbd> <kbd>q</kbd> <kbd>Leertaste</kbd></td></tr>
     <tr><td><kbd>F2</kbd> → <kbd>c</kbd> / <kbd>l</kbd></td><td>Agent fertig: Ergebnis kopieren / ganz lesen; <kbd>Bild↑</kbd>/<kbd>Bild↓</kbd> oder Mausrad blättern im Panel; mit der Maus ziehen markiert und kopiert Text im Panel (Ziel, Schritte, Ausgaben, Fehler)</td></tr>
     <tr><td><kbd>F3</kbd></td><td>KI fragen, mit Terminal-Kontext; <kbd>Esc</kbd> bricht die Antwort ab, <kbd>n</kbd> neue Frage, <kbd>f</kbd> Folgefrage, <kbd>u</kbd> Fix übernehmen, wenn ein Kartenbefehl fehlschlug</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>K</kbd> / <kbd>Alt</kbd>+<kbd>J</kbd></td><td>KI-Begleiter: Stufe (aus, leise, gesprächig, Coach) / Begleiter-Leiste</td></tr>
@@ -220,6 +223,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>Alt</kbd>+<kbd>I</kbd></td><td>Bereich zoomen / in alle Bereiche tippen</td></tr>
     <tr><td><kbd>Strg</kbd>+<kbd>F</kbd></td><td>Im Verlauf suchen</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>S</kbd></td><td>In allen offenen Tabs suchen</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>Bild↑</kbd> / <kbd>Bild↓</kbd> / <kbd>Alt</kbd>+<kbd>O</kbd></td><td>Zum vorigen / nächsten Befehl springen; Befehle des Tabs als Liste (Ausgabe kopieren, KI fragen)</td></tr>
     <tr><td><kbd>Leertaste</kbd> / <kbd>*</kbd></td><td>Manager: Verbindung markieren / alle sichtbaren; dann <kbd>e</kbd>, <kbd>v</kbd>, <kbd>d</kbd> für alle</td></tr>
     <tr><td>Manager → Rechtsklick</td><td>Menü zu Verbindung oder Ordner: verbinden, bearbeiten, verschieben, Tunnel, SSH-Key, Wake-on-LAN, löschen</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>c</kbd></td><td>Container: Docker, Podman, Kubernetes (Shell, Logs, KI)</td></tr>

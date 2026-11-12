@@ -1,31 +1,31 @@
  >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                            ▌● 1 web-01 ×  +
  P┌─ ? Keyboard shortcuts  sshTermy vdev ─────────────────────────────────────────────────────────────────────── × ─┐er
 ┏━│                                                                                                                 │━━┓
-┃L│  ◆ Everywhere                         ◆ Ask AI F3                          ▲ Log view Alt+E                     │  ┃
-┃ │   Ctrl+Space  Command palette          ⏎           send question            ⏎           lines of the pattern    │  ┃
-┃d│   F1          this help                ⇧⏎ / Ctrl+J new line                 1…4         insert check command    │  ┃
-┃●│   F11         full screen on/off (o…   1…9         insert command           k           AI explains the patte…  │  ┃
-┃ │   F12         About & update           ↑ ↓         choose command card      b           AI status report        │  ┃
-┃ │   F12 w       What's new               a           run command (red ones…   x / X       hide: host / folder     │  ┃
-┃d│   F12 l       Language / Sprache       c           copy command             n           What's new? (u restor…  │  ┃
-┃ │   ⇧F9         explain key bar          u           after an error: put t…   t           Timeline (←→, ⏎, k)     │  ┃
-┃ │   Ctrl+Q      quit (asks if connect…   z           collapse/expand expla…   z           Period 1 h … 7 days     │  ┃
-┃ │                                        Esc / Ctrl+C stop answer             w           Log watch: alerts       │  ┃
-┃ │  ≡ Connection manager F10              n           new question (fresh)     s           switch: send syslog t…  │  ┃
-┃ │   F10         back to the terminal     f           follow-up (keeps the …   r / c       reload / copy           │  ┃
-┃ │   ⏎           connect                                                                                           │  ┃
-┃ │   n           new connection          ◇ AI companion Alt+J                 ≡ Session logs l                     │  ┃
-┃ │   e           edit                     Alt+K       level: off/quiet/chat…   /           search (output too)     │  ┃
-┃ │   d           delete                   Alt+1…4     insert suggestion        ⏎ / → ←     expand/collapse         │  ┃
-┃ │   Space       mark (then e, v, d fo…   ⏎ / a       insert / run             Tab         by time / by host       │  ┃
-┃ │   Right-click menu for a connection…   m           mute topic               f           filter: today · 7 day…  │  ┃
-┃ │   *           mark all visible         l           remember fact            s           sort hosts              │  ┃
-┃ │   Ctrl+Z      undo delete (10 s)       p / g       intent: plan / agent …   z           AI summary              │  ┃
-┃ │   Ctrl+T      in the form: test con…   r           recap (remember, runb…   Z           summarize all matches   │  ┃
-┃ │   /           search (also #tag)       ?           last request sent        b           Change report           │  ┃
-┃ │   o           new folder (A / B nes…                                        x           export: md · txt · ca…  │  ┃
-┃ │   r           Edit folder             ◆ Task across several windows Alt+V   d           delete                  │  ┃
-┃ │   v           move to folder           Space / ← → choose windows / what…   a           recording on/off        │  ┃
+┃L│  ◆ Everywhere                         ◎ Goal mode F2                       / Search in history Ctrl+F           │  ┃
+┃ │   Ctrl+Space  Command palette          ⏎           start goal / run         type        search (capital = exa…  │  ┃
+┃d│   F1          this help                ⇧⏎ / Ctrl+J new line in the goal     ⏎ / ↑       next (older)            │  ┃
+┃●│   F11         full screen on/off (o…   i           only insert (dry run)    ⇧⏎ / ↓      back (newer)            │  ┃
+┃ │   F12         About & update           e           edit                     Ctrl+E      error lines only        │  ┃
+┃ │   F12 w       What's new               s / ⇧S      skip / with a reason     Tab         error list / history    │  ┃
+┃d│   F12 l       Language / Sprache       ?           instruct AI (applies …   Esc         close                   │  ┃
+┃ │   ⇧F9         explain key bar          r           suggest again                                                │  ┃
+┃ │   Ctrl+Q      quit (asks if connect…   x           end goal                ▲ Log view Alt+E                     │  ┃
+┃ │                                        j n q Space command asks: answer …   ⏎           lines of the pattern    │  ┃
+┃ │  ≡ Connection manager F10              f           follow-up goal (knows…   1…4         insert check command    │  ┃
+┃ │   F10         back to the terminal     u           restore what the goal…   k           AI explains the patte…  │  ┃
+┃ │   ⏎           connect                  ⏎ after a drop continue goal         b           AI status report        │  ┃
+┃ │   n           new connection           ↑ ↓         choose runbook or ear…   x / X       hide: host / folder     │  ┃
+┃ │   e           edit                     Ctrl+S      save as runbook          n           What's new? (u restor…  │  ┃
+┃ │   d           delete                   Ctrl+D      delete runbook / hist…   t           Timeline (←→, ⏎, k)     │  ┃
+┃ │   Space       mark (then e, v, d fo…   Tab         step by step or agent…   z           Period 1 h … 7 days     │  ┃
+┃ │   Right-click menu for a connection…   Esc         pause agent              w           Log watch: alerts       │  ┃
+┃ │   *           mark all visible         v           view the agent's scri…   s           switch: send syslog t…  │  ┃
+┃ │   Ctrl+Z      undo delete (10 s)       r           delete the agent's sc…   r / c       reload / copy           │  ┃
+┃ │   Ctrl+T      in the form: test con…   c / l       copy result / read all                                       │  ┃
+┃ │   /           search (also #tag)       PgUp PgDn   scroll the panel (mou…  ≡ Session logs l                     │  ┃
+┃ │   o           new folder (A / B nes…   Space       plan: remove step        /           search (output too)     │  ┃
+┃ │   r           Edit folder              ?           plan: re-plan            ⏎ / → ←     expand/collapse         │  ┃
+┃ │   v           move to folder                                                Tab         by time / by host       │  ┃
 ┃ │                                                                                                                 │  ┃
 ┃ │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │  ┃
 ┃ │  Esc leads back to the terminal from every panel.                                                               │  ┃

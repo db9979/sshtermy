@@ -220,6 +220,9 @@ func (a *Agent) FollowUps(ctx context.Context, c Context) ([]Suggestion, error) 
 		if !ok {
 			return nil, nil // eine kaputte Zeile verwirft alles (strikt)
 		}
+		if c.kind() == "unix" && Incomplete(cmd) != "" {
+			continue // bliebe am „>“ hängen
+		}
 		reason, _ := oneLine(x.Grund, maxReason)
 		res = append(res, annotate(cmd, reason, c.kind()))
 	}
@@ -246,7 +249,13 @@ const sysGoal = "Du begleitest einen Admin auf einem Server oder Netzwerkgerät 
 	"optionen weglassen, wenn nur eine freie Antwort passt. " +
 	`Steht unten ein Arbeitsordner, darfst du auch {"datei": {"name": "x.conf", "inhalt": "…"}, "grund": "…"} vorschlagen: ` +
 	"sshTermy legt die Datei nach Bestätigung per SFTP dort an (name ist nur ein Dateiname); im nächsten Schritt setzt du sie mit einem befehl ein." +
-	multiLineRule + guard
+	repeatRule + multiLineRule + guard
+
+// repeatRule: aus gescheiterten Schritten lernen und rechtzeitig fertig melden.
+const repeatRule = " Schlägt ein Schritt fehl, lies seine Ausgabe und versuche einen anderen Weg; schlag nie denselben gescheiterten " +
+	"Befehl noch einmal vor, auch nicht leicht abgewandelt (anderer Dateiname, angehängtes grep). Bei „keine Berechtigung“/" +
+	"„Permission denied“ nimm sudo, vor allem wenn sudo vorher schon geklappt hat, und bleib dann dabei. Steht eine Information " +
+	"schon in einer Ausgabe oben (z. B. der Inhalt einer Datei), lies sie nicht erneut. Ist das Ziel erreicht und geprüft, melde sofort fertig."
 
 // multiLineRule: mehrzeilige Inhalte nie in einen befehl packen und
 // Konfigurationsdateien ergänzen statt ersetzen. Sonst schickte ein Modell
@@ -278,6 +287,10 @@ type DoneStep struct {
 	Output string // Ausgabe des Befehls (gekürzt)
 	Exit   *int   // Exit-Code, wenn die Shell ihn meldet (OSC 133)
 	File   string // Name der angelegten Datei (dann ist Command nur eine Beschreibung)
+	// Manual: der Mensch hat den Befehl während des Ziels selbst getippt.
+	Manual bool
+	// Note: Grund des Menschen (z. B. beim Überspringen).
+	Note string
 }
 
 var ErrUnreadable = errors.New("Antwort des Modells nicht lesbar")
@@ -299,19 +312,10 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 		}
 	}
 	if len(hist) > 0 {
-		b.WriteString("Bisherige Schritte:\n")
-		for i, h := range hist {
-			st := "ausgeführt"
-			if h.Skipped {
-				st = "vom Menschen übersprungen"
-			} else if h.ExitHint != "" {
-				st = "ausgeführt, fehlgeschlagen: " + h.ExitHint
-			}
-			fmt.Fprintf(&b, "%d. %s (%s)\n", i+1, h.Command, st)
-		}
+		writeHist(&b, hist)
 	}
 	for _, x := range answers {
-		fmt.Fprintf(&b, "Antwort des Menschen auf deine Frage: %s\n", Redact(x))
+		b.WriteString(answerLine(x, "Antwort des Menschen auf deine Frage: %s\n"))
 	}
 	b.WriteString("\n" + material(c))
 	msgs := []llm.Message{
@@ -321,7 +325,12 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 	files := dir != ""
 	kind := c.kind()
 	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
-	return a.completeWith(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal}, retryHint, files, parse)
+	o := llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal}
+	st, err := a.completeWith(ctx, msgs, o, retryHint, files, parse)
+	if err != nil {
+		return st, err
+	}
+	return a.avoidRepeat(ctx, msgs, o, st, hist, kind, true, parse), nil
 }
 
 // Reasoning-Modelle (Qwen3, DeepSeek-R1, gpt-oss) denken vor der Antwort oft
@@ -384,6 +393,10 @@ const (
 		"anlegen geht hier nicht. Zerlege den Inhalt: erst sichern, dann Zeile für Zeile ergänzen, z. B. printf '%s\\n' 'zeile 1' 'zeile 2' >> ziel, " +
 		"bei langen Inhalten in mehreren Schritten."
 	fixLong = "Dein befehl war länger als 300 Zeichen. Teile ihn in mehrere kürzere Schritte"
+	// %s: Grund aus Incomplete
+	fixIncomplete = "Dein befehl war unvollständig (%s): Die Shell bliebe am Fortsetzungs-Prompt „>“ stehen und " +
+		"verschluckte den nächsten Befehl. Schließe jedes Anführungszeichen und jede Klammer, kein Heredoc (<<), " +
+		"kein | && || oder \\ am Ende, if/for/case vollständig in einer Zeile (… ; fi / ; done / ; esac)."
 )
 
 // retryFor: Korrekturtext passend zum Fehler.
@@ -486,6 +499,9 @@ func parseStep(out, kind string) (Step, error) {
 		return Step{}, &StepError{Why: fmt.Sprintf("Befehl zu lang (%d Zeichen, höchstens %d)", len([]rune(raw)), maxCmd), fix: fixLong}
 	case !ok || cmd == "":
 		return Step{}, ErrUnreadable
+	case kind == "unix" && Incomplete(cmd) != "":
+		why := Incomplete(cmd)
+		return Step{}, &StepError{Why: "Befehl unvollständig (" + why + ")", fix: fmt.Sprintf(fixIncomplete, why)}
 	}
 	var plan []string
 	if raw, ok := v["plan"]; ok {
@@ -664,6 +680,9 @@ func (a *Agent) Adapt(ctx context.Context, cmd string, c Context) (Suggestion, e
 	reason, _ := oneLine(v.Grund, maxReason)
 	if line == "" {
 		return Suggestion{Reason: reason}, nil
+	}
+	if c.kind() == "unix" && Incomplete(line) != "" {
+		return Suggestion{}, ErrUnreadable // bliebe am „>“ hängen
 	}
 	return annotate(line, reason, c.kind()), nil
 }
