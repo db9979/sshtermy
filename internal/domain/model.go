@@ -411,9 +411,9 @@ func (p LLMProvider) DefaultBaseURL() string {
 func (p LLMProvider) DefaultModel() string {
 	switch p {
 	case ProviderOllama:
-		return "qwen2.5-coder:7b"
+		return "qwen3:8b" // Denken lässt sich abschalten, läuft mit 8 GB RAM
 	case ProviderOpenAI:
-		return "gpt-4.1-mini"
+		return "gpt-5-mini"
 	case ProviderAnthropic:
 		return "claude-haiku-5-5"
 	}
@@ -511,7 +511,7 @@ func (c LLMConfig) Chain() []LLMConfig {
 // DefaultLLM: sinnvolle Standardwerte (lokales Modell, nichts verlässt das Netz).
 func DefaultLLM() LLMConfig {
 	return LLMConfig{
-		BaseURL: "http://localhost:11434/v1", Model: "qwen2.5-coder:7b",
+		BaseURL: "http://localhost:11434/v1", Model: "qwen3:8b",
 		MaxTokens: 400, Temperature: 0.2, TimeoutSec: 60,
 		SuggestEnabled: true, SuggestDelayMS: 450, ContextLines: 80, SendScreen: true,
 		GoalStepsMin: 6,

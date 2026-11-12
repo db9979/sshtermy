@@ -187,10 +187,6 @@ func (o shareOpts) withDefaults() shareOpts {
 	return o
 }
 
-// shareRelays: Vermittler, über die geteilt werden kann (eigene; Spark erst,
-// wenn das Panel Teilen v2 kann – der Versuch sagt es dann).
-func (a *App) shareRelays() []domain.Relay { return a.st.Relays() }
-
 // startShare: „teilen“ öffnet immer den Dialog (sharedialog.go).
 func (a *App) startShare(s *session) tea.Cmd {
 	if s == nil || s.state != stConnected || s.term == nil {

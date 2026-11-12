@@ -36,6 +36,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Agent-Weiterleitung** pro Verbindung (wie `ssh -A`): `git pull`, `ssh` und `scp` auf dem Server nutzen deine lokalen Keys aus ssh-agent, Pageant oder dem Windows-OpenSSH-Agent, die Keys verlassen deinen Rechner nie
 - **X11-Weiterleitung** pro Verbindung (wie `ssh -X`): Grafische Programme vom Server öffnen sich hier; braucht lokal einen X-Server (XQuartz, VcXsrv, WSLg), das X-Cookie verlässt deinen Rechner nie
 - **FIDO2-Sicherheitsschlüssel** (`id_ed25519_sk`, `id_ecdsa_sk`, z. B. YubiKey) werden direkt genutzt; sshTermy sagt dir, wann du den Schlüssel berühren musst (braucht OpenSSH ssh-agent/ssh-add)
+- **Aktuelle Verschlüsselung:** Schlüsseltausch mit ML-KEM (`mlkem768x25519`, quantensicher), sobald der Server es kann. Alte Geräte, die nur SHA-1/CBC sprechen, verbinden weiter, sshTermy zeigt dann aber einen gelben Hinweis, und die Host-Übersicht (F6) nennt die alten Verfahren unter „SSH“ (sonst z. B. „… · quantensicher“)
 - **Passwortmanager statt gespeicherter Passwörter**: Im Verbindungsformular „Passwort aus“ und (unter Erweitert)
   „2FA-Code aus“: `op://Tresor/Eintrag/password` (1Password CLI), `bw:Eintrag` (Bitwarden CLI), `keepassxc:Datei.kdbx:Eintrag`
   (KeePassXC, fragt das Datenbank-Passwort), `pass:Name` oder `cmd:Befehl`. Fragt ein Server nach einem Einmalcode
@@ -231,7 +232,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   „▲ zäh“ bei schlechter Leitung). In der geteilten Ansicht leuchtet die Trennlinie neben dem aktiven Bereich, beim
   Wechsel und beim Zoom (Alt+Z) gleitet ein Rahmen mit.
   Gezeichnet wird nur, solange sich etwas bewegt; Barrierearm schaltet alles ab
-- **MCP-Server** (`sshtermy mcp`): Claude und andere KI-Clients können Verbindungen auflisten und lesende Befehle ausführen, alles andere erst nach deiner Bestätigung in sshTermy
+- **MCP-Server** (`sshtermy mcp`, Protokoll 2026-07-28, ältere Clients gehen weiter): Claude und andere KI-Clients können Verbindungen auflisten und lesende Befehle ausführen, alles andere erst nach deiner Bestätigung in sshTermy
 - **Audit-Protokoll** (Einstellungen › Protokolle & Logs): wer hat wann auf welchem Host was getan: Verbindungen, Befehle
   (auch aus Agent-Modus und Broadcast), Dateiübertragungen, Config-Sicherungen, geänderte Verbindungen,
   Master-Passwort, Gesamtsicherungen und KI-Anfragen (nur Host/Modell). Jede Zeile ist verkettet und mit einem
@@ -556,7 +557,7 @@ Start ─▶ Entsperren (DPAPI automatisch │ Master-Passwort │ Ersteinrichtu
 
 | Thema | Wahl | Grund |
 |---|---|---|
-| Sprache | Go 1.26 | Ein statisches Binary pro Plattform, Cross-Compile ohne Toolchain (`GOOS=windows GOARCH=arm64`), kein cgo |
+| Sprache | Go 1.27 | Ein statisches Binary pro Plattform, Cross-Compile ohne Toolchain (`GOOS=windows GOARCH=arm64`), kein cgo |
 | TUI | bubbletea v2 + lipgloss v2 | aktueller Charm-Stack: echte Cursor-Steuerung, Ebenen für Overlays, Kitty-Keyboard, Windows-Konsole |
 | Terminal-Emulation | charmbracelet/x/vt | aktiv gepflegt, Truecolor, Alt-Screen, Scrollback, Breitzeichen; kodiert Tasten passend zum Modus |
 | SSH | golang.org/x/crypto/ssh | Referenz-Implementierung in Go, Agent, known_hosts, Forwarding |
@@ -672,7 +673,12 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
   Getippte am Ende, so nutzen vLLM, SGLang und Ollama ihren Prefix-Cache. Der Ghost-Text schickt nur die letzten 25
   Bildschirmzeilen, Folgebefehle 40. Solange der angezeigte Vorschlag noch passt, gibt es keine neue Anfrage, und dieselbe
   Eingabe innerhalb von 3 Minuten kommt aus dem Speicher. Bei kurzen Antworten werden Denkmodelle gebeten, nicht lange
-  nachzudenken (Qwen, gpt-oss, OpenAI o/gpt-5, Ollama-Denkmodelle).
+  nachzudenken (Qwen, gpt-oss, OpenAI o/gpt-5, Ollama-Denkmodelle, Claude).
+- **Verlässliche Antworten:** Ziel-Modus, Agent und Plan bitten den Server um genau ein JSON-Objekt (`response_format`, wenn der
+  Server es kennt). Bei Claude wird der lange Systemtext zwischengespeichert (Prompt-Caching), neuere Claude-Modelle bekommen
+  von selbst die passenden Einstellungen (keine eigene Temperatur, wenig Nachdenken bei kurzen Antworten), und eine Ablehnung
+  durch Claudes Sicherheitsfilter wird als solche gemeldet. Neue KI-Einrichtungen starten mit `qwen3:8b` (Ollama),
+  `gpt-5-mini` (OpenAI) oder `claude-haiku-5-5`.
 - **Warm halten:** Solange Tabs offen sind, hält eine Anfrage mit einem Token alle 4 Minuten das eigene Modell geladen
   (Ollama entlädt nach 5 Minuten). Cloud-Dienste werden nicht angepingt.
 - **KI-Status** (Klick auf den Punkt) zeigt die Antwortzeit je Aufgabe (Mittel und zuletzt), so sieht man, was bremst.
@@ -709,7 +715,10 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
 ### Auto-Update
 
 - Prüft `releases/latest` von `db9979/sshtermy`, nur HTTPS zu github.com, Weiterleitungen geprüft.
-- **SHA-256** aus `checksums.txt` und **Ed25519-Signatur** `checksums.txt.sig` mit eingebautem Public Key.
+- **SHA-256** aus `checksums.txt` und **Ed25519-Signatur** `checksums.txt.sig` mit eingebautem Public Key. Die signierte
+  Datei nennt ihre Version (`# sshtermy v1.0.42`), ein älteres signiertes Release lässt sich also nicht als neues ausgeben.
+- Jedes Release hat außerdem einen **Herkunftsnachweis** (`gh attestation verify sshtermy_linux_amd64 --repo db9979/sshtermy`)
+  und eine Liste aller eingebauten Bibliotheken (`sshtermy.sbom.cdx.json`, CycloneDX).
 - Ein Build ohne diesen Schlüssel (selbst gebaut ohne `UPDATE_PUBKEY`) sagt das im Über-Dialog (F12) und fragt vor
   dem Installieren eines Updates nach; `--update` gibt eine Warnung aus.
 - Austausch: laufende Datei → `.old`, neue an ihren Platz (geht auch unter Windows), beim nächsten Start aufgeräumt.
@@ -771,7 +780,8 @@ siehe `third_party/vt/README.sshtermy.md`.
 
 ## Nächste Schritte (Vorschläge)
 
-1. Windows-Ressourcen (Icon, Versionsinfo) und Code-Signing der `.exe`, macOS Notarisierung.
+1. Code-Signing der `.exe` und macOS-Notarisierung: Der Release-Workflow ist vorbereitet und signiert, sobald die Zertifikate
+   als Secrets hinterlegt sind ([docs/codesignatur.md](docs/codesignatur.md)).
 2. macOS-Schlüsselbund als zweiter Entsperr-Weg (wie DPAPI unter Windows).
 
 ## Vermittler: Server hinter NAT/Firewall

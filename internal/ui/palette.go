@@ -729,9 +729,6 @@ func (a *App) palFolder(id string) palItem {
 // proItem: Profi-Eintrag (im einfachen Modus nur über die Suche).
 func proItem(it palItem) palItem { it.pro = true; return it }
 
-// inMenu: Eintrag in ein anderes Untermenü legen.
-func inMenu(menu string, it palItem) palItem { it.menu = menu; return it }
-
 // cycleIndex: Position von cur in n Werten, um dir verschoben (rundherum).
 // Unbekannter Wert: vorwärts beim ersten, rückwärts beim letzten beginnen.
 func cycleIndex(cur, n, dir int) int {

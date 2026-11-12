@@ -163,7 +163,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Telnet &amp; Konsole</h3><p>Telnet und USB-Konsolenkabel (z. B. Aruba-Switches), Kabel wird automatisch gewählt, Anmeldung getippt.</p></div>
     <div class="card"><h3>PowerShell-Fernzugriff</h3><p>Auf Windows-Server einloggen wie mit <code>Enter-PSSession</code> über WinRM (NTLM oder Kerberos, verschlüsselt, oder HTTPS), mit Verlauf, Tab-Ergänzung vom Server und KI, die PowerShell spricht.</p></div>
     <div class="card"><h3>Lokale Shell</h3><p>Deine eigene PowerShell, cmd, zsh oder bash als Tab (<kbd>Alt</kbd>+<kbd>L</kbd>), mit KI, Agent- und Plan-Modus, geteilter Ansicht und Protokoll; der Gefahren-Check gilt auch hier.</p></div>
-    <div class="card"><h3>Profi-SSH</h3><p>Agent-Weiterleitung, X11-Weiterleitung, FIDO2-Sicherheitsschlüssel, Kerberos/GSSAPI, SSH-Zertifikate, feste tmux/screen-Sitzungen.</p></div>
+    <div class="card"><h3>Profi-SSH</h3><p>Agent-Weiterleitung, X11-Weiterleitung, FIDO2-Sicherheitsschlüssel, Kerberos/GSSAPI, SSH-Zertifikate, feste tmux/screen-Sitzungen. Quantensicherer Schlüsseltausch (ML-KEM), wo der Server ihn kann, und ein deutlicher Hinweis, wenn ein altes Gerät nur SHA-1/CBC spricht.</p></div>
     <div class="card"><h3>Dateien im Terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) auch durch <code>sudo su</code> und mehrere Sprünge, Zwischenablage vom Server per OSC 52.</p></div>
     <div class="card"><h3>Team-Freigabe</h3><p>Verschlüsselte <code>.sshteam</code>-Pakete und Team-Ordner, die die Verbindungen aller aktuell halten, ohne Passwörter.</p></div>
     <div class="card"><h3>Aussehen &amp; Tasten</h3><p>26 Themes mit Live-Vorschau, von Polarnacht, Abendrot und Tusche bis Papier und Minze, dazu Hochkontrast und Farbenblind, eigene Farben, vier Symbol-Stile, jede Taste frei belegbar.</p></div>
@@ -259,7 +259,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
 
 <section id="updates">
   <h2>Updates</h2>
-  <p>Ein direkter Download oder der Einzeiler aktualisiert sich selbst: sshTermy fragt einmal am Tag bei GitHub nach, prüft die Prüfsumme und tauscht die Datei aus (<kbd>F12</kbd> → <kbd>u</kbd> oder <code>sshtermy --update</code>).</p>
+  <p>Ein direkter Download oder der Einzeiler aktualisiert sich selbst: sshTermy fragt einmal am Tag bei GitHub nach, prüft Prüfsumme und Signatur (die auch die Version nennt) und tauscht die Datei aus (<kbd>F12</kbd> → <kbd>u</kbd> oder <code>sshtermy --update</code>).</p>
   <p>Über eine Paketquelle installiert, aktualisiert die Paketquelle:</p>
   <table>
     <tr><td>Homebrew</td><td><code>brew upgrade sshtermy</code></td></tr>

@@ -17,8 +17,56 @@ import (
 	"github.com/db9979/sshtermy/internal/version"
 )
 
-// ProtocolVersion: neueste Fassung, die dieser Server spricht.
-const ProtocolVersion = "2025-06-18"
+// ProtocolVersion: neueste Fassung, die dieser Server spricht. Ab 2026-07-28
+// ist MCP zustandslos: kein initialize mehr, jede Anfrage trägt ihre Version
+// in _meta, dazu server/discover. Ältere Clients bekommen weiter initialize.
+const ProtocolVersion = "2026-07-28"
+
+// Supported: alle Fassungen, neueste zuerst (server/discover, Fehlerdaten).
+var Supported = []string{"2026-07-28", "2025-11-25", "2025-06-18"}
+
+const (
+	metaVersion    = "io.modelcontextprotocol/protocolVersion"
+	metaServerInfo = "io.modelcontextprotocol/serverInfo"
+	errUnsupported = -32022 // UnsupportedProtocolVersion (2026-07-28)
+	instructions   = "sshTermy gives access to the user's saved SSH connections. Prefer read-only commands; changes need the user's approval in sshTermy."
+	listTTL        = 60_000 // ms: Werkzeugliste ändert sich nur mit der Version
+)
+
+func serverInfo() map[string]any {
+	return map[string]any{"name": "sshtermy", "version": version.Version}
+}
+
+// stateless: Version aus _meta (Fassung 2026-07-28 und neuer), "" = alter Client.
+func stateless(params json.RawMessage) string {
+	var p struct {
+		Meta map[string]json.RawMessage `json:"_meta"`
+	}
+	if json.Unmarshal(params, &p) != nil {
+		return ""
+	}
+	var v string
+	_ = json.Unmarshal(p.Meta[metaVersion], &v)
+	return v
+}
+
+func supported(v string) bool {
+	for _, s := range Supported {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
+// complete: Ergebnis im Format der neuen Fassung (resultType + serverInfo).
+func complete(res map[string]any, newStyle bool) map[string]any {
+	if newStyle {
+		res["resultType"] = "complete"
+		res["_meta"] = map[string]any{metaServerInfo: serverInfo()}
+	}
+	return res
+}
 
 // Tool: Beschreibung für tools/list.
 type Tool struct {
@@ -68,6 +116,7 @@ type rpcReq struct {
 type rpcErr struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 type rpcResp struct {
@@ -99,39 +148,58 @@ func Serve(in io.Reader, out io.Writer, b Backend) error {
 	for sc.Scan() {
 		var q rpcReq
 		if err := json.Unmarshal(sc.Bytes(), &q); err != nil {
-			send(rpcResp{ID: json.RawMessage("null"), Error: &rpcErr{-32700, "parse error"}})
+			send(rpcResp{ID: json.RawMessage("null"), Error: &rpcErr{Code: -32700, Message: "parse error"}})
 			continue
 		}
 		if len(q.ID) == 0 {
 			continue // Benachrichtigung (notifications/initialized, cancelled …)
 		}
+		v := stateless(q.Params)
+		if v != "" && !supported(v) {
+			send(rpcResp{ID: q.ID, Error: &rpcErr{errUnsupported, "Unsupported protocol version",
+				map[string]any{"supported": Supported, "requested": v}}})
+			continue
+		}
+		newStyle := v != ""
 		switch q.Method {
-		case "initialize":
+		case "server/discover":
+			send(rpcResp{ID: q.ID, Result: complete(map[string]any{
+				"supportedVersions": Supported,
+				"capabilities":      map[string]any{"tools": map[string]any{}},
+				"instructions":      instructions,
+				"ttlMs":             listTTL,
+				"cacheScope":        "private",
+			}, true)})
+		case "initialize": // Fassungen bis 2025-11-25
 			var p struct {
 				ProtocolVersion string `json:"protocolVersion"`
 			}
 			_ = json.Unmarshal(q.Params, &p)
-			pv := ProtocolVersion
+			pv := Supported[1] // neueste Fassung mit initialize
 			if p.ProtocolVersion != "" && p.ProtocolVersion < pv {
 				pv = p.ProtocolVersion // ältere Fassung des Clients übernehmen
 			}
 			send(rpcResp{ID: q.ID, Result: map[string]any{
 				"protocolVersion": pv,
 				"capabilities":    map[string]any{"tools": map[string]any{}},
-				"serverInfo":      map[string]any{"name": "sshtermy", "version": version.Version},
-				"instructions":    "sshTermy gives access to the user's saved SSH connections. Prefer read-only commands; changes need the user's approval in sshTermy.",
+				"serverInfo":      serverInfo(),
+				"instructions":    instructions,
 			}})
-		case "ping":
-			send(rpcResp{ID: q.ID, Result: map[string]any{}})
+		case "ping": // bis 2025-11-25
+			send(rpcResp{ID: q.ID, Result: complete(map[string]any{}, newStyle)})
 		case "tools/list":
-			send(rpcResp{ID: q.ID, Result: map[string]any{"tools": Tools}})
+			res := map[string]any{"tools": Tools}
+			if newStyle {
+				res["ttlMs"], res["cacheScope"] = listTTL, "private"
+			}
+			send(rpcResp{ID: q.ID, Result: complete(res, newStyle)})
 		case "tools/call":
 			var p struct {
 				Name      string          `json:"name"`
 				Arguments json.RawMessage `json:"arguments"`
 			}
 			if err := json.Unmarshal(q.Params, &p); err != nil || !known(p.Name) {
-				send(rpcResp{ID: q.ID, Error: &rpcErr{-32602, "unknown tool"}})
+				send(rpcResp{ID: q.ID, Error: &rpcErr{Code: -32602, Message: "unknown tool"}})
 				continue
 			}
 			if len(p.Arguments) == 0 {
@@ -145,10 +213,10 @@ func Serve(in io.Reader, out io.Writer, b Backend) error {
 				if err != nil {
 					res = map[string]any{"content": []textContent{{"text", err.Error()}}, "isError": true}
 				}
-				send(rpcResp{ID: id, Result: res})
+				send(rpcResp{ID: id, Result: complete(res, newStyle)})
 			}(q.ID)
 		default:
-			send(rpcResp{ID: q.ID, Error: &rpcErr{-32601, fmt.Sprintf("method not found: %s", q.Method)}})
+			send(rpcResp{ID: q.ID, Error: &rpcErr{Code: -32601, Message: fmt.Sprintf("method not found: %s", q.Method)}})
 		}
 	}
 	wg.Wait()

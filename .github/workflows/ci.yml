@@ -11,8 +11,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          # neuester Patch von Go 1.26: Sicherheitskorrekturen der Standardbibliothek
-          go-version: "1.26.x"
+          # neuester Patch von Go 1.27: Sicherheitskorrekturen der Standardbibliothek
+          go-version: "1.27.x"
           check-latest: true
       - run: go vet ./... && go test ./...
       - name: Terminal-Emulator (eigene Kopie in third_party/vt)
@@ -43,10 +43,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          # neuester Patch von Go 1.26: Sicherheitskorrekturen der Standardbibliothek
-          go-version: "1.26.x"
+          # neuester Patch von Go 1.27: Sicherheitskorrekturen der Standardbibliothek
+          go-version: "1.27.x"
           check-latest: true
       - run: go test -race ./...
+
+  # Statische Prüfung: tote Funktionen, veraltete APIs (z. B. Krypto), immer
+  # wahre Bedingungen. Abweichungen von der Vorgabe in staticcheck.conf.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+          check-latest: true
+      - run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+      - name: Bibliotheken aktuell? (nur Hinweis, Dependabot macht die PRs)
+        run: |
+          OUT="$(go list -m -u -f '{{if and .Update (not .Indirect)}}{{.Path}} {{.Version}} → {{.Update.Version}}{{end}}' all)"
+          [ -z "$OUT" ] || echo "::notice title=Neuere Bibliotheken::$(echo "$OUT" | tr '\n' ';')"
 
   # Tests auch auf echtem Windows und macOS (ConPTY, DPAPI, Schlüsselbund, Pfade)
   platforms:
@@ -59,7 +75,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.26.x"
+          go-version: "1.27.x"
           check-latest: true
       - run: go test ./...
       - run: cd third_party/vt && go test ./...
@@ -78,7 +94,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.26.x"
+          go-version: "1.27.x"
           check-latest: true
       - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
@@ -89,7 +105,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.26.x"
+          go-version: "1.27.x"
           check-latest: true
       - run: FUZZTIME=15s tools/fuzz/run.sh
       - name: ANSI-Parser (third_party/ansi)

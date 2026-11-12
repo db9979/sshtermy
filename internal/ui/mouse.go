@@ -388,11 +388,6 @@ func (a *App) hintsIn(s *session, style lipgloss.Style, items ...[2]string) stri
 	return b.String()
 }
 
-// button: anklickbarer Knopf für Dialoge.
-func (a *App) button(key, label string) string {
-	return a.keyZone(key, a.s.Key.Render(key)+a.s.KeyDesc.Render(label))
-}
-
 // ---------------------------------------------------------------- Terminal
 
 func (a *App) inTermArea(s *session, x, y int) bool {
@@ -630,12 +625,3 @@ func (a *App) modalKeys() [][2]string {
 	}
 	return keys
 }
-
-// mouseHelp: Abschnitt für die Hilfe (F1).
-const mouseHelp = `Maus         Klick auf Tabs, Listen, Vorschläge, Felder, Fußzeile · Doppelklick öffnet
-             Terminal: Ziehen markiert + kopiert · Doppel-/Dreifachklick Wort/Zeile
-             Ziel-/Agent-Panel, KI fragen: ebenso, Rechtsklick kopiert die Markierung
-             Rechtsklick fügt ein, auf Link/IP/Host öffnet er ein Menü · Strg+Klick öffnet URL
-             Rad blättert im Verlauf (Esc zurück)
-             htop, mc, vim, tmux bekommen die Maus · Shift+Ziehen markiert trotzdem
-             Palette „Maus aus“: Terminalfenster markiert wieder selbst`

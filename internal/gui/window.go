@@ -12,7 +12,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 	"unicode/utf8"
@@ -226,7 +225,6 @@ type window struct {
 	wheelAcc  float64
 	lastTitle string
 
-	shotMu sync.Mutex
 	script *script
 }
 
@@ -258,7 +256,7 @@ func (w *window) setFaces(scale float64) {
 	}
 	m := regular.Metrics()
 	w.ascentF = m.HAscent
-	w.cellW = math.Round(text.Advance("M", regular))
+	w.cellW = math.Round(text.AdvanceAt("M", 1, regular))
 	w.cellH = math.Ceil(m.HAscent + m.HDescent + m.HLineGap*0.5)
 	w.ascent = math.Round(m.HAscent + (w.cellH-m.HAscent-m.HDescent)/2)
 	w.glyphs = map[glyphKey]*ebiten.Image{}

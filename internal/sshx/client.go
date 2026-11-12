@@ -45,7 +45,10 @@ type Client struct {
 	// HostKey: Fingerprint (SHA256:…) des Host-Keys dieser Verbindung. Die
 	// UI prüft damit, ob ein Fenster noch dasselbe System ist (Vorgang).
 	HostKey string
-	cancel  context.CancelFunc
+	// Algos: ausgehandelte Verfahren; Weak: davon die unsicheren (weakalgo.go)
+	Algos  ssh.NegotiatedAlgorithms
+	Weak   []string
+	cancel context.CancelFunc
 
 	// Zustand der Leitung (Statuszeile, Auto-Reconnect)
 	latency  atomic.Int64  // letzte Rundreise in ns, 0 = noch keine
@@ -415,6 +418,11 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 
 	kctx, cancel := context.WithCancel(context.Background())
 	cl := &Client{Client: ssh.NewClient(sc, chans, reqs), Conn: c, jump: jump, cancel: cancel, dead: make(chan struct{}), HostKey: seenKey}
+	cl.Algos = algosOf(sc)
+	cl.Weak = weakAlgos(cl.Algos)
+	if len(cl.Weak) > 0 {
+		debuglog.Printf("ssh", "%s: alte Verfahren ausgehandelt: %v", c.Alias, cl.Weak)
+	}
 	go func() { _ = cl.Client.Wait(); close(cl.dead) }()
 	banner := string(sc.ServerVersion())
 	switch {

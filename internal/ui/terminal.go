@@ -136,9 +136,6 @@ func (a *App) resize(s *session) {
 	a.shareResized(s)
 }
 
-// agentClient: KI ohne Bezug zu einer Verbindung (nur die Einstellung zählt).
-func (a *App) agentClient() (*agent.Agent, error) { return a.agentClientFor() }
-
 // ---------------------------------------------------------------- Tasten
 
 func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
@@ -901,9 +898,7 @@ func (a *App) tabStrip(room int) string {
 			text = ts.UnsetPadding().Render(text)
 		} else {
 			ts = ts.Background(tabFlashBg(x, ts.GetBackground(), now))
-			if bg := ts.GetBackground(); bg != nil {
-				dot = lipgloss.NewStyle().Background(bg).Render(dot) // Punkt auf dem Tab-Hintergrund
-			}
+			dot = lipgloss.NewStyle().Background(ts.GetBackground()).Render(dot) // Punkt auf dem Tab-Hintergrund
 			// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
 			if col := a.tabColor(x); col != nil {
 				stripe = glyph("▌", col, ts.GetBackground())

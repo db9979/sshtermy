@@ -163,7 +163,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Telnet &amp; serial</h3><p>Telnet and USB console cables (e.g. Aruba switches), cable picked automatically, login typed for you.</p></div>
     <div class="card"><h3>Remote PowerShell</h3><p>Log into Windows servers like <code>Enter-PSSession</code> over WinRM (NTLM or Kerberos, encrypted, or HTTPS), with history, Tab completion from the server and AI that speaks PowerShell.</p></div>
     <div class="card"><h3>Local shell</h3><p>Your own PowerShell, cmd, zsh or bash as a tab (<kbd>Alt</kbd>+<kbd>L</kbd>), with AI, agent and plan mode, split view and session log; danger rules apply here too.</p></div>
-    <div class="card"><h3>Pro SSH</h3><p>Agent forwarding, X11 forwarding, FIDO2 security keys, Kerberos/GSSAPI, SSH certificates, persistent tmux/screen sessions.</p></div>
+    <div class="card"><h3>Pro SSH</h3><p>Agent forwarding, X11 forwarding, FIDO2 security keys, Kerberos/GSSAPI, SSH certificates, persistent tmux/screen sessions. Quantum-safe key exchange (ML-KEM) where the server supports it, and a clear notice when an old device only speaks SHA-1/CBC.</p></div>
     <div class="card"><h3>Files in the terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) through <code>sudo su</code> and several hops, clipboard from the server via OSC 52.</p></div>
     <div class="card"><h3>Team sharing</h3><p>Encrypted <code>.sshteam</code> packages and team folders that keep everyone's connections up to date, without passwords.</p></div>
     <div class="card"><h3>Look &amp; keys</h3><p>26 themes with live preview, from Polar night, Synthwave and Ink to Paper and Mint, plus high contrast and color blindness, your own colors, four icon styles, every shortcut can be changed.</p></div>
@@ -262,7 +262,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
 
 <section id="updates">
   <h2>Updates</h2>
-  <p>A direct download or the one-line installer updates itself: sshTermy checks GitHub once a day, verifies the checksum and swaps the file (<kbd>F12</kbd> → <kbd>u</kbd>, or <code>sshtermy --update</code>).</p>
+  <p>A direct download or the one-line installer updates itself: sshTermy checks GitHub once a day, verifies the checksum and the signature (which also names the version) and swaps the file (<kbd>F12</kbd> → <kbd>u</kbd>, or <code>sshtermy --update</code>).</p>
   <p>Installed with a package manager, the package manager updates it:</p>
   <table>
     <tr><td>Homebrew</td><td><code>brew upgrade sshtermy</code></td></tr>

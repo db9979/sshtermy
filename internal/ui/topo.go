@@ -119,14 +119,12 @@ func topoForest(devs []netmap.Device, links []netmap.Link) (roots []*topoNode, e
 	adj := map[string][]edge{}
 	leaves := map[string][]string{}
 	deg := map[string]int{}
-	var all []*bool
 	for _, l := range links {
 		if !l.Known {
 			leaves[l.A] = append(leaves[l.A], strings.TrimSpace(netmap.ShortName(l.B)+"  "+l.APort))
 			continue
 		}
 		u := new(bool)
-		all = append(all, u)
 		adj[l.A] = append(adj[l.A], edge{l.B, portPair(l.APort, l.BPort), u})
 		adj[l.B] = append(adj[l.B], edge{l.A, portPair(l.BPort, l.APort), u})
 		deg[l.A]++

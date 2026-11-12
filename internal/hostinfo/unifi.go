@@ -13,7 +13,6 @@ import (
 // UniFi-Controller; /tmp/system.cfg ist die gerade gültige Fassung.
 
 var (
-	unifiInfo    = regexp.MustCompile(`(?im)^\s*model:\s+US[^Gg\s][\w-]*\s*$|^\s*status:\s+.*?/inform\b`)
 	unifiUptime  = regexp.MustCompile(`(?i)^(\d+)\s*(?:seconds?|s)?$`)
 	unifiTopIdle = regexp.MustCompile(`(?im)^\s*CPU:.*?(\d{1,3})(?:\.\d+)?%\s+idle`)
 )

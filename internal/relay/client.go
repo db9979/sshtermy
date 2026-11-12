@@ -43,7 +43,7 @@ func NewClient(base, key, fp string) (*Client, error) {
 // (wie beim Pinnen in spark-tui); sonst die Zertifizierungsstellen.
 func transport(fp string) *http.Transport {
 	t := http.DefaultTransport.(*http.Transport).Clone()
-	cfg := &tls.Config{MinVersion: tls.VersionTLS12}
+	cfg := &tls.Config{MinVersion: tls.VersionTLS13} // beide Seiten sind sshTermy bzw. der eigene Vermittler
 	if fp != "" {
 		cfg.InsecureSkipVerify = true // ersetzt durch VerifyPeerCertificate (Pin)
 		cfg.VerifyPeerCertificate = func(raw [][]byte, _ [][]*x509.Certificate) error {

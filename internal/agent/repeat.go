@@ -162,7 +162,7 @@ func (a *Agent) avoidRepeat(ctx context.Context, msgs []llm.Message, o llm.Opts,
 				return st2
 			}
 			st = st2
-			prev, perm, _ = repeatOf(st.Command, hist)
+			_, perm, _ = repeatOf(st.Command, hist)
 		}
 	}
 	if perm && withSudo && kind == "unix" && !safety.Elevated(st.Command) {
