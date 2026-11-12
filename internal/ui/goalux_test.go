@@ -3,6 +3,7 @@ package ui
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -223,8 +224,10 @@ func TestGoalBackupAndUndo(t *testing.T) {
 	}
 	fresh := filepath.Join(dir, "neu.conf")
 	a, s, out := goalSession(t, domain.Connection{Alias: "lokal", Protocol: domain.ProtoLocal, GuardOff: true})
-	if !a.agentFilesOK(s) {
-		t.Skip("lokale Shell hier ohne Dateien (kein Unix)")
+	// Die Sicherung erkennt Unix-Befehle mit Unix-Pfaden (sed -i, tee, cp);
+	// die lokale Shell unter Windows ist PowerShell mit C:\-Pfaden.
+	if runtime.GOOS == "windows" || !a.agentFilesOK(s) {
+		t.Skip("lokale Shell hier ohne Unix-Dateien")
 	}
 	g := &s.goal
 	run := func(cmd string) {
