@@ -48,9 +48,7 @@ func (a *App) vgFocus(s *session) {
 // die noch fehlen (erst erfragen).
 func (a *App) stepTarget(st *vgStep) (s *session, cmd string, need []string) {
 	cmd = agent.FillPlaceholders(st.Command, a.vg.vals)
-	for _, p := range agent.Placeholders(cmd) {
-		need = append(need, p)
-	}
+	need = append(need, agent.Placeholders(cmd)...)
 	if st.Win > 0 {
 		s = a.byWin(st.Win)
 	}

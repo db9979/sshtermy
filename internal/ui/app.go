@@ -468,6 +468,11 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 			a.profileConnected(s)
 			a.learnKeychain(s)
 			a.flashOK(i18n.T("Verbunden: ") + s.conn.Alias)
+			if m.client != nil {
+				if w := m.client.WeakNote(); w != "" {
+					a.flash(w) // „Vorsicht: …“ = gelber Toast
+				}
+			}
 			for _, t := range a.st.Tunnels(s.conn.ID) {
 				if t.AutoStart && s.tunnels != nil {
 					if _, err := s.tunnels.Start(t); err != nil {

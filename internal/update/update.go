@@ -304,6 +304,11 @@ func FetchAsset(ctx context.Context, rel *Release, name string) ([]byte, error) 
 		if err := VerifySignature(sums, sig, version.UpdatePubKey); err != nil {
 			return nil, err
 		}
+		// Die Signatur gilt nur zusammen mit der Versionszeile: sonst ließe
+		// sich ein älteres, ebenfalls signiertes Release als neues ausgeben.
+		if err := SumsVersion(sums, rel.Version); err != nil {
+			return nil, err
+		}
 	}
 	want := ""
 	for _, l := range strings.Split(string(sums), "\n") {
@@ -324,6 +329,26 @@ func FetchAsset(ctx context.Context, rel *Release, name string) ([]byte, error) 
 		return nil, errors.New(i18n.T("update: Prüfsumme stimmt nicht, Download verworfen"))
 	}
 	return bin, nil
+}
+
+// SumsVersionLine: erste Zeile von checksums.txt, die release.yml vor dem
+// Signieren schreibt. Ältere Versionen überlesen sie (drei Felder statt zwei).
+func SumsVersionLine(v string) string { return "# sshtermy v" + strings.TrimPrefix(v, "v") }
+
+// SumsVersion: nennt die signierte checksums.txt genau die Version, die
+// installiert werden soll?
+func SumsVersion(sums []byte, want string) error {
+	line := SumsVersionLine(want)
+	for _, l := range strings.Split(string(sums), "\n") {
+		l = strings.TrimSpace(l)
+		if strings.HasPrefix(l, "# sshtermy v") {
+			if l == line {
+				return nil
+			}
+			return fmt.Errorf(i18n.T("update: signierte Prüfsummen gehören zu %s, nicht zu v%s – Download verworfen"), strings.TrimPrefix(l, "# sshtermy "), strings.TrimPrefix(want, "v"))
+		}
+	}
+	return errors.New(i18n.T("update: signierte Prüfsummen nennen keine Version – Download verworfen"))
 }
 
 // VerifySignature prüft eine Ed25519-Signatur (Rohbytes oder hex) über data.

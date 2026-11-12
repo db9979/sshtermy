@@ -370,18 +370,3 @@ func (a *App) cycleReach(dir int) tea.Cmd {
 	}
 	return nil
 }
-
-func (a *App) toggleReach() tea.Cmd {
-	on := !a.reachEnabled()
-	if err := a.st.UpdateSettings(func(s *domain.Settings) { s.NoReachCheck = !on }); err != nil {
-		a.flashErr(i18n.T("Einstellung nicht gespeichert: ") + err.Error())
-		return nil
-	}
-	a.reach.next = time.Time{}
-	if on {
-		a.flash(i18n.T("Erreichbarkeit an: der Manager zeigt pro Host einen Online-Punkt."))
-	} else {
-		a.flash(i18n.T("Erreichbarkeit aus: sshTermy baut keine Prüfverbindungen mehr auf."))
-	}
-	return nil
-}

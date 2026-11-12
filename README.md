@@ -36,6 +36,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
 - **X11 forwarding** per connection (like `ssh -X`): graphical programs from the server open here; needs a local X server (XQuartz, VcXsrv, WSLg), the X cookie never leaves your computer
 - **FIDO2 security keys** (`id_ed25519_sk`, `id_ecdsa_sk`, e.g. YubiKey) are used directly; sshTermy asks you to touch the key (needs OpenSSH ssh-agent/ssh-add)
+- **Up-to-date encryption:** key exchange with ML-KEM (`mlkem768x25519`, quantum-safe) whenever the server supports it. Old devices that only speak SHA-1/CBC still connect, but sshTermy shows a yellow notice and the host overview (F6) lists the old algorithms under “SSH” (otherwise e.g. “… · quantum-safe”)
 - **Password manager instead of stored passwords**: in the connection form “Password from” and (under Advanced)
   “2FA code from”: `op://Vault/Item/password` (1Password CLI), `bw:Item` (Bitwarden CLI), `keepassxc:file.kdbx:Item`
   (KeePassXC, asks for the database password), `pass:name` or `cmd:command`. When a server asks for a one-time code
@@ -224,7 +225,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   the latency as a small curve (red and “▲ sluggish” on a bad line). In split view the divider next to the active pane
   lights up, and a frame glides along when you switch panes or zoom (Alt+Z). Redraws only happen while
   something moves; accessible mode turns it all off
-- **MCP server** (`sshtermy mcp`): Claude and other AI clients can list your connections and run read-only commands, anything else only after you confirm in sshTermy
+- **MCP server** (`sshtermy mcp`, protocol 2026-07-28, older clients keep working): Claude and other AI clients can list your connections and run read-only commands, anything else only after you confirm in sshTermy
 - **Audit log** (Settings › Logs & audit): who did what and when, on which host: connections, commands (also from the
   agent mode and broadcast), file transfers, config backups, changed connections, master password, full backups and
   AI requests (host/model only). Each line is chained and signed with a key from the store, so changes, deleted or
@@ -546,7 +547,7 @@ Start ─▶ Unlock (DPAPI automatically │ master password │ first setup)
 
 | Topic | Choice | Reason |
 |---|---|---|
-| Language | Go 1.26 | one static binary per platform, cross-compiling without a toolchain (`GOOS=windows GOARCH=arm64`), no cgo |
+| Language | Go 1.27 | one static binary per platform, cross-compiling without a toolchain (`GOOS=windows GOARCH=arm64`), no cgo |
 | TUI | bubbletea v2 + lipgloss v2 | current Charm stack: real cursor control, layers for overlays, Kitty keyboard, Windows console |
 | Terminal emulation | charmbracelet/x/vt | actively maintained, truecolor, alt screen, scrollback, wide characters; encodes keys to match the mode |
 | SSH | golang.org/x/crypto/ssh | reference implementation in Go, agent, known_hosts, forwarding |
@@ -659,7 +660,11 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
 - **Quicker answers:** the fixed part of the request (system profile, recent commands, screen) comes first and what you
   just typed comes last, so vLLM, SGLang and Ollama can reuse their prefix cache. Ghost text sends only the last 25 screen
   lines, follow-ups 40. No new request while the shown suggestion still fits, and the same input within 3 minutes is answered
-  from memory. Short answers ask reasoning models not to think long (Qwen, gpt-oss, OpenAI o/gpt-5, Ollama thinking models).
+  from memory. Short answers ask reasoning models not to think long (Qwen, gpt-oss, OpenAI o/gpt-5, Ollama thinking models, Claude).
+- **Reliable answers:** goal mode, agent and plan ask the server for exactly one JSON object (`response_format`, if the server knows it).
+  With Claude the long system text is cached (prompt caching), newer Claude models get the right settings by themselves
+  (no own temperature, little thinking for short answers), and a refusal by Claude's safety filter is reported as such.
+  New AI setups start with `qwen3:8b` (Ollama), `gpt-5-mini` (OpenAI) or `claude-haiku-5-5`.
 - **Kept warm:** while tabs are open, a one-token request every 4 minutes keeps your own model loaded (Ollama unloads
   after 5 minutes). Cloud providers are not pinged.
 - **AI status** (click the dot) shows the response time per task (average and last), so you see what is slow.
@@ -696,7 +701,10 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
 ### Auto-update
 
 - Checks `releases/latest` of `db9979/sshtermy`, HTTPS to github.com only, redirects are checked.
-- **SHA-256** from `checksums.txt` and **Ed25519 signature** `checksums.txt.sig` with a built-in public key.
+- **SHA-256** from `checksums.txt` and **Ed25519 signature** `checksums.txt.sig` with a built-in public key. The signed
+  file names its version (`# sshtermy v1.0.42`), so an older signed release cannot be passed off as a new one.
+- Every release also carries a **build provenance attestation** (`gh attestation verify sshtermy_linux_amd64 --repo db9979/sshtermy`)
+  and a list of all built-in libraries (`sshtermy.sbom.cdx.json`, CycloneDX).
 - A build without that key (self-built without `UPDATE_PUBKEY`) says so in the About dialog (F12) and asks before
   installing an update; `--update` prints a warning.
 - Replacement: running file → `.old`, new one in its place (works on Windows too), cleaned up on the next start.
@@ -758,7 +766,8 @@ see `third_party/vt/README.sshtermy.md`.
 
 ## Next steps (suggestions)
 
-1. Windows resources (icon, version info) and code signing of the `.exe`, macOS notarization.
+1. Code signing of the `.exe` and macOS notarization: the release workflow is ready and signs as soon as the certificates
+   are stored as secrets ([docs/codesignatur.md](docs/codesignatur.md), German).
 2. macOS keychain as a second unlock path (like DPAPI on Windows).
 
 ## Relay: servers behind NAT/firewall

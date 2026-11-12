@@ -773,6 +773,18 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 	if h.err != "" {
 		b.WriteString(st.Danger.Render(wrap(h.err, w)) + "\n\n")
 	}
+	// Ausgehandelte SSH-Verfahren: alte (SHA-1, CBC …) gelb, ML-KEM = quantensicher
+	if c := s.client; c != nil && c.Algos.KeyExchange != "" {
+		v := c.Algos.KeyExchange + " · " + c.Algos.Write.Cipher
+		switch {
+		case len(c.Weak) > 0:
+			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "SSH")) + st.Warn.Render(trunc(i18n.T("alt: ")+strings.Join(c.Weak, ", "), w-10)) + "\n")
+		case c.PostQuantum():
+			row("SSH", v+i18n.T(" · quantensicher"))
+		default:
+			row("SSH", v)
+		}
+	}
 
 	if !net {
 		srv := h.srv

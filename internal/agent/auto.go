@@ -101,7 +101,7 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 	}
 	kind, files := c.kind(), info.Dir != ""
 	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
-	o := llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskAgent}
+	o := llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, JSON: true, Task: TaskAgent}
 	st, err := a.completeWith(ctx, msgs, o, retryAuto, files, parse)
 	if err != nil {
 		return st, err

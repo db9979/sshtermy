@@ -326,7 +326,7 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 	files := dir != ""
 	kind := c.kind()
 	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
-	o := llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal}
+	o := llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, JSON: true, Task: TaskGoal}
 	if files {
 		o.MaxTokens = autoTokens // Skripte brauchen mehr Platz als ein Befehl
 	}

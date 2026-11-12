@@ -36,6 +36,12 @@ type fakeSwitch struct {
 
 func startFakeSwitch(t *testing.T, banner string) *fakeSwitch {
 	t.Helper()
+	return startFakeSwitchWith(t, banner, nil)
+}
+
+// startFakeSwitchWith: wie startFakeSwitch, mod passt die Serverkonfiguration an.
+func startFakeSwitchWith(t *testing.T, banner string, mod func(*ssh.ServerConfig)) *fakeSwitch {
+	t.Helper()
 	_, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -49,6 +55,9 @@ func startFakeSwitch(t *testing.T, banner string) *fakeSwitch {
 		ServerVersion:    banner,
 	}
 	cfg.AddHostKey(signer)
+	if mod != nil {
+		mod(cfg)
+	}
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)

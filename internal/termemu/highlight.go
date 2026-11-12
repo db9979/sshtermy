@@ -15,16 +15,6 @@ type HL struct {
 	Colors [8]color.Color
 }
 
-// columns: Farbe je Spalte der Zeile l (nil = keine Regel).
-func (hl *HL) columns(t *Term, sb, w, l int) []color.Color {
-	if hl == nil || hl.Set == nil {
-		return nil
-	}
-	line := make(uv.Line, w)
-	t.lineCells(sb, l, line)
-	return hl.columnsOf(line)
-}
-
 // columnsOf: wie columns, für eine schon geholte Zeile.
 func (hl *HL) columnsOf(line uv.Line) []color.Color {
 	if hl == nil || hl.Set == nil {
