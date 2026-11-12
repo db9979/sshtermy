@@ -163,12 +163,14 @@ func (a *App) dangerKey(k tea.KeyPressMsg) tea.Cmd {
 	yn := yesNo(k)
 	switch {
 	case yn == 1:
+		a.heldEat.arm(k.String(), time.Now(), false) // j gehalten: kein jjj im Terminal
 		return a.dangerRun(d)
 	case yn == -1 || k.String() == "q":
 		a.modal = nil
 		a.flash(i18n.T("Nicht ausgeführt. Die Zeile steht noch am Prompt."))
 	case k.String() == "enter":
-		if d.hold.press(time.Now()) {
+		if now := time.Now(); d.hold.press(now) {
+			a.heldEat.arm("enter", now, true) // Rest des Haltens nicht ins Terminal
 			return a.dangerRun(d)
 		}
 		if !d.hold.held || !d.hold.rep {
@@ -176,6 +178,49 @@ func (a *App) dangerKey(k tea.KeyPressMsg) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// heldKeyEat: die Taste, die den Dialog bestätigt hat, ist danach meist noch
+// unten, und das Terminal schickt weiter Wiederholungen. Die gehören zum
+// Bestätigen und dürfen nicht als weitere Enter (oder jjj) beim Server
+// ankommen. Erst nach dem Loslassen (Loslass-Ereignis oder Pause wie beim
+// Halten, siehe holdState) zählt die Taste wieder.
+type heldKeyEat struct {
+	key  string
+	last time.Time
+	rep  bool // Wiederholungen kommen schon (kürzere Pause reicht als Ende)
+}
+
+func (h *heldKeyEat) arm(key string, now time.Time, rep bool) {
+	*h = heldKeyEat{key: key, last: now, rep: rep}
+}
+
+// eat: true = Wiederholung der Bestätigungstaste, verschlucken.
+func (h *heldKeyEat) eat(k tea.KeyPressMsg, now time.Time) bool {
+	if h.key == "" {
+		return false
+	}
+	if k.String() != h.key {
+		*h = heldKeyEat{} // andere Taste: Halten ist vorbei
+		return false
+	}
+	gap := holdFirstGap
+	if h.rep {
+		gap = holdGap
+	}
+	if k.IsRepeat || now.Sub(h.last) <= gap {
+		h.last, h.rep = now, true
+		return true
+	}
+	*h = heldKeyEat{} // Pause: losgelassen, das ist ein neuer Druck
+	return false
+}
+
+// release: Loslass-Ereignis vom Terminal.
+func (h *heldKeyEat) release(k tea.KeyReleaseMsg) {
+	if h.key != "" && k.String() == h.key {
+		*h = heldKeyEat{}
+	}
 }
 
 // dangerRun: bestätigt, die zurückgehaltene Zeile geht an den Server.
