@@ -115,6 +115,8 @@ var helpSections = []helpSection{
 		{"Alt+Z", "Bereich zoomen / zurück"},
 		{"Titel ziehen", "Bereiche tauschen"},
 		{"⇧F10", "Tab in eigenes Fenster (Sitzung bleibt offen)"},
+		{"Mausrad / ⇧Bild↑ Bild↓", "im Verlauf zurückblättern (Esc: unten)"},
+		{"⇧Pos1 / ⇧Ende", "Anfang / Ende des Verlaufs"},
 		{"Strg+F", "im Verlauf suchen"},
 		{"Alt+S", "in allen Tabs suchen"},
 		{"Alt+O", "Befehle des Tabs: Ausgabe kopieren, an KI"},

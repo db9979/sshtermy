@@ -28,6 +28,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Startbefehl je Verbindung** (Formular › Erweitert): wird nach dem Anmelden einmal sichtbar eingetippt, z. B. `cd /srv/app` oder `sudo -i`. Gefährliche Befehle lehnt das Formular ab; aus einem Team-Paket wird ein Startbefehl nie übernommen.
 - **Wake-on-LAN**: Ein ausgeschalteter Rechner im eigenen Netz lässt sich aus dem Manager wecken (Klick auf „Wake-on-LAN senden“, Palette „aufwecken“ oder `w` im getrennten Tab). Die MAC-Adresse merkt sich sshTermy beim ersten Verbinden von selbst oder du trägst sie unter Erweitert ein.
 - **Platzhalter in Schnellbefehlen**: `systemctl restart {{dienst}}` fragt beim Ausführen nach dem Wert, `{{dienst:nginx}}` schlägt einen vor; der letzte Wert steht beim nächsten Mal schon da. Macht erst der eingesetzte Wert den Befehl gefährlich, fragt sshTermy nach.
+- **Zurückblättern**: Mausrad oder ⇧Bild↑ / ⇧Bild↓ blättern im Verlauf, ⇧Pos1 springt an seinen Anfang, ⇧Ende oder Esc zurück nach unten. Neue Ausgabe schiebt die Ansicht beim Lesen nicht weg.
 - **Suche über alle Tabs** (Alt+S): ein Suchbegriff, die Treffer aus dem Verlauf aller offenen Tabs in einer Liste; ⏎ springt in den Tab an genau diese Zeile.
 - **Befehle als Blöcke**: Alt+Bild↑ / Alt+Bild↓ springt im Verlauf von Befehl zu Befehl, Alt+O listet die Befehle des Tabs (mit Uhrzeit, Dauer, ✓/×): ⏎ springt hin, Strg+C kopiert genau diese Ausgabe, Strg+K gibt Befehl und Ausgabe an „KI fragen“, Strg+L zeigt sie groß.
 - **Tabs mit der Maus ziehen**: Ein Tab lässt sich in der Tab-Leiste an eine andere Stelle ziehen.
@@ -357,6 +358,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
 | | ⇧F9 | Tastenzeile erklärt die Tasten des Bereichs |
 | | ⇧F10 | Tab in ein eigenes Terminalfenster abtrennen (Windows Terminal/Konsole, Terminal.app/iTerm2, Linux-Terminals, tmux; im eigenen Fenster von sshTermy ein zweites eigenes Fenster); die Sitzung bleibt offen, Fenster schließen oder ⏎ holt sie zurück. Eigenes Terminal: `SSHTERMY_TERMINAL="kitty {cmd}"` |
+| | Mausrad / ⇧Bild↑ / ⇧Bild↓ / ⇧Pos1 / ⇧Ende | im Verlauf (5000 Zeilen je Tab) zurückblättern, seitenweise / an den Anfang / zurück nach unten; Esc führt auch nach unten. In der geteilten Ansicht blättert der Bereich unter der Maus; Programme, die die Maus selbst nutzen (tmux, mc): ⇧ + Mausrad. Vollbild-Programme (less, vim) bekommen die Tasten selbst. Für lange Dateien ist `less` oder der Betrachter (F5, Doppelklick) besser |
 | | Strg+F | im Verlauf suchen (Strg+E nur Fehlerzeilen, Tab Fehlerliste) |
 | | Strg+T | Aufteilung wählen: eine, zwei nebeneinander/untereinander, groß + zwei, drei, vier, sechs (Tasten 1…7); im Fenster ⇧+Pfeil Größe, `=` gleich groß, `z` Zoom, `d` andere abdunkeln, `w` Arbeitsplätze |
 | | Alt+I | geteilte Ansicht: Eingabe gleichzeitig an alle sichtbaren Bereiche |
