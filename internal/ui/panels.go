@@ -18,7 +18,10 @@ import (
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
-const maxGoalSteps = 40
+// maxGoalSteps: harte Obergrenze pro Ziel (Ziel- und Agent-Modus). So hoch,
+// dass man sie beim normalen Arbeiten nicht erreicht; an die KI gehen ohnehin
+// nur die letzten Schritte (agent.histLines).
+const maxGoalSteps = 500
 
 // ---------------------------------------------------------------- Zustände
 
@@ -336,7 +339,7 @@ func (a *App) requestStep(s *session) tea.Cmd {
 		return nil
 	}
 	if len(g.steps) >= maxGoalSteps {
-		g.err = i18n.T("Maximal 40 Schritte pro Ziel. Ziel neu setzen (x).")
+		g.err = fmt.Sprintf(i18n.T("Maximal %d Schritte pro Ziel. Ziel neu setzen (x)."), maxGoalSteps)
 		return nil
 	}
 	ag, err := a.agentClientFor(s.conn)

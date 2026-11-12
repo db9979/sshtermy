@@ -37,8 +37,8 @@ const (
 )
 
 const (
-	agentSteps       = 25
-	agentStepsMore   = 10
+	agentSteps       = 50 // dann hält der Agent an; ⏎ erlaubt agentStepsMore weitere
+	agentStepsMore   = 50
 	agentTime        = 15 * time.Minute
 	agentFailsInRow  = 3
 	agentCmdTimeout  = 5 * time.Minute

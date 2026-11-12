@@ -118,7 +118,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
     Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),
     *Full* (sudo too). Dangerous commands, including every line of a script, always wait for you; on production hosts
-    and network devices every change asks. Limits: 25 steps, 15 minutes, 3 failures in a row. Esc or typing in the
+    and network devices every change asks. Limits: 50 steps (⏎ allows 50 more, at most 500), 15 minutes, 3 failures in a row. Esc or typing in the
     terminal pauses it, `?` gives it an instruction. At the end: the full summary (scroll with PgUp/PgDn or the mouse wheel,
     `c` copies it, `l` opens it in full), changed files, `s` saves the run as a runbook
     including its scripts, `r` deletes the scripts on the host. Every step is marked "Agent" in the session log.
@@ -598,7 +598,7 @@ Windows login ──DPAPI CryptProtectData────────────�
   private IPs, `.local`/`.lan`/`.internal` names; cloud fallbacks are skipped) or “AI off”. Per connection the tags
   `ai-local` or `no-ai` (also `ki-lokal`, `ki-aus`) do the same; the stricter setting wins. In the same folder
   “Show last AI request” shows exactly what was last sent, to which host and model.
-- Rate limit in goal mode (default 6 steps/min, at most 40 steps per goal).
+- Rate limit in goal mode (default 6 steps/min, at most 500 steps per goal).
 
 ### sshTermy as MCP server
 
