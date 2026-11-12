@@ -1,13 +1,13 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                              ▌● 1 web-01   ▌● 2 web-02 ×  +
- PRODUKTIV  deploy@10.0.0.12:22                                                            ↔ 0 Tunnel   ● ◆ qwen3-coder
-┏━ web-02 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ >_ sshTermy   ▌● 1 web-01   ▌● 2 web-02 ×  +            ▲ PRODUKTIV  deploy@10.0.0.12:22  ↔ 0 Tunnel   ● ◆ qwen3-coder
 ┃Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64                                                                   ┃
 ┃                                                                                                                      ┃
 ┃deploy@web-02:~$ systemctl status nginx --no-pager | head -3                                                          ┃
 ┃● nginx.service - A high performance web server and a reverse proxy server                                            ┃
 ┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)                                                      ┃
 ┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC                                                       ┃
-┃deploy@web-02:~$    ┌─ ▦ Aufteilung  Strg+T ───────────────────────────────────────────────── × ─┐                    ┃
+┃deploy@web-02:~$                                                                                                      ┃
+┃                                                                                                                      ┃
+┃                    ┌─ ▦ Aufteilung  Strg+T ───────────────────────────────────────────────── × ─┐                    ┃
 ┃                    │                                                                            │                    ┃
 ┃                    │      ┌────────┐        ┌───┬────┐        ┌────────┐        ┌────┬───┐      │                    ┃
 ┃                    │      │        │        │   │    │        ├────────┤        │    ├───┤      │                    ┃
@@ -33,4 +33,4 @@
 ┃                                                                                                                      ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
- Strg+Space Befehle  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  F9 Schnellbefehle  ⇧F9 erklären
+ Strg+Space Befehle 1Hilfe 2Ziel 3KI 4Tunnel 5Dateien 6Host 7/8Tabs 9Schnell 10Manager  ⇧F9 erklären  Strg+F Suche

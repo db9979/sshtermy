@@ -1,32 +1,32 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
- Verbindungen  6  / suchen  # Tags      │ ▾ Netzwerk
-                                        │
- ▾ Netzwerk                          1  │ Pfad                Netzwerk
-   ○ # switch-core      manager@192.1…  │ Inhalt              1 Verbindung
- ▾ Produktion                        3  │
-   ▾ Web                             2  │ Ordner
-▌    ○ · web-01         deploy@10.0.0…  │  ⏎      auf-/zuklappen
-▌    ○ · web-02         deploy@10.0.0…  │  n      neue Verbindung hier
-▌  ○ · db-01            postgres@10.0…  │  o      Unterordner anlegen
- ○ · nas               admin@nas.local  │  r      umbenennen
- ○ · spark             dominik@spark.…  │  v      verschieben
-                                        │  ⇧↑ ⇧↓  Reihenfolge
-                                        │  d      auflösen, Inhalt bleibt
-                                        │  - +    alle zu / auf
-                                        │
-                                        │  Mit der Maus: eine Zeile ziehen und auf einem Ordner oder zwischen zwei
-                                        │  Verbindungen loslassen.
-                                        │
-                                        │ Sync
-                                        │  nicht eingerichtet · y = Assistent
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
- Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen  v verschieben
+ >_ sshTermy                                                                              ↕ Sync aus   ● KI qwen3-coder
+ Verbindungen  6  / suchen  # Tags              │ ▾ Netzwerk
+                                                │
+ ▾ Netzwerk                                  1  │ Pfad                Netzwerk
+   ○ # switch-core      manager@192.168.1.2     │ Inhalt              1 Verbindung
+ ▾ Produktion                                3  │
+   ▾ Web                                     2  │ In diesem Ordner
+▌    ○   web-01         deploy@10.0.0.11        │  ○ switch-core        manager@192.168.1.2     ◌ wird geprüft …
+▌    ○   web-02         deploy@10.0.0.12        │
+▌  ○   db-01            postgres@10.0.1.5       │  Doppelklick verbindet · Rechtsklick öffnet das Menü · Zeilen links
+ ○   nas                admin@nas.local         │  lassen sich auf Ordner ziehen.
+ ○   spark              dominik@spark.lan       │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+ Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen  v verschieben

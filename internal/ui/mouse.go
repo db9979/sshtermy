@@ -604,8 +604,10 @@ func (a *App) modalKeys() [][2]string {
 		keys = append(keys, [2]string{"w", i18n.T("was ist neu")}, [2]string{"b", i18n.T("♥ Kaffee spendieren")}, [2]string{"l", langTarget()}, [2]string{"Esc", i18n.T("schließen")})
 	case mChangelog:
 		keys = [][2]string{{"b", i18n.T("♥ Kaffee spendieren")}, {"Esc", i18n.T("schließen")}}
-	case mHelp, mInfo:
+	case mInfo:
 		keys = [][2]string{{"Esc", i18n.T("schließen")}}
+	case mHelp:
+		keys = [][2]string{{"←/→", i18n.T("Reiter")}, {"Esc", i18n.T("schließen")}}
 	case mCrash:
 		keys = [][2]string{{"g", i18n.T("als Issue melden")}, {"o", i18n.T("Bericht öffnen")}, {"Esc", i18n.T("schließen")}}
 	case mLLM:

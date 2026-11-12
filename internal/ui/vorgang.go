@@ -215,7 +215,7 @@ var winAuto = []string{"blue", "green", "yellow", "purple", "cyan", "orange"}
 
 // winColor: Farbe des Fensters (Akzent der Verbindung, sonst je Nummer).
 func (a *App) winColor(s *session) color.Color {
-	if c := a.accentOf(s.conn); c != nil {
+	if c := a.tabColor(s); c != nil { // dieselbe Farbe wie Rahmen und Tab (tabframe.go)
 		return c
 	}
 	return accentColor(a.s.T, winAuto[(a.winNo(s)-1+len(winAuto))%len(winAuto)])

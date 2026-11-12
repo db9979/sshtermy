@@ -1,13 +1,13 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                        ▌● 1 web-01 ×  +
- PRODUCTION  deploy@10.0.0.11:22                                      ↔ 0 tunnels   ● ◆ qwen3-coder
-┏━ web-01 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ >_ sshTermy   ▌● 1 web-01 ×  +    ▲ PRODUCTION  deploy@10.0.0.11:22  ↔ 0 tunnels   ● ◆ qwen3-coder
 ┃Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                                               ┃
 ┃                                                                                                  ┃
 ┃deploy@web-01:~$ systemctl status nginx --no-pager | head -3                                      ┃
 ┃● nginx.service - A high performance web server and a reverse proxy server                        ┃
 ┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)                                  ┃
-┃     Active: a┌─ ► Quick commands  web-01 · defaults “Linux-Server” ─────────── × ─┐              ┃
-┃deploy@web-01:│                                                                    │              ┃
+┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC                                   ┃
+┃deploy@web-01:~$                                                                                  ┃
+┃              ┌─ ► Quick commands  web-01 · defaults “Linux-Server” ─────────── × ─┐              ┃
+┃              │                                                                    │              ┃
 ┃              │   ⇧F1    df -h                                                     │              ┃
 ┃              │   ⇧F2    free -h                                                   │              ┃
 ┃              │   ⇧F3    uptime                                                    │              ┃
@@ -27,4 +27,4 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
- Ctrl+Space Commands  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  F5 Files  F6 Host  ⇧F9 explain
+ Ctrl+Space Commands 1Help 2Goal 3AI 4Tunnel 5Files 6Host 9Quick 10Manager  ⇧F9 explain

@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	topRows    = 2 // Kopfzeile + Sitzungszeile
+	topRows    = 1 // Kopfzeile mit Tabs und Sitzungszustand
 	bottomRows = 2 // Vorschläge + Tasten
 )
 
@@ -561,10 +561,7 @@ func (a *App) followTick(s *session) tea.Cmd {
 
 func (a *App) viewTerminal() (string, *tea.Cursor) {
 	s := a.current()
-	top := a.header(a.tabStrip())
-
-	// Sitzungszeile (statusline.go)
-	bar := a.sessionBar(s)
+	top := a.termHeader(s) // Logo, Tabs, Zustand (statusline.go)
 
 	// Terminalfläche (eine Sitzung oder geteilt)
 	var body string
@@ -575,7 +572,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		body, cur = a.paneBody(s, true)
 		if a.framed() {
 			ar := a.areaRect()
-			body = a.frameBody(body, ar.w, ar.h, s, true, true, a.frameLabel(s))
+			body = a.frameBody(body, ar.w, ar.h, s, true, false, "")
 		}
 	}
 	bottom := a.chipBar(s)
@@ -591,7 +588,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 			cur = nil
 		}
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, top, bar, body, bottom, a.footer(a.simpleKeys(a.terminalKeys(s)))), cur
+	return lipgloss.JoinVertical(lipgloss.Left, top, body, bottom, a.footer(a.simpleKeys(a.terminalKeys(s)))), cur
 }
 
 // paneBody zeichnet die Terminalfläche einer Sitzung (samt Panel/Dateien).
@@ -750,8 +747,8 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		} else if len(s.chips) > 0 {
 			keys = append(keys, [2]string{i18n.T("Alt+1…") + strconv.Itoa(min(4, len(s.chips))), i18n.T("Vorschlag einfügen")})
 		}
-		keys = append(keys, [2]string{k.label(actGoal), i18n.T("Ziel")}, [2]string{k.label(actAsk), i18n.T("KI fragen")}, [2]string{k.label(actTunnels), "Tunnel"},
-			[2]string{k.label(actFiles), i18n.T("Dateien")}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), i18n.T("Schnellbefehle")})
+		keys = append(keys, [2]string{k.label(actGoal), i18n.T("Ziel")}, [2]string{k.label(actAsk), i18n.T("KI")}, [2]string{k.label(actTunnels), "Tunnel"},
+			[2]string{k.label(actFiles), i18n.T("Dateien")}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), i18n.Pick("Schnell", "Quick")})
 	}
 	if len(a.sessions) > 1 {
 		keys = append(keys, [2]string{k.label(actPrevTab) + "/" + k.label(actNextTab), "Tabs"})
@@ -777,34 +774,52 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	return keys
 }
 
+// tabLabel: Fensternummer (vorgang.go) und Name, auf l Zeichen gekürzt.
+func (a *App) tabLabel(i, l int) string {
+	x := a.sessions[i]
+	if l == 0 {
+		return " " + strconv.Itoa(a.winNo(x))
+	}
+	return " " + strconv.Itoa(a.winNo(x)) + " " + trunc(x.tabName(), l) + goalTabCount(x) // Schritte des Ziels
+}
+
+// tabWidth: Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven.
+func (a *App) tabWidth(i, l int) int {
+	w := 1 + lipgloss.Width(a.tabLabel(i, l)) + 3
+	if a.tabColor(a.sessions[i]) != nil {
+		w++
+	}
+	if i == a.cur {
+		w++ // „×“ statt des Leerzeichens am Ende
+	}
+	return w
+}
+
+// tabsNatural: Breite der Tab-Leiste mit ungekürzten Namen (samt „+“).
+func (a *App) tabsNatural() int {
+	if len(a.sessions) == 0 {
+		return 0
+	}
+	w := 3
+	for i := range a.sessions {
+		w += a.tabWidth(i, 16)
+	}
+	return w
+}
+
 // tabStrip: Sitzungs-Tabs für die Kopfzeile. Wird es eng, kürzen sich erst
 // die Namen (16 → 4 Zeichen), dann bleibt nur Punkt und Nummer; reicht auch
 // das nicht, zeigt die Leiste einen Ausschnitt um den aktiven Tab mit ‹ ›.
-func (a *App) tabStrip() string {
+func (a *App) tabStrip(room int) string {
 	st := a.s
 	n := len(a.sessions)
 	if n == 0 {
 		return ""
 	}
 	plus := st.Tab.Foreground(st.T.Accent).Bold(true).Render("+")
-	room := a.w - lipgloss.Width(a.headerLeft()) - 1 - lipgloss.Width(plus)
-	label := func(i, l int) string {
-		x := a.sessions[i]
-		if l == 0 {
-			return " " + strconv.Itoa(a.winNo(x))
-		}
-		return " " + strconv.Itoa(a.winNo(x)) + " " + trunc(x.tabName(), l) + goalTabCount(x) // Fensternummer (vorgang.go), Schritte des Ziels
-	}
-	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven
-		w := 1 + lipgloss.Width(label(i, l)) + 3
-		if a.tabColor(a.sessions[i]) != nil {
-			w++
-		}
-		if i == a.cur {
-			w++ // „×“ statt des Leerzeichens am Ende
-		}
-		return w
-	}
+	room -= lipgloss.Width(plus)
+	tabW := a.tabWidth
+	label := a.tabLabel
 	fit := 0
 	for _, l := range []int{16, 12, 8, 4, 0} {
 		fit = l

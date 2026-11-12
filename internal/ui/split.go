@@ -246,8 +246,8 @@ func (a *App) termRect(s *session) rect {
 		}
 	}
 	ar := a.areaRect()
-	if f { // Einzelansicht: auch oben eine Kante (mit Namen)
-		return inset(rect{ar.x, ar.y + 1, ar.w, max(3, ar.h-1)})
+	if f { // Einzelansicht: oben schließt die Kopfzeile mit dem farbigen Tab ab
+		return inset(ar)
 	}
 	return ar
 }
@@ -853,7 +853,7 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 	st := a.s
 	bar := lipgloss.NewStyle().Background(st.T.Surface).Foreground(st.T.Muted)
 	if focused {
-		bar = lipgloss.NewStyle().Background(st.T.Accent).Foreground(st.T.Bg).Bold(true)
+		bar = lipgloss.NewStyle().Background(st.T.Surface2).Foreground(st.T.Text).Bold(true)
 	}
 	gw := 0
 	if grip && w >= 30 {
@@ -866,20 +866,15 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 		}
 		return line
 	}
-	// Akzentfarbe der Verbindung: aktiver Bereich ganz in der Farbe,
-	// die anderen mit Farbstreifen (accent.go)
+	// Farbe des Tabs als Streifen links (accent.go, tabframe.go); mit Rahmen
+	// steht auch der Name in dieser Farbe. Produktiv: rote Marke.
 	col := a.tabColor(s)
-	if col != nil && focused {
-		bar = bar.Background(col)
-	} else if col != nil && a.framed() {
-		bar = bar.Foreground(col) // Name in der Rahmenfarbe
+	if col != nil && a.framed() {
+		bar = bar.Foreground(col)
 	}
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○", stReconnect: "◌"}[s.state]
 	left := " " + dot + " " + strconv.Itoa(a.winNo(s)) + " · " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string
-	if domain.LooksProduction(s.conn) {
-		marks = append(marks, "▲ "+i18n.T("PRODUKTIV")) // Rot heißt immer produktiv
-	}
 	if a.syncIn && s.state == stConnected && !s.detached() {
 		marks = append(marks, i18n.T("◈ alle"))
 	}
@@ -912,13 +907,21 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 		right += " "
 	}
 	inner := w - gw
+	pre := ""
+	if col == nil && focused {
+		col = st.T.Accent
+	}
+	if col != nil {
+		pre = glyph("▌", col, bar.GetBackground())
+		left = strings.TrimPrefix(left, " ")
+	}
+	if domain.LooksProduction(s.conn) && inner >= 40 {
+		pre += a.prodChip(true)
+	}
+	inner -= lipgloss.Width(pre)
 	left = ansi.Truncate(left, max(0, inner-ansi.StringWidth(right)-1), "…")
 	line := left + strings.Repeat(" ", max(1, inner-ansi.StringWidth(left)-ansi.StringWidth(right))) + right
-	if col != nil && !focused {
-		line = glyph("▌", col, st.T.Surface) + bar.Render(ansi.Truncate(strings.TrimPrefix(line, " "), inner-1, ""))
-	} else {
-		line = bar.Render(ansi.Truncate(line, inner, ""))
-	}
+	line = pre + bar.Render(ansi.Truncate(line, max(0, inner), ""))
 	if gw > 0 {
 		line += bar.Render(" ↕ ")
 	}

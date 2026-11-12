@@ -1,30 +1,30 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
- connections  6  / search        │ ▾ Netzwerk
-                                 │
- ▾ Netzwerk                   1  │ Path         Netzwerk
-   ○ # switch-core  manager@19…  │ Content      1 connection
- ▾ Produktion                 3  │
-   ▾ Web                      2  │ Folder
-▌    ○ · web-01┌─ ◆ Welcome to sshTermy  1/5 ─────────────────────────────────── × ─┐
-▌    ○ · web-02│                                                                    │
-▌  ○ · db-01   │  ● ○ ○ ○ ○                                                         │
- ○ · nas       │                                                                    │
- ○ · spark     │  Here in the connection manager you add your servers and           │
+ >_ sshTermy                                                          ↕ sync off   ● AI qwen3-coder
+ connections  6  / search  # Tags       │ ▾ Netzwerk
+                                        │
+ ▾ Netzwerk                          1  │ Path         Netzwerk
+   ○ # switch-core      manager@192.1…  │ Content      1 connection
+ ▾ Produktion                        3  │
+   ▾ Web                             2  │ In this folder
+▌    ○   web-01┌─ ◆ Welcome to sshTermy  1/5 ─────────────────────────────────── × ─┐g …
+▌    ○   web-02│                                                                    │
+▌  ○   db-01   │  ● ○ ○ ○ ○                                                         │the menu ·
+ ○   nas       │                                                                    │
+ ○   spark     │  Here in the connection manager you add your servers and           │
                │  switches. Passwords and keys are stored encrypted on your         │
                │  computer.                                                         │
                │                                                                    │
                │   F10          between manager and terminal                        │
-               │   n            new connection                                      │r or between
+               │   n            new connection                                      │
                │   ⏎            connect                                             │
                │                                                                    │
                │   → next    Esc skip                                               │
                │                                                                    │
                └────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
- Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move

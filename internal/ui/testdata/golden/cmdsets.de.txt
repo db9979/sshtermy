@@ -1,4 +1,4 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ● KI
+ >_ sshTermy                                                                                             ● KI
  ▤ Befehlssätze · was sshTermy je Hersteller tippt, liest und der KI sagt
 
  Eigene Sätze liegen in ~/.config/sshtermy/befehlssaetze.

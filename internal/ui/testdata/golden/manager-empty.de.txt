@@ -1,30 +1,30 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
- Verbindungen  0  / suchen       │
-                                 │ So liest du die Liste
-                                 │   ◉  verbunden
-  ≈  Noch keine Verbindungen     │   ●  erreichbar
-  Hier stehen gleich deine       │   ●  nicht erreichbar
-  Server, Switches und           │   ○  noch nicht geprüft oder hinter Jump-Host
-  Firewalls, mit Farbe und       │
-  Online-Punkt.                  │   $  Linux
-                                 │   >  Windows
-   n  neue Verbindung anlegen    │   %  macOS
-   i  importieren (PuTTY, Moba…  │   #  Switch
-   f  im Netz nach SSH-Geräten…  │   @  Router
-   o  Ordner anlegen             │   !  Firewall
-                                 │
-                                 │   ▌  Produktiv (Ordner, Tag oder Alias mit „prod“)
-                                 │   ▌  Test (test, dev, staging)
-                                 │   ▌  Labor (lab, labor)
-                                 │   Eigene Farbe: Verbindung bearbeiten (e) → Farbe.
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
- Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  n neue Verbindung  i Import  f Scan  o Ordner  s KI
+ >_ sshTermy                                                          ↕ Sync aus   ● KI qwen3-coder
+ Verbindungen  0  / suchen  # Tags      │
+                                        │ So liest du die Liste
+                                        │   ◉  verbunden
+  ≈  Noch keine Verbindungen            │   ●  erreichbar
+  Hier stehen gleich deine Server,      │   ●  nicht erreichbar
+  Switches und Firewalls, mit Farbe     │   ○  noch nicht geprüft oder hinter Jump-Host
+  und Online-Punkt.                     │
+                                        │   $  Linux
+   n  neue Verbindung anlegen           │   >  Windows
+   i  importieren (PuTTY, MobaXterm …)  │   %  macOS
+   f  im Netz nach SSH-Geräten suchen   │   #  Switch
+   o  Ordner anlegen                    │   @  Router
+                                        │   !  Firewall
+                                        │
+                                        │   ▌  Produktiv (Ordner, Tag oder Alias mit „prod“)
+                                        │   ▌  Test (test, dev, staging)
+                                        │   ▌  Labor (lab, labor)
+                                        │   Eigene Farbe: Verbindung bearbeiten (e) → Farbe.
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ Strg+Space Befehle 1Hilfe  ⇧F9 erklären  n neue Verbindung  i Import  f Scan  o Ordner  s KI

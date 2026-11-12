@@ -164,7 +164,3 @@ func (a *App) frameBody(body string, w, h int, s *session, focused, top bool, la
 	b.WriteString(ln.Render(bl + strings.Repeat(hz, iw) + br))
 	return b.String()
 }
-
-// frameLabel: Name oben im Rahmen der Einzelansicht („PRODUKTIV“ steht
-// schon in der Sitzungszeile darüber).
-func (a *App) frameLabel(s *session) string { return s.tabName() }

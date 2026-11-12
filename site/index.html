@@ -81,7 +81,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>Unlock, pick a host, go</h3>
-      <p>Your connections, passwords and keys live in an encrypted store (AES-256-GCM, Argon2id, plus DPAPI on Windows). The manager shows folders, tags and details; Enter connects. The status line shows load, RAM and disk of the server right away.</p>
+      <p>Your connections, passwords and keys live in an encrypted store (AES-256-GCM, Argon2id, plus DPAPI on Windows). The manager shows folders, tags and details; Enter connects. The details show load, RAM and disk of the server right away.</p>
     </div>
     <figure><img src="gifs/start-en.gif" width="962" height="594" alt="Start animation, unlock with the master password, connect to web-01" loading="lazy"></figure>
   </div>
@@ -167,7 +167,8 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Files in the terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) through <code>sudo su</code> and several hops, clipboard from the server via OSC 52.</p></div>
     <div class="card"><h3>Team sharing</h3><p>Encrypted <code>.sshteam</code> packages and team folders that keep everyone's connections up to date, without passwords.</p></div>
     <div class="card"><h3>Look &amp; keys</h3><p>26 themes with live preview, from Polar night, Synthwave and Ink to Paper and Mint, plus high contrast and color blindness, your own colors, four icon styles, every shortcut can be changed.</p></div>
-    <div class="card"><h3>Lively interface</h3><p>Connecting as a card with steps and a light sweep, tabs flash on success and errors, a card when hovering a tab, breathing online dots (only visible connections are checked) and load bars, the AI answer types out, palette matches light up, latency curve in the status line, a frame gliding between split panes, dialogs with shadows and optional round corners. Full, subtle or off.</p></div>
+    <div class="card"><h3>Tidy screen</h3><p>One header line with tabs on the left and the session state on the right, a red ▲ PRODUCTION badge instead of a red bar, a function key bar at the bottom (<code>1Help 2Goal 3AI …</code>). The manager shows only what belongs to the selection, a folder its contents with status. Help (<kbd>F1</kbd>) has tabs, typing filters.</p></div>
+    <div class="card"><h3>Lively interface</h3><p>Connecting as a card with steps and a light sweep, tabs flash on success and errors, a card when hovering a tab, breathing online dots (only visible connections are checked) and load bars, the AI answer types out, palette matches light up, latency curve in the header, a frame gliding between split panes, dialogs with shadows and optional round corners. Full, subtle or off.</p></div>
     <div class="card"><h3>Accessible &amp; supportable</h3><p>Accessible mode without animations and with shapes instead of color only. Debug log for bug reports (<code>--debug</code>), saved cleaned of hosts, IPs and passwords. Adaptive frame rate when output floods, plus a performance display in the palette that rates draw time in plain words.</p></div>
     <div class="card"><h3>Screen lock</h3><p>Lock now or after 5 to 60 minutes idle; sessions keep running behind the lock. Change the master password or the Windows sign-in any time.</p></div>
     <div class="card"><h3>MCP server</h3><p>Claude and other AI clients use your saved connections via <code>sshtermy mcp</code>: read-only by default, anything else only after you confirm.</p></div>
@@ -205,7 +206,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <table>
     <tr><th>Key</th><th>Effect</th></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>Command palette</td></tr>
-    <tr><td><kbd>F1</kbd></td><td>Help</td></tr>
+    <tr><td><kbd>F1</kbd></td><td>Help in tabs (Terminal, AI, Manager, Logs, Everywhere): <kbd>←</kbd>/<kbd>→</kbd> switch, typing filters</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Goal mode (agent)</td></tr>
     <tr><td><kbd>F2</kbd> → <kbd>v</kbd> / <kbd>s</kbd> / <kbd>r</kbd></td><td>Goal mode, file step: view the file / skip it; at the end delete the work folder (<kbd>⏎</kbd> creates the file)</td></tr>
     <tr><td><kbd>F2</kbd> → <kbd>?</kbd> / <kbd>⇧S</kbd> / <kbd>f</kbd> / <kbd>u</kbd></td><td>Goal mode: instruct the AI / skip with a reason / follow-up goal / restore the files the goal changed; <kbd>↑</kbd><kbd>↓</kbd> in the empty goal field picks an earlier goal; if a command asks for input: <kbd>j</kbd> <kbd>n</kbd> <kbd>q</kbd> <kbd>Space</kbd></td></tr>

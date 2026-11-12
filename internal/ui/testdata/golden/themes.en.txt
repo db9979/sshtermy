@@ -1,4 +1,4 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                        ● AI
+ >_ sshTermy                                                                                                       ● AI
  [c] Choose color scheme   26 themes · live preview, ⏎ applies · synced to your other computers
 
  // dark                                Preview: Deep sea
