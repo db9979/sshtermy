@@ -657,27 +657,37 @@ func (a *App) viewFolderDetails(n *domain.TreeNode, w int) string {
 			i18n.T("Lege hier eine Verbindung an oder schiebe eine vorhandene hinein (auch mit der Maus ziehen)."),
 			[]emptyStep{{"n", i18n.T("neue Verbindung hier")}, {km.label(actFolderNew), i18n.T("Unterordner anlegen")}}, w))
 	}
-	b.WriteString("\n " + s.PanelTitle.Render(i18n.T("Ordner")) + "\n")
-	keys := [][2]string{
-		{"⏎", i18n.T("auf-/zuklappen")}, {"n", i18n.T("neue Verbindung hier")}, {km.label(actFolderNew), i18n.T("Unterordner anlegen")},
-		{km.label(actRename), i18n.T("umbenennen")}, {km.label(actMoveTo), i18n.T("verschieben")}, {km.label(actMoveUp) + " " + keyLabel("shift+down"), i18n.T("Reihenfolge")},
-		{"d", i18n.T("auflösen, Inhalt bleibt")}, {km.label(actFoldAll) + " " + km.label(actUnfoldAll), i18n.T("alle zu / auf")},
-	}
-	for i := range keys {
-		keys[i][0] = strings.ReplaceAll(keys[i][0], "Shift+", "⇧")
-	}
-	kw := 0
-	for _, k := range keys {
-		kw = max(kw, lipgloss.Width(k[0]))
-	}
-	for _, k := range keys {
-		line := " " + s.Accent.Render(fmt.Sprintf(" %-*s", kw, k[0])) + "  " + s.Text.Render(trunc(k[1], max(6, w-kw-5)))
-		if parts := strings.Fields(k[0]); len(parts) == 1 {
-			line = a.keyZone(k[0], line)
+	// Inhalt des Ordners mit Zustand statt einer Tastenliste: die Tasten
+	// stehen in der Fußzeile, im Rechtsklick-Menü und in F1.
+	if len(n.Folders) > 0 || len(n.Conns) > 0 {
+		b.WriteString("\n " + s.PanelTitle.Render(i18n.T("In diesem Ordner")) + "\n")
+		aw := min(20, max(8, w/4))
+		for _, f := range n.Folders {
+			cnt := plural(f.Total, i18n.T("Verbindung"), i18n.T("Verbindungen"))
+			b.WriteString("  " + s.Accent.Render("▸ ") + s.PanelTitle.Render(fmt.Sprintf("%-*s", aw, trunc(f.Name, aw))) + "  " + s.Muted.Render(cnt) + "\n")
 		}
-		b.WriteString(line + "\n")
+		for _, c := range n.Conns {
+			stripe, _ := a.stripe(c, nil)
+			if stripe == "" {
+				stripe = " "
+			}
+			dot, dotC := a.reachDot(c)
+			tw := max(6, min(28, w-aw-12-20))
+			line := " " + stripe + glyph(dot, dotC, nil) + " " + s.Text.Render(fmt.Sprintf("%-*s", aw, trunc(c.Alias, aw))) + "  " +
+				s.Muted.Render(fmt.Sprintf("%-*s", tw, trunc(shortTarget(c), tw)))
+			if rest := w - lipgloss.Width(line) - 3; rest >= 8 {
+				line += "  " + ansi.Truncate(a.reachText(c), rest, "…")
+			}
+			c := c
+			b.WriteString(a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+				if double {
+					return a.connect(c)
+				}
+				return nil
+			}) + "\n")
+		}
 	}
-	hint := i18n.T("Mit der Maus: eine Zeile ziehen und auf einem Ordner oder zwischen zwei Verbindungen loslassen.")
+	hint := i18n.T("Doppelklick verbindet · Rechtsklick öffnet das Menü · Zeilen links lassen sich auf Ordner ziehen.")
 	b.WriteString("\n" + lipgloss.NewStyle().Foreground(s.T.Muted).PaddingLeft(2).Width(max(20, w-1)).Render(hint) + "\n")
 	return b.String()
 }

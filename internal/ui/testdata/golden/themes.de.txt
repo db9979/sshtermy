@@ -1,4 +1,4 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
+ >_ sshTermy                                                                                                       ● KI
  [c] Farbschema wählen   26 Themes · Vorschau sofort, ⏎ übernimmt · geht mit dem Sync mit
 
  // dunkel                              Vorschau: Tiefsee

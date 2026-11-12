@@ -10,6 +10,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 )
 
@@ -831,7 +832,7 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 	st := a.s
 	bar := lipgloss.NewStyle().Background(st.T.Surface).Foreground(st.T.Muted)
 	if focused {
-		bar = lipgloss.NewStyle().Background(st.T.Accent).Foreground(st.T.Bg).Bold(true)
+		bar = lipgloss.NewStyle().Background(st.T.Surface2).Foreground(st.T.Text).Bold(true)
 	}
 	gw := 0
 	if grip && w >= 30 {
@@ -844,12 +845,9 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 		}
 		return line
 	}
-	// Akzentfarbe der Verbindung: aktiver Bereich ganz in der Farbe,
-	// die anderen mit Farbstreifen (accent.go)
+	// Akzentfarbe der Verbindung als Streifen links (accent.go); der aktive
+	// Bereich ist heller. Produktiv: rote Marke statt roter Fläche.
 	col := a.accentOf(s.conn)
-	if col != nil && focused {
-		bar = bar.Background(col)
-	}
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○", stReconnect: "◌"}[s.state]
 	left := " " + dot + " " + strconv.Itoa(a.winNo(s)) + " · " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string
@@ -885,13 +883,21 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 		right += " "
 	}
 	inner := w - gw
+	pre := ""
+	if col == nil && focused {
+		col = st.T.Accent
+	}
+	if col != nil {
+		pre = glyph("▌", col, bar.GetBackground())
+		left = strings.TrimPrefix(left, " ")
+	}
+	if domain.LooksProduction(s.conn) && inner >= 40 {
+		pre += a.prodChip(true)
+	}
+	inner -= lipgloss.Width(pre)
 	left = ansi.Truncate(left, max(0, inner-ansi.StringWidth(right)-1), "…")
 	line := left + strings.Repeat(" ", max(1, inner-ansi.StringWidth(left)-ansi.StringWidth(right))) + right
-	if col != nil && !focused {
-		line = glyph("▌", col, st.T.Surface) + bar.Render(ansi.Truncate(strings.TrimPrefix(line, " "), inner-1, ""))
-	} else {
-		line = bar.Render(ansi.Truncate(line, inner, ""))
-	}
+	line = pre + bar.Render(ansi.Truncate(line, max(0, inner), ""))
 	if gw > 0 {
 		line += bar.Render(" ↕ ")
 	}

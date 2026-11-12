@@ -931,18 +931,11 @@ func (a *App) viewFrame() tea.View {
 	return v
 }
 
-// header: Logo, Version, Credit, Tabs/Status rechts.
-// headerLeft: Logo, Version und Credit. Im schmalen Fenster fällt zuerst die
-// Version weg (steht im Über-Dialog), der Credit bleibt immer sichtbar.
+// header: Logo links, Tabs/Status rechts. Version und Credit stehen im
+// Über-Dialog (F12), im Startbild und beim Entsperren, nicht in der Kopfzeile:
+// dort kosteten sie im schmalen Fenster die Tabnamen.
 func (a *App) headerLeft() string {
-	logo := a.logoChip(">_ " + version.Name) // gradient.go
-	x := lipgloss.Width(logo)
-	tint := a.headerTint()
-	if a.w < 90 {
-		return logo + tintRun(" "+i18n.T(version.Idea)+" ", x, a.s.Credit, tint)
-	}
-	ver := " v" + version.Version + " "
-	return logo + tintRun(ver, x, a.s.Version, tint) + tintRun(i18n.T(version.Idea)+"  ", x+len([]rune(ver)), a.s.Credit, tint)
+	return a.logoChip(">_ " + version.Name) // gradient.go
 }
 
 // headerTint: Kopfzeile links mit einem Hauch Akzent, der nach rechts
@@ -952,7 +945,6 @@ func (a *App) headerTint() func(int) color.Color {
 }
 
 func (a *App) header(right string) string {
-	left := a.headerLeft()
 	if a.rel != nil && right == "" {
 		right = a.keyZone(a.keys.label(actAbout), a.s.Header.Foreground(a.s.T.OK).Render(" ↑ v"+a.rel.Version+i18n.T(" verfügbar · ")+a.keys.label(actAbout)+" "))
 	} else if a.restartPending != "" && right == "" {
@@ -961,6 +953,15 @@ func (a *App) header(right string) string {
 	if a.scr != scrTerminal && a.scr != scrUnlock {
 		right += a.llmChip() // im Terminal steht der Status in der Sitzungszeile
 	}
+	if a.scr == scrManager {
+		right = a.syncChip() + right // manager.go
+	}
+	return a.headerRow(right)
+}
+
+// headerRow: Logo links, right rechtsbündig, dazwischen die getönte Fläche.
+func (a *App) headerRow(right string) string {
+	left := a.headerLeft()
 	gap := a.w - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 0 {
 		right = ansi.Truncate(right, max(0, a.w-lipgloss.Width(left)), "…")
@@ -974,8 +975,13 @@ func (a *App) footer(keys [][2]string) string {
 		return c // F9: Tastenzeile mit Erklärungen für den aktuellen Bereich
 	}
 	shown := a.sortedFooter(keys)
+	fbar := a.isMainBar(keys)
 	var b strings.Builder
 	for _, k := range shown {
+		if fbar && isFKeyLabel(k[0]) {
+			b.WriteString(a.fkeyChip(k[0], k[1]))
+			continue
+		}
 		if k[1] == "" {
 			b.WriteString(a.keyZone(k[0], a.s.Key.Render(k[0])))
 		} else {
@@ -997,7 +1003,7 @@ func (a *App) sortedFooter(keys [][2]string) [][2]string {
 	for i := range keys {
 		keys[i][0] = i18n.Keys(keys[i][0])
 	}
-	shown := a.fitFooter(keys)
+	shown := a.fitFooterAs(keys, a.isMainBar(keys))
 	pal := strings.ReplaceAll(i18n.Keys(a.keys.label(actPalette)), "Shift+", "⇧")
 	for _, k := range shown {
 		if k[0] == pal { // nur Hauptleisten; Panel-Leisten bleiben wie sie sind
@@ -1012,7 +1018,64 @@ func (a *App) sortedFooter(keys [][2]string) [][2]string {
 // hinten weg (die wichtigsten stehen vorn), solange noch einige mit Text
 // übrig bleiben. Erst danach verlieren die restlichen ihre Beschreibung.
 // „F1 Hilfe“ und die Erklär-Taste bleiben bis zuletzt sichtbar, dort steht alles.
-func (a *App) fitFooter(keys [][2]string) [][2]string {
+func (a *App) fitFooter(keys [][2]string) [][2]string { return a.fitFooterAs(keys, false) }
+
+// isMainBar: Hauptleiste (Manager, Terminal) erkennt man an der Palette-Taste.
+// Dort stehen F-Tasten kurz als Ziffer + Wort (fkeyChip).
+func (a *App) isMainBar(keys [][2]string) bool {
+	pal := i18n.Keys(a.keys.label(actPalette))
+	for _, k := range keys {
+		if i18n.Keys(k[0]) == pal || strings.ReplaceAll(k[0], "Shift+", "⇧") == strings.ReplaceAll(pal, "Shift+", "⇧") {
+			return true
+		}
+	}
+	return false
+}
+
+// isFKeyLabel: „F2“, „F10“ oder „F7/F8“ (ohne Umschalt).
+func isFKeyLabel(k string) bool {
+	if k == "" {
+		return false
+	}
+	for _, p := range strings.Split(k, "/") {
+		if len(p) < 2 || len(p) > 3 || p[0] != 'F' {
+			return false
+		}
+		for _, r := range p[1:] {
+			if r < '0' || r > '9' {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// fkeyChip: F-Taste als Leiste wie in klassischen Werkzeugen: die Ziffer auf
+// Akzentfarbe, dahinter das Wort. „F2 Ziel“ wird „2Ziel“ und braucht so drei
+// Zeichen weniger; damit passen alle F-Tasten auch in 80 Spalten.
+func (a *App) fkeyChip(key, desc string) string {
+	t := a.s.T
+	num := lipgloss.NewStyle().Background(t.Accent).Foreground(t.Bg).Bold(true)
+	parts := strings.Split(key, "/")
+	var b strings.Builder
+	for i, p := range parts {
+		if i > 0 {
+			b.WriteString(num.Render("/"))
+		}
+		b.WriteString(a.keyZone(p, num.Render(strings.TrimPrefix(p, "F"))))
+	}
+	lbl := lipgloss.NewStyle().Background(t.Surface2).Foreground(t.Text)
+	if desc == "" {
+		return b.String() + a.s.Footer.Render(" ")
+	}
+	return b.String() + a.keyZone(parts[0], lbl.Render(desc)) + a.s.Footer.Render(" ")
+}
+
+func fkeyChipWidth(key, desc string) int {
+	return len([]rune(key)) - strings.Count(key, "F") + len([]rune(desc)) + 1
+}
+
+func (a *App) fitFooterAs(keys [][2]string, fbar bool) [][2]string {
 	out := make([][2]string, len(keys))
 	help, explain := a.keys.label(actHelp), strings.ReplaceAll(a.keys.label(actCheat), "Shift+", "⇧")
 	for i, k := range keys {
@@ -1025,6 +1088,12 @@ func (a *App) fitFooter(keys [][2]string) [][2]string {
 	kw, dw := make([]int, len(out)), make([]int, len(out))
 	total := 0
 	for i, k := range out {
+		if fbar && isFKeyLabel(k[0]) {
+			kw[i] = fkeyChipWidth(k[0], "")
+			dw[i] = len([]rune(k[1]))
+			total += kw[i] + dw[i]
+			continue
+		}
 		kw[i] = lipgloss.Width(a.s.Key.Render(k[0]))
 		if k[1] != "" {
 			dw[i] = lipgloss.Width(a.s.KeyDesc.Render(k[1]))

@@ -1,5 +1,5 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                        ▌● 1 web-01 ×  +
- PRODUCTION  deploy@10.0.0.11:22                                      ↔ 0 tunnels   ● ◆ qwen3-coder
+ >_ sshTermy   ▌● 1 web-01 ×  +    ▲ PRODUCTION  deploy@10.0.0.11:22  ↔ 0 tunnels   ● ◆ qwen3-coder
+
 
 
 
@@ -27,4 +27,4 @@
 
 
 
- Ctrl+Space Commands  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  F5 Files  F6 Host  ⇧F9 explain
+ Ctrl+Space Commands 1Help 2Goal 3AI 4Tunnel 5Files 6Host 9Quick 10Manager  ⇧F9 explain

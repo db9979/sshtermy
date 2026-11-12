@@ -83,13 +83,13 @@ func TestTabStripFitsNarrowHeader(t *testing.T) {
 	for _, w := range []int{60, 80, 100, 140, 200} {
 		for _, cur := range []int{0, 3, 6} {
 			a.w, a.cur = w, cur
-			h := a.header(a.tabStrip())
+			h := a.header(a.tabStrip(a.w - lipgloss.Width(a.headerLeft()) - 1))
 			if lipgloss.Width(h) > w {
 				t.Errorf("w=%d: Kopfzeile %d breit", w, lipgloss.Width(h))
 			}
 			plain := ansi.Strip(zoneRe.ReplaceAllString(h, ""))
-			if !strings.Contains(plain, "Dominik") {
-				t.Errorf("w=%d: Credit fehlt: %q", w, plain)
+			if strings.Contains(plain, "Dominik") {
+				t.Errorf("w=%d: Credit gehört ins Über-Fenster, nicht in die Kopfzeile: %q", w, plain)
 			}
 			act := a.sessions[cur].conn.Alias
 			if !strings.Contains(plain, act[:3]) && !strings.Contains(plain, " "+string(rune('1'+cur))+" ") {

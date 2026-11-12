@@ -1,24 +1,24 @@
- >_ sshTermy  Idea: Dominik Bornhäußer                                     ● AI
+ >_ sshTermy                                                  ↕ sync off   ● AI
  connections  6  / search       │ ▾ Netzwerk
                                 │
  ▾ Netzwerk                  1  │ Path         Netzwerk
    ○ # switch-core  manager@1…  │ Content      1 connection
  ▾ Produktion                3  │
-   ▾ Web                     2  │ Folder
-▌    ○ · web-01      deploy@1…  │  ⏎      expand/collapse
-▌    ○ · web-02      deploy@1…  │  n      new connection here
-▌  ○ · db-01        postgres@…  │  o      add subfolder
- ○ · nas           admin@nas.…  │  r      rename
- ○ · spark         dominik@sp…  │  v      move
-                                │  ⇧↑ ⇧↓  order
-                                │  d      dissolve, content stays
-                                │  - +    collapse / expand all
-                                │
-                                │  With the mouse: drag a row and drop it on a
-                                │  folder or between two connections.
-                                │
-                                │ Sync
-                                │  not set up · y = wizard
+   ▾ Web                     2  │ In this folder
+▌    ○   web-01      deploy@1…  │  ○ switch-core  manag…  ◌ checking …
+▌    ○   web-02      deploy@1…  │
+▌  ○   db-01        postgres@…  │  Double-click connects · right-click opens
+ ○   nas           admin@nas.…  │  the menu · drag rows on the left onto
+ ○   spark         dominik@sp…  │  folders.
                                 │
                                 │
- Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e edit
+                                │
+                                │
+                                │
+                                │
+                                │
+                                │
+                                │
+                                │
+                                │
+ Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit

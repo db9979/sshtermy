@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"charm.land/lipgloss/v2"
 	"fmt"
 	"strings"
 	"testing"
@@ -40,8 +41,8 @@ func TestNoticeDoneInHiddenTab(t *testing.T) {
 	if len(sent) != 0 {
 		t.Fatalf("Desktop-Meldung, obwohl das Fenster vorn ist: %v", sent)
 	}
-	if !strings.Contains(ansi.Strip(a.tabStrip()), "× 2 db1") {
-		t.Fatalf("Tab ohne Markierung: %q", ansi.Strip(a.tabStrip()))
+	if !strings.Contains(ansi.Strip(a.tabStrip(a.w-lipgloss.Width(a.headerLeft())-1)), "× 2 db1") {
+		t.Fatalf("Tab ohne Markierung: %q", ansi.Strip(a.tabStrip(a.w-lipgloss.Width(a.headerLeft())-1)))
 	}
 	// Fenster im Hintergrund: Desktop-Benachrichtigung, auch für den sichtbaren Tab
 	a.Update(tea.BlurMsg{})

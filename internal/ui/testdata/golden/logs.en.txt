@@ -1,4 +1,4 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
+ >_ sshTermy                                                                                   ● AI
  Session logs  0  / search           Tab by host  │
   All  Today  7 days  With errors                 │
                                                   │

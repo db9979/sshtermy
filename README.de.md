@@ -48,7 +48,8 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **SSH-Zertifikate**: Von einer Firmen-CA signierte Keys (`id_ed25519-cert.pub` neben dem Key oder ein eigener Pfad in der Verbindung) werden automatisch genutzt; ein abgelaufenes Zertifikat meldet sshTermy mit Datum
 - **Dateien direkt im Terminal (trzsz)**: `tsz datei` auf dem Server lädt in deinen Downloads-Ordner (sshTermy fragt vorher und überschreibt nie eine vorhandene Datei), `trz` lädt hoch; klappt auch nach `sudo su`, über mehrere Sprünge und auf Geräten ohne SFTP. ZMODEM (`sz`/`rz`) wird erkannt und mit Hinweis abgebrochen, statt zu hängen
 - **Bildschirmsperre**: Palette „Jetzt sperren“ oder automatisch bei Leerlauf (5/15/30/60 min). Offene Sitzungen laufen hinter der Sperre weiter, nur das Master-Passwort entsperrt. **Master-Passwort ändern** (Palette → Einstellungen › Sicherheit) schaltet auch die Windows-Anmeldung (DPAPI) nachträglich ein oder aus
-- **Statuszeile pro Sitzung**: Verbindungsdauer, Latenz, Zeichensatz, Warnung bei root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) bekommen eine rote Zeile
+- **Eine Kopfzeile**: links Logo und Tabs, rechts der Zustand der aktiven Sitzung (wer@wo, Verbindungsdauer, Latenz, Zeichensatz, Ziel, Tunnel, KI) und Warnungen wie root; Produktiv-Hosts (Gruppe/Tag „Produktion“, „prod“, „live“) tragen eine rote Marke **▲ PRODUKTIV** (auch über jedem Bereich der geteilten Ansicht). Wird es eng, fallen rechts erst Details weg, dann kürzen sich die Tabnamen. Version und „Idee: Dominik Bornhäußer“ stehen im Über-Fenster (F12) und im Startbild
+- **F-Tasten-Leiste** unten wie in klassischen Werkzeugen: `1Hilfe 2Ziel 3KI 4Tunnel 5Dateien 6Host …`, die Ziffer zum Anklicken oder Drücken
 - **Dateien (F5)**: SFTP über dieselbe Verbindung, links lokal, rechts Server, Dateien und Ordner hoch- und herunterladen, mit der Maus auf die andere Seite ziehen, mehrere mit der Leertaste markieren. Dateien aus Explorer/Finder ins Fenster ziehen lädt sie hoch, auch direkt im Terminal. Beim Kopieren zeigt ein Balken Prozent, MB/s, Restzeit und „Datei 2 von 5“, dazu eine kleine Tempo-Kurve
 - **Dateien mit der Maus**: Doppelklick auf eine Datei zeigt sie direkt in sshTermy (Zeilennummern, Farben, Rad blättert, Ziehen markiert und kopiert, `/` sucht, `f` liest mit wie `tail -f`, `w` bricht um; große Dateien lädt er am Anfang und am Ende). Bilder, PDFs und Office-Dateien öffnen sich mit dem Standardprogramm deines Rechners (Server-Dateien werden vorher heruntergeladen). Ein Einfachklick zeigt den Anfang einer Textdatei unter der Liste (`v` schaltet das aus). Rechtsklick öffnet ein Menü: ansehen, bearbeiten, mit Standardprogramm öffnen, kopieren, herunter-/hochladen nach …, umbenennen (`F2`), Rechte ändern, Pfad kopieren (`y`), im Terminal hierhin `cd`, löschen. Ein Klick auf einen Teil des Pfads (/ › etc › nginx) springt dorthin, Knöpfe für ↑ ~ neu laden, neuer Ordner und versteckte Dateien, ein Klick auf einen Spaltenkopf sortiert (`s`), Strg+Klick markiert einzeln, Umschalt+Klick einen Bereich, die Zurück-Taste der Maus geht eine Ebene hoch
 - **Server-Datei im eigenen Editor**: `e` in F5 (Server-Seite) oder Palette „Server-Datei im eigenen Editor öffnen“ mit Pfad öffnet die Datei in VS Code, Notepad++, TextEdit … auf deinem Rechner; jedes Speichern lädt sie über dieselbe Verbindung zurück (Besitzer und Rechte bleiben). Editor einstellen: Palette → Einstellungen › „Editor für Server-Dateien“ (z. B. `code --new-window`)
@@ -95,8 +96,8 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   Befehlen vor dem Enter nach (`rm -rf`, `reboot`, auf Switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …).
   Ausführen nur mit `j` oder ⏎ gedrückt halten (ein Balken füllt sich, ein kurzes ⏎ reicht nicht), Esc lässt die Zeile stehen.
   Auch der Agent fragt dort bei jeder Änderung. Abschalten geht nur einzeln mit dem Schalter „Schutz“ im
-  Verbindungsformular (für Test- und Laborsysteme; die Statuszeile zeigt dann „Schutz aus“). „prod“/„live“ in Ordner,
-  Tag oder Alias färbt die Statuszeile weiterhin rot.
+  Verbindungsformular (für Test- und Laborsysteme; die Kopfzeile zeigt dann „Schutz aus“). „prod“/„live“ in Ordner,
+  Tag oder Alias zeigt weiterhin die rote Marke ▲ PRODUKTIV.
 - **Aufzeichnung exportieren:** Palette „Aufnahme starten“ nimmt den Tab als asciinema-Datei (`.cast`, mit Farben und
   vim/htop) auf, abspielbar mit `asciinema play`. Protokolle (`l`, dann `x`) gehen als Markdown, Text oder nachgebaute
   Aufnahme raus; „Terminal-Verlauf als Text exportieren“ speichert den Verlauf. Alles landet im Download-Ordner.
@@ -212,8 +213,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
 - **Deutsch und Englisch**: Sprache in der Palette („Sprache“/„Language“) oder im Über-Dialog (F12 → `l`) umschalten;
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Fensterstil** (Palette „Fensterstil“): Dialoge, Palette und Auswahl werfen einen Schatten, dahinter wird es etwas
-  dunkler, und Kopfzeile, Logo und Statusleiste tragen einen sanften Farbverlauf (die Statusleiste in der Akzentfarbe
-  der Verbindung); wahlweise mit runden Ecken oder ganz flach wie früher (ohne Schatten und Verläufe)
+  dunkler, und Kopfzeile und Logo tragen einen sanften Farbverlauf; wahlweise mit runden Ecken oder ganz flach wie früher (ohne Schatten und Verläufe)
 - **Barrierearm** (Einstellungen › Aussehen): keine Animationen, Formen statt nur Farben (× für „nicht erreichbar“);
   dazu die **Farbenblind-Themes** (Blau/Gelb/Orange statt Grün/Rot, Okabe-Ito-Farben)
 - **Lebendige Oberfläche** (Palette „Bewegung“: voll, dezent, aus): Spinner im Tab beim Verbinden, Tabs leuchten bei
@@ -224,7 +224,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   Beim Verbinden zeigt eine Karte die Schritte (Verbindung, Host-Schlüssel, Anmelden, Shell) mit Zeiten und einem
   Fortschrittsbalken mit Lichtlauf, danach blendet die Shell von oben ein. Die KI-Antwort schimmert „denkt nach …“ und
   tippt sich gleichmäßig, Panels blenden ein. In der Befehlspalette leuchten die getroffenen Buchstaben, die Zeilen
-  blenden nacheinander ein und die Auswahl gleitet weich. Die Statuszeile zeigt die Latenz als kleine Kurve (rot und
+  blenden nacheinander ein und die Auswahl gleitet weich. Die Kopfzeile zeigt die Latenz als kleine Kurve (rot und
   „▲ zäh“ bei schlechter Leitung). In der geteilten Ansicht leuchtet die Trennlinie neben dem aktiven Bereich, beim
   Wechsel und beim Zoom (Alt+Z) gleitet ein Rahmen mit.
   Gezeichnet wird nur, solange sich etwas bewegt; Barrierearm schaltet alles ab
@@ -393,6 +393,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | KI-Einstellungen | Strg+T / Strg+L | Endpunkt testen / Modell aus der Liste des Endpunkts wählen |
 | Überall | Strg+Leertaste | Befehlspalette: ⏎ als Ziel starten, Tab KI fragen, ↑↓ Vorschlag/Tunnel/Verbindung wählen; `log` = KI wertet Ausgabe aus, `farb` = Farbregeln |
 | | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden (fragt bei offenen Verbindungen; Strg+Q nochmal = beenden) |
+| | F1, dann ←/→ / tippen | Hilfe: Reiter Terminal, KI, Manager, Logs, Überall (der passende ist vorn) / über alle Reiter filtern, Esc leert |
 | | F12 → l / F12 → w | Sprache wechseln (Deutsch ↔ Englisch) / Was ist neu |
 | Eigenes Fenster | Strg+⇧V · ⇧Einfg (Windows auch Strg+V, Mac ⌘V) / Strg + · Strg − · Strg 0 (Mac: ⌘) | einfügen / Schrift größer · kleiner · Standard (auch Strg + Mausrad, wird gemerkt); F11 Vollbild; auf dem Mac wirkt ⌘ als Alt, ⌥ schreibt weiter @ [ ] { } \| ~ |
 
@@ -715,7 +716,7 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
 
 - Version = `MAJOR.MINOR` aus [`VERSION`](VERSION) + Anzahl der Commits, z. B. `1.0.42`. **Jeder Push auf `main`
   zählt automatisch hoch** und erzeugt ein Release (`.github/workflows/release.yml`) mit allen Plattformen,
-  `checksums.txt` und Signatur. Die App zeigt die Version in der Kopfzeile, im Über-Dialog (F12) und per `--version`.
+  `checksums.txt` und Signatur. Die App zeigt die Version im Über-Dialog (F12), in der Hilfe (F1) und per `--version`.
 - Neue Hauptversion: `VERSION` auf z. B. `1.1` setzen.
 - Signierschlüssel einmalig anlegen:
   ```

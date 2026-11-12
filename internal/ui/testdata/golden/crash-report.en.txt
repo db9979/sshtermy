@@ -1,30 +1,30 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
- connections  6  / search        │ ▾ Netzwerk
-                                 │
- ▾ Netzwerk                   1  │ Path         Netzwerk
-   ○ # switch-core  manager@19…  │ Content      1 connection
- ▾ Produktion                 3  │
-   ▾ Web                      2  │ Folder
-▌    ○ · web-01      deploy@10…  │  ⏎      expand/collapse
+ >_ sshTermy                                                          ↕ sync off   ● AI qwen3-coder
+ connections  6  / search  # Tags       │ ▾ Netzwerk
+                                        │
+ ▾ Netzwerk                          1  │ Path         Netzwerk
+   ○ # switch-core      manager@192.1…  │ Content      1 connection
+ ▾ Produktion                        3  │
+   ▾ Web                             2  │ In this folder
+▌    ○   web-01         deploy@10.0.0…  │  ○ switch-core     manager@192.…  ◌ checking …
 ▌    ○ ┌─ ▲ Crash report ─────────────────────────────────────────────────────────────── × ─┐
-▌  ○ · │                                                                                    │
- ○ · na│  sshTermy crashed last time. Sorry about that.                                     │
- ○ · sp│                                                                                    │
+▌  ○   │                                                                                    │ ·
+ ○   na│  sshTermy crashed last time. Sorry about that.                                     │
+ ○   sp│                                                                                    │
        │  Message: runtime error: index out of range [3] with length 3                      │
        │  Report: /home/golden/.config/sshtermy/crash/sshtermy-crash-20261106-071500.txt    │
        │                                                                                    │
        │  The report contains the version, system and the place in the program. Passwords,  │
-       │  keys, hosts and IP addresses are removed. When reporting, your browser shows      │ween
+       │  keys, hosts and IP addresses are removed. When reporting, your browser shows      │
        │  everything before it is sent.                                                     │
        │                                                                                    │
        │   g report as issue    o open report    Esc close                                  │
        │                                                                                    │
        └────────────────────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
- Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move

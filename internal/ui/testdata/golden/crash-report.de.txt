@@ -1,30 +1,30 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
- Verbindungen  6  / suchen       │ ▾ Netzwerk
-                                 │
- ▾ Netzwerk                   1  │ Pfad         Netzwerk
-   ○ # switch-core  manager@19…  │ Inhalt       1 Verbindung
- ▾ Produktion                 3  │
-   ▾ Web                      2  │ Ordner
-▌    ○ · web-01      deploy@10…  │  ⏎      auf-/zuklappen
+ >_ sshTermy                                                          ↕ Sync aus   ● KI qwen3-coder
+ Verbindungen  6  / suchen  # Tags      │ ▾ Netzwerk
+                                        │
+ ▾ Netzwerk                          1  │ Pfad         Netzwerk
+   ○ # switch-core      manager@192.1…  │ Inhalt       1 Verbindung
+ ▾ Produktion                        3  │
+   ▾ Web                             2  │ In diesem Ordner
+▌    ○   web-01         deploy@10.0.0…  │  ○ switch-core     manager@192.…  ◌ wird geprüft …
 ▌    ○ ┌─ ▲ Absturzbericht ──────────────────────────────────────────────────────────── × ─┐
-▌  ○ · │                                                                                   │
- ○ · na│  sshTermy ist beim letzten Mal abgestürzt. Das tut mir leid.                      │
- ○ · sp│                                                                                   │
+▌  ○   │                                                                                   │nü ·
+ ○   na│  sshTermy ist beim letzten Mal abgestürzt. Das tut mir leid.                      │
+ ○   sp│                                                                                   │
        │  Meldung: runtime error: index out of range [3] with length 3                     │
        │  Bericht: /home/golden/.config/sshtermy/crash/sshtermy-crash-20261106-071500.txt  │
        │                                                                                   │
        │  Im Bericht stehen Version, System und die Stelle im Programm. Passwörter,        │
-       │  Keys, Hosts und IP-Adressen sind entfernt. Beim Melden zeigt der Browser         │r
+       │  Keys, Hosts und IP-Adressen sind entfernt. Beim Melden zeigt der Browser         │
        │  alles vor dem Absenden.                                                          │
        │                                                                                   │
        │   g als Issue melden    o Bericht öffnen    Esc schließen                         │
        │                                                                                   │
        └───────────────────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
- Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen

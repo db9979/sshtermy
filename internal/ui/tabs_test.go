@@ -88,14 +88,14 @@ func TestTabStripPlusAndClose(t *testing.T) {
 	a := tabsApp(3)
 	for _, w := range []int{60, 80, 140} {
 		a.w, a.cur = w, 1
-		plain := ansi.Strip(zoneRe.ReplaceAllString(a.tabStrip(), ""))
+		plain := ansi.Strip(zoneRe.ReplaceAllString(a.tabStrip(a.w-lipgloss.Width(a.headerLeft())-1), ""))
 		if !strings.HasSuffix(plain, "+ ") && !strings.HasSuffix(plain, "+") && !strings.Contains(plain, " + ") {
 			t.Errorf("w=%d: kein + am Ende: %q", w, plain)
 		}
 		if !strings.Contains(plain, "×") {
 			t.Errorf("w=%d: kein × am aktiven Tab: %q", w, plain)
 		}
-		if h := a.header(a.tabStrip()); lipgloss.Width(h) > w {
+		if h := a.header(a.tabStrip(a.w - lipgloss.Width(a.headerLeft()) - 1)); lipgloss.Width(h) > w {
 			t.Errorf("w=%d: Kopfzeile %d breit", w, lipgloss.Width(h))
 		}
 	}

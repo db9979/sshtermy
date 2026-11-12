@@ -1,4 +1,4 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                              ● KI
+ >_ sshTermy                                                                                             ● KI
  ▪ Tastenkürzel anpassen   ◆ neue Tasten gelten nur auf diesem Rechner · l = wieder alle Rechner
 
  ÜBERALL

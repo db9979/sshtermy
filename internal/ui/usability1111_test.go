@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"charm.land/lipgloss/v2"
 	"context"
 	"reflect"
 	"strconv"
@@ -161,7 +162,7 @@ func TestSearchAllTabs(t *testing.T) {
 func TestTabDragReorders(t *testing.T) {
 	a := tabsApp(4)
 	a.scr = scrTerminal
-	view := a.z.scan(a.tabStrip(), 0, 0)
+	view := a.z.scan(a.tabStrip(a.w-lipgloss.Width(a.headerLeft())-1), 0, 0)
 	_ = view
 	at := func(i int) int { // Spalte in der Mitte von Tab i
 		for x := 0; x < a.w; x++ {
@@ -186,7 +187,7 @@ func TestTabDragReorders(t *testing.T) {
 		t.Fatalf("aktiver Tab: %s", a.current().conn.Alias)
 	}
 	a.z.reset()
-	a.z.scan(a.tabStrip(), 0, 0)
+	a.z.scan(a.tabStrip(a.w-lipgloss.Width(a.headerLeft())-1), 0, 0)
 	// Maus bewegt sich nach links über Tab 3 hinweg: kein Sprung nach rechts
 	a.tabDrag.x = at(3) + 1
 	a.mouse(tea.MouseMotionMsg{X: at(3), Y: 0, Button: tea.MouseLeft})
