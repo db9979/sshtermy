@@ -204,6 +204,12 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				return a.openBlocks(s)
 			}
 		}
+		if !s.panelFocus && !s.files.open && s.term != nil && !s.term.AltScreen() {
+			if act := a.keys.which(key, actScrollUp, actScrollDown, actScrollTop, actScrollBottom); act != "" {
+				a.scrollKey(s, act)
+				return nil
+			}
+		}
 		s.sel, s.selecting = nil, false
 		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
 			s.scroll = 0

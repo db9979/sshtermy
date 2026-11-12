@@ -78,6 +78,10 @@ const (
 	actCmdList      action = "cmd_list"
 	actPrevCmd      action = "prev_cmd"
 	actNextCmd      action = "next_cmd"
+	actScrollUp     action = "scroll_up"
+	actScrollDown   action = "scroll_down"
+	actScrollTop    action = "scroll_top"
+	actScrollBottom action = "scroll_bottom"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -124,6 +128,10 @@ var actionDefs = []actionDef{
 	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
 	{actSearchAll, "In allen Tabs suchen", "Terminal", []string{"alt+s"}},
 	{actCmdList, "Befehle dieses Tabs (Ausgabe kopieren, an KI)", "Terminal", []string{"alt+o"}},
+	{actScrollUp, "Im Verlauf eine Seite zurückblättern", "Terminal", []string{"shift+pgup"}},
+	{actScrollDown, "Im Verlauf eine Seite vorblättern", "Terminal", []string{"shift+pgdown"}},
+	{actScrollTop, "Zum Anfang des Verlaufs", "Terminal", []string{"shift+home"}},
+	{actScrollBottom, "Zurück nach unten (Ende des Verlaufs)", "Terminal", []string{"shift+end"}},
 	{actPrevCmd, "Zum vorigen Befehl springen", "Terminal", []string{"alt+pgup"}},
 	{actNextCmd, "Zum nächsten Befehl springen", "Terminal", []string{"alt+pgdown"}},
 	{actSplit, "Ansicht teilen (Aufteilung wählen)", "Terminal", []string{"ctrl+t"}},
