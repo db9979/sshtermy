@@ -114,7 +114,7 @@ func (a *App) frameColor(s *session, focused bool) color.Color {
 		return t.Border
 	}
 	if !focused {
-		return mixColor(t.Bg, col, 0.6)
+		return mixColor(t.Bg, col, 0.45)
 	}
 	return col
 }

@@ -853,7 +853,9 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 	st := a.s
 	bar := lipgloss.NewStyle().Background(st.T.Surface).Foreground(st.T.Muted)
 	if focused {
-		bar = lipgloss.NewStyle().Background(st.T.Surface2).Foreground(st.T.Text).Bold(true)
+		// aktiver Bereich: Fläche in der Tab-Farbe, fett, ▶ vorn (activetab.go)
+		fill := a.activeFill(s)
+		bar = lipgloss.NewStyle().Background(fill).Foreground(inkOn(st.T, fill)).Bold(true)
 	}
 	gw := 0
 	if grip && w >= 30 {
@@ -869,8 +871,8 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 	// Farbe des Tabs als Streifen links (accent.go, tabframe.go); mit Rahmen
 	// steht auch der Name in dieser Farbe. Produktiv: rote Marke.
 	col := a.tabColor(s)
-	if col != nil && a.framed() {
-		bar = bar.Foreground(col)
+	if col != nil && a.framed() && !focused {
+		bar = bar.Foreground(mixColor(st.T.Surface, col, 0.85)) // gedämpft
 	}
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○", stReconnect: "◌"}[s.state]
 	left := " " + dot + " " + strconv.Itoa(a.winNo(s)) + " · " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
@@ -908,15 +910,16 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 	}
 	inner := w - gw
 	pre := ""
-	if col == nil && focused {
-		col = st.T.Accent
-	}
-	if col != nil {
-		pre = glyph("▌", col, bar.GetBackground())
+	switch {
+	case focused:
+		pre = bar.Render(" " + activeMark)
+	case col != nil:
+		pre = glyph("▌", mixColor(st.T.Surface, col, 0.85), bar.GetBackground())
 		left = strings.TrimPrefix(left, " ")
 	}
 	if domain.LooksProduction(s.conn) && inner >= 40 {
 		pre += a.prodChip(true)
+		left = strings.TrimPrefix(left, " ") // die Marke hat eigenen Rand
 	}
 	inner -= lipgloss.Width(pre)
 	left = ansi.Truncate(left, max(0, inner-ansi.StringWidth(right)-1), "…")
