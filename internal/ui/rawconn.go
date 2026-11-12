@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -114,12 +113,12 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 			}
 			st, done = w, w.Done
 		case domain.ProtoWatch:
-			w, d, err := dialWatch(s.id, c.WatchLink, out, ev)
+			w, d, err := a.dialWatch(s.id, c.WatchLink, out, ev)
 			if err != nil {
 				return fail(err)
 			}
 			st, done = w, d
-			note = i18n.T("Nur Zusehen: Tasten gehen nirgendwo hin")
+			note = i18n.T("Nur Zusehen: Tasten gehen nirgendwo hin (Palette › Hand heben)")
 		default:
 			return fail(errors.New("unknown protocol " + string(c.Protocol)))
 		}
@@ -193,12 +192,9 @@ func (a *App) protoBadge(s *session) string {
 	case domain.ProtoLocal:
 		return st.Badge.Foreground(st.T.Accent).Render("$ " + s.localShellName() + " · " + i18n.T("lokal"))
 	case domain.ProtoWatch:
-		return st.Badge.Foreground(st.T.AI).Render("◉ " + i18n.T("nur Zusehen"))
+		return a.watchBadge(s)
 	case domain.ProtoWinRM:
 		return a.winrmBadge(s)
-	}
-	if o := s.share.Load(); o != nil {
-		return st.Badge.Foreground(st.T.AI).Render(fmt.Sprintf("◉ "+i18n.T("geteilt · %d"), o.viewers))
 	}
 	return ""
 }

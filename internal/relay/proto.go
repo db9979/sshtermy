@@ -31,6 +31,7 @@ const (
 	PathAnchorPair    = "/v1/anker/koppeln" // POST {code, name, os, hostkey} → {id, key}
 	PathAnchor        = "/v1/anker"         // WebSocket: Steuerleitung des Ankers
 	PathAnchorChannel = "/v1/anker/kanal"   // WebSocket ?id=KANAL: ein Kanal des Ankers
+	PathCodes         = "/v1/codes"         // POST {art} → {zeile}: Kopplungszeile (nur Geräte mit Verwaltungsrecht)
 )
 
 // Arten von Vermittlern (SystemList.Kind, Pair-Antwort).
@@ -61,9 +62,10 @@ type SystemList struct {
 
 // PairResult ist die Antwort auf POST /v1/koppeln.
 type PairResult struct {
-	Key  string `json:"key"`
-	Name string `json:"name"`
-	Kind string `json:"art"`
+	Key   string `json:"key"`
+	Name  string `json:"name"`
+	Kind  string `json:"art"`
+	Admin bool   `json:"verwalten,omitempty"` // darf weitere Codes holen (PathCodes)
 }
 
 // PairLine ist die einmalige Kopplungszeile:

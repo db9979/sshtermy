@@ -33,6 +33,9 @@ type ServeOptions struct {
 	// BehindProxy: nur http auf Listen (127.0.0.1 empfohlen), TLS macht ein
 	// Reverse-Proxy davor (Caddy, nginx). Dann gilt auch X-Forwarded-For.
 	BehindProxy bool
+	// Open: Teilen auch ohne Kopplung (öffentlicher Vermittler fürs Teilen).
+	// Inhalte bleiben Ende-zu-Ende verschlüsselt, Freigaben je Adresse gebremst.
+	Open bool
 }
 
 // Prepare legt Datenordner, Zertifikat und Zustand an und gibt den Zustand
@@ -92,6 +95,7 @@ func Serve(ctx context.Context, o ServeOptions) error {
 		return err
 	}
 	s.TrustProxy = o.BehindProxy
+	s.Open = o.Open
 	hs := &http.Server{Addr: o.Listen, Handler: s.Handler(), ReadHeaderTimeout: 10 * time.Second,
 		MaxHeaderBytes: 16 << 10}
 	if cert != nil {
