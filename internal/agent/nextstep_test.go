@@ -127,3 +127,88 @@ func TestRepairJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+type fakeReply struct{ content, finish string }
+
+// fakeModel: Antworten der Reihe nach, merkt letzte Nachricht und Max-Tokens.
+func fakeModel(t *testing.T, replies ...fakeReply) (*Agent, *[]string, *[]int) {
+	var prompts []string
+	var maxTok []int
+	n := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Messages  []llm.Message `json:"messages"`
+			MaxTokens int           `json:"max_tokens"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		prompts = append(prompts, req.Messages[len(req.Messages)-1].Content)
+		maxTok = append(maxTok, req.MaxTokens)
+		rp := replies[min(n, len(replies)-1)]
+		n++
+		if rp.finish == "" {
+			rp.finish = "stop"
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"choices": []any{map[string]any{
+			"message": map[string]any{"role": "assistant", "content": rp.content}, "finish_reason": rp.finish,
+		}}})
+	}))
+	t.Cleanup(srv.Close)
+	c, err := llm.New(domain.LLMConfig{BaseURL: srv.URL + "/v1", Model: "m"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &Agent{C: c}, &prompts, &maxTok
+}
+
+// Gitea-Webhook (2026-11-12): Skript mit sed-Mustern, das Modell schreibt
+// \[ und \$ ungültig maskiert in den JSON-String.
+const webhookScript = `{"datei": {"name": "patch_webhook.sh", "inhalt": "#!/bin/bash\nCONFIG=\"/data/gitea/conf/app.ini\"\n\nset_config_key() {\n  local section=\"$1\" key=\"$2\" value=\"$3\"\n  if ! grep -q \"^\[$section\]\" \"$CONFIG\"; then\n    printf '\\n[%s]\\n' \"$section\" >> \"$CONFIG\"\n  fi\n  sed -i \"/^\[$section\]/a $key = $value\" \"$CONFIG\"\n  echo \"gesetzt: \$key\"\n}\nset_config_key webhook ALLOWED_HOST_LIST external,192.168.2.83\n"}, "grund": "Webhook-Abschnitt ergänzen"}`
+
+func TestNextStepScriptInvalidEscapes(t *testing.T) {
+	a, prompts, maxTok := fakeModel(t, fakeReply{content: webhookScript})
+	st, err := a.NextStep(context.Background(), "app.ini ergänzen", nil, nil, nil, "~/.sshtermy-agent/x1", Context{OS: "Ubuntu"})
+	if err != nil || st.File == nil || st.File.Name != "patch_webhook.sh" {
+		t.Fatalf("%+v %v", st, err)
+	}
+	if !strings.Contains(st.File.Content, `grep -q "^\[$section\]"`) || !strings.Contains(st.File.Content, `\$key`) {
+		t.Errorf("Backslashes verloren:\n%s", st.File.Content)
+	}
+	if len(*prompts) != 1 || (*maxTok)[0] < 8192 {
+		t.Errorf("ohne Nachfrage, mit Platz für Skripte: %d Aufrufe, %v", len(*prompts), *maxTok)
+	}
+}
+
+func TestNextStepTruncatedScript(t *testing.T) {
+	cut := webhookScript[:200]
+	a, prompts, maxTok := fakeModel(t, fakeReply{cut, "length"},
+		fakeReply{content: `{"datei": {"name": "w.sh", "inhalt": "echo ok"}, "grund": "kurz"}`})
+	st, err := a.NextStep(context.Background(), "app.ini ergänzen", nil, nil, nil, "~/.sshtermy-agent/x1", Context{})
+	if err != nil || st.File == nil || st.File.Name != "w.sh" {
+		t.Fatalf("%+v %v", st, err)
+	}
+	if !strings.Contains((*prompts)[1], "abgeschnitten") || (*maxTok)[1] <= (*maxTok)[0] {
+		t.Errorf("Nachfrage: %q, Max-Tokens %v", (*prompts)[1], *maxTok)
+	}
+}
+
+func TestNextStepFileWithoutDir(t *testing.T) {
+	a, prompts, _ := fakeModel(t, fakeReply{content: webhookScript})
+	_, err := a.NextStep(context.Background(), "app.ini ergänzen", nil, nil, nil, "", Context{})
+	if err == nil || !strings.Contains(err.Error(), "nur Befehle") {
+		t.Fatal(err)
+	}
+	if !strings.Contains((*prompts)[1], "kein Arbeitsordner") {
+		t.Errorf("Nachfrage: %q", (*prompts)[1])
+	}
+}
+
+func TestNextStepBrokenJSONNamesError(t *testing.T) {
+	a, prompts, _ := fakeModel(t, fakeReply{content: `{"datei": {"name": "w.sh", "inhalt": "echo "ok""}, "grund": "x"}`})
+	_, err := a.NextStep(context.Background(), "x", nil, nil, nil, "~/.sshtermy-agent/x1", Context{})
+	if err == nil || !strings.Contains(err.Error(), "JSON fehlerhaft") {
+		t.Fatal(err)
+	}
+	if !strings.Contains((*prompts)[1], "nicht gültig") || !strings.Contains((*prompts)[1], `\\`) {
+		t.Errorf("Nachfrage: %q", (*prompts)[1])
+	}
+}
