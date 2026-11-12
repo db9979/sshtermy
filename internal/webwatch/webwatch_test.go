@@ -85,6 +85,10 @@ func TestServe(t *testing.T) {
 	defer srv.Close()
 	cl := &http.Client{Transport: &http.Transport{DisableCompression: true},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	defer cl.CloseIdleConnections()
+	// get liest den Körper sofort ganz und schließt ihn: offene Körper
+	// ließen srv.Close() warten (auf macOS bis zum Test-Timeout).
+	var body []byte
 	get := func(p string, gz bool) *http.Response {
 		req, _ := http.NewRequest("GET", srv.URL+p, nil)
 		if gz {
@@ -94,7 +98,8 @@ func TestServe(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Cleanup(func() { resp.Body.Close() })
+		body, _ = io.ReadAll(resp.Body)
+		resp.Body.Close()
 		return resp
 	}
 	r := get("/zusehen", false)
@@ -102,7 +107,7 @@ func TestServe(t *testing.T) {
 		t.Fatalf("Umleitung: %d %q", r.StatusCode, r.Header.Get("Location"))
 	}
 	r = get("/zusehen/", false)
-	b, _ := io.ReadAll(r.Body)
+	b := body
 	if r.StatusCode != 200 || !strings.Contains(string(b), "app.js") || !strings.Contains(r.Header.Get("Content-Security-Policy"), "connect-src 'self'") {
 		t.Fatalf("Seite: %d %s", r.StatusCode, r.Header)
 	}
@@ -116,7 +121,7 @@ func TestServe(t *testing.T) {
 		t.Fatalf("wasm gz: %d %s", r.StatusCode, r.Header)
 	}
 	r = get("/zusehen/zusehen.wasm", false)
-	b, _ = io.ReadAll(r.Body)
+	b = body
 	if r.StatusCode != 200 || len(b) < 4 || string(b[:4]) != "\x00asm" {
 		t.Fatalf("wasm: %d %d", r.StatusCode, len(b))
 	}
