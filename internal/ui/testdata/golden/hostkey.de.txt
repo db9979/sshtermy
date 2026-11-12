@@ -1,30 +1,30 @@
  >_ sshTermy   ▌● 1 web-01 ×  +      ▲ PRODUKTIV  deploy@10.0.0.11:22  ↔ 0 Tunnel   ● ◆ qwen3-coder
-
-
-
-
-
-
-
-     ┌─ ▲ Unbekannter Host ─────────────────────────────────────────────────────────────── × ─┐
-     │                                                                                        │
-     │  Der Server web-01 (10.0.0.11:22) ist noch nicht bekannt.                              │
-     │                                                                                        │
-     │  Schlüssel: ssh-ed25519                                                                │
-     │  Fingerprint: SHA256:Golden0123456789abcdefGHIJKLMNOPqrstuvwxyz0                       │
-     │                                                                                        │
-     │  Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf                             │
-     │  /etc/ssh/ssh_host_*_key.pub).                                                         │
-     │                                                                                        │
-     │   j vertrauen    n abbrechen                                                           │
-     │                                                                                        │
-     └────────────────────────────────────────────────────────────────────────────────────────┘
-
-
-
-
-
-
-
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃    ┌─ ▲ Unbekannter Host ─────────────────────────────────────────────────────────────── × ─┐    ┃
+┃    │                                                                                        │    ┃
+┃    │  Der Server web-01 (10.0.0.11:22) ist noch nicht bekannt.                              │    ┃
+┃    │                                                                                        │    ┃
+┃    │  Schlüssel: ssh-ed25519                                                                │    ┃
+┃    │  Fingerprint: SHA256:Golden0123456789abcdefGHIJKLMNOPqrstuvwxyz0                       │    ┃
+┃    │                                                                                        │    ┃
+┃    │  Vergleiche den Fingerprint mit dem Server (ssh-keygen -lf                             │    ┃
+┃    │  /etc/ssh/ssh_host_*_key.pub).                                                         │    ┃
+┃    │                                                                                        │    ┃
+┃    │   j vertrauen    n abbrechen                                                           │    ┃
+┃    │                                                                                        │    ┃
+┃    └────────────────────────────────────────────────────────────────────────────────────────┘    ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  Strg+Space Befehle 1Hilfe 2Ziel 3KI 4Tunnel 5Dateien 6Host 9Schnell 10Manager  ⇧F9 erklären

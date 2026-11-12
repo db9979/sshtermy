@@ -570,6 +570,10 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 		body, cur = a.viewSplit(s)
 	} else {
 		body, cur = a.paneBody(s, true)
+		if a.framed() {
+			ar := a.areaRect()
+			body = a.frameBody(body, ar.w, ar.h, s, true, false, "")
+		}
 	}
 	bottom := a.chipBar(s)
 	if s.search.open {
@@ -782,7 +786,7 @@ func (a *App) tabLabel(i, l int) string {
 // tabWidth: Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven.
 func (a *App) tabWidth(i, l int) int {
 	w := 1 + lipgloss.Width(a.tabLabel(i, l)) + 3
-	if a.accentOf(a.sessions[i].conn) != nil {
+	if a.tabColor(a.sessions[i]) != nil {
 		w++
 	}
 	if i == a.cur {
@@ -885,10 +889,10 @@ func (a *App) tabStrip(room int) string {
 		}
 		// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
 		stripe, text := "", label(i, fit)
-		if col := a.accentOf(x.conn); col != nil {
+		if col := a.tabColor(x); col != nil {
 			stripe = glyph("▌", col, ts.GetBackground())
-			if i == a.cur {
-				text = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(true).Render(strings.TrimPrefix(text, " "))
+			if i == a.cur || a.framed() { // Name in der Rahmenfarbe (tabframe.go)
+				text = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(i == a.cur).Render(strings.TrimPrefix(text, " "))
 			}
 		}
 		i := i

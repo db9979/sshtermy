@@ -76,7 +76,7 @@ func TestOneHeaderLineAndFKeyBar(t *testing.T) {
 		if strings.Contains(head, "Dominik") {
 			t.Errorf("w=%d: Credit in der Kopfzeile: %q", w, head)
 		}
-		if !strings.HasPrefix(lines[1], "Linux web-01") {
+		if !strings.HasPrefix(strings.TrimLeft(lines[1], "┃│"), "Linux web-01") { // links ggf. der farbige Rahmen (tabframe.go)
 			t.Errorf("w=%d: Terminal soll direkt unter der Kopfzeile beginnen: %q", w, lines[1])
 		}
 		foot := lines[len(lines)-2]

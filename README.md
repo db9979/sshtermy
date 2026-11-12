@@ -208,6 +208,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Window style** (palette “Window style”): dialogs, palette and pickers cast a shadow and the background dims a
   little, and the header and logo carry a soft color gradient; optionally with round corners, or flat as before (no shadows, no gradients)
+- **Colored frame per tab**: every terminal, alone or as a pane of the split view, gets a frame in its connection's color, and its name in the tab bar and pane title shows in the same color. Pick the color per connection in the form (“Color”); automatic means prod red, test green, lab blue, otherwise each open tab its own color, never red, so red always means production. Palette › Settings › “Colored frame around each tab” turns it off
 - **Accessible mode** (Settings › Appearance): no animations, shapes instead of color only (× for “unreachable”);
   together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
 - **Lively interface** (palette “Motion”: full, subtle, off): a spinner in the tab while connecting, tabs flash green

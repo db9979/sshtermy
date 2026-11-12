@@ -1,32 +1,32 @@
  >_ sshTermy   ▌● 1 web-01 ×  +                          ▲ PRODUKTIV  deploy@10.0.0.11:22  ↔ 0 Tunnel   ● ◆ qwen3-coder
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                     ┌──────────────────────────────────────────────┐
-                                                                        │ ◆ KI fragen  mit Terminal-Kontext            │
-deploy@web-01:~$ systemctl status nginx --no-pager | head -3            │                                              │
-● nginx.service - A high performance web server and a reverse proxy serv│ › Frage, z. B. Warum startet nginx nicht?    │
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)        │                                              │
-     Active: active (running) since Mon 2026-11-02 08:15:00 UTC         │                                              │
-deploy@web-01:~$                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        │                                              │
-                                                                        └──────────────────────────────────────────────┘
+┃Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                   ┌──────────────────────────────────────────────┐┃
+┃                                                                      │ ◆ KI fragen  mit Terminal-Kontext            │┃
+┃deploy@web-01:~$ systemctl status nginx --no-pager | head -3          │                                              │┃
+┃● nginx.service - A high performance web server and a reverse proxy se│ › Frage, z. B. Warum startet nginx nicht?    │┃
+┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)      │                                              │┃
+┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC       │                                              │┃
+┃deploy@web-01:~$                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      │                                              │┃
+┃                                                                      └──────────────────────────────────────────────┘┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  ⏎ fragen  Esc Terminal  F3 schließen

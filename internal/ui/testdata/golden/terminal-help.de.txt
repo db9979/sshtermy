@@ -1,36 +1,36 @@
  >_ sshTermy   ▌● 1 web-01 ×  +                          ▲ PRODUKTIV  deploy@10.0.0.11:22  ↔ 0 Tunnel   ● ◆ qwen3-coder
-L┌─ ? Tastenkürzel  sshTermy vdev ──────────────────────────────────────────────────────────────────────────────── × ─┐
- │                                                                                                                    │
-d│   Terminal   KI   Manager   Logs   Überall    tippen filtert                                                       │
-●│                                                                                                                    │
- │  ▸ Terminal  hier                                         ↔ Tunnel F4                                              │
- │   F2          Ziel-Modus (Agent)                           ⏎ / Klick   starten / stoppen                           │
-d│   F3          KI fragen                                    a           mit Verbindung starten                      │
- │   F4          Tunnel                                       o           im Browser öffnen                           │
- │   F5          Dateien (SFTP)                               n           neuer Tunnel                                │
- │   F6          Host-Übersicht                               e           bearbeiten                                  │
- │   F7 / F8     Tab wechseln                                 d           löschen                                     │
- │   F9          Schnellbefehle (Liste)                                                                               │
- │   F9 → a      häufigen Befehl übernehmen                  ▣ Host-Übersicht F6                                      │
- │   F10         zum Manager                                  r / ⏎       abfragen                                    │
- │   ⇧F1…F8      Schnellbefehl ausführen                      b           Switch-Config sichern                       │
- │   ⇧F10        Tab in eigenes Fenster (Sitzung bleibt       c           Container (Docker, Podman, k8s)             │
- │               offen)                                       l           Log-Blick                                   │
- │   Tab / →     Ghost-Text übernehmen                        ↑ ↓         Sicherung wählen                            │
- │   Alt+1…4     Folgebefehl einfügen                         d           Diff zur Vorversion                         │
- │   Alt+0       Fehler: Warum? & Fix                         v           Sicherung ansehen                           │
- │   Alt+K       KI-Begleiter: Aus/Leise/Gesprächig/Coach     g           Grenzwerte für Warnungen                    │
- │   Alt+J       Begleiter-Leiste                             t           Graphen: 5 min / 1 h                        │
- │   Alt+V       Vorgang über mehrere Fenster (KI sieht       z           Graphen groß                                │
- │               alle)                                        x           Abfrage abbrechen                           │
- │   Strg+T      Aufteilung wählen (1…7)                                                                              │
- │   Strg+Pfeil  Bereich wechseln (geteilt)                  ▤ Dateien F5                                             │
- │   Alt+⇧Pfeil  Trennlinie verschieben (Maus: ziehen)        F2          umbenennen                                  │
- │                                                                                                                    │
- │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.      │
- │  Esc führt aus jedem Panel zurück ins Terminal.                                                                    │
- │                                                                                                                    │
- │  ▾ mehr   ↑↓ blättern    ←/→ Reiter    Esc schließen                                                               │
- │                                                                                                                    │
+┃┌─ ? Tastenkürzel  sshTermy vdev ──────────────────────────────────────────────────────────────────────────────── × ─┐┃
+┃│                                                                                                                    │┃
+┃│   Terminal   KI   Manager   Logs   Überall    tippen filtert                                                       │┃
+┃│                                                                                                                    │┃
+┃│  ▸ Terminal  hier                                         ↔ Tunnel F4                                              │┃
+┃│   F2          Ziel-Modus (Agent)                           ⏎ / Klick   starten / stoppen                           │┃
+┃│   F3          KI fragen                                    a           mit Verbindung starten                      │┃
+┃│   F4          Tunnel                                       o           im Browser öffnen                           │┃
+┃│   F5          Dateien (SFTP)                               n           neuer Tunnel                                │┃
+┃│   F6          Host-Übersicht                               e           bearbeiten                                  │┃
+┃│   F7 / F8     Tab wechseln                                 d           löschen                                     │┃
+┃│   F9          Schnellbefehle (Liste)                                                                               │┃
+┃│   F9 → a      häufigen Befehl übernehmen                  ▣ Host-Übersicht F6                                      │┃
+┃│   F10         zum Manager                                  r / ⏎       abfragen                                    │┃
+┃│   ⇧F1…F8      Schnellbefehl ausführen                      b           Switch-Config sichern                       │┃
+┃│   ⇧F10        Tab in eigenes Fenster (Sitzung bleibt       c           Container (Docker, Podman, k8s)             │┃
+┃│               offen)                                       l           Log-Blick                                   │┃
+┃│   Tab / →     Ghost-Text übernehmen                        ↑ ↓         Sicherung wählen                            │┃
+┃│   Alt+1…4     Folgebefehl einfügen                         d           Diff zur Vorversion                         │┃
+┃│   Alt+0       Fehler: Warum? & Fix                         v           Sicherung ansehen                           │┃
+┃│   Alt+K       KI-Begleiter: Aus/Leise/Gesprächig/Coach     g           Grenzwerte für Warnungen                    │┃
+┃│   Alt+J       Begleiter-Leiste                             t           Graphen: 5 min / 1 h                        │┃
+┃│   Alt+V       Vorgang über mehrere Fenster (KI sieht       z           Graphen groß                                │┃
+┃│               alle)                                        x           Abfrage abbrechen                           │┃
+┃│   Strg+T      Aufteilung wählen (1…7)                                                                              │┃
+┃│   Strg+Pfeil  Bereich wechseln (geteilt)                  ▤ Dateien F5                                             │┃
+┃│   Alt+⇧Pfeil  Trennlinie verschieben (Maus: ziehen)        F2          umbenennen                                  │┃
+┃│                                                                                                                    │┃
+┃│   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.      │┃
+┃│  Esc führt aus jedem Panel zurück ins Terminal.                                                                    │┃
+┃│                                                                                                                    │┃
+┃│  ▾ mehr   ↑↓ blättern    ←/→ Reiter    Esc schließen                                                               │┃
+┗│                                                                                                                    │┛
  └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  Strg+Space Befehle 1Hilfe 2Ziel 3KI 4Tunnel 5Dateien 6Host 9Schnell 10Manager  ⇧F9 erklären  Strg+F Suche

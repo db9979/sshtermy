@@ -1,36 +1,36 @@
  >_ sshTermy   ▌● 1 web-01   ▌● 2 web-02 ×  +                              ▲ PRODUCTION  deploy@10.0.0.12:22  ↔ 0 tunnels   ● ◆ qwen3-coder
-▌ ▲ PROD ● 1 · web-01  deploy@10.0.0.11                               ┃▌ ▲ PROD ● 2 · web-02  deploy@10.0.0.12          Ctrl+arrow switches
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                   ┃Linux web-02 6.8.0-45-generic #45-Ubuntu┌──────────────────────────┐
-                                                                      ┃                                        │ i View: two side by side │
-deploy@web-01:~$ systemctl status nginx --no-pager | head -3          ┃deploy@web-02:~$ systemctl status nginx └──────────────────────────┘
-● nginx.service - A high performance web server and a reverse proxy se┃● nginx.service - A high performance web server and a reverse proxy s
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)      ┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)
-     Active: active (running) since Mon 2026-11-02 08:15:00 UTC       ┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC
-deploy@web-01:~$                                                      ┃deploy@web-02:~$
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
-                                                                      ┃
+▌ ▲ PROD ● 1 · web-01  deploy@10.0.0.11                                ▌ ▲ PROD ● 2 · web-02  deploy@10.0.0.12          Ctrl+arrow switches
+│Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                 │ ┃Linux web-02 6.8.0-45-generic #45-Ubunt┌──────────────────────────┐┃
+│                                                                    │ ┃                                       │ i View: two side by side │┃
+│deploy@web-01:~$ systemctl status nginx --no-pager | head -3        │ ┃deploy@web-02:~$ systemctl status nginx└──────────────────────────┘┃
+│● nginx.service - A high performance web server and a reverse proxy │ ┃● nginx.service - A high performance web server and a reverse proxy┃
+│     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)    │ ┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)   ┃
+│     Active: active (running) since Mon 2026-11-02 08:15:00 UTC     │ ┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC    ┃
+│deploy@web-01:~$                                                    │ ┃deploy@web-02:~$                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+│                                                                    │ ┃                                                                   ┃
+└────────────────────────────────────────────────────────────────────┘ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  Ctrl+Space Commands 1Help 2Goal 3AI 4Tunnel 5Files 6Host 7/8Tabs 9Quick 10Manager  ⇧F9 explain  ⇧F10 window  Ctrl+F Search  Ctrl+T Split

@@ -281,7 +281,10 @@ func TestFilesSortCrumbsMarks(t *testing.T) {
 	if filepath.Base(p.path) != "conf.d" {
 		t.Fatalf("Doppelklick auf Ordner: %s", p.path)
 	}
-	bx, by := screenAt(t, a, filepath.Base(r), 0)
+	// mit Trennern suchen: der Ordnername (z. B. „003“) kann auch in einer
+	// Zahl des Temp-Pfads davor stecken (Windows: …Marks1101400318\003)
+	bx, by := screenAt(t, a, "› "+filepath.Base(r)+" ›", 0)
+	bx += 2
 	a.click = clickState{}
 	a.mouse(tea.MouseClickMsg{X: bx + 1, Y: by, Button: tea.MouseLeft})
 	if p.path != r {

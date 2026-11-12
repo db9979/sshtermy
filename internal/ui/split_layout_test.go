@@ -70,7 +70,7 @@ func TestZoomUsesWholeArea(t *testing.T) {
 	a.setSplit(splitGrid)
 	a.toggleZoom()
 	ar := a.areaRect()
-	if r := a.termRect(a.current()); r.w != ar.w || r.h != ar.h-1 {
+	if r := a.termRect(a.current()); r.w != ar.w-2 || r.h != ar.h-2 { // farbiger Rahmen: links, rechts, unten
 		t.Fatalf("Zoom-Fläche %+v", r)
 	}
 	if a.paneAt(ar.w-2, ar.y+ar.h-2) != nil {

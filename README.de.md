@@ -214,6 +214,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   die Wahl wird gespeichert und mit dem Sync übernommen. Beim ersten Start richtet sich sshTermy nach der Systemsprache
 - **Fensterstil** (Palette „Fensterstil“): Dialoge, Palette und Auswahl werfen einen Schatten, dahinter wird es etwas
   dunkler, und Kopfzeile und Logo tragen einen sanften Farbverlauf; wahlweise mit runden Ecken oder ganz flach wie früher (ohne Schatten und Verläufe)
+- **Farbiger Rahmen je Tab**: jedes Terminal, allein oder als Bereich der geteilten Ansicht, bekommt einen Rahmen in der Farbe seiner Verbindung, und sein Name in der Tab-Leiste und im Bereichstitel steht in derselben Farbe. Farbe je Verbindung im Formular wählbar („Farbe“); automatisch heißt prod rot, test grün, labor blau, sonst jeder offene Tab eine eigene Farbe, nie Rot, Rot bedeutet also immer produktiv. Palette › Einstellungen › „Farbiger Rahmen um jeden Tab“ schaltet es ab
 - **Barrierearm** (Einstellungen › Aussehen): keine Animationen, Formen statt nur Farben (× für „nicht erreichbar“);
   dazu die **Farbenblind-Themes** (Blau/Gelb/Orange statt Grün/Rot, Okabe-Ito-Farben)
 - **Lebendige Oberfläche** (Palette „Bewegung“: voll, dezent, aus): Spinner im Tab beim Verbinden, Tabs leuchten bei

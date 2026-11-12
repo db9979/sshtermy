@@ -228,17 +228,28 @@ func (a *App) slotOf(s *session) int {
 
 // termRect: Fläche des Terminals (samt Seitenpanel) für eine Sitzung.
 func (a *App) termRect(s *session) rect {
+	f := a.framed() // farbiger Rahmen (tabframe.go): links, rechts, unten je eine Zelle
+	inset := func(r rect) rect {
+		if !f {
+			return r
+		}
+		return rect{r.x + 1, r.y, max(20, r.w-2), max(3, r.h-1)}
+	}
 	if a.zoom && a.split != splitOff && s != nil && s == a.current() && a.slotOf(s) >= 0 {
 		ar := a.areaRect()
-		return rect{ar.x, ar.y + 1, ar.w, max(3, ar.h-1)}
+		return inset(rect{ar.x, ar.y + 1, ar.w, max(3, ar.h-1)})
 	}
 	if j := a.slotOf(s); j >= 0 {
 		if rs := a.paneRects(); j < len(rs) {
 			r := rs[j]
-			return rect{r.x, r.y + 1, r.w, max(3, r.h-1)}
+			return inset(rect{r.x, r.y + 1, r.w, max(3, r.h-1)})
 		}
 	}
-	return a.areaRect()
+	ar := a.areaRect()
+	if f { // Einzelansicht: oben schließt die Kopfzeile mit dem farbigen Tab ab
+		return inset(ar)
+	}
+	return ar
 }
 
 func (a *App) resizeAll() {
@@ -741,7 +752,11 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 	now := time.Now()
 	if a.zoom {
 		b, cc := a.paneBody(focus, true)
-		out := a.paneTitle(focus, ar.w, true, false) + "\n" + fitBlock(b, ar.w, ar.h-1)
+		body := fitBlock(b, ar.w, ar.h-1)
+		if a.framed() {
+			body = a.frameBody(b, ar.w, ar.h-1, focus, true, false, "")
+		}
+		out := a.paneTitle(focus, ar.w, true, false) + "\n" + body
 		if gl := a.glideLayers(ar, now); gl != nil {
 			out = lipgloss.NewCompositor(append([]*lipgloss.Layer{lipgloss.NewLayer(out)}, gl...)...).Render()
 		}
@@ -785,6 +800,9 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 				body = fadeANSI(body, st.T, 0.45)
 			}
 		}
+		if a.framed() {
+			body = a.frameBody(body, rc.w, rc.h-1, ps, ps != nil && ps == focus, false, "")
+		}
 		layers = append(layers, lipgloss.NewLayer(title+"\n"+fitBlock(body, rc.w, rc.h-1)).X(rc.x-ar.x).Y(rc.y-ar.y))
 	}
 	// senkrechte Trennlinien (beim Ziehen farbig, mit Anteilen)
@@ -798,8 +816,11 @@ func (a *App) viewSplit(focus *session) (string, *tea.Cursor) {
 		if drag {
 			col, ch = st.T.Accent, "█"
 		}
+		if !drag && a.framed() {
+			ch = " " // die Rahmen der Bereiche trennen schon (tabframe.go)
+		}
 		line := lipgloss.NewStyle().Foreground(col).Render(strings.TrimSuffix(strings.Repeat(ch+"\n", ar.h), "\n"))
-		if !drag && fj >= 0 && fj < len(rects) {
+		if !drag && !a.framed() && fj >= 0 && fj < len(rects) {
 			// Linie direkt neben dem aktiven Bereich leuchtet
 			fr := rects[fj]
 			if bx := fr.x - ar.x; bx == x+1 || bx+fr.w == x {
@@ -845,9 +866,12 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 		}
 		return line
 	}
-	// Akzentfarbe der Verbindung als Streifen links (accent.go); der aktive
-	// Bereich ist heller. Produktiv: rote Marke statt roter Fläche.
-	col := a.accentOf(s.conn)
+	// Farbe des Tabs als Streifen links (accent.go, tabframe.go); mit Rahmen
+	// steht auch der Name in dieser Farbe. Produktiv: rote Marke.
+	col := a.tabColor(s)
+	if col != nil && a.framed() {
+		bar = bar.Foreground(col)
+	}
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○", stReconnect: "◌"}[s.state]
 	left := " " + dot + " " + strconv.Itoa(a.winNo(s)) + " · " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host
 	var marks []string

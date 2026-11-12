@@ -818,6 +818,7 @@ func (a *App) palMenuItems() []palItem {
 			keys: "theme farbe color colors eigene custom", run: func() tea.Cmd { return a.openColors() }},
 		palItem{group: pgSetLook, menu: "settings", icon: ic("colors"), label: i18n.T("Farbregeln für die Ausgabe …"), hint: hlHint(a.highlightOn()),
 			keys: "highlight farbregeln einfärben fehler ip mac syslog regeln", run: func() tea.Cmd { return a.openHighlightForm() }},
+		look(hide(palToggle(ic("split"), i18n.T("Farbiger Rahmen um jeden Tab"), a.tabFramesOn(), "rahmen farbe farbig tab umranden frame border color", func() tea.Cmd { return a.toggleTabFrames() }))),
 		look(hide(palToggle(ic("colors"), i18n.T("Farbregeln: Ausgabe einfärben"), a.highlightOn(), "highlight farbregeln einfärben", func() tea.Cmd { return a.toggleHighlight() }))),
 		palCycle(pgSetLook, ic("icons"), i18n.T("Symbole"), i18n.T(iconStyleLabel(iconSet)), "icons symbole nerd font unicode minimal tags",
 			func(dir int) tea.Cmd { return a.chooseIcons(iconStyles[cycleIndex(iconIdx, len(iconStyles), dir)].id) }),

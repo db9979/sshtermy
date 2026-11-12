@@ -1,30 +1,30 @@
  >_ sshTermy   ▌● 1 web-01 ×  +    ▲ PRODUCTION  deploy@10.0.0.11:22  ↔ 0 tunnels   ● ◆ qwen3-coder
-
-
-
-
-
-
-
-     ┌─ ▲ Unknown host ─────────────────────────────────────────────────────────────────── × ─┐
-     │                                                                                        │
-     │  The server web-01 (10.0.0.11:22) is not known yet.                                    │
-     │                                                                                        │
-     │  Key: ssh-ed25519                                                                      │
-     │  Fingerprint: SHA256:Golden0123456789abcdefGHIJKLMNOPqrstuvwxyz0                       │
-     │                                                                                        │
-     │  Compare the fingerprint with the server (ssh-keygen -lf                               │
-     │  /etc/ssh/ssh_host_*_key.pub).                                                         │
-     │                                                                                        │
-     │   y trust    n cancel                                                                  │
-     │                                                                                        │
-     └────────────────────────────────────────────────────────────────────────────────────────┘
-
-
-
-
-
-
-
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃    ┌─ ▲ Unknown host ─────────────────────────────────────────────────────────────────── × ─┐    ┃
+┃    │                                                                                        │    ┃
+┃    │  The server web-01 (10.0.0.11:22) is not known yet.                                    │    ┃
+┃    │                                                                                        │    ┃
+┃    │  Key: ssh-ed25519                                                                      │    ┃
+┃    │  Fingerprint: SHA256:Golden0123456789abcdefGHIJKLMNOPqrstuvwxyz0                       │    ┃
+┃    │                                                                                        │    ┃
+┃    │  Compare the fingerprint with the server (ssh-keygen -lf                               │    ┃
+┃    │  /etc/ssh/ssh_host_*_key.pub).                                                         │    ┃
+┃    │                                                                                        │    ┃
+┃    │   y trust    n cancel                                                                  │    ┃
+┃    │                                                                                        │    ┃
+┃    └────────────────────────────────────────────────────────────────────────────────────────┘    ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  Ctrl+Space Commands 1Help 2Goal 3AI 4Tunnel 5Files 6Host 9Quick 10Manager  ⇧F9 explain
