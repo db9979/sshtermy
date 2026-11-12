@@ -52,6 +52,8 @@ type modal struct {
 	onText   func(string) tea.Cmd // nur Texteingabe
 	onCancel func() tea.Cmd       // Texteingabe mit Esc verlassen (optional)
 	ctx      helpCtx              // nur Hilfe: aktueller Bereich
+	helpTab  int                  // nur Hilfe: gewählter Reiter (helpTabs)
+	filter   string               // nur Hilfe: getippter Suchtext über alle Reiter
 	scroll   int                  // Hilfe/Changelog/Text: Scroll-Position; Schnellbefehle: Auswahl
 	quickSID int                  // nur Schnellbefehle: Sitzung
 	armed    int                  // nur Schnellbefehle: roter Befehl nach dem ersten ⏎

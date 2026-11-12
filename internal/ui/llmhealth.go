@@ -175,6 +175,9 @@ func (a *App) llmChip() string {
 	h := a.llmHealth()
 	txt := a.s.Header.Foreground(a.llmColor(h.level)).Render(" "+h.dot(a.lh.probing)) +
 		a.s.Header.Foreground(a.s.T.AI).Render(" "+i18n.T("KI"))
+	if a.scr == scrManager && h.level != lhOff && h.model() != "" && a.w >= 90 {
+		txt += a.s.Header.Foreground(a.s.T.AI).Bold(true).Render(" " + trunc(h.model(), 22)) // statt „KI-Copilot“ je Verbindung
+	}
 	switch {
 	case h.level == lhOff:
 		txt += a.s.Header.Foreground(a.s.T.Muted).Render(i18n.T(" aus"))

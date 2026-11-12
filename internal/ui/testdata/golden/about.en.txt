@@ -1,30 +1,30 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
- connections  6  / search        │ ▾ Netzwerk
-                                 │
- ▾ Netzwerk                   1  │ Path         Netzwerk
-   ○ # switch-core  manager@19…  │ Content      1 connection
- ▾ Produktion                 3  │
-   ▾ Web                      2  │ Folder
+ >_ sshTermy                                                          ↕ sync off   ● AI qwen3-coder
+ connections  6  / search  # Tags       │ ▾ Netzwerk
+                                        │
+ ▾ Netzwerk                          1  │ Path         Netzwerk
+   ○ # switch-core      manager@192.1…  │ Content      1 connection
+ ▾ Produktion                        3  │
+   ▾ Web                             2  │ In this folder
 ▌    ┌─ ◆ About sshTermy ───────────────────────────────────────────────────────────────── × ─┐
 ▌    │                                                                                        │
 ▌  ○ │  sshTermy vdev (none, unknown) linux/amd64                                             │
- ○ · │  SSH terminal with AI copilot                                                          │
- ○ · │  Idea: Dominik Bornhäußer · MIT · https://github.com/db9979/sshtermy                   │
+ ○   │  SSH terminal with AI copilot                                                          │
+ ○   │  Idea: Dominik Bornhäußer · MIT · https://github.com/db9979/sshtermy                   │
      │                                                                                        │
      │  Security: AES-256-GCM, Argon2id, DPAPI (Windows), host key check (TOFU),              │
      │  AI without tools: every command needs your confirmation.                              │
      │                                                                                        │
-     │  ♥ Like sshTermy? Buy me a coffee: https://buymeacoffee.com/zquu1xu570                 │en
+     │  ♥ Like sshTermy? Buy me a coffee: https://buymeacoffee.com/zquu1xu570                 │
      │                                                                                        │
      │   c check for updates    w what's new    b ♥ Buy me a coffee    l Deutsch              │
      │   Esc close                                                                            │
      │                                                                                        │
      └────────────────────────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
- Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move

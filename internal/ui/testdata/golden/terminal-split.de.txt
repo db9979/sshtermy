@@ -1,9 +1,8 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                  ▌● 1 web-01   ▌● 2 web-02 ×  +
- PRODUKTIV  deploy@10.0.0.12:22                                                                                ↔ 0 Tunnel   ● ◆ qwen3-coder
-▌● 1 · web-01  deploy@10.0.0.11                                       ┃ ● 2 · web-02  deploy@10.0.0.12    ┌───────────────────────────────┐
-Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                   ┃Linux web-02 6.8.0-45-generic #45-U│ i Ansicht: zwei nebeneinander │
-                                                                      ┃                                   └───────────────────────────────┘
-deploy@web-01:~$ systemctl status nginx --no-pager | head -3          ┃deploy@web-02:~$ systemctl status nginx --no-pager | head -3
+ >_ sshTermy   ▌● 1 web-01   ▌● 2 web-02 ×  +                                ▲ PRODUKTIV  deploy@10.0.0.12:22  ↔ 0 Tunnel   ● ◆ qwen3-coder
+▌ ▲ PROD ● 1 · web-01  deploy@10.0.0.11                               ┃▌ ▲ PROD ● 2 · web-02  deploy@10.0.0.12          Strg+Pfeil wechselt
+Linux web-01 6.8.0-45-generic #45-Ubuntu SMP x86_64                   ┃Linux web-02 6.8.0-45-generic #45-U┌───────────────────────────────┐
+                                                                      ┃                                   │ i Ansicht: zwei nebeneinander │
+deploy@web-01:~$ systemctl status nginx --no-pager | head -3          ┃deploy@web-02:~$ systemctl status n└───────────────────────────────┘
 ● nginx.service - A high performance web server and a reverse proxy se┃● nginx.service - A high performance web server and a reverse proxy s
      Loaded: loaded (/lib/systemd/system/nginx.service; enabled)      ┃     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)
      Active: active (running) since Mon 2026-11-02 08:15:00 UTC       ┃     Active: active (running) since Mon 2026-11-02 08:15:00 UTC
@@ -32,5 +31,6 @@ deploy@web-01:~$                                                      ┃deploy@
                                                                       ┃
                                                                       ┃
                                                                       ┃
+                                                                      ┃
 
- Strg+Space Befehle  F1 Hilfe  F2 Ziel  F3 KI fragen  F4 Tunnel  F5 Dateien  F6 Host  F7/F8 Tabs  F9 Schnellbefehle  ⇧F9 erklären
+ Strg+Space Befehle 1Hilfe 2Ziel 3KI 4Tunnel 5Dateien 6Host 7/8Tabs 9Schnell 10Manager  ⇧F9 erklären  Strg+F Suche  Strg+T Teilen

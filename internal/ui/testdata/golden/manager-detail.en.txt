@@ -1,32 +1,32 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                        ● AI
- connections  6  / search  # Tags       │ web-01  Produktion / Web    ⏎ connect   e edit
-                                        │
- ▾ Netzwerk                          1  │ Goal                deploy@10.0.0.11:22
-   ○ # switch-core      manager@192.1…  │ Status              ◌ checking …
- ▾ Produktion                        3  │ Color               ▌ PRODUCTION
-   ▾ Web                             2  │ Login               SSH agent
-▌    ○ · web-01         deploy@10.0.0…  │ Tags                prod, nginx
-▌    ○ · web-02         deploy@10.0.0…  │ System              detected on the first connect
-▌  ○ · db-01            postgres@10.0…  │
- ○ · nas               admin@nas.local  │ Tunnel  t = new tunnel · click = edit/delete
- ○ · spark             dominik@spark.…  │  @ Grafana              -L 3000:localhost:3000
-                                        │
-                                        │ AI copilot
-                                        │  qwen3-coder @ http://spark.lan:8000/v1
-                                        │
-                                        │ Sync
-                                        │  not set up · y = wizard
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
- Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ connect  n new  e edit  d delete  v move  t Tunnel  q Quick commands
+ >_ sshTermy                                                                              ↕ sync off   ● AI qwen3-coder
+ connections  6  / search  # Tags               │ web-01  ▲ PRODUCTION   Produktion / Web    ⏎ connect   e edit
+                                                │
+ ▾ Netzwerk                                  1  │ Goal                deploy@10.0.0.11:22
+   ○ # switch-core      manager@192.168.1.2     │ Status              ◌ checking …
+ ▾ Produktion                                3  │ Color               ▌ PRODUCTION
+   ▾ Web                                     2  │ Login               SSH agent
+▌    ○   web-01         deploy@10.0.0.11        │ Tags                prod, nginx
+▌    ○   web-02         deploy@10.0.0.12        │ System              detected on the first connect
+▌  ○   db-01            postgres@10.0.1.5       │
+ ○   nas                admin@nas.local         │ Tunnel  t = new tunnel · click = edit/delete
+ ○   spark              dominik@spark.lan       │  @ Grafana              -L 3000:localhost:3000
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+ Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ connect  n new  e edit  d delete  v move  t Tunnel  q Quick commands

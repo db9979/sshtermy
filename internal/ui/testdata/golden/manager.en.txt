@@ -1,32 +1,32 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                        ● AI
- connections  6  / search  # Tags       │ ▾ Netzwerk
-                                        │
- ▾ Netzwerk                          1  │ Path                Netzwerk
-   ○ # switch-core      manager@192.1…  │ Content             1 connection
- ▾ Produktion                        3  │
-   ▾ Web                             2  │ Folder
-▌    ○ · web-01         deploy@10.0.0…  │  ⏎      expand/collapse
-▌    ○ · web-02         deploy@10.0.0…  │  n      new connection here
-▌  ○ · db-01            postgres@10.0…  │  o      add subfolder
- ○ · nas               admin@nas.local  │  r      rename
- ○ · spark             dominik@spark.…  │  v      move
-                                        │  ⇧↑ ⇧↓  order
-                                        │  d      dissolve, content stays
-                                        │  - +    collapse / expand all
-                                        │
-                                        │  With the mouse: drag a row and drop it on a folder or between two
-                                        │  connections.
-                                        │
-                                        │ Sync
-                                        │  not set up · y = wizard
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
-                                        │
- Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move  g open as grid  / search
+ >_ sshTermy                                                                              ↕ sync off   ● AI qwen3-coder
+ connections  6  / search  # Tags               │ ▾ Netzwerk
+                                                │
+ ▾ Netzwerk                                  1  │ Path                Netzwerk
+   ○ # switch-core      manager@192.168.1.2     │ Content             1 connection
+ ▾ Produktion                                3  │
+   ▾ Web                                     2  │ In this folder
+▌    ○   web-01         deploy@10.0.0.11        │  ○ switch-core        manager@192.168.1.2     ◌ checking …
+▌    ○   web-02         deploy@10.0.0.12        │
+▌  ○   db-01            postgres@10.0.1.5       │  Double-click connects · right-click opens the menu · drag rows on
+ ○   nas                admin@nas.local         │  the left onto folders.
+ ○   spark              dominik@spark.lan       │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+                                                │
+ Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move  g open as grid  / search

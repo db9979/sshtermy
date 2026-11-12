@@ -410,7 +410,7 @@ func (a *App) viewManager() string {
 	m := &a.mgr
 	rows := a.mgrRows()
 	h := a.h - 2
-	leftW := min(52, max(32, a.w/3))
+	leftW := min(64, max(32, a.w*2/5)) // breit genug für user@host ohne „…“
 	rightW := a.w - leftW - 1
 
 	// linke Spalte: Baum aus Ordnern und Verbindungen
@@ -507,6 +507,9 @@ func (a *App) viewManager() string {
 			c := r.conn
 			pdot, dotC := a.reachDot(c)
 			picon, iconC := a.devIcon(c)
+			if deviceClass(c) == devUnknown {
+				picon = " " // nur der Punkt; ein Symbol erst, wenn das Gerät bekannt ist
+			}
 			if m.marked[c.ID] {
 				picon, iconC = "✓", s.T.OK // Mehrfachauswahl (bulk.go)
 			}
@@ -585,9 +588,6 @@ func (a *App) viewManager() string {
 	if len(rows) == 0 && !a.mgrFiltering() {
 		rb.WriteString(a.mgrLegend(rightW))
 	}
-	if len(rows) > 0 || a.st.SyncConfig().Enabled() {
-		rb.WriteString("\n " + s.PanelTitle.Render("Sync") + "\n  " + a.syncStatus() + "\n")
-	}
 	right := frameBlock(clipLines(rb.String(), rightW), rightW, h)
 	return beside(beside(left, leftW, sep), leftW+1, right) // perf.go
 }
@@ -598,6 +598,9 @@ func (a *App) mgrConnDetails(c domain.Connection, rightW int, now time.Time) str
 	s := a.s
 	var rb strings.Builder
 	head := s.Accent.Render(" " + trunc(c.Alias, max(8, rightW-4)))
+	if domain.LooksProduction(c) {
+		head += " " + a.prodChip(false) // statusline.go
+	}
 	if g := c.Group; g != "" && lipgloss.Width(head)+2+len([]rune(g)) < rightW-1 {
 		head += "  " + s.Muted.Render(g)
 	}
@@ -721,9 +724,6 @@ func (a *App) mgrConnDetails(c domain.Connection, rightW int, now time.Time) str
 		line := fmt.Sprintf("  %s %-20s %s%s", icon, trunc(t.Name, 20), s.Muted.Render(t.Spec()), auto)
 		rb.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd { return a.openTunnelForm(t) }) + "\n")
 	}
-	cfg := a.st.LLM()
-	rb.WriteString("\n " + s.PanelTitle.Render(i18n.T("KI-Copilot")) + "\n")
-	rb.WriteString("  " + s.Muted.Render(trunc(cfg.Model+" @ "+cfg.BaseURL, max(10, rightW-3))) + "\n")
 	return rb.String()
 }
 
@@ -1463,4 +1463,15 @@ func clipLines(s string, w int) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// syncChip: Sync-Zustand oben rechts im Manager (früher je Verbindung in
+// der rechten Spalte). Klick öffnet den Assistenten.
+func (a *App) syncChip() string {
+	s := a.s
+	txt := " ↕ " + i18n.T("Sync aus") + " "
+	if a.st.SyncConfig().Enabled() {
+		txt = " ↕ Sync " + ansi.Strip(a.syncStatus()) + " "
+	}
+	return a.z.click(s.Header.Foreground(s.T.Muted).Render(trunc(txt, 40)), func(tea.Mouse, bool) tea.Cmd { return a.openSync() }) + s.Header.Render(" ")
 }
