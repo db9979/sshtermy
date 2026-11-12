@@ -1,36 +1,36 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                        ● AI
- c┌─ ? Keyboard shortcuts  sshTermy vdev ─────────────────────────────────────────────────────────────────────── × ─┐
-  │                                                                                                                 │
- ▾│  ◆ Everywhere                         ◆ Ask AI F3                          ▲ Log view Alt+E                     │
-  │   Ctrl+Space  Command palette          ⏎           send question            ⏎           lines of the pattern    │
- ▾│   F1          this help                ⇧⏎ / Ctrl+J new line                 1…4         insert check command    │
-  │   F11         full screen on/off (o…   1…9         insert command           k           AI explains the patte…  │
-▌ │   F12         About & update           ↑ ↓         choose command card      b           AI status report        │
-▌ │   F12 w       What's new               a           run command (red ones…   x / X       hide: host / folder     │
-▌ │   F12 l       Language / Sprache       c           copy command             n           What's new? (u restor…  │
- ○│   ⇧F9         explain key bar          u           after an error: put t…   t           Timeline (←→, ⏎, k)     │
- ○│   Ctrl+Q      quit (asks if connect…   z           collapse/expand expla…   z           Period 1 h … 7 days     │
-  │                                        Esc / Ctrl+C stop answer             w           Log watch: alerts       │
-  │  ≡ Connection manager F10  here        n           new question (fresh)     s           switch: send syslog t…  │
-  │   F10         back to the terminal     f           follow-up (keeps the …   r / c       reload / copy           │
-  │   ⏎           connect                                                                                           │
-  │   n           new connection          ◇ AI companion Alt+J                 ≡ Session logs l                     │
-  │   e           edit                     Alt+K       level: off/quiet/chat…   /           search (output too)     │
-  │   d           delete                   Alt+1…4     insert suggestion        ⏎ / → ←     expand/collapse         │
-  │   Space       mark (then e, v, d fo…   ⏎ / a       insert / run             Tab         by time / by host       │
-  │   Right-click menu for a connection…   m           mute topic               f           filter: today · 7 day…  │
-  │   *           mark all visible         l           remember fact            s           sort hosts              │
-  │   Ctrl+Z      undo delete (10 s)       p / g       intent: plan / agent …   z           AI summary              │
-  │   Ctrl+T      in the form: test con…   r           recap (remember, runb…   Z           summarize all matches   │
-  │   /           search (also #tag)       ?           last request sent        b           Change report           │
-  │   o           new folder (A / B nes…                                        x           export: md · txt · ca…  │
-  │   r           Edit folder             ◆ Task across several windows Alt+V   d           delete                  │
-  │   v           move to folder           Space / ← → choose windows / what…   a           recording on/off        │
-  │                                                                                                                 │
-  │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
-  │  Esc leads back to the terminal from every panel.                                                               │
-  │                                                                                                                 │
-  │  ▾ more   ↑↓ scroll    Esc close                                                                                │
-  │                                                                                                                 │
-  └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
- Ctrl+Space Commands  F1 Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move  g open as grid  / search
+ >_ sshTermy                                                                              ↕ sync off   ● AI qwen3-coder
+ ┌─ ? Keyboard shortcuts  sshTermy vdev ────────────────────────────────────────────────────────────────────────── × ─┐
+ │                                                                                                                    │
+ │   Terminal   AI   Manager   Logs   Everywhere    type to filter                                                    │
+ │                                                                                                                    │
+ │  ≡ Connection manager F10  here                           » Broadcast m                                            │
+ │   F10         back to the terminal                         Space / g / a  host / folder / all                      │
+▌│   ⏎           connect                                      Tab         hosts · source · cmd                        │
+▌│   n           new connection                               ⇧⏎          next step                                   │
+▌│   e           edit                                         Ctrl+S      check, then ⏎                               │
+ │   d           delete                                       ← / →       select host column                          │
+ │   Space       mark (then e, v, d for all)                  ↑ ↓ PgUp/Dn  scroll output                              │
+ │   Right-click  menu for a connection or folder             z / c       enlarge / copy                              │
+ │   *           mark all visible                             r / e / x   again / change / stop                       │
+ │   Ctrl+Z      undo delete (10 s)                           {{name}}    variable, asked first                       │
+ │   Ctrl+T      in the form: test connection                 {{host}}    filled in per host                          │
+ │   /           search (also #tag)                           Ctrl+R      save as runbook                             │
+ │   o           new folder (A / B nests)                     e / Ctrl+D  edit / delete                               │
+ │   r           Edit folder                                  k / a       AI check / apply                            │
+ │   v           move to folder                               p           trial run on/off                            │
+ │   Shift+↑     move up (↓ down)                                                                                     │
+ │   ← / →       collapse/expand folder                      / Network scan f                                         │
+ │   - / +       collapse/expand all                          Ctrl+S      start scan                                  │
+ │   #           filter by tag                                Space / a   select hit / all                            │
+ │   t           add tunnel                                   ⏎           create as connections                       │
+ │   c           Generate / copy SSH key                      x           stop scan                                   │
+ │   q           Quick commands                               r           scan again                                  │
+ │   m           Broadcast to hosts                                                                                   │
+ │                                                                                                                    │
+ │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                      │
+ │  Esc leads back to the terminal from every panel.                                                                  │
+ │                                                                                                                    │
+ │  ▾ more   ↑↓ scroll    ←/→ tab    Esc close                                                                        │
+ │                                                                                                                    │
+ └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move  g open as grid  / search

@@ -1,36 +1,36 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                                        ● KI
- V┌─ ? Tastenkürzel  sshTermy vdev ───────────────────────────────────────────────────────────────────────────── × ─┐
-  │                                                                                                                 │
- ▾│  ◆ Überall                            ◆ KI fragen F3                       ▲ Log-Blick Alt+E                    │
-  │   Strg+Space  Befehlspalette           ⏎           Frage senden             ⏎           Zeilen des Musters      │
- ▾│   F1          diese Hilfe              ⇧⏎ / Strg+J neue Zeile               1…4         Prüfbefehl einfügen     │
-  │   F11         Vollbild an/aus (eige…   1…9         Befehl einfügen          k           KI erklärt das Muster   │
-▌ │   F12         Über & Update            ↑ ↓         Befehlskarte wählen      b           KI-Lagebericht          │
-▌ │   F12 w       Was ist neu              a           Befehl ausführen (rot…   x / X       ausblenden: Host / Or…  │
-▌ │   F12 l       Sprache: Deutsch/Engl…   c           Befehl kopieren          n           Was ist neu? (u zurüc…  │
- ○│   ⇧F9         Tastenzeile erklären     u           nach Fehler: Fix in d…   t           Zeitleiste (←→, ⏎, k)   │
- ○│   Strg+Q      beenden (fragt bei of…   z           Erklärung ein-/auskla…   z           Zeitraum 1 h … 7 Tage   │
-  │                                        Esc / Strg+C Antwort abbrechen       w           Logwache: Meldungen     │
-  │  ≡ Verbindungs-Manager F10  hier       n           neue Frage (ohne Verl…   s           Switch: Syslog an ssh…  │
-  │   F10         zurück zum Terminal      f           Folgefrage (Verlauf g…   r / c       neu lesen / kopieren    │
-  │   ⏎           verbinden                                                                                         │
-  │   n           neue Verbindung         ◇ KI-Begleiter Alt+J                 ≡ Sitzungsprotokolle l               │
-  │   e           bearbeiten               Alt+K       Stufe: Aus/Leise/Gesp…   /           suchen (auch Ausgabe)   │
-  │   d           löschen                  Alt+1…4     Vorschlag einfügen       ⏎ / → ←     auf-/zuklappen          │
-  │   Leertaste   markieren (dann e, v,…   ⏎ / a       einfügen / ausführen     Tab         nach Zeit / nach Host   │
-  │   Rechtsklick Menü zu Verbindung od…   m           Thema stumm              f           Filter: heute · 7 Tag…  │
-  │   *           alle sichtbaren marki…   l           Tatsache merken          s           Hosts sortieren         │
-  │   Strg+Z      Löschen rückgängig (1…   p / g       Absicht: Plan / Agent…   z           KI-Zusammenfassung      │
-  │   Strg+T      im Formular: Verbindu…   r           Rückblick (merken, Ru…   Z           alle Treffer zusammen…  │
-  │   /           suchen (auch #tag)       ?           zuletzt gesendet         b           Änderungsbericht        │
-  │   o           neuer Ordner (A / B v…                                        x           Export: md · txt · ca…  │
-  │   r           Ordner bearbeiten       ◆ Vorgang über mehrere Fenster        d           löschen                 │
-  │   v           in Ordner verschieben   Alt+V                                 a           Mitschreiben an/aus     │
-  │                                                                                                                 │
-  │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.   │
-  │  Esc führt aus jedem Panel zurück ins Terminal.                                                                 │
-  │                                                                                                                 │
-  │  ▾ mehr   ↑↓ blättern    Esc schließen                                                                          │
-  │                                                                                                                 │
-  └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
- Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen  v verschieben
+ >_ sshTermy                                                                              ↕ Sync aus   ● KI qwen3-coder
+ ┌─ ? Tastenkürzel  sshTermy vdev ──────────────────────────────────────────────────────────────────────────────── × ─┐
+ │                                                                                                                    │
+ │   Terminal   KI   Manager   Logs   Überall    tippen filtert                                                       │
+ │                                                                                                                    │
+ │  ≡ Verbindungs-Manager F10  hier                          » Broadcast m                                            │
+ │   F10         zurück zum Terminal                          Space / g / a  Host / Ordner / alle                     │
+▌│   ⏎           verbinden                                    Tab         Hosts · Quelle · Befehl                     │
+▌│   n           neue Verbindung                              ⇧⏎          weiterer Schritt                            │
+▌│   e           bearbeiten                                   Strg+S      prüfen, dann ⏎                              │
+ │   d           löschen                                      ← / →       Host-Spalte wählen                          │
+ │   Leertaste   markieren (dann e, v, d für alle)            ↑ ↓ Bild↑↓  Ausgabe blättern                            │
+ │   Rechtsklick  Menü zu Verbindung oder Ordner              z / c       groß / kopieren                             │
+ │   *           alle sichtbaren markieren                    r / e / x   nochmal / ändern / Stopp                    │
+ │   Strg+Z      Löschen rückgängig (10 s)                    {{name}}    Variable, wird abgefragt                    │
+ │   Strg+T      im Formular: Verbindung testen               {{host}}    je Host eingesetzt                          │
+ │   /           suchen (auch #tag)                           Strg+R      als Runbook speichern                       │
+ │   o           neuer Ordner (A / B verschachtelt)           e / Strg+D  ändern / löschen                            │
+ │   r           Ordner bearbeiten                            k / a       KI prüft / übernehmen                       │
+ │   v           in Ordner verschieben                        p           Probelauf an/aus                            │
+ │   Shift+↑     nach oben schieben (↓ runter)                                                                        │
+ │   ← / →       Ordner zu-/aufklappen                       / Netzwerk-Scan f                                        │
+ │   - / +       alle Ordner zu/auf                           Strg+S      Scan starten                                │
+ │   #           nach Tag filtern                             Space / a   Fund / alle wählen                          │
+ │   t           Tunnel anlegen                               ⏎           als Verbindungen anlegen                    │
+ │   c           SSH-Schlüssel erzeugen / übertragen          x           Scan stoppen                                │
+ │   q           Schnellbefehle                               r           neu scannen                                 │
+ │   m           Broadcast an mehrere Hosts                                                                           │
+ │                                                                                                                    │
+ │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.      │
+ │  Esc führt aus jedem Panel zurück ins Terminal.                                                                    │
+ │                                                                                                                    │
+ │  ▾ mehr   ↑↓ blättern    ←/→ Reiter    Esc schließen                                                               │
+ │                                                                                                                    │
+ └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen  v verschieben

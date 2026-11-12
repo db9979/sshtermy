@@ -81,7 +81,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>Entsperren, Host wählen, los</h3>
-      <p>Verbindungen, Passwörter und Schlüssel liegen in einem verschlüsselten Speicher (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI). Der Manager zeigt Ordner, Tags und Details, Enter verbindet. Die Statuszeile zeigt sofort Last, RAM und Platte des Servers.</p>
+      <p>Verbindungen, Passwörter und Schlüssel liegen in einem verschlüsselten Speicher (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI). Der Manager zeigt Ordner, Tags und Details, Enter verbindet. Die Details zeigen sofort Last, RAM und Platte des Servers.</p>
     </div>
     <figure><img src="../gifs/start-de.gif" width="962" height="594" alt="Startanimation, Entsperren mit dem Master-Passwort, Verbinden mit web-01" loading="lazy"></figure>
   </div>
@@ -165,7 +165,8 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Dateien im Terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) auch durch <code>sudo su</code> und mehrere Sprünge, Zwischenablage vom Server per OSC 52.</p></div>
     <div class="card"><h3>Team-Freigabe</h3><p>Verschlüsselte <code>.sshteam</code>-Pakete und Team-Ordner, die die Verbindungen aller aktuell halten, ohne Passwörter.</p></div>
     <div class="card"><h3>Aussehen &amp; Tasten</h3><p>26 Themes mit Live-Vorschau, von Polarnacht, Abendrot und Tusche bis Papier und Minze, dazu Hochkontrast und Farbenblind, eigene Farben, vier Symbol-Stile, jede Taste frei belegbar.</p></div>
-    <div class="card"><h3>Lebendige Oberfläche</h3><p>Verbindungsaufbau als Karte mit Schritten und Lichtlauf, Tabs leuchten bei Erfolg und Fehler auf, Karte beim Überfahren eines Tabs, atmende Online-Punkte (geprüft wird nur, was sichtbar ist) und Lastbalken, KI-Antwort tippt sich, Palette mit leuchtenden Treffern, Latenzkurve in der Statuszeile, gleitender Rahmen in der geteilten Ansicht, Dialoge mit Schatten und wahlweise runden Ecken. Voll, dezent oder aus.</p></div>
+    <div class="card"><h3>Aufgeräumter Bildschirm</h3><p>Eine Kopfzeile mit Tabs links und dem Zustand der Sitzung rechts, rote Marke ▲ PRODUKTIV statt roter Fläche, unten eine F-Tasten-Leiste (<code>1Hilfe 2Ziel 3KI …</code>). Der Manager zeigt rechts nur, was zur Auswahl gehört, ein Ordner seinen Inhalt mit Status. Die Hilfe (<kbd>F1</kbd>) hat Reiter, tippen filtert.</p></div>
+    <div class="card"><h3>Lebendige Oberfläche</h3><p>Verbindungsaufbau als Karte mit Schritten und Lichtlauf, Tabs leuchten bei Erfolg und Fehler auf, Karte beim Überfahren eines Tabs, atmende Online-Punkte (geprüft wird nur, was sichtbar ist) und Lastbalken, KI-Antwort tippt sich, Palette mit leuchtenden Treffern, Latenzkurve in der Kopfzeile, gleitender Rahmen in der geteilten Ansicht, Dialoge mit Schatten und wahlweise runden Ecken. Voll, dezent oder aus.</p></div>
     <div class="card"><h3>Barrierearm &amp; Support</h3><p>Barrierearmer Modus ohne Animationen, mit Formen statt nur Farben. Debug-Protokoll für Fehlerberichte (<code>--debug</code>), bereinigt von Hosts, IPs und Passwörtern. Adaptive Bildrate bei Ausgabeflut, dazu eine Leistungsanzeige in der Palette, die die Zeichenzeit in Worten bewertet.</p></div>
     <div class="card"><h3>Bildschirmsperre</h3><p>Sofort sperren oder nach 5 bis 60 Minuten Leerlauf; Sitzungen laufen hinter der Sperre weiter. Master-Passwort und Windows-Anmeldung jederzeit änderbar.</p></div>
     <div class="card"><h3>MCP-Server</h3><p>Claude und andere KI-Clients nutzen deine Verbindungen über <code>sshtermy mcp</code>: standardmäßig nur lesend, alles andere erst nach deiner Bestätigung.</p></div>
@@ -237,7 +238,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Strg</kbd>+<kbd>T</kbd> (Verbindungsformular)</td><td>Verbindung testen: erreichbar, Host-Key, Anmeldung</td></tr>
     <tr><td><kbd>e</kbd> / <kbd>k</kbd> (getrennter Tab)</td><td>Verbindung bearbeiten / geänderten Host-Key vergleichen und übernehmen</td></tr>
     <tr><td><kbd>F10</kbd></td><td>Zurück zum Manager (Sitzungen laufen weiter)</td></tr>
-    <tr><td><kbd>F1</kbd> / <kbd>F12</kbd> / <kbd>Strg</kbd>+<kbd>Q</kbd></td><td>Hilfe / Über und Update / Beenden (fragt bei offenen Verbindungen)</td></tr>
+    <tr><td><kbd>F1</kbd> / <kbd>F12</kbd> / <kbd>Strg</kbd>+<kbd>Q</kbd></td><td>Hilfe in Reitern (<kbd>←</kbd>/<kbd>→</kbd>, tippen filtert) / Über und Update / Beenden (fragt bei offenen Verbindungen)</td></tr>
   </table>
   <p>Alle Tasten lassen sich ändern: <kbd>b</kbd> im Manager. Die ganze Liste steht in der <a href="https://github.com/db9979/sshtermy/blob/main/README.de.md">README</a> und in der App (<kbd>F1</kbd>).</p>
 </section>

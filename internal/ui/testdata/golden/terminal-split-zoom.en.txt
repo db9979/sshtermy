@@ -1,12 +1,11 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                                  ▌● 1 web-01   ▌● 2 web-02 ×  +
- PRODUCTION  deploy@10.0.0.12:22                                                                              ↔ 0 tunnels   ● ◆ qwen3-coder
- ● 2 · web-02  deploy@10.0.0.12                                                               ┌───────────────────────────────────────────┐
-Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64                                           │ i Zoom: Alt+Z brings the other panes back │
-                                                                                              └───────────────────────────────────────────┘
-deploy@web-02:~$ systemctl status nginx --no-pager | head -3                                  ┌───────────────────────────────────────────┐
-● nginx.service - A high performance web server and a reverse proxy s                         │ i View: two side by side                  │
-     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)                              └───────────────────────────────────────────┘
-     Active: active (running) since Mon 2026-11-02 08:15:00 UTC
+ >_ sshTermy   ▌● 1 web-01   ▌● 2 web-02 ×  +                              ▲ PRODUCTION  deploy@10.0.0.12:22  ↔ 0 tunnels   ● ◆ qwen3-coder
+▌ ▲ PROD ● 2 · web-02  deploy@10.0.0.12                                                                 ■ Zoom · 1 more hidden · Alt+Z back
+Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64                                           ┌───────────────────────────────────────────┐
+                                                                                              │ i Zoom: Alt+Z brings the other panes back │
+deploy@web-02:~$ systemctl status nginx --no-pager | head -3                                  └───────────────────────────────────────────┘
+● nginx.service - A high performance web server and a reverse proxy s                         ┌───────────────────────────────────────────┐
+     Loaded: loaded (/lib/systemd/system/nginx.service; enabled)                              │ i View: two side by side                  │
+     Active: active (running) since Mon 2026-11-02 08:15:00 UTC                               └───────────────────────────────────────────┘
 deploy@web-02:~$
 
 
@@ -33,4 +32,5 @@ deploy@web-02:~$
 
 
 
- Ctrl+Space Commands  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  F5 Files  F6 Host  F7/F8 Tabs  F9 Quick commands  F10 Manager  ⇧F9 explain
+
+ Ctrl+Space Commands 1Help 2Goal 3AI 4Tunnel 5Files 6Host 7/8Tabs 9Quick 10Manager  ⇧F9 explain  ⇧F10 window  Ctrl+F Search  Ctrl+T Split

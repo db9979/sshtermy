@@ -33,7 +33,7 @@ func TestSessionBarNarrow(t *testing.T) {
 	}
 	for _, w := range []int{140, 100, 80, 64, 50} {
 		a.w = w
-		bar := ansi.Strip(a.sessionBar(s))
+		bar := ansi.Strip(a.termHeader(s))
 		if lipgloss.Width(bar) > w {
 			t.Errorf("w=%d: Kopfzeile %d breit", w, lipgloss.Width(bar))
 		}
@@ -45,7 +45,7 @@ func TestSessionBarNarrow(t *testing.T) {
 		}
 	}
 	a.w = 140
-	if bar := ansi.Strip(a.sessionBar(s)); !strings.Contains(bar, trunc(model, 22)) {
+	if bar := ansi.Strip(a.termHeader(s)); !strings.Contains(bar, trunc(model, 22)) {
 		t.Errorf("breit: Modellname fehlt: %q", bar)
 	}
 }

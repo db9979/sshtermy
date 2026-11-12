@@ -1,15 +1,15 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
- Verbindungen  6  / suchen       │ ▾ Netzwerk
-                                 │
- ▾ Netzwerk                   1  │ Pfad         Netzwerk
-   ○ # switch-core  manager@19…  │ Inhalt       1 Verbindung
- ▾ Produktion                 3  │
-   ▾ Web                      2  │ Ordner
-▌    ○ · web-01      deploy@10…  │  ⏎      auf-/zuklappen
-▌    ○ · web-02      deploy@10…  │  n      neue Verbindung hier
-▌  ○ ┌─ ◆ KI-Status ────────────────────────────────────────────────────────────────────── × ─┐
- ○ · │                                                                                        │
- ○ · │  ● noch nicht geprüft                                                                  │
+ >_ sshTermy                                                          ↕ Sync aus   ● KI qwen3-coder
+ Verbindungen  6  / suchen  # Tags      │ ▾ Netzwerk
+                                        │
+ ▾ Netzwerk                          1  │ Pfad         Netzwerk
+   ○ # switch-core      manager@192.1…  │ Inhalt       1 Verbindung
+ ▾ Produktion                        3  │
+   ▾ Web                             2  │ In diesem Ordner
+▌    ○   web-01         deploy@10.0.0…  │  ○ switch-core     manager@192.…  ◌ wird geprüft …
+▌    ○   web-02         deploy@10.0.0…  │
+▌  ○ ┌─ ◆ KI-Status ────────────────────────────────────────────────────────────────────── × ─┐·
+ ○   │                                                                                        │
+ ○   │  ● noch nicht geprüft                                                                  │
      │                                                                                        │
      │  Anbieter     Spark / kompatibel                                                       │
      │  Endpunkt     http://spark.lan:8000/v1                                                 │
@@ -18,13 +18,13 @@
      │   p jetzt prüfen    e Einstellungen    r Ersatz-Anbieter    Esc schließen              │
      │                                                                                        │
      └────────────────────────────────────────────────────────────────────────────────────────┘
-                                 │  nicht eingerichtet · y = Assistent
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
- Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen

@@ -456,32 +456,169 @@ func splitColumns(h []int, n int) [][]int {
 	return best
 }
 
-func (m *modal) helpView(s Styles, w, h int) string {
-	avail := dialog{maxW: 200}.innerMax(w)
-	n := max(1, min(3, (avail+helpGap)/(helpColW+helpGap)))
-	blocks := make([][]string, len(helpSections))
-	heights := make([]int, len(helpSections))
-	for i, sec := range helpSections {
-		blocks[i] = s.helpSection(sec, m.ctx)
-		heights[i] = len(blocks[i])
-	}
-	var cols []string
-	for _, idx := range splitColumns(heights, n) {
-		var lines []string
-		for j, i := range idx {
-			if j > 0 {
-				lines = append(lines, "")
+// Reiter der Hilfe: jeder Abschnitt steht in genau einem Reiter. Vorn ist
+// der Reiter mit dem Bereich, aus dem F1 gedrückt wurde.
+type helpTabDef struct {
+	title string
+	secs  []string // Titel der Abschnitte (helpSections)
+}
+
+var helpTabs = []helpTabDef{
+	{"Terminal", []string{"Terminal", "Suche im Verlauf", "Tunnel", "Host-Übersicht", "Dateien", "Gefahren & Aufnahme", "Systemprofil"}},
+	{"KI", []string{"Ziel-Modus", "KI fragen", "KI-Begleiter", "Vorgang über mehrere Fenster", "KI-Einstellungen"}},
+	{"Manager", []string{"Verbindungs-Manager", "Broadcast", "Netzwerk-Scan"}},
+	{"Logs", []string{"Log-Blick", "Sitzungsprotokolle"}},
+	{"Überall", []string{"Überall", "Befehlspalette", "Aussehen & Tasten", "Maus"}},
+}
+
+// helpTabFor: Reiter, in dem der Bereich ctx steht.
+func helpTabFor(ctx helpCtx) int {
+	for i, t := range helpTabs {
+		for _, title := range t.secs {
+			for _, sec := range helpSections {
+				if sec.title == title && sec.ctx == ctx && ctx != hcNone {
+					return i
+				}
 			}
-			lines = append(lines, blocks[i]...)
 		}
-		col := lipgloss.NewStyle().Width(helpColW).Render(strings.Join(lines, "\n"))
-		if len(cols) > 0 {
-			cols = append(cols, strings.Repeat(" ", helpGap))
-		}
-		cols = append(cols, col)
 	}
-	body := lipgloss.JoinHorizontal(lipgloss.Top, cols...)
-	cw := min(avail, lipgloss.Width(body))
+	return len(helpTabs) - 1 // Überall
+}
+
+func helpSectionByTitle(title string) (helpSection, bool) {
+	for _, sec := range helpSections {
+		if sec.title == title {
+			return sec, true
+		}
+	}
+	return helpSection{}, false
+}
+
+// helpBlock: ein Abschnitt in Spaltenbreite cw. Beschreibungen brechen um
+// statt mit „…“ abgeschnitten zu werden.
+func (s Styles) helpBlock(sec helpSection, ctx helpCtx, cw int, filter string) []string {
+	head := s.Accent
+	if sec.ai {
+		head = lipgloss.NewStyle().Foreground(s.T.AI).Bold(true)
+	}
+	title := head.Render(sec.icon + " " + i18n.T(sec.title))
+	if sec.key != "" {
+		title += " " + s.Muted.Render(relabelDefault(sec.key, sec.ctx))
+	}
+	if sec.ctx != hcNone && sec.ctx == ctx {
+		title += " " + s.Badge.Render(i18n.T("hier"))
+	}
+	rows := make([][2]string, 0, len(sec.rows))
+	f := strings.ToLower(filter)
+	for _, r := range sec.rows {
+		k, d := relabelDefault(r[0], sec.ctx), i18n.T(r[1])
+		if f != "" && !strings.Contains(strings.ToLower(k+" "+d+" "+i18n.T(sec.title)), f) {
+			continue
+		}
+		rows = append(rows, [2]string{k, d})
+	}
+	if len(rows) == 0 {
+		return nil
+	}
+	lines := []string{title}
+	for _, r := range sortFKeys(rows, activeKeys.label(actPalette)) {
+		k := s.Key.Render(r[0])
+		kw := max(helpKeyW, lipgloss.Width(k)+1)
+		dw := max(10, cw-kw)
+		for i, l := range strings.Split(ansi.Wrap(r[1], dw, " "), "\n") {
+			if i == 0 {
+				lines = append(lines, k+strings.Repeat(" ", kw-lipgloss.Width(k))+s.Text.Render(l))
+			} else {
+				lines = append(lines, strings.Repeat(" ", kw)+s.Text.Render(l))
+			}
+		}
+	}
+	return lines
+}
+
+func (m *modal) helpView(s Styles, w, h int) string {
+	avail := dialog{maxW: 160}.innerMax(w)
+	if !m.helpTabSet() {
+		m.helpTab = helpTabFor(m.ctx) + 1
+	}
+	tab := m.helpTab - 1
+
+	// Reiterzeile
+	var tb strings.Builder
+	for i, t := range helpTabs {
+		lbl := " " + i18n.T(t.title) + " "
+		if i == tab && m.filter == "" {
+			tb.WriteString(lipgloss.NewStyle().Background(s.T.Accent).Foreground(s.T.Bg).Bold(true).Render(lbl))
+		} else {
+			tb.WriteString(lipgloss.NewStyle().Background(s.T.Surface2).Foreground(s.T.Muted).Render(lbl))
+		}
+		tb.WriteString(" ")
+	}
+	if m.filter != "" {
+		tb.WriteString(s.Accent.Render(" / ") + s.Text.Render(m.filter) + s.Muted.Render(i18n.T("  (alle Reiter)")))
+	} else if lipgloss.Width(tb.String())+24 < avail {
+		tb.WriteString(s.Muted.Render(i18n.T("  tippen filtert")))
+	}
+	tabRow := ansi.Truncate(tb.String(), avail, "")
+
+	// Abschnitte: gewählter Reiter, beim Filtern alle
+	var secs []helpSection
+	if m.filter != "" {
+		for _, t := range helpTabs {
+			for _, title := range t.secs {
+				if sec, ok := helpSectionByTitle(title); ok {
+					secs = append(secs, sec)
+				}
+			}
+		}
+	} else {
+		for _, title := range helpTabs[tab].secs {
+			if sec, ok := helpSectionByTitle(title); ok {
+				secs = append(secs, sec)
+			}
+		}
+	}
+	n := 1
+	if avail >= 2*44+helpGap {
+		n = 2
+	}
+	cw := (avail - (n-1)*helpGap) / n
+	if n == 1 {
+		cw = min(avail, 72)
+	}
+	var blocks [][]string
+	var heights []int
+	for _, sec := range secs {
+		if b := s.helpBlock(sec, m.ctx, cw, m.filter); b != nil {
+			blocks = append(blocks, b)
+			heights = append(heights, len(b))
+		}
+	}
+	var body string
+	if len(blocks) == 0 {
+		body = s.Muted.Render(i18n.T("Keine Taste passt. Backspace löscht, Esc leert die Suche."))
+	} else {
+		var cols []string
+		for _, idx := range splitColumns(heights, min(n, len(blocks))) {
+			var lines []string
+			for j, i := range idx {
+				if j > 0 {
+					lines = append(lines, "")
+				}
+				lines = append(lines, blocks[i]...)
+			}
+			col := lipgloss.NewStyle().Width(cw).Render(strings.Join(lines, "\n"))
+			if len(cols) > 0 {
+				cols = append(cols, strings.Repeat(" ", helpGap))
+			}
+			cols = append(cols, col)
+		}
+		body = lipgloss.JoinHorizontal(lipgloss.Top, cols...)
+	}
+	cw = avail
+	if n == 1 {
+		cw = min(avail, 72)
+	}
 
 	note := s.Muted.Render(i18n.T("Esc führt aus jedem Panel zurück ins Terminal."))
 	warn := s.ChipDanger.Render(i18n.T("ROT")) + " " + s.Text.Render(i18n.T("Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. ")) +
@@ -489,18 +626,19 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	warn = lipgloss.NewStyle().Width(cw).Render(warn)
 	note = lipgloss.NewStyle().Width(cw).Render(note)
 
-	// Höhe begrenzen: Fensterrand (2), Rahmen und Abstand (4), Warnung und
-	// Hinweis mit Leerzeile davor, Tastenzeile mit Leerzeile davor.
+	// Höhe begrenzen: Fensterrand (2), Rahmen und Abstand (4), Reiterzeile
+	// mit Leerzeile (2), Warnung und Hinweis mit Leerzeile davor, Tasten.
 	bodyLines := strings.Split(body, "\n")
 	foot := "\n\n" + warn + "\n" + note
-	maxBody := max(3, h-2-4-(1+lipgloss.Height(warn)+lipgloss.Height(note))-2)
+	maxBody := max(3, h-2-4-2-(1+lipgloss.Height(warn)+lipgloss.Height(note))-2)
 	if maxBody < 10 {
-		// wenige Zeilen (z. B. uConsole mit großer Schrift): Warnung und
-		// Hinweis blättern mit, damit mehr Platz für die Tasten bleibt
 		bodyLines = append(bodyLines, strings.Split(foot[1:], "\n")...)
-		foot, maxBody = "", max(3, h-2-4-2)
+		foot, maxBody = "", max(3, h-2-4-2-2)
 	}
-	keys := [][2]string{{"Esc", i18n.T("schließen")}}
+	keys := [][2]string{{"←/→", i18n.T("Reiter")}, {"Esc", i18n.T("schließen")}}
+	if m.filter != "" {
+		keys = [][2]string{{"Backspace", i18n.T("Suche kürzen")}, {"Esc", i18n.T("Suche leeren")}}
+	}
 	info := ""
 	if total := len(bodyLines); total > maxBody {
 		m.scroll = max(0, min(m.scroll, total-maxBody))
@@ -513,21 +651,62 @@ func (m *modal) helpView(s Styles, w, h int) string {
 		m.scroll = 0
 	}
 	return s.dialog(dialog{icon: "?", title: i18n.T("Tastenkürzel"), sub: version.Short(),
-		body: strings.Join(bodyLines, "\n") + foot, info: info, keys: keys, width: cw, maxW: 200}, w)
+		body: tabRow + "\n\n" + strings.Join(bodyLines, "\n") + foot, info: info, keys: keys, width: cw, maxW: 160}, w)
 }
 
+// helpTabSet: Reiter schon gewählt? (helpTab zählt ab 1, 0 = noch nicht)
+func (m *modal) helpTabSet() bool { return m.helpTab > 0 }
+
 func (m *modal) helpKey(key string) (closeIt bool) {
+	if !m.helpTabSet() {
+		m.helpTab = helpTabFor(m.ctx) + 1
+	}
 	switch key {
-	case "up", "k":
+	case "up":
 		m.scroll = max(0, m.scroll-1)
-	case "down", "j":
+		return false
+	case "down":
 		m.scroll++
+		return false
 	case "pgup":
 		m.scroll = max(0, m.scroll-10)
-	case "pgdown", "space":
+		return false
+	case "pgdown":
 		m.scroll += 10
-	default:
+		return false
+	case "right", "tab":
+		m.helpTab = m.helpTab%len(helpTabs) + 1
+		m.filter, m.scroll = "", 0
+		return false
+	case "left", "shift+tab":
+		m.helpTab = (m.helpTab+len(helpTabs)-2)%len(helpTabs) + 1
+		m.filter, m.scroll = "", 0
+		return false
+	case "backspace":
+		if r := []rune(m.filter); len(r) > 0 {
+			m.filter = string(r[:len(r)-1])
+			m.scroll = 0
+		}
+		return false
+	case "esc":
+		if m.filter != "" {
+			m.filter, m.scroll = "", 0
+			return false
+		}
 		return true
+	case "space":
+		if m.filter != "" {
+			m.filter += " "
+			return false
+		}
+		m.scroll += 10
+		return false
 	}
-	return false
+	// tippen filtert über alle Reiter
+	if r := []rune(key); len(r) == 1 && r[0] >= ' ' {
+		m.filter += key
+		m.scroll = 0
+		return false
+	}
+	return true
 }

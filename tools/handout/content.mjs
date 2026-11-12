@@ -17,7 +17,7 @@ export const de = {
   page1: [
     { t: 'Überall', ic: '◆', rows: [
       ['Strg+Space', 'Befehlspalette: Ziel, Frage, Aktionen, Verbindungen'],
-      ['F1', 'Hilfe zum aktuellen Bereich'],
+      ['F1', 'Hilfe: Reiter ←/→, tippen filtert'],
       ['⇧F9', 'Tastenzeile mit Erklärungen'],
       ['F10', 'Manager ↔ Terminal (Sitzungen laufen weiter)'],
       ['F12', 'Über & Update'],
@@ -87,7 +87,7 @@ export const de = {
       ['●', 'gelb: langsam oder Ersatz-Anbieter', 'mid'],
       ['●', 'rot: KI nicht erreichbar (Klick: Details)', 'bad'],
       ['✓  ×  !', 'Tab: langer Befehl fertig · ! = Farbregel'],
-      ['PRODUKTIV', 'rote Statuszeile: prod/live im Namen', 'warn'],
+      ['▲ PRODUKTIV', 'rote Marke oben: prod/live im Namen', 'warn'],
       ['status nginx', 'grauer Ghost-Text: Tab übernimmt', 'ghost'],
       ['rm -rf', 'rot: gefährlich, zweimal ⏎', 'danger'],
     ]},
@@ -195,7 +195,7 @@ export const en = {
   page1: [
     { t: 'Everywhere', ic: '◆', rows: [
       ['Ctrl+Space', 'command palette: goal, question, actions, hosts'],
-      ['F1', 'help for the current area'],
+      ['F1', 'help: tabs ←/→, type to filter'],
       ['⇧F9', 'key bar with explanations'],
       ['F10', 'manager ↔ terminal (sessions keep running)'],
       ['F12', 'about & update'],
@@ -265,7 +265,7 @@ export const en = {
       ['●', 'yellow: slow or fallback provider', 'mid'],
       ['●', 'red: AI unreachable (click: details)', 'bad'],
       ['✓  ×  !', 'tab: long command done · ! = color rule'],
-      ['PRODUCTION', 'red status line: prod/live in the name', 'warn'],
+      ['▲ PRODUCTION', 'red badge at the top: prod/live in the name', 'warn'],
       ['status nginx', 'gray ghost text: Tab accepts', 'ghost'],
       ['rm -rf', 'red: dangerous, ⏎ twice', 'danger'],
     ]},

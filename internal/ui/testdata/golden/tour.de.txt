@@ -1,30 +1,30 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
- Verbindungen  6  / suchen       │ ▾ Netzwerk
-                                 │
- ▾ Netzwerk                   1  │ Pfad         Netzwerk
-   ○ # switch-core  manager@19…  │ Inhalt       1 Verbindung
- ▾ Produktion                 3  │
-   ▾ Web                      2  │ Ordner
-▌    ○ · web-01┌─ ◆ Willkommen bei sshTermy  1/5 ─────────────────────────────── × ─┐
-▌    ○ · web-02│                                                                    │
-▌  ○ · db-01   │  ● ○ ○ ○ ○                                                         │
- ○ · nas       │                                                                    │
- ○ · spark     │  Hier im Verbindungs-Manager legst du deine Server und Switches    │
+ >_ sshTermy                                                          ↕ Sync aus   ● KI qwen3-coder
+ Verbindungen  6  / suchen  # Tags      │ ▾ Netzwerk
+                                        │
+ ▾ Netzwerk                          1  │ Pfad         Netzwerk
+   ○ # switch-core      manager@192.1…  │ Inhalt       1 Verbindung
+ ▾ Produktion                        3  │
+   ▾ Web                             2  │ In diesem Ordner
+▌    ○   web-01┌─ ◆ Willkommen bei sshTermy  1/5 ─────────────────────────────── × ─┐prüft …
+▌    ○   web-02│                                                                    │
+▌  ○   db-01   │  ● ○ ○ ○ ○                                                         │ das Menü ·
+ ○   nas       │                                                                    │.
+ ○   spark     │  Hier im Verbindungs-Manager legst du deine Server und Switches    │
                │  an. Passwörter und Schlüssel liegen verschlüsselt auf deinem      │
                │  Rechner.                                                          │
                │                                                                    │
                │   F10          zwischen Manager und Terminal                       │
-               │   n            neue Verbindung                                     │ner oder
+               │   n            neue Verbindung                                     │
                │   ⏎            verbinden                                           │
                │                                                                    │
                │   → weiter    Esc überspringen                                     │
                │                                                                    │
                └────────────────────────────────────────────────────────────────────┘
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
-                                 │
- Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+                                        │
+ Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen

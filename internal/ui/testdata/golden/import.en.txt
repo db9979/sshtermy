@@ -1,4 +1,4 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                    ● AI
+ >_ sshTermy                                                                                   ● AI
  ↓ Import connections
 
  ~/.ssh/config       not found  /home/golden/.ssh/config

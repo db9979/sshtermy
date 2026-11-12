@@ -1,20 +1,20 @@
- >_ sshTermy  vdev Idee: Dominik Bornhäußer                                                    ● KI
+ >_ sshTermy                                                          ↕ Sync aus   ● KI qwen3-coder
  Verbindunge┌─ ◆ Befehlspalette  20 Einträge ────────────────────────────────────── × ─┐
             │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
    ○ # switc│ // häufig                                                                │
  ▾ Produktio│ [+] Neue Verbindung                                                    n │
    ▾ Web    │ [$] Lokale Shell in neuem Tab                                      Alt+L │
-▌    ○ · web│ [*] Broadcast: Befehl auf mehreren Hosts                               m │
-▌    ○ · web│ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
-▌  ○ · db-01│ [#] Sitzungsprotokolle durchsuchen                                     l │
- ○ · nas    │ [!] Ordner-Scan: Logs aller Hosts im Ordner …                       Logs │
- ○ · spark  │ // verbindungen                                                          │
+▌    ○   web│ [*] Broadcast: Befehl auf mehreren Hosts                               m │ft …
+▌    ○   web│ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
+▌  ○   db-01│ [#] Sitzungsprotokolle durchsuchen                                     l │s Menü ·
+ ○   nas    │ [!] Ordner-Scan: Logs aller Hosts im Ordner …                       Logs │
+ ○   spark  │ // verbindungen                                                          │
             │ [·] nas                                                  admin@nas.local │
             │ [·] spark                                              dominik@spark.lan │
             │ [#] switch-core  Netzwerk                            manager@192.168.1.2 │
             │ [·] db-01  Produktion                                  postgres@10.0.1.5 │
-            │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │ oder
+            │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
             │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │
             │ // alle aktionen                                                         │
             │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         3 │
@@ -26,5 +26,5 @@
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘
-                                 │
- Strg+Space Befehle  F1 Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen
+                                        │
+ Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen

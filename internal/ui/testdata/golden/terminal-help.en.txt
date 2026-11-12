@@ -1,36 +1,36 @@
- >_ sshTermy  vdev Idea: Dominik Bornhäußer                                                            ▌● 1 web-01 ×  +
- P┌─ ? Keyboard shortcuts  sshTermy vdev ─────────────────────────────────────────────────────────────────────── × ─┐er
-Li│                                                                                                                 │
-  │  ◆ Everywhere                         ◆ Ask AI F3                          ▲ Log view Alt+E                     │
-de│   Ctrl+Space  Command palette          ⏎           send question            ⏎           lines of the pattern    │
-● │   F1          this help                ⇧⏎ / Ctrl+J new line                 1…4         insert check command    │
-  │   F11         full screen on/off (o…   1…9         insert command           k           AI explains the patte…  │
-  │   F12         About & update           ↑ ↓         choose command card      b           AI status report        │
-de│   F12 w       What's new               a           run command (red ones…   x / X       hide: host / folder     │
-  │   F12 l       Language / Sprache       c           copy command             n           What's new? (u restor…  │
-  │   ⇧F9         explain key bar          u           after an error: put t…   t           Timeline (←→, ⏎, k)     │
-  │   Ctrl+Q      quit (asks if connect…   z           collapse/expand expla…   z           Period 1 h … 7 days     │
-  │                                        Esc / Ctrl+C stop answer             w           Log watch: alerts       │
-  │  ≡ Connection manager F10              n           new question (fresh)     s           switch: send syslog t…  │
-  │   F10         back to the terminal     f           follow-up (keeps the …   r / c       reload / copy           │
-  │   ⏎           connect                                                                                           │
-  │   n           new connection          ◇ AI companion Alt+J                 ≡ Session logs l                     │
-  │   e           edit                     Alt+K       level: off/quiet/chat…   /           search (output too)     │
-  │   d           delete                   Alt+1…4     insert suggestion        ⏎ / → ←     expand/collapse         │
-  │   Space       mark (then e, v, d fo…   ⏎ / a       insert / run             Tab         by time / by host       │
-  │   Right-click menu for a connection…   m           mute topic               f           filter: today · 7 day…  │
-  │   *           mark all visible         l           remember fact            s           sort hosts              │
-  │   Ctrl+Z      undo delete (10 s)       p / g       intent: plan / agent …   z           AI summary              │
-  │   Ctrl+T      in the form: test con…   r           recap (remember, runb…   Z           summarize all matches   │
-  │   /           search (also #tag)       ?           last request sent        b           Change report           │
-  │   o           new folder (A / B nes…                                        x           export: md · txt · ca…  │
-  │   r           Edit folder             ◆ Task across several windows Alt+V   d           delete                  │
-  │   v           move to folder           Space / ← → choose windows / what…   a           recording on/off        │
-  │                                                                                                                 │
-  │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                   │
-  │  Esc leads back to the terminal from every panel.                                                               │
-  │                                                                                                                 │
-  │  ▾ more   ↑↓ scroll    Esc close                                                                                │
-  │                                                                                                                 │
-  └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
- Ctrl+Space Commands  F1 Help  F2 Goal  F3 Ask AI  F4 Tunnel  F5 Files  F6 Host  F9 Quick commands  ⇧F9 explain
+ >_ sshTermy   ▌● 1 web-01 ×  +                        ▲ PRODUCTION  deploy@10.0.0.11:22  ↔ 0 tunnels   ● ◆ qwen3-coder
+L┌─ ? Keyboard shortcuts  sshTermy vdev ────────────────────────────────────────────────────────────────────────── × ─┐
+ │                                                                                                                    │
+d│   Terminal   AI   Manager   Logs   Everywhere    type to filter                                                    │
+●│                                                                                                                    │
+ │  ▸ Terminal  here                                         ▣ Host overview F6                                       │
+ │   F2          Goal mode (agent)                            r / ⏎       query                                       │
+d│   F3          Ask AI                                       b           back up switch config                       │
+ │   F4          Tunnel                                       c           Containers (Docker, Podman, k8s)            │
+ │   F5          Files (SFTP)                                 l           Log view                                    │
+ │   F6          Host overview                                ↑ ↓         choose backup                               │
+ │   F7 / F8     switch tab                                   d           diff to previous                            │
+ │   F9          Quick commands (list)                        v           view backup                                 │
+ │   F9 → a      adopt a frequent command                     g           Warning limits                              │
+ │   F10         to manager                                   t           graphs: 5 min / 1 h                         │
+ │   ⇧F1…F8      run quick command                            z           graphs large                                │
+ │   ⇧F10        Tab to own window (session stays open)       x           cancel query                                │
+ │   Tab / →     accept ghost text                                                                                    │
+ │   Alt+1…4     insert follow-up command                    ▤ Files F5                                               │
+ │   Alt+0       Error: Why? & Fix                            F2          rename                                      │
+ │   Alt+K       AI companion: off/quiet/chatty/coach         Tab         switch side                                 │
+ │   Alt+J       Companion sidebar                            ⏎ / 2×click  open, view file                            │
+ │   Alt+V       Task across several windows (AI sees all)    ← / Bksp    one level up                                │
+ │   Ctrl+T      choose layout (1…7)                          c / F6      copy (up/down)                              │
+ │   Ctrl+arrow  switch pane (split)                          e           open in your own editor                     │
+ │   Alt+⇧arrow  move divider (mouse: drag)                   o           with the default app                        │
+ │   Alt+Z       Zoom pane / back                             Space / a   mark / all                                  │
+ │   Drag title  swap panes                                   Ctrl+click  mark one by one                             │
+ │                                                                                                                    │
+ │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                      │
+ │  Esc leads back to the terminal from every panel.                                                                  │
+ │                                                                                                                    │
+ │  ▾ more   ↑↓ scroll    ←/→ tab    Esc close                                                                        │
+ │                                                                                                                    │
+ └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ Ctrl+Space Commands 1Help 2Goal 3AI 4Tunnel 5Files 6Host 9Quick 10Manager  ⇧F9 explain  Ctrl+F Search  Ctrl+T Split

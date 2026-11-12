@@ -47,7 +47,8 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **SSH certificates**: keys signed by a company CA (`id_ed25519-cert.pub` next to the key, or any path in the connection) are used automatically; an expired certificate is reported with its date
 - **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder (sshTermy asks first and never overwrites an existing file), or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
 - **Screen lock**: palette “Lock now” or automatically when idle (5/15/30/60 min). Open sessions keep running behind the lock, only the master password unlocks the screen. **Change master password** (palette → Settings › Security) also switches the Windows sign-in (DPAPI) on or off later
-- **Status line per session**: connection time, latency, character set, warning for root; production hosts (group/tag “Produktion”, “prod”, “live”) get a red line
+- **One header line**: logo and tabs on the left, the state of the active session on the right (who@where, connection time, latency, character set, goal, tunnels, AI) plus warnings such as root; production hosts (group/tag “Produktion”, “prod”, “live”) carry a red **▲ PRODUCTION** badge (also above each pane of the split view). When space runs short, details on the right go first, then tab names get shorter. The version and “Idea: Dominik Bornhäußer” live in the About window (F12) and the start screen
+- **Function key bar** at the bottom like in classic tools: `1Help 2Goal 3AI 4Tunnel 5Files 6Host …`, click the digit or press the key
 - **Files (F5)**: SFTP over the same connection, local on the left, server on the right, upload and download files and folders, drag with the mouse to the other side, mark several with Space. Dragging files from Explorer/Finder into the window uploads them, even straight from the terminal. While copying, a bar shows percent, MB/s, time left and “file 2 of 5”, with a small speed curve
 - **Files with the mouse**: double-click a file to view it right in sshTermy (line numbers, colors, wheel scrolls, drag selects and copies, `/` searches, `f` follows like `tail -f`, `w` wraps; big files load beginning and end). Images, PDFs and Office files open with the default app of your computer (server files are downloaded first). A single click shows the start of a text file below the list (`v` turns that off). Right-click opens a menu: view, edit, open with default app, copy, download/upload to …, rename (`F2`), change permissions, copy path (`y`), `cd` here in the terminal, delete. Click a part of the path (/ › etc › nginx) to jump there, buttons for ↑ ~ reload, new folder and hidden files, click a column header to sort (`s`), Ctrl+click marks one by one, Shift+click a range, the mouse back button goes up a level
 - **Server file in your own editor**: `e` in F5 (server side) or the palette entry “Open server file in your own editor” with a path opens the file in VS Code, Notepad++, TextEdit … on your computer; every save uploads it back over the same connection (owner and permissions stay). Choose the editor: palette → Settings › “Editor for server files” (e.g. `code --new-window`)
@@ -93,7 +94,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   commands run (`rm -rf`, `reboot`, on switches `reload`, `erase`, `write erase`, `delete`, `no vlan` …). Only `y` or holding ⏎
   runs them (a bar fills up, a short ⏎ is not enough), Esc leaves the line in place. The agent asks before every change
   there too. Only the switch “Protection” in the connection form turns this off, one connection at a time (for test and
-  lab systems; the status bar then shows “Protection off”). “prod”/“live” in folder, tag or alias still colors the status bar red.
+  lab systems; the header then shows “Protection off”). “prod”/“live” in folder, tag or alias still shows the red ▲ PRODUCTION badge.
 - **Export recordings:** palette “Start recording” records the tab as an asciinema file (`.cast`, with colors and
   vim/htop), playable with `asciinema play`. Session logs (`l`, then `x`) export as Markdown, text or a rebuilt
   recording; “Export terminal history as text” saves the scrollback. Everything goes to your Downloads folder.
@@ -195,8 +196,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
 - **English and German**: switch the language in the palette (“Language”/“Sprache”) or in the About dialog (F12 → `l`);
   the choice is saved and synced. On first start sshTermy follows the system language
 - **Window style** (palette “Window style”): dialogs, palette and pickers cast a shadow and the background dims a
-  little, and the header, logo and status bar carry a soft color gradient (the status bar in the connection's accent
-  color); optionally with round corners, or flat as before (no shadows, no gradients)
+  little, and the header and logo carry a soft color gradient; optionally with round corners, or flat as before (no shadows, no gradients)
 - **Accessible mode** (Settings › Appearance): no animations, shapes instead of color only (× for “unreachable”);
   together with the **color-blind themes** (blue/yellow/orange instead of green/red, Okabe-Ito colors)
 - **Lively interface** (palette “Motion”: full, subtle, off): a spinner in the tab while connecting, tabs flash green
@@ -206,7 +206,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   visible, all), and the details show the reachability history and CPU/RAM/disk bars for connected servers. While connecting, a card shows
   the steps (connection, host key, login, shell) with timings and a progress bar with a light sweep, then the shell
   fades in from the top. The AI answer shimmers “thinking …” and types out smoothly, panels fade in. In the command
-  palette the matched letters light up, rows fade in one after another and the selection glides. The status line shows
+  palette the matched letters light up, rows fade in one after another and the selection glides. The header shows
   the latency as a small curve (red and “▲ sluggish” on a bad line). In split view the divider next to the active pane
   lights up, and a frame glides along when you switch panes or zoom (Alt+Z). Redraws only happen while
   something moves; accessible mode turns it all off
@@ -367,6 +367,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | AI settings | Ctrl+T / Ctrl+L | test endpoint / choose a model from the endpoint's list |
 | Everywhere | Ctrl+Space | command palette: ⏎ start as goal, Tab ask AI, ↑↓ choose suggestion/tunnel/connection; `log` = AI analyzes output, `color` = color rules |
 | | F1 / F12 / Ctrl+Q | help / about + update / quit (asks while connections are open; Ctrl+Q again = quit) |
+| | F1, then ←/→ / type | help: tabs Terminal, AI, Manager, Logs, Everywhere (the matching one first) / filter across all tabs, Esc clears |
 | | F12 → l / F12 → w | switch language (English ↔ German) / what's new |
 | Own window | Ctrl+⇧V · ⇧Insert (Windows also Ctrl+V, Mac ⌘V) / Ctrl + · Ctrl − · Ctrl 0 (Mac: ⌘) | paste / font size bigger · smaller · default (also Ctrl + mouse wheel, remembered); F11 full screen; on the Mac ⌘ acts as Alt, ⌥ keeps typing @ [ ] { } \| ~ |
 
@@ -686,7 +687,7 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
 
 - Version = `MAJOR.MINOR` from [`VERSION`](VERSION) + number of commits, e.g. `1.0.42`. **Every push to `main`
   counts up automatically** and creates a release (`.github/workflows/release.yml`) with all platforms,
-  `checksums.txt` and signature. The app shows the version in the header, in the About dialog (F12) and via `--version`.
+  `checksums.txt` and signature. The app shows the version in the About dialog (F12), in the help (F1) and via `--version`.
 - New major version: set `VERSION` to e.g. `1.1`.
 - Create the signing key once:
   ```
