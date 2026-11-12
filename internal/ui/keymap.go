@@ -75,6 +75,9 @@ const (
 	actCompanionBar action = "companion_bar"
 	actLogScan      action = "log_scan"
 	actVorgang      action = "vorgang"
+	actCmdList      action = "cmd_list"
+	actPrevCmd      action = "prev_cmd"
+	actNextCmd      action = "next_cmd"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -120,6 +123,9 @@ var actionDefs = []actionDef{
 	{actQuick[7], "Schnellbefehl 8", "Terminal", []string{"shift+f8", "f20"}},
 	{actSearch, "Im Verlauf suchen", "Terminal", []string{"ctrl+f"}},
 	{actSearchAll, "In allen Tabs suchen", "Terminal", []string{"alt+s"}},
+	{actCmdList, "Befehle dieses Tabs (Ausgabe kopieren, an KI)", "Terminal", []string{"alt+o"}},
+	{actPrevCmd, "Zum vorigen Befehl springen", "Terminal", []string{"alt+pgup"}},
+	{actNextCmd, "Zum nächsten Befehl springen", "Terminal", []string{"alt+pgdown"}},
 	{actSplit, "Ansicht teilen (Aufteilung wählen)", "Terminal", []string{"ctrl+t"}},
 	{actZoom, "Bereich zoomen / zurück", "Terminal", []string{"alt+z"}},
 	{actGrowLeft, "Trennlinie nach links", "Terminal", []string{"alt+shift+left"}},

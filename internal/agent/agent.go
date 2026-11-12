@@ -287,6 +287,10 @@ type DoneStep struct {
 	Output string // Ausgabe des Befehls (gekürzt)
 	Exit   *int   // Exit-Code, wenn die Shell ihn meldet (OSC 133)
 	File   string // Name der angelegten Datei (dann ist Command nur eine Beschreibung)
+	// Manual: der Mensch hat den Befehl während des Ziels selbst getippt.
+	Manual bool
+	// Note: Grund des Menschen (z. B. beim Überspringen).
+	Note string
 }
 
 var ErrUnreadable = errors.New("Antwort des Modells nicht lesbar")
@@ -311,7 +315,7 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 		writeHist(&b, hist)
 	}
 	for _, x := range answers {
-		fmt.Fprintf(&b, "Antwort des Menschen auf deine Frage: %s\n", Redact(x))
+		b.WriteString(answerLine(x, "Antwort des Menschen auf deine Frage: %s\n"))
 	}
 	b.WriteString("\n" + material(c))
 	msgs := []llm.Message{

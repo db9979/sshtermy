@@ -305,6 +305,7 @@ func (s *session) suspend() {
 	}
 	s.ghost, s.chips = "", nil
 	s.goal.cancel()
+	s.goal.connLost() // Ziel hält an, ⏎ setzt nach dem Neuverbinden fort (goalux.go)
 	s.ask.cancel()
 	if s.tunnels != nil {
 		s.tunnels.StopAll()

@@ -348,6 +348,9 @@ func (a *App) tabTip(x *session) string {
 		last := x.latHist[n-1]
 		lines = append(lines, on(st.T.Text, false).Render(i18n.T("Latenz")+" "+fmtLatency(last)+"  ")+on(st.T.Accent, false).Render(sparkline(vals)))
 	}
+	if t := a.goalTip(x); t != "" {
+		lines = append(lines, on(st.T.AI, false).Render(trunc(t, 60)))
+	}
 	if n := len(x.history); n > 0 {
 		lines = append(lines, on(st.T.Muted, false).Render("$ "+trunc(x.history[n-1], 34)))
 	}
