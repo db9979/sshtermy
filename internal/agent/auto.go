@@ -88,15 +88,7 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 		fmt.Fprintf(&b, label, f.Name, block(Redact(f.Content)))
 	}
 	if len(hist) > 0 {
-		b.WriteString("Bisherige Schritte:\n")
-		for i, h := range hist {
-			fmt.Fprintf(&b, "%d. %s (%s)\n", i+1, h.Command, h.status())
-			if i >= len(hist)-histFull && !h.Skipped && h.File == "" {
-				if out := strings.TrimSpace(h.Output); out != "" {
-					b.WriteString(block(tail(Redact(out), histOutput)) + "\n")
-				}
-			}
-		}
+		writeHist(&b, hist)
 	}
 	for _, x := range answers {
 		fmt.Fprintf(&b, "Antwort des Menschen: %s\n", Redact(x))
@@ -108,7 +100,28 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 	}
 	kind, files := c.kind(), info.Dir != ""
 	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
-	return a.completeWith(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskAgent}, retryAuto, files, parse)
+	o := llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskAgent}
+	st, err := a.completeWith(ctx, msgs, o, retryAuto, files, parse)
+	if err != nil {
+		return st, err
+	}
+	// sudo setzt nur der Ziel-Modus selbst davor; hier entscheidet die Stufe
+	return a.avoidRepeat(ctx, msgs, o, st, hist, kind, false, parse), nil
+}
+
+// writeHist: bisherige Schritte mit Status, die letzten histFull mit Ausgabe
+// (sonst sieht das Modell nicht, was ein Befehl gezeigt hat oder warum er
+// scheiterte, und schlägt ihn erneut vor).
+func writeHist(b *strings.Builder, hist []DoneStep) {
+	b.WriteString("Bisherige Schritte:\n")
+	for i, h := range hist {
+		fmt.Fprintf(b, "%d. %s (%s)\n", i+1, h.Command, h.status())
+		if i >= len(hist)-histFull && !h.Skipped && h.File == "" {
+			if out := strings.TrimSpace(h.Output); out != "" {
+				b.WriteString(block(tail(Redact(out), histOutput)) + "\n")
+			}
+		}
+	}
 }
 
 // Skripte brauchen mehr Platz als ein einzelner Befehl.
