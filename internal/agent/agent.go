@@ -246,7 +246,13 @@ const sysGoal = "Du begleitest einen Admin auf einem Server oder Netzwerkgerät 
 	"optionen weglassen, wenn nur eine freie Antwort passt. " +
 	`Steht unten ein Arbeitsordner, darfst du auch {"datei": {"name": "x.conf", "inhalt": "…"}, "grund": "…"} vorschlagen: ` +
 	"sshTermy legt die Datei nach Bestätigung per SFTP dort an (name ist nur ein Dateiname); im nächsten Schritt setzt du sie mit einem befehl ein." +
-	multiLineRule + guard
+	repeatRule + multiLineRule + guard
+
+// repeatRule: aus gescheiterten Schritten lernen und rechtzeitig fertig melden.
+const repeatRule = " Schlägt ein Schritt fehl, lies seine Ausgabe und versuche einen anderen Weg; schlag nie denselben gescheiterten " +
+	"Befehl noch einmal vor, auch nicht leicht abgewandelt (anderer Dateiname, angehängtes grep). Bei „keine Berechtigung“/" +
+	"„Permission denied“ nimm sudo, vor allem wenn sudo vorher schon geklappt hat, und bleib dann dabei. Steht eine Information " +
+	"schon in einer Ausgabe oben (z. B. der Inhalt einer Datei), lies sie nicht erneut. Ist das Ziel erreicht und geprüft, melde sofort fertig."
 
 // multiLineRule: mehrzeilige Inhalte nie in einen befehl packen und
 // Konfigurationsdateien ergänzen statt ersetzen. Sonst schickte ein Modell
@@ -299,16 +305,7 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 		}
 	}
 	if len(hist) > 0 {
-		b.WriteString("Bisherige Schritte:\n")
-		for i, h := range hist {
-			st := "ausgeführt"
-			if h.Skipped {
-				st = "vom Menschen übersprungen"
-			} else if h.ExitHint != "" {
-				st = "ausgeführt, fehlgeschlagen: " + h.ExitHint
-			}
-			fmt.Fprintf(&b, "%d. %s (%s)\n", i+1, h.Command, st)
-		}
+		writeHist(&b, hist)
 	}
 	for _, x := range answers {
 		fmt.Fprintf(&b, "Antwort des Menschen auf deine Frage: %s\n", Redact(x))
@@ -321,7 +318,12 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 	files := dir != ""
 	kind := c.kind()
 	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
-	return a.completeWith(ctx, msgs, llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal}, retryHint, files, parse)
+	o := llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal}
+	st, err := a.completeWith(ctx, msgs, o, retryHint, files, parse)
+	if err != nil {
+		return st, err
+	}
+	return a.avoidRepeat(ctx, msgs, o, st, hist, kind, true, parse), nil
 }
 
 // Reasoning-Modelle (Qwen3, DeepSeek-R1, gpt-oss) denken vor der Antwort oft

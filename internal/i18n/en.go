@@ -998,6 +998,8 @@ var en = map[string]string{
 	"keine Adresse angegeben":                                 "no address given",
 	"keine Antwort (Zeitüberschreitung)":                      "no answer (timeout)",
 	"keine Berechtigung":                                      "no permission",
+	"mit sudo, ohne ging es schon nicht":                      "with sudo, it already failed without",
+	"Achtung: so schon einmal fehlgeschlagen.":                "Caution: this already failed once.",
 	"keine Exec-Befehle auf Netzwerkgeräten":                  "no exec commands on network devices",
 	"keine Host-Key-Prüfung konfiguriert":                     "no host key check configured",
 	"keine Kennzahlen (nur Linux/macOS mit sh)":               "no metrics (only Linux/macOS with sh)",
