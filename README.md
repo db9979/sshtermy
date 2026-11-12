@@ -110,6 +110,10 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
     Multi-line content (config sections, scripts) comes as a file that sshTermy creates via SFTP in `~/.sshtermy-agent/<run>/`
     after ⏎, never as a heredoc in the command; config files are backed up and extended, not replaced
     (`docker cp` into a container counts as dangerous). If the model's answer is unusable, sshTermy asks once more and names the problem.
+    Commands that would leave the shell at the continuation prompt `>` (unclosed quote, heredoc, `|` at the end, `if` without `fi`)
+    are sent back to the model instead of being run. If a command sent by sshTermy (goal, agent, plan, ask AI, companion,
+    favorites, multi-window task) still gets stuck at `>`, sshTermy cancels it with Ctrl+C, reports it as a failed step, and only
+    then sends the next command.
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
     Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),

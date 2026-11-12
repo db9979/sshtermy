@@ -220,6 +220,9 @@ func (a *Agent) FollowUps(ctx context.Context, c Context) ([]Suggestion, error) 
 		if !ok {
 			return nil, nil // eine kaputte Zeile verwirft alles (strikt)
 		}
+		if c.kind() == "unix" && Incomplete(cmd) != "" {
+			continue // bliebe am „>“ hängen
+		}
 		reason, _ := oneLine(x.Grund, maxReason)
 		res = append(res, annotate(cmd, reason, c.kind()))
 	}
@@ -386,6 +389,10 @@ const (
 		"anlegen geht hier nicht. Zerlege den Inhalt: erst sichern, dann Zeile für Zeile ergänzen, z. B. printf '%s\\n' 'zeile 1' 'zeile 2' >> ziel, " +
 		"bei langen Inhalten in mehreren Schritten."
 	fixLong = "Dein befehl war länger als 300 Zeichen. Teile ihn in mehrere kürzere Schritte"
+	// %s: Grund aus Incomplete
+	fixIncomplete = "Dein befehl war unvollständig (%s): Die Shell bliebe am Fortsetzungs-Prompt „>“ stehen und " +
+		"verschluckte den nächsten Befehl. Schließe jedes Anführungszeichen und jede Klammer, kein Heredoc (<<), " +
+		"kein | && || oder \\ am Ende, if/for/case vollständig in einer Zeile (… ; fi / ; done / ; esac)."
 )
 
 // retryFor: Korrekturtext passend zum Fehler.
@@ -488,6 +495,9 @@ func parseStep(out, kind string) (Step, error) {
 		return Step{}, &StepError{Why: fmt.Sprintf("Befehl zu lang (%d Zeichen, höchstens %d)", len([]rune(raw)), maxCmd), fix: fixLong}
 	case !ok || cmd == "":
 		return Step{}, ErrUnreadable
+	case kind == "unix" && Incomplete(cmd) != "":
+		why := Incomplete(cmd)
+		return Step{}, &StepError{Why: "Befehl unvollständig (" + why + ")", fix: fmt.Sprintf(fixIncomplete, why)}
 	}
 	var plan []string
 	if raw, ok := v["plan"]; ok {
@@ -666,6 +676,9 @@ func (a *Agent) Adapt(ctx context.Context, cmd string, c Context) (Suggestion, e
 	reason, _ := oneLine(v.Grund, maxReason)
 	if line == "" {
 		return Suggestion{Reason: reason}, nil
+	}
+	if c.kind() == "unix" && Incomplete(line) != "" {
+		return Suggestion{}, ErrUnreadable // bliebe am „>“ hängen
 	}
 	return annotate(line, reason, c.kind()), nil
 }

@@ -173,7 +173,7 @@ func (a *App) runQuick(s *session, i int) tea.Cmd {
 func (a *App) sendQuick(s *session, cmd string) {
 	a.clearToasts()
 	s.sel, s.scroll, s.ghost, s.chips = nil, 0, "", nil
-	s.term.SendText(cmd + "\r")
+	a.sendLine(s, cmd)
 	s.history = append(s.history, cmd)
 }
 

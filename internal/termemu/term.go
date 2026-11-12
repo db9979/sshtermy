@@ -380,6 +380,23 @@ func (t *Term) TypedInput() (typed string, atPrompt bool) {
 	return line[locs[len(locs)-1][1]:], true
 }
 
+// contPrompt: Fortsetzungs-Prompt der Shell (PS2), der auf den Rest eines
+// unvollständigen Befehls wartet: bash/sh „> “, PowerShell „>> “, zsh
+// „quote> “, „dquote> “, „heredoc> “, „pipe pipe> “ usw. Nur die nackte Zeile
+// zählt; „switch> “ eines Netzwerkgeräts hat davor einen Namen.
+var contPrompt = regexp.MustCompile(`^\s*(?:>{1,2}|More\?|(?:(?:quote|dquote|bquote|heredoc|cmdsubst|pipe|cmdand|cmdor|subsh|cursh|for|foreach|while|until|if|then|else|elif|select|case|function|braceparam|mathsubst|array|shfunc|repeat|always|errpipe)\s+)*(?:quote|dquote|bquote|heredoc|cmdsubst|pipe|cmdand|cmdor|subsh|cursh|for|foreach|while|until|if|then|else|elif|select|case|function|braceparam|mathsubst|array|shfunc|repeat|always|errpipe)>)\s*$`)
+
+// ContinuationPrompt: ist line (Zeile bis zum Cursor) ein leerer
+// Fortsetzungs-Prompt?
+func ContinuationPrompt(line string) bool { return contPrompt.MatchString(line) }
+
+// AtContinuation: wartet die Shell am Cursor auf die Fortsetzung eines
+// unvollständigen Befehls (offenes Anführungszeichen, Heredoc, „|“ am Ende)?
+// Wer danach einen Befehl schickt, dessen Zeile wird verschluckt.
+func (t *Term) AtContinuation() bool {
+	return !t.AltScreen() && ContinuationPrompt(t.CursorLine())
+}
+
 // AtIdlePrompt: steht ein leerer Prompt am Cursor (Befehl fertig)?
 func (t *Term) AtIdlePrompt() bool {
 	typed, ok := t.TypedInput()

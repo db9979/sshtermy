@@ -156,7 +156,7 @@ func (a *App) sendCommand(s *session, cmd string) tea.Cmd {
 	a.clearToasts()
 	s.sel, s.scroll, s.ghost, s.chips = nil, 0, "", nil
 	a.beginCommand(s, cmd)
-	s.term.SendText(cmd + "\r")
+	a.sendLine(s, cmd)
 	s.history = append(s.history, cmd)
 	a.profileCommand(s, cmd)
 	return nil

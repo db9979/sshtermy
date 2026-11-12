@@ -397,6 +397,9 @@ func (a *App) goalTick(s *session) tea.Cmd {
 		return nil
 	}
 	quiet := time.Since(s.lastOutput) > 1500*time.Millisecond && time.Since(g.waitSince) > time.Second
+	if quiet && s.run != nil && (s.run.contWhy != "" || (s.run.sent && a.atContinuation(s))) {
+		return nil // hängt am „>“: commandTick bricht ab, dann geht es mit dem Fehler weiter (contprompt.go)
+	}
 	if quiet && s.term.AtIdlePrompt() {
 		g.waiting = false
 		if g.planning {
@@ -437,7 +440,7 @@ func (a *App) runProposal(s *session, cmd string, insertOnly bool) {
 	if g.auto && s.run != nil {
 		s.run.agent = true
 	}
-	s.term.SendText(cmd + "\r")
+	a.sendLine(s, cmd)
 	s.noteAI(cmd, false)
 	a.profileCommand(s, cmd)
 	g.startWait()

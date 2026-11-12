@@ -361,7 +361,7 @@ func (a *App) pingRemote(s *session, host string) tea.Cmd {
 	}
 	s.sel, s.scroll, s.panelFocus = nil, 0, false
 	if s.term.AtIdlePrompt() {
-		s.term.SendText(cmd + "\r")
+		a.sendLine(s, cmd)
 	} else {
 		s.term.SendText(cmd)
 		a.flash(i18n.T("Ping eingefügt, ⏎ zum Ausführen"))

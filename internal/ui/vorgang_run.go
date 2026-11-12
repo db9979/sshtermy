@@ -206,7 +206,7 @@ func (a *App) vgAdvance() tea.Cmd {
 		if s.run != nil {
 			s.run.agent = true
 		}
-		s.term.SendText(cmd + "\r")
+		a.sendLine(s, cmd)
 		s.history = append(s.history, cmd)
 		a.profileCommand(s, cmd)
 		st.state, st.at, st.note = vsRunning, time.Now(), i18n.T("Agent (liest)")

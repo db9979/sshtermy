@@ -31,6 +31,8 @@ type cmdRun struct {
 	interrupted bool   // Strg+C während der Befehl lief
 	learnFrom   string // korrigiert diesen KI-Befehl (learn.go)
 	agent       bool   // vom Agent-Modus ausgeführt
+	sent        bool   // von sshTermy gesendet (sendLine), nicht getippt
+	contWhy     string // blieb am Fortsetzungs-Prompt „>“ hängen, Strg+C geschickt (contprompt.go)
 }
 
 // beginCommand: Enter mit einem Befehl am Prompt.
@@ -53,6 +55,9 @@ func (a *App) commandTick(s *session) {
 	}
 	if time.Since(r.at) < 400*time.Millisecond || time.Since(s.lastOutput) < 600*time.Millisecond || !s.term.AtIdlePrompt() {
 		return
+	}
+	if a.contCheck(s, r) {
+		return // hing am „>“: Strg+C ist unterwegs, fertig erst am echten Prompt
 	}
 	a.finishCommand(s)
 }
@@ -85,6 +90,9 @@ func (a *App) finishCommand(s *session) {
 		}
 	} else if !r.interrupted {
 		failed, f.Reason = agent.LooksFailed(out)
+	}
+	if r.contWhy != "" { // am „>“ hängen geblieben, Strg+C kam von uns
+		failed, f.Reason = true, contReason(r.contWhy)
 	}
 	// Ziel-/Agent-Modus: Ausgabe und Exit-Code gehen an das Modell
 	if g := &s.goal; g.active && len(g.steps) > 0 && strings.HasPrefix(r.cmd, g.steps[len(g.steps)-1].Command) {
