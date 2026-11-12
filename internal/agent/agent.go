@@ -31,6 +31,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 	"time"
@@ -326,6 +327,9 @@ func (a *Agent) NextStep(ctx context.Context, goal string, recipe []string, hist
 	kind := c.kind()
 	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
 	o := llm.Opts{MaxTokens: goalTokens, Temperature: 0.2, NoThink: true, Task: TaskGoal}
+	if files {
+		o.MaxTokens = autoTokens // Skripte brauchen mehr Platz als ein Befehl
+	}
 	st, err := a.completeWith(ctx, msgs, o, retryHint, files, parse)
 	if err != nil {
 		return st, err
@@ -359,9 +363,15 @@ func (a *Agent) completeWith(ctx context.Context, msgs []llm.Message, o llm.Opts
 	if res.Truncated() && strings.TrimSpace(stripThink(res.Content)) == "" {
 		return Step{}, unreadable(res, nil) // nochmal fragen hilft nicht, nur mehr Tokens
 	}
+	hint := retryFor(retry, perr, files)
+	if res.Truncated() {
+		// abgeschnitten (meist ein langes Skript): mehr Platz und klare Ansage
+		o.MaxTokens = max(2*o.MaxTokens, autoTokens)
+		hint = fixTrunc + " Antworte jetzt NUR mit dem JSON-Objekt, ohne Text davor oder danach."
+	}
 	msgs = append(msgs,
 		llm.Message{Role: "assistant", Content: tail(stripThink(res.Content), 1500)},
-		llm.Message{Role: "user", Content: retryFor(retry, perr, files)})
+		llm.Message{Role: "user", Content: hint})
 	o.Temperature = 0.1
 	res2, err2 := a.C.CompleteResult(ctx, msgs, o)
 	if err2 == nil {
@@ -393,6 +403,12 @@ const (
 		"anlegen geht hier nicht. Zerlege den Inhalt: erst sichern, dann Zeile für Zeile ergänzen, z. B. printf '%s\\n' 'zeile 1' 'zeile 2' >> ziel, " +
 		"bei langen Inhalten in mehreren Schritten."
 	fixLong = "Dein befehl war länger als 300 Zeichen. Teile ihn in mehrere kürzere Schritte"
+	fixJSON = "In JSON-Strings schreibst du einen Zeilenumbruch als \\n, einen Backslash als \\\\ (auch in sed-/grep-Mustern wie \\\\[) " +
+		"und ein Anführungszeichen als \\\". Halte Skripte kurz: lieber einfache Befehle als lange Hilfsfunktionen."
+	fixTrunc = "Deine letzte Antwort wurde am Token-Limit abgeschnitten, das JSON ist unvollständig. Schick eine kürzere Fassung: " +
+		"ein knappes Skript ohne Kommentare und Hilfsfunktionen, oder erst einen einzeiligen befehl und den Rest in späteren Schritten."
+	fixNoFiles = "Dateien anlegen geht auf diesem System nicht (kein Arbeitsordner). Schlag stattdessen einen einzeiligen befehl vor; " +
+		"mehrzeiligen Inhalt nach einer Sicherung Zeile für Zeile mit printf '%s\\n' 'zeile 1' 'zeile 2' >> ziel ergänzen."
 	// %s: Grund aus Incomplete
 	fixIncomplete = "Dein befehl war unvollständig (%s): Die Shell bliebe am Fortsetzungs-Prompt „>“ stehen und " +
 		"verschluckte den nächsten Befehl. Schließe jedes Anführungszeichen und jede Klammer, kein Heredoc (<<), " +
@@ -423,6 +439,9 @@ func unreadable(r llm.Result, perr error) error {
 	var se *StepError
 	if errors.As(perr, &se) && !r.Truncated() {
 		return fmt.Errorf("%w: %s, auch nach Nachfrage: „%s“", ErrUnreadable, se.Why, short(body, 140))
+	}
+	if perr != nil && perr != ErrUnreadable && !r.Truncated() {
+		return fmt.Errorf("%w, auch nach Nachfrage: „%s“", perr, short(body, 140)) // z. B. Datei zu groß
 	}
 	switch {
 	case r.Truncated() && body == "":
@@ -470,6 +489,9 @@ func parseStep(out, kind string) (Step, error) {
 		// Abgeschnittene Abschlussmeldung: ebenfalls nur Text ⇒ retten.
 		if r, ok := salvageDone(out); ok {
 			return Step{Done: true, Suggestion: Suggestion{Reason: r}}, nil
+		}
+		if e := jsonProblem(out); e != nil {
+			return Step{}, e
 		}
 		return Step{}, ErrUnreadable
 	}
@@ -777,6 +799,12 @@ func repairJSON(s string) (string, bool) {
 		switch {
 		case inStr && esc:
 			esc = false
+		case inStr && c == '\\' && !validEscape(s, i+1):
+			// \[ \. \$ \s aus sed/grep-Mustern: in JSON ungültig, gemeint ist
+			// ein Backslash im Text
+			changed = true
+			b.WriteString(`\\`)
+			continue
 		case inStr && c == '\\':
 			esc = true
 		case inStr && c == '"':
@@ -807,6 +835,51 @@ func repairJSON(s string) (string, bool) {
 		b.WriteByte(c)
 	}
 	return b.String(), changed
+}
+
+// validEscape: beginnt bei s[i] eine gültige JSON-Maskierung nach „\“?
+func validEscape(s string, i int) bool {
+	if i >= len(s) {
+		return false
+	}
+	switch s[i] {
+	case '"', '\\', '/', 'b', 'f', 'n', 'r', 't':
+		return true
+	case 'u':
+		if i+5 > len(s) {
+			return false
+		}
+		for _, h := range s[i+1 : i+5] {
+			if !strings.ContainsRune("0123456789abcdefABCDEF", h) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// jsonProblem: warum ein Objekt im Text nicht lesbar ist (für die Nachfrage).
+// nil, wenn gar kein JSON-Objekt erkennbar ist.
+func jsonProblem(out string) error {
+	t := stripThink(out)
+	if r, ok := repairJSON(t); ok {
+		t = r
+	}
+	i := strings.IndexByte(t, '{')
+	if i < 0 {
+		return nil
+	}
+	var raw json.RawMessage
+	err := json.NewDecoder(strings.NewReader(t[i:])).Decode(&raw)
+	if err == nil {
+		return nil
+	}
+	why := "JSON fehlerhaft (" + short(err.Error(), 80) + ")"
+	if errors.Is(err, io.ErrUnexpectedEOF) || err == io.EOF {
+		why = "JSON bricht mittendrin ab"
+	}
+	return &StepError{Why: why, fix: "Dein JSON-Objekt war nicht gültig: " + short(err.Error(), 120) + ". " + fixJSON}
 }
 
 func jsonIn(t string, v any) bool {

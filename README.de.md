@@ -113,7 +113,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   - **Ziel-Modus / Agent** (F2): Ziel setzen, die KI schlägt Schritt für Schritt genau einen Befehl mit Begründung vor, du bestätigst. Text im Panel (Ziel, Schritte, Ausgaben, Fehlermeldungen) lässt sich mit der Maus markieren und wird gleich kopiert.
     Mehrzeilige Inhalte (Konfigurationsabschnitte, Skripte) kommen als Datei, die sshTermy nach ⏎ per SFTP in `~/.sshtermy-agent/<lauf>/`
     anlegt, nie als Heredoc im Befehl; Konfigurationsdateien werden gesichert und ergänzt statt ersetzt
-    (`docker cp` in einen Container gilt als Gefahr). Ist die Antwort des Modells unbrauchbar, fragt sshTermy einmal nach und nennt den Fehler.
+    (`docker cp` in einen Container gilt als Gefahr). Ist die Antwort des Modells unbrauchbar, fragt sshTermy einmal nach und nennt den Fehler (kaputtes JSON; eine abgeschnittene Antwort bekommt mehr Platz und die Bitte um eine kürzere Fassung); Backslashes aus sed-/grep-Mustern in Skripten werden richtig gelesen.
     Befehle, die die Shell am Fortsetzungs-Prompt `>` stehen ließen (offenes Anführungszeichen, Heredoc, `|` am Ende, `if` ohne `fi`),
     gehen zurück ans Modell statt ausgeführt zu werden. Bleibt ein von sshTermy gesendeter Befehl (Ziel, Agent, Plan, KI fragen,
     Begleiter, Favoriten, Vorgang über mehrere Fenster) trotzdem am `>` hängen, bricht sshTermy ihn mit Strg+C ab, meldet den

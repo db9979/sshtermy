@@ -111,7 +111,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   - **Goal mode / agent** (F2): set a goal, the AI suggests exactly one command at a time with a reason, you confirm. Text in the panel (goal, steps, output, error messages) can be selected with the mouse and is copied right away.
     Multi-line content (config sections, scripts) comes as a file that sshTermy creates via SFTP in `~/.sshtermy-agent/<run>/`
     after ⏎, never as a heredoc in the command; config files are backed up and extended, not replaced
-    (`docker cp` into a container counts as dangerous). If the model's answer is unusable, sshTermy asks once more and names the problem.
+    (`docker cp` into a container counts as dangerous). If the model's answer is unusable, sshTermy asks once more and names the problem (broken JSON, a cut-off answer gets more room and a request for a shorter version); backslashes from sed/grep patterns in scripts are read as intended.
     Commands that would leave the shell at the continuation prompt `>` (unclosed quote, heredoc, `|` at the end, `if` without `fi`)
     are sent back to the model instead of being run. If a command sent by sshTermy (goal, agent, plan, ask AI, companion,
     favorites, multi-window task) still gets stuck at `>`, sshTermy cancels it with Ctrl+C, reports it as a failed step, and only
