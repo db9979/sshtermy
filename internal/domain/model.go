@@ -891,6 +891,23 @@ type Data struct {
 	// TeamLinks: Team-Ordner (veröffentlichen bzw. abonnieren). Rein lokal:
 	// Pfade sind je Rechner anders, das Team-Passwort bleibt auf dem Gerät.
 	TeamLinks []TeamLink `json:"team_links,omitempty"`
+
+	// GoalRuns: Zielverlauf (frühere Ziele je Verbindung). Rein lokal wie
+	// TeamLinks: Befehle und Ergebnisse bleiben auf diesem Rechner.
+	GoalRuns []GoalRun `json:"goal_runs,omitempty"`
+}
+
+// GoalRun: ein früheres Ziel im Ziel-/Agent-/Plan-Modus (Zielverlauf).
+type GoalRun struct {
+	ID     string    `json:"id"`
+	ConnID string    `json:"conn"`
+	Goal   string    `json:"goal"`
+	Mode   string    `json:"mode,omitempty"` // "" Ziel-Modus, "agent", "plan"
+	Steps  []string  `json:"steps,omitempty"`
+	Result string    `json:"result,omitempty"`
+	State  string    `json:"state"` // "done", "stopped", "lost"
+	At     time.Time `json:"at"`
+	Took   int       `json:"took,omitempty"` // Sekunden
 }
 
 // CmdUse: wie oft ein Befehl auf einer Verbindung ohne Fehler lief

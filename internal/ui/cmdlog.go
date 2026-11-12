@@ -33,6 +33,7 @@ type cmdRun struct {
 	agent       bool   // vom Agent-Modus ausgeführt
 	sent        bool   // von sshTermy gesendet (sendLine), nicht getippt
 	contWhy     string // blieb am Fortsetzungs-Prompt „>“ hängen, Strg+C geschickt (contprompt.go)
+	line        int    // Zeile im Verlauf, in der der Befehl stand (cmdblocks.go)
 }
 
 // beginCommand: Enter mit einem Befehl am Prompt.
@@ -43,7 +44,7 @@ func (a *App) beginCommand(s *session, typed string) {
 		return
 	}
 	seq, _ := s.term.LastExit()
-	s.run = &cmdRun{cmd: cmd, at: time.Now(), exitSeq: seq, private: strings.HasPrefix(typed, " ")}
+	s.run = &cmdRun{cmd: cmd, at: time.Now(), exitSeq: seq, private: strings.HasPrefix(typed, " "), line: s.promptLine()}
 	s.fail = nil
 }
 
@@ -94,6 +95,8 @@ func (a *App) finishCommand(s *session) {
 	if r.contWhy != "" { // am „>“ hängen geblieben, Strg+C kam von uns
 		failed, f.Reason = true, contReason(r.contWhy)
 	}
+	// Selbst getippt während eines Ziels: als eigener Schritt (goalux.go)
+	a.noteManualStep(s, r, out, f, failed)
 	// Ziel-/Agent-Modus: Ausgabe und Exit-Code gehen an das Modell
 	if g := &s.goal; g.active && len(g.steps) > 0 && strings.HasPrefix(r.cmd, g.steps[len(g.steps)-1].Command) {
 		g.steps[len(g.steps)-1].Output, g.steps[len(g.steps)-1].Exit = sessionlog.Clip(out), f.Exit
@@ -122,7 +125,8 @@ func (a *App) finishCommand(s *session) {
 	}
 	a.auditCommand(s, r, failed, f.Exit)
 	a.companionAfter(s, r, f, failed)
-	a.vgCommandDone(s, r, out, failed, f) // Vorgang über mehrere Fenster (vorgang_run.go)
+	a.vgCommandDone(s, r, out, failed, f)             // Vorgang über mehrere Fenster (vorgang_run.go)
+	s.addBlock(r, out, failed, f.Exit, end.Sub(r.at)) // Befehle als Blöcke (cmdblocks.go)
 	if failed && !r.interrupted && !r.agent {
 		a.cardFailed(s, f) // Befehl aus einer Antwortkarte? (cardfix.go)
 	}

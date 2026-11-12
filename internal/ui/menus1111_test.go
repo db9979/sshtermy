@@ -40,7 +40,7 @@ func TestPaletteAreasRegrouped(t *testing.T) {
 	}
 
 	find := labels(palArea(a, "find"))
-	want := []string{"Im Verlauf suchen", "In allen Tabs suchen", "Fehlerzeilen im Verlauf zeigen", "Log-Blick", "Sitzungsprotokolle durchsuchen", "Ordner-Scan", "Logwache"}
+	want := []string{"Im Verlauf suchen", "In allen Tabs suchen", "Befehle dieses Tabs", "Fehlerzeilen im Verlauf zeigen", "Log-Blick", "Sitzungsprotokolle durchsuchen", "Ordner-Scan", "Logwache"}
 	if len(find) < len(want) {
 		t.Fatalf("Suchen & Logs: %v", find)
 	}

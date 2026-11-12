@@ -29,6 +29,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Wake-on-LAN**: Ein ausgeschalteter Rechner im eigenen Netz lässt sich aus dem Manager wecken (Klick auf „Wake-on-LAN senden“, Palette „aufwecken“ oder `w` im getrennten Tab). Die MAC-Adresse merkt sich sshTermy beim ersten Verbinden von selbst oder du trägst sie unter Erweitert ein.
 - **Platzhalter in Schnellbefehlen**: `systemctl restart {{dienst}}` fragt beim Ausführen nach dem Wert, `{{dienst:nginx}}` schlägt einen vor; der letzte Wert steht beim nächsten Mal schon da. Macht erst der eingesetzte Wert den Befehl gefährlich, fragt sshTermy nach.
 - **Suche über alle Tabs** (Alt+S): ein Suchbegriff, die Treffer aus dem Verlauf aller offenen Tabs in einer Liste; ⏎ springt in den Tab an genau diese Zeile.
+- **Befehle als Blöcke**: Alt+Bild↑ / Alt+Bild↓ springt im Verlauf von Befehl zu Befehl, Alt+O listet die Befehle des Tabs (mit Uhrzeit, Dauer, ✓/×): ⏎ springt hin, Strg+C kopiert genau diese Ausgabe, Strg+K gibt Befehl und Ausgabe an „KI fragen“, Strg+L zeigt sie groß.
 - **Tabs mit der Maus ziehen**: Ein Tab lässt sich in der Tab-Leiste an eine andere Stelle ziehen.
 - **Fertig im Hintergrund**: Ein Befehl, der 10 s oder länger in einem verdeckten Tab lief, markiert den Tab (✓ / ×) und meldet sich mit einer Einblendung; ist das sshTermy-Fenster im Hintergrund, kommt zusätzlich eine Desktop-Benachrichtigung (Windows, macOS, Linux). Die Terminal-Glocke markiert den Tab ebenso. Beides ist in der Palette abschaltbar
 - **Agent-Weiterleitung** pro Verbindung (wie `ssh -A`): `git pull`, `ssh` und `scp` auf dem Server nutzen deine lokalen Keys aus ssh-agent, Pageant oder dem Windows-OpenSSH-Agent, die Keys verlassen deinen Rechner nie
@@ -116,6 +117,16 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
     gehen zurück ans Modell statt ausgeführt zu werden. Bleibt ein von sshTermy gesendeter Befehl (Ziel, Agent, Plan, KI fragen,
     Begleiter, Favoriten, Vorgang über mehrere Fenster) trotzdem am `>` hängen, bricht sshTermy ihn mit Strg+C ab, meldet den
     Schritt als Fehlschlag und schickt erst dann den nächsten Befehl.
+    Im Einsatz: `?` gibt der KI mitten im Ziel eine Anweisung („nimm docker compose, nicht docker-compose“), ⇧S überspringt einen
+    Schritt mit Grund. Wartet ein Befehl auf eine Eingabe (`[Y/n]`, `less`/`(END)`, `--More--` am Switch, „Press any key“), zeigt
+    das Panel Knöpfe dafür (j / n / q / Leertaste / Strg+C); der Agent hält dort an. Bevor ein Schritt Dateien ändert (`sed -i`,
+    `tee`, `>`, `cp`/`mv` auf eine Datei, `rm`), sichert sshTermy sie per SFTP; am Ende holt `u` alles mit einem Befehl zurück
+    (neu angelegte Dateien werden gelöscht). `f` startet ein Folgeziel, das die Schritte davor kennt. Was du während des Ziels
+    selbst tippst, bekommt die KI als Schritt mit Ausgabe. Reißt die Verbindung ab, hält das Ziel an; nach dem Neuverbinden setzt
+    ⏎ es fort und die KI prüft zuerst den Stand. Jedes Ziel landet im **Zielverlauf** der Verbindung (nur auf diesem Rechner):
+    ↑↓ im Zielfeld, ⏎ startet es erneut, Strg+D entfernt es. Der Tab zeigt den Zustand des Ziels (◎ läuft, gelb = wartet auf
+    dich, grün = erreicht) und die Zahl der Schritte; wartet ein Ziel in einem verdeckten Tab auf dich, kommt eine Einblendung,
+    ist sshTermy im Hintergrund, eine Desktop-Benachrichtigung.
   - **Agent-Modus** (F2, Tab wählt den Modus): Der Agent arbeitet selbstständig bis zum Ziel. Er führt Befehle aus,
     sieht Ausgabe und Exit-Code, legt Skripte per SFTP in `~/.sshtermy-agent/<lauf>/` an und führt sie aus (erst Probelauf).
     Stufen: *Vorsichtig* (Standard; nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`; als root angemeldet oder unter Windows fragt jede Änderung, weil es dort kein sudo zum Anhalten gibt), *Voll* (auch sudo).
@@ -337,6 +348,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | F7 / F8 | vorheriger / nächster Tab |
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
 | | Alt+S | in allen offenen Tabs suchen, ⏎ springt zur Trefferzeile |
+| | Alt+Bild↑ / Alt+Bild↓ / Alt+O | zum vorigen / nächsten Befehl springen / Befehle des Tabs als Liste (⏎ hinspringen, Strg+C Ausgabe kopieren, Strg+K KI fragen, Strg+L lesen) |
 | | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
 | | Alt+L | lokale Shell in neuem Tab (auch im Manager; Palette: `lokal`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen (`{{name}}` im Befehl fragt nach einem Wert) |
@@ -362,7 +374,11 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | p / g / n / x | erkannte Absicht: Plan / Agent übernimmt / selbst machen / nicht mehr fragen |
 | | Strg+Klick / Rechtsklick | URL im Browser öffnen / Menü zu Link, IP oder Host: verbinden (direkt oder über den Server), Ping vom Server oder von hier, kopieren |
 | | Einfügen | mehrzeilig erst Vorschau (⏎ einfügen, o ohne letztes Enter, Esc abbrechen); Palette „Einfügeschutz aus“ |
-| Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook wählen / Ziel als Runbook speichern / Runbook löschen |
+| Ziel-Modus | ↑↓ / Strg+S / Strg+D | Runbook oder früheres Ziel (Verlauf) wählen / Ziel als Runbook speichern / Runbook oder Verlaufseintrag löschen |
+| | ? / ⇧S | KI anweisen (gilt ab dem nächsten Schritt) / überspringen mit Grund |
+| | j / n / q / Leertaste / Strg+C | der laufende Befehl fragt nach: mit den Knöpfen antworten (Esc: selbst im Terminal) |
+| | f / u | nach dem Ziel: Folgeziel / vom Ziel geänderte Dateien zurückholen (Strg+R im leeren Zielfeld) |
+| | ⏎ nach Abbruch | Ziel fortsetzen, sobald die Verbindung wieder steht |
 | Ziel-Modus, Datei-Schritt | ⏎ / v / s | Datei auf dem Host anlegen / ansehen / überspringen; am Ende löscht `r` den Arbeitsordner |
 | | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |
 | | Tab | Schritt für Schritt → Agent *Vorsichtig* → *Normal* → *Voll* → *Erst planen* |
