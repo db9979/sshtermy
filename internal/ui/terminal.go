@@ -873,6 +873,9 @@ func (a *App) tabStrip(room int) string {
 		if g := a.noticeGlyph(x); g != "" {
 			dot = g // Befehl fertig / Glocke, solange der Tab verdeckt war
 		}
+		if x.share.Load() != nil {
+			dot = st.Danger.Bold(true).Render("◉") // live geteilt: andere sehen zu
+		}
 		if g := a.goalGlyph(x); g != "" {
 			dot = g // Ziel läuft / wartet auf dich / fertig (goalux.go)
 		}

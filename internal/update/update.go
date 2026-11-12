@@ -272,27 +272,37 @@ func Apply(ctx context.Context, rel *Release) error {
 	if cmd := Managed(); cmd != "" {
 		return ManagedError{cmd}
 	}
-	name := AssetName()
+	bin, err := FetchAsset(ctx, rel, AssetName())
+	if err != nil {
+		return err
+	}
+	return replaceSelf(bin, rel.Version)
+}
+
+// FetchAsset lädt eine Programmdatei aus dem Release und prüft Prüfsumme und
+// (bei signierten Builds) die Signatur – z. B. die Linux-Datei für einen
+// Server, auf dem der Vermittler-Assistent einen Vermittler einrichtet.
+func FetchAsset(ctx context.Context, rel *Release, name string) ([]byte, error) {
 	binURL, ok1 := rel.assets[name]
 	sumURL, ok2 := rel.assets["checksums.txt"]
 	if !ok1 || !ok2 {
-		return fmt.Errorf(i18n.T("update: Release enthält %s oder checksums.txt nicht"), name)
+		return nil, fmt.Errorf(i18n.T("update: Release enthält %s oder checksums.txt nicht"), name)
 	}
 	sums, err := download(ctx, sumURL, 64<<10)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if version.UpdatePubKey != "" {
 		sigURL, ok := rel.assets["checksums.txt.sig"]
 		if !ok {
-			return errors.New(i18n.T("update: Signatur fehlt"))
+			return nil, errors.New(i18n.T("update: Signatur fehlt"))
 		}
 		sig, err := download(ctx, sigURL, 1024)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := VerifySignature(sums, sig, version.UpdatePubKey); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	want := ""
@@ -303,17 +313,17 @@ func Apply(ctx context.Context, rel *Release) error {
 		}
 	}
 	if want == "" {
-		return errors.New(i18n.T("update: keine Prüfsumme für ") + name)
+		return nil, errors.New(i18n.T("update: keine Prüfsumme für ") + name)
 	}
 	bin, err := download(ctx, binURL, 200<<20)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	got := sha256.Sum256(bin)
 	if hex.EncodeToString(got[:]) != want {
-		return errors.New(i18n.T("update: Prüfsumme stimmt nicht, Download verworfen"))
+		return nil, errors.New(i18n.T("update: Prüfsumme stimmt nicht, Download verworfen"))
 	}
-	return replaceSelf(bin, rel.Version)
+	return bin, nil
 }
 
 // VerifySignature prüft eine Ed25519-Signatur (Rohbytes oder hex) über data.

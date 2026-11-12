@@ -153,7 +153,7 @@ func (a *App) startRelayPair() (tea.Cmd, error) {
 				kind = relay.KindSSHTermy
 			}
 			r, err := a.st.UpsertRelay(domain.Relay{Name: orDefault(pr.Name, cl.Base), Kind: kind, Base: cl.Base, FP: pl.FP,
-				Key: domain.Secret(pr.Key), Device: device})
+				Key: domain.Secret(pr.Key), Device: device, Admin: pr.Admin})
 			if err != nil {
 				a.flashErr(err.Error())
 				return nil
@@ -401,9 +401,18 @@ func (a *App) applyRelayField(f *form, c *domain.Connection) {
 // ---------------------------------------------------------------- Verwalten
 
 func (a *App) openRelayManage() tea.Cmd {
-	items := []menuItem{{label: i18n.T("Neuen Vermittler koppeln"), hint: "+", run: func() tea.Cmd { return a.openRelayForm() }}}
+	items := []menuItem{{label: i18n.T("Neuen Vermittler koppeln"), hint: "+", run: func() tea.Cmd { return a.openRelayForm() }},
+		{label: i18n.T("Eigenen Vermittler auf einem Server einrichten (Assistent)"), hint: "SSH", run: func() tea.Cmd { return a.openRelaySetup(a.current()) }}}
 	for _, r := range a.st.Relays() {
 		r := r
+		if r.Admin {
+			items = append(items,
+				menuItem{label: i18n.T("Kopplungszeile für weiteres Gerät: ") + r.Name, hint: i18n.T("10 min"), run: func() tea.Cmd { return a.relayNewLine(r, relay.CodeClient) }},
+				menuItem{label: i18n.T("Kopplungszeile für Server (Anker): ") + r.Name, hint: i18n.T("10 min"), run: func() tea.Cmd { return a.relayNewLine(r, relay.CodeAnchor) }})
+		}
+		if r.Setup != nil {
+			items = append(items, menuItem{label: i18n.T("Vom Server entfernen: ") + r.Name, hint: i18n.T("Rückweg"), run: func() tea.Cmd { return a.relayUninstall(r) }})
+		}
 		items = append(items,
 			menuItem{label: i18n.T("Testen: ") + r.Name, hint: relayKindLabel(r.Kind), run: func() tea.Cmd { return a.testRelay(r) }},
 			menuItem{label: i18n.T("Entsperren: ") + r.Name, hint: i18n.T("Code"), run: func() tea.Cmd { return a.unlockRelay(r) }},

@@ -250,3 +250,19 @@ type fakeAddr string
 
 func (fakeAddr) Network() string  { return "vermittler" }
 func (a fakeAddr) String() string { return string(a) }
+
+// NewPairLine holt beim Vermittler eine Kopplungszeile für ein weiteres Gerät
+// (kind CodeClient/CodeAdmin) oder einen Server (CodeAnchor). Nur für Geräte
+// mit Verwaltungsrecht.
+func (c *Client) NewPairLine(ctx context.Context, kind string) (string, error) {
+	var r struct {
+		Line string `json:"zeile"`
+	}
+	if err := c.do(ctx, http.MethodPost, PathCodes, map[string]string{"art": kind}, &r); err != nil {
+		return "", err
+	}
+	if _, err := ParseLine(r.Line); err != nil {
+		return "", err
+	}
+	return r.Line, nil
+}

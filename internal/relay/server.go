@@ -35,7 +35,15 @@ type Server struct {
 	pending map[string]*pendingChan
 	active  map[string]*activeChan
 	shares  map[string]*shareRoom // Sitzung live teilen (share.go)
+	shares2 map[string]*room2     // Teilen mit Code und Zulassung (share2.go)
 	limit   *limiter
+
+	// Open: Freigaben auch ohne Kopplung (öffentlicher Vermittler nur fürs
+	// Teilen, `vermittler start --offen`). Gebremst je Adresse.
+	Open bool
+	// LocalKey: eingebauter Vermittler im lokalen Netz (lan.go). Nur wer
+	// diesen Schlüssel hat (sshTermy selbst), darf Freigaben anlegen.
+	LocalKey string
 }
 
 type anchorLink struct {
@@ -86,12 +94,13 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("POST "+PathAnchorPair, s.pairAnchor)
 	m.HandleFunc("GET "+PathAnchor, s.anchorCtrl)
 	m.HandleFunc("GET "+PathAnchorChannel, s.anchorChannel)
+	m.HandleFunc("POST "+PathCodes, s.codesCreate)
 	m.HandleFunc("POST "+PathShare, s.shareCreate)
 	m.HandleFunc("GET "+PathShareSend, s.shareSend)
 	m.HandleFunc("GET "+PathShareWatch, s.shareWatch)
 	m.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = io.WriteString(w, "sshTermy-Vermittler (Protokoll v1)\n")
+		_, _ = io.WriteString(w, "sshTermy-Vermittler (Protokoll v1, Teilen v2)\n")
 	})
 	return m
 }
@@ -136,6 +145,9 @@ func (s *Server) log(word string, n int) {
 
 // reload liest state.json neu, wenn die Datei sich geändert hat (Aufrufer hält s.mu).
 func (s *Server) reload() {
+	if s.Dir == "" {
+		return // eingebauter Vermittler ohne Datenordner
+	}
 	if m := stateMtime(s.Dir); !m.mod.Equal(s.stMod.mod) || m.size != s.stMod.size {
 		if st, err := LoadState(s.Dir); err == nil {
 			s.st, s.stMod = st, m
@@ -236,7 +248,8 @@ func (s *Server) pairClient(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &in) {
 		return
 	}
-	if !takeCode(s.Dir, in.Code, CodeClient, time.Now()) {
+	kind, ok := takeCodeKind(s.Dir, in.Code, time.Now())
+	if !ok || (kind != CodeClient && kind != CodeAdmin) {
 		fail(w, http.StatusForbidden, "Code ungültig oder abgelaufen")
 		s.log("koppeln_code_falsch", 1)
 		return
@@ -249,7 +262,7 @@ func (s *Server) pairClient(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusConflict, "zu viele Geräte")
 		return
 	}
-	s.st.Clients[newID("c_")] = &Peer{Name: name(in.Name, "sshTermy"), KeySHA: sha, Since: time.Now().UTC()}
+	s.st.Clients[newID("c_")] = &Peer{Name: name(in.Name, "sshTermy"), KeySHA: sha, Since: time.Now().UTC(), Admin: kind == CodeAdmin}
 	err := s.save()
 	nm := s.st.Name
 	s.mu.Unlock()
@@ -258,7 +271,7 @@ func (s *Server) pairClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.log("koppeln_geraet", 1)
-	reply(w, PairResult{Key: key, Name: nm, Kind: KindSSHTermy})
+	reply(w, PairResult{Key: key, Name: nm, Kind: KindSSHTermy, Admin: kind == CodeAdmin})
 }
 
 func (s *Server) pairAnchor(w http.ResponseWriter, r *http.Request) {
@@ -581,4 +594,40 @@ func (l *limiter) allow(key string, n int, per time.Duration) bool {
 	}
 	l.m[key] = append(ts, now)
 	return true
+}
+
+// codesCreate: ein Gerät mit Verwaltungsrecht holt eine Kopplungszeile für ein
+// weiteres Gerät oder einen Server, ohne sich am Vermittler-Rechner anzumelden.
+func (s *Server) codesCreate(w http.ResponseWriter, r *http.Request) {
+	cid, ok := s.peer(w, r, false)
+	if !ok {
+		return
+	}
+	var in struct {
+		Art string `json:"art"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	s.mu.Lock()
+	p := s.st.Clients[cid]
+	admin := p != nil && p.Admin
+	st := *s.st
+	s.mu.Unlock()
+	if !admin {
+		fail(w, http.StatusForbidden, "dieses Gerät darf keine Codes holen (mit „vermittler code --verwalten“ koppeln)")
+		return
+	}
+	kind := CodeClient
+	switch in.Art {
+	case CodeAnchor, CodeAdmin:
+		kind = in.Art
+	}
+	code, err := NewCode(s.Dir, kind)
+	if err != nil {
+		fail(w, http.StatusInternalServerError, "Speichern fehlgeschlagen")
+		return
+	}
+	s.log("code_aus_sshtermy", 1)
+	reply(w, map[string]string{"zeile": PairLine{Base: st.URL, Code: code, FP: st.FP}.String()})
 }

@@ -142,7 +142,7 @@ Anker (eigener Vermittler):
 
 Ein Host-Key ändert sich beim Vermittler nur durch neues Koppeln, ein abweichendes „hallo“ wird nur protokolliert.
 
-Sitzung live teilen (nur eigener Vermittler):
+Sitzung live teilen, v1 (nur eigener Vermittler, ältere Versionen):
 
 | Weg | Inhalt |
 |---|---|
@@ -154,6 +154,39 @@ Link zum Zusehen: `https://host[:port][/pfad]#teilen=ID&k=SCHLÜSSEL[&fp=SHA256]
 XChaCha20-Poly1305 mit dem Schlüssel aus dem Link (32 Byte, base64url), Nonce vorne, `ID` als zusätzliche Daten;
 entschlüsselt beginnt er mit `d` (Ausgabe), `s` („Spalten Zeilen“) oder `e` (Ende). Der Schlüssel steht hinter `#`
 und erreicht den Vermittler nie. Zuschauer schicken nichts; was sie tippen, verwirft sshTermy.
+
+### Teilen v2 (ab dieser Version Standard)
+
+Bedienung: Palette „teilen“ öffnet einen Dialog. Wege: **im Netzwerk** (ohne Vermittler: sshTermy startet einen
+eingebauten Teilen-Server auf einem Zufallsport, Zuschauer finden ihn per UDP-Rundruf auf Port 47831), über einen
+**gekoppelten Vermittler**, über einen **öffentlichen** Vermittler (gestartet mit `sshtermy relay start --offen`) oder
+den **Vermittler-Assistenten** (richtet `sshtermy relay` per SSH/SFTP als systemd-Dienst `sshtermy-vermittler` auf
+einem eigenen Server ein, koppelt sshTermy mit Verwaltungsrecht und kann ihn wieder entfernen).
+
+Einladung: Code `PLATZ-wort-wort-wort` (Platz 1–99 auf einem Vermittler, 100–999 im LAN; 256 Wörter je Stelle)
+oder Link `sshtermy://zusehen/CODE@host:port?fp=SHA256`, dazu ein QR-Code. Der Code gilt 10 Minuten für bis zu
+1/2/5/10 Zuschauer. Aus dem Code entsteht per **CPace** (PAKE über ristretto255) der Schlüssel: wer den Code nicht
+kennt, hat genau einen Rateversuch, danach ist die Einladung gesperrt. Beide Seiten zeigen drei Prüfwörter (HKDF aus
+dem PAKE-Ergebnis); der Gastgeber lässt erst nach dem Vergleich herein („Anklopfen“, abschaltbar).
+
+| Weg | Inhalt |
+|---|---|
+| `POST /v1/teilen` `{"v":2,"min":N}` (Client-Schlüssel, im LAN der lokale Schlüssel, bei `--offen` ohne) | → `{id, platz, bis}`. Laufzeit höchstens 12 h (gekoppelt) bzw. 4 h (offen) |
+| `GET /v1/teilen/senden?id=ID` (WebSocket) | Gastgeber. Binär: `0x00` + Daten an alle Zugelassenen, `0x01` + 4 Byte Gast-ID + Daten an einen. Text-JSON: `zulassen`/`trennen`/`zu`/`auf` → Vermittler meldet `neu`/`weg`/`zuschauer` |
+| `GET /v1/teilen/ansehen?platz=N` (WebSocket, ohne Schlüssel) | Gast; höchstens 3 wartend, wartet höchstens 3 Minuten auf Zulassung |
+| `POST /v1/codes` `{"art":…}` (nur Geräte mit Verwaltungsrecht) | → `{zeile}`: neue Kopplungszeile, aus sshTermy heraus. Recht vergibt `sshtermy relay code --verwalten` |
+
+Nachrichten (erstes Byte): `A` PAKE-Start (Gast), `B` PAKE-Antwort + Bestätigung (Gastgeber), `C` Bestätigung + Hallo
+(Name des Gasts), `K` Steuernachricht (mit dem PAKE-Schlüssel versiegelt), `S` Rahmen mit dem Teilen-Schlüssel,
+`N` Ablehnung. Rahmen wie oben (`d`/`s`/`e`) plus `p` Pause, `q` weiter, `i` Info (Tab, Laufzeit). Der Vermittler
+sieht nur Platznummer und Chiffrat.
+
+Schutz beim Gastgeber: Zuschauer sehen erst ab jetzt (kein alter Bildschirm), bei Passwortabfragen pausiert die
+Übertragung, bis die Zeile fertig ist, das Teilen endet von selbst, und im Sitzungsprotokoll steht, wer zugelassen oder abgelehnt wurde (`# Zuschauer zugelassen: …`).
+Mitschreiben gibt es nur, wenn der Zuschauer die Hand hebt und der Gastgeber es befristet erlaubt; ⏎ eines Zuschauers
+braucht bei produktiven Verbindungen die Bestätigung des Gastgebers.
+
+Speech on DGX Spark kann als Vermittler teilen, sobald es Teilen v2 umsetzt (die Wege oben); bis dahin gilt dort v1.
 
 ## Sicherheit
 

@@ -38,8 +38,9 @@ func relayUsage() {
 	fmt.Fprint(os.Stderr, i18n.T(`sshtermy vermittler: eigener Vermittler für Server hinter NAT/Firewall
 
   sshtermy vermittler start --url https://HOST:8022 [--listen :8022] [--name N]
-                            [--cert C --key K | --hinter-proxy] [--dir D]
-  sshtermy vermittler code [--anker] [--dir D]   Kopplungszeile (10 min, einmal)
+                            [--cert C --key K | --hinter-proxy] [--offen] [--dir D]
+  sshtermy vermittler code [--anker|--verwalten] [--dir D]
+                                                 Kopplungszeile (10 min, einmal)
   sshtermy vermittler liste [--dir D]            gekoppelte Geräte und Server
   sshtermy vermittler entfernen ID [--dir D]     Gerät oder Server entfernen
   sshtermy vermittler ordner ID ORDNER [--dir D] Server einem Ordner zuordnen
@@ -61,10 +62,11 @@ func runRelay(args []string) int {
 		cert := fs.String("cert", "", i18n.T("eigenes Zertifikat (PEM), sonst selbst signiert und gepinnt"))
 		key := fs.String("key", "", i18n.T("Schlüssel zum Zertifikat (PEM)"))
 		proxy := fs.Bool("hinter-proxy", false, i18n.T("nur http, TLS macht ein Reverse-Proxy davor"))
+		openShare := fs.Bool("offen", false, i18n.T("Teilen auch ohne Kopplung erlauben (öffentlicher Vermittler, gebremst)"))
 		if fs.Parse(args[1:]) != nil {
 			return 2
 		}
-		o := relay.ServeOptions{Dir: *dir, Listen: *listen, URL: *pub, Name: *nm, Cert: *cert, Key: *key, BehindProxy: *proxy}
+		o := relay.ServeOptions{Dir: *dir, Listen: *listen, URL: *pub, Name: *nm, Cert: *cert, Key: *key, BehindProxy: *proxy, Open: *openShare}
 		st, _, err := relay.Prepare(o)
 		if err != nil {
 			fail(err)
@@ -81,12 +83,15 @@ func runRelay(args []string) int {
 		}
 	case "code":
 		anchor := fs.Bool("anker", false, i18n.T("Zeile für einen Server (Anker) statt für sshTermy"))
+		admin := fs.Bool("verwalten", false, i18n.T("sshTermy darf danach selbst weitere Codes holen"))
 		if fs.Parse(args[1:]) != nil {
 			return 2
 		}
 		kind := relay.CodeClient
 		if *anchor {
 			kind = relay.CodeAnchor
+		} else if *admin {
+			kind = relay.CodeAdmin
 		}
 		line, err := relay.Line(*dir, kind)
 		if err != nil {
