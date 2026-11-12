@@ -186,6 +186,21 @@ Schutz beim Gastgeber: Zuschauer sehen erst ab jetzt (kein alter Bildschirm), be
 Mitschreiben gibt es nur, wenn der Zuschauer die Hand hebt und der Gastgeber es befristet erlaubt; ⏎ eines Zuschauers
 braucht bei produktiven Verbindungen die Bestätigung des Gastgebers.
 
+### Zusehen im Browser (ohne sshTermy)
+
+Der eingebaute Teilen-Server im LAN und `sshtermy vermittler` liefern unter `GET /zusehen/` eine Seite aus
+(internal/webwatch, xterm.js + `zusehen.wasm`). Link: `https://host[:port][/pfad]/zusehen/#CODE`. Der Code steht hinter
+`#` und geht nie an den Server; die Seite spricht dieselbe Anmeldung wie sshTermy (internal/sharewire als WebAssembly,
+gebaut mit `make zusehen` aus cmd/zusehen-wasm) über `wss://…/v1/teilen/ansehen`. Im Hallo steht `"browser":true`; der
+Gastgeber sieht beim Anklopfen „im Browser“ und lehnt solche Zuschauer ab, wenn *Auch im Browser zusehen* aus ist.
+Die Seite hat eine strenge CSP (nur eigene Skripte, nur Verbindungen zum selben Server).
+
+Grenzen: Ein selbst ausgestelltes Zertifikat (LAN, Vermittler ohne `--cert`) zeigt im Browser einmal eine Warnung; den
+Fingerabdruck kann der Browser nicht pinnen. Wer im Netz dazwischen sitzt und die Warnung ausnutzt, könnte eine
+falsche Seite ausliefern. Deshalb gilt der Browser-Link nur so viel wie die Leitung dorthin: Für heikle Sitzungen den
+Link für sshTermy nehmen (Fingerabdruck gepinnt) oder dem Vermittler ein echtes Zertifikat geben. Bei einem fremden,
+öffentlichen Vermittler liefert dieser die Seite aus; die Einladung warnt dann.
+
 Speech on DGX Spark kann als Vermittler teilen, sobald es Teilen v2 umsetzt (die Wege oben); bis dahin gilt dort v1.
 
 ## Sicherheit

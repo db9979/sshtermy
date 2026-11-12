@@ -785,7 +785,7 @@ func (a *App) tabLabel(i, l int) string {
 
 // tabWidth: Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven.
 func (a *App) tabWidth(i, l int) int {
-	w := 1 + lipgloss.Width(a.tabLabel(i, l)) + 3 + 1 // + Lücke danach
+	w := 1 + lipgloss.Width(a.tabLabel(i, l)) + 3 + 1   // + Lücke danach
 	if i == a.cur || a.tabColor(a.sessions[i]) != nil { // Streifen bzw. ▶
 		w++
 	}

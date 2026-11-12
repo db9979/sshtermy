@@ -86,6 +86,7 @@ func (a *App) openShareForm(s *session) tea.Cmd {
 	f.toggle("knock", i18n.T("Anklopfen lassen"), !cfg.NoKnock, i18n.T("jeder Zuschauer braucht dein „j“; du siehst Name, Rechner und Prüfwörter")).hidden = setup
 	f.toggle("hidepw", i18n.T("Passwörter verbergen"), !cfg.ShowPw, i18n.T("Bild pausiert bei Passwortabfragen (sudo, ssh, su …)")).hidden = setup
 	f.toggle("screen", i18n.T("Aktuellen Bildschirm zeigen"), cfg.Screen, i18n.T("aus = Zuschauer sehen nur, was ab jetzt kommt")).hidden = setup
+	f.toggle("browser", i18n.T("Auch im Browser zusehen"), !cfg.NoBrowser, i18n.T("Link und QR-Code für Zuschauer ohne sshTermy (gleicher Code, gleiches Anklopfen)")).hidden = setup
 	if isProduction(s.conn) {
 		f.section("prod", fmt.Sprintf(i18n.T("▲ %s gilt als produktiv: Zuschauer sehen alles, was ab dem Start in diesem Tab erscheint"), s.conn.Alias),
 			func(t Theme) color.Color { return t.Danger }).hidden = setup
@@ -116,10 +117,11 @@ func (a *App) submitShareForm() (tea.Cmd, error) {
 		return a.openRelaySetup(s), nil
 	}
 	opt := shareOpts{way: way, minutes: pickInt(f.sel("min"), shareMinutes, minutesLabel, 30), max: pickInt(f.sel("max"), shareMax, maxLabel, 1),
-		knock: f.flag("knock"), hidePw: f.flag("hidepw"), screen: f.flag("screen")}
+		knock: f.flag("knock"), hidePw: f.flag("hidepw"), screen: f.flag("screen"), browser: f.flag("browser")}
 	_ = a.st.UpdateSettings(func(st *domain.Settings) {
 		pub := st.Share.Public
-		st.Share = domain.ShareConfig{Minutes: opt.minutes, Max: opt.max, NoKnock: !opt.knock, ShowPw: !opt.hidePw, Screen: opt.screen, Way: way, Public: pub}
+		st.Share = domain.ShareConfig{Minutes: opt.minutes, Max: opt.max, NoKnock: !opt.knock, ShowPw: !opt.hidePw, Screen: opt.screen,
+			NoBrowser: !opt.browser, Way: way, Public: pub}
 	})
 	a.returnToTerminal = true
 	return a.startShareWith(s, opt), nil
