@@ -785,8 +785,8 @@ func (a *App) tabLabel(i, l int) string {
 
 // tabWidth: Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven.
 func (a *App) tabWidth(i, l int) int {
-	w := 1 + lipgloss.Width(a.tabLabel(i, l)) + 3
-	if a.tabColor(a.sessions[i]) != nil {
+	w := 1 + lipgloss.Width(a.tabLabel(i, l)) + 3 + 1   // + Lücke danach
+	if i == a.cur || a.tabColor(a.sessions[i]) != nil { // Streifen bzw. ▶
 		w++
 	}
 	if i == a.cur {
@@ -879,20 +879,31 @@ func (a *App) tabStrip(room int) string {
 		if g := a.goalGlyph(x); g != "" {
 			dot = g // Ziel läuft / wartet auf dich / fertig (goalux.go)
 		}
+		// Aktiver Tab: Fläche in der Tab-Farbe, „▶“ vorn, fett; die anderen
+		// liegen gedämpft auf eigener Fläche. Ohne Farbe bleiben ▶, Fettdruck
+		// und × am aktiven (activetab.go).
 		ts := st.Tab
-		if i == a.cur {
-			ts = st.TabActive
-		}
-		ts = ts.Background(tabFlashBg(x, ts.GetBackground(), now))
-		if bg := ts.GetBackground(); bg != nil {
-			dot = lipgloss.NewStyle().Background(bg).Render(dot) // Punkt auf dem Tab-Hintergrund
-		}
-		// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
 		stripe, text := "", label(i, fit)
-		if col := a.tabColor(x); col != nil {
-			stripe = glyph("▌", col, ts.GetBackground())
-			if i == a.cur || a.framed() { // Name in der Rahmenfarbe (tabframe.go)
-				text = " " + lipgloss.NewStyle().Foreground(col).Background(ts.GetBackground()).Bold(i == a.cur).Render(strings.TrimPrefix(text, " "))
+		if i == a.cur {
+			fill := a.activeFill(x)
+			ink := inkOn(st.T, fill)
+			ts = st.TabActive.Background(tabFlashBg(x, fill, now)).Foreground(ink)
+			dot = lipgloss.NewStyle().Foreground(ink).Background(ts.GetBackground()).Render(ansi.Strip(dot))
+			// ▶ steht statt des linken Innenabstands, danach ein Leerzeichen
+			ts = ts.PaddingLeft(0)
+			stripe = ts.UnsetPadding().Render(activeMark + " ")
+			text = ts.UnsetPadding().Render(text)
+		} else {
+			ts = ts.Background(tabFlashBg(x, ts.GetBackground(), now))
+			if bg := ts.GetBackground(); bg != nil {
+				dot = lipgloss.NewStyle().Background(bg).Render(dot) // Punkt auf dem Tab-Hintergrund
+			}
+			// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
+			if col := a.tabColor(x); col != nil {
+				stripe = glyph("▌", col, ts.GetBackground())
+				if a.framed() { // Name gedämpft in der Rahmenfarbe (tabframe.go)
+					text = " " + lipgloss.NewStyle().Foreground(mixColor(ts.GetBackground(), col, 0.85)).Background(ts.GetBackground()).Render(strings.TrimPrefix(text, " "))
+				}
 			}
 		}
 		i := i
@@ -918,12 +929,12 @@ func (a *App) tabStrip(room int) string {
 		})
 		if i == a.cur {
 			// × schließt den aktiven Tab (bei laufender Verbindung mit Rückfrage)
-			close := a.z.click(ts.Padding(0, 1, 0, 0).Foreground(st.T.Muted).UnsetBold().Render("×"), func(tea.Mouse, bool) tea.Cmd {
+			close := a.z.click(ts.Padding(0, 1, 0, 0).UnsetBold().Render("×"), func(tea.Mouse, bool) tea.Cmd {
 				return a.closeTabAsk(x, nil)
 			})
 			tab += close
 		}
-		b.WriteString(tab)
+		b.WriteString(tab + st.Header.Render(" ")) // Lücke: jeder Tab ein eigener Knopf
 	}
 	if to < n {
 		b.WriteString(st.Header.Foreground(st.T.Muted).Render(" ›"))

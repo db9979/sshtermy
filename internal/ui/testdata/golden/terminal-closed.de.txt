@@ -1,4 +1,4 @@
- >_ sshTermy   ▌○ 1 db-01 ×  +    ▲ PRODUKTIV  postgres@10.0.1.5:2222  ↔ 0 Tunnel   ● ◆ qwen3-coder
+ >_ sshTermy  ▶ ○ 1 db-01 ×   +   ▲ PRODUKTIV  postgres@10.0.1.5:2222  ↔ 0 Tunnel   ● ◆ qwen3-coder
 ┃                                                                                                  ┃
 ┃                                                                                                  ┃
 ┃                                                                                                  ┃

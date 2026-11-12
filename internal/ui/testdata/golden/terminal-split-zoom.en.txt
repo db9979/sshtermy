@@ -1,5 +1,5 @@
- >_ sshTermy   ▌● 1 web-01   ▌● 2 web-02 ×  +                              ▲ PRODUCTION  deploy@10.0.0.12:22  ↔ 0 tunnels   ● ◆ qwen3-coder
-▌ ▲ PROD ● 2 · web-02  deploy@10.0.0.12                                                                 ■ Zoom · 1 more hidden · Alt+Z back
+ >_ sshTermy   ▌● 1 web-01   ▶ ● 2 web-02 ×   +                            ▲ PRODUCTION  deploy@10.0.0.12:22  ↔ 0 tunnels   ● ◆ qwen3-coder
+ ▶ ▲ PROD ● 2 · web-02  deploy@10.0.0.12                                                                ■ Zoom · 1 more hidden · Alt+Z back
 ┃Linux web-02 6.8.0-45-generic #45-Ubuntu SMP x86_64                                          ┌───────────────────────────────────────────┐┃
 ┃                                                                                             │ i Zoom: Alt+Z brings the other panes back │┃
 ┃deploy@web-02:~$ systemctl status nginx --no-pager | head -3                                 └───────────────────────────────────────────┘┃

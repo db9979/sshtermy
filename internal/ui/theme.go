@@ -87,7 +87,7 @@ func NewStyles(t Theme) Styles {
 	s.Modal = lipgloss.NewStyle().Border(frameBorder).BorderForeground(t.Accent).Padding(1, 2)
 	s.Input = lipgloss.NewStyle().Foreground(t.Text)
 	s.Label = lipgloss.NewStyle().Foreground(t.Muted).Width(20)
-	s.Tab = lipgloss.NewStyle().Background(t.Surface).Foreground(t.Muted).Padding(0, 1)
+	s.Tab = lipgloss.NewStyle().Background(t.Surface2).Foreground(t.Muted).Padding(0, 1)
 	s.TabActive = lipgloss.NewStyle().Background(t.Bg).Foreground(t.Text).Bold(true).Padding(0, 1)
 	s.Code = lipgloss.NewStyle().Foreground(t.OK)
 	return s
