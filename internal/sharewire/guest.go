@@ -22,6 +22,9 @@ import (
 //	Gastgeber  K{ok, Freigabe-Schlüssel, Kennung}   → Zuschauer, dann „zulassen“ beim Vermittler
 //	danach     S: Rahmen (Freigabe-Schlüssel) an alle; K: Steuerung je Zuschauer
 
+// Stage meldet Zwischenschritte der Anmeldung (Browser-Seite zeigt sie an).
+var Stage = func(string) {}
+
 // Conn: Leitung des Zuschauers zum Gastgeber (WebSocket, Binärnachrichten).
 type Conn interface {
 	Send(p []byte) error
@@ -69,6 +72,9 @@ type Watch2 struct {
 	Base  string
 }
 
+// ErrLocked: Einladung schon benutzt, abgelaufen oder gesperrt.
+var ErrLocked = i18n.NewError("Einladung schon benutzt, abgelaufen oder gesperrt – bitte beim Gastgeber einen neuen Code holen")
+
 // ErrDenied: der Gastgeber hat abgelehnt (oder der Code war falsch).
 var ErrDenied = i18n.NewError("Der Gastgeber hat abgelehnt")
 
@@ -91,6 +97,7 @@ func join(ctx context.Context, g Conn, inv Invite, hello Hello, checked func([3]
 	if err := g.Send(append([]byte{MsgPakeA}, msgA...)); err != nil {
 		return nil, err
 	}
+	Stage("gesendet")
 	w := &Watch2{g: g}
 	for {
 		b, err := g.Recv(ctx)
@@ -107,6 +114,9 @@ func join(ctx context.Context, g Conn, inv Invite, hello Hello, checked func([3]
 		case MsgNo:
 			if strings.Contains(string(b[1:]), "Code") {
 				return nil, ErrWrongCode
+			}
+			if strings.Contains(string(b[1:]), "gesperrt") {
+				return nil, ErrLocked
 			}
 			return nil, ErrDenied
 		case MsgPakeB:

@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/agent"
+	"github.com/db9979/sshtermy/internal/debuglog"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/relay"
@@ -382,6 +383,12 @@ func (a *App) shareLog(s *session, line string) {
 }
 
 func (a *App) shareEvent(s *session, o *shareOut, e relay.HostEvent) tea.Cmd {
+	// Fehlersuche (Hilfe › Fehlersuche › Debug-Log): Ablauf ohne Inhalte
+	msgType := byte(0)
+	if len(e.Data) > 0 {
+		msgType = e.Data[0]
+	}
+	debuglog.Printf("teilen", "Meldung %s v=%d typ=%q gesperrt=%v", e.Kind, e.V, msgType, o.hs.Locked())
 	u, ok := o.hs.Handle(e)
 	if !ok {
 		return nil
@@ -422,6 +429,9 @@ func (a *App) shareEvent(s *session, o *shareOut, e relay.HostEvent) tea.Cmd {
 	case "falsch":
 		a.pushToast(toastErr, tab+i18n.T(": Jemand hat einen falschen Code versucht – Einladung gesperrt. Neuer Code: Palette › Teilen verwalten"))
 		a.shareLog(s, fmt.Sprintf(i18n.T("# Falscher Code-Versuch von %s – Einladung gesperrt"), u.G.IP))
+	case "gesperrt":
+		a.pushToast(toastWarn, fmt.Sprintf(i18n.T("%s: Jemand (%s) wollte zusehen, aber die Einladung ist verbraucht oder gesperrt. Neuer Code: Palette › Teilen verwalten"), tab, u.G.IP))
+		a.shareLog(s, fmt.Sprintf(i18n.T("# Zusehen abgewiesen (Einladung verbraucht oder gesperrt): %s"), u.G.IP))
 	case "weg":
 		if _, ok := o.names[u.G.V]; ok {
 			delete(o.names, u.G.V)

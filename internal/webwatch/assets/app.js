@@ -36,6 +36,8 @@
     "Dieser Browser kann kein WebAssembly.": "This browser cannot run WebAssembly.",
     "Seite nur über https": "Page only over https",
     "Verbinde mit der Freigabe …": "Connecting to the share …",
+    "Code gesendet, warte auf den Gastgeber …": "Code sent, waiting for the host …",
+    "Der Browser rechnet ungewöhnlich lange. Ist ein erweiterter Sicherheitsmodus an (Edge: „Sicherheit im Web erhöhen“)? Dann für diese Adresse eine Ausnahme eintragen oder Chrome/Firefox nehmen.": "The browser is taking unusually long. Is an enhanced security mode on (Edge: “Enhance your security on the web”)? Then add an exception for this address or use Chrome/Firefox.",
     "Verbunden. Prüfe den Code …": "Connected. Checking the code …",
   };
   const T = (s) => (DE ? s : EN[s] || s);
@@ -115,11 +117,22 @@
   let pausedNow = false;
 
   // ---------------------------------------------------------------- Anmelden
+  // Hängt die Anmeldung im Rechnen (vor „gesendet“), ist im Browser meist
+  // WebAssembly ohne JIT (Edge: „Sicherheit im Web erhöhen“).
+  let stageNow = "", stageAt = 0;
+  setInterval(() => {
+    if (stageNow === "code" && !$("wait").hidden && Date.now() - stageAt > 8000) $("slow").hidden = false;
+  }, 1000);
   const handlers = {
     stage(st) {
-      $("waitmsg").textContent = st === "dial" ? T("Verbinde mit der Freigabe …") : T("Verbunden. Prüfe den Code …");
+      stageNow = st;
+      stageAt = Date.now();
+      $("waitmsg").textContent = st === "dial" ? T("Verbinde mit der Freigabe …") : st === "gesendet" ? T("Code gesendet, warte auf den Gastgeber …") : T("Verbunden. Prüfe den Code …");
+      $("slow").hidden = true;
     },
     check(words) {
+      stageNow = "";
+      $("slow").hidden = true;
       $("waitmsg").hidden = true;
       $("checkbox").hidden = false;
       $("check").textContent = words;
