@@ -427,11 +427,17 @@ func (a *App) cardRun(s *session, i int) tea.Cmd {
 	}
 	s.ask.armed = -1
 	a.clearToasts()
+	if why := a.aiIncomplete(s, c); why != "" {
+		s.term.SendText(c) // nur einfügen: mit Enter bliebe die Shell am „>“ hängen
+		s.panelFocus = false
+		a.flash(i18n.F("Befehl unvollständig (%s): nur eingefügt, bitte ergänzen", why))
+		return nil
+	}
 	a.beginCommand(s, c)
 	if from := s.ask.learnSource(i); from != "" && s.run != nil {
 		s.run.learnFrom = from
 	}
-	s.term.SendText(c + "\r")
+	a.sendLine(s, c)
 	s.noteAI(c, false)
 	s.history = append(s.history, c)
 	a.profileCommand(s, c)

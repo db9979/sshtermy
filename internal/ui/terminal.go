@@ -192,6 +192,18 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll, s.sel = 0, nil
 			return nil
 		}
+		if !s.panelFocus && !s.files.open && s.term != nil {
+			switch a.keys.which(key, actPrevCmd, actNextCmd, actCmdList) { // Befehle als Blöcke (cmdblocks.go)
+			case actPrevCmd:
+				a.jumpBlock(s, -1)
+				return nil
+			case actNextCmd:
+				a.jumpBlock(s, 1)
+				return nil
+			case actCmdList:
+				return a.openBlocks(s)
+			}
+		}
 		s.sel, s.selecting = nil, false
 		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
 			s.scroll = 0
@@ -777,7 +789,7 @@ func (a *App) tabStrip() string {
 		if l == 0 {
 			return " " + strconv.Itoa(a.winNo(x))
 		}
-		return " " + strconv.Itoa(a.winNo(x)) + " " + trunc(x.tabName(), l) // Fensternummer (vorgang.go)
+		return " " + strconv.Itoa(a.winNo(x)) + " " + trunc(x.tabName(), l) + goalTabCount(x) // Fensternummer (vorgang.go), Schritte des Ziels
 	}
 	tabW := func(i, l int) int { // Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven
 		w := 1 + lipgloss.Width(label(i, l)) + 3
@@ -831,6 +843,9 @@ func (a *App) tabStrip() string {
 		x := a.sessions[i]
 		if a.sessionVisible(x) {
 			x.unseen = false
+			if !a.blurred && x.goal.done {
+				x.goal.doneSeen = true
+			}
 		}
 		dot := a.tabDot(x, now) // Spinner, Puls bei neuer Ausgabe (motion.go)
 		if x.detached() {
@@ -842,11 +857,8 @@ func (a *App) tabStrip() string {
 		if x.share.Load() != nil {
 			dot = st.Danger.Bold(true).Render("◉") // live geteilt: andere sehen zu
 		}
-		if x.goal.auto && x.goal.active {
-			dot = st.AI.Render("◆") // Agent läuft
-			if x.goal.paused {
-				dot = st.Warn.Render("◆") // Agent wartet auf dich
-			}
+		if g := a.goalGlyph(x); g != "" {
+			dot = g // Ziel läuft / wartet auf dich / fertig (goalux.go)
 		}
 		ts := st.Tab
 		if i == a.cur {

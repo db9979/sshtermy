@@ -38,7 +38,8 @@ const (
 	maxFiles     = 12
 	// Ausgabe der letzten Schritte, die das Modell sieht (je Schritt, Zeichen)
 	histOutput = 1500
-	histFull   = 4 // so viele letzte Schritte mit Ausgabe
+	histFull   = 4  // so viele letzte Schritte mit Ausgabe
+	histLines  = 60 // so viele letzte Befehlszeilen; ältere nur gezählt
 )
 
 var fileName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
@@ -88,18 +89,10 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 		fmt.Fprintf(&b, label, f.Name, block(Redact(f.Content)))
 	}
 	if len(hist) > 0 {
-		b.WriteString("Bisherige Schritte:\n")
-		for i, h := range hist {
-			fmt.Fprintf(&b, "%d. %s (%s)\n", i+1, h.Command, h.status())
-			if i >= len(hist)-histFull && !h.Skipped && h.File == "" {
-				if out := strings.TrimSpace(h.Output); out != "" {
-					b.WriteString(block(tail(Redact(out), histOutput)) + "\n")
-				}
-			}
-		}
+		writeHist(&b, hist)
 	}
 	for _, x := range answers {
-		fmt.Fprintf(&b, "Antwort des Menschen: %s\n", Redact(x))
+		b.WriteString(answerLine(x, "Antwort des Menschen: %s\n"))
 	}
 	b.WriteString("\n" + material(c))
 	msgs := []llm.Message{
@@ -108,7 +101,35 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 	}
 	kind, files := c.kind(), info.Dir != ""
 	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
-	return a.completeWith(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskAgent}, retryAuto, files, parse)
+	o := llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskAgent}
+	st, err := a.completeWith(ctx, msgs, o, retryAuto, files, parse)
+	if err != nil {
+		return st, err
+	}
+	// sudo setzt nur der Ziel-Modus selbst davor; hier entscheidet die Stufe
+	return a.avoidRepeat(ctx, msgs, o, st, hist, kind, false, parse), nil
+}
+
+// writeHist: bisherige Schritte mit Status, die letzten histFull mit Ausgabe
+// (sonst sieht das Modell nicht, was ein Befehl gezeigt hat oder warum er
+// scheiterte, und schlägt ihn erneut vor).
+func writeHist(b *strings.Builder, hist []DoneStep) {
+	b.WriteString("Bisherige Schritte:\n")
+	skip := max(0, len(hist)-histLines)
+	if skip > 0 {
+		fmt.Fprintf(b, "(%d frühere Schritte ausgelassen)\n", skip)
+	}
+	for i, h := range hist {
+		if i < skip {
+			continue
+		}
+		fmt.Fprintf(b, "%d. %s (%s)\n", i+1, h.Command, h.status())
+		if i >= len(hist)-histFull && !h.Skipped && h.File == "" {
+			if out := strings.TrimSpace(h.Output); out != "" {
+				b.WriteString(block(tail(Redact(out), histOutput)) + "\n")
+			}
+		}
+	}
 }
 
 // Skripte brauchen mehr Platz als ein einzelner Befehl.
@@ -125,8 +146,19 @@ func block(s string) string {
 
 func (h DoneStep) status() string {
 	switch {
+	case h.Skipped && h.Note != "":
+		return "vom Menschen übersprungen, Grund: " + strings.Join(strings.Fields(Redact(h.Note)), " ")
 	case h.Skipped:
 		return "vom Menschen übersprungen"
+	case h.Manual:
+		st := "vom Menschen selbst ausgeführt"
+		switch {
+		case h.ExitHint != "":
+			st += ", fehlgeschlagen: " + h.ExitHint
+		case h.Exit != nil:
+			st += fmt.Sprintf(", Exit %d", *h.Exit)
+		}
+		return st
 	case h.File != "":
 		return "Datei angelegt"
 	case h.ExitHint != "":

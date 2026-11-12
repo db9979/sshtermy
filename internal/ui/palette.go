@@ -421,6 +421,7 @@ func (a *App) palActsFind(add palAdd, s *session, inTerm, inMgr bool) {
 		add("find",
 			palItem{icon: ic("search"), label: i18n.T("Im Verlauf suchen"), hint: "Strg+F", top: true, run: func() tea.Cmd { return a.openSearch(s) }},
 			palItem{icon: ic("search"), label: i18n.T("In allen Tabs suchen"), hint: a.keys.label(actSearchAll), keys: "suche find grep verlauf alle tabs", run: func() tea.Cmd { return a.openSearchAll() }},
+			palItem{icon: ic("command"), label: i18n.T("Befehle dieses Tabs (Ausgabe kopieren, an KI)"), hint: a.keys.label(actCmdList), keys: "befehle blöcke blocks ausgabe output kopieren copy commands", run: func() tea.Cmd { return a.openBlocks(s) }},
 			palItem{icon: ic("errors"), label: i18n.T("Fehlerzeilen im Verlauf zeigen"), hint: i18n.T("Strg+F Strg+E"), run: func() tea.Cmd {
 				cmd := a.openSearch(s)
 				s.search.errors, s.search.list = true, true

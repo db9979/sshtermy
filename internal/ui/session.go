@@ -102,6 +102,7 @@ type session struct {
 
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
+	contHome   bool // normaler Prompt dieses Systems ist selbst „>“ (contprompt.go)
 
 	// Ghost-Text
 	ghost, ghostFor string
@@ -111,6 +112,9 @@ type session struct {
 
 	// eigene Befehle und Folgebefehle
 	history     []string
+	blocks      []cmdBlock // fertige Befehle mit Ausgabe (cmdblocks.go)
+	blockNav    int        // Sprung zwischen Befehlen: Block+1 (0 = live)
+	blockScroll int        // s.scroll nach dem Sprung (anders = du hast selbst geblättert)
 	chips       []agent.Suggestion
 	aiPend      *aiPending // zuletzt eingefügter/ausgeführter KI-Befehl (learn.go)
 	chipSeq     int

@@ -52,6 +52,10 @@ func (a *App) viewTimeline(b *strings.Builder, s *session, w int) {
 		switch {
 		case d.Skipped:
 			mark, ms = "»", st.Muted
+		case d.Manual && (d.ExitHint != "" || (d.Exit != nil && *d.Exit != 0)):
+			mark, ms = "•", st.Danger
+		case d.Manual:
+			mark, ms = "•", st.Accent // von dir selbst getippt
 		case d.File != "" && d.ExitHint == "":
 			mark, ms = "▪", st.AI
 		case d.ExitHint != "" || (d.Exit != nil && *d.Exit != 0):
@@ -79,6 +83,8 @@ func (a *App) viewTimeline(b *strings.Builder, s *session, w int) {
 		}
 		var sub string
 		switch {
+		case d.Skipped && d.Note != "":
+			sub = st.Muted.Render("→ " + trunc(d.Note, max(4, w-4)))
 		case d.ExitHint != "":
 			sub = st.Danger.Render("→ " + trunc(d.ExitHint, max(4, w-4)))
 		case d.Exit != nil && *d.Exit != 0:

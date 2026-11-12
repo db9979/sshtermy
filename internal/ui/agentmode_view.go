@@ -175,8 +175,9 @@ func (a *App) viewAgentDone(b *strings.Builder, s *session, w int) {
 	if len(g.files) > 0 && !g.cleaned {
 		keys = append(keys, [2]string{"r", i18n.T("Skripte auf dem Host löschen")}, [2]string{"v", i18n.T("Skript ansehen")})
 	}
-	keys = append(keys, [2]string{"⏎", i18n.T("neues Ziel")})
+	keys = append(keys, [2]string{"f", i18n.T("Folgeziel")}, [2]string{"⏎", i18n.T("neues Ziel")})
 	b.WriteString(a.hintsIn(s, st.Muted, keys...))
+	a.viewBackups(b, s, w, "u")
 }
 
 // agentPanelKeys: Fußzeile im Agent-Modus (nil = Ziel-Modus-Tasten).
@@ -190,7 +191,10 @@ func (a *App) agentPanelKeys(s *session) [][2]string {
 		if len(g.files) > 0 && !g.cleaned {
 			k = append(k, [2]string{"r", i18n.T("aufräumen")}, [2]string{"v", i18n.T("Skript ansehen")})
 		}
-		return append(k, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{"Esc", "Terminal"})
+		if len(g.backups) > 0 {
+			k = append(k, [2]string{"u", i18n.T("zurückholen")})
+		}
+		return append(k, [2]string{"f", i18n.T("Folgeziel")}, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{"Esc", "Terminal"})
 	case !g.active:
 		return [][2]string{{"⏎", i18n.T("Plan zeigen")}, {"Tab", i18n.T("Modus")}, {"Esc", "Terminal"}}
 	case g.editing, g.cur != nil && g.cur.Question != "":

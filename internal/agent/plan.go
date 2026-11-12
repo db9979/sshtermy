@@ -81,7 +81,7 @@ func (a *Agent) PlanNext(ctx context.Context, goal string, hist []DoneStep, answ
 		b.WriteString("Dein bisheriger Plan:\n" + prev.text())
 	}
 	for _, x := range answers {
-		fmt.Fprintf(&b, "Antwort des Menschen: %s\n", Redact(x))
+		b.WriteString(answerLine(x, "Antwort des Menschen: %s\n"))
 	}
 	if mustPlan || prev != nil {
 		b.WriteString("Erkunde nicht weiter: antworte jetzt mit \"planfertig\".\n")
