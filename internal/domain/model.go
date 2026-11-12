@@ -713,12 +713,13 @@ func (s Settings) SyncedPart() Settings {
 
 // ShareConfig: Vorgaben für „Sitzung teilen“ (zuletzt gewählt). Rein lokal.
 type ShareConfig struct {
-	Minutes int    `json:"min,omitempty"`      // Dauer, 0 = 30
-	Max     int    `json:"max,omitempty"`      // Zuschauer, 0 = 1
-	NoKnock bool   `json:"no_knock,omitempty"` // Zuschauer ohne Rückfrage zulassen (Code genügt)
-	ShowPw  bool   `json:"show_pw,omitempty"`  // bei Passwortabfragen nicht pausieren
-	Screen  bool   `json:"screen,omitempty"`   // aktuellen Bildschirm mitschicken (sonst „ab jetzt“)
-	Way     string `json:"way,omitempty"`      // "lan", "relay:<id>", "public"
+	Minutes   int    `json:"min,omitempty"`        // Dauer, 0 = 30
+	Max       int    `json:"max,omitempty"`        // Zuschauer, 0 = 1
+	NoKnock   bool   `json:"no_knock,omitempty"`   // Zuschauer ohne Rückfrage zulassen (Code genügt)
+	ShowPw    bool   `json:"show_pw,omitempty"`    // bei Passwortabfragen nicht pausieren
+	Screen    bool   `json:"screen,omitempty"`     // aktuellen Bildschirm mitschicken (sonst „ab jetzt“)
+	Way       string `json:"way,omitempty"`        // "lan", "relay:<id>", "public"
+	NoBrowser bool   `json:"no_browser,omitempty"` // Zusehen im Browser (ohne sshTermy) nicht anbieten
 	// Public: öffentlicher Vermittler fürs Teilen ohne Kopplung
 	// (https://host[:port][#fp=SHA256]), "" = keiner.
 	Public string `json:"public,omitempty"`

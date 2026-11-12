@@ -118,7 +118,7 @@ var enShare2 = map[string]string{
 	"Programmdatei: ":      "Program file: ",
 	"Prüfwörter – vergleiche sie mit dem Gastgeber:":               "Check words – compare them with the host:",
 	"QR-Code: enthält den Link (zum Abfotografieren oder Scannen)": "QR code: contains the link (to photograph or scan)",
-	"Rechner:  %s · sshTermy %s\nVon:      %s\n\nPrüfwörter – frag %s, ob bei ihr/ihm dieselben stehen:\n\n      %s\n\nPassen sie nicht, sitzt jemand dazwischen: ablehnen.\n\nj = zulassen (nur zusehen)   n = ablehnen": "Computer: %s · sshTermy %s\nFrom:     %s\n\nCheck words – ask %s whether they see the same:\n\n      %s\n\nIf they differ, someone sits in between: decline.\n\ny = admit (watch only)   n = decline",
+	"Rechner:  %s · %s\nVon:      %s\n\nPrüfwörter – frag %s, ob bei ihr/ihm dieselben stehen:\n\n      %s\n\nPassen sie nicht, sitzt jemand dazwischen: ablehnen.\n\nj = zulassen (nur zusehen)   n = ablehnen": "Computer: %s · %s\nFrom:     %s\n\nCheck words – ask %s whether they see the same:\n\n      %s\n\nIf they differ, someone sits in between: decline.\n\ny = admit (watch only)   n = decline",
 	"Rückweg": "way back",
 	"Schritt 1/5: Server prüfen (liest nur) …":                                "Step 1/5: checking the server (read only) …",
 	"Schritt 2/5: Programmdatei übertragen …":                                 "Step 2/5: transferring the program file …",

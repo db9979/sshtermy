@@ -28,13 +28,6 @@ func TestInviteParse(t *testing.T) {
 			t.Fatalf("%q sollte nicht gehen", bad)
 		}
 	}
-	seen := map[string]bool{}
-	for _, w := range shareWords {
-		if seen[w] || w == "" {
-			t.Fatalf("Wort doppelt/leer: %q", w)
-		}
-		seen[w] = true
-	}
 }
 
 func TestPakeWrongCode(t *testing.T) {

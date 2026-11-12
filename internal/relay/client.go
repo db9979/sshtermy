@@ -266,3 +266,21 @@ func (c *Client) NewPairLine(ctx context.Context, kind string) (string, error) {
 	}
 	return r.Line, nil
 }
+
+// ServesBrowser: liefert der Vermittler die Seite zum Zusehen im Browser aus
+// (sshtermy vermittler ab Teilen im Browser; Spark und ältere nicht)?
+func (c *Client) ServesBrowser(ctx context.Context) bool {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.Base+"/zusehen/", nil)
+	if err != nil {
+		return false
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
+	return resp.StatusCode == http.StatusOK && strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html")
+}
