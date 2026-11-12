@@ -120,7 +120,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
     sieht Ausgabe und Exit-Code, legt Skripte per SFTP in `~/.sshtermy-agent/<lauf>/` an und führt sie aus (erst Probelauf).
     Stufen: *Vorsichtig* (Standard; nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`; als root angemeldet oder unter Windows fragt jede Änderung, weil es dort kein sudo zum Anhalten gibt), *Voll* (auch sudo).
     Gefahrenbefehle, auch jede Zeile eines Skripts, warten immer auf dich; auf Produktiv-Hosts und Netzwerkgeräten fragt
-    jede Änderung nach. Grenzen: 25 Schritte, 15 Minuten, 3 Fehler in Folge. Esc oder Tippen im Terminal hält ihn an,
+    jede Änderung nach. Grenzen: 50 Schritte (⏎ erlaubt 50 weitere, höchstens 500), 15 Minuten, 3 Fehler in Folge. Esc oder Tippen im Terminal hält ihn an,
     `?` gibt ihm eine Anweisung. Am Ende: die vollständige Zusammenfassung (blättern mit Bild↑/Bild↓ oder Mausrad, `c`
     kopiert sie, `l` zeigt sie groß), geänderte Dateien, `s` speichert den Lauf als Runbook samt
     Skripten, `r` löscht die Skripte auf dem Host. Jeder Schritt steht als „Agent“ im Sitzungsprotokoll.
@@ -608,7 +608,7 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   Pro Verbindung wirken die Tags `ki-lokal` bzw. `ki-aus` (auch `ai-local`, `no-ai`) genauso; die strengere
   Einstellung gilt. Im selben Ordner zeigt „Letzte KI-Anfrage ansehen“ genau, was zuletzt an welchen Host und
   welches Modell ging.
-- Ratenlimit im Ziel-Modus (Standard 6 Schritte/min, max. 40 Schritte pro Ziel).
+- Ratenlimit im Ziel-Modus (Standard 6 Schritte/min, max. 500 Schritte pro Ziel).
 
 ### sshTermy als MCP-Server
 

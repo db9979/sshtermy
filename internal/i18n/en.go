@@ -499,7 +499,7 @@ var en = map[string]string{
 	"Maus aus (Terminalfenster markiert selbst)":                          "Mouse off (terminal window selects itself)",
 	"Maus aus: das Terminalfenster markiert und kopiert selbst.":          "Mouse off: the terminal window selects and copies by itself.",
 	"Max-Tokens": "Max tokens",
-	"Maximal 40 Schritte pro Ziel. Ziel neu setzen (x).": "At most 40 steps per goal. Set a new goal (x).",
+	"Maximal %d Schritte pro Ziel. Ziel neu setzen (x).": "At most %d steps per goal. Set a new goal (x).",
 	"Meldung":               "Message",
 	"Menü: Verbinden, Ping": "menu: connect, ping",
 	"Mit Windows-Anmeldung entsperren (DPAPI)":                                                        "Unlock with Windows login (DPAPI)",

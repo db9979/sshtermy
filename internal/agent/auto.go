@@ -38,7 +38,8 @@ const (
 	maxFiles     = 12
 	// Ausgabe der letzten Schritte, die das Modell sieht (je Schritt, Zeichen)
 	histOutput = 1500
-	histFull   = 4 // so viele letzte Schritte mit Ausgabe
+	histFull   = 4  // so viele letzte Schritte mit Ausgabe
+	histLines  = 60 // so viele letzte Befehlszeilen; ältere nur gezählt
 )
 
 var fileName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
@@ -114,7 +115,14 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 // scheiterte, und schlägt ihn erneut vor).
 func writeHist(b *strings.Builder, hist []DoneStep) {
 	b.WriteString("Bisherige Schritte:\n")
+	skip := max(0, len(hist)-histLines)
+	if skip > 0 {
+		fmt.Fprintf(b, "(%d frühere Schritte ausgelassen)\n", skip)
+	}
 	for i, h := range hist {
+		if i < skip {
+			continue
+		}
 		fmt.Fprintf(b, "%d. %s (%s)\n", i+1, h.Command, h.status())
 		if i >= len(hist)-histFull && !h.Skipped && h.File == "" {
 			if out := strings.TrimSpace(h.Output); out != "" {
