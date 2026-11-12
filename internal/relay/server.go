@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/db9979/sshtermy/internal/webwatch"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -98,6 +99,7 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("POST "+PathShare, s.shareCreate)
 	m.HandleFunc("GET "+PathShareSend, s.shareSend)
 	m.HandleFunc("GET "+PathShareWatch, s.shareWatch)
+	webwatch.Register(m) // Zusehen im Browser
 	m.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = io.WriteString(w, "sshTermy-Vermittler (Protokoll v1, Teilen v2)\n")

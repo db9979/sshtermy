@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/webwatch"
 )
 
 // Teilen im lokalen Netz ohne Vermittler
@@ -72,6 +73,7 @@ func StartLAN() (*LAN, error) {
 	m.HandleFunc("POST "+PathShare, s.shareCreate)
 	m.HandleFunc("GET "+PathShareSend, s.shareSend)
 	m.HandleFunc("GET "+PathShareWatch, s.shareWatch)
+	webwatch.Register(m)
 	hs := &http.Server{Handler: m, ReadHeaderTimeout: 10 * time.Second, MaxHeaderBytes: 16 << 10,
 		TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{cert}}}
 	go func() { _ = hs.ServeTLS(ln, "", "") }()

@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/sharewire"
 )
 
 // Wege des Protokolls, relativ zur Basis-URL des Vermittlers.
@@ -127,17 +128,4 @@ func (p PairLine) String() string {
 
 // NormBase prüft und vereinheitlicht eine Basis-URL: nur https, ohne
 // Abfrage und Fragment, ohne abschließenden Schrägstrich.
-func NormBase(s string) (string, error) {
-	u, err := url.Parse(strings.TrimSpace(s))
-	if err != nil || u.Host == "" {
-		return "", i18n.NewError("Adresse des Vermittlers ungültig")
-	}
-	if u.Scheme != "https" {
-		return "", i18n.NewError("Vermittler nur über https")
-	}
-	if u.User != nil {
-		return "", i18n.NewError("Adresse des Vermittlers ohne Benutzer und Passwort")
-	}
-	u.RawQuery, u.Fragment = "", ""
-	return strings.TrimRight(u.String(), "/"), nil
-}
+func NormBase(s string) (string, error) { return sharewire.NormBase(s) }

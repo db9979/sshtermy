@@ -25,6 +25,7 @@ import (
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/termemu"
 	"github.com/db9979/sshtermy/internal/version"
+	"github.com/db9979/sshtermy/internal/webwatch"
 )
 
 // Sitzung live teilen (Palette „teilen“, sharedialog.go für die Auswahl)
@@ -70,6 +71,8 @@ type shareOut struct {
 	hidePw bool
 	prompt string // Zeile der Passwortabfrage (nur Lese-Goroutine)
 	knock  bool
+	web    bool // Zusehen im Browser angeboten (Seite /zusehen/ erreichbar)
+	public bool // über einen öffentlichen Vermittler (liefert dann auch die Seite aus)
 	until  time.Time
 	codeAt time.Time
 
@@ -148,6 +151,7 @@ type shareStartedMsg struct {
 	lan  *relay.LAN
 	via  string
 	opts shareOpts
+	web  bool // Vermittler liefert die Seite zum Zusehen im Browser aus
 	err  error
 }
 
@@ -170,6 +174,7 @@ type shareOpts struct {
 	knock   bool
 	hidePw  bool
 	screen  bool // aktuellen Bildschirm mitschicken
+	browser bool // auch im Browser zusehen lassen (ohne sshTermy)
 }
 
 func (o shareOpts) withDefaults() shareOpts {
@@ -254,10 +259,14 @@ func (a *App) startShareWith(s *session, opt shareOpts) tea.Cmd {
 			}
 			return shareStartedMsg{sid: sid, err: err}
 		}
+		web := false
 		if lan != nil {
 			sh.Base, sh.FP = lan.Base, lan.FP
+			web = true
+		} else if opt.browser {
+			web = cl.ServesBrowser(ctx)
 		}
-		return shareStartedMsg{sid: sid, sh: sh, lan: lan, via: via, opts: opt}
+		return shareStartedMsg{sid: sid, sh: sh, lan: lan, via: via, opts: opt, web: web}
 	}
 }
 
@@ -315,6 +324,7 @@ func (a *App) shareMsg(msg tea.Msg) (tea.Cmd, bool) {
 		c, r := s.term.Size()
 		o := &shareOut{hs: relay.NewHostSession(m.sh, m.opts.max), lan: m.lan, via: m.via, term: s.term,
 			shadow: termemu.New(c, r, io.Discard), hidePw: m.opts.hidePw, knock: m.opts.knock,
+			web: m.web && m.opts.browser, public: m.opts.way == "public",
 			until: time.Now().Add(time.Duration(m.opts.minutes) * time.Minute), codeAt: time.Now(),
 			ch: make(chan shareFrame, 512), stop: make(chan struct{}), names: map[uint32]string{}}
 		if !m.sh.Until.IsZero() && m.sh.Until.Before(o.until) {
@@ -382,12 +392,21 @@ func (a *App) shareEvent(s *session, o *shareOut, e relay.HostEvent) tea.Cmd {
 		o.viewers = u.N
 	case "klopft":
 		g := u.G
+		if g.Hello.Browser && !o.web {
+			o.hs.Deny(g.V)
+			a.shareLog(s, fmt.Sprintf(i18n.T("# Zuschauer im Browser abgelehnt (nicht freigegeben): %s (%s)"), g.Hello.Name, g.IP))
+			return nil
+		}
 		if !o.knock {
 			a.shareAdmit(s, o, g)
 			return nil
 		}
-		body := fmt.Sprintf(i18n.T("Rechner:  %s · sshTermy %s\nVon:      %s\n\nPrüfwörter – frag %s, ob bei ihr/ihm dieselben stehen:\n\n      %s\n\nPassen sie nicht, sitzt jemand dazwischen: ablehnen.\n\nj = zulassen (nur zusehen)   n = ablehnen"),
-			g.Hello.Rechner, g.Hello.Version, g.IP, g.Hello.Name, strings.ToUpper(strings.Join(g.Check[:], " · ")))
+		what := "sshTermy " + g.Hello.Version
+		if g.Hello.Browser {
+			what = i18n.T("im Browser (ohne sshTermy)")
+		}
+		body := fmt.Sprintf(i18n.T("Rechner:  %s · %s\nVon:      %s\n\nPrüfwörter – frag %s, ob bei ihr/ihm dieselben stehen:\n\n      %s\n\nPassen sie nicht, sitzt jemand dazwischen: ablehnen.\n\nj = zulassen (nur zusehen)   n = ablehnen"),
+			g.Hello.Rechner, what, g.IP, g.Hello.Name, strings.ToUpper(strings.Join(g.Check[:], " · ")))
 		m := confirmModal(fmt.Sprintf(i18n.T("▸ %s möchte zusehen · %s"), g.Hello.Name, tab), body, func() tea.Cmd {
 			if s.share.Load() == o {
 				a.shareAdmit(s, o, g)
@@ -601,7 +620,12 @@ func (a *App) shareChip(s *session) string {
 func (a *App) showInvite(s *session, o *shareOut) {
 	inv := o.hs.Invite()
 	link := inv.Link()
-	go func() { _ = clipboard.WriteAll(link) }()
+	web := o.browserLink()
+	clip := link
+	if web != "" {
+		clip = web // geht für beide: Browser öffnet die Seite, sshTermy liest den Code daraus
+	}
+	go func() { _ = clipboard.WriteAll(clip) }()
 	st := a.s
 	code := strings.ReplaceAll(inv.Code(), "-", " – ")
 	lines := []string{
@@ -619,12 +643,29 @@ func (a *App) showInvite(s *session, o *shareOut) {
 	} else {
 		lines = append(lines, st.Muted.Render(fmt.Sprintf(i18n.T("Über den Vermittler „%s“: der Code reicht, wenn der Zuschauer ihn kennt, sonst den Link schicken."), o.via)))
 	}
+	inClip := st.Muted.Render(i18n.T(" (in der Zwischenablage, c kopiert erneut)"))
+	if web != "" {
+		lines = append(lines, "",
+			st.Text.Bold(true).Render(i18n.T("Ohne sshTermy: im Browser"))+inClip,
+			st.Accent.Render(web))
+		if o.hs.Sh.FP != "" {
+			lines = append(lines, st.Muted.Render(fmt.Sprintf(i18n.T("Der Browser warnt einmal vor dem Zertifikat (selbst ausgestellt, SHA-256 %s…): „Erweitert › Weiter“."), fpShort(o.hs.Sh.FP))))
+		}
+		if o.public {
+			lines = append(lines, st.Warn.Render(i18n.T("▲ Die Seite kommt vom öffentlichen Vermittler: Browser-Link nur, wenn du ihm vertraust.")))
+		}
+		inClip = ""
+	}
 	lines = append(lines, "",
-		st.Text.Bold(true).Render(i18n.T("Oder Link"))+st.Muted.Render(i18n.T(" (in der Zwischenablage, c kopiert erneut)")),
+		st.Text.Bold(true).Render(i18n.T("Link für sshTermy"))+inClip,
 		st.Accent.Render(link), "")
-	if q := qrLines(link); len(q) > 0 {
+	qrText, qrHint := link, i18n.T("QR-Code: enthält den Link (zum Abfotografieren oder Scannen)")
+	if web != "" {
+		qrText, qrHint = web, i18n.T("QR-Code: Browser-Link – mit der Handy-Kamera scannen, ohne App")
+	}
+	if q := qrLines(qrText); len(q) > 0 {
 		lines = append(lines, q...)
-		lines = append(lines, st.Muted.Render(i18n.T("QR-Code: enthält den Link (zum Abfotografieren oder Scannen)")), "")
+		lines = append(lines, st.Muted.Render(qrHint), "")
 	}
 	lines = append(lines,
 		st.Muted.Render(i18n.T("Der Code ist kein Schlüssel: beide Seiten leiten den Schlüssel daraus ab (PAKE).")),
@@ -636,8 +677,26 @@ func (a *App) showInvite(s *session, o *shareOut) {
 		st.Muted.Render(i18n.T("Verwalten, Mitschreiben erlauben, beenden: Palette › „Teilen verwalten“")),
 	)
 	m := textModal(i18n.T("Einladung · ")+s.tabName(), lines)
-	m.styled, m.copy, m.mail = true, link, a.shareMailto(s, o)
+	m.styled, m.copy, m.mail = true, clip, a.shareMailto(s, o)
 	a.modal = m
+}
+
+// browserLink: Link zum Zusehen im Browser ("" = nicht angeboten).
+func (o *shareOut) browserLink() string {
+	if !o.web {
+		return ""
+	}
+	inv := o.hs.Invite()
+	return webwatch.Link(inv.Base, inv.Code())
+}
+
+// fpShort: „AB:CD:EF:12“ (Anfang des Fingerabdrucks, wie Browser ihn zeigen).
+func fpShort(fp string) string {
+	var p []string
+	for i := 0; i+2 <= len(fp) && len(p) < 4; i += 2 {
+		p = append(p, strings.ToUpper(fp[i:i+2]))
+	}
+	return strings.Join(p, ":")
 }
 
 // openMail öffnet eine mailto:-Adresse im eingestellten Mailprogramm (im Test ersetzt).
@@ -652,22 +711,40 @@ func (a *App) shareMailto(s *session, o *shareOut) string {
 		"",
 		fmt.Sprintf(i18n.T("du kannst live zusehen, wie ich in %s arbeite."), s.tabName()),
 		"",
+	}
+	if w := webMail(o); w != "" {
+		lines = append(lines, w)
+	}
+	lines = append(lines,
 		i18n.T("So geht's: sshTermy öffnen, Strg+Leertaste drücken und den Code eintippen:"),
 		"",
-		"    " + inv.Code(),
+		"    "+inv.Code(),
 		"",
 		i18n.T("Oder den ganzen Link in die Palette einfügen:"),
 		"",
-		"    " + inv.Link(),
+		"    "+inv.Link(),
 		"",
 		fmt.Sprintf(i18n.T("Der Code gilt %d Minuten und nur einmal. Danach klopfst du an, wir vergleichen kurz drei Prüfwörter (am Telefon oder im Chat), und ich lasse dich herein. Das Teilen endet spätestens um %s."), int(relay.CodeTTL.Minutes()), o.until.Format("15:04")),
 		"",
 		i18n.T("Noch kein sshTermy? https://db9979.github.io/sshtermy/"),
-	}
+	)
 	if n, _ := localName(); n != "" {
 		lines = append(lines, "", n)
 	}
 	return mailtoURL("", subject, strings.Join(lines, "\r\n"))
+}
+
+// webMail: Absatz der E-Mail für Zuschauer ohne sshTermy ("" = keiner).
+func webMail(o *shareOut) string {
+	web := o.browserLink()
+	if web == "" {
+		return ""
+	}
+	t := i18n.T("Ohne sshTermy, direkt im Browser (auch am Handy):") + "\r\n\r\n    " + web + "\r\n"
+	if o.hs.Sh.FP != "" {
+		t += "\r\n" + i18n.T("Der Browser warnt einmal vor dem Zertifikat, weil es selbst ausgestellt ist: „Erweitert“ und „Weiter“ wählen.") + "\r\n"
+	}
+	return t + "\r\n" + i18n.T("Mit sshTermy:") + "\r\n"
 }
 
 // mailtoURL baut eine mailto:-Adresse (RFC 6068: Leerzeichen als %20, nicht +).

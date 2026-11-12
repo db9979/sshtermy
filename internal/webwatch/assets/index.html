@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>sshTermy · Zusehen</title>
+<link rel="stylesheet" href="xterm.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <span class="brand">sshTermy</span>
+  <span id="badge" class="badge" data-t="nur zusehen">nur zusehen</span>
+  <span id="status" class="status"></span>
+  <span class="grow"></span>
+  <button id="hand" class="btn" hidden data-t="Hand heben">Hand heben</button>
+  <button id="smaller" class="btn icon" hidden title="A−">A−</button>
+  <button id="bigger" class="btn icon" hidden title="A+">A+</button>
+  <button id="leave" class="btn" hidden data-t="Trennen">Trennen</button>
+</header>
+
+<main>
+  <section id="start" class="card" hidden>
+    <h1 data-t="Live zusehen">Live zusehen</h1>
+    <p class="muted" data-t="Jemand teilt ein Terminal mit dir. Du brauchst dafür kein sshTermy.">Jemand teilt ein Terminal mit dir. Du brauchst dafür kein sshTermy.</p>
+    <form id="form" autocomplete="off">
+      <label><span data-t="Code">Code</span>
+        <input id="code" spellcheck="false" autocapitalize="off" placeholder="7-taube-kompass-ofen">
+      </label>
+      <label><span data-t="Dein Name (sieht der Gastgeber)">Dein Name (sieht der Gastgeber)</span>
+        <input id="name" maxlength="40" spellcheck="false">
+      </label>
+      <p id="err" class="err" hidden></p>
+      <button class="btn primary" type="submit" data-t="Anklopfen">Anklopfen</button>
+    </form>
+    <p class="muted small" data-t="Der Code bleibt in deinem Browser. Daraus entsteht ein Schlüssel, den nur du und der Gastgeber kennen; alles ist Ende-zu-Ende verschlüsselt.">Der Code bleibt in deinem Browser. Daraus entsteht ein Schlüssel, den nur du und der Gastgeber kennen; alles ist Ende-zu-Ende verschlüsselt.</p>
+  </section>
+
+  <section id="wait" class="card" hidden>
+    <p id="waitmsg" data-t="Prüfe den Code …">Prüfe den Code …</p>
+    <div id="checkbox" hidden>
+      <p class="ok" data-t="✓ Code stimmt.">✓ Code stimmt.</p>
+      <p data-t="Prüfwörter – vergleiche sie mit dem Gastgeber:">Prüfwörter – vergleiche sie mit dem Gastgeber:</p>
+      <p id="check" class="check"></p>
+      <p class="muted small" data-t="Stimmen sie nicht, sitzt jemand dazwischen: Seite schließen.">Stimmen sie nicht, sitzt jemand dazwischen: Seite schließen.</p>
+      <p class="pulse" data-t="Warte, bis der Gastgeber dich zulässt …">Warte, bis der Gastgeber dich zulässt …</p>
+    </div>
+  </section>
+
+  <section id="end" class="card" hidden>
+    <h1 id="endtitle"></h1>
+    <p id="endmsg" class="muted"></p>
+    <button id="again" class="btn" data-t="Neu anklopfen">Neu anklopfen</button>
+  </section>
+
+  <div id="screen" hidden>
+    <div id="term"></div>
+    <div id="paused" class="paused" hidden></div>
+  </div>
+</main>
+<noscript>JavaScript + WebAssembly</noscript>
+<script src="xterm.js"></script>
+<script src="wasm_exec.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
