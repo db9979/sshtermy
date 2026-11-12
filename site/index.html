@@ -42,7 +42,7 @@
   </div>
   <figure>
     <img src="gifs/goal-en.gif" width="962" height="594" alt="Goal mode: the AI sets up nginx step by step, each command is confirmed with Enter">
-    <figcaption>Goal mode (F2): describe a goal, the AI suggests exactly one command at a time, you confirm. Multi-line content such as config sections arrives as a file (created via SFTP after ⏎), and config files are extended, not replaced.</figcaption>
+    <figcaption>Goal mode (F2): describe a goal, the AI suggests exactly one command at a time, you confirm. Multi-line content such as config sections arrives as a file (created via SFTP after ⏎), and config files are extended, not replaced. If a command gets stuck at the shell's continuation prompt <code>&gt;</code>, sshTermy cancels it with Ctrl+C and tells the AI, so the next command is not swallowed.</figcaption>
   </figure>
 </section>
 

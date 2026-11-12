@@ -47,7 +47,7 @@ func (a *App) runStartCmd(s *session) tea.Cmd {
 		a.pushToast(toastWarn, i18n.F("Startbefehl nicht ausgeführt (%s). Bitte in der Verbindung ändern.", f[0].Reason))
 		return nil
 	}
-	s.term.SendText(cmd + "\r")
+	a.sendLine(s, cmd)
 	return nil
 }
 

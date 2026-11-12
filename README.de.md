@@ -112,6 +112,10 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
     Mehrzeilige Inhalte (Konfigurationsabschnitte, Skripte) kommen als Datei, die sshTermy nach ⏎ per SFTP in `~/.sshtermy-agent/<lauf>/`
     anlegt, nie als Heredoc im Befehl; Konfigurationsdateien werden gesichert und ergänzt statt ersetzt
     (`docker cp` in einen Container gilt als Gefahr). Ist die Antwort des Modells unbrauchbar, fragt sshTermy einmal nach und nennt den Fehler.
+    Befehle, die die Shell am Fortsetzungs-Prompt `>` stehen ließen (offenes Anführungszeichen, Heredoc, `|` am Ende, `if` ohne `fi`),
+    gehen zurück ans Modell statt ausgeführt zu werden. Bleibt ein von sshTermy gesendeter Befehl (Ziel, Agent, Plan, KI fragen,
+    Begleiter, Favoriten, Vorgang über mehrere Fenster) trotzdem am `>` hängen, bricht sshTermy ihn mit Strg+C ab, meldet den
+    Schritt als Fehlschlag und schickt erst dann den nächsten Befehl.
   - **Agent-Modus** (F2, Tab wählt den Modus): Der Agent arbeitet selbstständig bis zum Ziel. Er führt Befehle aus,
     sieht Ausgabe und Exit-Code, legt Skripte per SFTP in `~/.sshtermy-agent/<lauf>/` an und führt sie aus (erst Probelauf).
     Stufen: *Vorsichtig* (Standard; nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`; als root angemeldet oder unter Windows fragt jede Änderung, weil es dort kein sudo zum Anhalten gibt), *Voll* (auch sudo).

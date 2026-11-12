@@ -102,6 +102,7 @@ type session struct {
 
 	pending    atomic.Bool // Ausgabe-Nachricht unterwegs (Koaleszieren)
 	lastOutput time.Time
+	contHome   bool // normaler Prompt dieses Systems ist selbst „>“ (contprompt.go)
 
 	// Ghost-Text
 	ghost, ghostFor string
