@@ -3,27 +3,27 @@ class Sshtermy < Formula
   desc "SSH terminal with an AI copilot"
   homepage "https://db9979.github.io/sshtermy/"
   license "MIT"
-  version "1.0.370"
+  version "1.0.372"
 
   on_macos do
     on_arm do
-      url "https://github.com/db9979/sshtermy/releases/download/v1.0.370/sshtermy_darwin_arm64"
-      sha256 "b55acd3cdd50693d967b60894bf2ad37e43c1e0ad0ab56ae9cec80233689a905"
+      url "https://github.com/db9979/sshtermy/releases/download/v1.0.372/sshtermy_darwin_arm64"
+      sha256 "f5f9790c7adb54927ddd0330f6790ca855a68d9530cf85ddf6b4b20d3a02b876"
     end
     on_intel do
-      url "https://github.com/db9979/sshtermy/releases/download/v1.0.370/sshtermy_darwin_amd64"
-      sha256 "5374d8ae55a35997bb18813eaea479f58d76f8f5c885fcd54be7f6e26fa95d0b"
+      url "https://github.com/db9979/sshtermy/releases/download/v1.0.372/sshtermy_darwin_amd64"
+      sha256 "1456566050a1ac0a8e1897d665ede5fbd03e0619ef69b58193f798b77c687997"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/db9979/sshtermy/releases/download/v1.0.370/sshtermy_linux_arm64"
-      sha256 "3bdf0099540cbaa731b9a2e5808e46cfffbc84d1cb1c1cb95f4d6c4f3fc54a6f"
+      url "https://github.com/db9979/sshtermy/releases/download/v1.0.372/sshtermy_linux_arm64"
+      sha256 "75a56d61c634053b56bf76af891decced091045414c6bac2b18dff707b5efaa5"
     end
     on_intel do
-      url "https://github.com/db9979/sshtermy/releases/download/v1.0.370/sshtermy_linux_amd64"
-      sha256 "1c90da63710a295b8852646cb0b528bea235fd5e973b3e8b21663c1ad5067807"
+      url "https://github.com/db9979/sshtermy/releases/download/v1.0.372/sshtermy_linux_amd64"
+      sha256 "617fb689f4c8b37bb048b6b829130153fdf77d545f12ceb13273f34d9b961c35"
     end
   end
 
