@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync/atomic"
 	"syscall/js"
 	"time"
 
@@ -45,7 +46,40 @@ func (c *conn) Recv(ctx context.Context) ([]byte, error) {
 	}
 }
 
-func (c *conn) Close() error { return c.ws.Close(websocket.StatusNormalClosure, "") }
+// Close wartet nicht: ws.Close blockiert im Browser, bis das close-Ereignis
+// kommt, und das bleibt bei manchen Fehlern (Zertifikat, Safari) ganz aus.
+func (c *conn) Close() error {
+	go func() { _ = c.ws.Close(websocket.StatusNormalClosure, "") }()
+	return nil
+}
+
+// dial: wie websocket.Dial, aber bei Zeitüberschreitung ohne Warten auf das
+// close-Ereignis (websocket.Dial bleibt dann sonst ewig in Close hängen).
+func dial(ctx context.Context, url string, wait time.Duration) (*websocket.Conn, error) {
+	type res struct {
+		ws  *websocket.Conn
+		err error
+	}
+	ch := make(chan res, 1)
+	dctx, cancel := context.WithCancel(ctx)
+	go func() {
+		ws, _, err := websocket.Dial(dctx, url, nil)
+		ch <- res{ws, err}
+	}()
+	t := time.NewTimer(wait)
+	defer t.Stop()
+	select {
+	case r := <-ch:
+		cancel()
+		return r.ws, r.err
+	case <-t.C:
+		cancel() // der Versuch räumt im Hintergrund auf
+		return nil, context.DeadlineExceeded
+	case <-ctx.Done():
+		cancel()
+		return nil, ctx.Err()
+	}
+}
 
 // session: eine Anmeldung (die Seite kann nach einem Fehler neu beginnen).
 type session struct {
@@ -112,21 +146,35 @@ func (s *session) run(ctx context.Context, wsURL string, inv sharewire.Invite, h
 		}
 		s.call("end", msg)
 	}
-	dctx, dcancel := context.WithTimeout(ctx, 15*time.Second)
-	ws, _, err := websocket.Dial(dctx, wsURL, nil)
-	dcancel()
+	s.call("stage", "dial")
+	ws, err := dial(ctx, wsURL, 15*time.Second)
 	if err != nil {
-		fail(errors.New(i18n.T("Freigabe nicht erreichbar (beendet, Code schon benutzt oder abgelaufen?)")))
+		// Häufigster Grund außer „beendet“: Safari lässt WebSockets zu selbst
+		// ausgestellten Zertifikaten nicht zu, auch wenn die Seite erlaubt wurde.
+		fail(errors.New(i18n.T("Keine Verbindung zur Freigabe (beendet, Code schon benutzt oder abgelaufen?). Safari: bitte Chrome, Edge oder Firefox nehmen – Safari erlaubt hier keine Verbindung zu selbst ausgestellten Zertifikaten.")))
 		return
 	}
 	ws.SetReadLimit(1<<20 + 1024)
 	c := &conn{ws}
+	s.call("stage", "code")
 	jctx, jcancel := context.WithTimeout(ctx, 4*time.Minute)
+	// Antwortet der Gastgeber nicht binnen 20 s auf den Code, nicht ewig warten.
+	var checked atomic.Bool
+	quiet := time.AfterFunc(20*time.Second, func() {
+		if !checked.Load() {
+			jcancel()
+		}
+	})
 	w, err := sharewire.Join(jctx, c, inv, hello, func(chk [3]string) {
+		checked.Store(true)
 		s.call("check", strings.ToUpper(strings.Join(chk[:], " · ")))
 	})
+	quiet.Stop()
 	jcancel()
 	if err != nil {
+		if !checked.Load() && ctx.Err() == nil {
+			err = errors.New(i18n.T("Der Gastgeber antwortet nicht auf den Code (sshTermy beim Gastgeber noch offen und aktuell?)"))
+		}
 		fail(err)
 		return
 	}
@@ -191,8 +239,8 @@ func hand(_ js.Value, _ []js.Value) any {
 func leave(_ js.Value, _ []js.Value) any {
 	if cur != nil {
 		cur.cancel()
-		if cur.w != nil {
-			_ = cur.w.Close()
+		if w := cur.w; w != nil {
+			go func() { _ = w.Close() }()
 		}
 	}
 	return nil

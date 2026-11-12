@@ -4,9 +4,10 @@ package i18n
 var enWebWatch = map[string]string{
 	"# Zuschauer im Browser abgelehnt (nicht freigegeben): %s (%s)": "# Browser viewer refused (not enabled): %s (%s)",
 	"Auch im Browser zusehen": "Also watch in a browser",
-	"Der Browser warnt einmal vor dem Zertifikat (selbst ausgestellt, SHA-256 %s…): „Erweitert › Weiter“.":          "The browser warns once about the certificate (self-signed, SHA-256 %s…): “Advanced › Proceed”.",
-	"Der Browser warnt einmal vor dem Zertifikat, weil es selbst ausgestellt ist: „Erweitert“ und „Weiter“ wählen.": "The browser warns once about the certificate because it is self-signed: choose “Advanced” and “Proceed”.",
-	"Freigabe nicht erreichbar (beendet, Code schon benutzt oder abgelaufen?)":                                      "Share not reachable (ended, code already used or expired?)",
+	"Der Browser warnt einmal vor dem Zertifikat (selbst ausgestellt, SHA-256 %s…): „Erweitert › Weiter“.":                                                                                                      "The browser warns once about the certificate (self-signed, SHA-256 %s…): “Advanced › Proceed”.",
+	"Der Browser warnt einmal vor dem Zertifikat, weil es selbst ausgestellt ist: „Erweitert“ und „Weiter“ wählen.":                                                                                             "The browser warns once about the certificate because it is self-signed: choose “Advanced” and “Proceed”.",
+	"Keine Verbindung zur Freigabe (beendet, Code schon benutzt oder abgelaufen?). Safari: bitte Chrome, Edge oder Firefox nehmen – Safari erlaubt hier keine Verbindung zu selbst ausgestellten Zertifikaten.": "No connection to the share (ended, code already used or expired?). Safari: please use Chrome, Edge or Firefox – Safari does not allow connections to self-signed certificates here.",
+	"Der Gastgeber antwortet nicht auf den Code (sshTermy beim Gastgeber noch offen und aktuell?)":                                                                                                              "The host does not answer the code (is sshTermy still open and up to date on the host?)",
 	"Link für sshTermy": "Link for sshTermy",
 	"Link und QR-Code für Zuschauer ohne sshTermy (gleicher Code, gleiches Anklopfen)": "Link and QR code for viewers without sshTermy (same code, same knocking)",
 	"Mit sshTermy:":  "With sshTermy:",

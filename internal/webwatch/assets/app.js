@@ -35,6 +35,8 @@
     "Du darfst mitschreiben bis %s – Tasten gehen jetzt an den Server": "You may type until %s – keys now go to the server",
     "Dieser Browser kann kein WebAssembly.": "This browser cannot run WebAssembly.",
     "Seite nur über https": "Page only over https",
+    "Verbinde mit der Freigabe …": "Connecting to the share …",
+    "Verbunden. Prüfe den Code …": "Connected. Checking the code …",
   };
   const T = (s) => (DE ? s : EN[s] || s);
   const F = (s, ...a) => { let i = 0; return T(s).replace(/%[sd]/g, () => String(a[i++])); };
@@ -114,6 +116,9 @@
 
   // ---------------------------------------------------------------- Anmelden
   const handlers = {
+    stage(st) {
+      $("waitmsg").textContent = st === "dial" ? T("Verbinde mit der Freigabe …") : T("Verbunden. Prüfe den Code …");
+    },
     check(words) {
       $("waitmsg").hidden = true;
       $("checkbox").hidden = false;
