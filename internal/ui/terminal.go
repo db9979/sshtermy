@@ -192,6 +192,18 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll, s.sel = 0, nil
 			return nil
 		}
+		if !s.panelFocus && !s.files.open && s.term != nil {
+			switch a.keys.which(key, actPrevCmd, actNextCmd, actCmdList) { // Befehle als Blöcke (cmdblocks.go)
+			case actPrevCmd:
+				a.jumpBlock(s, -1)
+				return nil
+			case actNextCmd:
+				a.jumpBlock(s, 1)
+				return nil
+			case actCmdList:
+				return a.openBlocks(s)
+			}
+		}
 		s.sel, s.selecting = nil, false
 		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
 			s.scroll = 0
@@ -764,7 +776,7 @@ func (a *App) tabLabel(i, l int) string {
 	if l == 0 {
 		return " " + strconv.Itoa(a.winNo(x))
 	}
-	return " " + strconv.Itoa(a.winNo(x)) + " " + trunc(x.tabName(), l)
+	return " " + strconv.Itoa(a.winNo(x)) + " " + trunc(x.tabName(), l) + goalTabCount(x) // Schritte des Ziels
 }
 
 // tabWidth: Streifen, Punkt, Text, Leerraum, Innenabstand, × am aktiven.
@@ -846,6 +858,9 @@ func (a *App) tabStrip(room int) string {
 		x := a.sessions[i]
 		if a.sessionVisible(x) {
 			x.unseen = false
+			if !a.blurred && x.goal.done {
+				x.goal.doneSeen = true
+			}
 		}
 		dot := a.tabDot(x, now) // Spinner, Puls bei neuer Ausgabe (motion.go)
 		if x.detached() {
@@ -854,11 +869,8 @@ func (a *App) tabStrip(room int) string {
 		if g := a.noticeGlyph(x); g != "" {
 			dot = g // Befehl fertig / Glocke, solange der Tab verdeckt war
 		}
-		if x.goal.auto && x.goal.active {
-			dot = st.AI.Render("◆") // Agent läuft
-			if x.goal.paused {
-				dot = st.Warn.Render("◆") // Agent wartet auf dich
-			}
+		if g := a.goalGlyph(x); g != "" {
+			dot = g // Ziel läuft / wartet auf dich / fertig (goalux.go)
 		}
 		ts := st.Tab
 		if i == a.cur {

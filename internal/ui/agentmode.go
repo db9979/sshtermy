@@ -205,8 +205,7 @@ func (a *App) agentExec(s *session) tea.Cmd {
 	if g.cur.File != nil {
 		return a.writeAgentFile(s)
 	}
-	a.runProposal(s, g.cur.Command, false)
-	return nil
+	return a.execProposal(s, g.cur.Command, false) // ändert er Dateien, erst sichern (goalux.go)
 }
 
 // agentNext holt den nächsten Schritt, wenn keine Grenze greift.
@@ -521,6 +520,10 @@ func (a *App) agentKey(s *session, key string) (tea.Cmd, bool) {
 		case "v":
 			a.agentView(s)
 			return nil, true
+		case "f":
+			return a.startFollowGoal(s), true
+		case "u":
+			return a.startUndo(s), true
 		}
 		return nil, false
 	}
@@ -549,6 +552,10 @@ func (a *App) agentKey(s *session, key string) (tea.Cmd, bool) {
 	case "j", "y":
 		if g.cur != nil {
 			return a.agentResume(s), true
+		}
+	case "S":
+		if g.cur != nil {
+			return a.goalSkipWhy(s), true
 		}
 	case "s", "n":
 		if g.cur != nil {

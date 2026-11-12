@@ -92,7 +92,7 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 		writeHist(&b, hist)
 	}
 	for _, x := range answers {
-		fmt.Fprintf(&b, "Antwort des Menschen: %s\n", Redact(x))
+		b.WriteString(answerLine(x, "Antwort des Menschen: %s\n"))
 	}
 	b.WriteString("\n" + material(c))
 	msgs := []llm.Message{
@@ -146,8 +146,19 @@ func block(s string) string {
 
 func (h DoneStep) status() string {
 	switch {
+	case h.Skipped && h.Note != "":
+		return "vom Menschen übersprungen, Grund: " + strings.Join(strings.Fields(Redact(h.Note)), " ")
 	case h.Skipped:
 		return "vom Menschen übersprungen"
+	case h.Manual:
+		st := "vom Menschen selbst ausgeführt"
+		switch {
+		case h.ExitHint != "":
+			st += ", fehlgeschlagen: " + h.ExitHint
+		case h.Exit != nil:
+			st += fmt.Sprintf(", Exit %d", *h.Exit)
+		}
+		return st
 	case h.File != "":
 		return "Datei angelegt"
 	case h.ExitHint != "":

@@ -29,6 +29,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Wake-on-LAN**: a powered-off machine in your own network can be woken from the manager (click “Send Wake-on-LAN”, palette “wake”, or `w` in a disconnected tab). sshTermy remembers the MAC address on the first connect, or you enter it under Advanced.
 - **Placeholders in quick commands**: `systemctl restart {{service}}` asks for the value when run, `{{service:nginx}}` suggests one; the last value is prefilled next time. If only the inserted value makes the command dangerous, sshTermy asks first.
 - **Search across all tabs** (Alt+S): one search term, the hits from the scrollback of all open tabs in one list; ⏎ jumps to the tab at exactly that line.
+- **Commands as blocks**: Alt+PgUp / Alt+PgDn jumps from command to command in the scrollback, Alt+O lists the commands of the tab (with time, duration, ✓/×): ⏎ jumps there, Ctrl+C copies just that output, Ctrl+K hands command and output to “Ask AI”, Ctrl+L shows it in full.
 - **Drag tabs with the mouse**: a tab can be dragged to another position in the tab bar.
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
@@ -115,6 +116,16 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
     are sent back to the model instead of being run. If a command sent by sshTermy (goal, agent, plan, ask AI, companion,
     favorites, multi-window task) still gets stuck at `>`, sshTermy cancels it with Ctrl+C, reports it as a failed step, and only
     then sends the next command.
+    In daily use: `?` gives the AI an instruction in the middle of a goal (“use docker compose, not docker-compose”), ⇧S skips a
+    step with a reason. If a command waits for input (`[Y/n]`, `less`/`(END)`, `--More--` on a switch, “Press any key”), the panel
+    shows buttons for it (j / n / q / Space / Ctrl+C); the agent pauses there. Before a step changes files (`sed -i`, `tee`, `>`,
+    `cp`/`mv` onto a file, `rm`), sshTermy backs them up via SFTP; at the end `u` restores everything in one command (new files are
+    removed). `f` starts a follow-up goal that knows the steps before. Commands you type yourself during a goal reach the AI as
+    steps with their output. If the connection drops, the goal pauses; after reconnecting ⏎ continues and the AI checks the state
+    first. Every goal lands in the **goal history** of the connection (only on this computer): ↑↓ in the goal field, ⏎ runs it
+    again, Ctrl+D removes it. The tab shows the goal's state (◎ running, yellow = waiting for you, green = reached) and the
+    number of steps; if a goal is waiting for you in a hidden tab, a notification pops up, with sshTermy in the background a
+    desktop notification.
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
     Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),
@@ -327,6 +338,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+S | search in all open tabs, ⏎ jumps to the matching line |
+| | Alt+PgUp / Alt+PgDn / Alt+O | jump to the previous / next command / list of the tab's commands (⏎ jump, Ctrl+C copy output, Ctrl+K ask AI, Ctrl+L read) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu, hover it for target, duration and latency) |
 | | Alt+L | local shell in a new tab (also in the manager; palette: `local`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | quick commands: list / run directly (`{{name}}` in the command asks for a value) |
@@ -352,7 +364,11 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | p / g / n / x | spotted intent: plan / agent takes over / do it myself / don't ask again |
 | | Ctrl+click / right-click | open URL in the browser / menu for a link, IP or host: connect (directly or via the server), ping from the server or from here, copy |
 | | Paste | multi-line shows a preview first (⏎ paste, o without the last Enter, Esc cancel); palette “Paste guard off” |
-| Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook / save goal as runbook / delete runbook |
+| Goal mode | ↑↓ / Ctrl+S / Ctrl+D | choose runbook or earlier goal (history) / save goal as runbook / delete runbook or history entry |
+| | ? / ⇧S | instruct the AI (applies from the next step) / skip with a reason |
+| | j / n / q / Space / Ctrl+C | the running command asks for input: answer with the buttons (Esc: answer in the terminal) |
+| | f / u | after the goal: follow-up goal / restore the files the goal changed (Ctrl+R in the empty goal field) |
+| | ⏎ after a drop | continue the goal once the connection is back |
 | Goal mode, file step | ⏎ / v / s | create the file on the host / view it / skip; at the end `r` deletes the work folder |
 | | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |
 | | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
