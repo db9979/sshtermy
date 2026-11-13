@@ -624,6 +624,7 @@ func (w *window) Draw(screen *ebiten.Image) {
 		w.white.Fill(color.White)
 	}
 	dFg, dBg := baseColors(w.term.DefaultColors())
+	curClr := w.term.CursorColor()
 	screen.Fill(dBg)
 
 	var cw, ch int
@@ -647,7 +648,7 @@ func (w *window) Draw(screen *ebiten.Image) {
 			}
 			_, bg, set := cellColors(&c.Style, dFg, dBg)
 			if curVis && x == curX && y == curY {
-				bg, set = cursorClr, true
+				bg, set = cursorColor(curClr, dFg, bg), true
 			}
 			if !set {
 				continue

@@ -86,6 +86,18 @@ func TestThemeFillsEveryCell(t *testing.T) {
 	}
 }
 
+// Cursorfarbe (Akzent) hebt sich in jedem Theme vom Grund ab.
+func TestCursorContrast(t *testing.T) {
+	for _, th := range Themes {
+		if r := contrast(th.Accent, th.Bg); r < 3 {
+			t.Errorf("%s: Cursor (Akzent) auf Grund nur %.1f:1", th.Name, r)
+		}
+		if r := contrast(th.Bg, th.Accent); r < 3 {
+			t.Errorf("%s: Zeichen im Cursorblock nur %.1f:1", th.Name, r)
+		}
+	}
+}
+
 func TestFillDefaultColors(t *testing.T) {
 	th := Hell
 	cases := []string{
@@ -136,6 +148,34 @@ func TestThemeFillsTerminal(t *testing.T) {
 	}
 	a.Update(msg)
 	waitFor(t, func() bool { return strings.HasSuffix(strings.TrimSpace(s.term.CursorLine()), "#") })
+	// Cursor: helle Themes zeichnen ihn selbst (Akzent-Block), dunkle
+	// überlassen ihn dem Terminal in Akzentfarbe.
+	for _, name := range []string{"hell", "kontrasthell", "nacht"} {
+		a.setTheme(name)
+		v := a.View()
+		x, y, _ := s.term.Cursor()
+		tr := a.termRect(s)
+		c := cellsOf(v.Content, a.w, a.h).CellAt(tr.x+x, tr.y+y)
+		if a.s.T.Dark {
+			if v.Cursor == nil || !sameCol(v.Cursor.Color, a.s.T.Accent) {
+				t.Errorf("%s: Terminal-Cursor fehlt oder falsche Farbe: %+v", name, v.Cursor)
+			}
+			continue
+		}
+		if v.Cursor != nil {
+			t.Errorf("%s: echter Cursor sollte aus sein", name)
+		}
+		if c == nil || !sameCol(c.Style.Bg, a.s.T.Accent) || !sameCol(c.Style.Fg, a.s.T.Bg) {
+			t.Errorf("%s: Cursorzelle nicht als Block gezeichnet: %+v", name, c)
+		}
+	}
+	// Suche im Terminal: Feld in Theme-Farben (Cursor sichtbar)
+	a.setTheme("hell")
+	a.openSearch(s)
+	if st := s.search.in.Styles(); !sameCol(st.Cursor.Color, Hell.Accent) || !sameCol(st.Focused.Text.GetForeground(), Hell.Text) {
+		t.Errorf("Suchfeld nicht im Theme: Cursor %v Text %v", st.Cursor.Color, st.Focused.Text.GetForeground())
+	}
+	s.search.open = false
 	for _, name := range []string{"hell", "papier", "nacht"} {
 		a.setTheme(name)
 		body, _ := a.viewTerminal()
