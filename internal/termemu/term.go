@@ -8,8 +8,10 @@ package termemu
 
 import (
 	"encoding/base64"
+	"image/color"
 	"io"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -40,6 +42,10 @@ type Term struct {
 	// OSC 52: Text, den ein Programm auf dem Server in die Zwischenablage
 	// legen will (tmux, vim, neovim …). Die Oberfläche holt ihn ab.
 	clip string
+
+	// OSC 10/11: Grundfarben, die das Programm fürs Terminal wünscht (nil =
+	// keine). Das eigene Fenster zeichnet damit Rand und leere Zellen.
+	defFg, defBg color.Color
 
 	img imageFilter // Sixel, kitty, iTerm2 → Halbblöcke (images.go)
 
@@ -94,6 +100,23 @@ func New(cols, rows int, toHost io.Writer) *Term {
 			return true // A/B/C (Prompt-Marker) still schlucken
 		})
 	}
+	// OSC 10/11 merken (110/111 setzen zurück); der Emulator wertet sie
+	// danach selbst aus (false = weiterreichen).
+	for _, cmd := range []int{10, 11, 110, 111} {
+		t.emu.RegisterOscHandler(cmd, func(data []byte) bool {
+			c, ok := parseDefaultColor(cmd, string(data))
+			if ok {
+				t.mu.Lock()
+				if cmd == 10 || cmd == 110 {
+					t.defFg = c
+				} else {
+					t.defBg = c
+				}
+				t.mu.Unlock()
+			}
+			return false
+		})
+	}
 	// OSC 52 „Zwischenablage setzen“: "c;<base64>". Abfragen („?“) werden
 	// nie beantwortet, sonst könnte jeder Server die Zwischenablage lesen.
 	t.emu.RegisterOscHandler(52, func(data []byte) bool {
@@ -126,6 +149,30 @@ func New(cols, rows int, toHost io.Writer) *Term {
 // der Emulator nicht auch antworten. SendText und Paste gehen in der Zeit
 // direkt an den Server.
 func (t *Term) MuteReplies(on bool) { t.muted.Store(on) }
+
+// parseDefaultColor liest "11;#rrggbb" bzw. "rgb:…" (auch ohne Präfix).
+// 110/111 = zurücksetzen (nil). Abfragen („?“) ändern nichts.
+func parseDefaultColor(cmd int, s string) (color.Color, bool) {
+	if cmd == 110 || cmd == 111 {
+		return nil, true
+	}
+	parts := strings.Split(s, ";")
+	if len(parts) > 0 && parts[0] == strconv.Itoa(cmd) {
+		parts = parts[1:]
+	}
+	if len(parts) != 1 || parts[0] == "?" {
+		return nil, false
+	}
+	c := ansi.XParseColor(parts[0])
+	return c, c != nil
+}
+
+// DefaultColors: per OSC 10/11 gewünschte Grundfarben (nil = keine).
+func (t *Term) DefaultColors() (fg, bg color.Color) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.defFg, t.defBg
+}
 
 // parseCommandDone liest "133;D;1" (auch ohne Präfix oder ohne Code = 0).
 func parseCommandDone(s string) (int, bool) {

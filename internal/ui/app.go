@@ -929,7 +929,9 @@ func (a *App) viewFrame() tea.View {
 		a.z.reset() // während der Animation ist nichts klickbar
 		body, cur = a.viewIntro(), nil
 	}
-	v := tea.NewView(body)
+	// Grundfarben in jede Zelle (fillbg.go): sonst bleiben helle Themes in
+	// Terminals ohne OSC 11 dunkel.
+	v := tea.NewView(fillDefaultColors(body, a.s.T.Text, a.s.T.Bg))
 	v.AltScreen = true
 	v.MouseMode = a.mouseMode()
 	v.Cursor = cur

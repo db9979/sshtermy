@@ -62,3 +62,29 @@ func TestCommandOutput(t *testing.T) {
 		t.Fatalf("wrapped: %q %v", out, ok)
 	}
 }
+
+// OSC 10/11 merkt sich das Terminal (eigenes Fenster malt damit), 110/111
+// setzt zurück, Abfragen ändern nichts.
+func TestDefaultColorsOSC(t *testing.T) {
+	tm := New(20, 5, io.Discard)
+	defer tm.Close()
+	_, _ = tm.Write([]byte("\x1b]11;#f5f5f7\x07\x1b]10;rgb:1f/23/35\x1b\\"))
+	fg, bg := tm.DefaultColors()
+	if bg == nil || fg == nil {
+		t.Fatalf("nicht gemerkt: %v %v", fg, bg)
+	}
+	if r, g, b, _ := bg.RGBA(); r>>8 != 0xf5 || g>>8 != 0xf5 || b>>8 != 0xf7 {
+		t.Errorf("bg %v", bg)
+	}
+	if r, _, _, _ := fg.RGBA(); r>>8 != 0x1f {
+		t.Errorf("fg %v", fg)
+	}
+	_, _ = tm.Write([]byte("\x1b]11;?\x07"))
+	if _, bg := tm.DefaultColors(); bg == nil {
+		t.Error("Abfrage hat Farbe gelöscht")
+	}
+	_, _ = tm.Write([]byte("\x1b]111\x07"))
+	if _, bg := tm.DefaultColors(); bg != nil {
+		t.Errorf("111 setzt nicht zurück: %v", bg)
+	}
+}
