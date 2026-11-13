@@ -14,7 +14,7 @@
             │ ──────────────────────────────────────────────────────────────────────── │
             │ Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.          │
             │                                                                          │
-            │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
+            │  ↑↓ wählen    Esc schließen                                              │
             └──────────────────────────────────────────────────────────────────────────┘
                                         │
                                         │

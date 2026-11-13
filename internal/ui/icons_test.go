@@ -53,7 +53,7 @@ func TestPaletteIconColumn(t *testing.T) {
 		a.applyLook()
 		items := a.paletteItems()
 		a.palEnter("settings")
-		items = append(items, a.paletteItems()...)
+		items = append(items, allSettings(a)...)
 		for _, it := range items {
 			if w := ansi.StringWidth(padIcon(it.icon)); w != iconCol() {
 				t.Errorf("Stil %q: %q hat Symbol %q mit Breite %d", set, it.label, it.icon, w)
@@ -107,6 +107,7 @@ func TestIconStyles(t *testing.T) {
 	// Die Palette zeigt einen Durchschalt-Eintrag; die Suche findet alle
 	// vier Stile einzeln, den aktiven mit Haken.
 	a.palEnter("settings")
+	a.pal.tab = pgSetLook
 	if it, ok := hasLabel(a.paletteItems(), "Symbole"); !ok || it.cycle == nil || it.hint != "Text-Tags" {
 		t.Fatalf("Durchschalt-Eintrag Symbole: %+v", it)
 	}

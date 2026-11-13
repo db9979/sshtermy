@@ -77,6 +77,9 @@ type palItem struct {
 	area string
 	// top: zusätzlich oben unter „Häufig“.
 	top bool
+	// pos: Position des Werts (i von n) bei Durchschalt-Einträgen, für die
+	// Punkte ●○○ (palstyle.go); n = 0 heißt keine Punkte.
+	pos [2]int
 }
 
 // palState: Schalter zeigen rechts „an“ oder „aus“ statt eines Hinweises.
@@ -94,6 +97,7 @@ type palette struct {
 	armed int
 	menu  string    // offenes Untermenü, "" = Übersicht
 	mo    palMotion // Übergänge (motion2.go)
+	tab   palGroup  // Reiter der Einstellungen (palstyle.go)
 }
 
 func isPaletteKey(k string) bool { return activeKeys.is(actPalette, k) }
@@ -105,7 +109,7 @@ func newPaletteInput() aiInput {
 }
 
 func (a *App) openPalette() tea.Cmd {
-	a.pal = &palette{in: newPaletteInput(), armed: -1}
+	a.pal = &palette{in: newPaletteInput(), armed: -1, tab: pgSetBehave}
 	return a.pal.in.Focus()
 }
 
@@ -198,7 +202,8 @@ func (a *App) palSubmenu(m, ql string, match func(string) bool) []palItem {
 	for _, x := range a.palMenuItems() {
 		switch {
 		case ql == "":
-			if x.menu == m && !x.hidden {
+			// Einstellungen: nur der offene Reiter (palstyle.go).
+			if x.menu == m && !x.hidden && (m != "settings" || x.group == a.pal.tab) {
 				items = append(items, x)
 			}
 		case x.open == "" && (x.menu == m || strings.HasPrefix(x.menu, m+"/")) && x.matches(match):
@@ -503,7 +508,7 @@ func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 				cur = i
 			}
 		}
-		add("tabs", palItem{icon: ic("split"), label: i18n.T("Aufteilung"), hint: layoutOrder[cur].label(), keep: true,
+		add("tabs", palItem{icon: ic("split"), label: i18n.T("Aufteilung"), hint: layoutOrder[cur].label(), keep: true, pos: [2]int{cur, len(layoutOrder)},
 			cycle: func(d int) tea.Cmd { a.setSplit(layoutOrder[cycleIndex(cur, len(layoutOrder), d)]); return nil },
 			run:   func() tea.Cmd { a.setSplit(layoutOrder[cycleIndex(cur, len(layoutOrder), 1)]); return nil }})
 		for _, m := range layoutOrder {
@@ -770,18 +775,18 @@ func (a *App) palMenuItems() []palItem {
 	items := []palItem{
 		palToggle(ic("explain"), i18n.T("Einfacher Modus: Profi-Funktionen ausblenden"), a.simple(),
 			"einfach simple anfänger beginner profi expert ausblenden weniger", func() tea.Cmd { return a.toggleSimple() }),
-		palCycle(pgSetBehave, ic("language"), "Sprache / Language", lang, "english deutsch german", func(int) tea.Cmd { return a.toggleLang() }),
+		palCycle(pgSetBehave, ic("language"), "Sprache / Language", lang, "english deutsch german", func(int) tea.Cmd { return a.toggleLang() }).at(langIdx(), 2),
 		palToggle(ic("mouse"), i18n.T("Maus: klicken, markieren, scrollen"), a.mouseEnabled(), "mouse", func() tea.Cmd { return a.toggleMouse() }),
 		palToggle(ic("reconnect"), i18n.T("Auto-Reconnect: nach Abbruch neu verbinden"), a.autoReconnect(), "reconnect", func() tea.Cmd { return a.toggleAutoReconnect() }),
 		palCycle(pgSetBehave, ic("reach"), i18n.T("Online-Punkt: Erreichbarkeit der Hosts prüfen"), reachLabel(a.reachMode()),
-			"online reach erreichbar ordner zugeklappt", func(dir int) tea.Cmd { return a.cycleReach(dir) }),
+			"online reach erreichbar ordner zugeklappt", func(dir int) tea.Cmd { return a.cycleReach(dir) }).at(a.reachMode(), 3),
 		palCycle(pgSetBehave, ic("news"), i18n.T("Meldung, wenn lange Befehle fertig sind"), notifyLabel(a.notifyLevel()),
-			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }),
+			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }).at(a.notifyLevel(), 3),
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
 		palCycle(pgSetBehave, ic("split"), i18n.T("Fenster beim Start"), winStartLabel(a.winStart()), "fenster vollbild fullscreen maximiert start window f11",
-			func(dir int) tea.Cmd { return a.cycleWinStart(dir) }),
+			func(dir int) tea.Cmd { return a.cycleWinStart(dir) }).at(winStartIdx(a.winStart()), 3),
 	}
 
 	// Aussehen: je ein Durchschalt-Eintrag, die Einzelwerte nur für die Suche.
@@ -819,12 +824,12 @@ func (a *App) palMenuItems() []palItem {
 		look(hide(palToggle(ic("split"), i18n.T("Farbiger Rahmen um jeden Tab"), a.tabFramesOn(), "rahmen farbe farbig tab umranden frame border color", func() tea.Cmd { return a.toggleTabFrames() }))),
 		look(hide(palToggle(ic("colors"), i18n.T("Farbregeln: Ausgabe einfärben"), a.highlightOn(), "highlight farbregeln einfärben", func() tea.Cmd { return a.toggleHighlight() }))),
 		palCycle(pgSetLook, ic("icons"), i18n.T("Symbole"), i18n.T(iconStyleLabel(iconSet)), "icons symbole nerd font unicode minimal tags",
-			func(dir int) tea.Cmd { return a.chooseIcons(iconStyles[cycleIndex(iconIdx, len(iconStyles), dir)].id) }),
+			func(dir int) tea.Cmd { return a.chooseIcons(iconStyles[cycleIndex(iconIdx, len(iconStyles), dir)].id) }).at(iconIdx, len(iconStyles)),
 		palCycle(pgSetLook, ic("theme"), i18n.T("Fensterstil"), framesLabel(framesSetting), "fensterstil rahmen ecken rund eckig schatten dialog flach",
-			func(dir int) tea.Cmd { return a.cycleFrames(dir) }),
+			func(dir int) tea.Cmd { return a.cycleFrames(dir) }).at(indexOf(framesValues, set.Frames), len(framesValues)),
 		// Bewegung „aus“ schaltet auch die Startanimation ab (motion.go).
 		palCycle(pgSetLook, ic("intro"), i18n.T("Bewegung"), motionLabel(motionSetting), "bewegung animation motion animiert spinner puls hover karte ruhig startanimation intro",
-			func(dir int) tea.Cmd { return a.cycleMotion(dir) }),
+			func(dir int) tea.Cmd { return a.cycleMotion(dir) }).at(indexOf(motionValues, set.Motion), len(motionValues)),
 		look(hide(palToggle(ic("intro"), i18n.T("Startanimation"), a.introOn(), "intro animation", func() tea.Cmd { return a.toggleIntro() }))),
 		look(palToggle(ic("intro"), i18n.T("Barrierearm: keine Animationen, Formen statt nur Farben"), accessible,
 			"barrierefrei barrierearm accessibility a11y screenreader farbenblind animation ruhig", func() tea.Cmd { return a.toggleAccessible() })),
@@ -854,7 +859,7 @@ func (a *App) palMenuItems() []palItem {
 		safe(palToggle(ic("paste"), i18n.T("Einfügeschutz: Vorschau bei mehreren Zeilen"), a.pasteGuardEnabled(), "paste einfügen", func() tea.Cmd { return a.togglePasteGuard() })),
 		proItem(safe(palToggle(ic("paste"), i18n.T("Server darf in die Zwischenablage kopieren (OSC 52)"), a.osc52On(), "clipboard zwischenablage osc52 tmux vim", func() tea.Cmd { return a.toggleOSC52() }))),
 		palCycle(pgSetSafe, ic("sshkey"), i18n.T("Automatisch sperren bei Leerlauf"), lockLabel(set.LockAfterMin), "lock sperren idle leerlauf",
-			func(dir int) tea.Cmd { return a.cycleLockAfter(dir) }),
+			func(dir int) tea.Cmd { return a.cycleLockAfter(dir) }).at(indexInt(lockChoices, set.LockAfterMin), len(lockChoices)),
 		palItem{group: pgSetSafe, menu: "settings", icon: ic("sshkey"), label: i18n.T("Master-Passwort ändern …"), hint: masterHint(a.st.V.HasDPAPI()),
 			keys: "master passwort password ändern change dpapi windows anmeldung", run: func() tea.Cmd { return a.openMasterForm() }},
 
@@ -885,7 +890,7 @@ func (a *App) palMenuItems() []palItem {
 
 		// Einstellungen › KI › KI-Begleiter
 		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("KI-Begleiter"), companionLevelLabel(a.compLevel()),
-			"begleiter companion stufe aus leise gesprächig coach", func(dir int) tea.Cmd { return a.cycleCompanion(dir) })),
+			"begleiter companion stufe aus leise gesprächig coach", func(dir int) tea.Cmd { return a.cycleCompanion(dir) }).at(a.compLevel(), domain.CompanionCoach+1)),
 		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Höchstens KI-Anfragen pro Stunde"), fmt.Sprint(a.compCfg().Hour()),
 			"begleiter companion grenze limit stunde rate kosten", func(dir int) tea.Cmd { return a.cycleCompanionHour(dir) })),
 		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Tagesbudget (geschätzte Tokens)"), kTok(a.compCfg().DayTokens()),
@@ -903,7 +908,7 @@ func (a *App) palMenuItems() []palItem {
 		// Einstellungen › Protokolle & Logs
 		sub("settings/logs", palToggle(ic("sesslog"), i18n.T("Sitzungsprotokoll schreiben"), a.logsEnabled(), "log protokoll", func() tea.Cmd { return a.toggleSessionLog() })),
 		sub("settings/logs", palCycle(pgSetSetup, ic("errors"), i18n.T("Logwache"), watchLabel(a.watchLevel()),
-			"logwache log watch journal überwachen fehler warnungen", func(dir int) tea.Cmd { return a.cycleWatch(dir) })),
+			"logwache log watch journal überwachen fehler warnungen", func(dir int) tea.Cmd { return a.cycleWatch(dir) }).at(a.watchLevel(), 3)),
 		proItem(sub("settings/logs", palCycle(pgSetSetup, ic("errors"), i18n.T("Syslog-Empfang (Switches, Firewalls)"), syslogLabel(set.SyslogPort),
 			"syslog udp 514 5514 empfang switch firewall logwache", func(dir int) tea.Cmd { return a.cycleSyslog(dir) }))),
 		proItem(sub("settings/logs", palToggle(ic("errors"), i18n.T("Syslog auch von unbekannten Absendern annehmen"), set.SyslogAny,
@@ -1001,11 +1006,19 @@ func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 		cur = items[p.sel]
 	}
 	switch key := k.String(); {
+	case (key == "tab" || key == "shift+tab") && a.palTabbed():
+		dir := 1
+		if key == "shift+tab" {
+			dir = -1
+		}
+		a.palTabMove(dir)
+		return nil
 	case (key == "left" || key == "right") && cur.cycle != nil:
 		dir := 1
 		if key == "left" {
 			dir = -1
 		}
+		p.palChanged(cur.label)
 		return a.palRun(palItem{menu: cur.menu, keep: true, run: func() tea.Cmd { return cur.cycle(dir) }})
 	case key == "right" && cur.open != "" && p.in.Value() == "":
 		return a.palRun(cur)
@@ -1039,7 +1052,7 @@ func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 			p.armed = p.sel
 			return nil
 		}
-		return a.palRun(it)
+		return a.palRunTrack(it)
 	}
 	var cmd tea.Cmd
 	before := p.in.Value()
@@ -1058,6 +1071,7 @@ func (a *App) viewPalette() string {
 	if p.sel >= len(items) {
 		p.sel = max(0, len(items)-1)
 	}
+	dw := a.palDetailWidth(w)
 	p.in.SetWidth(w - 8)
 	now := time.Now()
 	p.track(now)
@@ -1070,6 +1084,26 @@ func (a *App) viewPalette() string {
 	b.WriteString(promptBlock(st.Accent.Render("$ "), p.in.View()) + "\n")
 	b.WriteString(lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w-4)) + "\n")
 	maxRows := max(5, a.h-12)
+	tabbed := a.palTabbed()
+	if tabbed {
+		b.WriteString(a.palTabsRow() + "\n")
+		maxRows -= 2
+	}
+	// Hilfesatz unter der Auswahl nur ohne Detailspalte (dort steht er rechts).
+	var help string
+	if dw == 0 && p.sel < len(items) {
+		help = palHelp(items[p.sel])
+	}
+	var helpLines []string
+	if help != "" {
+		// höchstens zwei Zeilen, umgebrochen
+		helpLines = strings.Split(lipgloss.NewStyle().Width(w-10).Render(help), "\n")
+		if len(helpLines) > 2 {
+			helpLines = helpLines[:2]
+			helpLines[1] = trunc(strings.TrimRight(helpLines[1], " ")+" …", w-10)
+		}
+		maxRows -= len(helpLines)
+	}
 	// Leerzeilen zwischen den Gruppen nur, wenn sie Platz haben: jede kostet
 	// eine Zeile, die sonst ein Eintrag hätte.
 	groups := 0
@@ -1088,22 +1122,22 @@ func (a *App) viewPalette() string {
 	rows := 0
 	for i := start; i < len(items) && rows < maxRows; i++ {
 		it := items[i]
+		gcol := a.palGroupColor(it.group)
 		if it.group != last {
 			last = it.group
-			head := i18n.T(palGroupName[it.group])
-			if it.group == pgConns {
-				head = a.palConnHeader(p.in.Value())
+			if !tabbed {
+				head := i18n.T(palGroupName[it.group])
+				if it.group == pgConns {
+					head = a.palConnHeader(p.in.Value())
+				}
+				b.WriteString(a.palGroupRule(head, w-4, gcol, gaps && rows > 0) + "\n")
+			} else if rows == 0 {
+				b.WriteString("\n")
 			}
-			b.WriteString(a.palGroupRule(head, w-4, gaps && rows > 0) + "\n")
 		}
 		iconStyle := st.Accent
-		switch it.group {
-		case pgAI:
-			iconStyle = st.AI
-		case pgSuggest:
-			iconStyle = st.OK
-		case pgRunbook:
-			iconStyle = st.AI
+		if gcol != nil {
+			iconStyle = lipgloss.NewStyle().Foreground(gcol)
 		}
 		if it.group == pgConns && it.more {
 			iconStyle = st.Muted
@@ -1113,21 +1147,10 @@ func (a *App) viewPalette() string {
 		}
 		it.icon = padIcon(it.icon)
 		iw := lipgloss.Width(it.icon) - 1
-		hint := st.Muted.Render(it.hint)
-		if it.cycle != nil {
-			hint = st.Muted.Render("‹ ") + st.Accent.Render(it.hint) + st.Muted.Render(" ›")
-		}
-		switch it.state {
-		case palOn:
-			hint = st.OK.Render("● " + i18n.T("an"))
-		case palOff:
-			hint = st.Muted.Render("○ " + i18n.T("aus"))
-		}
-		if it.danger != "" {
-			hint = st.Danger.Render("▲ " + it.danger)
-			if p.armed == i {
-				hint = st.Danger.Render(i18n.T("nochmal ⏎"))
-			}
+		hint := a.palHint(it, p.armed == i)
+		if k := p.glowK(it.label, now); k > 0 {
+			// umgeschalteter Wert leuchtet kurz auf (Bewegung)
+			hint = lipgloss.NewStyle().Background(mixColor(st.T.Surface, st.T.Warn, 0.55*k)).Render(ansiPlainKeep(hint))
 		}
 		label := trunc(it.label, w-8-iw-lipgloss.Width(hint))
 		sub := ""
@@ -1141,14 +1164,22 @@ func (a *App) viewPalette() string {
 		}
 		hits := fuzzyHits(query, label) // getroffene Buchstaben leuchten (motion2.go)
 		line := iconStyle.Render(it.icon) + " " + hitLabel(label, hits, labelStyle, st.Accent.Bold(true), glow) + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
+		if k := p.trailK(i, now); k > 0 {
+			// Nachleuchten: die alte Auswahl verblasst, der Balken „gleitet“.
+			line = lipgloss.NewStyle().Background(mixColor(st.T.Surface, st.T.Accent, 0.35*k)).Width(w - 4).Render(ansi.Strip(line))
+		}
 		if i == p.sel {
-			sel := st.Selected
+			// Auswahl als Balken in Akzentfarbe mit ▶ (wie der aktive Tab).
+			fill := st.T.Accent
 			if motionLevel() > 0 {
 				if k := easeOut(float64(now.Sub(p.mo.selAt)) / float64(selFadeDur)); k < 1 {
-					sel = sel.Background(mixColor(st.T.Surface, st.Selected.GetBackground(), k))
+					fill = mixColor(st.T.Surface, st.T.Accent, k)
 				}
 			}
-			line = sel.Width(w - 4).Render(it.icon + " " + label + sub + strings.Repeat(" ", gap) + ansiPlain(hint))
+			ink := inkOn(st.T, fill)
+			mark := "▶" + strings.Repeat(" ", max(0, lipgloss.Width(it.icon)-1))
+			bar := lipgloss.NewStyle().Background(fill).Foreground(ink)
+			line = bar.Bold(true).Render(mark+" "+label) + bar.Render(ansi.Strip(sub)+strings.Repeat(" ", gap)) + bar.Bold(true).Render(ansi.Strip(hint))
 		}
 		if k := p.rowK(rows, now); k < 1 {
 			line = fadeANSI(line, st.T, k) // Zeilen blenden nacheinander ein
@@ -1160,29 +1191,48 @@ func (a *App) viewPalette() string {
 				p.armed = i // rot: erst scharf schalten, zweiter Klick führt aus
 				return nil
 			}
-			return a.palRun(it)
+			return a.palRunTrack(it)
 		})
 		b.WriteString(line + "\n")
+		if i == p.sel {
+			for k, l := range helpLines {
+				pre := "      "
+				if k == 0 {
+					pre = "    › "
+				}
+				b.WriteString(st.Muted.Render(pre+strings.TrimRight(l, " ")) + "\n")
+			}
+		}
 		rows++
 	}
 	if len(items) == 0 {
 		b.WriteString(st.Muted.Render(i18n.T("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.")) + "\n")
 	}
-	keys := [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("ausführen")}}
-	if _, ok := palAskItem(items); ok {
-		keys = append(keys, [2]string{"Tab", i18n.T("KI fragen")})
-	}
-	keys = append(keys, [2]string{"Esc", i18n.T("schließen")})
+	keys := a.palKeys(items)
 	title := i18n.T("Befehlspalette")
+	sub := fmt.Sprintf(i18n.T("%d Einträge"), len(items))
 	if p.menu != "" {
-		keys = [][2]string{{"↑↓", i18n.T("wählen")}, {"⏎", i18n.T("ausführen / umschalten")}, {"Esc", i18n.T("zurück")}}
-		if p.sel < len(items) && items[p.sel].cycle != nil {
-			keys[1] = [2]string{"←→", i18n.T("durchschalten")}
-		}
 		title += " › " + palMenuPath(p.menu)
 	}
-	box := st.dialog(dialog{icon: "◆", title: title, sub: fmt.Sprintf(i18n.T("%d Einträge"), len(items)), tone: st.T.AI,
-		body: b.String(), keys: keys, width: w - 4, compact: true}, a.w)
+	if tabbed {
+		sub = palTitle(i18n.T(palGroupName[p.tab])) + " · " + fmt.Sprint(len(items))
+	}
+	body := b.String()
+	width := w - 4
+	maxW := 0
+	if dw > 0 && p.sel < len(items) {
+		// Detailspalte rechts: Erklärung, Vorschau, Inhalt von Ordnern.
+		list := strings.TrimSuffix(body, "\n")
+		lh := lipgloss.Height(list)
+		det := a.palDetail(items[p.sel], dw, max(lh, a.h-14))
+		hh := max(lh, lipgloss.Height(det))
+		sep := lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.TrimSuffix(strings.Repeat(" │ \n", hh), "\n"))
+		body = lipgloss.JoinHorizontal(lipgloss.Top, lipgloss.NewStyle().Width(w-4).Render(list), sep, det) + "\n"
+		width = w - 4 + 3 + dw
+		maxW = width + 6
+	}
+	box := st.dialog(dialog{icon: "◆", title: title, sub: sub, tone: st.T.AI,
+		body: body, keys: keys, width: width, maxW: maxW, compact: true}, a.w)
 	return a.z.mark(box, zoneAction{block: true, wheel: func(up bool) tea.Cmd {
 		if up {
 			p.sel = max(0, p.sel-1)
@@ -1194,16 +1244,32 @@ func (a *App) viewPalette() string {
 	}})
 }
 
+// ansiPlainKeep: Farben der Schrift behalten, Hintergründe entfernen wäre
+// aufwendig; für das Aufleuchten reicht der reine Text.
+func ansiPlainKeep(s string) string { return ansi.Strip(s) }
+
+// palRunTrack: wie palRun, merkt sich aber umgeschaltete Werte fürs
+// Aufleuchten (Bewegung).
+func (a *App) palRunTrack(it palItem) tea.Cmd {
+	if a.pal != nil && (it.cycle != nil || it.state != palNoState) {
+		a.pal.palChanged(it.label)
+	}
+	return a.palRun(it)
+}
+
 func ansiPlain(s string) string { return lipgloss.NewStyle().Render(ansi.Strip(s)) }
 
 // palGroupRule: Gruppenkopf der Palette als Linie mit Namen
 // („── ALLGEMEIN ─────────“), damit sich die Bereiche deutlich trennen. Ab
 // der zweiten Gruppe steht eine Leerzeile davor (gap), wenn Platz ist.
-func (a *App) palGroupRule(head string, w int, gap bool) string {
+func (a *App) palGroupRule(head string, w int, col color.Color, gap bool) string {
 	st := a.s
 	name := head
 	rule := lipgloss.NewStyle().Foreground(st.T.Border)
-	label := st.Accent.Bold(true).Render(name)
+	if col == nil {
+		col = st.T.Accent
+	}
+	label := lipgloss.NewStyle().Foreground(col).Bold(true).Render(name)
 	rest := max(2, w-lipgloss.Width(name)-4)
 	out := rule.Render("── ") + label + rule.Render(" "+strings.Repeat("─", rest))
 	if gap {
