@@ -5,6 +5,9 @@ import (
 	"image/color"
 	"strconv"
 	"strings"
+
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // Hintergrund und Schrift des Themes in jede Zelle schreiben.
@@ -117,4 +120,23 @@ func rewriteSGR(params, fgP, bgP string) string {
 		}
 	}
 	return strings.Join(out, ";")
+}
+
+// paintCursor: Cursorzelle selbst als Block in Akzentfarbe zeichnen. Auf
+// hellen Themes nötig, weil viele Terminals die Cursorfarbe (OSC 12) nicht
+// übernehmen und ihren eigenen, meist weißen Cursor zeigen – auf hellem Grund
+// unsichtbar. View blendet den echten Cursor dann aus, damit nicht zwei
+// Cursor übereinanderliegen.
+func paintCursor(body string, x, y int, t Theme) string {
+	lines := strings.Split(body, "\n")
+	if y < 0 || y >= len(lines) || x < 0 {
+		return body
+	}
+	ch := ansi.Strip(ansi.Cut(lines[y], x, x+1))
+	if ch == "" || ansi.StringWidth(ch) != 1 {
+		ch = " "
+	}
+	block := lipgloss.NewStyle().Background(t.Accent).Foreground(t.Bg).Render(ch)
+	lines[y] = stampLine(lines[y], block, x, 0)
+	return strings.Join(lines, "\n")
 }

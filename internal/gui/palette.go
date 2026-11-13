@@ -12,7 +12,6 @@ import (
 var (
 	defaultFg = color.RGBA{0xCC, 0xCC, 0xCC, 0xFF}
 	defaultBg = color.RGBA{0x0C, 0x0C, 0x0C, 0xFF}
-	cursorClr = color.RGBA{0xFF, 0xFF, 0xFF, 0xFF}
 )
 
 var basic16 = [16]color.RGBA{
@@ -73,6 +72,35 @@ func cellColors(s *uv.Style, dFg, dBg color.RGBA) (fg, bg color.RGBA, bgSet bool
 // per OSC 10/11; ohne Meldung gelten die Campbell-Farben.
 func baseColors(fg, bg color.Color) (color.RGBA, color.RGBA) {
 	return rgba(fg, defaultFg), rgba(bg, defaultBg)
+}
+
+// cursorColor: Farbe des Cursorblocks. Gemeldete Cursorfarbe (OSC 12), sonst
+// die Schriftfarbe – nie fest Weiß, das auf hellen Themes verschwindet. Ist
+// der Kontrast zum Zellgrund zu gering, gilt die Schriftfarbe.
+func cursorColor(c color.Color, dFg, cellBg color.RGBA) color.RGBA {
+	cur := rgba(c, dFg)
+	if lumaDiff(cur, cellBg) < 0.25 {
+		cur = dFg
+		if lumaDiff(cur, cellBg) < 0.25 {
+			cur = color.RGBA{0xFF, 0xFF, 0xFF, 0xFF}
+			if lumaDiff(cur, cellBg) < 0.25 {
+				cur = color.RGBA{0, 0, 0, 0xFF}
+			}
+		}
+	}
+	return cur
+}
+
+// lumaDiff: Helligkeitsabstand 0…1.
+func lumaDiff(a, b color.RGBA) float64 {
+	l := func(c color.RGBA) float64 {
+		return (0.2126*float64(c.R) + 0.7152*float64(c.G) + 0.0722*float64(c.B)) / 255
+	}
+	d := l(a) - l(b)
+	if d < 0 {
+		d = -d
+	}
+	return d
 }
 
 // mix: a mit Anteil f, Rest b.
