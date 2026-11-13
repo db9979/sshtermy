@@ -12,7 +12,7 @@
  TERMINAL
  Goal mode (agent)             F2
  Ask AI                        F3
- AI companion: change level    Alt+K
+ AI companion ‹level›          Alt+K
  Companion sidebar             Alt+J
  Task across several windows (AI sees all)  Alt+V
  Tunnel                        F4

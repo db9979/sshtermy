@@ -66,7 +66,7 @@ export const de = {
       ['Alt+S', 'in allen Tabs suchen'],
       ['Alt+O', 'Befehle des Tabs · Alt+Bild↑↓ springt'],
       ['⇧↑ / ⇧↓', '(Liste) Tab verschieben'],
-      ['_Rechtsklick_', 'Tab-Menü · Mittelklick schließt'],
+      ['_Rechtsklick_', 'Tab-Menü: bearbeiten, daneben zeigen · Mittelklick schließt'],
     ]},
     { t: 'Geteilte Ansicht', ic: '▦', rows: [
       ['Strg+T', 'Aufteilung wählen: 1 … 7'],
@@ -252,7 +252,7 @@ export const en = {
       ['Alt+S', 'search in all tabs'],
       ['Alt+O', 'tab commands · Alt+PgUp/Dn jumps'],
       ['⇧↑ / ⇧↓', '(list) move the tab'],
-      ['_right-click_', 'tab menu · middle click closes'],
+      ['_right-click_', 'tab menu: edit, show alongside · middle click closes'],
     ]},
     { t: 'Split view', ic: '▦', rows: [
       ['Ctrl+T', 'choose a layout: 1 … 7'],

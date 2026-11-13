@@ -65,7 +65,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Logwache** (Einstellungen › Protokolle & Logs › *Logwache*: Fehler oder Fehler + Warnungen): Solange ein Tab offen ist, folgt sshTermy im Hintergrund seinen Logs (Linux `journalctl -f`, Windows über WinRM jede Minute) und meldet nur, was gegenüber dem letzten Log-Blick neu oder kritisch ist, jedes Muster höchstens einmal pro Stunde: Toast, ▲ am Tab, Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist. Ausgeblendetes Rauschen bleibt still. *Syslog-Empfang* (UDP 5514, 1514 oder 514) nimmt Syslog von Switches und Firewalls an und ordnet es über IP oder Hostnamen der passenden Verbindung zu. Absender, die zu keiner gespeicherten Verbindung
 passen, werden verworfen (ein Toast nennt die IP einmal), weil sich UDP-Absender fälschen lassen; Einstellungen › Protokolle & Logs ›
 *Syslog auch von unbekannten Absendern annehmen* lässt sie zu. Der KI-Lagebericht wertet Syslog-Zeilen als Hinweis,
-nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick; ⏎ springt zum Muster im Log-Blick des Hosts, `x` blendet es als Rauschen aus. Fehlanmeldungen (SSH, Windows 4625) zählen ab 20 in 10 Minuten als Fehler; Link-down-Meldungen behalten die Schwere des Geräts (Cisco `LINK-3` = Fehler).
+nicht als Beweis. Die Liste: Palette *Logwache: gesammelte Meldungen ansehen* oder `w` im Log-Blick; ⏎ springt zum Muster im Log-Blick des Hosts, `x` blendet es als Rauschen aus. Fehlanmeldungen (SSH, Windows 4625) zählen ab 20 in 10 Minuten als Fehler; Link-down-Meldungen behalten die Schwere des Geräts (Cisco `LINK-3` = Fehler).
 - **Ordner-Scan** (Palette *Ordner-Scan*): der Log-Blick für alle Hosts eines Ordners auf einmal, nur lesend und ohne Rückfragen (6 gleichzeitig; Server über SSH, Windows über WinRM, Switches über ihre Shell). Eine Zeile pro Host mit kritisch/Fehler/Warnungen, neuen Mustern und dem wichtigsten Muster, dazu *Gemeinsam*: Muster, die auf mehreren Hosts auftauchen. `c` kopiert das Ergebnis als Markdown; die Grundlinie für *Was ist neu?* wird pro Host gespeichert. Als Zeitplan (Art *Ordner-Scan (Logs)*) läuft er z. B. jede Nacht; das Ergebnis steht im Zeitplan und unter *Ordner-Scan: letztes Ergebnis*.
 - **Config-Sicherung für Switches**: `b` sichert die laufende Konfiguration (`show running-config`; Junos `show configuration | display set`, RouterOS `/export`, FortiOS `show full-configuration`, UniFi `cat /tmp/system.cfg`) verschlüsselt auf dem Rechner, `d` zeigt den Diff zum vorherigen Stand, unveränderte Stände werden nicht doppelt gespeichert.
   Nächtlich geht es per Zeitplan (`z`, Art „Config-Sicherung“) für einen ganzen Ordner. **Regeln für Switch-Configs**
@@ -329,7 +329,8 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 |---|---|---|
 | Manager | ⏎ / n / e / d / / / t / s / y / l | verbinden / neu / bearbeiten / löschen / suchen / Tunnel / KI-Einstellungen / Sync / Sitzungsprotokolle |
 | | Leertaste / * | Verbindung markieren / alle sichtbaren markieren; danach wirken e (Sammeländerung), v und d auf alle markierten, Esc hebt auf |
-| | Rechtsklick | Menü zu Verbindung oder Ordner: verbinden, bearbeiten, verschieben, Tunnel, SSH-Key, Schnellbefehle, Wake-on-LAN, markieren, löschen; bei Ordnern auf-/zuklappen, neue Verbindung hier, als Raster öffnen |
+| | Rechtsklick | Menü zu Verbindung oder Ordner: verbinden, bearbeiten, verschieben, Tunnel, SSH-Key, Schnellbefehle, Wake-on-LAN, markieren, löschen; bei Ordnern auf-/zuklappen, neue Verbindung hier, als Raster öffnen. Trennlinien gruppieren die Einträge (auch in den Menüs zu Tabs, Links und Dateien) |
+| | Fußzeile | zeigt nur Tasten zur Auswahl (⏎ n e d v Leertaste /) plus Befehle, Hilfe, beenden; Broadcast, Scan, Import, KI-Einstellungen, Sync, Protokolle und Über stehen in F1, der Palette und im Rechtsklick-Menü, die Tasten wirken weiter |
 | | Strg+Z | letztes Löschen rückgängig (Verbindung, Ordner, Runbook; 10 s, oder Klick auf den Hinweis) |
 | Verbindungsformular | Strg+T / Strg+S | Verbindung testen (erreichbar, Host-Key, Anmeldung) / speichern |
 | Getrennter Tab | ⏎ / e / k / x / w | neu verbinden / Verbindung bearbeiten / geänderten Host-Key vergleichen und übernehmen / Tab schließen / aufwecken (Wake-on-LAN) |
@@ -353,7 +354,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
 | | Alt+S | in allen offenen Tabs suchen, ⏎ springt zur Trefferzeile |
 | | Alt+Bild↑ / Alt+Bild↓ / Alt+O | zum vorigen / nächsten Befehl springen / Befehle des Tabs als Liste (⏎ hinspringen, Strg+C Ausgabe kopieren, Strg+K KI fragen, Strg+L lesen) |
-| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
+| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü mit *Verbindung bearbeiten …* (Farbe, Notiz) und *Daneben zeigen (geteilt)*, Maus darauf zeigt Ziel, Dauer und Latenz) |
 | | Alt+L | lokale Shell in neuem Tab (auch im Manager; Palette: `lokal`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen (`{{name}}` im Befehl fragt nach einem Wert) |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |

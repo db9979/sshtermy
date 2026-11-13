@@ -339,8 +339,9 @@ func (a *App) palActsSession(add palAdd, s *session) {
 			a.resize(s)
 			return a.panelOpened(s)
 		}},
-		palItem{icon: ic("ai"), label: i18n.T("KI-Begleiter: Stufe wechseln"), hint: companionLevelLabel(a.compLevel()) + " · " + a.keys.label(actCompanion),
-			keys: "begleiter companion mitlesen kommentar coach", run: func() tea.Cmd { return a.cycleCompanion(1) }},
+		palItem{icon: ic("ai"), label: i18n.T("KI-Begleiter"), hint: companionLevelLabel(a.compLevel()), keep: true,
+			keys:  "begleiter companion mitlesen kommentar coach stufe " + a.keys.label(actCompanion),
+			cycle: func(d int) tea.Cmd { return a.cycleCompanion(d) }, run: func() tea.Cmd { return a.cycleCompanion(1) }},
 		palItem{icon: ic("ai"), label: i18n.T("Begleiter-Leiste"), pro: true, hint: a.keys.label(actCompanionBar),
 			keys: "begleiter companion leiste feed", run: func() tea.Cmd { return a.toggleCompanionBar(s) }},
 		palItem{icon: ic("ai"), label: i18n.T("Begleiter: Rückblick dieser Sitzung"), pro: true, hint: i18n.T("merken, Runbook"),
@@ -439,7 +440,7 @@ func (a *App) palActsFind(add palAdd, s *session, inTerm, inMgr bool) {
 	}
 	add("find",
 		palItem{icon: ic("logs"), label: i18n.T("Sitzungsprotokolle durchsuchen"), hint: logsKey, top: inMgr, run: func() tea.Cmd { return a.openLogs() }},
-		palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: Logs aller Hosts im Ordner …"), hint: i18n.T("Logs"), top: inMgr,
+		palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: Logs aller Hosts im Ordner …"), hint: i18n.T("Logs"),
 			keys: "ordner scan folder logs log blick alle hosts auffälligkeiten journal eventlog", run: func() tea.Cmd { return a.openFolderScan() }})
 	if len(a.lfold.hosts) > 0 {
 		add("find", palItem{icon: ic("errors"), label: i18n.T("Ordner-Scan: letztes Ergebnis"), hint: a.lfold.folder,
@@ -883,7 +884,7 @@ func (a *App) palMenuItems() []palItem {
 			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
 
 		// Einstellungen › KI › KI-Begleiter
-		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Begleiter-Stufe"), companionLevelLabel(a.compLevel()),
+		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("KI-Begleiter"), companionLevelLabel(a.compLevel()),
 			"begleiter companion stufe aus leise gesprächig coach", func(dir int) tea.Cmd { return a.cycleCompanion(dir) })),
 		sub("settings/ki/begleiter", palCycle(pgSetSetup, ic("ai"), i18n.T("Höchstens KI-Anfragen pro Stunde"), fmt.Sprint(a.compCfg().Hour()),
 			"begleiter companion grenze limit stunde rate kosten", func(dir int) tea.Cmd { return a.cycleCompanionHour(dir) })),
@@ -901,7 +902,7 @@ func (a *App) palMenuItems() []palItem {
 
 		// Einstellungen › Protokolle & Logs
 		sub("settings/logs", palToggle(ic("sesslog"), i18n.T("Sitzungsprotokoll schreiben"), a.logsEnabled(), "log protokoll", func() tea.Cmd { return a.toggleSessionLog() })),
-		sub("settings/logs", palCycle(pgSetSetup, ic("errors"), i18n.T("Logwache: neue Log-Muster melden"), watchLabel(a.watchLevel()),
+		sub("settings/logs", palCycle(pgSetSetup, ic("errors"), i18n.T("Logwache"), watchLabel(a.watchLevel()),
 			"logwache log watch journal überwachen fehler warnungen", func(dir int) tea.Cmd { return a.cycleWatch(dir) })),
 		proItem(sub("settings/logs", palCycle(pgSetSetup, ic("errors"), i18n.T("Syslog-Empfang (Switches, Firewalls)"), syslogLabel(set.SyslogPort),
 			"syslog udp 514 5514 empfang switch firewall logwache", func(dir int) tea.Cmd { return a.cycleSyslog(dir) }))),

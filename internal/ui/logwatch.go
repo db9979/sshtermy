@@ -684,7 +684,7 @@ func (a *App) watchAlertAt(it *pickItem) (watchAlert, bool) {
 func (a *App) openWatchList() tea.Cmd {
 	a.lwatch.unread = 0
 	var p *picker
-	p = newPicker(i18n.T("Logwache: Meldungen")+" · "+a.watchStatus(), i18n.T("Meldungen filtern …"), a.watchItems(), "", func(it pickItem) tea.Cmd {
+	p = newPicker(i18n.T("Logwache: gesammelte Meldungen")+" · "+a.watchStatus(), i18n.T("Meldungen filtern …"), a.watchItems(), "", func(it pickItem) tea.Cmd {
 		al, ok := a.watchAlertAt(&it)
 		if !ok {
 			return nil
@@ -771,7 +771,7 @@ func (a *App) stopWatch() {
 
 func (a *App) watchMenuLabel() string {
 	if n := a.lwatch.unread; n > 0 {
-		return fmt.Sprintf(i18n.T("Logwache: Meldungen (%d neu)"), n)
+		return fmt.Sprintf(i18n.T("Logwache: gesammelte Meldungen ansehen (%d neu)"), n)
 	}
-	return i18n.T("Logwache: Meldungen")
+	return i18n.T("Logwache: gesammelte Meldungen ansehen")
 }

@@ -12,7 +12,7 @@
  TERMINAL
  Ziel-Modus (Agent)            F2
  KI fragen                     F3
- KI-Begleiter: Stufe wechseln  Alt+K
+ KI-Begleiter ‹Stufe›          Alt+K
  Begleiter-Leiste              Alt+J
  Vorgang über mehrere Fenster (KI sieht alle)  Alt+V
  Tunnel                        F4

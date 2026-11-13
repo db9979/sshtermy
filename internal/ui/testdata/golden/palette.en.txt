@@ -1,5 +1,5 @@
  >_ sshTermy                                                          ↕ sync off   ● AI qwen3-coder
- connections┌─ ◆ Command palette  20 entries ────────────────────────────────────── × ─┐
+ connections┌─ ◆ Command palette  19 entries ────────────────────────────────────── × ─┐
             │ $ Goal, question, command, tunnel, connection or user@host:port …        │
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
    ○ # switc│ // frequent                                                              │
@@ -8,9 +8,8 @@
 ▌    ○   web│ [*] Broadcast: command on several hosts                                m │
 ▌    ○   web│ [/] Network scan: find SSH devices                                     f │
 ▌  ○   db-01│ [#] Search session logs                                                l │ menu ·
- ○   nas    │ [!] Folder scan: logs of all hosts in the folder …                  Logs │
- ○   spark  │ // connections                                                           │
-            │ [·] nas                                                  admin@nas.local │
+ ○   nas    │ // connections                                                           │
+ ○   spark  │ [·] nas                                                  admin@nas.local │
             │ [·] spark                                              dominik@spark.lan │
             │ [#] switch-core  Netzwerk                            manager@192.168.1.2 │
             │ [·] db-01  Produktion                                  postgres@10.0.1.5 │
@@ -23,8 +22,9 @@
             │ [&] Team & sharing ›  live sharing, team folders                       4 │
             │ [=] Connections & data ›  new, SSH key, import/export, backup          6 │
             │ [:] Settings ›  mouse, look, language, AI …                           27 │
+            │ [?] Help & info ›  keys, tour, news, update                            7 │
             │                                                                          │
             │  ↑↓ select    ⏎ run    Esc close                                         │
             └──────────────────────────────────────────────────────────────────────────┘
                                         │
- Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move
+ Ctrl+Space Commands 1Help  ⏎ collapse  n new here  e edit  d delete  v move  / search  Ctrl+Q quit
