@@ -27,4 +27,4 @@
                                         │
                                         │
                                         │
- Strg+Space Befehle 1Hilfe  ⇧F9 erklären  n neue Verbindung  i Import  f Scan  o Ordner  s KI
+ Strg+Space Befehle 1Hilfe  n neue Verbindung  i importieren  f Netz scannen  Strg+Q beenden

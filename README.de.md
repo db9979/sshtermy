@@ -354,7 +354,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
 | | Alt+S | in allen offenen Tabs suchen, ⏎ springt zur Trefferzeile |
 | | Alt+Bild↑ / Alt+Bild↓ / Alt+O | zum vorigen / nächsten Befehl springen / Befehle des Tabs als Liste (⏎ hinspringen, Strg+C Ausgabe kopieren, Strg+K KI fragen, Strg+L lesen) |
-| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste; `+`, Alt+N und ein Klick aufs Logo `>_ sshTermy` öffnen den Verbindungs-Manager: ⏎ oder Doppelklick startet die Verbindung in einem zusätzlichen Tab, die offenen Tabs bleiben, Esc führt zurück; Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
+| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste; `+`, Alt+N und ein Klick aufs Logo `>_ sshTermy` öffnen den Verbindungs-Manager: ⏎ oder Doppelklick startet die Verbindung in einem zusätzlichen Tab, die offenen Tabs bleiben, Esc führt zurück; Rechtsklick auf einen Tab öffnet sein Menü mit *Verbindung bearbeiten …* (Farbe, Notiz) und *Daneben zeigen (geteilt)*, Maus darauf zeigt Ziel, Dauer und Latenz) |
 | | Alt+L | lokale Shell in neuem Tab (auch im Manager; Palette: `lokal`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen (`{{name}}` im Befehl fragt nach einem Wert) |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |

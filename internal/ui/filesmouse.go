@@ -313,11 +313,11 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 			hint = many
 		}
 		items = append(items,
-			menuItem{label: toOther, hint: hint, run: func() tea.Cmd {
+			menuItem{label: toOther, hint: hint, sep: true, run: func() tea.Cmd {
 				return a.startTransfer(s, p.fs, paths, other.fs, other.path, side == 0, false)
 			}},
 			menuItem{label: sendTo, run: func() tea.Cmd { return a.askSendTo(s, side, paths) }},
-			menuItem{label: i18n.T("Umbenennen"), hint: "F2", run: func() tea.Cmd { return a.askRename(s, side, i) }},
+			menuItem{label: i18n.T("Umbenennen"), hint: "F2", sep: true, run: func() tea.Cmd { return a.askRename(s, side, i) }},
 			menuItem{label: i18n.T("Rechte ändern"), hint: modeString(e.Mode), run: func() tea.Cmd { return a.askChmod(s, side, i) }},
 			menuItem{label: i18n.T("Pfad kopieren"), hint: "y", run: func() tea.Cmd { return a.copyPath(full) }},
 		)
@@ -332,7 +332,7 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 		if many != "" {
 			del = fmt.Sprintf(i18n.T("%s löschen …"), many)
 		}
-		items = append(items, menuItem{label: del, hint: "d", run: func() tea.Cmd { return a.askDelete(s, side, paths) }})
+		items = append(items, menuItem{label: del, hint: "d", sep: true, run: func() tea.Cmd { return a.askDelete(s, side, paths) }})
 	} else {
 		hidden := i18n.T("Versteckte zeigen")
 		if f.hidden {
@@ -341,9 +341,9 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 		items = append(items,
 			menuItem{label: i18n.T("Neuer Ordner"), hint: "n", run: func() tea.Cmd { return a.filesMkdir(s) }},
 			menuItem{label: i18n.T("Neu laden"), hint: "r", run: func() tea.Cmd { p.load(f.hidden); return nil }},
-			menuItem{label: hidden, hint: ".", run: func() tea.Cmd { a.filesToggleHidden(s); return nil }},
+			menuItem{label: hidden, hint: ".", sep: true, run: func() tea.Cmd { a.filesToggleHidden(s); return nil }},
 			menuItem{label: i18n.T("Sortieren nach …"), hint: sortLabel((p.sortBy + 1) % 3), run: func() tea.Cmd { p.sortClick((p.sortBy+1)%3, f.hidden); return nil }},
-			menuItem{label: i18n.T("Pfad kopieren"), hint: "y", run: func() tea.Cmd { return a.copyPath(p.path) }},
+			menuItem{label: i18n.T("Pfad kopieren"), hint: "y", sep: true, run: func() tea.Cmd { return a.copyPath(p.path) }},
 		)
 		if remote && s.state == stConnected {
 			dir := p.path
@@ -351,7 +351,7 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 		}
 		if len(p.marked) > 0 {
 			paths := p.picked()
-			items = append(items, menuItem{label: fmt.Sprintf(i18n.T("%d markierte kopieren"), len(paths)), hint: "c",
+			items = append(items, menuItem{label: fmt.Sprintf(i18n.T("%d markierte kopieren"), len(paths)), hint: "c", sep: true,
 				run: func() tea.Cmd { return a.startTransfer(s, p.fs, paths, other.fs, other.path, side == 0, false) }})
 		}
 	}

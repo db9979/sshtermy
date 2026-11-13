@@ -957,3 +957,46 @@ func fitBlock(s string, w, h int) string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+// showBeside zeigt Sitzung s neben der aktiven (Tab-Rechtsklick „Daneben
+// zeigen“). Ohne Aufteilung wird nebeneinander geteilt; sonst kommt s in
+// einen leeren Bereich oder ersetzt einen, der nicht die aktive Sitzung zeigt.
+func (a *App) showBeside(s *session) {
+	cur := a.current()
+	if s == nil || cur == nil || s == cur || a.slotOf(s) >= 0 {
+		return
+	}
+	if a.split == splitOff {
+		if !a.fits(splitCols) {
+			a.flash(i18n.T("Fenster zu klein für „") + splitCols.label() + i18n.T("“"))
+			return
+		}
+		a.setSplit(splitCols)
+		a.panes = []int{cur.id, s.id}
+		a.resizeAll()
+		return
+	}
+	a.prunePanes()
+	keep := a.slotOf(cur)
+	target := -1
+	for j, id := range a.panes {
+		if id == 0 {
+			target = j
+			break
+		}
+	}
+	if target < 0 {
+		for j := len(a.panes) - 1; j >= 0; j-- {
+			if j != keep {
+				target = j
+				break
+			}
+		}
+	}
+	if target < 0 {
+		return
+	}
+	a.panes[target] = s.id
+	a.zoom = false
+	a.resizeAll()
+}

@@ -29,4 +29,4 @@
                                                 │
                                                 │
                                                 │
- Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ verbinden  n neu  e bearbeiten  d löschen  v verschieben  t Tunnel
+ Strg+Space Befehle 1Hilfe  ⏎ verbinden  n neu  e bearbeiten  d löschen  v verschieben  Leertaste markieren  / suchen

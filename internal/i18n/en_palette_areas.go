@@ -55,4 +55,10 @@ var enPaletteAreas = map[string]string{
 	"Verbinden":                             "Connect",
 	"Löschen …":                             "Delete …",
 	"Menü zu Verbindung oder Ordner":        "menu for a connection or folder",
+	// Menüs aufräumen 15–21
+	"Verbindung bearbeiten …":  "Edit connection …",
+	"Farbe, Notiz":             "color, note",
+	"Daneben zeigen (geteilt)": "Show alongside (split)",
+	"importieren":              "import",
+	"Netz scannen":             "scan network",
 }

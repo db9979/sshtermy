@@ -344,7 +344,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+S | search in all open tabs, ⏎ jumps to the matching line |
 | | Alt+PgUp / Alt+PgDn / Alt+O | jump to the previous / next command / list of the tab's commands (⏎ jump, Ctrl+C copy output, Ctrl+K ask AI, Ctrl+L read) |
-| | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar; `+`, Alt+N and a click on the `>_ sshTermy` logo open the connection manager: ⏎ or a double-click starts the connection in an additional tab, the open tabs stay, Esc goes back; right-click a tab for its menu, hover it for target, duration and latency) |
+| | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar; `+`, Alt+N and a click on the `>_ sshTermy` logo open the connection manager: ⏎ or a double-click starts the connection in an additional tab, the open tabs stay, Esc goes back; right-click a tab for its menu with *Edit connection …* (color, note) and *Show alongside (split)*, hover it for target, duration and latency) |
 | | Alt+L | local shell in a new tab (also in the manager; palette: `local`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | quick commands: list / run directly (`{{name}}` in the command asks for a value) |
 | | F10 | back to the manager (sessions keep running) |

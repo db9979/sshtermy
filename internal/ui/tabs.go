@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 )
 
@@ -186,13 +187,30 @@ func (a *App) tabMenu(s *session, x, y int, after func()) *modal {
 		}
 		items = append(items, menuItem{label: label, hint: k.label(actDetach), run: func() tea.Cmd { return a.toggleDetach(s) }})
 	}
+	// Verbindung: Farbe, Notiz & Co. gleich vom Tab aus ändern.
+	if c, ok := a.st.Connection(s.conn.ID); ok && s.conn.Protocol != domain.ProtoWatch {
+		items = append(items, menuItem{label: i18n.T("Verbindung bearbeiten …"), hint: i18n.T("Farbe, Notiz"), sep: true, run: func() tea.Cmd {
+			cmd := a.openConnForm(c)
+			a.returnToTerminal = true
+			return cmd
+		}})
+	}
+	// Anordnen: daneben zeigen, verschieben.
+	first := true
+	group := func(it menuItem) {
+		it.sep, first = first, false
+		items = append(items, it)
+	}
+	if s != a.current() && a.slotOf(s) < 0 {
+		group(menuItem{label: i18n.T("Daneben zeigen (geteilt)"), run: func() tea.Cmd { a.showBeside(s); return nil }})
+	}
 	if i > 0 {
-		items = append(items, menuItem{label: i18n.T("Nach links"), run: func() tea.Cmd { a.moveTab(s, -1); return nil }})
+		group(menuItem{label: i18n.T("Nach links"), run: func() tea.Cmd { a.moveTab(s, -1); return nil }})
 	}
 	if i < len(a.sessions)-1 {
-		items = append(items, menuItem{label: i18n.T("Nach rechts"), run: func() tea.Cmd { a.moveTab(s, 1); return nil }})
+		group(menuItem{label: i18n.T("Nach rechts"), run: func() tea.Cmd { a.moveTab(s, 1); return nil }})
 	}
-	items = append(items, menuItem{label: i18n.T("Tab schließen"), hint: k.label(actCloseTab), run: func() tea.Cmd { return a.closeTabAsk(s, after) }})
+	items = append(items, menuItem{label: i18n.T("Tab schließen"), hint: k.label(actCloseTab), sep: true, run: func() tea.Cmd { return a.closeTabAsk(s, after) }})
 	if len(a.sessions) > 1 {
 		items = append(items, menuItem{label: i18n.T("Andere Tabs schließen"), run: func() tea.Cmd { return a.closeOtherTabs(s) }})
 	}

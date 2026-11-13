@@ -252,7 +252,7 @@ var helpSections = []helpSection{
 		{"n", "Was ist neu? (u zurückholen)"},
 		{"t", "Zeitleiste (←→, ⏎, k)"},
 		{"z", "Zeitraum 1 h … 7 Tage"},
-		{"w", "Logwache: Meldungen"},
+		{"w", "Logwache: gesammelte Meldungen ansehen"},
 		{"s", "Switch: Syslog an sshTermy senden"},
 		{"r / c", "neu lesen / kopieren"},
 	}},

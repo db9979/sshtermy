@@ -21,4 +21,4 @@
                                 │
                                 │
                                 │
- Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten
+ Strg+Space Befehle 1Hilfe  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen

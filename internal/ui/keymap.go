@@ -104,7 +104,7 @@ var actionDefs = []actionDef{
 	{actLocal, "Lokale Shell öffnen", "Überall", []string{"alt+l"}},
 	{actGoal, "Ziel-Modus (Agent)", "Terminal", []string{"f2"}},
 	{actAsk, "KI fragen", "Terminal", []string{"f3"}},
-	{actCompanion, "KI-Begleiter: Stufe wechseln", "Terminal", []string{"alt+k"}},
+	{actCompanion, "KI-Begleiter ‹Stufe›", "Terminal", []string{"alt+k"}},
 	{actCompanionBar, "Begleiter-Leiste", "Terminal", []string{"alt+j"}},
 	{actVorgang, "Vorgang über mehrere Fenster (KI sieht alle)", "Terminal", []string{"alt+v"}},
 	{actTunnels, "Tunnel", "Terminal", []string{"f4"}},

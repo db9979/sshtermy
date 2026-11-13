@@ -231,6 +231,9 @@ type menuItem struct {
 	label string
 	hint  string
 	run   func() tea.Cmd
+	// sep: Trennlinie über dem Eintrag (beginnt eine neue Gruppe). Die
+	// Linie zählt nicht mit: Nummern und Pfeiltasten gehen über Einträge.
+	sep bool
 }
 
 func (a *App) openURL(u string) tea.Cmd {
@@ -265,7 +268,7 @@ func (a *App) linkMenu(s *session, l link, x, y int) *modal {
 			items = append(items, menuItem{label: i18n.T("Verbinden über ") + trunc(s.conn.Alias, 18), hint: i18n.T("Jump-Host"), run: func() tea.Cmd { return a.connectTo(s, l, true) }})
 		}
 		items = append(items,
-			menuItem{label: i18n.T("Ping vom Server"), hint: trunc(s.conn.Alias, 16), run: func() tea.Cmd { return a.pingRemote(s, l.host) }},
+			menuItem{label: i18n.T("Ping vom Server"), hint: trunc(s.conn.Alias, 16), sep: true, run: func() tea.Cmd { return a.pingRemote(s, l.host) }},
 			menuItem{label: i18n.T("Ping von diesem Rechner"), hint: i18n.T("lokal"), run: func() tea.Cmd { return a.pingLocal(l.host) }},
 			menuItem{label: i18n.T("Im Browser öffnen"), hint: "https://", run: func() tea.Cmd {
 				u := "https://" + target
@@ -276,7 +279,7 @@ func (a *App) linkMenu(s *session, l link, x, y int) *modal {
 			}},
 			copyIt(target))
 	}
-	items = append(items, menuItem{label: i18n.T("Einfügen"), hint: i18n.T("Zwischenablage"), run: func() tea.Cmd { return a.pasteClipboard(s) }})
+	items = append(items, menuItem{label: i18n.T("Einfügen"), hint: i18n.T("Zwischenablage"), sep: true, run: func() tea.Cmd { return a.pasteClipboard(s) }})
 	return &modal{kind: mMenu, title: title, items: items, at: [2]int{x, y}, anchored: true}
 }
 
@@ -443,6 +446,9 @@ func (a *App) menuView(m *modal) string {
 		i := i
 		if i > 0 {
 			b.WriteString("\n")
+			if it.sep {
+				b.WriteString(lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w)) + "\n")
+			}
 		}
 		b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
 			m.sel = i
