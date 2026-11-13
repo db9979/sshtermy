@@ -1150,7 +1150,7 @@ func (a *App) viewPalette() string {
 		hint := a.palHint(it, p.armed == i)
 		if k := p.glowK(it.label, now); k > 0 {
 			// umgeschalteter Wert leuchtet kurz auf (Bewegung)
-			hint = lipgloss.NewStyle().Background(mixColor(st.T.Surface, st.T.Warn, 0.55*k)).Render(ansiPlainKeep(hint))
+			hint = lipgloss.NewStyle().Background(mixColor(st.T.Surface, st.T.Warn, 0.55*k)).Render(ansi.Strip(hint))
 		}
 		label := trunc(it.label, w-8-iw-lipgloss.Width(hint))
 		sub := ""
@@ -1244,10 +1244,6 @@ func (a *App) viewPalette() string {
 	}})
 }
 
-// ansiPlainKeep: Farben der Schrift behalten, Hintergründe entfernen wäre
-// aufwendig; für das Aufleuchten reicht der reine Text.
-func ansiPlainKeep(s string) string { return ansi.Strip(s) }
-
 // palRunTrack: wie palRun, merkt sich aber umgeschaltete Werte fürs
 // Aufleuchten (Bewegung).
 func (a *App) palRunTrack(it palItem) tea.Cmd {
@@ -1256,8 +1252,6 @@ func (a *App) palRunTrack(it palItem) tea.Cmd {
 	}
 	return a.palRun(it)
 }
-
-func ansiPlain(s string) string { return lipgloss.NewStyle().Render(ansi.Strip(s)) }
 
 // palGroupRule: Gruppenkopf der Palette als Linie mit Namen
 // („── ALLGEMEIN ─────────“), damit sich die Bereiche deutlich trennen. Ab
