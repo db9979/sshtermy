@@ -90,7 +90,7 @@ func TestPaletteAreasRegrouped(t *testing.T) {
 func TestSettingsRegrouped(t *testing.T) {
 	a := newPaletteTestApp(t)
 	a.palEnter("settings")
-	items := a.paletteItems()
+	items := allSettings(a)
 	order := []palGroup{pgSetBehave, pgSetLook, pgSetSafe, pgSetSetup}
 	pos := 0
 	for _, it := range items {
@@ -271,5 +271,27 @@ func TestMenus1521Names(t *testing.T) {
 	it.cycle(1)
 	if a.compLevel() == before {
 		t.Error("KI-Begleiter lässt sich nicht durchschalten")
+	}
+}
+
+// allSettings: Einträge aller Reiter der Einstellungen, in Reihenfolge.
+func allSettings(a *App) []palItem {
+	keep := a.pal.tab
+	defer func() { a.pal.tab = keep }()
+	var out []palItem
+	for _, g := range palTabGroups {
+		a.pal.tab = g
+		out = append(out, a.paletteItems()...)
+	}
+	return out
+}
+
+// settingsTabOf: öffnet den Reiter, in dem label steht.
+func settingsTabOf(a *App, label string) {
+	for _, it := range allSettings(a) {
+		if it.label == label {
+			a.pal.tab = it.group
+			return
+		}
 	}
 }

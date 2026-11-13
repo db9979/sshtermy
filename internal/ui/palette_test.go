@@ -120,6 +120,7 @@ func TestPaletteSettingsCompact(t *testing.T) {
 		t.Fatal("Einzelwerte nur bei der Suche")
 	}
 	sel := func(label string) {
+		settingsTabOf(a, label)
 		for i, it := range a.paletteItems() {
 			if it.label == label {
 				a.pal.sel = i

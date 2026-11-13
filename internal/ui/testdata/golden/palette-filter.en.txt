@@ -14,7 +14,7 @@
             │ ──────────────────────────────────────────────────────────────────────── │
             │ Nothing found. In the terminal, text becomes a goal or a question.       │
             │                                                                          │
-            │  ↑↓ select    ⏎ run    Esc close                                         │
+            │  ↑↓ select    Esc close                                                  │
             └──────────────────────────────────────────────────────────────────────────┘
                                         │
                                         │

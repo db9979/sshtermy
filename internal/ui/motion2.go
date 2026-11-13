@@ -210,6 +210,10 @@ type palMotion struct {
 	sel     int
 	selAt   time.Time
 	opened  bool
+	prevSel int // vorher gewählte Zeile (Nachleuchten, palstyle.go)
+	// changed: Label des zuletzt umgeschalteten Werts (leuchtet kurz)
+	changed   string
+	changedAt time.Time
 }
 
 // palRowK: wie weit Zeile i eingeblendet ist (0 … 1).
@@ -227,13 +231,14 @@ func (p *palette) track(now time.Time) {
 		p.mo.opened, p.mo.query, p.mo.queryAt = true, q, now
 	}
 	if p.sel != p.mo.sel {
-		p.mo.sel, p.mo.selAt = p.sel, now
+		p.mo.prevSel, p.mo.sel, p.mo.selAt = p.mo.sel, p.sel, now
 	}
 }
 
 // animating: braucht die Palette gerade schnelle Bilder?
 func (p *palette) animating(now time.Time) bool {
-	return now.Sub(p.mo.queryAt) < palHitGlow || now.Sub(p.mo.selAt) < selFadeDur
+	return now.Sub(p.mo.queryAt) < palHitGlow || now.Sub(p.mo.selAt) < max(selFadeDur, palTrailDur) ||
+		now.Sub(p.mo.changedAt) < palGlowDur
 }
 
 // fuzzyHits: Positionen (Runen) der Buchstaben von q in s, nacheinander,

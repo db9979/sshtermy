@@ -3,13 +3,15 @@
             │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
    ○ # switc│ ── HÄUFIG ────────────────────────────────────────────────────────────── │
- ▾ Produktio│ [+] Neue Verbindung                                                    n │
-   ▾ Web    │ [$] Lokale Shell in neuem Tab                                      Alt+L │
-▌    ○   web│ [*] Broadcast: Befehl auf mehreren Hosts                               m │ft …
-▌    ○   web│ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
-▌  ○   db-01│ [#] Sitzungsprotokolle durchsuchen                                     l │s Menü ·
- ○   nas    │ ── VERBINDUNGEN ──────────────────────────────────────────────────────── │
- ○   spark  │ [·] nas                                                  admin@nas.local │
+ ▾ Produktio│ ▶   Neue Verbindung                                                    n │
+   ▾ Web    │     › Formular für eine neue Verbindung: SSH, Telnet, seriell, lokal     │
+▌    ○   web│       oder PowerShell.                                                   │ft …
+▌    ○   web│ [$] Lokale Shell in neuem Tab                                      Alt+L │
+▌  ○   db-01│ [*] Broadcast: Befehl auf mehreren Hosts                               m │s Menü ·
+ ○   nas    │ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
+ ○   spark  │ [#] Sitzungsprotokolle durchsuchen                                     l │
+            │ ── VERBINDUNGEN ──────────────────────────────────────────────────────── │
+            │ [·] nas                                                  admin@nas.local │
             │ [·] spark                                              dominik@spark.lan │
             │ [#] switch-core  Netzwerk                            manager@192.168.1.2 │
             │ [·] db-01  Produktion                                  postgres@10.0.1.5 │
@@ -21,8 +23,6 @@
             │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switches   5 │
             │ [&] Team & Teilen ›  live teilen, Team-Ordner                          4 │
             │ [=] Verbindungen & Daten ›  neu, SSH-Key, Import/Export, Sicherung     6 │
-            │ [:] Einstellungen ›  Maus, Aussehen, Sprache, KI …                    27 │
-            │ [?] Hilfe & Info ›  Tasten, Tour, Neues, Update                        7 │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘

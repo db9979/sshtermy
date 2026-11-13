@@ -142,7 +142,7 @@ export const de = {
       ['„log“ / „befehl“', 'Ausgabe auswerten / Befehlssätze'],
       ['MAC, IP / „topo“', 'Switch-Port finden / Topologie'],
       ['„teilen“ / Code', 'Tab live teilen / Code tippen = zusehen (auch im Browser)'],
-      ['Esc', 'Ordner zurück / schließen'],
+      ['Tab · Esc', 'Einstellungen: Reiter · Ordner zurück / schließen'],
     ]},
     { t: 'Dateien (SFTP)', ic: '▤', key: 'F5', rows: [
       ['Tab', 'Seite: lokal ↔ Server'],
@@ -330,7 +330,7 @@ export const en = {
       ['“log” / “vendor”', 'AI analyzes output / command sets'],
       ['MAC, IP / “topo”', 'find switch port / topology'],
       ['“share” / code', 'share tab live / type a code = watch (browser too)'],
-      ['Esc', 'back from folder / close'],
+      ['Tab · Esc', 'settings: tabs · back from folder / close'],
     ]},
     { t: 'Files (SFTP)', ic: '▤', key: 'F5', rows: [
       ['Tab', 'switch side (local ↔ server)'],
