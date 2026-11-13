@@ -100,3 +100,40 @@ func TestTabStripPlusAndClose(t *testing.T) {
 		}
 	}
 }
+
+// „+“/Alt+N öffnen den Manager; ⏎ startet die Verbindung in einem weiteren
+// Tab, Esc führt ohne neuen Tab zurück.
+func TestNewTabViaManager(t *testing.T) {
+	a := newPaletteTestApp(t)
+	if _, err := a.st.AddConnections([]domain.Connection{{Alias: "ki-lab", Host: "10.0.0.9", Username: "root"}}); err != nil {
+		t.Fatal(err)
+	}
+	a.nextSID++
+	a.sessions = append(a.sessions, &session{id: a.nextSID, conn: domain.Connection{ID: "alt", Alias: "alt"}, state: stClosed, chipArmed: -1, quickArmed: -1})
+	a.scr = scrTerminal
+	esc := tea.KeyPressMsg{Code: tea.KeyEscape}
+	enter := tea.KeyPressMsg{Code: tea.KeyEnter}
+
+	a.openNewTab()
+	if a.scr != scrManager || !a.mgr.forTab {
+		t.Fatalf("Manager nicht offen: scr %v forTab %v", a.scr, a.mgr.forTab)
+	}
+	a.updateManager(esc)
+	if a.scr != scrTerminal || len(a.sessions) != 1 {
+		t.Fatalf("Esc: scr %v, %d Tabs", a.scr, len(a.sessions))
+	}
+
+	a.openNewTab()
+	for i, r := range a.mgrRows() {
+		if !r.isFolder() && r.conn.Alias == "ki-lab" {
+			a.mgr.sel = i
+		}
+	}
+	a.updateManager(enter)
+	if len(a.sessions) != 2 || a.current().conn.Alias != "ki-lab" || a.sessions[0].conn.Alias != "alt" {
+		t.Fatalf("kein zusätzlicher Tab: %s", aliases(a))
+	}
+	if a.scr != scrTerminal || a.mgr.forTab {
+		t.Fatalf("nach ⏎: scr %v forTab %v", a.scr, a.mgr.forTab)
+	}
+}

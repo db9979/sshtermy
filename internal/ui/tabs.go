@@ -1,14 +1,12 @@
 package ui
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 )
 
@@ -203,65 +201,17 @@ func (a *App) tabMenu(s *session, x, y int, after func()) *modal {
 
 // ---------------------------------------------------------------- Neuer Tab
 
-// openNewTab: Auswahl einer Verbindung für einen neuen Tab. Offene und
-// zuletzt benutzte stehen oben; ⏎ öffnet immer einen neuen Tab, auch wenn
-// die Verbindung schon offen ist (zweite Shell auf demselben Server).
+// openNewTab öffnet den Verbindungs-Manager, um eine weitere Verbindung zu
+// starten: ⏎ (oder Doppelklick) öffnet sie in einem zusätzlichen Tab, die
+// offenen Tabs bleiben. Das geht auch, wenn die Verbindung schon offen ist
+// (zweite Shell auf demselben Server). Esc führt ohne neuen Tab zurück.
 func (a *App) openNewTab() tea.Cmd {
-	all := a.st.Connections()
-	rank := func(c domain.Connection) int {
-		switch {
-		case a.connected(c.ID):
-			return 0
-		case !c.LastUsed.IsZero():
-			return 1
-		}
-		return 2
+	a.pick, a.modal = nil, nil
+	a.scr = scrManager
+	if len(a.sessions) > 0 {
+		a.mgr.forTab = true
 	}
-	sort.SliceStable(all, func(i, j int) bool {
-		ri, rj := rank(all[i]), rank(all[j])
-		if ri != rj {
-			return ri < rj
-		}
-		return all[i].LastUsed.After(all[j].LastUsed)
-	})
-	byID := map[string]domain.Connection{}
-	// oben: Shell dieses Rechners (immer ein neuer Tab)
-	lc := localConn("")
-	byID[lc.ID] = lc
-	items := []pickItem{{value: lc.ID, label: ic("command") + " " + i18n.T("Lokale Shell"), detail: i18n.T("dieser Rechner"),
-		hint: shortTarget(lc), search: "local lokal shell terminal powershell pwsh cmd zsh bash"}}
-	for _, c := range all {
-		byID[c.ID] = c
-		icon, _ := a.devIcon(c)
-		hint := shortTarget(c)
-		if a.connected(c.ID) {
-			hint = i18n.T("offen") + " · " + hint
-		}
-		items = append(items, pickItem{value: c.ID, label: icon + " " + c.Alias, detail: c.Group, hint: hint,
-			search: c.Host + " " + strings.Join(c.Tags, " ")})
-	}
-	p := newPicker(i18n.T("Neuer Tab"), i18n.T("Name, Host, Ordner oder Tag"), items, "\x00", func(it pickItem) tea.Cmd {
-		if c, ok := byID[it.value]; ok {
-			return a.connect(c)
-		}
-		return nil
-	})
-	p.keys = [][2]string{{"⏎", i18n.T("öffnen")}, {"Esc", i18n.T("zurück")}, {"", i18n.T("tippen filtert")}}
-	p.extra = func(q string) *pickItem {
-		if q != "" {
-			return nil
-		}
-		return &pickItem{value: "\x00new", label: ic("new") + " " + i18n.T("Neue Verbindung anlegen …")}
-	}
-	inner := p.onPick
-	p.onPick = func(it pickItem) tea.Cmd {
-		if it.value == "\x00new" {
-			a.scr = scrManager
-			return a.openConnForm(newConnDefaults())
-		}
-		return inner(it)
-	}
-	return a.openPicker(p)
+	return nil
 }
 
 // ---------------------------------------------------------------- Tab-Liste

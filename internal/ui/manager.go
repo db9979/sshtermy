@@ -38,6 +38,7 @@ type managerState struct {
 	tree      *domain.TreeNode
 	memo      mgrMemo         // mgrtree.go: Zeilen, solange Daten und Filter gleich sind
 	selAt     time.Time       // Auswahl zuletzt gewechselt (Einblenden, Balken)
+	forTab    bool            // über „+“/Alt+N geöffnet: ⏎ = neuer Tab, Esc = zurück (tabs.go)
 	selSeen   int             // Auswahl im letzten Bild
 	marked    map[string]bool // Mehrfachauswahl: IDs markierter Verbindungen (bulk.go)
 }
@@ -68,6 +69,9 @@ func (a *App) managerKeys() [][2]string {
 	k := [][2]string{{km.label(actPalette), i18n.T("Befehle")}}
 	if len(a.sessions) > 0 {
 		k = append(k, [2]string{km.label(actManager), i18n.T("zum Terminal")})
+	}
+	if a.mgr.forTab && len(a.sessions) > 0 && have && !cur.isFolder() {
+		k = append(k, [2]string{"⏎", i18n.T("in neuem Tab öffnen")}, [2]string{"Esc", i18n.T("zurück")})
 	}
 	switch {
 	case have && cur.isFolder():
@@ -299,6 +303,10 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			if have {
 				m.want = cur.key()
 			}
+			return nil
+		}
+		if m.forTab && len(a.sessions) > 0 {
+			a.scr = scrTerminal // „+“ abgebrochen: zurück zum Tab von vorher
 		}
 	case "/":
 		m.searching = true
@@ -375,6 +383,7 @@ func (a *App) mgrNewTunnel(c domain.Connection) tea.Cmd {
 }
 
 func (a *App) connect(c domain.Connection) tea.Cmd {
+	a.mgr.forTab = false
 	a.nextSID++
 	s := &session{id: a.nextSID, conn: c, state: stConnecting, started: time.Now(), chipArmed: -1, quickArmed: -1}
 	a.sessions = append(a.sessions, s)
@@ -604,7 +613,11 @@ func (a *App) mgrConnDetails(c domain.Connection, rightW int, now time.Time) str
 	if g := c.Group; g != "" && lipgloss.Width(head)+2+len([]rune(g)) < rightW-1 {
 		head += "  " + s.Muted.Render(g)
 	}
-	if acts := a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render(i18n.T("verbinden"))) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render(i18n.T("bearbeiten"))); lipgloss.Width(head)+3+lipgloss.Width(acts) < rightW {
+	enter := i18n.T("verbinden")
+	if a.mgr.forTab && len(a.sessions) > 0 {
+		enter = i18n.T("in neuem Tab")
+	}
+	if acts := a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render(enter)) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render(i18n.T("bearbeiten"))); lipgloss.Width(head)+3+lipgloss.Width(acts) < rightW {
 		head += "   " + acts
 	}
 	rb.WriteString(head + "\n\n")

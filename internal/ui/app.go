@@ -282,6 +282,9 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if a.scr != scrManager {
+		a.mgr.forTab = false // „+“-Auswahl gilt nur, solange der Manager offen ist
+	}
 	a.perf.skip = false // jede Nachricht außer Ausgabeflut zeichnet sofort (perf.go)
 	switch msg.(type) {
 	case WindowClosedMsg:
@@ -952,7 +955,12 @@ func (a *App) viewFrame() tea.View {
 // Über-Dialog (F12), im Startbild und beim Entsperren, nicht in der Kopfzeile:
 // dort kosteten sie im schmalen Fenster die Tabnamen.
 func (a *App) headerLeft() string {
-	return a.logoChip(">_ " + version.Name) // gradient.go
+	logo := a.logoChip(">_ " + version.Name) // gradient.go
+	if a.scr == scrTerminal && len(a.sessions) > 0 {
+		// Klick aufs Logo: Manager für einen weiteren Tab, wie „+“ (tabs.go)
+		return a.z.click(logo, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() })
+	}
+	return logo
 }
 
 // headerTint: Kopfzeile links mit einem Hauch Akzent, der nach rechts
