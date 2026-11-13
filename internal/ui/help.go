@@ -125,7 +125,7 @@ var helpSections = []helpSection{
 		{"Alt+E", "Log-Blick: Auffälligkeiten"},
 		{"F7 / F8", "Tab wechseln"},
 		{"Alt+T", "alle Tabs (Liste)"},
-		{"Alt+N", "neuer Tab"},
+		{"Alt+N", "neuer Tab: Verbindung im Manager wählen"},
 		{"Alt+L", "lokale Shell (neuer Tab)"},
 		{"Alt+W", "Tab schließen"},
 		{"F10", "zum Manager"},

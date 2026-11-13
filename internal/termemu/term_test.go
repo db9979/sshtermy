@@ -88,3 +88,16 @@ func TestDefaultColorsOSC(t *testing.T) {
 		t.Errorf("111 setzt nicht zurück: %v", bg)
 	}
 }
+
+func TestCursorColorOSC(t *testing.T) {
+	tm := New(20, 5, io.Discard)
+	defer tm.Close()
+	_, _ = tm.Write([]byte("\x1b]12;#2e59c9\x07"))
+	if c := tm.CursorColor(); c == nil {
+		t.Fatal("OSC 12 nicht gemerkt")
+	}
+	_, _ = tm.Write([]byte("\x1b]112\x07"))
+	if c := tm.CursorColor(); c != nil {
+		t.Errorf("112 setzt nicht zurück: %v", c)
+	}
+}
