@@ -450,6 +450,9 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 		if m.Button != tea.MouseWheelUp && m.Button != tea.MouseWheelDown {
 			return nil
 		}
+		if a.tmuxWheel(s, up) {
+			return nil // tmux: Copy-Mode (tmuxscroll.go)
+		}
 		if s.term.AltScreen() {
 			// Vollbild-Programm ohne Maus (less, man): Rad = Pfeiltasten
 			k := uv.KeyPressEvent{Code: uv.KeyDown}

@@ -201,10 +201,15 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				return a.openBlocks(s)
 			}
 		}
-		if !s.panelFocus && !s.files.open && s.term != nil && !s.term.AltScreen() {
+		if !s.panelFocus && !s.files.open && s.term != nil {
 			if act := a.keys.which(key, actScrollUp, actScrollDown, actScrollTop, actScrollBottom); act != "" {
-				a.scrollKey(s, act)
-				return nil
+				if !s.term.AltScreen() {
+					a.scrollKey(s, act)
+					return nil
+				}
+				if a.tmuxKey(s, act) {
+					return nil
+				}
 			}
 		}
 		s.sel, s.selecting = nil, false
