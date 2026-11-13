@@ -639,6 +639,9 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if cmd, ok := a.filesMsg(msg); ok {
 		return cmd, true
 	}
+	if cmd, ok := a.sudoMsg(msg); ok {
+		return cmd, true
+	}
 	if cmd, ok := a.hostMsg(msg); ok {
 		return cmd, true
 	}

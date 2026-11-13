@@ -52,9 +52,10 @@ type xfer struct {
 	pr     *sshx.Progress
 	cancel context.CancelFunc
 	start  time.Time
-	files  atomic.Int64 // Dateien insgesamt
-	speed  xferSpeed    // Tempo-Verlauf (xferview.go)
-	then   func()       // nach Erfolg (Öffnen mit dem Standardprogramm)
+	files  atomic.Int64   // Dateien insgesamt
+	speed  xferSpeed      // Tempo-Verlauf (xferview.go)
+	then   func()         // nach Erfolg (Öffnen mit dem Standardprogramm)
+	sudo   func() tea.Cmd // nach „permission denied“ vom Server: mit sudo wiederholen (filesudo.go)
 }
 
 type filesState struct {
@@ -263,6 +264,9 @@ func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 			f.last = a.s.Warn.Render(i18n.T("Abgebrochen: ") + x.what)
 		case m.err != nil:
 			f.last = a.s.Danger.Render("× " + x.what + ": " + m.err.Error())
+			if x.sudo != nil {
+				a.offerSudo(s, f.remote, i18n.T("Kopieren: ")+x.what, m.err, x.sudo)
+			}
 		default:
 			if x.then != nil {
 				x.then()
@@ -345,6 +349,7 @@ func (a *App) startTransfer(s *session, srcFS sshx.FS, paths []string, dstFS ssh
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	x := &xfer{what: arrow + " " + name + " → " + dstDir, pr: &sshx.Progress{}, cancel: cancel, start: time.Now()}
+	x.sudo = a.sudoTransferOffer(s, srcFS, paths, dstFS, dstDir, up)
 	f.xfer, f.last = x, ""
 	sid := s.id
 	run := func() tea.Msg {
@@ -471,8 +476,14 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			f.mkdir = nil
 			p := f.panes[f.side]
 			if name != "" && !strings.ContainsAny(name, `/\`) {
-				if err := p.fs.Mkdir(p.fs.Join(p.path, name)); err != nil {
-					p.err = err.Error()
+				full := p.fs.Join(p.path, name)
+				if err := p.fs.Mkdir(full); err != nil {
+					if !a.offerSudo(s, p.fs, i18n.T("Neuer Ordner: ")+full, err, func() tea.Cmd {
+						return a.runSudo(s, "mkdir "+full, func(ctx context.Context, sx *sshx.Sudo) error { return sx.Mkdir(ctx, full) },
+							func(error) tea.Cmd { p.load(f.hidden); p.selectName(name); return nil })
+					}) {
+						p.err = err.Error()
+					}
 				} else {
 					p.load(f.hidden)
 					for i, e := range p.entries {

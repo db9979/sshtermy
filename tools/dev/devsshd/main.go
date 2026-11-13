@@ -162,7 +162,11 @@ func session(nc ssh.NewChannel) {
 			r.Reply(true, nil)
 			out, _ := cmd.CombinedOutput()
 			ch.Write(out)
-			ch.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+			code := make([]byte, 4) // echter Exit-Code (sudo-Tests)
+			if cmd.ProcessState != nil {
+				binary.BigEndian.PutUint32(code, uint32(cmd.ProcessState.ExitCode()))
+			}
+			ch.SendRequest("exit-status", false, code)
 			ch.Close()
 		default:
 			if r.WantReply {

@@ -145,7 +145,7 @@ func (r *RemoteFS) Label() string { return r.name }
 func (r *RemoteFS) ReadDir(p string) ([]Entry, error) {
 	fis, err := r.c.ReadDir(p)
 	if err != nil {
-		return nil, err
+		return nil, remoteErr(err)
 	}
 	out := make([]Entry, 0, len(fis))
 	for _, fi := range fis {
@@ -163,17 +163,24 @@ func (r *RemoteFS) ReadDir(p string) ([]Entry, error) {
 func (r *RemoteFS) Stat(p string) (Entry, error) {
 	fi, err := r.c.Stat(p)
 	if err != nil {
-		return Entry{}, err
+		return Entry{}, remoteErr(err)
 	}
 	return toEntry(fi), nil
 }
-func (r *RemoteFS) Open(p string) (io.ReadCloser, error) { return r.c.Open(p) }
+func (r *RemoteFS) Open(p string) (io.ReadCloser, error) {
+	f, err := r.c.Open(p)
+	if err != nil {
+		return nil, remoteErr(err)
+	}
+	return f, nil
+}
 func (r *RemoteFS) Create(p string, mode fs.FileMode) (io.WriteCloser, error) {
 	f, err := r.c.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
-	if err == nil {
-		_ = f.Chmod(mode.Perm() | 0o200)
+	if err != nil {
+		return nil, remoteErr(err)
 	}
-	return f, err
+	_ = f.Chmod(mode.Perm() | 0o200)
+	return f, nil
 }
 
 // Rewrite überschreibt eine vorhandene Datei, ohne Rechte oder Besitzer
@@ -181,26 +188,26 @@ func (r *RemoteFS) Create(p string, mode fs.FileMode) (io.WriteCloser, error) {
 func (r *RemoteFS) Rewrite(p string, data []byte) error {
 	f, err := r.c.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
 	if err != nil {
-		return err
+		return remoteErr(err)
 	}
 	if _, err := f.Write(data); err != nil {
 		f.Close()
-		return err
+		return remoteErr(err)
 	}
-	return f.Close()
+	return remoteErr(f.Close())
 }
 
-func (r *RemoteFS) Mkdir(p string) error     { return r.c.MkdirAll(p) }
-func (r *RemoteFS) RemoveAll(p string) error { return r.c.RemoveAll(p) }
+func (r *RemoteFS) Mkdir(p string) error     { return remoteErr(r.c.MkdirAll(p)) }
+func (r *RemoteFS) RemoveAll(p string) error { return remoteErr(r.c.RemoveAll(p)) }
 
 // Rename benennt um, überschreibt aber nie ein vorhandenes Ziel.
 func (r *RemoteFS) Rename(from, to string) error {
 	if _, err := r.c.Lstat(to); err == nil {
 		return fmt.Errorf(i18n.T("„%s“ gibt es schon"), path.Base(to))
 	}
-	return r.c.Rename(from, to)
+	return remoteErr(r.c.Rename(from, to))
 }
-func (r *RemoteFS) Chmod(p string, mode fs.FileMode) error { return r.c.Chmod(p, mode) }
+func (r *RemoteFS) Chmod(p string, mode fs.FileMode) error { return remoteErr(r.c.Chmod(p, mode)) }
 func (r *RemoteFS) Join(elem ...string) string             { return path.Join(elem...) }
 func (r *RemoteFS) Dir(p string) string                    { return path.Dir(p) }
 func (r *RemoteFS) Home() string                           { return r.home }
