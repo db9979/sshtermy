@@ -284,3 +284,24 @@ func (t *Term) LineText(line int) (text string, cols []int) {
 	cols[w] = b.Len()
 	return b.String(), cols
 }
+
+// SnapshotAt: wie Snapshot, aber offset Zeilen in den Verlauf zurück
+// (0 = aktueller Bildschirm). Für das zweite eigene Fenster (gui), das
+// selbst zurückblättert.
+func (t *Term) SnapshotAt(dst []uv.Cell, offset int) ([]uv.Cell, int, int) {
+	sb := t.ScrollbackLen()
+	offset = max(0, min(offset, sb))
+	if offset == 0 {
+		return t.Snapshot(dst)
+	}
+	w, h := t.Size()
+	if cap(dst) < w*h {
+		dst = make([]uv.Cell, w*h)
+	}
+	dst = dst[:w*h]
+	first := sb - offset
+	for y := 0; y < h; y++ {
+		t.lineCells(sb, first+y, uv.Line(dst[y*w:(y+1)*w]))
+	}
+	return dst, w, h
+}

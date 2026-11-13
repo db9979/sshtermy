@@ -220,6 +220,9 @@ func replayScreen(t *termemu.Term) string {
 		b.WriteString("\x1b[?1049h")
 	}
 	b.WriteString("\x1b[0m\x1b[H\x1b[2J")
+	if !t.AltScreen() {
+		replayHistory(&b, t)
+	}
 	lines := strings.Split(t.Render(0, nil), "\n")
 	for i, l := range lines {
 		if i > 0 {
@@ -242,6 +245,21 @@ func replayScreen(t *termemu.Term) string {
 		b.WriteString("\x1b[?25l")
 	}
 	return b.String()
+}
+
+// replayHistory: den Verlauf vor dem Bildschirm mitschicken, damit man im
+// neuen Fenster auch weiter zurückblättern kann (Terminal oder eigenes
+// Fenster sammeln ihn dort in ihrem eigenen Verlauf).
+func replayHistory(b *strings.Builder, t *termemu.Term) {
+	sb := t.ScrollbackLen()
+	_, h := t.Size()
+	for off := sb; off > 0; off -= h {
+		lines := strings.Split(t.Render(off, nil), "\n")
+		for _, l := range lines[:min(h, off, len(lines))] {
+			b.WriteString(strings.TrimRight(l, " "))
+			b.WriteString("\x1b[0m\r\n")
+		}
+	}
 }
 
 // detachedView: Platzhalter im Hauptfenster.
