@@ -932,6 +932,11 @@ func (a *App) viewFrame() tea.View {
 		a.z.reset() // während der Animation ist nichts klickbar
 		body, cur = a.viewIntro(), nil
 	}
+	if cur != nil && !a.s.T.Dark {
+		// Helle Themes: Cursor selbst zeichnen und den des Terminals
+		// ausblenden, dessen Farbe (oft Weiß) wir nicht sicher setzen können.
+		body, cur = paintCursor(body, cur.X, cur.Y, a.s.T), nil // fillbg.go
+	}
 	// Grundfarben in jede Zelle (fillbg.go): sonst bleiben helle Themes in
 	// Terminals ohne OSC 11 dunkel.
 	v := tea.NewView(fillDefaultColors(body, a.s.T.Text, a.s.T.Bg))

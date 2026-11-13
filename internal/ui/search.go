@@ -49,6 +49,7 @@ func (a *App) openSearch(s *session) tea.Cmd {
 	in.Prompt = ""
 	in.Placeholder = i18n.T("Suchbegriff (Großbuchstaben = genau)")
 	in.CharLimit = 200
+	in.SetStyles(inputStyles(activeTheme)) // sonst Schrift und Cursor für dunkle Terminals
 	s.search = searchState{open: true, in: in, idx: -1}
 	s.panelFocus = false
 	return s.search.in.Focus()

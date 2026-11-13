@@ -46,6 +46,7 @@ type Term struct {
 	// OSC 10/11: Grundfarben, die das Programm fürs Terminal wünscht (nil =
 	// keine). Das eigene Fenster zeichnet damit Rand und leere Zellen.
 	defFg, defBg color.Color
+	defCur       color.Color // OSC 12: Cursorfarbe
 
 	img imageFilter // Sixel, kitty, iTerm2 → Halbblöcke (images.go)
 
@@ -100,17 +101,20 @@ func New(cols, rows int, toHost io.Writer) *Term {
 			return true // A/B/C (Prompt-Marker) still schlucken
 		})
 	}
-	// OSC 10/11 merken (110/111 setzen zurück); der Emulator wertet sie
+	// OSC 10/11/12 merken (110/111/112 setzen zurück); der Emulator wertet sie
 	// danach selbst aus (false = weiterreichen).
-	for _, cmd := range []int{10, 11, 110, 111} {
+	for _, cmd := range []int{10, 11, 12, 110, 111, 112} {
 		t.emu.RegisterOscHandler(cmd, func(data []byte) bool {
 			c, ok := parseDefaultColor(cmd, string(data))
 			if ok {
 				t.mu.Lock()
-				if cmd == 10 || cmd == 110 {
+				switch cmd {
+				case 10, 110:
 					t.defFg = c
-				} else {
+				case 11, 111:
 					t.defBg = c
+				default:
+					t.defCur = c
 				}
 				t.mu.Unlock()
 			}
@@ -151,9 +155,9 @@ func New(cols, rows int, toHost io.Writer) *Term {
 func (t *Term) MuteReplies(on bool) { t.muted.Store(on) }
 
 // parseDefaultColor liest "11;#rrggbb" bzw. "rgb:…" (auch ohne Präfix).
-// 110/111 = zurücksetzen (nil). Abfragen („?“) ändern nichts.
+// 110/111/112 = zurücksetzen (nil). Abfragen („?“) ändern nichts.
 func parseDefaultColor(cmd int, s string) (color.Color, bool) {
-	if cmd == 110 || cmd == 111 {
+	if cmd >= 110 {
 		return nil, true
 	}
 	parts := strings.Split(s, ";")
@@ -165,6 +169,13 @@ func parseDefaultColor(cmd int, s string) (color.Color, bool) {
 	}
 	c := ansi.XParseColor(parts[0])
 	return c, c != nil
+}
+
+// CursorColor: per OSC 12 gewünschte Cursorfarbe (nil = keine).
+func (t *Term) CursorColor() color.Color {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.defCur
 }
 
 // DefaultColors: per OSC 10/11 gewünschte Grundfarben (nil = keine).
