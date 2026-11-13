@@ -78,10 +78,10 @@ export const de = {
       ['_Titel ziehen_', 'Bereiche tauschen'],
     ]},
     { t: 'Maus', ic: '◦', rows: [
-      ['_Ziehen_', 'markieren + kopieren, auch im Panel'],
+      ['_Ziehen_', 'markiert + kopiert, am Rand weiter'],
       ['_Rechtsklick_', 'einfügen · auf Link/IP: Menü'],
       ['Strg+_Klick_', 'URL im Browser öffnen'],
-      ['⇧+_Ziehen_', 'markieren in htop / vim'],
+      ['⇧+_Klick_', 'erweitern · ⇧+Ziehen: htop/vim'],
       ['_Ablegen_', 'Datei aus Explorer/Finder hochladen'],
     ]},
     { t: 'Anzeigen lesen', ic: 'i', legend: true, rows: [
@@ -263,10 +263,10 @@ export const en = {
       ['_drag title_', 'swap panes'],
     ]},
     { t: 'Mouse', ic: '◦', rows: [
-      ['_drag_', 'select + copy, also in the panel'],
+      ['_drag_', 'select + copy, scrolls at the edge'],
       ['_right-click_', 'paste · on a link/IP: menu'],
       ['Ctrl+_click_', 'open URL in the browser'],
-      ['⇧+_drag_', 'select inside htop / vim'],
+      ['⇧+_click_', 'extend · ⇧+drag: htop/vim'],
       ['_drop_', 'upload a file from Explorer/Finder'],
     ]},
     { t: 'Reading the screen', ic: 'i', legend: true, rows: [

@@ -437,6 +437,10 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return a.sshKeyDone(m), true
 	case relayMsg:
 		return m.apply(a), true
+	case edgeTickMsg:
+		return a.onEdgeTick(a.byID(m.sid)), true
+	case tmuxEvMsg: // kommt über a.events (tmuxscroll.go)
+		return tea.Batch(m.apply(a), a.listen()), true
 	case teamLinkMsg:
 		return m.apply(a), true
 	case macLearnedMsg:

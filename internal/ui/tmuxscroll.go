@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+
+	tea "charm.land/bubbletea/v2"
 	"strings"
 	"sync"
 	"time"
@@ -32,7 +34,32 @@ const (
 	tmuxPageDown
 	tmuxTop
 	tmuxBottom
+	tmuxQuery // nur nachsehen, wo tmux steht
 )
+
+// tmuxState: so steht der Bereich nach einer Aktion.
+type tmuxState struct {
+	inMode bool // Copy-Mode
+	alt    bool // Vollbild-Programm (less, vim) in tmux
+	pos    int  // Zeilen zurückgeblättert
+}
+
+// parseTmuxState liest die letzte Zeile "<in_mode> <alternate_on> <scroll_position>".
+func parseTmuxState(out string) (tmuxState, bool) {
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	f := strings.Fields(lines[len(lines)-1])
+	if len(f) < 2 {
+		return tmuxState{}, false
+	}
+	st := tmuxState{inMode: f[0] == "1", alt: f[1] == "1"}
+	if st.inMode && len(f) > 2 {
+		_, _ = fmt.Sscan(f[2], &st.pos)
+	}
+	return st, true
+}
+
+// tmuxEvMsg: Ergebnis aus dem Arbeiter, über a.events.
+type tmuxEvMsg struct{ apply func(a *App) tea.Cmd }
 
 // tmuxTarget: Ziel für -t; ok = false bei Namen, die sich nicht sicher
 // in ein Shell-Skript schreiben lassen.
@@ -84,7 +111,8 @@ func tmuxScript(name string, op tmuxOp, n int) (string, bool) {
 		}
 		return s
 	}
-	return head + fmt.Sprintf(`case "$m" in 1*) %s;; 01) %s;; *) %s;; esac`, or(inMode), or(inApp), or(plain)), true
+	tail := fmt.Sprintf("; tmux display-message -p%s '#{pane_in_mode} #{alternate_on} #{scroll_position}'", t)
+	return head + fmt.Sprintf(`case "$m" in 1*) %s;; 01) %s;; *) %s;; esac`, or(inMode), or(inApp), or(plain)) + tail, true
 }
 
 // tmuxScroller arbeitet die Blätter-Aktionen eines Tabs der Reihe nach ab;
@@ -101,13 +129,13 @@ type tmuxJob struct {
 }
 
 // add reiht op ein und startet den Arbeiter, falls er ruht.
-func (q *tmuxScroller) add(c *sshx.Client, name string, op tmuxOp) {
+func (q *tmuxScroller) add(c *sshx.Client, name string, op tmuxOp, n int, done func(tmuxState)) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	if l := len(q.pending); l > 0 && q.pending[l-1].op == op {
-		q.pending[l-1].n++
+	if l := len(q.pending); l > 0 && q.pending[l-1].op == op && op != tmuxQuery {
+		q.pending[l-1].n += n
 	} else if l < 32 {
-		q.pending = append(q.pending, tmuxJob{op, 1})
+		q.pending = append(q.pending, tmuxJob{op, n})
 	}
 	if q.running {
 		return
@@ -125,7 +153,10 @@ func (q *tmuxScroller) add(c *sshx.Client, name string, op tmuxOp) {
 			q.pending = q.pending[1:]
 			q.mu.Unlock()
 			if script, ok := tmuxScript(name, j.op, j.n); ok {
-				_, _ = c.Output(script, 5*time.Second)
+				out, err := c.Output(script, 5*time.Second)
+				if st, ok := parseTmuxState(out); err == nil && ok && done != nil {
+					done(st)
+				}
 			}
 		}
 	}()
@@ -150,8 +181,23 @@ func (a *App) tmuxWheel(s *session, up bool) bool {
 		op = tmuxWheelUp
 		a.tmuxHintOnce(s)
 	}
-	s.tmuxScroll.add(s.client, s.mux.name, op)
+	a.tmuxDo(s, op)
 	return true
+}
+
+// tmuxDo reiht op ein; das Ergebnis (Position) kommt als tmuxEvMsg zurück.
+func (a *App) tmuxDo(s *session, op tmuxOp) { a.tmuxDoN(s, op, 1) }
+
+func (a *App) tmuxDoN(s *session, op tmuxOp, n int) {
+	sid, ev := s.id, a.events
+	s.tmuxScroll.add(s.client, s.mux.name, op, n, func(st tmuxState) {
+		ev <- tmuxEvMsg{apply: func(a *App) tea.Cmd {
+			if s := a.byID(sid); s != nil {
+				a.onTmuxState(s, st)
+			}
+			return nil
+		}}
+	})
 }
 
 // tmuxKey: ⇧Bild↑/↓, ⇧Pos1, ⇧Ende in tmux. true = erledigt.
@@ -163,7 +209,7 @@ func (a *App) tmuxKey(s *session, act action) bool {
 	if act == actScrollUp || act == actScrollTop {
 		a.tmuxHintOnce(s)
 	}
-	s.tmuxScroll.add(s.client, s.mux.name, op)
+	a.tmuxDo(s, op)
 	return true
 }
 

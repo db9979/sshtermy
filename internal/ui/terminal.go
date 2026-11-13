@@ -186,7 +186,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		// Tippen beendet Markierung und Rückblick (Esc nur das)
 		if s.scroll > 0 && key == "esc" && !s.panelFocus && !s.files.open {
-			s.scroll, s.sel = 0, nil
+			s.scroll, s.sel, s.tsel = 0, nil, nil
 			return nil
 		}
 		if !s.panelFocus && !s.files.open && s.term != nil {
@@ -212,7 +212,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				}
 			}
 		}
-		s.sel, s.selecting = nil, false
+		s.sel, s.tsel, s.selecting = nil, nil, false
 		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
 			s.scroll = 0
 		}

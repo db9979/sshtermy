@@ -70,6 +70,13 @@ type session struct {
 	startPending bool         // Startbefehl der Verbindung noch nicht getippt (connextra.go)
 	tmuxScroll   tmuxScroller // Blättern in tmux (tmuxscroll.go)
 	tmuxHinted   bool
+	tmuxPos      int       // tmux: Zeilen zurückgeblättert (Copy-Mode)
+	tmuxAlt      bool      // tmux: Vollbild-Programm im Bereich
+	tmuxBusy     time.Time // tmux: Blätter-Aktion beim Markieren unterwegs seit
+	tsel         *tmuxSel
+	edgeDir      int // Markieren über den Rand: Zeilen je Schritt (+ hoch, − runter)
+	edgeX        int
+	edgeTicking  bool
 	muxPending   bool                     // tmux/screen nach dem Neuverbinden anhängen
 	rootPrompt   bool                     // letzter Prompt endete auf „#“
 	dangerOK     string                   // Gefahren-Check: diese Eingabe wurde bestätigt (dangerguard.go)

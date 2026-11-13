@@ -19,3 +19,18 @@ var enScrollKeys = map[string]string{
 	"tmux: Verlauf im Copy-Mode · markieren kopiert · Esc/q oder ganz nach unten beendet": "tmux: history in copy mode · select to copy · Esc/q or scrolling to the bottom ends it",
 	"Hole den Verlauf aus tmux …": "Fetching the history from tmux …",
 }
+
+func init() {
+	for k, v := range enSelScroll {
+		en[k] = v
+	}
+}
+
+// Markieren über den Rand hinaus (ui/selscroll.go).
+var enSelScroll = map[string]string{
+	"über den Rand ziehen":                   "drag past the edge",
+	"blättert weiter, Markierung wächst mit": "scrolls on, the selection grows along",
+	"Markierung bis hierher erweitern":       "extend the selection to here",
+	"Hole die Markierung aus tmux …":         "Fetching the selection from tmux …",
+	"Kopieren aus tmux ging nicht: ":         "Copying from tmux failed: ",
+}

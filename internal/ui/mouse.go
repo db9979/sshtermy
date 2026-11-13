@@ -426,7 +426,7 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 		switch {
 		case isClick:
 			s.fwdHeld = lvl >= termemu.MouseButtons
-			s.sel, s.scroll = nil, 0
+			s.sel, s.tsel, s.scroll = nil, nil, 0
 			s.term.SendMouse(uv.MouseClickEvent(ev))
 		case isRelease:
 			s.fwdHeld = false
@@ -478,7 +478,21 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 		fallthrough
 
 	case isClick && m.Button == tea.MouseLeft:
-		p := s.term.ScreenPos(clamp(tx, 0, cols-1), clamp(ty, 0, rows-1), s.scroll)
+		x, y := clamp(tx, 0, cols-1), clamp(ty, 0, rows-1)
+		p := s.term.ScreenPos(x, y, s.scroll)
+		// ⇧+Klick erweitert die Markierung (auch über mehrere Seiten, selscroll.go)
+		if clicks == 1 && m.Mod.Contains(tea.ModShift) && s.sel != nil {
+			if s.tsel != nil && s.inTmux() {
+				s.tsel.b = termemu.Pos{Line: y - s.tmuxPos, Col: x}
+				a.syncTmuxSel(s)
+				return a.copyTmuxSel(s)
+			}
+			if s.tsel == nil {
+				s.sel.B = p
+				return a.copySel(s)
+			}
+		}
+		s.tsel = nil
 		switch {
 		case clicks == 2:
 			sel := s.term.WordAt(p)
@@ -491,20 +505,31 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 		}
 		s.sel = &termemu.Sel{A: p, B: p}
 		s.selecting = true
+		if s.tmuxSelectable() {
+			a.startTmuxSel(s, x, y) // tmux: Markierung in tmux-Zeilen
+		}
 		return nil
 
 	case isMotion && s.selecting && s.sel != nil:
-		// über den Rand ziehen blättert mit
-		if ty < 0 && !s.term.AltScreen() {
-			s.scroll = clamp(s.scroll+1, 0, s.term.ScrollbackLen())
-		} else if ty >= rows {
-			s.scroll = clamp(s.scroll-1, 0, s.term.ScrollbackLen())
+		x, y := clamp(tx, 0, cols-1), clamp(ty, 0, rows-1)
+		if s.tsel != nil {
+			s.tsel.b = termemu.Pos{Line: y - s.tmuxPos, Col: x}
+			a.syncTmuxSel(s)
+		} else {
+			s.sel.B = s.term.ScreenPos(x, y, s.scroll)
 		}
-		s.sel.B = s.term.ScreenPos(clamp(tx, 0, cols-1), clamp(ty, 0, rows-1), s.scroll)
-		return nil
+		// über den Rand ziehen blättert weiter, solange die Maus dort bleibt
+		return a.selEdge(s, tx, ty, cols, rows)
 
 	case isRelease && s.selecting:
-		s.selecting = false
+		s.selecting, s.edgeDir = false, 0
+		if t := s.tsel; t != nil {
+			if t.a == t.b {
+				s.sel, s.tsel = nil, nil
+				return nil
+			}
+			return a.copyTmuxSel(s)
+		}
 		if s.sel == nil || s.sel.Empty() {
 			s.sel = nil
 			return nil

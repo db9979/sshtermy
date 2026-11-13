@@ -331,6 +331,8 @@ var helpSections = []helpSection{
 		{"Klick", "Tabs, Listen, Felder"},
 		{"Doppelklick", "öffnen / Wort"},
 		{"Ziehen", "markieren + kopieren, auch im Panel"},
+		{"über den Rand ziehen", "blättert weiter, Markierung wächst mit"},
+		{"⇧+Klick", "Markierung bis hierher erweitern"},
 		{"Rechtsklick", "einfügen"},
 		{"Rechtsklick Link", "Menü: Verbinden, Ping"},
 		{"Rechtsklick Tab", "Menü: umbenennen, schließen …"},
