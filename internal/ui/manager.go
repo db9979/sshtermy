@@ -96,15 +96,6 @@ func (a *App) managerKeys() [][2]string {
 	return k
 }
 
-func (a *App) hasTags() bool {
-	for _, c := range a.st.Connections() {
-		if len(c.Tags) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
 func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 	k, ok := msg.(tea.KeyPressMsg)
 	if !ok {
