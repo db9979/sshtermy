@@ -31,6 +31,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Zurückblättern**: Mausrad oder ⇧Bild↑ / ⇧Bild↓ blättern im Verlauf, ⇧Pos1 springt an seinen Anfang, ⇧Ende oder Esc zurück nach unten. Neue Ausgabe schiebt die Ansicht beim Lesen nicht weg.
 - **Suche über alle Tabs** (Alt+S): ein Suchbegriff, die Treffer aus dem Verlauf aller offenen Tabs in einer Liste; ⏎ springt in den Tab an genau diese Zeile.
 - **Befehle als Blöcke**: Alt+Bild↑ / Alt+Bild↓ springt im Verlauf von Befehl zu Befehl, Alt+O listet die Befehle des Tabs (mit Uhrzeit, Dauer, ✓/×): ⏎ springt hin, Strg+C kopiert genau diese Ausgabe, Strg+K gibt Befehl und Ausgabe an „KI fragen“, Strg+L zeigt sie groß.
+- **Neuer Tab über den Manager**: `+` in der Tab-Leiste, Alt+N oder ein Klick aufs Logo `>_ sshTermy` öffnet den Verbindungs-Manager mit Ordnern, Suche und Tags; die gewählte Verbindung (⏎ oder Doppelklick) öffnet sich in einem zusätzlichen Tab, die bisherigen Tabs bleiben offen. Esc führt ohne neuen Tab zurück.
 - **Tabs mit der Maus ziehen**: Ein Tab lässt sich in der Tab-Leiste an eine andere Stelle ziehen.
 - **Fertig im Hintergrund**: Ein Befehl, der 10 s oder länger in einem verdeckten Tab lief, markiert den Tab (✓ / ×) und meldet sich mit einer Einblendung; ist das sshTermy-Fenster im Hintergrund, kommt zusätzlich eine Desktop-Benachrichtigung (Windows, macOS, Linux). Die Terminal-Glocke markiert den Tab ebenso. Beides ist in der Palette abschaltbar
 - **Agent-Weiterleitung** pro Verbindung (wie `ssh -A`): `git pull`, `ssh` und `scp` auf dem Server nutzen deine lokalen Keys aus ssh-agent, Pageant oder dem Windows-OpenSSH-Agent, die Keys verlassen deinen Rechner nie
@@ -353,7 +354,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
 | | Alt+S | in allen offenen Tabs suchen, ⏎ springt zur Trefferzeile |
 | | Alt+Bild↑ / Alt+Bild↓ / Alt+O | zum vorigen / nächsten Befehl springen / Befehle des Tabs als Liste (⏎ hinspringen, Strg+C Ausgabe kopieren, Strg+K KI fragen, Strg+L lesen) |
-| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste, Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
+| | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste; `+`, Alt+N und ein Klick aufs Logo `>_ sshTermy` öffnen den Verbindungs-Manager: ⏎ oder Doppelklick startet die Verbindung in einem zusätzlichen Tab, die offenen Tabs bleiben, Esc führt zurück; Rechtsklick auf einen Tab öffnet sein Menü, Maus darauf zeigt Ziel, Dauer und Latenz) |
 | | Alt+L | lokale Shell in neuem Tab (auch im Manager; Palette: `lokal`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | Schnellbefehle: Liste / direkt ausführen (`{{name}}` im Befehl fragt nach einem Wert) |
 | | F10 | zurück zum Manager (Sitzungen laufen weiter) |
@@ -450,7 +451,7 @@ Palette → „Break senden“ schickt ein serielles Break. Host-Übersicht (F6)
 laufen wie bei SSH; Dateien, Tunnel und Broadcast brauchen SSH. Linux: Benutzer muss in der Gruppe `dialout` sein.
 Telnet ist unverschlüsselt, nur in vertrauenswürdigen Netzen verwenden.
 
-**Lokale Shell:** Alt+L (oder der erste Eintrag unter Alt+N, oder Palette → „Lokale Shell öffnen“) öffnet die Shell
+**Lokale Shell:** Alt+L (auch im Manager, den Alt+N öffnet, oder Palette → „Lokale Shell öffnen“) öffnet die Shell
 des eigenen Rechners in einem Tab: unter Windows PowerShell 7 (`pwsh`), sonst Windows PowerShell oder cmd (ConPTY, ab
 Windows 10 1809), unter macOS die Login-Shell, unter Linux `$SHELL`. `pwsh`, `cmd`, `wsl -d Ubuntu` oder `zsh` in der
 Palette startet genau diese. Als gespeicherte Verbindung („Verbindungsart: Lokal“) lassen sich Shell

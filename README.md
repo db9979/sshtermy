@@ -31,6 +31,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Scroll back**: mouse wheel or ⇧PgUp / ⇧PgDn scroll through the scrollback, ⇧Home jumps to its start, ⇧End or Esc back to the bottom. New output does not push the view away while you read.
 - **Search across all tabs** (Alt+S): one search term, the hits from the scrollback of all open tabs in one list; ⏎ jumps to the tab at exactly that line.
 - **Commands as blocks**: Alt+PgUp / Alt+PgDn jumps from command to command in the scrollback, Alt+O lists the commands of the tab (with time, duration, ✓/×): ⏎ jumps there, Ctrl+C copies just that output, Ctrl+K hands command and output to “Ask AI”, Ctrl+L shows it in full.
+- **New tab via the manager**: `+` in the tab bar, Alt+N or a click on the `>_ sshTermy` logo opens the connection manager with folders, search and tags; the connection you pick (⏎ or double-click) opens in an additional tab, the current tabs stay open. Esc goes back without a new tab.
 - **Drag tabs with the mouse**: a tab can be dragged to another position in the tab bar.
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
@@ -343,7 +344,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+S | search in all open tabs, ⏎ jumps to the matching line |
 | | Alt+PgUp / Alt+PgDn / Alt+O | jump to the previous / next command / list of the tab's commands (⏎ jump, Ctrl+C copy output, Ctrl+K ask AI, Ctrl+L read) |
-| | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar, right-click a tab for its menu, hover it for target, duration and latency) |
+| | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar; `+`, Alt+N and a click on the `>_ sshTermy` logo open the connection manager: ⏎ or a double-click starts the connection in an additional tab, the open tabs stay, Esc goes back; right-click a tab for its menu, hover it for target, duration and latency) |
 | | Alt+L | local shell in a new tab (also in the manager; palette: `local`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
 | | F9 / ⇧F1…F8 | quick commands: list / run directly (`{{name}}` in the command asks for a value) |
 | | F10 | back to the manager (sessions keep running) |
@@ -439,7 +440,7 @@ sshTermy types them as soon as the device asks (and answers “Press any key to 
 break. Host overview (F6), config backup, quick commands and the AI work as with SSH; files, tunnels and broadcast
 need SSH. Linux: the user needs to be in the `dialout` group. Telnet is unencrypted, use it only in trusted networks.
 
-**Local shell:** Alt+L (or the first entry under Alt+N, or palette → “Open local shell”) opens the shell of your own
+**Local shell:** Alt+L (also in the manager that Alt+N opens, or palette → “Open local shell”) opens the shell of your own
 computer in a tab: PowerShell 7 (`pwsh`), otherwise Windows PowerShell or cmd on Windows (ConPTY, Windows 10 1809 or
 newer), your login shell on macOS and `$SHELL` on Linux. Typing `pwsh`, `cmd`, `wsl -d Ubuntu` or `zsh` in the palette
 starts that one. As a saved connection (“Connection type: Local”) you can set the shell and a start folder;
