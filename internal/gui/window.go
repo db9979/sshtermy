@@ -223,6 +223,8 @@ type window struct {
 	mouseY    int
 	mouseBtn  uv.MouseButton
 	wheelAcc  float64
+	scroll    int // Zeilen Rückblick (nur zweites Fenster, scroll.go)
+	sbSeen    int
 	lastTitle string
 
 	script *script
@@ -448,6 +450,9 @@ func (w *window) keyboard() {
 			continue
 		}
 		if code, ok := specialKeys[k]; ok {
+			if w.scrollKey(code, mod) {
+				continue
+			}
 			buf = append(buf, encodeKey(uv.Key{Code: code, Mod: mod})...)
 			continue
 		}
@@ -473,6 +478,9 @@ func (w *window) keyboard() {
 		}
 	}
 	if len(buf) > 0 {
+		if w.scroll > 0 {
+			w.setScroll(0) // Tippen führt zurück nach unten
+		}
 		w.sendOrdered(buf)
 	}
 }
@@ -544,6 +552,16 @@ func (w *window) mouse() {
 		w.zoom(math.Copysign(1, wy))
 		return
 	}
+	if wy != 0 && w.localWheel(ebiten.IsKeyPressed(ebiten.KeyShift)) {
+		w.wheelAcc += wy
+		for ; w.wheelAcc >= 1; w.wheelAcc-- {
+			w.scrollWheel(true)
+		}
+		for ; w.wheelAcc <= -1; w.wheelAcc++ {
+			w.scrollWheel(false)
+		}
+		return
+	}
 	level := w.term.MouseTracking()
 	if level == termemu.MouseOff {
 		return
@@ -609,9 +627,15 @@ func (w *window) Draw(screen *ebiten.Image) {
 	screen.Fill(dBg)
 
 	var cw, ch int
-	w.cells, cw, ch = w.term.Snapshot(w.cells)
+	if w.opts.attach {
+		w.followScroll()
+	}
+	w.cells, cw, ch = w.term.SnapshotAt(w.cells, w.scroll)
 	pad := math.Round(padding * w.scale)
 	curX, curY, curVis := w.term.Cursor()
+	if w.scroll > 0 {
+		curVis = false
+	}
 
 	// erst alle Hintergründe, dann Schrift: breite Zeichen dürfen in die
 	// Nachbarzelle ragen

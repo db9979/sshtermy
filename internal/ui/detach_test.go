@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -102,5 +103,25 @@ func TestMuteReplies(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	if g := got.String(); !strings.Contains(g, "\x1b[?") {
 		t.Fatalf("ohne Stummschaltung muss der Emulator antworten: %q", g)
+	}
+}
+
+// Der Verlauf geht mit ins eigene Fenster, damit man dort zurückblättern kann.
+func TestReplayScreenHistory(t *testing.T) {
+	term := termemu.New(20, 4, io.Discard)
+	for i := 0; i < 30; i++ {
+		_, _ = term.Write([]byte(fmt.Sprintf("zeile %d\r\n", i)))
+	}
+	out := replayScreen(term)
+	if strings.Count(out, "zeile ") != 30 {
+		t.Fatalf("Verlauf fehlt oder doppelt: %d Zeilen", strings.Count(out, "zeile "))
+	}
+	if strings.Index(out, "zeile 0\x1b") > strings.Index(out, "zeile 29") {
+		t.Fatal("Reihenfolge falsch")
+	}
+	// im Vollbild-Programm (vim, less) nur der Bildschirm
+	_, _ = term.Write([]byte("\x1b[?1049hvim"))
+	if out := replayScreen(term); strings.Contains(out, "zeile ") {
+		t.Fatal("Alt-Bildschirm: kein Verlauf")
 	}
 }
