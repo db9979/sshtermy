@@ -215,7 +215,7 @@ func (s *Sudo) Mkdir(ctx context.Context, p string) error {
 
 // Chmod setzt Rechte (mit setuid/setgid/sticky).
 func (s *Sudo) Chmod(ctx context.Context, p string, mode fs.FileMode) error {
-	return s.Run(ctx, fmt.Sprintf("chmod %04o -- %s", octalMode(mode), Quote(p)))
+	return s.Run(ctx, fmt.Sprintf("chmod -- %04o %s", octalMode(mode), Quote(p)))
 }
 
 func octalMode(m fs.FileMode) uint32 {
@@ -294,7 +294,7 @@ func (s *Sudo) Download(ctx context.Context, src FS, paths []string, dst FS, dst
 	}
 	pr.current.Store("sudo cp ← " + strings.Join(paths, ", "))
 	if err := s.Run(ctx, "cp -RH -- "+quoteAll(paths)+" "+Quote(tmp+"/")+
-		" && chown -R \"${SUDO_UID:-$(id -u)}:${SUDO_GID:-$(id -g)}\" -- "+quoteAll(names)); err != nil {
+		" && chown -R -- \"${SUDO_UID:-$(id -u)}:${SUDO_GID:-$(id -g)}\" "+quoteAll(names)); err != nil {
 		return err
 	}
 	var total int64
