@@ -87,7 +87,8 @@ func exportPath(host string, at time.Time, ext string) string {
 	return filepath.Join(exportDir(), name)
 }
 
-// exportScrollback: Verlauf des Tabs als Text.
+// exportScrollback: Verlauf des Tabs als Text. Läuft tmux, liegt der
+// Verlauf dort: dann holt sshTermy ihn mit capture-pane vom Server.
 func (a *App) exportScrollback(s *session) tea.Cmd {
 	if s.term == nil {
 		return nil
@@ -97,14 +98,35 @@ func (a *App) exportScrollback(s *session) tea.Cmd {
 	for i := 0; i < n; i++ {
 		lines = append(lines, strings.TrimRight(s.term.PlainLine(i), " "))
 	}
-	text := strings.TrimRight(strings.Join(lines, "\n"), "\n") + "\n"
-	p := exportPath(s.conn.Alias, time.Now(), ".txt")
+	text := strings.Join(lines, "\n")
+	alias := s.conn.Alias
+	if s.inTmux() {
+		c := s.client
+		t, _ := tmuxTarget(s.mux.name)
+		a.flash(i18n.T("Hole den Verlauf aus tmux …"))
+		return func() tea.Msg {
+			out, err := c.Output("tmux capture-pane -p -J -S -"+t, 15*time.Second)
+			return relayMsg{apply: func(a *App) tea.Cmd {
+				if err == nil && strings.TrimSpace(out) != "" {
+					text = out
+				}
+				a.writeScrollback(alias, text)
+				return nil
+			}}
+		}
+	}
+	a.writeScrollback(alias, text)
+	return nil
+}
+
+func (a *App) writeScrollback(alias, text string) {
+	text = strings.TrimRight(text, "\n") + "\n"
+	p := exportPath(alias, time.Now(), ".txt")
 	if err := os.WriteFile(p, []byte(text), 0o600); err != nil {
 		a.flashErr(i18n.T("Export: ") + err.Error())
-		return nil
+		return
 	}
 	a.flash(i18n.T("Verlauf exportiert: ") + p)
-	return nil
 }
 
 // exportMenu: Protokoll exportieren (Logs-Ansicht, x).

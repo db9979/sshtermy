@@ -16,4 +16,6 @@ var enScrollKeys = map[string]string{
 	"im Verlauf zurückblättern (Esc: unten)": "scroll back in history (Esc: bottom)",
 	"⇧Pos1 / ⇧Ende":                          "⇧Home / ⇧End",
 	"Anfang / Ende des Verlaufs":             "start / end of history",
+	"tmux: Verlauf im Copy-Mode · markieren kopiert · Esc/q oder ganz nach unten beendet": "tmux: history in copy mode · select to copy · Esc/q or scrolling to the bottom ends it",
+	"Hole den Verlauf aus tmux …": "Fetching the history from tmux …",
 }
