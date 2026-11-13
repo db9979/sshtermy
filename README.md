@@ -379,7 +379,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | Tab | step by step → agent *Careful* → *Normal* → *Full* → *Plan first* |
 | Agent mode | Esc / ? / v / x | pause / give an instruction / view the script / end; at the end `s` save as runbook, `r` delete the scripts on the host, `c` copy the result, `l` read it in full |
 | Goal/agent/plan panel, Ask AI | PgUp / PgDn, mouse wheel | scroll long content (summary, plan, answer) |
-| | drag / double-click / triple-click, right-click | select text in the panel (goal, steps, output, error messages) and copy it right away (clipboard + OSC 52): word / line; right-click copies the selection again |
+| | drag / double-click / triple-click, right-click | select text in the panel (goal, steps, output, error messages) and copy it right away (clipboard + OSC 52): word / line; right-click copies the selection again. Box frames (│) are left out, lines wrapped by a box are joined into one |
 | Plan mode | ↑↓ / Space / e / v / ? | choose step / remove or restore / edit / view script / re-plan |
 | | Tab / ⏎ / x | how it runs (step by step or agent level) / approve and run / discard; Ctrl+S saves the plan as a runbook |
 | AI inputs | ⇧⏎ / Ctrl+J | new line in goal, question and palette (long texts wrap automatically, the field grows) |
@@ -607,6 +607,7 @@ Windows login ──DPAPI CryptProtectData────────────�
   Red commands need two confirmations; edited commands are checked again. `sudo` is marked, also behind `&&`, `;` or `|`.
 - **Reading secrets asks too:** `/etc/shadow`, private keys, `.env`, `kubectl get secret`, `docker inspect`, `printenv` or a switch's `show running-config` change nothing, but their output would go to the AI. The agent and MCP always ask first; plan mode skips them while exploring.
 - **Dialogs that pop up by themselves** (host key, password, MCP request, files from the server) ignore keys for one second, so a `j` from `journalctl` you were typing confirms nothing. If another dialog is open, they wait instead of replacing it.
+- **`docker exec` without `-it`:** `docker exec gitea vi /data/app.ini` starts vi without a terminal, it shows a few lines and quits at once (leaving `^[[61;189R` at the prompt). On Enter sshTermy adds the missing `-it` (or `-t`/`-i`) for editors, pagers, `top`/`htop` and shells without a command, also for `podman`, `docker run` and `kubectl exec`, and waits: the next ⏎ runs the corrected line. Typing the line again unchanged runs it as it was.
 - **Paste guard:** the same rules check every pasted line. A hit shows the preview with the
   red line and needs two confirmations, even if the multi-line preview is turned off.
 - **Prompt injection:** everything from the terminal is passed as material in a `<<< … >>>` block whose markers are

@@ -429,6 +429,9 @@ func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
 	if key == "ctrl+c" && s.run != nil {
 		s.run.interrupted = true
 	}
+	if key == "enter" && a.ttyFix(s) {
+		return nil // docker exec ohne -it: Zeile ergänzt, erst nächstes ⏎ führt aus (ttyhint.go)
+	}
 	if key == "enter" && a.dangerCheck(s, k) {
 		return nil // Gefahren-Check: erst bestätigen (dangerguard.go)
 	}

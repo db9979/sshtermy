@@ -83,6 +83,7 @@ type session struct {
 	panelMemo            panelMemo   // letzte Seitenleiste (panels.go: viewPanel)
 	pscroll              panelScroll // Blättern in der Seitenleiste (panelscroll.go)
 	psel                 *panelSel   // Markierung in der Seitenleiste (panelsel.go)
+	ttyFixed             string      // Zeile, der sshTermy -it ergänzt hat (nochmal getippt = so lassen)
 	pplain               []string    // Seitenleiste als Klartext, je Inhaltszeile (zum Kopieren)
 
 	notice   noticeKind  // Markierung im Tab: Befehl fertig, Glocke (notify.go)

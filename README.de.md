@@ -389,7 +389,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | Tab | Schritt für Schritt → Agent *Vorsichtig* → *Normal* → *Voll* → *Erst planen* |
 | Agent-Modus | Esc / ? / v / x | anhalten / Anweisung geben / Skript ansehen / beenden; am Ende `s` als Runbook speichern, `r` Skripte auf dem Host löschen, `c` Ergebnis kopieren, `l` ganz lesen |
 | Ziel-/Agent-/Plan-Panel, KI fragen | Bild↑ / Bild↓, Mausrad | langen Inhalt blättern (Zusammenfassung, Plan, Antwort) |
-| | Ziehen / Doppelklick / Dreifachklick, Rechtsklick | Text im Panel markieren (Ziel, Schritte, Ausgaben, Fehlermeldungen) und gleich kopieren (Zwischenablage + OSC 52): Wort / Zeile; Rechtsklick kopiert die Markierung erneut |
+| | Ziehen / Doppelklick / Dreifachklick, Rechtsklick | Text im Panel markieren (Ziel, Schritte, Ausgaben, Fehlermeldungen) und gleich kopieren (Zwischenablage + OSC 52): Wort / Zeile; Rechtsklick kopiert die Markierung erneut. Kastenrahmen (│) bleiben weg, vom Kasten umbrochene Zeilen werden wieder eine |
 | Plan-Modus | ↑↓ / Leertaste / e / v / ? | Schritt wählen / streichen oder zurückholen / ändern / Skript ansehen / neu planen |
 | | Tab / ⏎ / x | Ausführung (Schritt für Schritt oder Agent-Stufe) / freigeben und ausführen / verwerfen; Strg+S speichert den Plan als Runbook |
 | KI-Eingaben | ⇧⏎ / Strg+J | neue Zeile in Ziel, Frage und Palette (lange Texte brechen automatisch um, das Feld wächst mit) |
@@ -616,6 +616,7 @@ Windows-Anmeldung ──DPAPI CryptProtectData───────────�
   Rote Befehle brauchen zwei Bestätigungen; bearbeitete Befehle werden neu geprüft. `sudo` wird markiert, auch hinter `&&`, `;` oder `|`.
 - **Geheimnisse lesen fragt auch:** `/etc/shadow`, private Schlüssel, `.env`, `kubectl get secret`, `docker inspect`, `printenv` oder `show running-config` am Switch ändern nichts, ihre Ausgabe ginge aber an die KI. Agent und MCP fragen deshalb immer; der Plan-Modus lässt sie beim Erkunden aus.
 - **Dialoge, die von selbst aufgehen** (Host-Key, Passwort, MCP-Anfrage, Dateien vom Server), nehmen eine Sekunde lang keine Tasten an: ein `j` aus `journalctl`, das du gerade tippst, bestätigt nichts. Ist schon ein Dialog offen, warten sie, statt ihn zu ersetzen.
+- **`docker exec` ohne `-it`:** `docker exec gitea vi /data/app.ini` startet vi ohne Terminal, vi zeigt ein paar Zeilen und endet sofort (am Prompt bleibt `^[[61;189R`). Beim Enter ergänzt sshTermy das fehlende `-it` (oder `-t`/`-i`) bei Editoren, Pagern, `top`/`htop` und Shells ohne Befehl, auch für `podman`, `docker run` und `kubectl exec`, und wartet: das nächste ⏎ führt die korrigierte Zeile aus. Wer die Zeile unverändert noch einmal tippt, führt sie so aus.
 - **Einfügeschutz:** Dieselben Regeln prüfen jede eingefügte Zeile. Ein Treffer zeigt die Vorschau mit der
   roten Zeile und braucht zwei Bestätigungen, auch wenn die Mehrzeilen-Vorschau abgeschaltet ist.
 - **Prompt Injection:** alles aus dem Terminal steht als Material in einem Block `<<< … >>>`, dessen Marker im
