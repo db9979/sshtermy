@@ -13,6 +13,7 @@ import (
 const (
 	SecretPassword   = "password"
 	SecretPassphrase = "passphrase"
+	SecretSudo       = "sudo" // sudo-Passwort für Dateiaktionen (ui/filesudo.go)
 )
 
 // KeychainAccount: Kontoname im Schlüsselbund.
@@ -21,8 +22,11 @@ func KeychainAccount(connID, kind string) string { return connID + "/" + kind }
 // KeychainLabel: lesbarer Name im Schlüsselbund.
 func KeychainLabel(c domain.Connection, kind string) string {
 	what := c.Username + "@" + c.Host
-	if kind == SecretPassphrase {
+	switch kind {
+	case SecretPassphrase:
 		what = "Key-Passphrase " + c.Alias
+	case SecretSudo:
+		what = "sudo " + what
 	}
 	return keychain.Service + ": " + what
 }
@@ -49,6 +53,7 @@ func SetKeychainSecret(c domain.Connection, kind, secret string) error {
 func ForgetKeychain(connID string) {
 	_ = keychain.Delete(KeychainAccount(connID, SecretPassword))
 	_ = keychain.Delete(KeychainAccount(connID, SecretPassphrase))
+	_ = keychain.Delete(KeychainAccount(connID, SecretSudo))
 }
 
 // withKeychain füllt fehlende Geheimnisse aus dem Schlüsselbund, nur für

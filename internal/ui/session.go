@@ -67,6 +67,8 @@ type session struct {
 	rc           reconnState              // Auto-Reconnect
 	mux          muxState                 // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
 	secrets      *secretCache             // Antworten auf Passwort-Rückfragen, nur im Speicher
+	sudo         *sshx.Sudo               // geprüftes sudo für Dateiaktionen (filesudo.go), nur im Speicher
+	sudoFor      *sshx.Client             // Verbindung, für die sudo gilt
 	startPending bool                     // Startbefehl der Verbindung noch nicht getippt (connextra.go)
 	muxPending   bool                     // tmux/screen nach dem Neuverbinden anhängen
 	rootPrompt   bool                     // letzter Prompt endete auf „#“

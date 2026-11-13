@@ -153,6 +153,7 @@ export const de = {
       ['_Rechtsklick_', 'Menü: Rechte, Pfad, cd hierhin'],
       ['F2 / y / s / v', 'umbenennen / Pfad / sortieren / Vorschau'],
       ['n / d / .', 'neuer Ordner / löschen / versteckte'],
+      ['_keine Rechte_ → j j', 'mit sudo wiederholen'],
     ]},
     { t: 'Tunnel', ic: '↔', key: 'F4', rows: [
       ['⏎', 'starten / stoppen'],
@@ -340,6 +341,7 @@ export const en = {
       ['_Right-click_', 'menu: permissions, path, cd here'],
       ['F2 / y / s / v', 'rename / path / sort / preview'],
       ['n / d / .', 'new folder / delete / hidden'],
+      ['_no permission_ → j j', 'repeat with sudo'],
     ]},
     { t: 'Tunnels', ic: '↔', key: 'F4', rows: [
       ['⏎', 'start / stop (click works too)'],
