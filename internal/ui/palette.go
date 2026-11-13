@@ -1070,6 +1070,15 @@ func (a *App) viewPalette() string {
 	b.WriteString(promptBlock(st.Accent.Render("$ "), p.in.View()) + "\n")
 	b.WriteString(lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w-4)) + "\n")
 	maxRows := max(5, a.h-12)
+	// Leerzeilen zwischen den Gruppen nur, wenn sie Platz haben: jede kostet
+	// eine Zeile, die sonst ein Eintrag hätte.
+	groups := 0
+	for i, it := range items {
+		if i == 0 || it.group != items[i-1].group {
+			groups++
+		}
+	}
+	gaps := a.h >= 30 && len(items)+groups <= maxRows
 	// Fenster um die Auswahl
 	start := 0
 	if p.sel >= maxRows {
@@ -1085,7 +1094,7 @@ func (a *App) viewPalette() string {
 			if it.group == pgConns {
 				head = a.palConnHeader(p.in.Value())
 			}
-			b.WriteString(st.Muted.Render(groupHead(head)) + "\n")
+			b.WriteString(a.palGroupRule(head, w-4, gaps && rows > 0) + "\n")
 		}
 		iconStyle := st.Accent
 		switch it.group {
@@ -1186,3 +1195,19 @@ func (a *App) viewPalette() string {
 }
 
 func ansiPlain(s string) string { return lipgloss.NewStyle().Render(ansi.Strip(s)) }
+
+// palGroupRule: Gruppenkopf der Palette als Linie mit Namen
+// („── ALLGEMEIN ─────────“), damit sich die Bereiche deutlich trennen. Ab
+// der zweiten Gruppe steht eine Leerzeile davor (gap), wenn Platz ist.
+func (a *App) palGroupRule(head string, w int, gap bool) string {
+	st := a.s
+	name := head
+	rule := lipgloss.NewStyle().Foreground(st.T.Border)
+	label := st.Accent.Bold(true).Render(name)
+	rest := max(2, w-lipgloss.Width(name)-4)
+	out := rule.Render("── ") + label + rule.Render(" "+strings.Repeat("─", rest))
+	if gap {
+		out = "\n" + out
+	}
+	return out
+}

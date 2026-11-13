@@ -2,20 +2,20 @@
  connections┌─ ◆ Command palette  19 entries ────────────────────────────────────── × ─┐
             │ $ Goal, question, command, tunnel, connection or user@host:port …        │
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
-   ○ # switc│ // frequent                                                              │
+   ○ # switc│ ── FREQUENT ──────────────────────────────────────────────────────────── │
  ▾ Produktio│ [+] New connection                                                     n │
    ▾ Web    │ [$] Local shell in a new tab                                       Alt+L │
 ▌    ○   web│ [*] Broadcast: command on several hosts                                m │
 ▌    ○   web│ [/] Network scan: find SSH devices                                     f │
 ▌  ○   db-01│ [#] Search session logs                                                l │ menu ·
- ○   nas    │ // connections                                                           │
+ ○   nas    │ ── CONNECTIONS ───────────────────────────────────────────────────────── │
  ○   spark  │ [·] nas                                                  admin@nas.local │
             │ [·] spark                                              dominik@spark.lan │
             │ [#] switch-core  Netzwerk                            manager@192.168.1.2 │
             │ [·] db-01  Produktion                                  postgres@10.0.1.5 │
             │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
             │ [=] All 6 connections in the manager         type a name, folder or #tag │
-            │ // all actions                                                           │
+            │ ── ALL ACTIONS ───────────────────────────────────────────────────────── │
             │ [/] Search & logs ›  scrollback, all tabs, log glance, session logs    3 │
             │ [T] Tabs & view ›  new, split, zoom, workspaces                        2 │
             │ [*] Several hosts & network ›  broadcast, scan, schedules, switches    5 │
