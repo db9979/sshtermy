@@ -52,7 +52,10 @@ func TestGoalPanelSelectCopy(t *testing.T) {
 	}
 	s.panelAt = time.Now().Add(-time.Hour) // ohne Einblenden
 	view := a.View().Content
-	if !strings.Contains(view, a.s.Selected.Render("kaputt")) {
+	// View schreibt die Theme-Grundfarben in jede Zelle (fillbg.go)
+	want := fillDefaultColors(a.s.Selected.Render("kaputt"), a.s.T.Text, a.s.T.Bg)
+	want = want[strings.IndexByte(want, 'm')+1:]
+	if !strings.Contains(view, want) {
 		t.Fatal("Markierung wird nicht hervorgehoben")
 	}
 	plain := strings.Split(ansi.Strip(view), "\n")

@@ -605,7 +605,8 @@ func (w *window) Draw(screen *ebiten.Image) {
 		w.white = ebiten.NewImage(1, 1)
 		w.white.Fill(color.White)
 	}
-	screen.Fill(defaultBg)
+	dFg, dBg := baseColors(w.term.DefaultColors())
+	screen.Fill(dBg)
 
 	var cw, ch int
 	w.cells, cw, ch = w.term.Snapshot(w.cells)
@@ -620,7 +621,7 @@ func (w *window) Draw(screen *ebiten.Image) {
 			if c.Width == 0 && c.Content == "" && x > 0 {
 				continue
 			}
-			_, bg, set := cellColors(&c.Style)
+			_, bg, set := cellColors(&c.Style, dFg, dBg)
 			if curVis && x == curX && y == curY {
 				bg, set = cursorClr, true
 			}
@@ -634,7 +635,7 @@ func (w *window) Draw(screen *ebiten.Image) {
 	for y := 0; y < ch; y++ {
 		for x := 0; x < cw; x++ {
 			c := &w.cells[y*cw+x]
-			fg, bg, _ := cellColors(&c.Style)
+			fg, bg, _ := cellColors(&c.Style, dFg, dBg)
 			if curVis && x == curX && y == curY {
 				fg = bg
 			}

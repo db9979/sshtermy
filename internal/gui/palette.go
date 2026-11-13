@@ -44,16 +44,17 @@ func rgba(c color.Color, def color.RGBA) color.RGBA {
 }
 
 // cellColors: Vorder- und Hintergrund einer Zelle nach Fett/Blass/Invers.
-// bgSet sagt, ob der Hintergrund eigens gezeichnet werden muss.
-func cellColors(s *uv.Style) (fg, bg color.RGBA, bgSet bool) {
-	fg = rgba(s.Fg, defaultFg)
+// bgSet sagt, ob der Hintergrund eigens gezeichnet werden muss. dFg/dBg sind
+// die Grundfarben (Standard oder per OSC 10/11 vom Programm gesetzt).
+func cellColors(s *uv.Style, dFg, dBg color.RGBA) (fg, bg color.RGBA, bgSet bool) {
+	fg = rgba(s.Fg, dFg)
 	// Fett mit Grundfarbe 0–7: hellere Variante, wie die meisten Terminals
 	if s.Attrs&uv.AttrBold != 0 {
 		if b, ok := s.Fg.(ansi.BasicColor); ok && b < 8 {
 			fg = basic16[b+8]
 		}
 	}
-	bg = rgba(s.Bg, defaultBg)
+	bg = rgba(s.Bg, dBg)
 	bgSet = s.Bg != nil
 	if s.Attrs&uv.AttrReverse != 0 {
 		fg, bg = bg, fg
@@ -66,6 +67,12 @@ func cellColors(s *uv.Style) (fg, bg color.RGBA, bgSet bool) {
 		fg = bg
 	}
 	return fg, bg, bgSet
+}
+
+// baseColors: Grundfarben des Fensters. sshTermy meldet die Theme-Farben
+// per OSC 10/11; ohne Meldung gelten die Campbell-Farben.
+func baseColors(fg, bg color.Color) (color.RGBA, color.RGBA) {
+	return rgba(fg, defaultFg), rgba(bg, defaultBg)
 }
 
 // mix: a mit Anteil f, Rest b.
