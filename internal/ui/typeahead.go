@@ -21,7 +21,7 @@ import (
 // Text verworfen statt dort zu landen.
 
 const (
-	aheadMax  = 256              // Zeichen
+	aheadMax  = 256             // Zeichen
 	aheadWait = 8 * time.Second // länger kein Prompt: verwerfen
 )
 
