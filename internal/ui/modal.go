@@ -47,6 +47,7 @@ type modal struct {
 	patch    bool   // mText: Patch-Runde (patchround.go)
 	harden   bool   // mText: Härtungs-Check (harden.go)
 	keyinv   bool   // mText: Schlüssel-Inventar, ein Schlüssel (keyinv.go)
+	inv      bool   // mText: Inventar & Änderungen (inventory.go)
 	mail     string // mText: m öffnet diese mailto:-Adresse im Mailprogramm
 	title    string
 	body     string
@@ -293,6 +294,11 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		}
 		if m.keyinv {
 			if cmd, ok := a.keyinvKey(key); ok {
+				return cmd
+			}
+		}
+		if m.inv {
+			if cmd, ok := a.invKey(key); ok {
 				return cmd
 			}
 		}

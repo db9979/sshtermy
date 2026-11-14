@@ -108,6 +108,8 @@ type App struct {
 	patch         patchState        // Patch-Runde (patchround.go)
 	hard          hardenState       // Härtungs-Check (harden.go)
 	kinv          keyinvState       // Schlüssel-Inventar (keyinv.go)
+	trend         trendState        // Verlaufskurven F6 (trend.go)
+	inv           invState          // Inventar & Änderungen (inventory.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -644,6 +646,9 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return cmd, true
 	}
 	if cmd, ok := a.hardenMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.invMsgs(msg); ok {
 		return cmd, true
 	}
 	if cmd, ok := a.keyinvMsgs(msg); ok {

@@ -209,6 +209,8 @@ var helpSections = []helpSection{
 		{"l", "Log-Blick"},
 		{"s", "Sicherheitscheck · Switch: Firmware"},
 		{"h / a", "Härtungs-Check / Schlüssel-Inventar"},
+		{"i", "Inventar & Änderungen (e = CSV)"},
+		{"w", "Verlauf 24 h / 7 Tage"},
 		{"↑ ↓", "Sicherung wählen"},
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},
