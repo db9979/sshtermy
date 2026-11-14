@@ -18,7 +18,7 @@
             │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
             │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │
             │ ── ALLE AKTIONEN ─────────────────────────────────────────────────────── │
-            │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         3 │
+            │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         4 │
             │ [T] Tabs & Ansicht ›  neu, teilen, Zoom, Arbeitsplätze                 2 │
             │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switch…   11 │
             │ [&] Team & Teilen ›  live teilen, Team-Ordner                          4 │

@@ -12,7 +12,7 @@ export const de = {
   sub: 'SSH-Terminal mit KI-Copilot · Windows · macOS · Linux',
   credit: 'Idee: Dominik Bornhäußer',
   stand: 'Stand November 2026',
-  hint: 'Tasten ändern: <b>b</b> im Manager (<b>l</b> = nur dieser Rechner) · Hilfe: <b>F1</b> · Plan-Modus, Protokolle und Start-Optionen: Handbuch (Palette › Hilfe).',
+  hint: 'Tasten ändern: <b>b</b> im Manager (<b>l</b> = nur dieser Rechner) · Hilfe: <b>F1</b> · Plan-Modus, Protokolle, Aufnahmen und Start-Optionen: Handbuch (Palette › Hilfe).',
   web: 'db9979.github.io/sshtermy',
   page1: [
     { t: 'Überall', ic: '◆', rows: [
@@ -200,7 +200,7 @@ export const en = {
   sub: 'SSH terminal with an AI copilot · Windows · macOS · Linux',
   credit: 'Idea: Dominik Bornhäußer',
   stand: 'As of November 2026',
-  hint: 'Change keys: <b>b</b> in the manager (<b>l</b> = this computer only) · help: <b>F1</b> · plan mode, session logs and start options: manual (palette › Help).',
+  hint: 'Change keys: <b>b</b> in the manager (<b>l</b> = this computer only) · help: <b>F1</b> · plan mode, session logs, recordings and start options: manual (palette › Help).',
   web: 'db9979.github.io/sshtermy',
   page1: [
     { t: 'Everywhere', ic: '◆', rows: [

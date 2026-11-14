@@ -60,7 +60,7 @@ func (a *App) stopRecording(s *session) {
 		a.flashErr(i18n.T("Aufnahme nicht gespeichert: ") + err.Error())
 		return
 	}
-	msg := fmt.Sprintf(i18n.T("Aufnahme gespeichert (%s): %s · abspielen mit „asciinema play“"), bcDur(r.Duration().Round(time.Second)), p)
+	msg := fmt.Sprintf(i18n.T("Aufnahme gespeichert (%s): %s · abspielen: Palette › Aufnahme abspielen"), bcDur(r.Duration().Round(time.Second)), p)
 	if r.Truncated() {
 		msg += i18n.T(" · gekürzt (Größengrenze)")
 	}
@@ -144,6 +144,7 @@ func (a *App) exportMenu(l *sessionlog.Log) *modal {
 		{label: i18n.T("Markdown für Doku oder Wiki"), hint: ".md", run: func() tea.Cmd { return write(".md", []byte(l.Markdown())) }},
 		{label: i18n.T("Text, wie im Terminal"), hint: ".txt", run: func() tea.Cmd { return write(".txt", []byte(l.Text())) }},
 		{label: i18n.T("Abspielbare Aufnahme (asciinema)"), hint: ".cast", run: func() tea.Cmd { return write(".cast", l.Cast(2*time.Second)) }},
+		{label: i18n.T("Gleich hier abspielen"), hint: "▶", run: func() tea.Cmd { return a.playCast(l.Host+".cast", l.Cast(2*time.Second)) }},
 	}
 	return &modal{kind: mMenu, title: i18n.T("Exportieren nach ") + exportDir(), items: items}
 }

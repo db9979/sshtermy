@@ -489,6 +489,8 @@ func (a *App) palActsFind(add palAdd, s *session, inTerm, inMgr bool) {
 	}
 	add("find", palItem{icon: ic("errors"), label: a.watchMenuLabel(), hint: watchLabel(a.watchLevel()),
 		keys: "logwache log watch syslog alarm meldungen journal überwachen", run: func() tea.Cmd { return a.openWatchList() }})
+	add("find", palItem{icon: ic("record"), label: i18n.T("Aufnahme abspielen (.cast) …"), hint: "asciinema",
+		keys: "aufnahme abspielen play replay cast asciinema video recording ansehen", run: func() tea.Cmd { return a.openPlayerPicker() }})
 }
 
 // palActsTerminal: weitere Aktionen der Sitzung, Ansicht und Tabs.

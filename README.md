@@ -107,8 +107,9 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   there too. Only the switch “Protection” in the connection form turns this off, one connection at a time (for test and
   lab systems; the header then shows “Protection off”). “prod”/“live” in folder, tag or alias still shows the red ▲ PRODUCTION badge.
 - **Export recordings:** palette “Start recording” records the tab as an asciinema file (`.cast`, with colors and
-  vim/htop), playable with `asciinema play`. Session logs (`l`, then `x`) export as Markdown, text or a rebuilt
+  vim/htop), playable with `asciinema play` or right inside sshTermy. Session logs (`l`, then `x`) export as Markdown, text or a rebuilt
   recording; “Export terminal history as text” saves the scrollback. Everything goes to your Downloads folder.
+- **Recording player** (palette *Play recording*, or “Play it here” in the log export): plays `.cast` files (asciicast v2 and v3) in sshTermy itself: Space pause, ←/→ 5 s (⇧ 30 s), ↑/↓ speed 0.25× to 16×, `1`…`9` jump to 10…90 %, `/` searches text that was on screen at some point and stops there (`n` next match), `m` next marker, `.` single step, `i` shortens long pauses to 2 s. Nothing is sent to a server.
 - **Network scan** (f in the manager): search a subnet for SSH devices (only port and SSH banner, no login),
   recognize switches and routers by their banner and create the hits as connections with one key press.
 - **Tunnel manager**: `-L`, `-R`, `-D` (SOCKS5) and one-click web services with a local URL; saved per connection, one click turns them on/off, optionally start with the connection; works through jump hosts
