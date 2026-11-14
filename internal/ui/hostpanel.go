@@ -53,6 +53,7 @@ type hostState struct {
 	alerts    []hostinfo.Alert // Kennzahlen über der Warnschwelle
 	lastTry   time.Time        // letzte Server-Abfrage (auch fehlgeschlagene)
 	live      liveState        // Live-Graphen (hostlive.go)
+	week      bool             // Verlaufskurven über 7 Tage statt 24 h (trend.go)
 }
 
 func (h *hostState) cancel() {
@@ -489,6 +490,7 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		srv := m.srv
 		h.srv = &srv
+		a.recordMetrics(s.conn.ID, s.conn.Alias, srv)
 		fresh := a.setAlerts(s, srv.Alerts(a.monLimits()))
 		switch {
 		case len(fresh) > 0:
@@ -644,6 +646,14 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		if !net {
 			return a.openKeyinvHost(s)
 		}
+	case "i":
+		if !net {
+			return a.openInventory(s)
+		}
+	case "w":
+		if !net {
+			h.week = !h.week
+		}
 	case "b":
 		if net && !h.busy {
 			s.panelFocus = false
@@ -737,7 +747,14 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		}
 		k = append(k, [2]string{"t", span}, [2]string{"z", size})
 	}
-	return append(k, [2]string{"l", "Logs"}, [2]string{"s", i18n.T("Sicherheit")}, [2]string{"h", i18n.T("Härtung")}, [2]string{"a", i18n.T("Schlüssel")}, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+	if len(a.metricsHistory(s.conn.ID).Samples) >= 2 {
+		span := i18n.T("7 Tage")
+		if s.host.week {
+			span = i18n.T("24 h")
+		}
+		k = append(k, [2]string{"w", span})
+	}
+	return append(k, [2]string{"l", "Logs"}, [2]string{"s", i18n.T("Sicherheit")}, [2]string{"h", i18n.T("Härtung")}, [2]string{"a", i18n.T("Schlüssel")}, [2]string{"i", i18n.T("Inventar")}, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -831,6 +848,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			}
 		}
 		a.viewDisks(b, srv.DiskList(), w, lim.Disk)
+		a.viewTrend(b, s, w)
 		if srv.Uptime > 0 {
 			row(i18n.T("Laufzeit"), hostinfo.Duration(srv.Uptime))
 		}
@@ -862,6 +880,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		}
 		a.viewVulnRow(b, s, w)
 		a.viewHardenRow(b, s, w)
+		a.viewInventoryRow(b, s, w)
 		for _, e := range srv.Extras {
 			row(trunc(e.Label, 9), e.Value)
 		}

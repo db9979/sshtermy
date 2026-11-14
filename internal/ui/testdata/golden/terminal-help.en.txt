@@ -10,22 +10,22 @@
 ┃│   F5          Files (SFTP)                                 l           Log view                                    │┃
 ┃│   F6          Host overview                                s           security check · switch: firmware           │┃
 ┃│   F7 / F8     switch tab                                   h / a       hardening check / key inventory             │┃
-┃│   F9          Quick commands (list)                        ↑ ↓         choose backup                               │┃
-┃│   F9 → a      adopt a frequent command                     d           diff to previous                            │┃
-┃│   F10         to manager                                   v           view backup                                 │┃
-┃│   ⇧F1…F8      run quick command                            g           Warning limits                              │┃
-┃│   ⇧F10        Tab to own window (session stays open)       t           graphs: 5 min / 1 h                         │┃
-┃│   Tab / →     accept ghost text                            z           graphs large                                │┃
-┃│   Alt+1…4     insert follow-up command                     x           cancel query                                │┃
-┃│   Alt+0       Error: Why? & Fix                                                                                    │┃
-┃│   Alt+K       AI companion: off/quiet/chatty/coach        ▤ Files F5                                               │┃
-┃│   Alt+J       Companion sidebar                            F2          rename                                      │┃
-┃│   Alt+V       Task across several windows (AI sees all)    Tab         switch side                                 │┃
-┃│   Ctrl+T      choose layout (1…7)                          ⏎ / 2×click  open, view file                            │┃
-┃│   Ctrl+arrow  switch pane (split)                          ← / Bksp    one level up                                │┃
-┃│   Alt+⇧arrow  move divider (mouse: drag)                   c / F6      copy (up/down)                              │┃
-┃│   Alt+Z       Zoom pane / back                             e           open in your own editor                     │┃
-┃│   Drag title  swap panes                                   o           with the default app                        │┃
+┃│   F9          Quick commands (list)                        i           Inventory & changes (e = CSV)               │┃
+┃│   F9 → a      adopt a frequent command                     w           History 24 h / 7 days                       │┃
+┃│   F10         to manager                                   ↑ ↓         choose backup                               │┃
+┃│   ⇧F1…F8      run quick command                            d           diff to previous                            │┃
+┃│   ⇧F10        Tab to own window (session stays open)       v           view backup                                 │┃
+┃│   Tab / →     accept ghost text                            g           Warning limits                              │┃
+┃│   Alt+1…4     insert follow-up command                     t           graphs: 5 min / 1 h                         │┃
+┃│   Alt+0       Error: Why? & Fix                            z           graphs large                                │┃
+┃│   Alt+K       AI companion: off/quiet/chatty/coach         x           cancel query                                │┃
+┃│   Alt+J       Companion sidebar                                                                                    │┃
+┃│   Alt+V       Task across several windows (AI sees all)   ▤ Files F5                                               │┃
+┃│   Ctrl+T      choose layout (1…7)                          F2          rename                                      │┃
+┃│   Ctrl+arrow  switch pane (split)                          Tab         switch side                                 │┃
+┃│   Alt+⇧arrow  move divider (mouse: drag)                   ⏎ / 2×click  open, view file                            │┃
+┃│   Alt+Z       Zoom pane / back                             ← / Bksp    one level up                                │┃
+┃│   Drag title  swap panes                                   c / F6      copy (up/down)                              │┃
 ┃│                                                                                                                    │┃
 ┃│   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                      │┃
 ┃│  Esc leads back to the terminal from every panel.                                                                  │┃

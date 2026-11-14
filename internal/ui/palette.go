@@ -436,6 +436,12 @@ func (a *App) palActsGlobal(add palAdd, inMgr bool) {
 		add("net", palItem{icon: ic("sshkey"), label: i18n.T("Schlüssel-Inventar: letztes Ergebnis"), hint: trunc(a.kinv.title, 18),
 			keys: "schlüssel inventar ergebnis keys", run: func() tea.Cmd { a.showKeyinvList(); return nil }})
 	}
+	add("net", palItem{icon: ic("host"), label: i18n.T("Inventar & Änderungen: alle Server im Ordner …"), hint: i18n.T("was ist neu?"),
+		keys: "inventar inventory änderungen changes pakete benutzer admins cron ports dienste kernel drift csv export ordner folder", run: func() tea.Cmd { return a.openInventoryFolder() }})
+	if len(a.inv.hosts) > 0 {
+		add("net", palItem{icon: ic("host"), label: i18n.T("Inventar: letztes Ergebnis"), hint: trunc(a.inv.title, 18),
+			keys: "inventar inventory änderungen ergebnis", run: func() tea.Cmd { a.showInventory(); return nil }})
+	}
 	add("net", palItem{icon: ic("restart"), label: i18n.T("Patch-Runde: Updates gestaffelt über einen Ordner …"), hint: i18n.T("erst ein Host"),
 		keys: "patch runde updates upgrade aktualisieren ordner gestaffelt kanarienvogel canary rollout apt dnf neustart reboot", run: func() tea.Cmd { return a.openPatch() }})
 	if len(a.patch.hosts) > 0 {
@@ -513,6 +519,8 @@ func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 				keys: "härtung hardening sicherheit security sshd root passwort firewall ports zertifikat cert tls sudo audit cis", run: func() tea.Cmd { return a.openHarden(s) }})
 			add("session", palItem{icon: ic("sshkey"), label: i18n.T("Schlüssel-Inventar: authorized_keys dieses Hosts"), hint: i18n.T("F6 a"),
 				keys: "schlüssel keys authorized_keys inventar zugang access ssh key kollege entfernen", run: func() tea.Cmd { return a.openKeyinvHost(s) }})
+			add("session", palItem{icon: ic("host"), label: i18n.T("Inventar & Änderungen dieses Hosts"), hint: i18n.T("F6 i"),
+				keys: "inventar inventory änderungen changes pakete benutzer admins cron ports dienste kernel drift csv", run: func() tea.Cmd { return a.openInventory(s) }})
 		}
 		if a.containersOK(s) {
 			add("session", palItem{icon: ic("host"), label: i18n.T("Container (Docker, Podman, Kubernetes)"), hint: i18n.T("F6 c"),

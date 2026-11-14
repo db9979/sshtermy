@@ -75,9 +75,11 @@ type Store struct {
 
 	late lateSave // vorgemerktes Speichern kleiner Änderungen (later.go)
 
-	stats cmdStats // Befehlsstatistik (cmdstats.go), nur lokal
-	lbase logBase  // Grundlinie des Log-Blicks (logbase.go), nur lokal
-	vbase logBase  // letzter Sicherheitscheck je Verbindung (vulnbase.go), nur lokal
+	stats   cmdStats // Befehlsstatistik (cmdstats.go), nur lokal
+	lbase   logBase  // Grundlinie des Log-Blicks (logbase.go), nur lokal
+	vbase   logBase  // letzter Sicherheitscheck je Verbindung (vulnbase.go), nur lokal
+	metrics encMap   // Messverlauf je Verbindung (encmap.go), nur lokal
+	inv     encMap   // Inventar-Stand je Verbindung (encmap.go), nur lokal
 }
 
 type connCache struct {
