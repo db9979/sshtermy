@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"strings"
 	"os"
 	"path/filepath"
 )
@@ -55,7 +56,9 @@ func (s *Store) VulnReports() map[string]json.RawMessage {
 		return out
 	}
 	for k, v := range s.vbase.m {
-		out[k] = v
+		if !strings.HasPrefix(k, fwPrefix) {
+			out[k] = v
+		}
 	}
 	return out
 }
@@ -85,4 +88,18 @@ func (s *Store) SetVulnReport(connID string, v json.RawMessage) error {
 		return err
 	}
 	return os.Rename(p+".tmp", p)
+}
+
+// Firmware-Hinweise (NVD) für Netzwerkgeräte liegen in derselben Datei,
+// unter „fw|<Verbindung>“.
+const fwPrefix = "fw|"
+
+// FirmwareReport: letzte Firmware-Prüfung eines Netzwerkgeräts (nil = keine).
+func (s *Store) FirmwareReport(connID string) json.RawMessage {
+	return s.VulnReport(fwPrefix + connID)
+}
+
+// SetFirmwareReport speichert die Firmware-Prüfung (nil löscht).
+func (s *Store) SetFirmwareReport(connID string, v json.RawMessage) error {
+	return s.SetVulnReport(fwPrefix+connID, v)
 }

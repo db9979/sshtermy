@@ -241,7 +241,7 @@ func (a *App) folderScanMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if f.allDone() {
 		a.flashOK(fmt.Sprintf(i18n.T("Ordner-Scan fertig: %d Hosts in %s"), len(f.hosts), durText(time.Since(f.start))))
 	}
-	if f.open && a.modal != nil && a.modal.kind == mText && a.modal.copy != "" && !a.modal.vuln {
+	if f.open && a.modal != nil && a.modal.kind == mText && a.modal.copy != "" && !a.modal.vuln && !a.modal.fw && !a.modal.patch {
 		a.showFolderScan()
 	}
 	return a.listen(), true

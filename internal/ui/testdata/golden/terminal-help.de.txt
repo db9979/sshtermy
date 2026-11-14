@@ -16,7 +16,7 @@
 ┃│   ⇧F1…F8      Schnellbefehl ausführen                      b           Switch-Config sichern                       │┃
 ┃│   ⇧F10        Tab in eigenes Fenster (Sitzung bleibt       c           Container (Docker, Podman, k8s)             │┃
 ┃│               offen)                                       l           Log-Blick                                   │┃
-┃│   Tab / →     Ghost-Text übernehmen                        s           Sicherheitscheck (OSV)                      │┃
+┃│   Tab / →     Ghost-Text übernehmen                        s           Sicherheitscheck · Switch: Firmware         │┃
 ┃│   Alt+1…4     Folgebefehl einfügen                         ↑ ↓         Sicherung wählen                            │┃
 ┃│   Alt+0       Fehler: Warum? & Fix                         d           Diff zur Vorversion                         │┃
 ┃│   Alt+K       KI-Begleiter: Aus/Leise/Gesprächig/Coach     v           Sicherung ansehen                           │┃

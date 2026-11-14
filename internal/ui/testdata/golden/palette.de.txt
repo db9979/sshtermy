@@ -20,7 +20,7 @@
             │ ── ALLE AKTIONEN ─────────────────────────────────────────────────────── │
             │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         3 │
             │ [T] Tabs & Ansicht ›  neu, teilen, Zoom, Arbeitsplätze                 2 │
-            │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switches   6 │
+            │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switches   8 │
             │ [&] Team & Teilen ›  live teilen, Team-Ordner                          4 │
             │ [=] Verbindungen & Daten ›  neu, SSH-Key, Import/Export, Sicherung     6 │
             │                                                                          │

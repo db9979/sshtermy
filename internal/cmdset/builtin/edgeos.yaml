@@ -9,3 +9,7 @@ detect:
 danger:
   - rx: '^\s*(load\s+\S|rollback\s+\d)'
     reason: überschreibt die Gerätekonfiguration
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:ui:edgeos]
+  url: https://community.ui.com/releases

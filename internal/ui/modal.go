@@ -43,6 +43,8 @@ type modal struct {
 	kind     modalKind
 	copy     string // mText: c kopiert diesen Text
 	vuln     bool   // mText: Ergebnis des Sicherheitschecks über einen Ordner (vulnfolder.go)
+	fw       bool   // mText: Firmware-Hinweise (firmware.go)
+	patch    bool   // mText: Patch-Runde (patchround.go)
 	mail     string // mText: m öffnet diese mailto:-Adresse im Mailprogramm
 	title    string
 	body     string
@@ -282,6 +284,11 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	case mQuick:
 		return a.quickModalKey(key)
 	case mText:
+		if m.patch {
+			if cmd, ok := a.patchKey(key); ok {
+				return cmd
+			}
+		}
 		if m.textKey(key) {
 			a.modal = nil
 		}

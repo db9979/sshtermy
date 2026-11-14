@@ -632,9 +632,10 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 			return a.openLogScan(s)
 		}
 	case "s":
-		if !net {
-			return a.openVuln(s)
+		if net {
+			return a.openFirmware(s)
 		}
+		return a.openVuln(s)
 	case "b":
 		if net && !h.busy {
 			s.panelFocus = false
@@ -715,7 +716,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		if len(s.host.backups) > 0 {
 			k = append(k, [2]string{"↑↓", i18n.T("Stand")}, [2]string{"v", i18n.T("ansehen")})
 		}
-		return append(k, [2]string{"l", "Logs"}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+		return append(k, [2]string{"l", "Logs"}, [2]string{"s", i18n.T("Sicherheit")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 	}
 	k := [][2]string{{"r", i18n.T("aktualisieren")}}
 	if s.host.live.hasLive() {
@@ -874,6 +875,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			row(i18n.T("Modell"), sw.Model)
 		}
 		row("Firmware", orDefault(sw.Firmware, "?"))
+		a.viewFirmwareRow(b, s, w)
 		if sw.Uptime != "" {
 			row(i18n.T("Laufzeit"), sw.Uptime)
 		}
