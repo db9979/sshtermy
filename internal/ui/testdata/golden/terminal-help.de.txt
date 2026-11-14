@@ -17,15 +17,15 @@
 ┃│   ⇧F10        Tab in eigenes Fenster (Sitzung bleibt       c           Container (Docker, Podman, k8s)             │┃
 ┃│               offen)                                       l           Log-Blick                                   │┃
 ┃│   Tab / →     Ghost-Text übernehmen                        s           Sicherheitscheck · Switch: Firmware         │┃
-┃│   Alt+1…4     Folgebefehl einfügen                         ↑ ↓         Sicherung wählen                            │┃
-┃│   Alt+0       Fehler: Warum? & Fix                         d           Diff zur Vorversion                         │┃
-┃│   Alt+K       KI-Begleiter: Aus/Leise/Gesprächig/Coach     v           Sicherung ansehen                           │┃
-┃│   Alt+J       Begleiter-Leiste                             g           Grenzwerte für Warnungen                    │┃
-┃│   Alt+V       Vorgang über mehrere Fenster (KI sieht       t           Graphen: 5 min / 1 h                        │┃
-┃│               alle)                                        z           Graphen groß                                │┃
-┃│   Strg+T      Aufteilung wählen (1…7)                      x           Abfrage abbrechen                           │┃
-┃│   Strg+Pfeil  Bereich wechseln (geteilt)                                                                           │┃
-┃│   Alt+⇧Pfeil  Trennlinie verschieben (Maus: ziehen)       ▤ Dateien F5                                             │┃
+┃│   Alt+1…4     Folgebefehl einfügen                         h / a       Härtungs-Check / Schlüssel-Inventar         │┃
+┃│   Alt+0       Fehler: Warum? & Fix                         ↑ ↓         Sicherung wählen                            │┃
+┃│   Alt+K       KI-Begleiter: Aus/Leise/Gesprächig/Coach     d           Diff zur Vorversion                         │┃
+┃│   Alt+J       Begleiter-Leiste                             v           Sicherung ansehen                           │┃
+┃│   Alt+V       Vorgang über mehrere Fenster (KI sieht       g           Grenzwerte für Warnungen                    │┃
+┃│               alle)                                        t           Graphen: 5 min / 1 h                        │┃
+┃│   Strg+T      Aufteilung wählen (1…7)                      z           Graphen groß                                │┃
+┃│   Strg+Pfeil  Bereich wechseln (geteilt)                   x           Abfrage abbrechen                           │┃
+┃│   Alt+⇧Pfeil  Trennlinie verschieben (Maus: ziehen)                                                                │┃
 ┃│                                                                                                                    │┃
 ┃│   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.      │┃
 ┃│  Esc führt aus jedem Panel zurück ins Terminal.                                                                    │┃

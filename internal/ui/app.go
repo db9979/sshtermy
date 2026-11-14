@@ -106,6 +106,8 @@ type App struct {
 	voff          *vuln.Offline     // Offline-Datenbank (bleibt im Speicher)
 	fwchk         fwState           // Firmware-Hinweise (firmware.go)
 	patch         patchState        // Patch-Runde (patchround.go)
+	hard          hardenState       // Härtungs-Check (harden.go)
+	kinv          keyinvState       // Schlüssel-Inventar (keyinv.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -639,6 +641,12 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return cmd, true
 	}
 	if cmd, ok := a.patchMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.hardenMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.keyinvMsgs(msg); ok {
 		return cmd, true
 	}
 	if cmd, ok := a.vulnFolderMsg(msg); ok {

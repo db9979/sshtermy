@@ -45,6 +45,8 @@ type modal struct {
 	vuln     bool   // mText: Ergebnis des Sicherheitschecks über einen Ordner (vulnfolder.go)
 	fw       bool   // mText: Firmware-Hinweise (firmware.go)
 	patch    bool   // mText: Patch-Runde (patchround.go)
+	harden   bool   // mText: Härtungs-Check (harden.go)
+	keyinv   bool   // mText: Schlüssel-Inventar, ein Schlüssel (keyinv.go)
 	mail     string // mText: m öffnet diese mailto:-Adresse im Mailprogramm
 	title    string
 	body     string
@@ -286,6 +288,11 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	case mText:
 		if m.patch {
 			if cmd, ok := a.patchKey(key); ok {
+				return cmd
+			}
+		}
+		if m.keyinv {
+			if cmd, ok := a.keyinvKey(key); ok {
 				return cmd
 			}
 		}
