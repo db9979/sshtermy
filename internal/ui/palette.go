@@ -418,6 +418,18 @@ func (a *App) palActsGlobal(add palAdd, inMgr bool) {
 		add("net", palItem{icon: ic("lock"), label: i18n.T("Sicherheitscheck: letztes Ergebnis"), hint: a.vfold.folder,
 			keys: "sicherheit security osv ergebnis folder", run: func() tea.Cmd { a.showVulnFolder(); return nil }})
 	}
+	add("net", palItem{icon: ic("lock"), label: i18n.T("Firmware-Hinweise: Switches und Firewalls im Ordner …"), hint: "NVD",
+		keys: "firmware sicherheit security cve nvd switch firewall router hersteller advisory ordner", run: func() tea.Cmd { return a.openFirmwareFolder() }})
+	if len(a.fwchk.res) > 0 || a.fwchk.busy {
+		add("net", palItem{icon: ic("lock"), label: i18n.T("Firmware-Hinweise: letztes Ergebnis"), hint: trunc(a.fwchk.title, 18),
+			keys: "firmware sicherheit nvd ergebnis", run: func() tea.Cmd { a.showFirmware(); return nil }})
+	}
+	add("net", palItem{icon: ic("restart"), label: i18n.T("Patch-Runde: Updates gestaffelt über einen Ordner …"), hint: i18n.T("erst ein Host"),
+		keys: "patch runde updates upgrade aktualisieren ordner gestaffelt kanarienvogel canary rollout apt dnf neustart reboot", run: func() tea.Cmd { return a.openPatch() }})
+	if len(a.patch.hosts) > 0 {
+		add("net", palItem{icon: ic("restart"), label: i18n.T("Patch-Runde: Stand und Bericht"), hint: trunc(orDefault(a.patch.folder, "*"), 18),
+			keys: "patch runde stand bericht report", run: func() tea.Cmd { a.showPatch(); return nil }})
+	}
 	add("team",
 		palItem{icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen …"), hint: i18n.T("Code"),
 			keys: "zusehen watch link code teilen share live einladung", run: func() tea.Cmd { return a.askWatch() }},
@@ -669,7 +681,7 @@ var palSubMenus = []palMenu{
 	{"settings/relay", "relay", "Vermittler", "Server hinter NAT/Firewall", "relay vermittler"},
 	{"settings/logs", "sesslog", "Protokolle & Logs", "Sitzungsprotokoll, Logwache, Syslog, Audit", "protokoll logs syslog audit"},
 	{"settings/net", "backup", "Netzwerkgeräte", "Befehlssätze, Regeln für Switch-Configs", "switch netzwerk befehlssatz"},
-	{"settings/osv", "lock", "Sicherheitscheck (OSV)", "Quelle online/offline, eigener Spiegel, Container", "sicherheit security osv cve schwachstellen"},
+	{"settings/osv", "lock", "Sicherheitscheck (OSV)", "Quelle online/offline, eigener Spiegel, Container, NVD-Schlüssel", "sicherheit security osv cve schwachstellen"},
 	{"help/debug", "sesslog", "Fehlersuche", "Debug-Protokoll, Leistungsanzeige", "debug fehler leistung"},
 }
 
@@ -892,6 +904,8 @@ func (a *App) palMenuItems() []palItem {
 			keys: "sicherheit security osv spiegel mirror offline firmennetz proxy", run: func() tea.Cmd { return a.askVulnMirror() }},
 		sub("settings/osv", palToggle(ic("lock"), i18n.T("Laufende Container mitprüfen"), !set.Vuln.NoContainers, "sicherheit security osv docker podman container",
 			func() tea.Cmd { return a.toggleVulnContainers() })),
+		palItem{group: pgSetSetup, menu: "settings/osv", icon: ic("lock"), label: i18n.T("NVD-API-Schlüssel (Firmware-Hinweise) …"), hint: nvdKeyLabel(set),
+			keys: "nvd api key schlüssel firmware switch nist", run: func() tea.Cmd { return a.askNVDKey() }},
 
 		// Einstellungen › KI
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Endpunkt & Modell …"), hint: "s", keys: "ai llm ki-einstellungen endpunkt modell model url", run: func() tea.Cmd { return a.openSettings() }},

@@ -25,3 +25,8 @@ syslog:
 danger:
   - rx: '^\s*(execute\s+(restore|batch|disk\s+format|factoryreset2|erase-disk))\b'
     reason: überschreibt die Gerätekonfiguration
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:fortinet:fortios]
+  version: '(\d+\.\d+\.\d+)'
+  url: https://www.fortiguard.com/psirt

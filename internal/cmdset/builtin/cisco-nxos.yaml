@@ -46,3 +46,7 @@ samples:
       name: leaf1
       cpu: 5
       mem: 34
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:cisco:nx-os]
+  url: https://sec.cloudapps.cisco.com/security/center/publicationListing.x

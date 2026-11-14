@@ -21,3 +21,8 @@ logs:
 syslog:
   steps: [configure, 'set system syslog host {{ip}} any warning', 'set system syslog host {{ip}} port {{port}}', commit and-quit]
   abort: [rollback, exit configuration-mode]
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:juniper:junos]
+  version: '(?i)(\d+\.\d+[a-z]\d+(?:-s\d+)?)'
+  url: https://supportportal.juniper.net/

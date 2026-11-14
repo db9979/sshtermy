@@ -8,7 +8,7 @@
 ┃│   F3          Ask AI                                       b           back up switch config                       │┃
 ┃│   F4          Tunnel                                       c           Containers (Docker, Podman, k8s)            │┃
 ┃│   F5          Files (SFTP)                                 l           Log view                                    │┃
-┃│   F6          Host overview                                s           Security check (OSV)                        │┃
+┃│   F6          Host overview                                s           security check · switch: firmware           │┃
 ┃│   F7 / F8     switch tab                                   ↑ ↓         choose backup                               │┃
 ┃│   F9          Quick commands (list)                        d           diff to previous                            │┃
 ┃│   F9 → a      adopt a frequent command                     v           view backup                                 │┃

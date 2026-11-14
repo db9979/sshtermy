@@ -38,3 +38,8 @@ samples:
       Boot Image:     Primary
     expect:
       firmware: WC.16.10.0009
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:arubanetworks:arubaos-switch]
+  version: '(\d+\.\d+\.\d+)'
+  url: https://www.arubanetworks.com/support-services/security-bulletins/

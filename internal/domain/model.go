@@ -1194,6 +1194,10 @@ type VulnConfig struct {
 	Mirror string `json:"mirror,omitempty"`
 	// NoContainers: laufende Container nicht mitprüfen.
 	NoContainers bool `json:"no_containers,omitempty"`
+	// NVDKey: API-Schlüssel der NVD (Firmware-Hinweise; ohne geht es
+	// langsamer). NVDURL: eigener Spiegel/Proxy der NVD-API.
+	NVDKey Secret `json:"nvd_key,omitempty"`
+	NVDURL string `json:"nvd_url,omitempty"`
 	// Ignore: als „betrifft uns nicht“ ausgeblendet.
 	Ignore []VulnIgnore `json:"ignore,omitempty"`
 }

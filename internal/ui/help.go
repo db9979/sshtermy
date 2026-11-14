@@ -207,7 +207,7 @@ var helpSections = []helpSection{
 		{"b", "Switch-Config sichern"},
 		{"c", "Container (Docker, Podman, k8s)"},
 		{"l", "Log-Blick"},
-		{"s", "Sicherheitscheck (OSV)"},
+		{"s", "Sicherheitscheck · Switch: Firmware"},
 		{"↑ ↓", "Sicherung wählen"},
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},
@@ -267,6 +267,12 @@ var helpSections = []helpSection{
 		{"f", "nur Pakete mit Update"},
 		{"o", "alle Server im Ordner prüfen"},
 		{"r / c", "neu prüfen / kopieren"},
+	}},
+	{hcVuln, "■", "Patch-Runde", "Palette", false, [][2]string{
+		{"j j", "starten (Ordner, erster Host)"},
+		{"w", "nach Prüfung weiter"},
+		{"x", "nach diesem Host beenden"},
+		{"c", "Bericht kopieren"},
 	}},
 	{hcLogs, "≡", "Sitzungsprotokolle", "l", false, [][2]string{
 		{"/", "suchen (auch Ausgabe)"},
@@ -489,7 +495,7 @@ var helpTabs = []helpTabDef{
 	{"Terminal", []string{"Terminal", "Suche im Verlauf", "Tunnel", "Host-Übersicht", "Dateien", "Gefahren & Aufnahme", "Systemprofil"}},
 	{"KI", []string{"Ziel-Modus", "KI fragen", "KI-Begleiter", "Vorgang über mehrere Fenster", "KI-Einstellungen"}},
 	{"Manager", []string{"Verbindungs-Manager", "Broadcast", "Netzwerk-Scan"}},
-	{"Logs", []string{"Log-Blick", "Sicherheitscheck", "Sitzungsprotokolle"}},
+	{"Logs", []string{"Log-Blick", "Sicherheitscheck", "Patch-Runde", "Sitzungsprotokolle"}},
 	{"Überall", []string{"Überall", "Befehlspalette", "Aussehen & Tasten", "Maus"}},
 }
 

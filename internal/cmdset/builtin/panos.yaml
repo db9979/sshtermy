@@ -55,3 +55,7 @@ samples:
       name: PA-220
       cpu: 4
       mem: 75
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:paloaltonetworks:pan-os]
+  url: https://security.paloaltonetworks.com/

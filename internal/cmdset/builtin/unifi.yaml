@@ -27,3 +27,6 @@ syslog:
 danger:
   - rx: '(\bsyswrapper\.sh\s+restore-default\b|^\s*set-default\s*$)'
     reason: löscht Konfiguration oder Speicher des Geräts
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  url: https://community.ui.com/releases

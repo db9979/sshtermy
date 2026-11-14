@@ -104,6 +104,8 @@ type App struct {
 	vfold         vulnFolderState   // Sicherheitscheck über einen Ordner (vulnfolder.go)
 	vsum          map[string]vulnSum
 	voff          *vuln.Offline     // Offline-Datenbank (bleibt im Speicher)
+	fwchk         fwState           // Firmware-Hinweise (firmware.go)
+	patch         patchState        // Patch-Runde (patchround.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -631,6 +633,12 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return cmd, true
 	}
 	if cmd, ok := a.vulnMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.firmwareMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.patchMsgs(msg); ok {
 		return cmd, true
 	}
 	if cmd, ok := a.vulnFolderMsg(msg); ok {
