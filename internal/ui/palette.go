@@ -424,6 +424,18 @@ func (a *App) palActsGlobal(add palAdd, inMgr bool) {
 		add("net", palItem{icon: ic("lock"), label: i18n.T("Firmware-Hinweise: letztes Ergebnis"), hint: trunc(a.fwchk.title, 18),
 			keys: "firmware sicherheit nvd ergebnis", run: func() tea.Cmd { a.showFirmware(); return nil }})
 	}
+	add("net", palItem{icon: ic("lock"), label: i18n.T("Härtungs-Check: alle Server im Ordner …"), hint: i18n.T("nur lesend"),
+		keys: "härtung hardening sicherheit security sshd firewall ports zertifikat ordner folder", run: func() tea.Cmd { return a.openHardenFolder() }})
+	if len(a.hard.hosts) > 0 {
+		add("net", palItem{icon: ic("lock"), label: i18n.T("Härtungs-Check: letztes Ergebnis"), hint: trunc(a.hard.title, 18),
+			keys: "härtung hardening ergebnis", run: func() tea.Cmd { a.showHarden(); return nil }})
+	}
+	add("net", palItem{icon: ic("sshkey"), label: i18n.T("Schlüssel-Inventar: authorized_keys im Ordner …"), hint: i18n.T("wer hat Zugang?"),
+		keys: "schlüssel keys authorized_keys inventar zugang access kollege ausgeschieden entfernen ordner folder", run: func() tea.Cmd { return a.openKeyinvFolder() }})
+	if len(a.kinv.keys) > 0 {
+		add("net", palItem{icon: ic("sshkey"), label: i18n.T("Schlüssel-Inventar: letztes Ergebnis"), hint: trunc(a.kinv.title, 18),
+			keys: "schlüssel inventar ergebnis keys", run: func() tea.Cmd { a.showKeyinvList(); return nil }})
+	}
 	add("net", palItem{icon: ic("restart"), label: i18n.T("Patch-Runde: Updates gestaffelt über einen Ordner …"), hint: i18n.T("erst ein Host"),
 		keys: "patch runde updates upgrade aktualisieren ordner gestaffelt kanarienvogel canary rollout apt dnf neustart reboot", run: func() tea.Cmd { return a.openPatch() }})
 	if len(a.patch.hosts) > 0 {
@@ -497,6 +509,10 @@ func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 		if a.vulnOK(s) == nil {
 			add("session", palItem{icon: ic("lock"), label: i18n.T("Sicherheitscheck: Pakete gegen bekannte Lücken (OSV)"), hint: i18n.T("F6 s"),
 				keys: "sicherheit security osv cve schwachstellen vulnerabilities lücken pakete packages kev patch update", run: func() tea.Cmd { return a.openVuln(s) }})
+			add("session", palItem{icon: ic("lock"), label: i18n.T("Härtungs-Check: sshd, Firewall, Ports, Zertifikate"), hint: i18n.T("F6 h"),
+				keys: "härtung hardening sicherheit security sshd root passwort firewall ports zertifikat cert tls sudo audit cis", run: func() tea.Cmd { return a.openHarden(s) }})
+			add("session", palItem{icon: ic("sshkey"), label: i18n.T("Schlüssel-Inventar: authorized_keys dieses Hosts"), hint: i18n.T("F6 a"),
+				keys: "schlüssel keys authorized_keys inventar zugang access ssh key kollege entfernen", run: func() tea.Cmd { return a.openKeyinvHost(s) }})
 		}
 		if a.containersOK(s) {
 			add("session", palItem{icon: ic("host"), label: i18n.T("Container (Docker, Podman, Kubernetes)"), hint: i18n.T("F6 c"),

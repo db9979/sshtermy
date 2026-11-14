@@ -2,9 +2,9 @@ package store
 
 import (
 	"encoding/json"
-	"strings"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Letzter Sicherheitscheck (OSV) je Verbindung: Grundlage für die Zeile in
@@ -56,7 +56,7 @@ func (s *Store) VulnReports() map[string]json.RawMessage {
 		return out
 	}
 	for k, v := range s.vbase.m {
-		if !strings.HasPrefix(k, fwPrefix) {
+		if !strings.Contains(k, "|") { // „fw|…“, „hd|…“: andere Prüfungen
 			out[k] = v
 		}
 	}
@@ -102,4 +102,15 @@ func (s *Store) FirmwareReport(connID string) json.RawMessage {
 // SetFirmwareReport speichert die Firmware-Prüfung (nil löscht).
 func (s *Store) SetFirmwareReport(connID string, v json.RawMessage) error {
 	return s.SetVulnReport(fwPrefix+connID, v)
+}
+
+// ExtraReport: weitere Prüfungen je Verbindung in derselben Datei
+// (kind „hd“ Härtungs-Check, „ki“ Schlüssel-Inventar).
+func (s *Store) ExtraReport(kind, connID string) json.RawMessage {
+	return s.VulnReport(kind + "|" + connID)
+}
+
+// SetExtraReport speichert eine weitere Prüfung (nil löscht).
+func (s *Store) SetExtraReport(kind, connID string, v json.RawMessage) error {
+	return s.SetVulnReport(kind+"|"+connID, v)
 }
