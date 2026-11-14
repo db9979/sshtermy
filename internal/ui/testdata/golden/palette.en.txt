@@ -18,7 +18,7 @@
             │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
             │ [=] All 6 connections in the manager         type a name, folder or #tag │
             │ ── ALL ACTIONS ───────────────────────────────────────────────────────── │
-            │ [/] Search & logs ›  scrollback, all tabs, log glance, session logs    3 │
+            │ [/] Search & logs ›  scrollback, all tabs, log glance, session logs    4 │
             │ [T] Tabs & view ›  new, split, zoom, workspaces                        2 │
             │ [*] Several hosts & network ›  broadcast, scan, schedules, switches   11 │
             │ [&] Team & sharing ›  live sharing, team folders                       4 │

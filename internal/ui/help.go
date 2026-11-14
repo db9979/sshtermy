@@ -296,6 +296,14 @@ var helpSections = []helpSection{
 		{"a", "Mitschreiben an/aus"},
 		{"␣ Befehl", "nicht protokollieren"},
 	}},
+	{hcLogs, "▶", "Aufnahme abspielen", "Palette", false, [][2]string{
+		{"Space", "Pause / weiter"},
+		{"← → · ⇧← ⇧→", "5 s · 30 s spulen"},
+		{"↑ ↓", "Tempo 0,25× … 16×"},
+		{"/ · n", "Text suchen · nächster Treffer"},
+		{"m · .", "nächste Marke · Einzelschritt"},
+		{"i", "lange Pausen kürzen"},
+	}},
 	{hcBroadcast, "»", "Broadcast", "m", false, [][2]string{
 		{"Space / g / a", "Host / Ordner / alle"},
 		{"Tab", "Hosts · Quelle · Befehl"},
@@ -388,7 +396,7 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
-	case scrLogs:
+	case scrLogs, scrPlayer:
 		return hcLogs
 	case scrLogScan:
 		return hcLogScan
@@ -503,7 +511,7 @@ var helpTabs = []helpTabDef{
 	{"Terminal", []string{"Terminal", "Suche im Verlauf", "Tunnel", "Host-Übersicht", "Dateien", "Gefahren & Aufnahme", "Systemprofil"}},
 	{"KI", []string{"Ziel-Modus", "KI fragen", "KI-Begleiter", "Vorgang über mehrere Fenster", "KI-Einstellungen"}},
 	{"Manager", []string{"Verbindungs-Manager", "Broadcast", "Netzwerk-Scan"}},
-	{"Logs", []string{"Log-Blick", "Sicherheitscheck", "Schlüssel-Inventar", "Patch-Runde", "Sitzungsprotokolle"}},
+	{"Logs", []string{"Log-Blick", "Sicherheitscheck", "Schlüssel-Inventar", "Patch-Runde", "Sitzungsprotokolle", "Aufnahme abspielen"}},
 	{"Überall", []string{"Überall", "Befehlspalette", "Aussehen & Tasten", "Maus"}},
 }
 

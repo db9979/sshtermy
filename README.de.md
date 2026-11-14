@@ -109,8 +109,9 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   Verbindungsformular (für Test- und Laborsysteme; die Kopfzeile zeigt dann „Schutz aus“). „prod“/„live“ in Ordner,
   Tag oder Alias zeigt weiterhin die rote Marke ▲ PRODUKTIV.
 - **Aufzeichnung exportieren:** Palette „Aufnahme starten“ nimmt den Tab als asciinema-Datei (`.cast`, mit Farben und
-  vim/htop) auf, abspielbar mit `asciinema play`. Protokolle (`l`, dann `x`) gehen als Markdown, Text oder nachgebaute
+  vim/htop) auf, abspielbar mit `asciinema play` oder direkt in sshTermy. Protokolle (`l`, dann `x`) gehen als Markdown, Text oder nachgebaute
   Aufnahme raus; „Terminal-Verlauf als Text exportieren“ speichert den Verlauf. Alles landet im Download-Ordner.
+- **Aufnahmen abspielen** (Palette *Aufnahme abspielen*, oder „Gleich hier abspielen“ beim Protokoll-Export): spielt `.cast`-Dateien (asciicast v2 und v3) in sshTermy selbst ab: Leertaste Pause, ←/→ 5 s (⇧ 30 s), ↑/↓ Tempo 0,25× bis 16×, `1`…`9` springt auf 10…90 %, `/` sucht Text, der irgendwann auf dem Bildschirm stand, und hält dort an (`n` nächster Treffer), `m` nächste Marke, `.` Einzelschritt, `i` kürzt lange Pausen auf 2 s. Nichts geht an einen Server.
 - **Netzwerk-Scan** (f im Manager): ein Subnetz nach SSH-Geräten durchsuchen (nur Port und SSH-Kennung, ohne Anmeldung),
   Switches und Router am Banner erkennen und die Funde mit einem Druck als Verbindungen anlegen.
 - **Tunnel-Manager**: `-L`, `-R`, `-D` (SOCKS5) und One-Click-Web-Services mit lokaler URL; pro Verbindung gespeichert, ein Klick schaltet an/aus, auf Wunsch startet ein Tunnel mit der Verbindung; läuft auch über Jump-Hosts

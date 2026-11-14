@@ -82,6 +82,7 @@ const (
 	scrVuln          // Sicherheitscheck (vuln.go)
 	scrCmdSets       // Befehlssätze (cmdsets.go)
 	scrCmdSetForm    // eigener Befehlssatz bearbeiten
+	scrPlayer        // Aufnahme abspielen (player.go)
 )
 
 // App ist das Wurzel-Modell.
@@ -110,6 +111,7 @@ type App struct {
 	kinv          keyinvState       // Schlüssel-Inventar (keyinv.go)
 	trend         trendState        // Verlaufskurven F6 (trend.go)
 	inv           invState          // Inventar & Änderungen (inventory.go)
+	play          playerState       // Aufnahme abspielen (player.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -648,6 +650,9 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if cmd, ok := a.hardenMsgs(msg); ok {
 		return cmd, true
 	}
+	if cmd, ok := a.playerMsgs(msg); ok {
+		return cmd, true
+	}
 	if cmd, ok := a.invMsgs(msg); ok {
 		return cmd, true
 	}
@@ -772,6 +777,8 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 		return a.updateLogScan(msg)
 	case scrVuln:
 		return a.updateVuln(msg)
+	case scrPlayer:
+		return a.updatePlayer(msg)
 	case scrCmdSets:
 		return a.updateCmdSets(msg)
 	case scrImport:
@@ -928,6 +935,8 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewLogScan(), a.logScanKeys())
 	case scrVuln:
 		body = a.frame(a.viewVuln(), a.vulnKeys())
+	case scrPlayer:
+		body = a.frame(a.viewPlayer(), a.playerKeys())
 	case scrCmdSets:
 		body = a.frame(a.viewCmdSets(), a.cmdSetsKeys())
 	case scrImport:
