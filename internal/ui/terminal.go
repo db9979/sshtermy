@@ -333,6 +333,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			}
 			return nil
 		}
+		if s.state == stConnecting {
+			return a.connectingKey(s, m) // Text wartet auf den Prompt (typeahead.go)
+		}
 		if s.state != stConnected {
 			if cmd, ok := a.closedKey(s, key); ok {
 				return cmd

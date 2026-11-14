@@ -70,6 +70,8 @@ type session struct {
 	sudo         *sshx.Sudo   // geprüftes sudo für Dateiaktionen (filesudo.go), nur im Speicher
 	sudoFor      *sshx.Client // Verbindung, für die sudo gilt
 	startPending bool         // Startbefehl der Verbindung noch nicht getippt (connextra.go)
+	ahead        []rune       // beim Verbinden vorausgetippt, wartet auf den Prompt (typeahead.go)
+	aheadTicking bool
 	tmuxScroll   tmuxScroller // Blättern in tmux (tmuxscroll.go)
 	tmuxHinted   bool
 	muxPending   bool                     // tmux/screen nach dem Neuverbinden anhängen

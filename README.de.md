@@ -235,7 +235,9 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   sich (geprüft werden die im Manager sichtbaren Verbindungen, ein Ordner sofort beim Aufklappen; Einstellung
   „Online-Punkt“: aus, sichtbare, alle), die Details zeigen den Verlauf der Erreichbarkeit und bei verbundenen Servern CPU/RAM/Platte als Balken.
   Beim Verbinden zeigt eine Karte die Schritte (Verbindung, Host-Schlüssel, Anmelden, Shell) mit Zeiten und einem
-  Fortschrittsbalken mit Lichtlauf, danach blendet die Shell von oben ein. Die KI-Antwort schimmert „denkt nach …“ und
+  Fortschrittsbalken mit Lichtlauf, danach blendet die Shell von oben ein. Was du beim Verbinden schon tippst, geht
+  nicht verloren: Die Karte zeigt es, und es landet am Prompt, sobald die Shell steht (⏎ wird nie vorausgeschickt,
+  Esc bricht ab). Die KI-Antwort schimmert „denkt nach …“ und
   tippt sich gleichmäßig, Panels blenden ein. In der Befehlspalette leuchten die getroffenen Buchstaben, die Zeilen
   blenden nacheinander ein und die Auswahl gleitet weich. Die Kopfzeile zeigt die Latenz als kleine Kurve (rot und
   „▲ zäh“ bei schlechter Leitung). In der geteilten Ansicht leuchtet die Trennlinie neben dem aktiven Bereich, beim
