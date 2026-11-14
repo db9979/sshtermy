@@ -405,9 +405,11 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 			if !a.sessionVisible(s) {
 				s.unseen = true
 			}
-			clip = a.takeClipboard(s)
+			clip = tea.Batch(a.takeClipboard(s), a.aheadTick(s))
 		}
 		return tea.Batch(a.listen(), clip, a.onOutputFrame(time.Now()), a.takePixels(m.sid)), true
+	case aheadMsg:
+		return a.onAhead(m), true
 	case tea.FocusMsg:
 		a.blurred = false
 		a.clearNotices()
@@ -849,6 +851,7 @@ func (a *App) onTick() tea.Cmd {
 			a.noticeBell(s)
 		}
 		a.alertTick(s)
+		a.flushAhead(s) // vorausgetippt beim Verbinden (typeahead.go)
 		s.recordLatency(time.Now())
 		a.shareTick(s)
 		if c := a.takeClipboard(s); c != nil {

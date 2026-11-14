@@ -79,6 +79,16 @@ func (a *App) connectCard(s *session, w int) string {
 	if s.connNote != "" {
 		lines = append(lines, "", on(st.T.Warn, false).Render(trunc(s.connNote, inner)))
 	}
+	if len(s.ahead) > 0 { // vorausgetippt (typeahead.go): sichtbar, dass nichts verloren geht
+		lbl := i18n.T("Getippt: ")
+		txt := string(s.ahead)
+		if n := inner - lipgloss.Width(lbl) - 1; utf8.RuneCountInString(txt) > n {
+			r := []rune(txt)
+			txt = "…" + string(r[len(r)-max(0, n-1):])
+		}
+		lines = append(lines, "", on(st.T.Muted, false).Render(lbl)+on(st.T.Text, true).Render(txt+"▏"),
+			on(st.T.Muted, false).Render(trunc(i18n.T("kommt am Prompt an · Esc bricht ab"), inner)))
+	}
 	for i, l := range lines {
 		lines[i] = l + on(st.T.Text, false).Render(strings.Repeat(" ", max(0, inner-lipgloss.Width(l))))
 	}
