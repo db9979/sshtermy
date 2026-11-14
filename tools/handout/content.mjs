@@ -167,6 +167,7 @@ export const de = {
       ['↑ / ↓ · d · v', 'Stand wählen · Diff · ansehen'],
       ['c · g · t · z', 'Container · Grenzen · Zeitraum · groß'],
       ['Alt+E / l', 'Log-Blick: n neu · t Zeit · b KI · w Wache · s Syslog'],
+      ['s', 'Sicherheitscheck: u Update · k KI · x hinnehmen'],
     ]},
     { t: 'Suche im Verlauf', ic: '/', key: 'Strg+F', rows: [
       ['⏎ / ⇧⏎', 'älterer / neuerer Treffer'],
@@ -355,6 +356,7 @@ export const en = {
       ['↑ / ↓ · d · v', 'pick state · diff · view'],
       ['c · g · t · z', 'containers · limits · range · large'],
       ['Alt+E / l', "log view: n new · t time · b AI · w watch · s syslog"],
+      ['s', 'security check: u update · k AI · x accept'],
     ]},
     { t: 'Scrollback search', ic: '/', key: 'Ctrl+F', rows: [
       ['⏎ / ⇧⏎', 'older / newer match'],

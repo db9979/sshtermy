@@ -560,6 +560,9 @@ type Settings struct {
 	// LogScan: Log-Blick (Zeitraum, als Rauschen ausgeblendete Meldungen)
 	// und Logwache. Geht mit dem Sync.
 	LogScan LogScanConfig `json:"log_scan,omitempty"`
+	// Vuln: Sicherheitscheck der installierten Pakete gegen OSV. Nur lokal
+	// (Quelle und Spiegel hängen am Netz dieses Rechners).
+	Vuln VulnConfig `json:"vuln,omitempty"`
 	// SyslogPort: Syslog-Empfänger der Logwache auf diesem Rechner (UDP),
 	// 0 = aus. Nur lokal: jeder Rechner hat seinen eigenen Port.
 	SyslogPort int `json:"syslog_port,omitempty"`
@@ -708,6 +711,7 @@ func (s Settings) SyncedPart() Settings {
 	s.UpdateWaitH = 0       // Update-Kanal gilt je Rechner
 	s.CmdSetApproved = nil  // Freigaben gelten für die Team-Dateien dieses Rechners
 	s.Share = ShareConfig{} // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
+	s.Vuln = VulnConfig{}   // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
 	return s
 }
 
@@ -1101,6 +1105,9 @@ const ScheduleBackup = "backup"
 // ScheduleLogs: Zeitplan macht einen Ordner-Scan der Logs (Log-Blick je Host).
 const ScheduleLogs = "logs"
 
+// ScheduleVuln: Zeitplan prüft die Pakete aller Server im Ziel gegen OSV.
+const ScheduleVuln = "osv"
+
 // ScheduleCatchUp: so lange nach dem Termin wird ein verpasster Lauf nachgeholt.
 // Was etwas ändert, holt sshTermy nur bis ScheduleLate nach (eine Wartung für
 // 3 Uhr soll nicht mitten am Tag laufen); Lesendes bis ScheduleCatchUp.
@@ -1175,6 +1182,61 @@ func (c LogScanConfig) LogHours() int {
 		return 24
 	}
 	return c.Hours
+}
+
+// VulnConfig: Sicherheitscheck (OSV).
+type VulnConfig struct {
+	// Mode: "online" (OSV-API, sendet Paketnamen und Versionen), "offline"
+	// (Datenbank wird geladen, beim Prüfen geht nichts nach außen) oder
+	// "" = noch nicht gewählt (sshTermy fragt beim ersten Mal).
+	Mode string `json:"mode,omitempty"`
+	// Mirror: eigener Spiegel des OSV-Speichers (Firmennetz ohne Internet).
+	Mirror string `json:"mirror,omitempty"`
+	// NoContainers: laufende Container nicht mitprüfen.
+	NoContainers bool `json:"no_containers,omitempty"`
+	// Ignore: als „betrifft uns nicht“ ausgeblendet.
+	Ignore []VulnIgnore `json:"ignore,omitempty"`
+}
+
+// Vuln-Quellen.
+const (
+	VulnOnline  = "online"
+	VulnOffline = "offline"
+)
+
+// VulnIgnore: ein Paket mit seinen Lücken, das der Admin geprüft hat und das
+// ihn nicht betrifft. Kommen neue Lücken dazu, zeigt sshTermy es wieder.
+// Conn und Folder leer = überall.
+type VulnIgnore struct {
+	Pkg    string    `json:"pkg"`
+	CVEs   []string  `json:"cves,omitempty"`
+	Conn   string    `json:"conn,omitempty"`
+	Folder string    `json:"folder,omitempty"`
+	Reason string    `json:"reason,omitempty"`
+	At     time.Time `json:"at,omitempty"`
+}
+
+// Hides: blendet die Regel das Paket mit diesen Lücken auf c aus?
+func (n VulnIgnore) Hides(pkg string, cves []string, c Connection) bool {
+	if n.Pkg != pkg {
+		return false
+	}
+	switch {
+	case n.Conn != "" && n.Conn != c.ID:
+		return false
+	case n.Conn == "" && n.Folder != "" && !InFolder(c.Group, n.Folder):
+		return false
+	}
+	known := map[string]bool{}
+	for _, x := range n.CVEs {
+		known[x] = true
+	}
+	for _, x := range cves {
+		if !known[x] {
+			return false
+		}
+	}
+	return true
 }
 
 // LogNoise: eine als Rauschen ausgeblendete Meldung. Conn und Folder leer =

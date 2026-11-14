@@ -42,6 +42,7 @@ import (
 	"github.com/db9979/sshtermy/internal/update"
 	"github.com/db9979/sshtermy/internal/vault"
 	"github.com/db9979/sshtermy/internal/version"
+	"github.com/db9979/sshtermy/internal/vuln"
 )
 
 type screen int
@@ -78,6 +79,7 @@ const (
 	scrScheduleForm  // Zeitplan (schedule.go)
 	scrRulesForm     // Regeln für Switch-Configs (configrules.go)
 	scrLogScan       // Log-Blick (logscan.go)
+	scrVuln          // Sicherheitscheck (vuln.go)
 	scrCmdSets       // Befehlssätze (cmdsets.go)
 	scrCmdSetForm    // eigener Befehlssatz bearbeiten
 )
@@ -98,6 +100,10 @@ type App struct {
 	fresh         storeFresh        // zweites sshTermy hat gespeichert (storefresh.go)
 	quickVals     map[string]string // zuletzt eingegebene Platzhalter-Werte (quickvars.go)
 	lfold         folderScanState   // Ordner-Scan (logfolder.go)
+	vscan         vulnState         // Sicherheitscheck (vuln.go)
+	vfold         vulnFolderState   // Sicherheitscheck über einen Ordner (vulnfolder.go)
+	vsum          map[string]vulnSum
+	voff          *vuln.Offline // Offline-Datenbank (bleibt im Speicher)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -624,6 +630,15 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if cmd, ok := a.folderScanMsg(msg); ok {
 		return cmd, true
 	}
+	if cmd, ok := a.vulnMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.vulnFolderMsg(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.schedVulnMsg(msg); ok {
+		return cmd, true
+	}
 	if cmd, ok := a.watchMsg(msg); ok {
 		return cmd, true
 	}
@@ -685,7 +700,7 @@ func (a *App) overlayMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if a.pal != nil {
 			return a.paletteKey(k), true
 		}
-		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs || a.scr == scrLogScan) {
+		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs || a.scr == scrLogScan || a.scr == scrVuln) {
 			return a.openPalette(), true
 		}
 		if a.keys.is(actLocal, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) && a.lock == nil {
@@ -734,6 +749,8 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 		return a.updateLogs(msg)
 	case scrLogScan:
 		return a.updateLogScan(msg)
+	case scrVuln:
+		return a.updateVuln(msg)
 	case scrCmdSets:
 		return a.updateCmdSets(msg)
 	case scrImport:
@@ -888,6 +905,8 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrLogScan:
 		body = a.frame(a.viewLogScan(), a.logScanKeys())
+	case scrVuln:
+		body = a.frame(a.viewVuln(), a.vulnKeys())
 	case scrCmdSets:
 		body = a.frame(a.viewCmdSets(), a.cmdSetsKeys())
 	case scrImport:

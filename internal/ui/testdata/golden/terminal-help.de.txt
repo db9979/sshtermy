@@ -16,16 +16,16 @@
 ┃│   ⇧F1…F8      Schnellbefehl ausführen                      b           Switch-Config sichern                       │┃
 ┃│   ⇧F10        Tab in eigenes Fenster (Sitzung bleibt       c           Container (Docker, Podman, k8s)             │┃
 ┃│               offen)                                       l           Log-Blick                                   │┃
-┃│   Tab / →     Ghost-Text übernehmen                        ↑ ↓         Sicherung wählen                            │┃
-┃│   Alt+1…4     Folgebefehl einfügen                         d           Diff zur Vorversion                         │┃
-┃│   Alt+0       Fehler: Warum? & Fix                         v           Sicherung ansehen                           │┃
-┃│   Alt+K       KI-Begleiter: Aus/Leise/Gesprächig/Coach     g           Grenzwerte für Warnungen                    │┃
-┃│   Alt+J       Begleiter-Leiste                             t           Graphen: 5 min / 1 h                        │┃
-┃│   Alt+V       Vorgang über mehrere Fenster (KI sieht       z           Graphen groß                                │┃
-┃│               alle)                                        x           Abfrage abbrechen                           │┃
-┃│   Strg+T      Aufteilung wählen (1…7)                                                                              │┃
-┃│   Strg+Pfeil  Bereich wechseln (geteilt)                  ▤ Dateien F5                                             │┃
-┃│   Alt+⇧Pfeil  Trennlinie verschieben (Maus: ziehen)        F2          umbenennen                                  │┃
+┃│   Tab / →     Ghost-Text übernehmen                        s           Sicherheitscheck (OSV)                      │┃
+┃│   Alt+1…4     Folgebefehl einfügen                         ↑ ↓         Sicherung wählen                            │┃
+┃│   Alt+0       Fehler: Warum? & Fix                         d           Diff zur Vorversion                         │┃
+┃│   Alt+K       KI-Begleiter: Aus/Leise/Gesprächig/Coach     v           Sicherung ansehen                           │┃
+┃│   Alt+J       Begleiter-Leiste                             g           Grenzwerte für Warnungen                    │┃
+┃│   Alt+V       Vorgang über mehrere Fenster (KI sieht       t           Graphen: 5 min / 1 h                        │┃
+┃│               alle)                                        z           Graphen groß                                │┃
+┃│   Strg+T      Aufteilung wählen (1…7)                      x           Abfrage abbrechen                           │┃
+┃│   Strg+Pfeil  Bereich wechseln (geteilt)                                                                           │┃
+┃│   Alt+⇧Pfeil  Trennlinie verschieben (Maus: ziehen)       ▤ Dateien F5                                             │┃
 ┃│                                                                                                                    │┃
 ┃│   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.      │┃
 ┃│  Esc führt aus jedem Panel zurück ins Terminal.                                                                    │┃

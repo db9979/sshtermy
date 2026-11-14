@@ -631,6 +631,10 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		if !h.busy {
 			return a.openLogScan(s)
 		}
+	case "s":
+		if !net {
+			return a.openVuln(s)
+		}
 	case "b":
 		if net && !h.busy {
 			s.panelFocus = false
@@ -724,7 +728,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		}
 		k = append(k, [2]string{"t", span}, [2]string{"z", size})
 	}
-	return append(k, [2]string{"l", "Logs"}, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+	return append(k, [2]string{"l", "Logs"}, [2]string{"s", i18n.T("Sicherheit")}, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -847,6 +851,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		if srv.RebootNeeded {
 			b.WriteString(st.Warn.Render(i18n.T("◌ Neustart erforderlich")) + "\n")
 		}
+		a.viewVulnRow(b, s, w)
 		for _, e := range srv.Extras {
 			row(trunc(e.Label, 9), e.Value)
 		}

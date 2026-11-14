@@ -412,6 +412,12 @@ func (a *App) palActsGlobal(add palAdd, inMgr bool) {
 			keys: "mac ip port vlan switch finden suchen wo hängt locate find", run: func() tea.Cmd { return a.askNetFind() }},
 		palItem{icon: ic("scan"), label: i18n.T("Netzwerk-Topologie (LLDP/CDP)"), hint: i18n.T("Switches"),
 			keys: "topologie topology lldp cdp nachbarn neighbors karte map plan", run: func() tea.Cmd { return a.netTopology() }})
+	add("net", palItem{icon: ic("lock"), label: i18n.T("Sicherheitscheck: alle Server im Ordner …"), hint: "OSV",
+		keys: "sicherheit security osv cve schwachstellen vulnerabilities lücken ordner folder alle hosts patch", run: func() tea.Cmd { return a.openVulnFolder() }})
+	if len(a.vfold.hosts) > 0 {
+		add("net", palItem{icon: ic("lock"), label: i18n.T("Sicherheitscheck: letztes Ergebnis"), hint: a.vfold.folder,
+			keys: "sicherheit security osv ergebnis folder", run: func() tea.Cmd { a.showVulnFolder(); return nil }})
+	}
 	add("team",
 		palItem{icon: ic("team"), label: i18n.T("Geteilte Sitzung ansehen …"), hint: i18n.T("Code"),
 			keys: "zusehen watch link code teilen share live einladung", run: func() tea.Cmd { return a.askWatch() }},
@@ -475,6 +481,10 @@ func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 		} else if s.state == stConnected {
 			add("team", palItem{icon: ic("team"), label: i18n.T("Sitzung live teilen (Code für Zuschauer) …"), hint: i18n.T("Netz/Vermittler"),
 				keys: "teilen share live zuschauen zeigen kollege screen einladen code", run: func() tea.Cmd { return a.startShare(s) }})
+		}
+		if a.vulnOK(s) == nil {
+			add("session", palItem{icon: ic("lock"), label: i18n.T("Sicherheitscheck: Pakete gegen bekannte Lücken (OSV)"), hint: i18n.T("F6 s"),
+				keys: "sicherheit security osv cve schwachstellen vulnerabilities lücken pakete packages kev patch update", run: func() tea.Cmd { return a.openVuln(s) }})
 		}
 		if a.containersOK(s) {
 			add("session", palItem{icon: ic("host"), label: i18n.T("Container (Docker, Podman, Kubernetes)"), hint: i18n.T("F6 c"),
@@ -659,6 +669,7 @@ var palSubMenus = []palMenu{
 	{"settings/relay", "relay", "Vermittler", "Server hinter NAT/Firewall", "relay vermittler"},
 	{"settings/logs", "sesslog", "Protokolle & Logs", "Sitzungsprotokoll, Logwache, Syslog, Audit", "protokoll logs syslog audit"},
 	{"settings/net", "backup", "Netzwerkgeräte", "Befehlssätze, Regeln für Switch-Configs", "switch netzwerk befehlssatz"},
+	{"settings/osv", "lock", "Sicherheitscheck (OSV)", "Quelle online/offline, eigener Spiegel, Container", "sicherheit security osv cve schwachstellen"},
 	{"help/debug", "sesslog", "Fehlersuche", "Debug-Protokoll, Leistungsanzeige", "debug fehler leistung"},
 }
 
@@ -867,11 +878,20 @@ func (a *App) palMenuItems() []palItem {
 		a.palFolder("settings/ki"),
 		a.palFolder("settings/logs"),
 		a.palFolder("settings/net"),
+		a.palFolder("settings/osv"),
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("keys"), label: i18n.T("Tastenkürzel anpassen"), hint: a.keys.label(actKeys), keys: "keys", run: func() tea.Cmd { return a.openKeys() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("open"), label: i18n.T("Editor für Server-Dateien"), hint: trunc(orDefault(a.editorSetting(), i18n.T("Standard")), 18),
 			keys: "editor vscode code notepad bearbeiten", run: func() tea.Cmd { return a.askEditor() }},
 		palItem{group: pgSetSetup, menu: "settings", icon: ic("sync"), label: i18n.T("Sync zwischen Rechnern einrichten"), hint: "y", keys: "sync", run: func() tea.Cmd { return a.openSync() }},
 		a.palFolder("settings/relay"),
+
+		// Einstellungen › Sicherheitscheck (OSV)
+		sub("settings/osv", palCycle(pgSetSetup, ic("lock"), i18n.T("Quelle"), vulnModeLabel(set.Vuln.Mode), "sicherheit security osv online offline datenbank quelle source",
+			func(int) tea.Cmd { return a.cycleVulnMode() })),
+		palItem{group: pgSetSetup, menu: "settings/osv", icon: ic("lock"), label: i18n.T("Eigener Spiegel (Firmennetz) …"), hint: trunc(orDefault(set.Vuln.Mirror, "osv.dev"), 22),
+			keys: "sicherheit security osv spiegel mirror offline firmennetz proxy", run: func() tea.Cmd { return a.askVulnMirror() }},
+		sub("settings/osv", palToggle(ic("lock"), i18n.T("Laufende Container mitprüfen"), !set.Vuln.NoContainers, "sicherheit security osv docker podman container",
+			func() tea.Cmd { return a.toggleVulnContainers() })),
 
 		// Einstellungen › KI
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Endpunkt & Modell …"), hint: "s", keys: "ai llm ki-einstellungen endpunkt modell model url", run: func() tea.Cmd { return a.openSettings() }},

@@ -81,3 +81,27 @@ func (a *Agent) LogBrief(ctx context.Context, brief string, c Context, onDelta f
 		{Role: "user", Content: material(c) + "\n\nLog-Auswertung:\n<<<\n" + body + "\n>>>\n\nBitte einen Lagebericht schreiben."},
 	}, llm.Opts{MaxTokens: 1000, Temperature: 0.2, Task: TaskLogs}, func(d string) { onDelta(Clean(d)) })
 }
+
+// ---------------------------------------------------------------- Sicherheitscheck (OSV)
+
+const sysVuln = "Du bekommst ein Paket eines Servers mit bekannten Sicherheitslücken aus der Datenbank OSV (osv.dev): " +
+	"Paket, installierte und behobene Version, die Kennungen mit Schwere (CVSS), ob die Lücke laut CISA aktiv ausgenutzt wird, " +
+	"die Beschreibungen und ob Programme aus dem Paket gerade laufen bzw. auf Ports lauschen. Schreibe für einen Admin, kurz " +
+	"und konkret, als schlichter Text ohne Fettdruck und Überschriften. Zuerst „Was ist das?“ mit 1 bis 2 Sätzen zur " +
+	"wichtigsten Lücke in Alltagssprache. Dann „Betrifft uns?“: schätze aus den Angaben (läuft der Dienst, lauscht er im Netz, " +
+	"ist es eine Bibliothek, Kernel, Container), wie dringend es ist – sag ehrlich, wenn die Angaben dafür nicht reichen. " +
+	"Dann „Behebung:“ mit dem Update-Befehl für genau dieses System in einem eigenen Codeblock ```sh … ``` und was dabei " +
+	"passiert (Dienst startet neu, Neustart nötig beim Kernel, Container: Image neu bauen bzw. ziehen). Gibt es keinen Fix, " +
+	"schreib das. Zuletzt „Übergangslösung:“ nur, wenn es eine bekannte gibt, sonst weglassen. Erfinde keine Versionen und " +
+	"keine Kennungen, die nicht im Material stehen. Führe nichts selbst aus; der Admin entscheidet." + guard
+
+// VulnExplain erklärt die Lücken eines Pakets (gestreamt wie im Frage-Modus).
+// Bewusst ohne Hostnamen, Terminal oder Befehlsverlauf: an die KI gehen nur
+// System, Paket, Versionen und die öffentlichen Angaben aus OSV.
+func (a *Agent) VulnExplain(ctx context.Context, osName, text string, onDelta func(string)) error {
+	body := strings.NewReplacer("<<<", "‹‹‹", ">>>", "›››").Replace(text)
+	return a.C.Stream(ctx, []llm.Message{
+		{Role: "system", Content: a.sys(sysVuln)},
+		{Role: "user", Content: "<<<\nBetriebssystem: " + orUnknown(osName) + "\n" + body + "\n>>>\n\nBitte erklären."},
+	}, llm.Opts{MaxTokens: 1000, Temperature: 0.2, Task: TaskLogs}, func(d string) { onDelta(Clean(d)) })
+}
