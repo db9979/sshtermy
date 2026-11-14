@@ -103,7 +103,7 @@ type App struct {
 	vscan         vulnState         // Sicherheitscheck (vuln.go)
 	vfold         vulnFolderState   // Sicherheitscheck über einen Ordner (vulnfolder.go)
 	vsum          map[string]vulnSum
-	voff          *vuln.Offline // Offline-Datenbank (bleibt im Speicher)
+	voff          *vuln.Offline     // Offline-Datenbank (bleibt im Speicher)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed

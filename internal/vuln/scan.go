@@ -138,7 +138,6 @@ func Scan(ctx context.Context, inv *Inventory, src Source, kev KEV, o Options) (
 		eco   string
 		ver   string
 		bins  []string
-		insts []string
 	}
 	var qs []Query
 	var refs []qref

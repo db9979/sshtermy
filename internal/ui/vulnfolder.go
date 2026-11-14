@@ -38,7 +38,6 @@ type vulnFolderState struct {
 	hosts  []vulnHost
 	cancel context.CancelFunc
 	start  time.Time
-	step   string
 }
 
 type vulnHostMsg struct {

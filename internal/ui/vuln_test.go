@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -169,10 +170,10 @@ func TestVulnFolderAndSchedule(t *testing.T) {
 
 	old := vulnScanHost
 	defer func() { vulnScanHost = old }()
-	calls := 0
+	var calls atomic.Int32
 	vulnScanHost = func(*App) func(context.Context, domain.Connection, vuln.Source, *vuln.HTTP, domain.VulnConfig) (*vuln.Report, error) {
 		return func(_ context.Context, c domain.Connection, _ vuln.Source, _ *vuln.HTTP, cfg domain.VulnConfig) (*vuln.Report, error) {
-			calls++
+			calls.Add(1)
 			if cfg.Mode != domain.VulnOffline {
 				return nil, errors.New("Modus fehlt")
 			}
