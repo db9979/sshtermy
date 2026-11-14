@@ -87,6 +87,7 @@ var localSettings = map[string]bool{
 	"CmdSetApproved": true,
 	"Share":          true,
 	"FilesNoPeek":    true, // Vorschau im Dateibrowser: Platz je Bildschirm
+	"Vuln":           true, // Sicherheitscheck je Rechner
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der

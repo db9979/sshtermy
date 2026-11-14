@@ -20,7 +20,7 @@
             │ ── ALL ACTIONS ───────────────────────────────────────────────────────── │
             │ [/] Search & logs ›  scrollback, all tabs, log glance, session logs    3 │
             │ [T] Tabs & view ›  new, split, zoom, workspaces                        2 │
-            │ [*] Several hosts & network ›  broadcast, scan, schedules, switches    5 │
+            │ [*] Several hosts & network ›  broadcast, scan, schedules, switches    6 │
             │ [&] Team & sharing ›  live sharing, team folders                       4 │
             │ [=] Connections & data ›  new, SSH key, import/export, backup          6 │
             │                                                                          │
