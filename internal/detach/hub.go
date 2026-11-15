@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -24,6 +25,14 @@ type Hub struct {
 	sock  string // Ordner des Sockets (Unix)
 	ln    net.Listener
 	token []byte
+	conns chan hubConn
+	done  chan struct{}
+	once  sync.Once
+}
+
+type hubConn struct {
+	c          *Conn
+	cols, rows int
 }
 
 // ListenHub öffnet den Kanal des Hintergrunddienstes in dir.
@@ -45,7 +54,8 @@ func ListenHub(dir string) (*Hub, error) {
 		os.RemoveAll(sock)
 		return nil, err
 	}
-	h := &Hub{dir: dir, sock: sock, ln: ln, token: []byte(hex.EncodeToString(tok))}
+	h := &Hub{dir: dir, sock: sock, ln: ln, token: []byte(hex.EncodeToString(tok)),
+		conns: make(chan hubConn), done: make(chan struct{})}
 	if err := writeFileAtomic(filepath.Join(dir, tokenFile), h.token); err != nil {
 		h.Close()
 		return nil, err
@@ -54,7 +64,33 @@ func ListenHub(dir string) (*Hub, error) {
 		h.Close()
 		return nil, err
 	}
+	go h.acceptLoop()
 	return h, nil
+}
+
+// acceptLoop nimmt immer an, auch während niemand Accept aufruft: Eine
+// Named Pipe (Windows) ist nur erreichbar, solange ein Accept wartet, sonst
+// hielte HubAlive den Dienst für tot und es startete ein zweiter.
+func (h *Hub) acceptLoop() {
+	for {
+		nc, err := h.ln.Accept()
+		if err != nil {
+			h.once.Do(func() { close(h.done) })
+			return
+		}
+		go func() {
+			c, cols, rows, err := handshake(nc, h.token)
+			if err != nil {
+				nc.Close() // Probe von HubAlive oder falsches Zugangswort
+				return
+			}
+			select {
+			case h.conns <- hubConn{c, cols, rows}:
+			case <-h.done:
+				nc.Close()
+			}
+		}()
+	}
 }
 
 func writeFileAtomic(p string, b []byte) error {
@@ -66,23 +102,18 @@ func writeFileAtomic(p string, b []byte) error {
 
 // Accept wartet auf das nächste Fenster (falsches Zugangswort: weiter warten).
 func (h *Hub) Accept() (*Conn, int, int, error) {
-	for {
-		nc, err := h.ln.Accept()
-		if err != nil {
-			return nil, 0, 0, err
-		}
-		c, cols, rows, err := handshake(nc, h.token)
-		if err != nil {
-			nc.Close()
-			continue
-		}
-		return c, cols, rows, nil
+	select {
+	case hc := <-h.conns:
+		return hc.c, hc.cols, hc.rows, nil
+	case <-h.done:
+		return nil, 0, 0, net.ErrClosed
 	}
 }
 
 // Close beendet den Dienst-Kanal und entfernt Adresse und Zugangswort.
 func (h *Hub) Close() {
 	h.ln.Close()
+	h.once.Do(func() { close(h.done) })
 	os.RemoveAll(h.sock)
 	os.Remove(filepath.Join(h.dir, addrFile))
 	os.Remove(filepath.Join(h.dir, tokenFile))
