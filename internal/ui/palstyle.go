@@ -197,8 +197,7 @@ func palTitle(s string) string {
 // ---------------------------------------------------------------- Bewegung
 
 const (
-	palTrailDur = 260 * time.Millisecond // Nachleuchten der alten Auswahl
-	palGlowDur  = 650 * time.Millisecond // umgeschalteter Wert leuchtet
+	palGlowDur = 650 * time.Millisecond // umgeschalteter Wert leuchtet
 )
 
 // palChanged merkt sich, welcher Wert gerade umgeschaltet wurde.
@@ -216,18 +215,6 @@ func (p *palette) glowK(label string, now time.Time) float64 {
 		return 0
 	}
 	return 1 - easeOut(float64(d)/float64(palGlowDur))
-}
-
-// trailK: Nachleuchten der vorher gewählten Zeile (1 … 0).
-func (p *palette) trailK(i int, now time.Time) float64 {
-	if motionLevel() == 0 || i != p.mo.prevSel || i == p.sel {
-		return 0
-	}
-	d := now.Sub(p.mo.selAt)
-	if d >= palTrailDur {
-		return 0
-	}
-	return 1 - easeOut(float64(d)/float64(palTrailDur))
 }
 
 // ---------------------------------------------------------------- Fußzeile

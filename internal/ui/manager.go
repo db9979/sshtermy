@@ -460,11 +460,7 @@ func (a *App) viewManager() string {
 	m.top = clamp(m.top, 0, max(0, len(rows)-listH))
 	now := time.Now()
 	if m.sel != m.selSeen {
-		m.selSeen, m.selAt = m.sel, now // Auswahl blendet ein, Balken füllen sich
-	}
-	selK := 1.0
-	if motionLevel() > 0 {
-		selK = easeOut(float64(now.Sub(m.selAt)) / float64(selFadeDur))
+		m.selSeen, m.selAt = m.sel, now // Balken der Detailspalte füllen sich
 	}
 	if len(rows) > listH {
 		info += s.Muted.Render(fmt.Sprintf(i18n.T("  %d–%d von %d"), m.top+1, min(len(rows), m.top+listH), len(rows)))
@@ -511,7 +507,7 @@ func (a *App) viewManager() string {
 			if i == m.sel {
 				// Auswahl: Hintergrund über die ganze Zeile, Punkt und
 				// Symbol behalten ihre Farbe (rot = nicht erreichbar).
-				bg := mixColor(s.T.Bg, s.T.Surface2, selK)
+				bg := s.T.Surface2 // Auswahl sofort voll da, ohne Einblenden
 				sel := s.Selected.Background(bg)
 				stripeSel, _ := a.stripe(c, bg)
 				body := sel.Render(indent) + glyph(pdot, dotC, bg) + sel.Render(" ") + glyph(picon, iconC, bg) + sel.Render(" "+alias+" "+target)

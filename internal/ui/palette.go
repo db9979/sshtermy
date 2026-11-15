@@ -1244,18 +1244,11 @@ func (a *App) viewPalette() string {
 		}
 		hits := fuzzyHits(query, label) // getroffene Buchstaben leuchten (motion2.go)
 		line := iconStyle.Render(it.icon) + " " + hitLabel(label, hits, labelStyle, st.Accent.Bold(true), glow) + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
-		if k := p.trailK(i, now); k > 0 {
-			// Nachleuchten: die alte Auswahl verblasst, der Balken „gleitet“.
-			line = lipgloss.NewStyle().Background(mixColor(st.T.Surface, st.T.Accent, 0.35*k)).Width(w - 4).Render(ansi.Strip(line))
-		}
 		if i == p.sel {
 			// Auswahl als Balken in Akzentfarbe mit ▶ (wie der aktive Tab).
+			// Sofort voll da, ohne Einblenden oder Nachleuchten: bei
+			// gehaltener Pfeiltaste wirkte der Balken sonst träge.
 			fill := st.T.Accent
-			if motionLevel() > 0 {
-				if k := easeOut(float64(now.Sub(p.mo.selAt)) / float64(selFadeDur)); k < 1 {
-					fill = mixColor(st.T.Surface, st.T.Accent, k)
-				}
-			}
 			ink := inkOn(st.T, fill)
 			mark := "▶" + strings.Repeat(" ", max(0, lipgloss.Width(it.icon)-1))
 			bar := lipgloss.NewStyle().Background(fill).Foreground(ink)

@@ -168,6 +168,7 @@ type App struct {
 	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
 	perf         perfState      // Bildrate und Leistungsanzeige (perf.go)
 	styleGen     int            // zählt Theme-Wechsel (termView)
+	ovMemo       overlayMemo    // Hintergrund unter dem Modal (overlay)
 	toastTicking bool
 	animTicking  bool       // Takt für Bewegung (motion.go)
 	hov          hoverState // Karte unter der Maus (motion.go)
@@ -1267,12 +1268,35 @@ func (a *App) overlay(base, box string) string {
 	}
 	a.z.rects = a.z.rects[:0]
 	box = a.z.scan(box, x, y)
-	layers := []*lipgloss.Layer{lipgloss.NewLayer(base)}
-	if shadowsOn() {
-		layers = a.shadowLayers(base, x, y, bw, bh) // frames.go
+	return stamp(a.overlayBackground(base, x, y, bw, bh), box, x, y, a.w)
+}
+
+// overlayMemo: abgedunkelter Hintergrund samt Schatten unter dem Modal.
+// Beim Blättern in der Befehlspalette ändert sich nur das Modal; der
+// Hintergrund darunter bleibt gleich. Ihn jedes Bild neu abzudunkeln und
+// durch den Compositor zu schicken kostete den Großteil der Zeichenzeit,
+// der Auswahlbalken zog dadurch spürbar nach.
+type overlayMemo struct {
+	base         string
+	x, y, bw, bh int
+	gen, w, h    int
+	shadow       bool
+	out          string
+}
+
+func (a *App) overlayBackground(base string, x, y, bw, bh int) string {
+	m := &a.ovMemo
+	sh := shadowsOn()
+	if m.out != "" && m.base == base && m.x == x && m.y == y && m.bw == bw && m.bh == bh &&
+		m.gen == a.styleGen && m.w == a.w && m.h == a.h && m.shadow == sh {
+		return m.out
 	}
-	c := lipgloss.NewCompositor(append(layers, lipgloss.NewLayer(box).X(x).Y(y).Z(2))...)
-	return c.Render()
+	out := base
+	if sh {
+		out = lipgloss.NewCompositor(a.shadowLayers(base, x, y, bw, bh)...).Render() // frames.go
+	}
+	*m = overlayMemo{base: base, x: x, y: y, bw: bw, bh: bh, gen: a.styleGen, w: a.w, h: a.h, shadow: sh, out: out}
+	return out
 }
 
 func plural(n int, one, many string) string {

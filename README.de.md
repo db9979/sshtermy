@@ -246,7 +246,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   nicht verloren: Die Karte zeigt es, und es landet am Prompt, sobald die Shell steht (⏎ wird nie vorausgeschickt,
   Esc bricht ab). Die KI-Antwort schimmert „denkt nach …“ und
   tippt sich gleichmäßig, Panels blenden ein. In der Befehlspalette leuchten die getroffenen Buchstaben, die Zeilen
-  blenden nacheinander ein und die Auswahl gleitet weich. Die Kopfzeile zeigt die Latenz als kleine Kurve (rot und
+  blenden nacheinander ein und der Auswahlbalken folgt den Pfeiltasten sofort. Die Kopfzeile zeigt die Latenz als kleine Kurve (rot und
   „▲ zäh“ bei schlechter Leitung). In der geteilten Ansicht leuchtet die Trennlinie neben dem aktiven Bereich, beim
   Wechsel und beim Zoom (Alt+Z) gleitet ein Rahmen mit.
   Gezeichnet wird nur, solange sich etwas bewegt; Barrierearm schaltet alles ab
