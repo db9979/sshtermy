@@ -88,6 +88,8 @@ var localSettings = map[string]bool{
 	"Share":          true,
 	"FilesNoPeek":    true, // Vorschau im Dateibrowser: Platz je Bildschirm
 	"Vuln":           true, // Sicherheitscheck je Rechner
+	"Header":         true, // eigener Befehl in der Kopfzeile läuft nur hier
+	"RestoreTabs":    true, // Tabs vom letzten Mal: je Rechner
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der

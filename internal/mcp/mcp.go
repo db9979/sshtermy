@@ -90,7 +90,7 @@ func num(desc string) map[string]any { return map[string]any{"type": "integer", 
 var Tools = []Tool{
 	{"list_connections", "List the SSH connections saved in sshTermy (alias, host, user, folder, tags, device type, OS). Never includes passwords or keys.",
 		obj(map[string]any{"query": str("optional filter on alias, host, folder or tag")})},
-	{"list_tabs", "List the terminal tabs currently open in sshTermy with their connection and state.", obj(map[string]any{})},
+	{"list_tabs", "List the terminal tabs currently open in sshTermy with their connection and state. status tells whether the tab sits at its shell prompt, waits for input (password, yes/no, pager) or runs a coding agent (Claude Code, Codex …) that is working, waiting for approval or ready.", obj(map[string]any{})},
 	{"read_tab", "Read the visible text and recent scrollback of an open tab (secrets are redacted).",
 		obj(map[string]any{"tab": num("tab number from list_tabs"), "lines": num("how many lines from the end, default 100, max 1000")}, "tab")},
 	{"run_command", "Run a shell command on a saved connection in a separate, invisible session and return its output. Read-only commands run directly; anything that could change the system needs the user's confirmation in sshTermy (or is refused, depending on the user's setting). Network devices (switches/routers) accept their CLI show commands.",
@@ -99,6 +99,21 @@ var Tools = []Tool{
 			"command":         str("the command line"),
 			"timeout_seconds": num("default 60, max 600"),
 		}, "connection", "command")},
+	{"open_tab", "Open a new visible terminal tab in sshTermy for a saved connection (needs the sshTermy setting “MCP access: with confirmation”). Returns the tab number; use wait_tab with until=prompt before typing.",
+		obj(map[string]any{"connection": str("alias or ID of the connection (see list_connections)")}, "connection")},
+	{"send_input", "Type text into an open tab, as if the user typed it, by default followed by Enter. At a shell prompt, read-only commands are typed directly; everything else (changing commands, answers to prompts, input for a running program or coding agent) needs the user's confirmation in sshTermy. Passwords are never typed. Use read_tab or wait_tab afterwards to see the result.",
+		obj(map[string]any{
+			"tab":   num("tab number from list_tabs"),
+			"text":  str("the text to type"),
+			"enter": map[string]any{"type": "boolean", "description": "press Enter after the text (default true)"},
+		}, "tab", "text")},
+	{"wait_tab", "Wait until something happens in an open tab and return its status and the last lines. until: prompt (back at the shell prompt, i.e. the command finished), input (the tab waits for input or a coding agent waits for approval or is ready), text (the given text appears on the screen), quiet (no output for 2 seconds).",
+		obj(map[string]any{
+			"tab":             num("tab number from list_tabs"),
+			"until":           str("prompt, input, text or quiet (default prompt)"),
+			"text":            str("text to wait for (until=text)"),
+			"timeout_seconds": num("default 120, max 600"),
+		}, "tab")},
 }
 
 // Backend führt Werkzeuge aus (im Brückenprozess: Weiterleitung an die App).

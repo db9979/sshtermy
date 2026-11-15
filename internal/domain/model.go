@@ -548,6 +548,12 @@ type Settings struct {
 	// NoDesktopNotify: dafür keine Benachrichtigung des Betriebssystems,
 	// wenn das sshTermy-Fenster nicht im Vordergrund ist.
 	NoDesktopNotify bool `json:"no_desktop_notify,omitempty"`
+	// RestoreTabs: Tabs vom letzten Mal beim Start wieder öffnen:
+	// "" = fragen, "always" = ohne Rückfrage, "never" = nie. Je Rechner.
+	RestoreTabs string `json:"restore_tabs,omitempty"`
+	// Header: eigene Felder in der Kopfzeile (Uhrzeit, Ausgabe eines lokalen
+	// Befehls). Rein lokal: ein Befehl, der hier läuft, kommt nie per Sync.
+	Header HeaderConfig `json:"header,omitempty"`
 	// NoOSC52: Programme auf dem Server (tmux, vim) dürfen nicht in die
 	// lokale Zwischenablage schreiben.
 	NoOSC52 bool `json:"no_osc52,omitempty"`
@@ -708,11 +714,20 @@ func (s Settings) SyncedPart() Settings {
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false
-	s.UpdateWaitH = 0       // Update-Kanal gilt je Rechner
-	s.CmdSetApproved = nil  // Freigaben gelten für die Team-Dateien dieses Rechners
-	s.Share = ShareConfig{} // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
-	s.Vuln = VulnConfig{}   // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
+	s.UpdateWaitH = 0         // Update-Kanal gilt je Rechner
+	s.CmdSetApproved = nil    // Freigaben gelten für die Team-Dateien dieses Rechners
+	s.Share = ShareConfig{}   // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
+	s.Vuln = VulnConfig{}     // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
+	s.Header = HeaderConfig{} // lokaler Befehl in der Kopfzeile: nie per Sync
+	s.RestoreTabs = ""        // Tabs vom letzten Mal: je Rechner
 	return s
+}
+
+// HeaderConfig: eigene Felder rechts in der Kopfzeile.
+type HeaderConfig struct {
+	Clock bool   `json:"clock,omitempty"` // Uhrzeit HH:MM
+	Cmd   string `json:"cmd,omitempty"`   // lokaler Befehl, erste Zeile der Ausgabe
+	Every int    `json:"every,omitempty"` // alle N Sekunden (0 = 30)
 }
 
 // ShareConfig: Vorgaben für „Sitzung teilen“ (zuletzt gewählt). Rein lokal.

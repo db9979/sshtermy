@@ -8,6 +8,7 @@ package termemu
 
 import (
 	"encoding/base64"
+	"fmt"
 	"image/color"
 	"io"
 	"regexp"
@@ -498,3 +499,36 @@ func (t *Term) CommandOutput(cmd string, n int) (out, line string, found bool) {
 // Snapshot: der ganze Bildschirm als Zellen, unter einer Sperre kopiert
 // (eigenes Fenster, internal/gui). dst wird wiederverwendet.
 func (t *Term) Snapshot(dst []uv.Cell) ([]uv.Cell, int, int) { return t.emu.Snapshot(dst) }
+
+// ClearKeepLine leert Bildschirm und Verlauf, die Zeile mit dem Cursor
+// (Prompt samt halb getippter Eingabe) rückt nach oben und bleibt stehen.
+// Vollbildprogramme (vim, less, htop) bleiben unberührt: false.
+func (t *Term) ClearKeepLine() bool {
+	if t.AltScreen() {
+		return false
+	}
+	x, y, _ := t.Cursor()
+	var b strings.Builder
+	if y > 0 {
+		fmt.Fprintf(&b, "\x1b[%dS", y) // Cursorzeile nach oben schieben
+	}
+	// alles unter der ersten Zeile leeren, Cursor zurück an seine Spalte
+	fmt.Fprintf(&b, "\x1b[2;1H\x1b[J\x1b[1;%dH", x+1)
+	_, _ = t.emu.Write([]byte(b.String()))
+	t.sb.clear()
+	t.gen.Add(1)
+	return true
+}
+
+// ScreenText: nur der sichtbare Bildschirm als Klartext (ohne Verlauf),
+// Leerzeilen am Ende entfernt.
+func (t *Term) ScreenText() string {
+	lines := strings.Split(t.emu.String(), "\n")
+	for i, l := range lines {
+		lines[i] = strings.TrimRight(l, " \r")
+	}
+	for len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return strings.Join(lines, "\n")
+}

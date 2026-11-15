@@ -74,9 +74,10 @@ type modal struct {
 	anchored bool        // am Mauszeiger statt mittig
 	hints    [][2]string // Tastenhinweise (setzt modalView aus modalKeys)
 
-	crash *crash.Report // nur Absturzbericht
-	recap bool          // Menü ist der Rückblick des Begleiters (companion.go)
-	quit  bool          // Rückfrage beim Beenden (quitask.go)
+	crash *crash.Report             // nur Absturzbericht
+	recap bool                      // Menü ist der Rückblick des Begleiters (companion.go)
+	quit  bool                      // Rückfrage beim Beenden (quitask.go)
+	alt   map[string]func() tea.Cmd // Bestätigung: weitere Tasten (z. B. a = abkoppeln)
 
 	guardUntil time.Time // von selbst aufgegangen: bis dahin keine Tasten (modalguard.go)
 	twice      bool      // Bestätigen: Gefahr, j zweimal
@@ -201,6 +202,10 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		m.in, cmd = m.in.Update(k)
 		return cmd
 	case mConfirm:
+		if f := m.alt[key]; f != nil {
+			a.modal = nil
+			return f()
+		}
 		switch yesNo(k) {
 		case 1:
 			if m.twice && !m.yesArmed {

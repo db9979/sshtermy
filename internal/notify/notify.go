@@ -12,9 +12,19 @@ import (
 )
 
 // Send zeigt title und body an und kehrt sofort zurück.
-func Send(title, body string) {
+func Send(title, body string) { SendClick(title, body, "", nil) }
+
+// SendClick wie Send; klickt man die Meldung an, läuft click (in einer
+// eigenen Goroutine). Das klappt nur, wo das Bordmittel Klicks zurückmeldet
+// (Linux: notify-send --action --wait). Anderswo bleibt click ungenutzt,
+// sshTermy springt dann beim Zurückkehren ins Fenster in den Tab.
+// action ist die Beschriftung des Knopfs („Öffnen“).
+func SendClick(title, body, action string, click func()) {
 	title, body = clean(title, 64), clean(body, 200)
-	go func() { _ = send(title, body) }()
+	if action = clean(action, 30); action == "" {
+		action = "Open"
+	}
+	go func() { _ = send(title, body, action, click) }()
 }
 
 // clean: einzeilig, ohne Steuerzeichen, höchstens n Zeichen.

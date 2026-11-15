@@ -29,6 +29,13 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Wake-on-LAN**: Ein ausgeschalteter Rechner im eigenen Netz lässt sich aus dem Manager wecken (Klick auf „Wake-on-LAN senden“, Palette „aufwecken“ oder `w` im getrennten Tab). Die MAC-Adresse merkt sich sshTermy beim ersten Verbinden von selbst oder du trägst sie unter Erweitert ein.
 - **Platzhalter in Schnellbefehlen**: `systemctl restart {{dienst}}` fragt beim Ausführen nach dem Wert, `{{dienst:nginx}}` schlägt einen vor; der letzte Wert steht beim nächsten Mal schon da. Macht erst der eingesetzte Wert den Befehl gefährlich, fragt sshTermy nach.
 - **Zurückblättern**: Mausrad oder ⇧Bild↑ / ⇧Bild↓ blättern im Verlauf, ⇧Pos1 springt an seinen Anfang, ⇧Ende oder Esc zurück nach unten. Neue Ausgabe schiebt die Ansicht beim Lesen nicht weg.
+- **Wer auf dich wartet**: Ein Tab, der auf ein Passwort, eine `[j/N]`-Frage, eine Taste oder im Pager (`--More--`) wartet, bekommt ein `?` in der Tab-Leiste; Alt+G springt zum nächsten Tab, der wartet oder sich gemeldet hat. **KI-Coding-Agenten** im Tab (Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI, Cursor Agent, Qwen Code) werden erkannt: Der Tab zeigt, ob der Agent arbeitet, auf deine Freigabe wartet (`◆`, dazu eine Desktop-Meldung) oder fertig ist. Die Tab-Liste (Alt+T) zeigt den Zustand als Text.
+- **Klick auf die Desktop-Meldung** (Linux; unter Windows und macOS, wenn du sshTermy nach vorn holst) springt direkt in den Tab, um den es ging.
+- **Tabs vom letzten Mal**: Beim Start bietet sshTermy an, die Tabs (mit geteilter Ansicht) der letzten Sitzung wieder zu öffnen; Befehlspalette › „Tabs vom letzten Mal“ stellt auf immer oder nie.
+- **Hintergrunddienst** (Befehlspalette › „Hintergrunddienst“, wenn sshTermy in einem Terminal läuft): Sitzungen laufen weiter, wenn du das Terminalfenster schließt; `sshtermy` erneut starten hängt sich wieder an. Strg+Q bietet dann neben Beenden `a` = abkoppeln (Fenster zu, Sitzungen laufen weiter).
+- **Markieren per Tastatur** (Alt+C): mit Pfeilen oder hjkl bewegen, `w`/`b`/`e` wortweise, `v` beginnt die Markierung, `V` ganze Zeilen, `y` kopiert, Esc beendet.
+- **Bildschirm leeren** (Alt+X): leert Bildschirm und Verlauf, die Eingabezeile bleibt (auch in der Befehlspalette).
+- **Eigene Kopfzeilen-Felder**: Die Kopfzeile zeigt auf Wunsch die Uhrzeit und die erste Zeile eines eigenen Befehls, etwa `git -C ~/repo branch --show-current` oder `cat /sys/class/power_supply/BAT0/capacity` (Befehlspalette › „Kopfzeile“; läuft alle 30 s, `@60` am Ende ändert das).
 - **Suche über alle Tabs** (Alt+S): ein Suchbegriff, die Treffer aus dem Verlauf aller offenen Tabs in einer Liste; ⏎ springt in den Tab an genau diese Zeile.
 - **Befehle als Blöcke**: Alt+Bild↑ / Alt+Bild↓ springt im Verlauf von Befehl zu Befehl, Alt+O listet die Befehle des Tabs (mit Uhrzeit, Dauer, ✓/×): ⏎ springt hin, Strg+C kopiert genau diese Ausgabe, Strg+K gibt Befehl und Ausgabe an „KI fragen“, Strg+L zeigt sie groß.
 - **Neuer Tab über den Manager**: `+` in der Tab-Leiste, Alt+N oder ein Klick aufs Logo `>_ sshTermy` öffnet den Verbindungs-Manager mit Ordnern, Suche und Tags; die gewählte Verbindung (⏎ oder Doppelklick) öffnet sich in einem zusätzlichen Tab, die bisherigen Tabs bleiben offen. Esc führt ohne neuen Tab zurück.
@@ -243,7 +250,7 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   „▲ zäh“ bei schlechter Leitung). In der geteilten Ansicht leuchtet die Trennlinie neben dem aktiven Bereich, beim
   Wechsel und beim Zoom (Alt+Z) gleitet ein Rahmen mit.
   Gezeichnet wird nur, solange sich etwas bewegt; Barrierearm schaltet alles ab
-- **MCP-Server** (`sshtermy mcp`, Protokoll 2026-07-28, ältere Clients gehen weiter): Claude und andere KI-Clients können Verbindungen auflisten und lesende Befehle ausführen, alles andere erst nach deiner Bestätigung in sshTermy
+- **MCP-Server** (`sshtermy mcp`, Protokoll 2026-07-28, ältere Clients gehen weiter): Claude und andere KI-Clients können Verbindungen auflisten und lesende Befehle ausführen, alles andere erst nach deiner Bestätigung in sshTermy; mit Rückfrage auch Tabs öffnen, in einen Tab tippen und auf ihn warten
 - **Audit-Protokoll** (Einstellungen › Protokolle & Logs): wer hat wann auf welchem Host was getan: Verbindungen, Befehle
   (auch aus Agent-Modus und Broadcast), Dateiübertragungen, Config-Sicherungen, geänderte Verbindungen,
   Master-Passwort, Gesamtsicherungen und KI-Anfragen (nur Host/Modell). Jede Zeile ist verkettet und mit einem
@@ -363,6 +370,9 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | F7 / F8 | vorheriger / nächster Tab |
 | | Alt+T | alle Tabs (Liste: springen, schließen, umbenennen, duplizieren, verschieben) |
 | | Alt+S | in allen offenen Tabs suchen, ⏎ springt zur Trefferzeile |
+| | Alt+G | zum nächsten Tab, der wartet (`?`, Passwort, `[j/N]`, Pager) oder sich gemeldet hat (`◆` KI-Agent wartet auf Freigabe, ✓/×) |
+| | Alt+C | per Tastatur markieren: Pfeile/hjkl, w/b/e, v markieren, V Zeilen, y kopieren, Esc beenden |
+| | Alt+X | Bildschirm und Verlauf leeren, die Eingabezeile bleibt |
 | | Alt+Bild↑ / Alt+Bild↓ / Alt+O | zum vorigen / nächsten Befehl springen / Befehle des Tabs als Liste (⏎ hinspringen, Strg+C Ausgabe kopieren, Strg+K KI fragen, Strg+L lesen) |
 | | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste; `+`, Alt+N und ein Klick aufs Logo `>_ sshTermy` öffnen den Verbindungs-Manager: ⏎ oder Doppelklick startet die Verbindung in einem zusätzlichen Tab, die offenen Tabs bleiben, Esc führt zurück; Rechtsklick auf einen Tab öffnet sein Menü mit *Verbindung bearbeiten …* (Farbe, Notiz) und *Daneben zeigen (geteilt)*, Maus darauf zeigt Ziel, Dauer und Latenz) |
 | | Alt+L | lokale Shell in neuem Tab (auch im Manager; Palette: `lokal`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
@@ -412,7 +422,7 @@ sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „
 | | z / Z / b / x / d / a | KI-Zusammenfassung / alle Treffer zusammenfassen / Änderungsbericht / Export (md, txt, cast) / löschen / Mitschreiben an/aus |
 | KI-Einstellungen | Strg+T / Strg+L | Endpunkt testen / Modell aus der Liste des Endpunkts wählen |
 | Überall | Strg+Leertaste | Befehlspalette: ⏎ als Ziel starten, Tab KI fragen, ↑↓ Vorschlag/Tunnel/Verbindung wählen; `log` = KI wertet Ausgabe aus, `farb` = Farbregeln |
-| | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden (fragt bei offenen Verbindungen; Strg+Q nochmal = beenden) |
+| | F1 / F12 / Strg+Q | Hilfe / Über + Update / beenden (fragt bei offenen Verbindungen; Strg+Q nochmal = beenden; mit Hintergrunddienst `a` = abkoppeln) |
 | | F1, dann ←/→ / tippen | Hilfe: Reiter Terminal, KI, Manager, Logs, Überall (der passende ist vorn) / über alle Reiter filtern, Esc leert |
 | | F12 → l / F12 → w | Sprache wechseln (Deutsch ↔ Englisch) / Was ist neu |
 | Eigenes Fenster | Strg+⇧V · ⇧Einfg (Windows auch Strg+V, Mac ⌘V) / Strg + · Strg − · Strg 0 (Mac: ⌘) | einfügen / Schrift größer · kleiner · Standard (auch Strg + Mausrad, wird gemerkt); F11 Vollbild; auf dem Mac wirkt ⌘ als Alt, ⌥ schreibt weiter @ [ ] { } \| ~ |
@@ -657,6 +667,11 @@ Protocol nutzen. Einschalten unter Einstellungen › KI › „MCP-Zugriff für 
 sshTermy muss laufen und entsperrt sein; `sshtermy mcp` ist nur die Brücke und hält keine Daten. Verbindungen mit Tag
 `ki-aus`/`ki-lokal` oder KI-Datenschutz „KI aus“ tauchen nie auf. Geheimnisse in Ausgaben werden entfernt, jeder
 Aufruf steht im Audit-Protokoll.
+
+Mit Rückfrage können KI-Clients Tabs auch **steuern**: `open_tab` öffnet eine Verbindung in einem neuen Tab, `send_input`
+tippt Text in einen Tab (ein lesender Befehl am Prompt läuft direkt, alles andere fragt vorher, Passwörter und
+Steuerzeichen werden abgelehnt), `wait_tab` wartet, bis der Tab wieder am Prompt ist, auf eine Eingabe wartet, einen Text
+zeigt oder still wird (höchstens 10 Minuten). `list_tabs` meldet je Tab, ob er arbeitet, am Prompt ist oder wartet.
 
 ```
 claude mcp add sshtermy -- sshtermy mcp

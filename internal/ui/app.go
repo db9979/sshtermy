@@ -174,7 +174,18 @@ type App struct {
 	rel          *update.Release
 	// restartPending: installierte, noch nicht gestartete Version.
 	restartPending string
-	restart        bool // nach dem Beenden neu starten (siehe Restart)
+	keeperDetach   func(string) // Hintergrunddienst: Fenster abkoppeln (keeper.go)
+	hdrOut         string       // eigener Befehl in der Kopfzeile: Ausgabe (headerfields.go)
+	hdrFor         string       // … für diesen Befehl
+	hdrAt          time.Time    // … zuletzt gestartet
+	hdrBusy        bool
+	mcpWaits       []*mcpWaiter // MCP wait_tab, die noch warten (mcpcontrol.go)
+	jumpSID        int          // Tab der letzten Desktop-Meldung (notify.go)
+	jumpAt         time.Time    // … und wann sie kam
+	restoreArmed   bool         // Tabs vom letzten Mal angeboten, ab jetzt sichern (restore.go)
+	restoreAt      time.Time    // letzte Sicherung der offenen Tabs
+	restoreSig     string       // Inhalt der letzten Sicherung (nur bei Änderung schreiben)
+	restart        bool         // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
 
 	hl      hlState       // Farbregeln (highlight.go)
@@ -416,7 +427,15 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return a.onAhead(m), true
 	case tea.FocusMsg:
 		a.blurred = false
+		a.onRefocus() // nach einer Desktop-Meldung in deren Tab (notify.go)
 		a.clearNotices()
+		return nil, true
+	case headerOutMsg:
+		a.onHeaderOut(m)
+		return nil, true
+	case notifyClickMsg:
+		a.jumpSID = 0
+		a.jumpToNotified(m.sid, i18n.T("Desktop-Meldung angeklickt"))
 		return nil, true
 	case tea.BlurMsg:
 		a.blurred = true
@@ -809,6 +828,7 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 type WindowClosedMsg struct{}
 
 func (a *App) quit() tea.Cmd {
+	a.restoreOnQuit()  // offene Tabs fürs nächste Mal merken (restore.go)
 	a.finishUndo()     // offenes Löschen endgültig machen (undo.go)
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
 	a.cleanupEdits()
@@ -855,6 +875,11 @@ func (a *App) onTick() tea.Cmd {
 		cmds = append(cmds, c)
 	}
 	a.watchTick()
+	a.restoreTick(time.Now())
+	a.mcpWaitTick(time.Now()) // MCP wait_tab (mcpcontrol.go)
+	if c := a.headerTick(time.Now()); c != nil {
+		cmds = append(cmds, c) // eigener Befehl in der Kopfzeile (headerfields.go)
+	}
 	if c := a.vgTick(); c != nil {
 		cmds = append(cmds, c)
 	}
@@ -863,7 +888,8 @@ func (a *App) onTick() tea.Cmd {
 			a.noticeBell(s)
 		}
 		a.alertTick(s)
-		a.flushAhead(s) // vorausgetippt beim Verbinden (typeahead.go)
+		a.waitTick(s, time.Now()) // wartet auf dich / KI-Agent (waitmark.go)
+		a.flushAhead(s)           // vorausgetippt beim Verbinden (typeahead.go)
 		s.recordLatency(time.Now())
 		a.shareTick(s)
 		if c := a.takeClipboard(s); c != nil {

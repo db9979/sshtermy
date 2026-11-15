@@ -30,6 +30,9 @@ type State struct {
 	HasXY bool    `json:"has_xy,omitempty"`
 	Full  bool    `json:"full,omitempty"` // zuletzt im Vollbild
 	Max   bool    `json:"max,omitempty"`  // zuletzt maximiert
+	// Keep: sshTermy im Terminal als Hintergrunddienst starten; Sitzungen
+	// laufen weiter, wenn das Fenster zugeht (cmd/sshtermy keep.go).
+	Keep bool `json:"keep,omitempty"`
 }
 
 // Mode: Startart mit Standardwert.

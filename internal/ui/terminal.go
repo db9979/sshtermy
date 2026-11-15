@@ -184,6 +184,18 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				return cmd
 			}
 		}
+		// Markieren per Tastatur (copymode.go): hat alle Tasten außer den F-Tasten
+		if s.copy != nil && !s.panelFocus && !s.files.open {
+			if m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12 {
+				a.stopCopyMode(s)
+			} else {
+				return a.copyKey(s, m)
+			}
+		}
+		if a.keys.is(actCopyMode, key) && !s.panelFocus && !s.files.open && s.term != nil {
+			a.startCopyMode(s)
+			return nil
+		}
 		// Tippen beendet Markierung und Rückblick (Esc nur das)
 		if s.scroll > 0 && key == "esc" && !s.panelFocus && !s.files.open {
 			s.scroll, s.sel = 0, nil
@@ -223,7 +235,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.vgKey(m) // Leiste „Vorgang“ hat die Tasten (vorgang_view.go)
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList, actSearchAll) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList, actSearchAll, actNextNotice) {
+		case actNextNotice:
+			return a.jumpNextNotice()
 		case actSearchAll:
 			return a.openSearchAll()
 		case actNewTab:
@@ -321,6 +335,10 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if a.keys.is(actSearch, key) {
 			return a.openSearch(s)
+		}
+		if a.keys.is(actClearScreen, key) {
+			a.clearKeepLine(s)
+			return nil
 		}
 		if s.state == stReconnect {
 			switch key {
@@ -735,6 +753,9 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	if s.panelFocus {
 		return a.panelKeys(s)
 	}
+	if s.copy != nil {
+		return copyKeys(s)
+	}
 	if s.search.open {
 		if s.search.list {
 			return [][2]string{{"↑/↓", i18n.T("wählen")}, {"⏎", i18n.T("im Verlauf zeigen")}, {"Tab", i18n.T("Liste/Verlauf")}, {"Strg+E", i18n.T("Filter aus")}, {"Esc", i18n.T("Suche schließen")}}
@@ -883,6 +904,9 @@ func (a *App) tabStrip(room int) string {
 		dot := a.tabDot(x, now) // Spinner, Puls bei neuer Ausgabe (motion.go)
 		if x.detached() {
 			dot = st.AI.Render("↑") // läuft in eigenem Fenster
+		}
+		if g := a.agentGlyph(x); g != "" {
+			dot = g // KI-Coding-Agent arbeitet / wartet (waitmark.go)
 		}
 		if g := a.noticeGlyph(x); g != "" {
 			dot = g // Befehl fertig / Glocke, solange der Tab verdeckt war

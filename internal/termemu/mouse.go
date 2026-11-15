@@ -305,3 +305,13 @@ func (t *Term) SnapshotAt(dst []uv.Cell, offset int) ([]uv.Cell, int, int) {
 	}
 	return dst, w, h
 }
+
+// CellText: Inhalt einer Zelle im Gesamtpuffer ("" = leer oder zweite
+// Hälfte eines breiten Zeichens).
+func (t *Term) CellText(p Pos) string {
+	c, ok := t.cellAt(t.ScrollbackLen(), p)
+	if !ok {
+		return ""
+	}
+	return c.Content
+}

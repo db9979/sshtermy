@@ -82,6 +82,9 @@ const (
 	actScrollDown   action = "scroll_down"
 	actScrollTop    action = "scroll_top"
 	actScrollBottom action = "scroll_bottom"
+	actClearScreen  action = "clear_screen"
+	actNextNotice   action = "next_notice"
+	actCopyMode     action = "copy_mode"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -116,6 +119,7 @@ var actionDefs = []actionDef{
 	{actNewTab, "Neuer Tab", "Terminal", []string{"alt+n"}},
 	{actCloseTab, "Tab schließen", "Terminal", []string{"alt+w"}},
 	{actTabList, "Alle Tabs (Liste)", "Terminal", []string{"alt+t"}},
+	{actNextNotice, "Zum nächsten Tab, der wartet oder sich gemeldet hat", "Terminal", []string{"alt+g"}},
 	{actQuickMenu, "Schnellbefehle (Liste)", "Terminal", []string{"f9"}},
 	{actQuick[0], "Schnellbefehl 1", "Terminal", []string{"shift+f1", "f13"}},
 	{actQuick[1], "Schnellbefehl 2", "Terminal", []string{"shift+f2", "f14"}},
@@ -132,6 +136,8 @@ var actionDefs = []actionDef{
 	{actScrollDown, "Im Verlauf eine Seite vorblättern", "Terminal", []string{"shift+pgdown"}},
 	{actScrollTop, "Zum Anfang des Verlaufs", "Terminal", []string{"shift+home"}},
 	{actScrollBottom, "Zurück nach unten (Ende des Verlaufs)", "Terminal", []string{"shift+end"}},
+	{actCopyMode, "Markieren per Tastatur (v, y kopiert)", "Terminal", []string{"alt+c"}},
+	{actClearScreen, "Bildschirm und Verlauf leeren (Eingabezeile bleibt)", "Terminal", []string{"alt+x"}},
 	{actPrevCmd, "Zum vorigen Befehl springen", "Terminal", []string{"alt+pgup"}},
 	{actNextCmd, "Zum nächsten Befehl springen", "Terminal", []string{"alt+pgdown"}},
 	{actSplit, "Ansicht teilen (Aufteilung wählen)", "Terminal", []string{"ctrl+t"}},

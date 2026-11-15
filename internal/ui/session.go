@@ -98,7 +98,9 @@ type session struct {
 	flashCol color.Color // … in dieser Farbe
 	latAt    time.Time   // Latenzverlauf für die Hover-Karte
 	latHist  []time.Duration
-	bellAt   time.Time // letzte gemeldete Glocke
+	bellAt   time.Time  // letzte gemeldete Glocke
+	wait     waitState  // wartet auf eine Eingabe (waitmark.go)
+	agentW   agentWatch // KI-Coding-Agent im Tab (waitmark.go)
 
 	editFS  *sshx.RemoteFS            // SFTP für Dateien im eigenen Editor (editor.go)
 	alerts  atomic.Pointer[alertScan] // Farbregeln mit „!“ (highlight.go)
@@ -160,6 +162,7 @@ type session struct {
 	sbSeen    int          // Scrollback-Länge beim letzten Bild
 	sel       *termemu.Sel // Markierung
 	selecting bool         // linke Taste gedrückt, Markierung wächst
+	copy      *copyMode    // Markieren per Tastatur (copymode.go)
 	fwdHeld   bool         // Taste gedrückt, Ereignisse gehen an den Server
 
 	// Bilder fürs äußere Terminal (pixels.go)
