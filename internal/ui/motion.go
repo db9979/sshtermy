@@ -97,7 +97,6 @@ const (
 	animSlow    = 250 * time.Millisecond // Pulsieren, Atmen
 	tabFlashDur = 1200 * time.Millisecond
 	barFillDur  = 450 * time.Millisecond
-	selFadeDur  = 160 * time.Millisecond
 	hoverDelay  = 450 * time.Millisecond
 	downBlink   = 4 * time.Second // Manager: Punkt blinkt, nachdem ein Host ausfiel
 )

@@ -217,10 +217,7 @@ func (q *askState) typing() bool {
 type palMotion struct {
 	query   string
 	queryAt time.Time
-	sel     int
-	selAt   time.Time
 	opened  bool
-	prevSel int // vorher gewählte Zeile (Nachleuchten, palstyle.go)
 	// changed: Label des zuletzt umgeschalteten Werts (leuchtet kurz)
 	changed   string
 	changedAt time.Time
@@ -240,14 +237,11 @@ func (p *palette) track(now time.Time) {
 	if !p.mo.opened || q != p.mo.query {
 		p.mo.opened, p.mo.query, p.mo.queryAt = true, q, now
 	}
-	if p.sel != p.mo.sel {
-		p.mo.prevSel, p.mo.sel, p.mo.selAt = p.mo.sel, p.sel, now
-	}
 }
 
 // animating: braucht die Palette gerade schnelle Bilder?
 func (p *palette) animating(now time.Time) bool {
-	return now.Sub(p.mo.queryAt) < palHitGlow || now.Sub(p.mo.selAt) < max(selFadeDur, palTrailDur) ||
+	return now.Sub(p.mo.queryAt) < palHitGlow ||
 		now.Sub(p.mo.changedAt) < palGlowDur
 }
 

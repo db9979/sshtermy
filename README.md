@@ -238,7 +238,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   the steps (connection, host key, login, shell) with timings and a progress bar with a light sweep, then the shell
   fades in from the top. Text you type while it connects is not lost: the card shows it, and it lands at the prompt
   as soon as the shell is ready (⏎ is never sent ahead, Esc cancels). The AI answer shimmers “thinking …” and types out smoothly, panels fade in. In the command
-  palette the matched letters light up, rows fade in one after another and the selection glides. The header shows
+  palette the matched letters light up, rows fade in one after another; the selection bar follows the arrow keys instantly. The header shows
   the latency as a small curve (red and “▲ sluggish” on a bad line). In split view the divider next to the active pane
   lights up, and a frame glides along when you switch panes or zoom (Alt+Z). Redraws only happen while
   something moves; accessible mode turns it all off

@@ -282,3 +282,17 @@ func TestReachVisibleOnly(t *testing.T) {
 		t.Fatal("drittes Weiterschalten schaltet nicht aus")
 	}
 }
+
+// Befehlspalette (Einstellungen) bei ↓: jede Taste zeichnet die Palette neu.
+func BenchmarkPaletteSettingsDown(b *testing.B) {
+	a := manyConnsApp(b, 50)
+	a.openPalette()
+	a.pal.menu = "settings"
+	a.View()
+	b.ReportAllocs()
+	n := len(a.paletteItems())
+	for b.Loop() {
+		a.pal.sel = (a.pal.sel + 1) % max(1, n)
+		a.View()
+	}
+}
