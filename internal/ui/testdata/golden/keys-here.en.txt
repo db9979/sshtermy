@@ -24,9 +24,9 @@
  New tab                       Alt+N
  close tab                     Alt+W
  All tabs (list)               Alt+T
+ Go to the next tab that waits or has a notice  Alt+G
  Quick commands (list)         F9
  Quick command 1               Shift+F1 / F13
- Quick command 2               Shift+F2 / F14
 
  Alt+⏎ is blocked: Windows Terminal uses it for full screen.
  Font size: Ctrl + plus/minus in the terminal window (macOS: ⌘ + / −)

@@ -129,7 +129,7 @@ func TestGoalNotifyHiddenTab(t *testing.T) {
 	a.cur = 1 // der Ziel-Tab ist verdeckt
 	var sent []string
 	old := desktopSend
-	desktopSend = func(title, body string) { sent = append(sent, body) }
+	desktopSend = func(title, body string, _ func()) { sent = append(sent, body) }
 	defer func() { desktopSend = old }()
 
 	a.sessionMsg(stepMsg(s, agent.Step{Question: "Welcher Port?"}))

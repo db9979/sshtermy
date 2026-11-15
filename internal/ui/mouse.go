@@ -585,6 +585,9 @@ func (a *App) modalKeys() [][2]string {
 		keys = [][2]string{{yesKey(), i18n.T("vertrauen")}, {"n", i18n.T("abbrechen")}}
 	case mConfirm:
 		keys = [][2]string{{yesKey(), i18n.T("ja")}, {"n", i18n.T("nein")}}
+		if a.modal.quit && a.modal.alt["a"] != nil {
+			keys = [][2]string{{"a", i18n.T("abkoppeln")}, {yesKey(), i18n.T("beenden")}, {"n", i18n.T("abbrechen")}}
+		}
 	case mSecret:
 		keys = [][2]string{{"⏎", i18n.T("senden")}, {"Esc", i18n.T("abbrechen")}}
 	case mInput:

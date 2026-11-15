@@ -29,6 +29,13 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Wake-on-LAN**: a powered-off machine in your own network can be woken from the manager (click “Send Wake-on-LAN”, palette “wake”, or `w` in a disconnected tab). sshTermy remembers the MAC address on the first connect, or you enter it under Advanced.
 - **Placeholders in quick commands**: `systemctl restart {{service}}` asks for the value when run, `{{service:nginx}}` suggests one; the last value is prefilled next time. If only the inserted value makes the command dangerous, sshTermy asks first.
 - **Scroll back**: mouse wheel or ⇧PgUp / ⇧PgDn scroll through the scrollback, ⇧Home jumps to its start, ⇧End or Esc back to the bottom. New output does not push the view away while you read.
+- **Who is waiting for you**: a tab that waits for a password, a `[y/N]` question, a key or a pager (`--More--`) gets a `?` in the tab bar; Alt+G jumps to the next tab that waits or has a notice. **AI coding agents** in a tab (Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI, Cursor Agent, Qwen Code) are recognized: the tab shows whether the agent is working, waiting for your approval (`◆`, plus a desktop notification) or done. The tab list (Alt+T) shows the state as text.
+- **Click on a desktop notification** (Linux; on Windows and macOS by bringing sshTermy to the front) jumps straight into the tab it was about.
+- **Tabs from last time**: when you start sshTermy, it offers to reopen the tabs (with split view) of the last session; palette › “Tabs from last time” sets it to always or never.
+- **Background service** (palette › “Background service”, when sshTermy runs in a terminal): sessions keep running when you close the terminal window; start `sshtermy` again to attach. Ctrl+Q then offers `a` = detach (window closes, sessions keep running) next to quitting.
+- **Select by keys** (Alt+C): move with arrows or hjkl, `w`/`b`/`e` by word, `v` starts the selection, `V` whole lines, `y` copies, Esc ends.
+- **Clear screen** (Alt+X): clears screen and scrollback, the input line stays (also in the palette).
+- **Own header fields**: the header can show the time and the first line of a command of your choice, e.g. `git -C ~/repo branch --show-current` or `cat /sys/class/power_supply/BAT0/capacity` (palette › “Header”; runs every 30 s, `@60` at the end changes it).
 - **Search across all tabs** (Alt+S): one search term, the hits from the scrollback of all open tabs in one list; ⏎ jumps to the tab at exactly that line.
 - **Commands as blocks**: Alt+PgUp / Alt+PgDn jumps from command to command in the scrollback, Alt+O lists the commands of the tab (with time, duration, ✓/×): ⏎ jumps there, Ctrl+C copies just that output, Ctrl+K hands command and output to “Ask AI”, Ctrl+L shows it in full.
 - **New tab via the manager**: `+` in the tab bar, Alt+N or a click on the `>_ sshTermy` logo opens the connection manager with folders, search and tags; the connection you pick (⏎ or double-click) opens in an additional tab, the current tabs stay open. Esc goes back without a new tab.
@@ -235,7 +242,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   the latency as a small curve (red and “▲ sluggish” on a bad line). In split view the divider next to the active pane
   lights up, and a frame glides along when you switch panes or zoom (Alt+Z). Redraws only happen while
   something moves; accessible mode turns it all off
-- **MCP server** (`sshtermy mcp`, protocol 2026-07-28, older clients keep working): Claude and other AI clients can list your connections and run read-only commands, anything else only after you confirm in sshTermy
+- **MCP server** (`sshtermy mcp`, protocol 2026-07-28, older clients keep working): Claude and other AI clients can list your connections and run read-only commands, anything else only after you confirm in sshTermy; with confirmation they can also open tabs, type into a tab and wait for it
 - **Audit log** (Settings › Logs & audit): who did what and when, on which host: connections, commands (also from the
   agent mode and broadcast), file transfers, config backups, changed connections, master password, full backups and
   AI requests (host/model only). Each line is chained and signed with a key from the store, so changes, deleted or
@@ -352,6 +359,9 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | F7 / F8 | previous / next tab |
 | | Alt+T | all tabs (list: jump, close, rename, duplicate, move) |
 | | Alt+S | search in all open tabs, ⏎ jumps to the matching line |
+| | Alt+G | go to the next tab that waits (`?`, password, `[y/N]`, pager) or has a notice (`◆` AI agent waiting for approval, ✓/×) |
+| | Alt+C | select by keys: arrows/hjkl, w/b/e, v select, V lines, y copy, Esc end |
+| | Alt+X | clear screen and scrollback, the input line stays |
 | | Alt+PgUp / Alt+PgDn / Alt+O | jump to the previous / next command / list of the tab's commands (⏎ jump, Ctrl+C copy output, Ctrl+K ask AI, Ctrl+L read) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar; `+`, Alt+N and a click on the `>_ sshTermy` logo open the connection manager: ⏎ or a double-click starts the connection in an additional tab, the open tabs stay, Esc goes back; right-click a tab for its menu with *Edit connection …* (color, note) and *Show alongside (split)*, hover it for target, duration and latency) |
 | | Alt+L | local shell in a new tab (also in the manager; palette: `local`, `pwsh`, `cmd`, `wsl`, `zsh` …) |
@@ -401,7 +411,7 @@ sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshT
 | | z / Z / b / x / d / a | AI summary / summarize all matches / change report / export (md, txt, cast) / delete / recording on/off |
 | AI settings | Ctrl+T / Ctrl+L | test endpoint / choose a model from the endpoint's list |
 | Everywhere | Ctrl+Space | command palette: ⏎ start as goal, Tab ask AI, ↑↓ choose suggestion/tunnel/connection; `log` = AI analyzes output, `color` = color rules |
-| | F1 / F12 / Ctrl+Q | help / about + update / quit (asks while connections are open; Ctrl+Q again = quit) |
+| | F1 / F12 / Ctrl+Q | help / about + update / quit (asks while connections are open; Ctrl+Q again = quit; with the background service `a` = detach) |
 | | F1, then ←/→ / type | help: tabs Terminal, AI, Manager, Logs, Everywhere (the matching one first) / filter across all tabs, Esc clears |
 | | F12 → l / F12 → w | switch language (English ↔ German) / what's new |
 | Own window | Ctrl+⇧V · ⇧Insert (Windows also Ctrl+V, Mac ⌘V) / Ctrl + · Ctrl − · Ctrl 0 (Mac: ⌘) | paste / font size bigger · smaller · default (also Ctrl + mouse wheel, remembered); F11 full screen; on the Mac ⌘ acts as Alt, ⌥ keeps typing @ [ ] { } \| ~ |
@@ -645,6 +655,11 @@ read a tab, run read-only commands like `df -h` or `show interfaces`) or **with 
 runs only after you press `y` in sshTermy; dangerous commands need `y` twice). Commands with `sudo` or that read secrets (`/etc/shadow`, keys, `.env`, `show running-config` …) always ask, even if they only read. sshTermy must be running and unlocked;
 `sshtermy mcp` is only a bridge and holds no data. Connections tagged `no-ai`/`ai-local`, or AI privacy “AI off”, are
 never shown. Secrets in output are redacted, every call lands in the audit log.
+
+With confirmation, AI clients can also **control** tabs: `open_tab` opens a connection in a new tab, `send_input`
+types text into a tab (a read-only command at the prompt runs directly, anything else asks first, passwords and control
+characters are refused), `wait_tab` waits until the tab is back at the prompt, waits for input, shows a text or goes quiet
+(at most 10 minutes). `list_tabs` reports for each tab whether it is working, at the prompt or waiting.
 
 ```
 claude mcp add sshtermy -- sshtermy mcp

@@ -146,6 +146,10 @@ func (a *App) paletteItems() []palItem {
 		add("tabs", palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }})
 	}
 	add("", palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
+	if a.Keeper() {
+		add("", palItem{icon: ic("reconnect"), label: i18n.T("Abkoppeln: Fenster zu, Sitzungen laufen weiter"), hint: "sshtermy",
+			keys: "abkoppeln detach hintergrund weiterlaufen schließen", run: func() tea.Cmd { return a.keepDetach() }})
+	}
 	actions = a.simpleHide(actions) // einfacher Modus (simple.go)
 	for i := range actions {
 		actions[i].group = pgAction
@@ -534,7 +538,11 @@ func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 		}
 		add("session",
 			palItem{icon: ic("record"), label: recordLabel(s.recording()), pro: true, hint: "asciinema", run: func() tea.Cmd { return a.toggleRecording(s) }},
-			palItem{icon: ic("export"), label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }})
+			palItem{icon: ic("export"), label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }},
+			palItem{icon: ic("copy"), label: i18n.T("Markieren per Tastatur (v, y kopiert)"), hint: a.keys.label(actCopyMode),
+				keys: "copy kopieren markieren auswahl tastatur keyboard select vi tmux copy-mode", run: func() tea.Cmd { a.startCopyMode(s); return nil }},
+			palItem{icon: ic("break"), label: i18n.T("Bildschirm und Verlauf leeren (Eingabezeile bleibt)"), hint: a.keys.label(actClearScreen),
+				keys: "clear leeren löschen bildschirm screen verlauf scrollback cls reset", run: func() tea.Cmd { a.clearKeepLine(s); return nil }})
 		if s.netDevice() {
 			add("net", palItem{icon: ic("errors"), label: i18n.T("Syslog an sshTermy senden (Gerät einrichten) …"), hint: i18n.T("Logwache"),
 				keys: "syslog logging remote logwache einrichten switch firewall", run: func() tea.Cmd { return a.askSyslogSetup(s) }})
@@ -834,6 +842,18 @@ func (a *App) palMenuItems() []palItem {
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
+		// nur über die Suche („Tabs vom letzten Mal“), die Rückfrage beim Start nennt den Weg
+		hide(palCycle(pgSetBehave, ic("reconnect"), i18n.T("Tabs vom letzten Mal beim Start öffnen"), restoreLabel(a.restoreMode()),
+			"tabs wiederherstellen restore session sitzung weitermachen start letzte mal",
+			func(dir int) tea.Cmd { return a.cycleRestore(dir) }).at(indexOf(restoreModes, a.restoreMode()), len(restoreModes))),
+		// Hintergrunddienst (keeper.go): über die Suche, Hinweis beim Beenden
+		hide(palToggle(ic("reconnect"), i18n.T("Hintergrunddienst: Sitzungen laufen weiter, wenn das Fenster zugeht"), a.keepOn(),
+			"hintergrund dienst daemon keep detach abkoppeln weiterlaufen tmux server schließen", func() tea.Cmd { return a.toggleKeep() })),
+		// Kopfzeile: nur über die Suche („Kopfzeile“, „Uhr“)
+		hide(palToggle(ic("intro"), i18n.T("Kopfzeile: Uhrzeit zeigen"), a.headerCfg().Clock, "kopfzeile uhr uhrzeit clock zeit header statuszeile",
+			func() tea.Cmd { return a.toggleHeaderClock() })),
+		hide(palItem{group: pgSetBehave, menu: "settings", icon: ic("command"), label: i18n.T("Kopfzeile: eigener Befehl …"), hint: trunc(a.headerCfg().Cmd, 20),
+			keys: "kopfzeile header statuszeile befehl command vpn feld field", run: func() tea.Cmd { return a.askHeaderCmd() }}),
 		palCycle(pgSetBehave, ic("split"), i18n.T("Fenster beim Start"), winStartLabel(a.winStart()), "fenster vollbild fullscreen maximiert start window f11",
 			func(dir int) tea.Cmd { return a.cycleWinStart(dir) }).at(winStartIdx(a.winStart()), 3),
 	}

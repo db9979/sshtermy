@@ -62,6 +62,14 @@ func main() {
 				fail(err)
 			}
 			return
+		case "keep-serve":
+			// Hintergrunddienst ohne Terminal (keep.go), von „sshtermy“ gestartet
+			var noIntro, debug bool
+			for _, a := range os.Args[2:] {
+				noIntro = noIntro || a == "-no-intro"
+				debug = debug || a == "-debug"
+			}
+			os.Exit(runKeepServe(dir, noIntro, debug))
 		case "attach":
 			// neues Fenster eines abgetrennten Tabs (⇧F10), siehe internal/detach;
 			// „-window“: aus dem eigenen Fenster heraus, also wieder ein eigenes
@@ -113,6 +121,19 @@ func main() {
 	}
 
 	windowed := wantWindow(*forceWindow, *forceTUI)
+	// Hintergrunddienst: andocken statt selbst starten (keep.go)
+	if !windowed && *crashTest == "" && keepWanted(dir) {
+		var flags []string
+		if *noIntro {
+			flags = append(flags, "-no-intro")
+		}
+		if *debug {
+			flags = append(flags, "-debug")
+		}
+		if code, ok := keepAttach(dir, flags); ok {
+			os.Exit(code)
+		}
+	}
 	if windowed {
 		hideConsole()
 		ui.EnablePixelImages()

@@ -265,6 +265,8 @@ func (a *App) tabListItems() []pickItem {
 			hint = i18n.T("verbindet …")
 		case s.state == stReconnect:
 			hint = i18n.T("verbindet neu …")
+		case a.tabStatus(s) != "":
+			hint = a.tabStatus(s) // wartet / KI-Agent (waitmark.go)
 		default:
 			if n := len(s.history); n > 0 {
 				hint = trunc(oneLine(s.history[n-1]), 22)
@@ -275,6 +277,11 @@ func (a *App) tabListItems() []pickItem {
 				}
 				hint += ago
 			}
+		}
+		if g := a.noticeGlyph(s); g != "" {
+			dot = g
+		} else if g := a.agentGlyph(s); g != "" {
+			dot = g
 		}
 		label := strconv.Itoa(i+1) + "  " + dot + " " + s.tabName()
 		if s.title != "" {

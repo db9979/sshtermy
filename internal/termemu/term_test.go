@@ -2,6 +2,7 @@ package termemu
 
 import (
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -99,5 +100,39 @@ func TestCursorColorOSC(t *testing.T) {
 	_, _ = tm.Write([]byte("\x1b]112\x07"))
 	if c := tm.CursorColor(); c != nil {
 		t.Errorf("112 setzt nicht zurück: %v", c)
+	}
+}
+
+func TestClearKeepLine(t *testing.T) {
+	tm := New(30, 5, io.Discard)
+	for i := 0; i < 12; i++ {
+		tm.Write([]byte("zeile " + strconv.Itoa(i) + "\r\n"))
+	}
+	tm.Write([]byte("user@web:~$ ls -l"))
+	if tm.ScrollbackLen() == 0 {
+		t.Fatal("Testaufbau: kein Verlauf")
+	}
+	if !tm.ClearKeepLine() {
+		t.Fatal("nicht geleert")
+	}
+	if tm.ScrollbackLen() != 0 {
+		t.Fatalf("Verlauf noch da: %d", tm.ScrollbackLen())
+	}
+	got := tm.PlainLines(10)
+	if got != "user@web:~$ ls -l" {
+		t.Fatalf("Bildschirm = %q", got)
+	}
+	if x, y, _ := tm.Cursor(); x != 17 || y != 0 {
+		t.Fatalf("Cursor %d,%d", x, y)
+	}
+	// weiter tippen landet hinter der Eingabe
+	tm.Write([]byte("a"))
+	if tm.PlainLines(10) != "user@web:~$ ls -la" {
+		t.Fatalf("danach = %q", tm.PlainLines(10))
+	}
+	// Vollbildprogramm: nichts anfassen
+	tm.Write([]byte("\x1b[?1049h"))
+	if tm.ClearKeepLine() {
+		t.Fatal("Alt-Screen geleert")
 	}
 }

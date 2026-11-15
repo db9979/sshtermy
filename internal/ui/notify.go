@@ -37,6 +37,8 @@ const (
 	noticeBell
 	noticeAlert // Farbregel mit „!“ hat angeschlagen (highlight.go)
 	noticeLog   // Logwache: neues Muster (logwatch.go)
+	noticeWait  // wartet auf eine Eingabe (waitmark.go)
+	noticeAgent // KI-Coding-Agent wartet auf Freigabe (waitmark.go)
 )
 
 func (a *App) notifyOn() bool        { return !a.st.Settings().NoNotify }
@@ -93,9 +95,65 @@ func (a *App) toggleOSC52() tea.Cmd {
 }
 
 // sendDesktop: Benachrichtigung des Betriebssystems (in Tests abschaltbar).
-var desktopSend = notify.Send
+// click läuft, wenn man die Meldung anklickt (nur wo das System es meldet).
+var desktopSend = func(title, body string, click func()) {
+	notify.SendClick(title, body, i18n.T("Öffnen"), click)
+}
 
-func (a *App) sendDesktop(title, body string) { desktopSend(title, body) }
+func (a *App) sendDesktop(title, body string) { desktopSend(title, body, nil) }
+
+// Klick auf eine Desktop-Meldung (oder zurück ins Fenster danach) führt in
+// den Tab, um den es ging. Linux meldet den Klick (notify-send --action);
+// Windows und macOS nicht: dort springt sshTermy beim nächsten Fokus hin,
+// wenn seit der Meldung keine Taste gedrückt wurde.
+
+// jumpWindow: so lange nach der Meldung gilt der Sprung beim Zurückkehren.
+const jumpWindow = 30 * time.Minute
+
+type notifyClickMsg struct{ sid int }
+
+// sendDesktopFor: Meldung zu Tab s; merkt ihn für den Sprung.
+func (a *App) sendDesktopFor(s *session, title, body string) {
+	a.jumpSID, a.jumpAt = s.id, time.Now()
+	ev, sid := a.events, s.id
+	desktopSend(title, body, func() {
+		select {
+		case ev <- notifyClickMsg{sid}:
+		default:
+		}
+	})
+}
+
+// jumpToNotified: in den gemeldeten Tab wechseln (Klick oder Fokus).
+func (a *App) jumpToNotified(sid int, why string) bool {
+	s := a.byID(sid)
+	if s == nil || a.lock != nil || a.scr == scrUnlock || a.modal != nil {
+		return false
+	}
+	for i, x := range a.sessions {
+		if x == s {
+			if a.cur == i && a.scr == scrTerminal {
+				return false
+			}
+			a.focusSession(i)
+			a.scr = scrTerminal
+			a.flash("→ " + s.tabName() + " · " + why)
+			return true
+		}
+	}
+	return false
+}
+
+// onRefocus (tea.FocusMsg): seit der letzten Meldung nichts getippt? Dann
+// dorthin, wo die Meldung herkam.
+func (a *App) onRefocus() {
+	sid, at := a.jumpSID, a.jumpAt
+	a.jumpSID = 0
+	if sid == 0 || time.Since(at) > jumpWindow || a.lastKey.After(at) {
+		return
+	}
+	a.jumpToNotified(sid, i18n.T("von der Desktop-Meldung"))
+}
 
 // sessionVisible: Ist der Tab gerade auf dem Bildschirm (aktiv oder in
 // einem Bereich der geteilten Ansicht)? Das Fenster selbst kann trotzdem im
@@ -152,7 +210,7 @@ func (a *App) noticeDone(s *session, cmd string, dur time.Duration, failed, inte
 		if a.lock != nil {
 			body = i18n.T("Befehl ") + word // gesperrt: keinen Befehl verraten
 		}
-		a.sendDesktop("sshTermy · "+s.tabName(), body+" ("+fmtDur(dur)+")")
+		a.sendDesktopFor(s, "sshTermy · "+s.tabName(), body+" ("+fmtDur(dur)+")")
 	}
 }
 
@@ -170,7 +228,7 @@ func (a *App) noticeBell(s *session) {
 	s.bellAt = time.Now()
 	a.flash("♦ " + s.tabName() + ": " + i18n.T("Glocke (BEL) im Terminal"))
 	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() {
-		a.sendDesktop("sshTermy · "+s.tabName(), i18n.T("Glocke (BEL) im Terminal"))
+		a.sendDesktopFor(s, "sshTermy · "+s.tabName(), i18n.T("Glocke (BEL) im Terminal"))
 	}
 }
 
@@ -187,6 +245,10 @@ func (a *App) noticeGlyph(s *session) string {
 		return a.s.Warn.Render("!")
 	case noticeLog:
 		return a.s.Danger.Render("▲")
+	case noticeWait:
+		return a.s.Warn.Bold(true).Render("?")
+	case noticeAgent:
+		return a.s.Warn.Bold(true).Render("◆")
 	}
 	return ""
 }

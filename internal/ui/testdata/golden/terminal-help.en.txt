@@ -3,29 +3,29 @@
 ┃│                                                                                                                    │┃
 ┃│   Terminal   AI   Manager   Logs   Everywhere    type to filter                                                    │┃
 ┃│                                                                                                                    │┃
-┃│  ▸ Terminal  here                                         ▣ Host overview F6                                       │┃
-┃│   F2          Goal mode (agent)                            r / ⏎       query                                       │┃
-┃│   F3          Ask AI                                       b           back up switch config                       │┃
-┃│   F4          Tunnel                                       c           Containers (Docker, Podman, k8s)            │┃
-┃│   F5          Files (SFTP)                                 l           Log view                                    │┃
-┃│   F6          Host overview                                s           security check · switch: firmware           │┃
-┃│   F7 / F8     switch tab                                   h / a       hardening check / key inventory             │┃
-┃│   F9          Quick commands (list)                        i           Inventory & changes (e = CSV)               │┃
-┃│   F9 → a      adopt a frequent command                     w           History 24 h / 7 days                       │┃
-┃│   F10         to manager                                   ↑ ↓         choose backup                               │┃
-┃│   ⇧F1…F8      run quick command                            d           diff to previous                            │┃
-┃│   ⇧F10        Tab to own window (session stays open)       v           view backup                                 │┃
-┃│   Tab / →     accept ghost text                            g           Warning limits                              │┃
-┃│   Alt+1…4     insert follow-up command                     t           graphs: 5 min / 1 h                         │┃
-┃│   Alt+0       Error: Why? & Fix                            z           graphs large                                │┃
-┃│   Alt+K       AI companion: off/quiet/chatty/coach         x           cancel query                                │┃
-┃│   Alt+J       Companion sidebar                                                                                    │┃
-┃│   Alt+V       Task across several windows (AI sees all)   ▤ Files F5                                               │┃
-┃│   Ctrl+T      choose layout (1…7)                          F2          rename                                      │┃
-┃│   Ctrl+arrow  switch pane (split)                          Tab         switch side                                 │┃
-┃│   Alt+⇧arrow  move divider (mouse: drag)                   ⏎ / 2×click  open, view file                            │┃
-┃│   Alt+Z       Zoom pane / back                             ← / Bksp    one level up                                │┃
-┃│   Drag title  swap panes                                   c / F6      copy (up/down)                              │┃
+┃│  ▸ Terminal  here                                         ↔ Tunnel F4                                              │┃
+┃│   F2          Goal mode (agent)                            ⏎ / click   start / stop                                │┃
+┃│   F3          Ask AI                                       a           start with connection                       │┃
+┃│   F4          Tunnel                                       o           open in browser                             │┃
+┃│   F5          Files (SFTP)                                 n           new tunnel                                  │┃
+┃│   F6          Host overview                                e           edit                                        │┃
+┃│   F7 / F8     switch tab                                   d           delete                                      │┃
+┃│   F9          Quick commands (list)                                                                                │┃
+┃│   F9 → a      adopt a frequent command                    ▣ Host overview F6                                       │┃
+┃│   F10         to manager                                   r / ⏎       query                                       │┃
+┃│   ⇧F1…F8      run quick command                            b           back up switch config                       │┃
+┃│   ⇧F10        Tab to own window (session stays open)       c           Containers (Docker, Podman, k8s)            │┃
+┃│   Tab / →     accept ghost text                            l           Log view                                    │┃
+┃│   Alt+1…4     insert follow-up command                     s           security check · switch: firmware           │┃
+┃│   Alt+0       Error: Why? & Fix                            h / a       hardening check / key inventory             │┃
+┃│   Alt+K       AI companion: off/quiet/chatty/coach         i           Inventory & changes (e = CSV)               │┃
+┃│   Alt+J       Companion sidebar                            w           History 24 h / 7 days                       │┃
+┃│   Alt+V       Task across several windows (AI sees all)    ↑ ↓         choose backup                               │┃
+┃│   Ctrl+T      choose layout (1…7)                          d           diff to previous                            │┃
+┃│   Ctrl+arrow  switch pane (split)                          v           view backup                                 │┃
+┃│   Alt+⇧arrow  move divider (mouse: drag)                   g           Warning limits                              │┃
+┃│   Alt+Z       Zoom pane / back                             t           graphs: 5 min / 1 h                         │┃
+┃│   Drag title  swap panes                                   z           graphs large                                │┃
 ┃│                                                                                                                    │┃
 ┃│   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                      │┃
 ┃│  Esc leads back to the terminal from every panel.                                                                  │┃

@@ -618,7 +618,11 @@ func (a *App) announceWatch(al watchAlert, sid int) {
 		s.notice = noticeLog
 	}
 	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() {
-		a.sendDesktop("sshTermy · "+al.Host, al.Title)
+		if s := a.byID(sid); s != nil {
+			a.sendDesktopFor(s, "sshTermy · "+al.Host, al.Title)
+		} else {
+			a.sendDesktop("sshTermy · "+al.Host, al.Title)
+		}
 	}
 }
 

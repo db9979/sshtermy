@@ -85,7 +85,7 @@ func (s *Server) Accept(timeout time.Duration) (*Conn, int, int, error) {
 				ch <- res{err: err}
 				return
 			}
-			c, cols, rows, err := s.handshake(nc)
+			c, cols, rows, err := handshake(nc, s.token)
 			if err != nil {
 				nc.Close() // falsches Zugangswort: weiter warten
 				continue
@@ -105,14 +105,14 @@ func (s *Server) Accept(timeout time.Duration) (*Conn, int, int, error) {
 	}
 }
 
-func (s *Server) handshake(nc net.Conn) (*Conn, int, int, error) {
+func handshake(nc net.Conn, token []byte) (*Conn, int, int, error) {
 	_ = nc.SetReadDeadline(time.Now().Add(5 * time.Second))
 	defer nc.SetReadDeadline(time.Time{})
 	h, err := readFrame(nc)
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	if h.typ != frHello || subtle.ConstantTimeCompare(bytes.TrimSpace(h.p), s.token) != 1 {
+	if h.typ != frHello || subtle.ConstantTimeCompare(bytes.TrimSpace(h.p), token) != 1 {
 		return nil, 0, 0, errors.New("detach: falsches Zugangswort")
 	}
 	r, err := readFrame(nc)

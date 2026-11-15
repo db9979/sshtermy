@@ -244,7 +244,7 @@ func (a *App) goalNotifyTick(s *session) {
 		if a.lock != nil {
 			body = i18n.T("Ziel-Modus wartet auf dich") // gesperrt: nichts verraten
 		}
-		a.sendDesktop("sshTermy · "+s.tabName(), body)
+		a.sendDesktopFor(s, "sshTermy · "+s.tabName(), body)
 	}
 }
 

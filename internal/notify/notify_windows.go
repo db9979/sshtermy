@@ -8,7 +8,8 @@ import (
 // Windows 10/11: Toast über die WinRT-Klassen, die PowerShell ohne Module
 // erreicht. Als Absender dient die AppID der PowerShell, die immer
 // registriert ist (eigene AppIDs bräuchten eine Verknüpfung im Startmenü).
-func send(title, body string) error {
+// Ein Klick aktiviert deshalb nur PowerShell und kommt nicht bei sshTermy an.
+func send(title, body, _ string, _ func()) error {
 	xml := "<toast><visual><binding template=\"ToastGeneric\"><text>" + xmlEscape(title) +
 		"</text><text>" + xmlEscape(body) + "</text></binding></visual></toast>"
 	ps := "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null;" +
