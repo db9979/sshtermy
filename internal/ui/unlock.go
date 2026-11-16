@@ -153,8 +153,8 @@ func (a *App) viewUnlock() string {
 	if u.setup {
 		b.WriteString(s.Text.Render(i18n.T("Willkommen! Lege ein Master-Passwort für deinen verschlüsselten Store an.")) + "\n")
 		b.WriteString(s.Muted.Render(i18n.T("Es wird nie gespeichert. Argon2id + AES-256-GCM schützen Passwörter, Keys und API-Keys.")) + "\n\n")
-		b.WriteString(s.Label.Render(i18n.T("Master-Passwort")) + u.pw.View() + "\n")
-		b.WriteString(s.Label.Render(i18n.T("Wiederholen")) + u.pw2.View() + "\n")
+		b.WriteString(s.Label.Render(i18n.T("Master-Passwort")) + themedInput(u.pw) + "\n")
+		b.WriteString(s.Label.Render(i18n.T("Wiederholen")) + themedInput(u.pw2) + "\n")
 		mark := "○"
 		if u.dpapi {
 			mark = s.OK.Render("●")
@@ -170,7 +170,7 @@ func (a *App) viewUnlock() string {
 		b.WriteString(focus + mark + " " + s.Text.Render(lbl) + "\n")
 	} else {
 		b.WriteString(s.Text.Render(i18n.T("Store gesperrt.")) + "\n\n")
-		b.WriteString(s.Label.Render(i18n.T("Master-Passwort")) + u.pw.View() + "\n")
+		b.WriteString(s.Label.Render(i18n.T("Master-Passwort")) + themedInput(u.pw) + "\n")
 	}
 	if u.busy {
 		b.WriteString("\n" + s.AI.Render(i18n.T("⠿ Schlüssel wird abgeleitet (Argon2id) …")))

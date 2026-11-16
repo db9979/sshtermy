@@ -340,7 +340,7 @@ func (t *Term) ViewHL(ghost string, ghostStyle func(string) string, hl *HL) stri
 	w, h := t.Size()
 	var raw string
 	padded := false // render liefert jede Zeile schon genau w breit
-	if hl != nil && !t.AltScreen() {
+	if hl != nil && (hl.Look != nil || !t.AltScreen()) {
 		raw, padded = t.render(0, nil, nil, hl), true
 	} else {
 		raw = strings.ReplaceAll(t.emu.Render(), "\r\n", "\n")

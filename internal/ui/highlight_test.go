@@ -39,9 +39,9 @@ func TestHighlightAlertInHiddenTab(t *testing.T) {
 	if bg.alerts.Load() != nil {
 		t.Fatal("Scanner muss weg")
 	}
-	// Farbregeln aus: nichts zum Zeichnen
+	// Farbregeln aus: keine Regeln mehr, Theme-Farben bleiben
 	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.Highlight.Off = true })
-	if a.termHL() != nil {
+	if h := a.termHL(); h.Set != nil || h.Look == nil {
 		t.Fatal("aus heißt aus")
 	}
 }

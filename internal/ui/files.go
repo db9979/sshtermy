@@ -650,7 +650,7 @@ func (a *App) viewFiles(s *session, w, h int) string {
 	switch {
 	case f.mkdir != nil:
 		f.mkdir.SetWidth(w - 20)
-		status = st.Accent.Render(i18n.T(" Neuer Ordner: ")) + f.mkdir.View()
+		status = st.Accent.Render(i18n.T(" Neuer Ordner: ")) + themedInput(*f.mkdir)
 	case f.xfer != nil:
 		status = a.xferStatus(f.xfer, w) // xferview.go, zwei Zeilen
 	case f.drag != nil && f.drag.moved:

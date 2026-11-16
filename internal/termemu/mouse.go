@@ -146,28 +146,42 @@ func (t *Term) render(offset int, sel *Sel, hook func(line, x int, c *uv.Cell), 
 	first := sb - offset
 	rows := make([]string, h)
 	line := make(uv.Line, w)
-	if hl != nil && t.AltScreen() {
-		hl = nil // vim, htop, less: die Programme färben selbst
+	var look *Look
+	if hl != nil {
+		look = hl.Look
 	}
+	var memo *lookMemo
+	if look != nil {
+		memo = newLookMemo()
+	}
+	useSet := hl != nil && hl.Set != nil && !t.AltScreen() // vim, htop, less: die Programme färben selbst
 	for y := 0; y < h; y++ {
 		abs := first + y
 		t.lineCells(sb, abs, line)
 		var colors []color.Color
-		if hl != nil {
+		if useSet {
 			colors = hl.columnsOf(line)
 		}
 		for x := 0; x < w; x++ {
+			selected := false
 			if sel != nil && !line[x].IsZero() && sel.Contains(Pos{abs, x}) {
 				if line[x].Content == "" {
 					line[x].Content, line[x].Width = " ", 1
 				}
-				line[x].Style.Attrs ^= uv.AttrReverse
+				if look != nil {
+					selected = true
+				} else {
+					line[x].Style.Attrs ^= uv.AttrReverse
+				}
 			}
 			if colors != nil && colors[x] != nil && line[x].Style.Fg == nil && line[x].Style.Bg == nil && !line[x].IsZero() {
 				line[x].Style.Fg = colors[x]
 			}
 			if hook != nil && !line[x].IsZero() {
 				hook(abs, x, &line[x])
+			}
+			if look != nil && !line[x].IsZero() {
+				look.apply(&line[x], selected, memo)
 			}
 		}
 		r := line.Render()

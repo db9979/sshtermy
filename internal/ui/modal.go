@@ -347,9 +347,9 @@ func (m *modal) view(s Styles, w, h int) string {
 	body := ansi.Wrap(s.Text.Render(m.body), d.width, "")
 	switch m.kind {
 	case mInput:
-		body += "\n\n" + m.in.View()
+		body += "\n\n" + themedInput(m.in)
 	case mSecret:
-		body += "\n\n" + m.in.View() + "\n\n" + s.Muted.Render(i18n.T("Wird nicht gespeichert."))
+		body += "\n\n" + themedInput(m.in) + "\n\n" + s.Muted.Render(i18n.T("Wird nicht gespeichert."))
 	}
 	d.body = body
 	if m.kind != mAbout && m.kind != mHostKey && m.kind != mInput && m.kind != mSecret {

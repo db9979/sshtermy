@@ -54,7 +54,8 @@ func (a *App) prodChip(short bool) string {
 	if short {
 		txt = i18n.T("▲ PROD")
 	}
-	return lipgloss.NewStyle().Foreground(st.T.Danger).Background(mixColor(st.T.Surface, st.T.Danger, 0.22)).
+	bg := mixColor(st.T.Surface, st.T.Danger, 0.22)
+	return lipgloss.NewStyle().Foreground(readableOn(st.T.Danger, bg, minText)).Background(bg).
 		Bold(true).Padding(0, 1).Render(txt)
 }
 

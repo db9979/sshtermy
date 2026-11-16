@@ -13,6 +13,9 @@ import (
 type HL struct {
 	Set    *highlight.Set
 	Colors [8]color.Color
+	// Look: Theme-Farben und Kontrastschutz (look.go); nil = Farben so
+	// weiterreichen, wie das Programm sie schreibt.
+	Look *Look
 }
 
 // columnsOf: wie columns, für eine schon geholte Zeile.

@@ -182,7 +182,7 @@ func (a *App) viewBcVars() string {
 		if v.Default != "" {
 			hint = s.Muted.Render(i18n.T("  leer = ") + v.Default)
 		}
-		o.WriteString(lbl + b.varIn[i].View() + hint + "\n")
+		o.WriteString(lbl + themedInput(b.varIn[i]) + hint + "\n")
 	}
 	if runbook.HasBuiltins(b.stepList()) {
 		o.WriteString("\n" + s.Muted.Render(i18n.T("{{host}}, {{alias}}, {{user}} und {{port}} setzt sshTermy pro Host ein.")) + "\n")
