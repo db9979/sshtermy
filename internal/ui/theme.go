@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"strings"
+
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/lipgloss/v2"
 
+	"github.com/db9979/sshtermy/internal/termemu"
 	"github.com/db9979/sshtermy/internal/ui/theme"
 )
 
@@ -34,6 +37,24 @@ var (
 	contrastProblems = theme.Problems
 	rgbOf            = theme.RGB
 )
+
+// readableOn: Schrift so wenig wie nötig aufhellen/abdunkeln, bis sie auf
+// dem Grund lesbar ist (gleiche Rechnung wie für die Serverausgabe).
+var readableOn = termemu.Readable
+
+// Mindestkontraste (WCAG 2): Text 4,5:1, Gedämpftes und Nebensachen 3,5:1.
+const (
+	minText  = 4.5
+	minMuted = 3.5
+)
+
+// minMutedFor: Hochkontrast-Themes halten auch Nebensachen bei 4,5:1.
+func minMutedFor(t Theme) float64 {
+	if strings.HasPrefix(t.Name, "kontrast") {
+		return minText
+	}
+	return minMuted
+}
 
 // frameBorder: eckige Rahmen für den Terminal-Look (┌─┐ statt ╭─╮).
 var frameBorder = lipgloss.NormalBorder()
@@ -92,13 +113,22 @@ func NewStyles(t Theme) Styles {
 	return s
 }
 
+// themedInput zeichnet ein Textfeld immer in den Farben des aktiven Themes.
+// bubbles setzt sonst Farben für dunkle Terminals (Eingabe „weiß“), und
+// Felder, die vor einem Theme-Wechsel entstanden, behielten die alten.
+func themedInput(in textinput.Model) string {
+	in.SetStyles(inputStyles(activeTheme))
+	return in.View()
+}
+
 // inputStyles: Textfelder passend zum Theme (sonst wäre Text auf Hell
 // unsichtbar, weil bubbles Standardfarben für dunkle Terminals setzt).
 func inputStyles(t Theme) textinput.Styles {
 	s := textinput.DefaultStyles(t.Dark)
 	s.Focused.Text = lipgloss.NewStyle().Foreground(t.Text)
 	s.Blurred.Text = lipgloss.NewStyle().Foreground(t.Text)
-	s.Focused.Placeholder = lipgloss.NewStyle().Foreground(t.Muted).Faint(true).Italic(true)
+	// nicht zusätzlich abgedunkelt: Gedämpft hat schon nur 3,5:1
+	s.Focused.Placeholder = lipgloss.NewStyle().Foreground(t.Muted).Italic(true)
 	s.Blurred.Placeholder = s.Focused.Placeholder
 	s.Focused.Prompt = lipgloss.NewStyle().Foreground(t.Accent)
 	s.Blurred.Prompt = s.Focused.Prompt

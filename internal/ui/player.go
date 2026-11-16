@@ -388,7 +388,7 @@ func (a *App) viewPlayer() string {
 	b.WriteString(st.PanelTitle.Render(trunc("▶ "+title, w)) + "\n")
 	tw, th := p.term.Size()
 	rows := h - 4
-	lines := strings.Split(p.term.Render(0, nil), "\n")
+	lines := strings.Split(p.term.RenderHL(0, nil, &termemu.HL{Look: a.termLook()}), "\n")
 	for i := 0; i < rows; i++ {
 		if i < len(lines) && i < th {
 			b.WriteString(ansi.Truncate(lines[i], w, "") + "\x1b[0m")

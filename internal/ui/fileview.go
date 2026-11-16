@@ -742,7 +742,7 @@ func (a *App) viewFileView(s *session, w, h int) string {
 	switch {
 	case v.search != nil:
 		v.search.SetWidth(w - 12)
-		status = st.Accent.Render(i18n.T(" Suchen: ")) + v.search.View()
+		status = st.Accent.Render(i18n.T(" Suchen: ")) + themedInput(*v.search)
 	case v.query != "":
 		status = st.Muted.Render(fmt.Sprintf(i18n.T(" Suche „%s“ · n weiter, N zurück, Esc hebt auf"), v.query))
 		if v.hit < 0 {

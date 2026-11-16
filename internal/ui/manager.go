@@ -420,7 +420,7 @@ func (a *App) viewManager() string {
 		lb.WriteString(" " + s.Warn.Render("↕ "+i18n.T("„")+trunc(name, 16)+i18n.T("“")+" "+trunc(desc, leftW-24)) + "\n")
 	case m.searching || m.search.Value() != "":
 		m.search.SetWidth(leftW - 6)
-		lb.WriteString(" " + s.Accent.Render("/") + " " + m.search.View() + "\n")
+		lb.WriteString(" " + s.Accent.Render("/") + " " + themedInput(m.search) + "\n")
 	default:
 		title := s.PanelTitle.Foreground(s.T.Accent).Render(i18n.T(" Verbindungen")) + s.Muted.Render(fmt.Sprintf("  %d", total))
 		// Hinweise nur, solange sie in die Zeile passen

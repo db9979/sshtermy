@@ -459,7 +459,7 @@ func (a *App) viewLogs() string {
 		view = i18n.T("Tab nach Zeit")
 	}
 	if m.searching || m.search.Value() != "" {
-		lb.WriteString(" " + s.Accent.Render("/") + " " + m.search.View() + "\n")
+		lb.WriteString(" " + s.Accent.Render("/") + " " + themedInput(m.search) + "\n")
 	} else {
 		count := fmt.Sprintf("  %d", nLogs)
 		if m.byHost {

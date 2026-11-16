@@ -163,7 +163,7 @@ func (a *App) viewPicker() string {
 
 	var b strings.Builder
 	p.in.SetWidth(w - 8)
-	b.WriteString(s.Accent.Render("/ ") + p.in.View() + "\n\n")
+	b.WriteString(s.Accent.Render("/ ") + themedInput(p.in) + "\n\n")
 	var list strings.Builder
 	for i := p.top; i < len(vis) && i < p.top+rows; i++ {
 		it := vis[i]

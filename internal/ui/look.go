@@ -28,6 +28,10 @@ func (a *App) setStyles(t Theme) {
 }
 
 // applyLook übernimmt Theme und Tasten aus den Einstellungen.
+// themeGen zählt Theme-Wechsel; Eingabefelder, die länger leben, holen
+// damit ihre Farben nach (aiInput.restyle).
+var themeGen int
+
 func (a *App) applyLook() {
 	a.applyLang()
 	set := a.st.Settings()
@@ -48,11 +52,15 @@ func (a *App) applyLook() {
 	}
 	iconSet = set.IconsNow()
 	activeTheme = t
+	themeGen++
 	a.setStyles(t)
 	a.keys = newKeymap(set.KeysNow())
 	activeKeys = a.keys
 	// Felder, die schon existieren, bekommen die neuen Farben.
 	a.mgr.search.SetStyles(inputStyles(t))
+	for _, s := range a.sessions {
+		s.search.in.SetStyles(inputStyles(t))
+	}
 }
 
 func (a *App) setTheme(name string) tea.Cmd {

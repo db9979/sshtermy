@@ -52,12 +52,13 @@ func (a *App) hlSet() *highlight.Set {
 
 // termHL: Farbregeln mit den Farben des Themes für das Zeichnen.
 func (a *App) termHL() *termemu.HL {
+	t := a.s.T
+	h := &termemu.HL{Look: a.termLook()}
 	set := a.hlSet()
 	if set == nil {
-		return nil
+		return h
 	}
-	t := a.s.T
-	h := &termemu.HL{Set: set}
+	h.Set = set
 	h.Colors[highlight.Red] = t.Danger
 	h.Colors[highlight.Yellow] = t.Warn
 	h.Colors[highlight.Green] = t.OK
@@ -65,6 +66,35 @@ func (a *App) termHL() *termemu.HL {
 	h.Colors[highlight.Purple] = t.AI
 	h.Colors[highlight.Grey] = t.Muted
 	return h
+}
+
+// termLook: Farben und Kontrastschutz für die Serverausgabe (gemerkt je
+// Theme-Stand, siehe termemu/look.go).
+func (a *App) termLook() *termemu.Look {
+	if a.look.l != nil && a.look.gen == a.styleGen {
+		return a.look.l
+	}
+	a.look.l, a.look.gen = lookOf(a.s.T), a.styleGen
+	return a.look.l
+}
+
+// minTermContrast: Mindestkontrast für Text vom Server (WCAG AA wie in
+// VS Code), bei den Hochkontrast-Themes AAA.
+func minTermContrast(t Theme) float64 {
+	if strings.HasPrefix(t.Name, "kontrast") {
+		return 7
+	}
+	return 4.5
+}
+
+func lookOf(t Theme) *termemu.Look {
+	return &termemu.Look{
+		Fg: t.Text, Bg: t.Bg,
+		ANSI:  termemu.StandardANSI(t.Dark),
+		SelFg: t.Bg, SelBg: t.Accent,
+		MinContrast: minTermContrast(t),
+		MinFaint:    minMutedFor(t),
+	}
 }
 
 func (a *App) highlightOn() bool { return !a.st.Settings().Highlight.Off }

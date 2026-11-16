@@ -76,7 +76,7 @@ var Lagerfeuer = Theme{
 	AI:       lipgloss.Color("#d3869b"),
 	OK:       lipgloss.Color("#b8bb26"),
 	Warn:     lipgloss.Color("#fabd2f"),
-	Danger:   lipgloss.Color("#fb4934"),
+	Danger:   lipgloss.Color("#fb5743"),
 	Orange:   lipgloss.Color("#fe8019"),
 	Cyan:     lipgloss.Color("#8ec07c"),
 }

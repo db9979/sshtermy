@@ -35,7 +35,7 @@ var Nacht = Theme{
 	Surface2: lipgloss.Color("#292e42"),
 	Border:   lipgloss.Color("#3b4261"),
 	Text:     lipgloss.Color("#c0caf5"),
-	Muted:    lipgloss.Color("#737aa2"),
+	Muted:    lipgloss.Color("#7c83a8"),
 	Accent:   lipgloss.Color("#7aa2f7"),
 	AI:       lipgloss.Color("#bb9af7"),
 	OK:       lipgloss.Color("#9ece6a"),

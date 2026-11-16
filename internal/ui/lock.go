@@ -170,7 +170,7 @@ func (a *App) viewLock() string {
 		}
 	}
 	b.WriteString(s.Muted.Render(plural(running, i18n.T("Sitzung läuft"), i18n.T("Sitzungen laufen"))+i18n.T(" im Hintergrund weiter.")) + "\n\n")
-	b.WriteString(s.Label.Render(i18n.T("Master-Passwort")) + l.in.View() + "\n")
+	b.WriteString(s.Label.Render(i18n.T("Master-Passwort")) + themedInput(l.in) + "\n")
 	if l.busy {
 		b.WriteString("\n" + s.AI.Render(i18n.T("⠿ Passwort wird geprüft …")))
 	}

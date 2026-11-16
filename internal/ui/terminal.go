@@ -938,7 +938,7 @@ func (a *App) tabStrip(room int) string {
 			if col := a.tabColor(x); col != nil {
 				stripe = glyph("▌", col, ts.GetBackground())
 				if a.framed() { // Name gedämpft in der Rahmenfarbe (tabframe.go)
-					text = " " + lipgloss.NewStyle().Foreground(mixColor(ts.GetBackground(), col, 0.85)).Background(ts.GetBackground()).Render(strings.TrimPrefix(text, " "))
+					text = " " + lipgloss.NewStyle().Foreground(readableOn(mixColor(ts.GetBackground(), col, 0.85), ts.GetBackground(), minMutedFor(st.T))).Background(ts.GetBackground()).Render(strings.TrimPrefix(text, " "))
 				}
 			}
 		}

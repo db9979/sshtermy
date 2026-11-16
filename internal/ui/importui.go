@@ -231,7 +231,7 @@ func (a *App) viewImport() string {
 	b.WriteString("\n")
 	if m.asking {
 		m.path.SetWidth(w - 12)
-		b.WriteString(" " + s.Accent.Render(i18n.T("Datei: ")) + m.path.View() + "\n\n")
+		b.WriteString(" " + s.Accent.Render(i18n.T("Datei: ")) + themedInput(m.path) + "\n\n")
 	}
 	if m.err != "" {
 		b.WriteString(" " + s.Danger.Render(m.err) + "\n\n")

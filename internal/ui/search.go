@@ -289,7 +289,7 @@ func (a *App) searchBar(s *session) string {
 		right = a.s.Warn.Render(i18n.T("nur Fehlerzeilen "))
 	}
 	sr.in.SetWidth(max(10, a.w-ansi.StringWidth(label)-ansi.StringWidth(count)-ansi.StringWidth(right)-2))
-	out := st.Accent.Render(label) + sr.in.View() + count
+	out := st.Accent.Render(label) + themedInput(sr.in) + count
 	gap := a.w - ansi.StringWidth(out) - ansi.StringWidth(right)
 	if gap > 0 {
 		out += strings.Repeat(" ", gap) + right

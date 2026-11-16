@@ -115,7 +115,7 @@ func (a *App) vgViewSetup(add func(string), w int) {
 	st := a.s
 	lbl := st.Muted.Render(i18n.T("Worum geht's? (optional, hilft der KI)  "))
 	g.goalIn.SetWidth(max(20, w-lipgloss.Width(lbl)-4))
-	add(lbl + g.goalIn.View())
+	add(lbl + themedInput(g.goalIn))
 	add("")
 	add(st.Muted.Render(fmt.Sprintf("     %-24s %-34s %s", i18n.T("Fenster"), i18n.T("System"), i18n.T("KI sieht"))))
 	for i, r := range g.rows {

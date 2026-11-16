@@ -872,7 +872,7 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 	// steht auch der Name in dieser Farbe. Produktiv: rote Marke.
 	col := a.tabColor(s)
 	if col != nil && a.framed() && !focused {
-		bar = bar.Foreground(mixColor(st.T.Surface, col, 0.85)) // gedämpft
+		bar = bar.Foreground(readableOn(mixColor(st.T.Surface, col, 0.85), st.T.Surface, minMutedFor(st.T))) // gedämpft, aber lesbar
 	}
 	dot := map[sessState]string{stConnecting: "◌", stConnected: "●", stClosed: "○", stReconnect: "◌"}[s.state]
 	left := " " + dot + " " + strconv.Itoa(a.winNo(s)) + " · " + s.conn.Alias + "  " + s.conn.Username + "@" + s.conn.Host

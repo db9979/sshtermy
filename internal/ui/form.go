@@ -326,7 +326,7 @@ func (f *form) view(s Styles, width int, z *zones) string {
 			}
 		default:
 			fl.in.SetWidth(inW - 1)
-			val = " " + fl.in.View()
+			val = " " + themedInput(fl.in)
 		}
 		marker := "  "
 		if tint != nil {

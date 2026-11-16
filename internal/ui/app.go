@@ -39,6 +39,7 @@ import (
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
+	"github.com/db9979/sshtermy/internal/termemu"
 	"github.com/db9979/sshtermy/internal/update"
 	"github.com/db9979/sshtermy/internal/vault"
 	"github.com/db9979/sshtermy/internal/version"
@@ -189,7 +190,11 @@ type App struct {
 	restart        bool         // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
 
-	hl      hlState       // Farbregeln (highlight.go)
+	hl   hlState  // Farbregeln (highlight.go)
+	look struct { // Terminalfarben je Theme-Stand (termLook)
+		l   *termemu.Look
+		gen int
+	}
 	edits   []*remoteEdit // Server-Dateien im eigenen Editor (editor.go)
 	openTmp []string      // heruntergeladen zum Öffnen mit dem Standardprogramm (fileview.go)
 
