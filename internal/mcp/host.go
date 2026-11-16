@@ -49,7 +49,6 @@ type Host struct {
 	info    string
 	token   []byte
 	handle  Handler
-	wg      sync.WaitGroup
 }
 
 // Listen öffnet den Socket und schreibt Adresse + Token nach dataDir/mcp.json

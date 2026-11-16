@@ -101,7 +101,7 @@ func (a *Agent) AutoStep(ctx context.Context, goal string, recipe []string, hist
 	}
 	kind, files := c.kind(), info.Dir != ""
 	parse := func(out string) (Step, error) { return parseAuto(out, kind, files) }
-	o := llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskAgent}
+	o := llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, JSON: true, Task: TaskAgent}
 	st, err := a.completeWith(ctx, msgs, o, retryAuto, files, parse)
 	if err != nil {
 		return st, err
@@ -175,13 +175,16 @@ func ParseAuto(out, kind string, files bool) (Step, error) { return parseAuto(ou
 func parseAuto(out, kind string, files bool) (Step, error) {
 	var v map[string]json.RawMessage
 	if strictJSON(out, &v) {
+		if _, ok := v["datei"]; ok && !files {
+			return Step{}, &StepError{Why: "Datei vorgeschlagen, hier gehen aber nur Befehle", fix: fixNoFiles}
+		}
 		if raw, ok := v["datei"]; ok && files {
 			var f struct {
 				Name   string `json:"name"`
 				Inhalt string `json:"inhalt"`
 			}
 			if json.Unmarshal(raw, &f) != nil {
-				return Step{}, ErrUnreadable
+				return Step{}, &StepError{Why: "datei ohne name/inhalt", fix: `datei braucht die Form {"name": "x.sh", "inhalt": "…"}.`}
 			}
 			fa, err := CheckFile(f.Name, f.Inhalt)
 			if err != nil {

@@ -38,6 +38,7 @@ type managerState struct {
 	tree      *domain.TreeNode
 	memo      mgrMemo         // mgrtree.go: Zeilen, solange Daten und Filter gleich sind
 	selAt     time.Time       // Auswahl zuletzt gewechselt (Einblenden, Balken)
+	forTab    bool            // über „+“/Alt+N geöffnet: ⏎ = neuer Tab, Esc = zurück (tabs.go)
 	selSeen   int             // Auswahl im letzten Bild
 	marked    map[string]bool // Mehrfachauswahl: IDs markierter Verbindungen (bulk.go)
 }
@@ -65,9 +66,15 @@ func (a *App) managerKeys() [][2]string {
 	if have {
 		cur = rows[m.sel]
 	}
+	// Nur Tasten zur Auswahl (Menüs aufräumen 17/18): Broadcast, Scan, Import,
+	// KI-Einstellungen, Sync, Protokolle und Über stehen in F1, der Palette
+	// und im Rechtsklick-Menü; die Tasten selbst wirken weiter.
 	k := [][2]string{{km.label(actPalette), i18n.T("Befehle")}}
 	if len(a.sessions) > 0 {
 		k = append(k, [2]string{km.label(actManager), i18n.T("zum Terminal")})
+	}
+	if a.mgr.forTab && len(a.sessions) > 0 && have && !cur.isFolder() {
+		k = append(k, [2]string{"⏎", i18n.T("in neuem Tab öffnen")}, [2]string{"Esc", i18n.T("zurück")})
 	}
 	switch {
 	case have && cur.isFolder():
@@ -76,45 +83,21 @@ func (a *App) managerKeys() [][2]string {
 			open = i18n.T("aufklappen")
 		}
 		k = append(k, [2]string{"⏎", open}, [2]string{"n", i18n.T("neu hier")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")},
-			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{km.label(actFolderGrid), i18n.T("als Raster öffnen")})
+			[2]string{km.label(actMoveTo), i18n.T("verschieben")})
 	case have:
 		k = append(k, [2]string{"⏎", i18n.T("verbinden")}, [2]string{"n", i18n.T("neu")}, [2]string{"e", i18n.T("bearbeiten")}, [2]string{"d", i18n.T("löschen")},
-			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{"t", "Tunnel"}, [2]string{km.label(actQuickEdit), i18n.T("Schnellbefehle")},
-			[2]string{km.label(actSSHKey), i18n.T("SSH-Key")})
+			[2]string{km.label(actMoveTo), i18n.T("verschieben")}, [2]string{i18n.T("Leertaste"), i18n.T("markieren")})
 	default:
-		k = append(k, [2]string{"n", i18n.T("neue Verbindung")}, [2]string{km.label(actImport), "Import"}, [2]string{km.label(actScan), "Scan"})
+		k = append(k, [2]string{"n", i18n.T("neue Verbindung")}, [2]string{km.label(actImport), i18n.T("importieren")}, [2]string{km.label(actScan), i18n.T("Netz scannen")})
 	}
 	if m.tag != "" || m.search.Value() != "" {
 		k = append(k, [2]string{"Esc", i18n.T("Filter aus")})
 	}
 	if len(rows) > 1 {
 		k = append(k, [2]string{"/", i18n.T("suchen")})
-		if have && !a.mgrFiltering() {
-			k = append(k, [2]string{km.label(actMoveUp) + "/" + keyLabel("down"), i18n.T("sortieren")})
-		}
 	}
-	k = append(k, [2]string{km.label(actFolderNew), i18n.T("Ordner")})
-	if a.hasTags() {
-		k = append(k, [2]string{km.label(actTagFilter), "Tags"})
-	}
-	if set := a.st.Settings(); len(set.Workspaces) > 0 || set.LastLayout != nil {
-		k = append(k, [2]string{km.label(actWorkspace), i18n.T("Arbeitsplätze")})
-	}
-	if have {
-		k = append(k, [2]string{km.label(actBroadcast), "Broadcast"}, [2]string{km.label(actScan), "Scan"}, [2]string{km.label(actImport), "Import"})
-	}
-	k = append(k, [2]string{"s", i18n.T("KI")}, [2]string{"y", "Sync"}, [2]string{"l", i18n.T("Protokolle")},
-		[2]string{km.label(actHelp), i18n.T("Hilfe")}, [2]string{km.label(actCheat), i18n.T("erklären")}, [2]string{km.label(actAbout), i18n.T("Über")}, [2]string{km.label(actQuit), i18n.T("beenden")})
+	k = append(k, [2]string{km.label(actHelp), i18n.T("Hilfe")}, [2]string{km.label(actQuit), i18n.T("beenden")})
 	return k
-}
-
-func (a *App) hasTags() bool {
-	for _, c := range a.st.Connections() {
-		if len(c.Tags) > 0 {
-			return true
-		}
-	}
-	return false
 }
 
 func (a *App) updateManager(msg tea.Msg) tea.Cmd {
@@ -299,6 +282,10 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 			if have {
 				m.want = cur.key()
 			}
+			return nil
+		}
+		if m.forTab && len(a.sessions) > 0 {
+			a.scr = scrTerminal // „+“ abgebrochen: zurück zum Tab von vorher
 		}
 	case "/":
 		m.searching = true
@@ -375,6 +362,7 @@ func (a *App) mgrNewTunnel(c domain.Connection) tea.Cmd {
 }
 
 func (a *App) connect(c domain.Connection) tea.Cmd {
+	a.mgr.forTab = false
 	a.nextSID++
 	s := &session{id: a.nextSID, conn: c, state: stConnecting, started: time.Now(), chipArmed: -1, quickArmed: -1}
 	a.sessions = append(a.sessions, s)
@@ -472,11 +460,7 @@ func (a *App) viewManager() string {
 	m.top = clamp(m.top, 0, max(0, len(rows)-listH))
 	now := time.Now()
 	if m.sel != m.selSeen {
-		m.selSeen, m.selAt = m.sel, now // Auswahl blendet ein, Balken füllen sich
-	}
-	selK := 1.0
-	if motionLevel() > 0 {
-		selK = easeOut(float64(now.Sub(m.selAt)) / float64(selFadeDur))
+		m.selSeen, m.selAt = m.sel, now // Balken der Detailspalte füllen sich
 	}
 	if len(rows) > listH {
 		info += s.Muted.Render(fmt.Sprintf(i18n.T("  %d–%d von %d"), m.top+1, min(len(rows), m.top+listH), len(rows)))
@@ -523,7 +507,7 @@ func (a *App) viewManager() string {
 			if i == m.sel {
 				// Auswahl: Hintergrund über die ganze Zeile, Punkt und
 				// Symbol behalten ihre Farbe (rot = nicht erreichbar).
-				bg := mixColor(s.T.Bg, s.T.Surface2, selK)
+				bg := s.T.Surface2 // Auswahl sofort voll da, ohne Einblenden
 				sel := s.Selected.Background(bg)
 				stripeSel, _ := a.stripe(c, bg)
 				body := sel.Render(indent) + glyph(pdot, dotC, bg) + sel.Render(" ") + glyph(picon, iconC, bg) + sel.Render(" "+alias+" "+target)
@@ -604,7 +588,11 @@ func (a *App) mgrConnDetails(c domain.Connection, rightW int, now time.Time) str
 	if g := c.Group; g != "" && lipgloss.Width(head)+2+len([]rune(g)) < rightW-1 {
 		head += "  " + s.Muted.Render(g)
 	}
-	if acts := a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render(i18n.T("verbinden"))) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render(i18n.T("bearbeiten"))); lipgloss.Width(head)+3+lipgloss.Width(acts) < rightW {
+	enter := i18n.T("verbinden")
+	if a.mgr.forTab && len(a.sessions) > 0 {
+		enter = i18n.T("in neuem Tab")
+	}
+	if acts := a.keyZone("⏎", s.Key.Render("⏎")+s.KeyDesc.Render(enter)) + " " + a.keyZone("e", s.Key.Render("e")+s.KeyDesc.Render(i18n.T("bearbeiten"))); lipgloss.Width(head)+3+lipgloss.Width(acts) < rightW {
 		head += "   " + acts
 	}
 	rb.WriteString(head + "\n\n")

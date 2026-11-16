@@ -136,9 +136,6 @@ func (a *App) resize(s *session) {
 	a.shareResized(s)
 }
 
-// agentClient: KI ohne Bezug zu einer Verbindung (nur die Einstellung zählt).
-func (a *App) agentClient() (*agent.Agent, error) { return a.agentClientFor() }
-
 // ---------------------------------------------------------------- Tasten
 
 func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
@@ -187,6 +184,18 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				return cmd
 			}
 		}
+		// Markieren per Tastatur (copymode.go): hat alle Tasten außer den F-Tasten
+		if s.copy != nil && !s.panelFocus && !s.files.open {
+			if m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12 {
+				a.stopCopyMode(s)
+			} else {
+				return a.copyKey(s, m)
+			}
+		}
+		if a.keys.is(actCopyMode, key) && !s.panelFocus && !s.files.open && s.term != nil {
+			a.startCopyMode(s)
+			return nil
+		}
 		// Tippen beendet Markierung und Rückblick (Esc nur das)
 		if s.scroll > 0 && key == "esc" && !s.panelFocus && !s.files.open {
 			s.scroll, s.sel = 0, nil
@@ -204,6 +213,17 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				return a.openBlocks(s)
 			}
 		}
+		if !s.panelFocus && !s.files.open && s.term != nil {
+			if act := a.keys.which(key, actScrollUp, actScrollDown, actScrollTop, actScrollBottom); act != "" {
+				if !s.term.AltScreen() {
+					a.scrollKey(s, act)
+					return nil
+				}
+				if a.tmuxKey(s, act) {
+					return nil
+				}
+			}
+		}
 		s.sel, s.selecting = nil, false
 		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
 			s.scroll = 0
@@ -215,7 +235,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.vgKey(m) // Leiste „Vorgang“ hat die Tasten (vorgang_view.go)
 		}
 		// globale Tasten der Terminal-Ansicht (frei belegbar, siehe keymap.go)
-		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList, actSearchAll) {
+		switch a.keys.which(key, actHelp, actAbout, actManager, actPrevTab, actNextTab, actFiles, actCheat, actQuickMenu, actNewTab, actCloseTab, actTabList, actSearchAll, actNextNotice) {
+		case actNextNotice:
+			return a.jumpNextNotice()
 		case actSearchAll:
 			return a.openSearchAll()
 		case actNewTab:
@@ -314,6 +336,10 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if a.keys.is(actSearch, key) {
 			return a.openSearch(s)
 		}
+		if a.keys.is(actClearScreen, key) {
+			a.clearKeepLine(s)
+			return nil
+		}
 		if s.state == stReconnect {
 			switch key {
 			case "enter", "r":
@@ -324,6 +350,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				a.closeTab(s)
 			}
 			return nil
+		}
+		if s.state == stConnecting {
+			return a.connectingKey(s, m) // Text wartet auf den Prompt (typeahead.go)
 		}
 		if s.state != stConnected {
 			if cmd, ok := a.closedKey(s, key); ok {
@@ -425,6 +454,9 @@ func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
 	}
 	if key == "ctrl+c" && s.run != nil {
 		s.run.interrupted = true
+	}
+	if key == "enter" && a.ttyFix(s) {
+		return nil // docker exec ohne -it: Zeile ergänzt, erst nächstes ⏎ führt aus (ttyhint.go)
 	}
 	if key == "enter" && a.dangerCheck(s, k) {
 		return nil // Gefahren-Check: erst bestätigen (dangerguard.go)
@@ -721,6 +753,9 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	if s.panelFocus {
 		return a.panelKeys(s)
 	}
+	if s.copy != nil {
+		return copyKeys(s)
+	}
 	if s.search.open {
 		if s.search.list {
 			return [][2]string{{"↑/↓", i18n.T("wählen")}, {"⏎", i18n.T("im Verlauf zeigen")}, {"Tab", i18n.T("Liste/Verlauf")}, {"Strg+E", i18n.T("Filter aus")}, {"Esc", i18n.T("Suche schließen")}}
@@ -870,6 +905,9 @@ func (a *App) tabStrip(room int) string {
 		if x.detached() {
 			dot = st.AI.Render("↑") // läuft in eigenem Fenster
 		}
+		if g := a.agentGlyph(x); g != "" {
+			dot = g // KI-Coding-Agent arbeitet / wartet (waitmark.go)
+		}
 		if g := a.noticeGlyph(x); g != "" {
 			dot = g // Befehl fertig / Glocke, solange der Tab verdeckt war
 		}
@@ -895,9 +933,7 @@ func (a *App) tabStrip(room int) string {
 			text = ts.UnsetPadding().Render(text)
 		} else {
 			ts = ts.Background(tabFlashBg(x, ts.GetBackground(), now))
-			if bg := ts.GetBackground(); bg != nil {
-				dot = lipgloss.NewStyle().Background(bg).Render(dot) // Punkt auf dem Tab-Hintergrund
-			}
+			dot = lipgloss.NewStyle().Background(ts.GetBackground()).Render(dot) // Punkt auf dem Tab-Hintergrund
 			// Akzentfarbe der Verbindung als Streifen links im Tab (accent.go)
 			if col := a.tabColor(x); col != nil {
 				stripe = glyph("▌", col, ts.GetBackground())

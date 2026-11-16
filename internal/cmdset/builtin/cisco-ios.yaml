@@ -36,3 +36,7 @@ samples:
       firmware: 15.2(7)E4
       model: WS-C2960X-48FPD-L
       name: sw1
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:cisco:ios, cpe:2.3:o:cisco:ios_xe]
+  url: https://sec.cloudapps.cisco.com/security/center/publicationListing.x

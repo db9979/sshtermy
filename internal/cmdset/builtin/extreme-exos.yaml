@@ -27,3 +27,7 @@ syslog:
 danger:
   - rx: '^\s*(unconfigure\s+switch|delete\s+vlan|unconfigure\s+vlan|use\s+image)\b'
     reason: löscht Konfiguration oder Speicher des Geräts
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:extremenetworks:exos]
+  url: https://www.extremenetworks.com/support/security-advisories

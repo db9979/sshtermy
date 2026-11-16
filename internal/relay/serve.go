@@ -99,7 +99,7 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	hs := &http.Server{Addr: o.Listen, Handler: s.Handler(), ReadHeaderTimeout: 10 * time.Second,
 		MaxHeaderBytes: 16 << 10}
 	if cert != nil {
-		hs.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{*cert}}
+		hs.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{*cert}}
 	}
 	go s.Watch(ctx)
 	go func() {

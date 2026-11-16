@@ -112,3 +112,43 @@ func TestHostRemote(t *testing.T) {
 		t.Fatal("mcp.json bleibt nach Close")
 	}
 }
+
+// Fassung 2026-07-28: kein initialize, Version je Anfrage in _meta,
+// server/discover, resultType und Cache-Felder; unbekannte Version → -32022.
+func TestServeStateless(t *testing.T) {
+	meta := `"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}`
+	in := strings.Join([]string{
+		`{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{` + meta + `}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{` + meta + `}}`,
+		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_tabs","arguments":{},` + meta + `}}`,
+		`{"jsonrpc":"2.0","id":4,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"1900-01-01"}}}`,
+	}, "\n") + "\n"
+	var out bytes.Buffer
+	if err := Serve(strings.NewReader(in), &out, fake{}); err != nil {
+		t.Fatal(err)
+	}
+	byID := map[string]map[string]any{}
+	for _, l := range strings.Split(strings.TrimSpace(out.String()), "\n") {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(l), &m); err != nil {
+			t.Fatal(l)
+		}
+		id, _ := json.Marshal(m["id"])
+		byID[string(id)] = m
+	}
+	disc := byID["1"]["result"].(map[string]any)
+	if vs := disc["supportedVersions"].([]any); len(vs) == 0 || vs[0] != ProtocolVersion || disc["resultType"] != "complete" || disc["cacheScope"] != "private" {
+		t.Errorf("server/discover: %v", disc)
+	}
+	list := byID["2"]["result"].(map[string]any)
+	if list["resultType"] != "complete" || list["ttlMs"] == nil || list["_meta"] == nil {
+		t.Errorf("tools/list: %v", list)
+	}
+	if byID["3"]["result"].(map[string]any)["resultType"] != "complete" {
+		t.Errorf("tools/call: %v", byID["3"])
+	}
+	e := byID["4"]["error"].(map[string]any)
+	if e["code"].(float64) != -32022 || e["data"].(map[string]any)["requested"] != "1900-01-01" {
+		t.Errorf("unbekannte Version: %v", e)
+	}
+}

@@ -29,4 +29,4 @@
                                                 │
                                                 │
                                                 │
- Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ connect  n new  e edit  d delete  v move  t Tunnel  q Quick commands
+ Ctrl+Space Commands 1Help  ⏎ connect  n new  e edit  d delete  v move  Space mark  / search  Ctrl+Q quit

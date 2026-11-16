@@ -101,7 +101,7 @@ const retryPlan = "Deine letzte Antwort war kein gültiges JSON-Objekt im verlan
 
 // completeStep: Anfrage mit einem Korrekturversuch bei unlesbarer Antwort.
 func (a *Agent) completeStep(ctx context.Context, msgs []llm.Message, retry string, files bool, parse func(string) (Step, error)) (Step, error) {
-	return a.completeWith(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, Task: TaskPlan}, retry, files, parse)
+	return a.completeWith(ctx, msgs, llm.Opts{MaxTokens: autoTokens, Temperature: 0.2, NoThink: true, JSON: true, Task: TaskPlan}, retry, files, parse)
 }
 
 // text: der Plan als Text für den Prompt (Überarbeiten).

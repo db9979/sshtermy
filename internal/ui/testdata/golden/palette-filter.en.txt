@@ -14,7 +14,7 @@
             │ ──────────────────────────────────────────────────────────────────────── │
             │ Nothing found. In the terminal, text becomes a goal or a question.       │
             │                                                                          │
-            │  ↑↓ select    ⏎ run    Esc close                                         │
+            │  ↑↓ select    Esc close                                                  │
             └──────────────────────────────────────────────────────────────────────────┘
                                         │
                                         │
@@ -27,4 +27,4 @@
                                         │
                                         │
                                         │
- Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move
+ Ctrl+Space Commands 1Help  ⏎ collapse  n new here  e edit  d delete  v move  / search  Ctrl+Q quit

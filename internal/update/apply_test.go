@@ -42,7 +42,7 @@ func fakeRelease(t *testing.T, ver string, bin []byte, sums string, sign bool) *
 	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
 	if sums == "" {
 		h := sha256.Sum256(bin)
-		sums = hex.EncodeToString(h[:]) + "  " + AssetName() + "\n"
+		sums = SumsVersionLine(ver) + "\n" + hex.EncodeToString(h[:]) + "  " + AssetName() + "\n"
 	}
 	files := map[string][]byte{"/bin": bin, "/sums": []byte(sums)}
 	rel := &Release{Version: ver, assets: map[string][]string{}}
@@ -99,13 +99,13 @@ func TestApplyReplacesAndKeepsOld(t *testing.T) {
 }
 
 func TestApplyRejects(t *testing.T) {
-	bad := strings.Repeat("0", 64) + "  " + AssetName() + "\n"
+	bad := SumsVersionLine("1.0.2") + "\n" + strings.Repeat("0", 64) + "  " + AssetName() + "\n"
 	cases := []struct {
 		name string
 		prep func(t *testing.T) *Release
 		want string
 	}{
-		{"falsche Prüfsumme", func(t *testing.T) *Release { return fakeRelease(t, "1.0.2", []byte("neu"), bad, true) }, "Prüfsumme"},
+		{"falsche Prüfsumme", func(t *testing.T) *Release { return fakeRelease(t, "1.0.2", []byte("neu"), bad, true) }, "Prüfsumme stimmt nicht"},
 		{"Signatur fehlt", func(t *testing.T) *Release {
 			r := fakeRelease(t, "1.0.2", []byte("neu"), "", true)
 			delete(r.assets, "checksums.txt.sig")
@@ -122,6 +122,14 @@ func TestApplyRejects(t *testing.T) {
 			delete(r.assets, AssetName())
 			return r
 		}, "checksums.txt"},
+		{"signierte Prüfsummen einer älteren Version", func(t *testing.T) *Release {
+			h := sha256.Sum256([]byte("alt"))
+			return fakeRelease(t, "1.0.2", []byte("alt"), SumsVersionLine("1.0.1")+"\n"+hex.EncodeToString(h[:])+"  "+AssetName()+"\n", true)
+		}, "v1.0.1"},
+		{"signierte Prüfsummen ohne Version", func(t *testing.T) *Release {
+			h := sha256.Sum256([]byte("alt"))
+			return fakeRelease(t, "1.0.2", []byte("alt"), hex.EncodeToString(h[:])+"  "+AssetName()+"\n", true)
+		}, "keine Version"},
 		{"Selbsttest scheitert", func(t *testing.T) *Release {
 			selfTest = func(string, string) error { return errors.New("startet nicht") }
 			return fakeRelease(t, "1.0.2", []byte("neu"), "", true)

@@ -3,6 +3,12 @@
 # GitHub Release veröffentlichen. Die App findet das Release per Auto-Update.
 # Dazu: .deb-Pakete (apt-Quelle baut pages.yml) und die Homebrew-Formel
 # (Formula/sshtermy.rb, dieses Repo ist der Tap). winget: winget.yml.
+#
+# Drei Jobs, damit Schlüssel nie dort liegen, wo fremder Code läuft:
+#   build   – Tests und Bauen (Bibliotheken, go test …), ohne Secrets
+#   sign    – nur Codesignatur (falls eingerichtet), Prüfsummen und
+#             Ed25519-Signatur; kein Checkout, kein go
+#   publish – Herkunftsnachweis (Attestierung), Release, Homebrew
 name: release
 
 on:
@@ -12,16 +18,20 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: read # PR-Beschreibungen für den Changelog
+  contents: read
 
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # PR-Beschreibungen für den Changelog
+    outputs:
+      version: ${{ steps.v.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -29,7 +39,7 @@ jobs:
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.26.x"
+          go-version: "1.27.x"
           check-latest: true
 
       - name: Tests
@@ -55,13 +65,14 @@ jobs:
         run: |
           PKG=github.com/db9979/sshtermy/internal/version
           LDF="-s -w -X $PKG.Version=${{ steps.v.outputs.version }} -X $PKG.Commit=${GITHUB_SHA::7} -X $PKG.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X $PKG.UpdatePubKey=$UPDATE_PUBKEY"
-          mkdir -p dist
+          mkdir -p dist tool
           for t in windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 linux/arm linux/riscv64; do
             os=${t%/*}; arch=${t#*/}; ext=""; [ "$os" = windows ] && ext=".exe"
             # linux/arm = 32-Bit-ARMv7 (Raspberry Pi OS armhf, z. B. uConsole mit CM3/CM4)
             CGO_ENABLED=0 GOARM=7 GOOS=$os GOARCH=$arch go build -trimpath -ldflags "$LDF" -o "dist/sshtermy_${os}_${arch}${ext}" ./cmd/sshtermy
           done
-          cd dist && sha256sum sshtermy_* > checksums.txt && cat checksums.txt
+          # Signierwerkzeug für den Job „sign“ (der selbst kein go ausführt)
+          CGO_ENABLED=0 go build -trimpath -o tool/sshtermy-sign ./cmd/sshtermy-sign
 
       # Sicherheitsnetz: was gleich an alle Installationen geht, muss starten
       # und die richtige Version nennen (derselbe Test läuft vor jedem
@@ -78,14 +89,96 @@ jobs:
             b=$a; [ $a = armhf ] && b=arm
             packaging/deb.sh ${{ steps.v.outputs.version }} $a dist/sshtermy_linux_$b dist
           done
-          cd dist && sha256sum sshtermy_* > checksums.txt && cat checksums.txt
+
+      # Teileliste (SBOM, CycloneDX): welche Bibliotheken in welcher Version drin sind
+      - name: SBOM
+        run: go run github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.12.0 app -json -licenses -main cmd/sshtermy -output dist/sshtermy.sbom.cdx.json .
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned
+          path: |
+            dist/
+            tool/
+            notes.md
+          retention-days: 3
+
+  sign:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: {}
+    env:
+      V: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: unsigned
+
+      # Codesignatur Windows (Authenticode). Nur wenn die Secrets gesetzt sind,
+      # Anleitung in docs/codesignatur.md.
+      - name: Windows signieren (Authenticode)
+        env:
+          WINDOWS_CERT_PFX: ${{ secrets.WINDOWS_CERT_PFX }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+        if: env.WINDOWS_CERT_PFX != ''
+        run: |
+          sudo apt-get install -y -qq osslsigncode >/dev/null
+          umask 077; echo "$WINDOWS_CERT_PFX" | base64 -d > "$RUNNER_TEMP/cert.pfx"
+          for f in dist/sshtermy_windows_*.exe; do
+            osslsigncode sign -pkcs12 "$RUNNER_TEMP/cert.pfx" -pass "$WINDOWS_CERT_PASSWORD" \
+              -n "sshTermy" -i "https://github.com/${{ github.repository }}" -h sha256 \
+              -ts http://timestamp.digicert.com -in "$f" -out "$f.signed"
+            mv "$f.signed" "$f"
+            osslsigncode verify -in "$f" | grep -q "Signature verification: ok"
+          done
+          rm -f "$RUNNER_TEMP/cert.pfx"
+
+      # Codesignatur + Notarisierung macOS (rcodesign läuft unter Linux).
+      - name: macOS signieren und notarisieren
+        env:
+          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        if: env.APPLE_CERT_P12 != ''
+        run: |
+          RC=apple-codesign-0.29.0-x86_64-unknown-linux-musl
+          curl -fsSL -o "$RUNNER_TEMP/rc.tgz" "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F0.29.0/$RC.tar.gz"
+          echo "dbe85cedd8ee4217b64e9a0e4c2aef92ab8bcaaa41f20bde99781ff02e600002  $RUNNER_TEMP/rc.tgz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/rc.tgz" -C "$RUNNER_TEMP" && R="$RUNNER_TEMP/$RC/rcodesign"
+          umask 077
+          echo "$APPLE_CERT_P12" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          printf '%s' "$APPLE_CERT_PASSWORD" > "$RUNNER_TEMP/cert.pw"
+          for f in dist/sshtermy_darwin_*; do
+            "$R" sign --p12-file "$RUNNER_TEMP/cert.p12" --p12-password-file "$RUNNER_TEMP/cert.pw" \
+              --code-signature-flags runtime --binary-identifier de.sshtermy.sshtermy "$f"
+          done
+          if [ -n "$APPLE_API_KEY_P8" ]; then
+            echo "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/key.p8"
+            "$R" encode-app-store-connect-api-key -o "$RUNNER_TEMP/key.json" "$APPLE_API_ISSUER" "$APPLE_API_KEY_ID" "$RUNNER_TEMP/key.p8"
+            for f in dist/sshtermy_darwin_*; do
+              (cd dist && zip -q "$RUNNER_TEMP/$(basename "$f").zip" "$(basename "$f")")
+              "$R" notary-submit --api-key-file "$RUNNER_TEMP/key.json" --wait "$RUNNER_TEMP/$(basename "$f").zip"
+            done
+          fi
+          rm -f "$RUNNER_TEMP"/cert.* "$RUNNER_TEMP"/key.*
+
+      # Erste Zeile nennt die Version: die App installiert nur, wenn sie zur
+      # erwarteten Version passt (internal/update.SumsVersion). Ältere Apps
+      # überlesen die Zeile (drei statt zwei Felder).
+      - name: Prüfsummen
+        run: |
+          cd dist
+          { echo "# sshtermy v$V"; sha256sum sshtermy_*; } > checksums.txt
+          cat checksums.txt
 
       - name: Signieren (Ed25519)
         env:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
           UPDATE_PUBKEY: ${{ vars.UPDATE_PUBKEY }}
         if: env.UPDATE_SIGNING_KEY != ''
-        run: go run ./cmd/sshtermy-sign sign dist/checksums.txt
+        run: chmod +x tool/sshtermy-sign && tool/sshtermy-sign sign dist/checksums.txt
 
       - name: Hinweis, wenn unsigniert
         env:
@@ -100,12 +193,48 @@ jobs:
           fi
           echo "::warning title=Release unsigniert::UPDATE_PUBKEY und UPDATE_SIGNING_KEY fehlen – Anleitung in docs/signatur.md"
 
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: signed
+          path: |
+            dist/
+            notes.md
+          retention-days: 3
+
+  publish:
+    needs: [build, sign]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Release + Homebrew-Formel
+      id-token: write # Herkunftsnachweis (Sigstore)
+      attestations: write
+    env:
+      V: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: signed
+
+      # Herkunftsnachweis (SLSA): belegt, dass genau diese Dateien aus diesem
+      # Commit in diesem Workflow entstanden sind.
+      # Prüfen: gh attestation verify sshtermy_linux_amd64 --repo db9979/sshtermy
+      - name: Herkunftsnachweis (Attestierung)
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        continue-on-error: true # Release soll daran nicht scheitern
+        with:
+          subject-path: |
+            dist/sshtermy_*
+            dist/checksums.txt
+
       - name: Release veröffentlichen
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          V=${{ steps.v.outputs.version }}
-          gh release create "v$V" dist/sshtermy_* dist/checksums.txt* --title "sshTermy v$V" --notes-file notes.md --latest
+          gh release create "v$V" dist/sshtermy_* dist/sshtermy.sbom.cdx.json dist/checksums.txt* --title "sshTermy v$V" --notes-file notes.md --latest
 
       - name: Alte Releases aufräumen (die letzten 10 bleiben)
         env:
@@ -118,12 +247,12 @@ jobs:
       - name: Homebrew-Formel aktualisieren (Formula/sshtermy.rb in main)
         continue-on-error: true # z. B. Branch-Schutz: Release ist trotzdem draußen
         run: |
-          V=${{ steps.v.outputs.version }}
+          cp dist/checksums.txt "$RUNNER_TEMP/checksums.txt"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for i in 1 2 3 4; do
             git fetch -q origin main && git checkout -q -f -B formula origin/main
-            mkdir -p Formula && packaging/formula.sh "$V" dist/checksums.txt > Formula/sshtermy.rb
+            mkdir -p Formula && packaging/formula.sh "$V" "$RUNNER_TEMP/checksums.txt" > Formula/sshtermy.rb
             git add Formula/sshtermy.rb
             git diff --cached --quiet && exit 0
             git commit -q -m "Homebrew-Formel für v$V"

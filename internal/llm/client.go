@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/db9979/sshtermy/internal/debuglog"
@@ -49,6 +50,9 @@ type request struct {
 	// gpt-oss (vLLM, Ollama), OpenAI o-/gpt-5-Modelle, Ollama-Denkmodelle:
 	// wie lange das Modell vor der Antwort nachdenkt.
 	ReasoningEffort string `json:"reasoning_effort,omitempty"`
+	// JSON-Modus (Opts.JSON): der Server erzwingt genau ein JSON-Objekt
+	// (OpenAI, vLLM, SGLang, Ollama).
+	ResponseFormat map[string]string `json:"response_format,omitempty"`
 }
 
 // msgOut ist eine Antwortnachricht. Reasoning-Modelle (Qwen3, DeepSeek-R1)
@@ -78,6 +82,17 @@ type conn struct {
 	http *http.Client
 	idx  int // 0 = eingestellter Endpunkt, 1… = Ersatz-Anbieter
 }
+
+// quirks: optionale Felder, die ein Endpunkt schon einmal abgelehnt hat
+// (Schlüssel Adresse|Modell|Feld). Spart bei jeder weiteren Anfrage den
+// zweiten Versuch.
+var quirks sync.Map
+
+func (c *conn) quirkKey(field string) string {
+	return c.cfg.BaseURL + "|" + c.cfg.Model + "|" + field
+}
+func (c *conn) quirk(field string) bool { _, ok := quirks.Load(c.quirkKey(field)); return ok }
+func (c *conn) setQuirk(field string)   { quirks.Store(c.quirkKey(field), true) }
 
 // Client hält den Endpunkt samt Ersatz-Anbietern.
 type Client struct {
@@ -324,6 +339,11 @@ type Opts struct {
 	// Task benennt die Aufgabe für die Antwortzeiten im KI-Status
 	// (TaskStats), z. B. "ghost" oder "agent".
 	Task string
+	// JSON: die Antwort ist genau ein JSON-Objekt (Ziel-, Agent-, Plan-Modus).
+	// OpenAI-kompatible Server bekommen response_format json_object, damit
+	// kein Text davor/danach steht. Kennt der Server das Feld nicht, wird
+	// ohne wiederholt (und für den Endpunkt gemerkt).
+	JSON bool
 }
 
 func noThinkKwargs(model string) map[string]any {
@@ -406,12 +426,24 @@ func (c *conn) completeResult(ctx context.Context, msgs []Message, o Opts) (Resu
 		return c.anthropicComplete(ctx, msgs, o)
 	}
 	body := c.openAIBody(msgs, o, false)
+	if o.JSON && !c.quirk("response_format") {
+		body.ResponseFormat = map[string]string{"type": "json_object"}
+	}
+	if c.quirk("temperature") {
+		body.Temperature = nil
+	}
 	status, raw, err := c.post(ctx, body)
+	if err == nil && body.ResponseFormat != nil && rejects(status, raw, "response_format") {
+		c.setQuirk("response_format")
+		body.ResponseFormat = nil
+		status, raw, err = c.post(ctx, body)
+	}
 	if err == nil && status == http.StatusBadRequest && (body.ChatTemplateKwargs != nil || body.ReasoningEffort != "") {
 		body.ChatTemplateKwargs, body.ReasoningEffort = nil, "" // Server kennt die Felder nicht
 		status, raw, err = c.post(ctx, body)
 	}
-	if err == nil && rejects(status, raw, "temperature") {
+	if err == nil && body.Temperature != nil && rejects(status, raw, "temperature") {
+		c.setQuirk("temperature")
 		body.Temperature = nil // Reasoning-Modelle bei OpenAI erlauben nur den Standard
 		status, raw, err = c.post(ctx, body)
 	}
@@ -487,18 +519,34 @@ func (c *conn) post(ctx context.Context, body any) (int, []byte, error) {
 // openStream startet einen Stream; nil-Fehler heißt: Kopfzeilen mit 2xx da.
 func (c *conn) openStream(ctx context.Context, msgs []Message, o Opts) (*http.Response, error) {
 	var body any
+	var ab *anthropicRequest
 	if c.cfg.Provider == domain.ProviderAnthropic {
 		b := c.anthropicBody(msgs, o)
 		b.Stream = true
-		body = b
+		ab, body = &b, &b
 	} else {
 		b := c.openAIBody(msgs, o, true)
 		b.ChatTemplateKwargs, b.ReasoningEffort = nil, ""
+		if c.quirk("temperature") {
+			b.Temperature = nil
+		}
 		body = b
 	}
 	resp, err := c.do(ctx, body, true)
 	if err != nil {
 		return nil, err
+	}
+	// Anthropic: abgelehntes optionales Feld weglassen und neu starten
+	for i := 0; i < 3 && ab != nil && resp.StatusCode == http.StatusBadRequest; i++ {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+		resp.Body.Close()
+		if !c.anthropicRetry(resp.StatusCode, raw, ab) {
+			resp = &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(bytes.NewReader(raw))}
+			break
+		}
+		if resp, err = c.do(ctx, body, true); err != nil {
+			return nil, err
+		}
 	}
 	if resp.StatusCode/100 != 2 {
 		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))

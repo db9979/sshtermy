@@ -35,20 +35,19 @@ const (
 )
 
 var (
-	NewWords     = sharewire.NewWords
-	IsInvite     = sharewire.IsInvite
-	ParseInvite  = sharewire.ParseInvite
-	StartGuest   = sharewire.StartGuest
-	HostPake     = sharewire.HostPake
-	SealFrame    = sharewire.SealFrame
-	OpenFrame    = sharewire.OpenFrame
-	PakeB        = sharewire.PakeB
-	SplitPakeB   = sharewire.SplitPakeB
-	ErrDenied    = sharewire.ErrDenied
-	errWrongCode = sharewire.ErrWrongCode
-	randN        = sharewire.RandN
-	seal         = sharewire.Seal
-	open         = sharewire.Open
+	NewWords    = sharewire.NewWords
+	IsInvite    = sharewire.IsInvite
+	ParseInvite = sharewire.ParseInvite
+	StartGuest  = sharewire.StartGuest
+	HostPake    = sharewire.HostPake
+	SealFrame   = sharewire.SealFrame
+	OpenFrame   = sharewire.OpenFrame
+	PakeB       = sharewire.PakeB
+	SplitPakeB  = sharewire.SplitPakeB
+	ErrDenied   = sharewire.ErrDenied
+	randN       = sharewire.RandN
+	seal        = sharewire.Seal
+	open        = sharewire.Open
 )
 
 // Join: anmelden, Code prüfen, auf Zulassung warten (siehe sharewire.Join).

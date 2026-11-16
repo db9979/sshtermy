@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/db9979/sshtermy/internal/i18n"
 )
 
@@ -88,7 +90,7 @@ func TestPaletteAreasRegrouped(t *testing.T) {
 func TestSettingsRegrouped(t *testing.T) {
 	a := newPaletteTestApp(t)
 	a.palEnter("settings")
-	items := a.paletteItems()
+	items := allSettings(a)
 	order := []palGroup{pgSetBehave, pgSetLook, pgSetSafe, pgSetSetup}
 	pos := 0
 	for _, it := range items {
@@ -178,5 +180,118 @@ func TestManagerRightClick(t *testing.T) {
 	fm := a.mgrMenu(folder, 10, 5)
 	if fm.title == "" || len(fm.items) < 4 {
 		t.Fatalf("Ordner-Menü: %+v", fm.items)
+	}
+}
+
+// Menüs aufräumen 15–16: Tab-Menü mit „Verbindung bearbeiten“ und „Daneben
+// zeigen“, Trennlinien zählen nicht mit.
+func TestTabMenuEditAndBeside(t *testing.T) {
+	g := newGold(t, i18n.DE, 120, 40, true)
+	web := g.session("web-01", termOut)
+	db := g.session("db-01", termOut)
+	a := g.a
+	a.focusSession(a.indexOf(web))
+	m := a.tabMenu(db, 5, 1, nil)
+	var beside, edit menuItem
+	for _, it := range m.items {
+		switch it.label {
+		case "Daneben zeigen (geteilt)":
+			beside = it
+		case "Verbindung bearbeiten …":
+			edit = it
+		}
+	}
+	if beside.run == nil || edit.run == nil {
+		t.Fatalf("Tab-Menü: %+v", m.items)
+	}
+	if !edit.sep || !beside.sep {
+		t.Error("Bearbeiten und Anordnen beginnen je eine Gruppe")
+	}
+	a.modal = m
+	out := ansi.Strip(a.menuView(m))
+	if !strings.Contains(out, "────") {
+		t.Errorf("keine Trennlinie:\n%s", out)
+	}
+	if want := fmt.Sprintf("%d %s", len(m.items), m.items[len(m.items)-1].label); !strings.Contains(out, want) {
+		t.Errorf("Trennlinien zählen mit, %q fehlt:\n%s", want, out)
+	}
+	beside.run()
+	if a.split != splitCols || a.slotOf(db) < 0 || a.slotOf(web) < 0 || a.current() != web {
+		t.Fatalf("Daneben zeigen: split=%v panes=%v aktiv=%s", a.split, a.panes, a.current().conn.Alias)
+	}
+	for _, it := range a.tabMenu(db, 5, 1, nil).items {
+		if it.label == "Daneben zeigen (geteilt)" {
+			t.Error("Sichtbarer Tab bietet „Daneben zeigen“ noch an")
+		}
+	}
+	edit.run()
+	if !a.returnToTerminal {
+		t.Error("Bearbeiten vom Tab führt danach nicht zurück ins Terminal")
+	}
+}
+
+// Menüs aufräumen 17–21: kurze Manager-Fußzeile, einheitliche Namen,
+// Ordner-Scan nicht mehr unter „Häufig“.
+func TestMenus1521Names(t *testing.T) {
+	g := newGold(t, i18n.DE, 120, 40, true)
+	a := g.a
+	var foot []string
+	for _, k := range a.managerKeys() {
+		foot = append(foot, k[0]+" "+k[1])
+	}
+	for _, gone := range []string{"Broadcast", "s KI", "y Sync", "l Protokolle", "Über", "t Tunnel"} {
+		if strings.Contains(strings.Join(foot, "|"), gone) {
+			t.Errorf("Manager-Fußzeile zeigt noch %q: %v", gone, foot)
+		}
+	}
+	a.openPalette()
+	for _, it := range a.paletteItems() {
+		if it.top && strings.HasPrefix(it.label, "Ordner-Scan") {
+			t.Errorf("Ordner-Scan steht unter „Häufig“")
+		}
+	}
+	if it, ok := hasLabel(palArea(a, "find"), "Logwache: gesammelte Meldungen ansehen"); !ok || it.cycle != nil {
+		t.Errorf("Suchen & Logs: %v", labels(palArea(a, "find")))
+	}
+	a.palEnter("settings/logs")
+	if it, ok := hasLabel(a.paletteItems(), "Logwache"); !ok || it.label != "Logwache" || it.cycle == nil {
+		t.Errorf("Einstellung „Logwache ‹aus›“ fehlt: %v", labels(a.paletteItems()))
+	}
+	a.palEnter("settings/ki/begleiter")
+	if it, ok := hasLabel(a.paletteItems(), "KI-Begleiter"); !ok || it.label != "KI-Begleiter" || it.cycle == nil {
+		t.Errorf("Einstellung „KI-Begleiter ‹Aus›“ fehlt: %v", labels(a.paletteItems()))
+	}
+	a.palEnter("")
+	g.session("web-01", termOut)
+	it, ok := hasLabel(palArea(a, "ai"), "KI-Begleiter")
+	if !ok || it.label != "KI-Begleiter" || it.cycle == nil {
+		t.Fatalf("KI: %v", labels(palArea(a, "ai")))
+	}
+	before := a.compLevel()
+	it.cycle(1)
+	if a.compLevel() == before {
+		t.Error("KI-Begleiter lässt sich nicht durchschalten")
+	}
+}
+
+// allSettings: Einträge aller Reiter der Einstellungen, in Reihenfolge.
+func allSettings(a *App) []palItem {
+	keep := a.pal.tab
+	defer func() { a.pal.tab = keep }()
+	var out []palItem
+	for _, g := range palTabGroups {
+		a.pal.tab = g
+		out = append(out, a.paletteItems()...)
+	}
+	return out
+}
+
+// settingsTabOf: öffnet den Reiter, in dem label steht.
+func settingsTabOf(a *App, label string) {
+	for _, it := range allSettings(a) {
+		if it.label == label {
+			a.pal.tab = it.group
+			return
+		}
 	}
 }

@@ -53,6 +53,7 @@ type hostState struct {
 	alerts    []hostinfo.Alert // Kennzahlen über der Warnschwelle
 	lastTry   time.Time        // letzte Server-Abfrage (auch fehlgeschlagene)
 	live      liveState        // Live-Graphen (hostlive.go)
+	week      bool             // Verlaufskurven über 7 Tage statt 24 h (trend.go)
 }
 
 func (h *hostState) cancel() {
@@ -489,6 +490,7 @@ func (a *App) hostMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		srv := m.srv
 		h.srv = &srv
+		a.recordMetrics(s.conn.ID, s.conn.Alias, srv)
 		fresh := a.setAlerts(s, srv.Alerts(a.monLimits()))
 		switch {
 		case len(fresh) > 0:
@@ -631,6 +633,27 @@ func (a *App) hostKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		if !h.busy {
 			return a.openLogScan(s)
 		}
+	case "s":
+		if net {
+			return a.openFirmware(s)
+		}
+		return a.openVuln(s)
+	case "h":
+		if !net {
+			return a.openHarden(s)
+		}
+	case "a":
+		if !net {
+			return a.openKeyinvHost(s)
+		}
+	case "i":
+		if !net {
+			return a.openInventory(s)
+		}
+	case "w":
+		if !net {
+			h.week = !h.week
+		}
 	case "b":
 		if net && !h.busy {
 			s.panelFocus = false
@@ -711,7 +734,7 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		if len(s.host.backups) > 0 {
 			k = append(k, [2]string{"↑↓", i18n.T("Stand")}, [2]string{"v", i18n.T("ansehen")})
 		}
-		return append(k, [2]string{"l", "Logs"}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+		return append(k, [2]string{"l", "Logs"}, [2]string{"s", i18n.T("Sicherheit")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 	}
 	k := [][2]string{{"r", i18n.T("aktualisieren")}}
 	if s.host.live.hasLive() {
@@ -724,7 +747,14 @@ func (a *App) hostPanelKeys(s *session) [][2]string {
 		}
 		k = append(k, [2]string{"t", span}, [2]string{"z", size})
 	}
-	return append(k, [2]string{"l", "Logs"}, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
+	if len(a.metricsHistory(s.conn.ID).Samples) >= 2 {
+		span := i18n.T("7 Tage")
+		if s.host.week {
+			span = i18n.T("24 h")
+		}
+		k = append(k, [2]string{"w", span})
+	}
+	return append(k, [2]string{"l", "Logs"}, [2]string{"s", i18n.T("Sicherheit")}, [2]string{"h", i18n.T("Härtung")}, [2]string{"a", i18n.T("Schlüssel")}, [2]string{"i", i18n.T("Inventar")}, [2]string{"c", i18n.T("Container")}, [2]string{"g", i18n.T("Grenzwerte")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actHost), i18n.T("schließen")})
 }
 
 // ---------------------------------------------------------------- Ansicht
@@ -773,6 +803,18 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 	if h.err != "" {
 		b.WriteString(st.Danger.Render(wrap(h.err, w)) + "\n\n")
 	}
+	// Ausgehandelte SSH-Verfahren: alte (SHA-1, CBC …) gelb, ML-KEM = quantensicher
+	if c := s.client; c != nil && c.Algos.KeyExchange != "" {
+		v := c.Algos.KeyExchange + " · " + c.Algos.Write.Cipher
+		switch {
+		case len(c.Weak) > 0:
+			b.WriteString(st.Muted.Render(fmt.Sprintf("%-9s ", "SSH")) + st.Warn.Render(trunc(i18n.T("alt: ")+strings.Join(c.Weak, ", "), w-10)) + "\n")
+		case c.PostQuantum():
+			row("SSH", v+i18n.T(" · quantensicher"))
+		default:
+			row("SSH", v)
+		}
+	}
 
 	if !net {
 		srv := h.srv
@@ -806,6 +848,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			}
 		}
 		a.viewDisks(b, srv.DiskList(), w, lim.Disk)
+		a.viewTrend(b, s, w)
 		if srv.Uptime > 0 {
 			row(i18n.T("Laufzeit"), hostinfo.Duration(srv.Uptime))
 		}
@@ -835,6 +878,9 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 		if srv.RebootNeeded {
 			b.WriteString(st.Warn.Render(i18n.T("◌ Neustart erforderlich")) + "\n")
 		}
+		a.viewVulnRow(b, s, w)
+		a.viewHardenRow(b, s, w)
+		a.viewInventoryRow(b, s, w)
 		for _, e := range srv.Extras {
 			row(trunc(e.Label, 9), e.Value)
 		}
@@ -857,6 +903,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			row(i18n.T("Modell"), sw.Model)
 		}
 		row("Firmware", orDefault(sw.Firmware, "?"))
+		a.viewFirmwareRow(b, s, w)
 		if sw.Uptime != "" {
 			row(i18n.T("Laufzeit"), sw.Uptime)
 		}

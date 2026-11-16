@@ -65,10 +65,12 @@ func TestIntroSkipAndDisable(t *testing.T) {
 	if !strings.Contains(ansi.Strip(a.View().Content), "überspringt") {
 		t.Fatal("Animation wird nicht gezeigt")
 	}
-	// Taste überspringt und wird verschluckt
+	// Taste überspringt und wird verschluckt (Manager dahinter)
+	a.scr = scrManager
 	if _, ok := a.introMsg(tea.KeyPressMsg{Code: 'q', Text: "q"}); !ok || a.intro != nil {
 		t.Fatal("Taste hat die Animation nicht beendet")
 	}
+	a.scr = scrUnlock
 	// Zeit abgelaufen
 	a.intro = &introState{start: time.Now().Add(-introDur * 1100 * time.Millisecond)}
 	if cmd, ok := a.introMsg(introFrameMsg(time.Now())); !ok || cmd != nil || a.intro != nil {
@@ -92,5 +94,32 @@ func TestIntroSkipAndDisable(t *testing.T) {
 	}
 	if introFits(40, 12) {
 		t.Fatal("kleines Fenster sollte die Animation auslassen")
+	}
+}
+
+// Erste Taste darf nicht unbemerkt verloren gehen: Ist die Animation nicht
+// zu sehen (Fenster zu klein), geht die Taste normal weiter. Steht das
+// Passwortfeld dahinter, zählt ein getipptes Zeichen schon mit.
+func TestIntroKeepsFirstKey(t *testing.T) {
+	a := &App{s: NewStyles(Nacht), keys: newKeymap(nil), intro: &introState{start: time.Now()}}
+	a.w, a.h = 30, 10 // zu klein, View zeigt keine Animation
+	if introFits(a.w, a.h) {
+		t.Fatal("Testfenster ist nicht zu klein")
+	}
+	if _, ok := a.introMsg(tea.KeyPressMsg{Code: 'l', Text: "l"}); ok || a.intro != nil {
+		t.Fatal("unsichtbare Animation hat die Taste verschluckt")
+	}
+
+	a.w, a.h = 120, 40
+	a.scr = scrUnlock
+	a.intro = &introState{start: time.Now()}
+	if _, ok := a.introMsg(tea.KeyPressMsg{Code: 'g', Text: "g"}); ok || a.intro != nil {
+		t.Fatal("erstes Zeichen des Passworts verschluckt")
+	}
+	for _, k := range []tea.KeyPressMsg{{Code: tea.KeyEnter}, {Code: tea.KeyEscape}, {Code: tea.KeySpace, Text: " "}, {Code: 'c', Mod: tea.ModCtrl}} {
+		a.intro = &introState{start: time.Now()}
+		if _, ok := a.introMsg(k); !ok {
+			t.Fatalf("%s sollte nur überspringen", k.String())
+		}
 	}
 }

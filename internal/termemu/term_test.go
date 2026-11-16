@@ -2,6 +2,7 @@ package termemu
 
 import (
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -60,5 +61,78 @@ func TestCommandOutput(t *testing.T) {
 	out, line, ok = tm.CommandOutput(long, 100)
 	if !ok || out != strings.Repeat("x", 40) || line != long {
 		t.Fatalf("wrapped: %q %v", out, ok)
+	}
+}
+
+// OSC 10/11 merkt sich das Terminal (eigenes Fenster malt damit), 110/111
+// setzt zurück, Abfragen ändern nichts.
+func TestDefaultColorsOSC(t *testing.T) {
+	tm := New(20, 5, io.Discard)
+	defer tm.Close()
+	_, _ = tm.Write([]byte("\x1b]11;#f5f5f7\x07\x1b]10;rgb:1f/23/35\x1b\\"))
+	fg, bg := tm.DefaultColors()
+	if bg == nil || fg == nil {
+		t.Fatalf("nicht gemerkt: %v %v", fg, bg)
+	}
+	if r, g, b, _ := bg.RGBA(); r>>8 != 0xf5 || g>>8 != 0xf5 || b>>8 != 0xf7 {
+		t.Errorf("bg %v", bg)
+	}
+	if r, _, _, _ := fg.RGBA(); r>>8 != 0x1f {
+		t.Errorf("fg %v", fg)
+	}
+	_, _ = tm.Write([]byte("\x1b]11;?\x07"))
+	if _, bg := tm.DefaultColors(); bg == nil {
+		t.Error("Abfrage hat Farbe gelöscht")
+	}
+	_, _ = tm.Write([]byte("\x1b]111\x07"))
+	if _, bg := tm.DefaultColors(); bg != nil {
+		t.Errorf("111 setzt nicht zurück: %v", bg)
+	}
+}
+
+func TestCursorColorOSC(t *testing.T) {
+	tm := New(20, 5, io.Discard)
+	defer tm.Close()
+	_, _ = tm.Write([]byte("\x1b]12;#2e59c9\x07"))
+	if c := tm.CursorColor(); c == nil {
+		t.Fatal("OSC 12 nicht gemerkt")
+	}
+	_, _ = tm.Write([]byte("\x1b]112\x07"))
+	if c := tm.CursorColor(); c != nil {
+		t.Errorf("112 setzt nicht zurück: %v", c)
+	}
+}
+
+func TestClearKeepLine(t *testing.T) {
+	tm := New(30, 5, io.Discard)
+	for i := 0; i < 12; i++ {
+		tm.Write([]byte("zeile " + strconv.Itoa(i) + "\r\n"))
+	}
+	tm.Write([]byte("user@web:~$ ls -l"))
+	if tm.ScrollbackLen() == 0 {
+		t.Fatal("Testaufbau: kein Verlauf")
+	}
+	if !tm.ClearKeepLine() {
+		t.Fatal("nicht geleert")
+	}
+	if tm.ScrollbackLen() != 0 {
+		t.Fatalf("Verlauf noch da: %d", tm.ScrollbackLen())
+	}
+	got := tm.PlainLines(10)
+	if got != "user@web:~$ ls -l" {
+		t.Fatalf("Bildschirm = %q", got)
+	}
+	if x, y, _ := tm.Cursor(); x != 17 || y != 0 {
+		t.Fatalf("Cursor %d,%d", x, y)
+	}
+	// weiter tippen landet hinter der Eingabe
+	tm.Write([]byte("a"))
+	if tm.PlainLines(10) != "user@web:~$ ls -la" {
+		t.Fatalf("danach = %q", tm.PlainLines(10))
+	}
+	// Vollbildprogramm: nichts anfassen
+	tm.Write([]byte("\x1b[?1049h"))
+	if tm.ClearKeepLine() {
+		t.Fatal("Alt-Screen geleert")
 	}
 }

@@ -27,4 +27,4 @@
                                         │
                                         │
                                         │
- Ctrl+Space Commands 1Help  ⇧F9 explain  n new connection  i Import  f Scan  o Folder  s AI  y Sync
+ Ctrl+Space Commands 1Help  n new connection  i import  f scan network  Ctrl+Q quit

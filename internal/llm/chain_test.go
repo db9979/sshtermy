@@ -113,7 +113,13 @@ func TestAnthropic(t *testing.T) {
 	if err != nil || r.Content != "ls -la" || !r.Truncated() {
 		t.Fatalf("%+v %v", r, err)
 	}
-	if req.System != "Du bist ein Shell-Assistent." || len(req.Messages) != 1 || req.Messages[0].Content != "a\n\nb" || req.MaxTokens != 50 {
+	if len(req.System) != 1 || req.System[0].Text != "Du bist ein Shell-Assistent." || req.System[0].CacheControl["type"] != "ephemeral" {
+		t.Fatalf("System ohne Prompt-Caching: %+v", req.System)
+	}
+	if req.Temperature != nil {
+		t.Fatalf("temperature an %s geschickt (lehnt eigene Werte ab)", cfg.Model)
+	}
+	if len(req.Messages) != 1 || req.Messages[0].Content != "a\n\nb" || req.MaxTokens != 50 {
 		t.Fatalf("Anfrage: %+v", req)
 	}
 	var b strings.Builder

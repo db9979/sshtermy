@@ -313,11 +313,19 @@ func ppkKey(alg string, pubBlob, privBlob []byte) (any, error) {
 		if !(ok1 && ok2 && ok3) {
 			return nil, bad
 		}
-		x, y := elliptic.Unmarshal(curve, pt) //nolint:staticcheck // einfachster Weg zum Punkt
-		if x == nil {
+		// Skalar in feste Länge bringen und über die Go-1.25-API prüfen lassen
+		// (liegt im gültigen Bereich); der öffentliche Punkt muss passen.
+		size := (curve.Params().BitSize + 7) / 8
+		if d.Sign() <= 0 || d.BitLen() > size*8 {
 			return nil, bad
 		}
-		k := &ecdsa.PrivateKey{PublicKey: ecdsa.PublicKey{Curve: curve, X: x, Y: y}, D: d}
+		k, err := ecdsa.ParseRawPrivateKey(curve, d.FillBytes(make([]byte, size)))
+		if err != nil {
+			return nil, bad
+		}
+		if own, err := k.PublicKey.Bytes(); err != nil || !bytes.Equal(own, pt) {
+			return nil, bad
+		}
 		return k, nil
 	}
 	return nil, fmt.Errorf(i18n.T("PuTTY-Key: Typ %s wird nicht unterstützt (bitte ed25519, RSA oder ECDSA)"), alg)

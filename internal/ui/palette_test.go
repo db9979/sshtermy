@@ -120,6 +120,7 @@ func TestPaletteSettingsCompact(t *testing.T) {
 		t.Fatal("Einzelwerte nur bei der Suche")
 	}
 	sel := func(label string) {
+		settingsTabOf(a, label)
 		for i, it := range a.paletteItems() {
 			if it.label == label {
 				a.pal.sel = i
@@ -140,7 +141,7 @@ func TestPaletteSettingsCompact(t *testing.T) {
 	}
 	sel("Meldung, wenn lange Befehle fertig sind")
 	old := desktopSend
-	desktopSend = func(string, string) {}
+	desktopSend = func(string, string, func()) {}
 	t.Cleanup(func() { desktopSend = old })
 	a.paletteKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if a.notifyLevel() != 0 || !a.st.Settings().NoNotify {

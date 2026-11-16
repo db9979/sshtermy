@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -188,13 +187,30 @@ func (a *App) tabMenu(s *session, x, y int, after func()) *modal {
 		}
 		items = append(items, menuItem{label: label, hint: k.label(actDetach), run: func() tea.Cmd { return a.toggleDetach(s) }})
 	}
+	// Verbindung: Farbe, Notiz & Co. gleich vom Tab aus ändern.
+	if c, ok := a.st.Connection(s.conn.ID); ok && s.conn.Protocol != domain.ProtoWatch {
+		items = append(items, menuItem{label: i18n.T("Verbindung bearbeiten …"), hint: i18n.T("Farbe, Notiz"), sep: true, run: func() tea.Cmd {
+			cmd := a.openConnForm(c)
+			a.returnToTerminal = true
+			return cmd
+		}})
+	}
+	// Anordnen: daneben zeigen, verschieben.
+	first := true
+	group := func(it menuItem) {
+		it.sep, first = first, false
+		items = append(items, it)
+	}
+	if s != a.current() && a.slotOf(s) < 0 {
+		group(menuItem{label: i18n.T("Daneben zeigen (geteilt)"), run: func() tea.Cmd { a.showBeside(s); return nil }})
+	}
 	if i > 0 {
-		items = append(items, menuItem{label: i18n.T("Nach links"), run: func() tea.Cmd { a.moveTab(s, -1); return nil }})
+		group(menuItem{label: i18n.T("Nach links"), run: func() tea.Cmd { a.moveTab(s, -1); return nil }})
 	}
 	if i < len(a.sessions)-1 {
-		items = append(items, menuItem{label: i18n.T("Nach rechts"), run: func() tea.Cmd { a.moveTab(s, 1); return nil }})
+		group(menuItem{label: i18n.T("Nach rechts"), run: func() tea.Cmd { a.moveTab(s, 1); return nil }})
 	}
-	items = append(items, menuItem{label: i18n.T("Tab schließen"), hint: k.label(actCloseTab), run: func() tea.Cmd { return a.closeTabAsk(s, after) }})
+	items = append(items, menuItem{label: i18n.T("Tab schließen"), hint: k.label(actCloseTab), sep: true, run: func() tea.Cmd { return a.closeTabAsk(s, after) }})
 	if len(a.sessions) > 1 {
 		items = append(items, menuItem{label: i18n.T("Andere Tabs schließen"), run: func() tea.Cmd { return a.closeOtherTabs(s) }})
 	}
@@ -203,65 +219,17 @@ func (a *App) tabMenu(s *session, x, y int, after func()) *modal {
 
 // ---------------------------------------------------------------- Neuer Tab
 
-// openNewTab: Auswahl einer Verbindung für einen neuen Tab. Offene und
-// zuletzt benutzte stehen oben; ⏎ öffnet immer einen neuen Tab, auch wenn
-// die Verbindung schon offen ist (zweite Shell auf demselben Server).
+// openNewTab öffnet den Verbindungs-Manager, um eine weitere Verbindung zu
+// starten: ⏎ (oder Doppelklick) öffnet sie in einem zusätzlichen Tab, die
+// offenen Tabs bleiben. Das geht auch, wenn die Verbindung schon offen ist
+// (zweite Shell auf demselben Server). Esc führt ohne neuen Tab zurück.
 func (a *App) openNewTab() tea.Cmd {
-	all := a.st.Connections()
-	rank := func(c domain.Connection) int {
-		switch {
-		case a.connected(c.ID):
-			return 0
-		case !c.LastUsed.IsZero():
-			return 1
-		}
-		return 2
+	a.pick, a.modal = nil, nil
+	a.scr = scrManager
+	if len(a.sessions) > 0 {
+		a.mgr.forTab = true
 	}
-	sort.SliceStable(all, func(i, j int) bool {
-		ri, rj := rank(all[i]), rank(all[j])
-		if ri != rj {
-			return ri < rj
-		}
-		return all[i].LastUsed.After(all[j].LastUsed)
-	})
-	byID := map[string]domain.Connection{}
-	// oben: Shell dieses Rechners (immer ein neuer Tab)
-	lc := localConn("")
-	byID[lc.ID] = lc
-	items := []pickItem{{value: lc.ID, label: ic("command") + " " + i18n.T("Lokale Shell"), detail: i18n.T("dieser Rechner"),
-		hint: shortTarget(lc), search: "local lokal shell terminal powershell pwsh cmd zsh bash"}}
-	for _, c := range all {
-		byID[c.ID] = c
-		icon, _ := a.devIcon(c)
-		hint := shortTarget(c)
-		if a.connected(c.ID) {
-			hint = i18n.T("offen") + " · " + hint
-		}
-		items = append(items, pickItem{value: c.ID, label: icon + " " + c.Alias, detail: c.Group, hint: hint,
-			search: c.Host + " " + strings.Join(c.Tags, " ")})
-	}
-	p := newPicker(i18n.T("Neuer Tab"), i18n.T("Name, Host, Ordner oder Tag"), items, "\x00", func(it pickItem) tea.Cmd {
-		if c, ok := byID[it.value]; ok {
-			return a.connect(c)
-		}
-		return nil
-	})
-	p.keys = [][2]string{{"⏎", i18n.T("öffnen")}, {"Esc", i18n.T("zurück")}, {"", i18n.T("tippen filtert")}}
-	p.extra = func(q string) *pickItem {
-		if q != "" {
-			return nil
-		}
-		return &pickItem{value: "\x00new", label: ic("new") + " " + i18n.T("Neue Verbindung anlegen …")}
-	}
-	inner := p.onPick
-	p.onPick = func(it pickItem) tea.Cmd {
-		if it.value == "\x00new" {
-			a.scr = scrManager
-			return a.openConnForm(newConnDefaults())
-		}
-		return inner(it)
-	}
-	return a.openPicker(p)
+	return nil
 }
 
 // ---------------------------------------------------------------- Tab-Liste
@@ -297,6 +265,8 @@ func (a *App) tabListItems() []pickItem {
 			hint = i18n.T("verbindet …")
 		case s.state == stReconnect:
 			hint = i18n.T("verbindet neu …")
+		case a.tabStatus(s) != "":
+			hint = a.tabStatus(s) // wartet / KI-Agent (waitmark.go)
 		default:
 			if n := len(s.history); n > 0 {
 				hint = trunc(oneLine(s.history[n-1]), 22)
@@ -307,6 +277,11 @@ func (a *App) tabListItems() []pickItem {
 				}
 				hint += ago
 			}
+		}
+		if g := a.noticeGlyph(s); g != "" {
+			dot = g
+		} else if g := a.agentGlyph(s); g != "" {
+			dot = g
 		}
 		label := strconv.Itoa(i+1) + "  " + dot + " " + s.tabName()
 		if s.title != "" {

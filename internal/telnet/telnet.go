@@ -54,7 +54,6 @@ type Conn struct {
 	echoOn   atomic.Bool
 	cols     int
 	rows     int
-	ttSent   int
 	sizeMu   sync.Mutex
 	parseSt  int
 	parseCmd byte

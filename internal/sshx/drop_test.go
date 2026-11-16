@@ -25,7 +25,6 @@ type stallServer struct {
 	addr    string
 	answer  int32
 	seen    atomic.Int32
-	conns   chan net.Conn
 	openTCP chan net.Conn
 }
 

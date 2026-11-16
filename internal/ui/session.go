@@ -62,12 +62,18 @@ type session struct {
 	err        string
 	started    time.Time
 
-	connectedAt  time.Time                // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
-	quitAt       time.Time                // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
-	rc           reconnState              // Auto-Reconnect
-	mux          muxState                 // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
-	secrets      *secretCache             // Antworten auf Passwort-Rückfragen, nur im Speicher
-	startPending bool                     // Startbefehl der Verbindung noch nicht getippt (connextra.go)
+	connectedAt  time.Time    // letzter erfolgreicher Aufbau (Statuszeile: Dauer)
+	quitAt       time.Time    // exit/logout getippt: Ende ist gewollt, kein Auto-Reconnect
+	rc           reconnState  // Auto-Reconnect
+	mux          muxState     // tmux/screen, das nach dem Neuverbinden wieder angehängt wird
+	secrets      *secretCache // Antworten auf Passwort-Rückfragen, nur im Speicher
+	sudo         *sshx.Sudo   // geprüftes sudo für Dateiaktionen (filesudo.go), nur im Speicher
+	sudoFor      *sshx.Client // Verbindung, für die sudo gilt
+	startPending bool         // Startbefehl der Verbindung noch nicht getippt (connextra.go)
+	ahead        []rune       // beim Verbinden vorausgetippt, wartet auf den Prompt (typeahead.go)
+	aheadTicking bool
+	tmuxScroll   tmuxScroller // Blättern in tmux (tmuxscroll.go)
+	tmuxHinted   bool
 	muxPending   bool                     // tmux/screen nach dem Neuverbinden anhängen
 	rootPrompt   bool                     // letzter Prompt endete auf „#“
 	dangerOK     string                   // Gefahren-Check: diese Eingabe wurde bestätigt (dangerguard.go)
@@ -83,6 +89,7 @@ type session struct {
 	panelMemo            panelMemo   // letzte Seitenleiste (panels.go: viewPanel)
 	pscroll              panelScroll // Blättern in der Seitenleiste (panelscroll.go)
 	psel                 *panelSel   // Markierung in der Seitenleiste (panelsel.go)
+	ttyFixed             string      // Zeile, der sshTermy -it ergänzt hat (nochmal getippt = so lassen)
 	pplain               []string    // Seitenleiste als Klartext, je Inhaltszeile (zum Kopieren)
 
 	notice   noticeKind  // Markierung im Tab: Befehl fertig, Glocke (notify.go)
@@ -91,7 +98,9 @@ type session struct {
 	flashCol color.Color // … in dieser Farbe
 	latAt    time.Time   // Latenzverlauf für die Hover-Karte
 	latHist  []time.Duration
-	bellAt   time.Time // letzte gemeldete Glocke
+	bellAt   time.Time  // letzte gemeldete Glocke
+	wait     waitState  // wartet auf eine Eingabe (waitmark.go)
+	agentW   agentWatch // KI-Coding-Agent im Tab (waitmark.go)
 
 	editFS  *sshx.RemoteFS            // SFTP für Dateien im eigenen Editor (editor.go)
 	alerts  atomic.Pointer[alertScan] // Farbregeln mit „!“ (highlight.go)
@@ -153,6 +162,7 @@ type session struct {
 	sbSeen    int          // Scrollback-Länge beim letzten Bild
 	sel       *termemu.Sel // Markierung
 	selecting bool         // linke Taste gedrückt, Markierung wächst
+	copy      *copyMode    // Markieren per Tastatur (copymode.go)
 	fwdHeld   bool         // Taste gedrückt, Ereignisse gehen an den Server
 
 	// Bilder fürs äußere Terminal (pixels.go)

@@ -26,3 +26,8 @@ syslog:
 danger:
   - rx: '^\s*/?(ip\s+firewall\s+\S+\s+remove|interface\s+\S*\s*remove|user\s+remove|ip\s+address\s+remove)\b'
     reason: entfernt Konfiguration (VLAN, Routing, Zugang)
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:mikrotik:routeros]
+  version: '(\d+(?:\.\d+)+)'
+  url: https://mikrotik.com/download/changelogs

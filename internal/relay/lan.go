@@ -75,7 +75,7 @@ func StartLAN() (*LAN, error) {
 	m.HandleFunc("GET "+PathShareWatch, s.shareWatch)
 	webwatch.Register(m)
 	hs := &http.Server{Handler: m, ReadHeaderTimeout: 10 * time.Second, MaxHeaderBytes: 16 << 10,
-		TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{cert}}}
+		TLSConfig: &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{cert}}}
 	go func() { _ = hs.ServeTLS(ln, "", "") }()
 	fp := CertFP(cert.Certificate[0])
 	l := &LAN{Base: "https://" + net.JoinHostPort(ip, strconv.Itoa(port)), FP: fp, srv: hs, open: map[int]bool{}}

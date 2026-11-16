@@ -17,8 +17,56 @@ import (
 	"github.com/db9979/sshtermy/internal/version"
 )
 
-// ProtocolVersion: neueste Fassung, die dieser Server spricht.
-const ProtocolVersion = "2025-06-18"
+// ProtocolVersion: neueste Fassung, die dieser Server spricht. Ab 2026-07-28
+// ist MCP zustandslos: kein initialize mehr, jede Anfrage trägt ihre Version
+// in _meta, dazu server/discover. Ältere Clients bekommen weiter initialize.
+const ProtocolVersion = "2026-07-28"
+
+// Supported: alle Fassungen, neueste zuerst (server/discover, Fehlerdaten).
+var Supported = []string{"2026-07-28", "2025-11-25", "2025-06-18"}
+
+const (
+	metaVersion    = "io.modelcontextprotocol/protocolVersion"
+	metaServerInfo = "io.modelcontextprotocol/serverInfo"
+	errUnsupported = -32022 // UnsupportedProtocolVersion (2026-07-28)
+	instructions   = "sshTermy gives access to the user's saved SSH connections. Prefer read-only commands; changes need the user's approval in sshTermy."
+	listTTL        = 60_000 // ms: Werkzeugliste ändert sich nur mit der Version
+)
+
+func serverInfo() map[string]any {
+	return map[string]any{"name": "sshtermy", "version": version.Version}
+}
+
+// stateless: Version aus _meta (Fassung 2026-07-28 und neuer), "" = alter Client.
+func stateless(params json.RawMessage) string {
+	var p struct {
+		Meta map[string]json.RawMessage `json:"_meta"`
+	}
+	if json.Unmarshal(params, &p) != nil {
+		return ""
+	}
+	var v string
+	_ = json.Unmarshal(p.Meta[metaVersion], &v)
+	return v
+}
+
+func supported(v string) bool {
+	for _, s := range Supported {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
+// complete: Ergebnis im Format der neuen Fassung (resultType + serverInfo).
+func complete(res map[string]any, newStyle bool) map[string]any {
+	if newStyle {
+		res["resultType"] = "complete"
+		res["_meta"] = map[string]any{metaServerInfo: serverInfo()}
+	}
+	return res
+}
 
 // Tool: Beschreibung für tools/list.
 type Tool struct {
@@ -42,7 +90,7 @@ func num(desc string) map[string]any { return map[string]any{"type": "integer", 
 var Tools = []Tool{
 	{"list_connections", "List the SSH connections saved in sshTermy (alias, host, user, folder, tags, device type, OS). Never includes passwords or keys.",
 		obj(map[string]any{"query": str("optional filter on alias, host, folder or tag")})},
-	{"list_tabs", "List the terminal tabs currently open in sshTermy with their connection and state.", obj(map[string]any{})},
+	{"list_tabs", "List the terminal tabs currently open in sshTermy with their connection and state. status tells whether the tab sits at its shell prompt, waits for input (password, yes/no, pager) or runs a coding agent (Claude Code, Codex …) that is working, waiting for approval or ready.", obj(map[string]any{})},
 	{"read_tab", "Read the visible text and recent scrollback of an open tab (secrets are redacted).",
 		obj(map[string]any{"tab": num("tab number from list_tabs"), "lines": num("how many lines from the end, default 100, max 1000")}, "tab")},
 	{"run_command", "Run a shell command on a saved connection in a separate, invisible session and return its output. Read-only commands run directly; anything that could change the system needs the user's confirmation in sshTermy (or is refused, depending on the user's setting). Network devices (switches/routers) accept their CLI show commands.",
@@ -51,6 +99,21 @@ var Tools = []Tool{
 			"command":         str("the command line"),
 			"timeout_seconds": num("default 60, max 600"),
 		}, "connection", "command")},
+	{"open_tab", "Open a new visible terminal tab in sshTermy for a saved connection (needs the sshTermy setting “MCP access: with confirmation”). Returns the tab number; use wait_tab with until=prompt before typing.",
+		obj(map[string]any{"connection": str("alias or ID of the connection (see list_connections)")}, "connection")},
+	{"send_input", "Type text into an open tab, as if the user typed it, by default followed by Enter. At a shell prompt, read-only commands are typed directly; everything else (changing commands, answers to prompts, input for a running program or coding agent) needs the user's confirmation in sshTermy. Passwords are never typed. Use read_tab or wait_tab afterwards to see the result.",
+		obj(map[string]any{
+			"tab":   num("tab number from list_tabs"),
+			"text":  str("the text to type"),
+			"enter": map[string]any{"type": "boolean", "description": "press Enter after the text (default true)"},
+		}, "tab", "text")},
+	{"wait_tab", "Wait until something happens in an open tab and return its status and the last lines. until: prompt (back at the shell prompt, i.e. the command finished), input (the tab waits for input or a coding agent waits for approval or is ready), text (the given text appears on the screen), quiet (no output for 2 seconds).",
+		obj(map[string]any{
+			"tab":             num("tab number from list_tabs"),
+			"until":           str("prompt, input, text or quiet (default prompt)"),
+			"text":            str("text to wait for (until=text)"),
+			"timeout_seconds": num("default 120, max 600"),
+		}, "tab")},
 }
 
 // Backend führt Werkzeuge aus (im Brückenprozess: Weiterleitung an die App).
@@ -68,6 +131,7 @@ type rpcReq struct {
 type rpcErr struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 type rpcResp struct {
@@ -99,39 +163,58 @@ func Serve(in io.Reader, out io.Writer, b Backend) error {
 	for sc.Scan() {
 		var q rpcReq
 		if err := json.Unmarshal(sc.Bytes(), &q); err != nil {
-			send(rpcResp{ID: json.RawMessage("null"), Error: &rpcErr{-32700, "parse error"}})
+			send(rpcResp{ID: json.RawMessage("null"), Error: &rpcErr{Code: -32700, Message: "parse error"}})
 			continue
 		}
 		if len(q.ID) == 0 {
 			continue // Benachrichtigung (notifications/initialized, cancelled …)
 		}
+		v := stateless(q.Params)
+		if v != "" && !supported(v) {
+			send(rpcResp{ID: q.ID, Error: &rpcErr{errUnsupported, "Unsupported protocol version",
+				map[string]any{"supported": Supported, "requested": v}}})
+			continue
+		}
+		newStyle := v != ""
 		switch q.Method {
-		case "initialize":
+		case "server/discover":
+			send(rpcResp{ID: q.ID, Result: complete(map[string]any{
+				"supportedVersions": Supported,
+				"capabilities":      map[string]any{"tools": map[string]any{}},
+				"instructions":      instructions,
+				"ttlMs":             listTTL,
+				"cacheScope":        "private",
+			}, true)})
+		case "initialize": // Fassungen bis 2025-11-25
 			var p struct {
 				ProtocolVersion string `json:"protocolVersion"`
 			}
 			_ = json.Unmarshal(q.Params, &p)
-			pv := ProtocolVersion
+			pv := Supported[1] // neueste Fassung mit initialize
 			if p.ProtocolVersion != "" && p.ProtocolVersion < pv {
 				pv = p.ProtocolVersion // ältere Fassung des Clients übernehmen
 			}
 			send(rpcResp{ID: q.ID, Result: map[string]any{
 				"protocolVersion": pv,
 				"capabilities":    map[string]any{"tools": map[string]any{}},
-				"serverInfo":      map[string]any{"name": "sshtermy", "version": version.Version},
-				"instructions":    "sshTermy gives access to the user's saved SSH connections. Prefer read-only commands; changes need the user's approval in sshTermy.",
+				"serverInfo":      serverInfo(),
+				"instructions":    instructions,
 			}})
-		case "ping":
-			send(rpcResp{ID: q.ID, Result: map[string]any{}})
+		case "ping": // bis 2025-11-25
+			send(rpcResp{ID: q.ID, Result: complete(map[string]any{}, newStyle)})
 		case "tools/list":
-			send(rpcResp{ID: q.ID, Result: map[string]any{"tools": Tools}})
+			res := map[string]any{"tools": Tools}
+			if newStyle {
+				res["ttlMs"], res["cacheScope"] = listTTL, "private"
+			}
+			send(rpcResp{ID: q.ID, Result: complete(res, newStyle)})
 		case "tools/call":
 			var p struct {
 				Name      string          `json:"name"`
 				Arguments json.RawMessage `json:"arguments"`
 			}
 			if err := json.Unmarshal(q.Params, &p); err != nil || !known(p.Name) {
-				send(rpcResp{ID: q.ID, Error: &rpcErr{-32602, "unknown tool"}})
+				send(rpcResp{ID: q.ID, Error: &rpcErr{Code: -32602, Message: "unknown tool"}})
 				continue
 			}
 			if len(p.Arguments) == 0 {
@@ -145,10 +228,10 @@ func Serve(in io.Reader, out io.Writer, b Backend) error {
 				if err != nil {
 					res = map[string]any{"content": []textContent{{"text", err.Error()}}, "isError": true}
 				}
-				send(rpcResp{ID: id, Result: res})
+				send(rpcResp{ID: id, Result: complete(res, newStyle)})
 			}(q.ID)
 		default:
-			send(rpcResp{ID: q.ID, Error: &rpcErr{-32601, fmt.Sprintf("method not found: %s", q.Method)}})
+			send(rpcResp{ID: q.ID, Error: &rpcErr{Code: -32601, Message: fmt.Sprintf("method not found: %s", q.Method)}})
 		}
 	}
 	wg.Wait()

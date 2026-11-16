@@ -38,7 +38,6 @@ type logsState struct {
 	busy       string // läuft: Zusammenfassung von …
 	group      string // Zusammenfassung über mehrere Sitzungen
 	groupQ     string
-	groupKey   string // Host, dessen Zusammenfassung gerade läuft
 	back       screen
 	byHost     bool            // Tab: nach Host statt nach Tagen
 	sortN      bool            // Hosts nach Anzahl sortieren

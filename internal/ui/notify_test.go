@@ -19,7 +19,7 @@ func TestNoticeDoneInHiddenTab(t *testing.T) {
 	a := dangerApp(t)
 	var sent []string
 	old := desktopSend
-	desktopSend = func(title, body string) { sent = append(sent, title+"|"+body) }
+	desktopSend = func(title, body string, _ func()) { sent = append(sent, title+"|"+body) }
 	defer func() { desktopSend = old }()
 	s1, _ := typedSession(domain.Connection{Alias: "web1"}, "$ ", "")
 	s2, _ := typedSession(domain.Connection{Alias: "db1"}, "$ ", "")
@@ -69,7 +69,7 @@ func TestNoticeDoneInHiddenTab(t *testing.T) {
 func TestBellAndClipboard(t *testing.T) {
 	a := dangerApp(t)
 	old := desktopSend
-	desktopSend = func(string, string) {}
+	desktopSend = func(string, string, func()) {}
 	defer func() { desktopSend = old }()
 	s1, _ := typedSession(domain.Connection{Alias: "a"}, "$ ", "")
 	s2, _ := typedSession(domain.Connection{Alias: "b"}, "$ ", "")
@@ -150,5 +150,47 @@ func TestCycleLockAfter(t *testing.T) {
 	}
 	if fmtDur(75*time.Second) != "1:15 min" || fmtDur(9*time.Second) != "9 s" || fmtDur(3725*time.Second) != "1:02 h" {
 		t.Fatal("fmtDur")
+	}
+}
+
+// Desktop-Meldung: Klick (Linux) oder Zurückkehren ins Fenster ohne
+// Tastendruck führt in den gemeldeten Tab.
+func TestDesktopNoticeJumpsToTab(t *testing.T) {
+	a := dangerApp(t)
+	var click func()
+	old := desktopSend
+	desktopSend = func(_, _ string, c func()) { click = c }
+	defer func() { desktopSend = old }()
+	s1, _ := typedSession(domain.Connection{Alias: "web1"}, "$ ", "")
+	s2, _ := typedSession(domain.Connection{Alias: "db1"}, "$ ", "")
+	s2.id = 2
+	a.sessions, a.cur = []*session{s1, s2}, 0
+	a.lastKey = time.Now().Add(-time.Minute)
+	a.blurred = true
+
+	a.noticeDone(s2, "backup.sh", time.Minute, false, false)
+	if click == nil {
+		t.Fatal("keine Desktop-Meldung")
+	}
+	a.coreMsg(tea.FocusMsg{})
+	if a.cur != 1 {
+		t.Fatalf("nicht in den gemeldeten Tab gesprungen: %d", a.cur)
+	}
+
+	// getippt nach der Meldung: kein Sprung beim Zurückkehren
+	a.cur, a.blurred = 0, true
+	a.noticeDone(s2, "backup.sh", time.Minute, false, false)
+	a.lastKey = time.Now().Add(time.Second)
+	a.coreMsg(tea.FocusMsg{})
+	if a.cur != 0 {
+		t.Fatal("trotz Tastendruck gesprungen")
+	}
+
+	// Klick auf die Meldung (Linux) springt sofort
+	click()
+	m := <-a.events
+	a.coreMsg(m)
+	if a.cur != 1 {
+		t.Fatal("Klick springt nicht")
 	}
 }

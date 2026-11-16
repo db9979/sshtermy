@@ -84,8 +84,13 @@
     <li><kbd>Ctrl</kbd>+<kbd>T</kbd> splits the view (2 to 6 panes), <kbd>Alt</kbd>+<kbd>I</kbd> types into all visible panes at once.</li>
     <li><kbd>⇧F10</kbd> moves a tab into its own terminal window.</li>
     <li><kbd>Ctrl</kbd>+<kbd>F</kbd> searches the scrollback, <kbd>Ctrl</kbd>+<kbd>E</kbd> jumps to error lines. <kbd>Alt</kbd>+<kbd>S</kbd> searches all open tabs.</li>
+    <li><kbd>Alt</kbd>+<kbd>C</kbd> selects by keyboard: arrows or <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd>, <kbd>w</kbd>/<kbd>b</kbd>/<kbd>e</kbd> by word, <kbd>v</kbd> select, <kbd>V</kbd> whole lines, <kbd>y</kbd> copies, <kbd>Esc</kbd> ends. <kbd>Alt</kbd>+<kbd>X</kbd> clears screen and scrollback, the input line stays.</li>
+    <li>A tab waiting for a password, a <code>[y/N]</code> question, a key or a pager gets a <code>?</code>. If an AI coding agent runs in it (Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI, Cursor Agent, Qwen Code), the tab shows whether it is working, waiting for your approval (<code>◆</code>, plus a desktop notification) or done. <kbd>Alt</kbd>+<kbd>G</kbd> jumps to the next tab that waits or has a notice; clicking the desktop notification opens it directly.</li>
+    <li><b>Tabs from last time</b>: at start sshTermy asks whether to reopen the tabs and split layout of the last session. Palette “Tabs from last time” sets it to always or never.</li>
+    <li><b>Background service</b> (palette “Background service”, terminal mode only): sessions keep running when you close the terminal window; <code>sshtermy</code> attaches again. <kbd>Ctrl</kbd>+<kbd>Q</kbd> → <kbd>a</kbd> detaches, <kbd>y</kbd> really quits.</li>
+    <li><b>Header</b>: palette “Header: show the time” and “Header: own command …”. The first line of the output shows on the right, e.g. <code>git -C ~/repo branch --show-current</code>; every 30 s, <code>@60</code> at the end for every 60 s.</li>
     <li><kbd>F9</kbd> and <kbd>⇧F1</kbd>…<kbd>⇧F8</kbd>: quick commands, preset for the device (Linux, Windows, Aruba, Cisco, Juniper, MikroTik, FortiGate …).</li>
-    <li><kbd>F6</kbd> host overview: CPU, RAM, disk, updates on servers, live graphs on Linux (<kbd>t</kbd> 5 min / 1 h, <kbd>z</kbd> large); firmware, ports and VLANs on network devices; <kbd>c</kbd> containers.</li>
+    <li><kbd>F6</kbd> host overview: CPU, RAM, disk, updates on servers, live graphs on Linux (<kbd>t</kbd> 5 min / 1 h, <kbd>z</kbd> large); firmware, ports and VLANs on network devices; <kbd>c</kbd> containers; <kbd>s</kbd> security check: installed packages against the OSV database (score, fix available, actively exploited, used by a running service); on switches and firewalls firmware advisories from the NVD. Palette <em>Patch round</em>: staged updates across a folder, first host, then <kbd>w</kbd> for the rest. <kbd>h</kbd> hardening check (read-only), <kbd>a</kbd> key inventory of the <code>authorized_keys</code>, <kbd>i</kbd> inventory &amp; changes since last time (<kbd>e</kbd> CSV). Curves for CPU, RAM and disks over 24 hours (<kbd>w</kbd> 7 days) with "disk full in ~N days".</li>
     <li>If the line drops (Wi-Fi, VPN, standby), sshTermy reconnects by itself, restarts tunnels and re-attaches tmux/screen. After waking up or a network change all connections are checked right away.</li>
   </ul>
 </section>
@@ -191,7 +196,7 @@
   <p>Claude Desktop, Claude Code and other MCP clients can use sshTermy as a tool. Switch it on under Settings › Security › “MCP access for AI clients”:</p>
   <ul>
     <li><b>read only</b>: list connections and tabs, read a tab, run read-only commands (<code>df -h</code>, <code>show interfaces</code>).</li>
-    <li><b>with confirmation</b>: any other command runs only after <kbd>y</kbd> in sshTermy.</li>
+    <li><b>with confirmation</b>: any other command runs only after <kbd>y</kbd> in sshTermy. The client can also control tabs: <code>open_tab</code> opens a connection, <code>send_input</code> types into a tab (a read-only command at the prompt runs directly, anything else asks; never passwords or control characters), <code>wait_tab</code> waits for the prompt, input, a text or quiet (at most 10 minutes). <code>list_tabs</code> shows whether a tab is working or waiting.</li>
   </ul>
   <div class="cmd"><pre>claude mcp add sshtermy -- sshtermy mcp</pre></div>
   <p>Claude Desktop: add the server <code>{"command": "sshtermy", "args": ["mcp"]}</code> to <code>claude_desktop_config.json</code>. sshTermy must be running and unlocked. AI privacy applies here too, and every call is in the audit log.</p>
@@ -230,6 +235,14 @@
     <tr><td><kbd>b</kbd></td><td>change report for ticket or docs (AI)</td></tr>
     <tr><td><kbd>x</kbd> / <kbd>d</kbd></td><td>export md · txt · cast / delete</td></tr>
     <tr><td><kbd>a</kbd></td><td>recording on / off</td></tr>
+  </table>
+  <h3>Play recording (palette)</h3>
+  <table>
+    <tr><td><kbd>Space</kbd> · <kbd>.</kbd></td><td>pause / resume · single step</td></tr>
+    <tr><td><kbd>←</kbd> <kbd>→</kbd> · <kbd>⇧←</kbd> <kbd>⇧→</kbd> · <kbd>1</kbd>…<kbd>9</kbd></td><td>5 s · 30 s · jump to 10…90 %</td></tr>
+    <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>speed 0.25× … 16×</td></tr>
+    <tr><td><kbd>/</kbd> · <kbd>n</kbd> · <kbd>m</kbd></td><td>search text on screen · next match · next marker</td></tr>
+    <tr><td><kbd>i</kbd></td><td>shorten long pauses to 2 s</td></tr>
   </table>
   <h3>Start and tips</h3>
   <table>

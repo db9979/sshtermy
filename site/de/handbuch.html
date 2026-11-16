@@ -84,8 +84,13 @@
     <li><kbd>Strg</kbd>+<kbd>T</kbd> teilt die Ansicht (2 bis 6 Bereiche), <kbd>Alt</kbd>+<kbd>I</kbd> tippt in alle sichtbaren gleichzeitig.</li>
     <li><kbd>⇧F10</kbd> verschiebt einen Tab in ein eigenes Terminalfenster.</li>
     <li><kbd>Strg</kbd>+<kbd>F</kbd> durchsucht den Verlauf, <kbd>Strg</kbd>+<kbd>E</kbd> springt zu Fehlerzeilen. <kbd>Alt</kbd>+<kbd>S</kbd> sucht in allen offenen Tabs.</li>
+    <li><kbd>Alt</kbd>+<kbd>C</kbd> markiert per Tastatur: Pfeile oder <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd>, <kbd>w</kbd>/<kbd>b</kbd>/<kbd>e</kbd> wortweise, <kbd>v</kbd> markieren, <kbd>V</kbd> ganze Zeilen, <kbd>y</kbd> kopiert, <kbd>Esc</kbd> beendet. <kbd>Alt</kbd>+<kbd>X</kbd> leert Bildschirm und Verlauf, die Eingabezeile bleibt.</li>
+    <li>Wartet ein Tab auf ein Passwort, eine <code>[j/N]</code>-Frage, eine Taste oder im Pager, steht ein <code>?</code> an ihm. Läuft darin ein KI-Coding-Agent (Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI, Cursor Agent, Qwen Code), zeigt der Tab, ob er arbeitet, auf deine Freigabe wartet (<code>◆</code>, dazu eine Desktop-Meldung) oder fertig ist. <kbd>Alt</kbd>+<kbd>G</kbd> springt zum nächsten Tab, der wartet oder sich gemeldet hat; ein Klick auf die Desktop-Meldung öffnet ihn direkt.</li>
+    <li><b>Tabs vom letzten Mal</b>: Beim Start fragt sshTermy, ob es die Tabs und die Aufteilung der letzten Sitzung wieder öffnen soll. Palette „Tabs vom letzten Mal“ stellt auf immer oder nie.</li>
+    <li><b>Hintergrunddienst</b> (Palette „Hintergrunddienst“, nur im Terminal-Betrieb): Sitzungen laufen weiter, wenn du das Terminalfenster schließt; <code>sshtermy</code> hängt sich wieder an. <kbd>Strg</kbd>+<kbd>Q</kbd> → <kbd>a</kbd> koppelt ab, <kbd>j</kbd> beendet wirklich.</li>
+    <li><b>Kopfzeile</b>: Palette „Kopfzeile: Uhrzeit zeigen“ und „Kopfzeile: eigener Befehl …“. Die erste Zeile der Ausgabe steht rechts, etwa <code>git -C ~/repo branch --show-current</code>; alle 30 s, mit <code>@60</code> am Ende alle 60 s.</li>
     <li><kbd>F9</kbd> und <kbd>⇧F1</kbd>…<kbd>⇧F8</kbd>: Schnellbefehle, passend zum Gerät vorbelegt (Linux, Windows, Aruba, Cisco, Juniper, MikroTik, FortiGate …).</li>
-    <li><kbd>F6</kbd> Host-Übersicht: CPU, RAM, Platte, Updates bei Servern, bei Linux Live-Graphen (<kbd>t</kbd> 5 min / 1 h, <kbd>z</kbd> groß); Firmware, Ports und VLANs bei Netzwerkgeräten; <kbd>c</kbd> Container.</li>
+    <li><kbd>F6</kbd> Host-Übersicht: CPU, RAM, Platte, Updates bei Servern, bei Linux Live-Graphen (<kbd>t</kbd> 5 min / 1 h, <kbd>z</kbd> groß); Firmware, Ports und VLANs bei Netzwerkgeräten; <kbd>c</kbd> Container; <kbd>s</kbd> Sicherheitscheck: installierte Pakete gegen die OSV-Datenbank (Bewertung, Reparatur vorhanden, aktiv ausgenutzt, von laufendem Dienst genutzt); an Switches und Firewalls Firmware-Hinweise aus der NVD. Palette <em>Patch-Runde</em>: Updates gestaffelt über einen Ordner, erst ein Host, dann <kbd>w</kbd> für den Rest. <kbd>h</kbd> Härtungs-Check (nur lesend), <kbd>a</kbd> Schlüssel-Inventar der <code>authorized_keys</code>, <kbd>i</kbd> Inventar &amp; Änderungen seit dem letzten Mal (<kbd>e</kbd> CSV). Kurven für CPU, RAM und Platten über 24 Stunden (<kbd>w</kbd> 7 Tage) mit „Platte voll in ~N Tagen“.</li>
     <li>Reißt die Leitung ab (WLAN, VPN, Ruhezustand), verbindet sshTermy von selbst neu, startet Tunnel und hängt tmux/screen wieder an. Nach dem Aufwachen oder einem Netzwechsel werden alle Leitungen sofort geprüft.</li>
   </ul>
 </section>
@@ -191,7 +196,7 @@
   <p>Claude Desktop, Claude Code und andere MCP-Clients können sshTermy als Werkzeug nutzen. Einschalten unter Einstellungen › Sicherheit › „MCP-Zugriff für KI-Clients“:</p>
   <ul>
     <li><b>nur lesen</b>: Verbindungen und Tabs auflisten, einen Tab lesen, lesende Befehle (<code>df -h</code>, <code>show interfaces</code>) ausführen.</li>
-    <li><b>mit Rückfrage</b>: jeder andere Befehl läuft erst nach <kbd>j</kbd> in sshTermy.</li>
+    <li><b>mit Rückfrage</b>: jeder andere Befehl läuft erst nach <kbd>j</kbd> in sshTermy. Dazu kann der Client Tabs steuern: <code>open_tab</code> öffnet eine Verbindung, <code>send_input</code> tippt in einen Tab (lesender Befehl am Prompt direkt, sonst mit Rückfrage; Passwörter und Steuerzeichen nie), <code>wait_tab</code> wartet auf Prompt, Eingabe, einen Text oder Ruhe (höchstens 10 Minuten). <code>list_tabs</code> zeigt, ob ein Tab arbeitet oder wartet.</li>
   </ul>
   <div class="cmd"><pre>claude mcp add sshtermy -- sshtermy mcp</pre></div>
   <p>Claude Desktop: in <code>claude_desktop_config.json</code> den Server <code>{"command": "sshtermy", "args": ["mcp"]}</code> eintragen. sshTermy muss laufen und entsperrt sein. Der KI-Datenschutz gilt auch hier, und jeder Aufruf steht im Audit-Protokoll.</p>
@@ -230,6 +235,14 @@
     <tr><td><kbd>b</kbd></td><td>Änderungsbericht für Ticket oder Doku (KI)</td></tr>
     <tr><td><kbd>x</kbd> / <kbd>d</kbd></td><td>Export md · txt · cast / löschen</td></tr>
     <tr><td><kbd>a</kbd></td><td>Mitschreiben an / aus</td></tr>
+  </table>
+  <h3>Aufnahme abspielen (Palette)</h3>
+  <table>
+    <tr><td><kbd>Space</kbd> · <kbd>.</kbd></td><td>Pause / weiter · Einzelschritt</td></tr>
+    <tr><td><kbd>←</kbd> <kbd>→</kbd> · <kbd>⇧←</kbd> <kbd>⇧→</kbd> · <kbd>1</kbd>…<kbd>9</kbd></td><td>5 s · 30 s · auf 10…90 % springen</td></tr>
+    <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Tempo 0,25× … 16×</td></tr>
+    <tr><td><kbd>/</kbd> · <kbd>n</kbd> · <kbd>m</kbd></td><td>Text auf dem Bildschirm suchen · nächster Treffer · nächste Marke</td></tr>
+    <tr><td><kbd>i</kbd></td><td>lange Pausen auf 2 s kürzen</td></tr>
   </table>
   <h3>Start und Tipps</h3>
   <table>

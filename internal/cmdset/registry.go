@@ -304,6 +304,15 @@ func overlay(dst, src *Set, top bool) {
 	overParse(&dst.Parse, src.Parse)
 	overLogs(&dst.Logs, src.Logs)
 	overSyslog(&dst.Syslog, src.Syslog)
+	if len(src.Advisory.CPE) > 0 {
+		dst.Advisory.CPE = src.Advisory.CPE
+	}
+	if src.Advisory.Version != "" {
+		dst.Advisory.Version = src.Advisory.Version
+	}
+	if src.Advisory.URL != "" {
+		dst.Advisory.URL = src.Advisory.URL
+	}
 	dst.Danger = append(dst.Danger, src.Danger...)
 	dst.Variants = src.Variants
 }

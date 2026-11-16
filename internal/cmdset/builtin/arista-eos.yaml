@@ -37,3 +37,7 @@ samples:
       firmware: 4.28.3M
       model: DCS-7050SX-64-F
       mem: 25
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:arista:eos]
+  url: https://www.arista.com/en/support/advisories-notices

@@ -15,3 +15,7 @@ commands:
       cmd: pfctl -si
       pick: '(?im)^Status:\s*(\w+)'
 read: ['^opnsense-version$']
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:a:opnsense:opnsense]
+  url: https://opnsense.org/

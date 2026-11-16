@@ -147,6 +147,9 @@ func (a *App) onMCP(m mcpCallMsg) tea.Cmd {
 	case "run_command":
 		return a.mcpRun(m)
 	default:
+		if cmd, ok := a.mcpControl(m); ok {
+			return cmd // open_tab, send_input, wait_tab (mcpcontrol.go)
+		}
 		return fail("unknown tool %s", m.tool)
 	}
 	return nil
@@ -190,10 +193,11 @@ func (a *App) mcpConnections(q string) string {
 
 func (a *App) mcpTabs() string {
 	type tab struct {
-		Tab   int    `json:"tab"`
-		Alias string `json:"alias"`
-		Host  string `json:"host,omitempty"`
-		State string `json:"state"`
+		Tab    int    `json:"tab"`
+		Alias  string `json:"alias"`
+		Host   string `json:"host,omitempty"`
+		State  string `json:"state"`
+		Status string `json:"status,omitempty"`
 	}
 	out := []tab{}
 	for _, s := range a.sessions {
@@ -208,7 +212,7 @@ func (a *App) mcpTabs() string {
 		default:
 			st = "not connected"
 		}
-		out = append(out, tab{s.id, s.conn.Alias, s.conn.Host, st})
+		out = append(out, tab{s.id, s.conn.Alias, s.conn.Host, st, a.mcpStatus(s)})
 	}
 	b, _ := json.MarshalIndent(out, "", " ")
 	return string(b)

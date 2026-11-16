@@ -12,7 +12,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 	"unicode/utf8"
@@ -224,9 +223,10 @@ type window struct {
 	mouseY    int
 	mouseBtn  uv.MouseButton
 	wheelAcc  float64
+	scroll    int // Zeilen Rückblick (nur zweites Fenster, scroll.go)
+	sbSeen    int
 	lastTitle string
 
-	shotMu sync.Mutex
 	script *script
 }
 
@@ -258,7 +258,7 @@ func (w *window) setFaces(scale float64) {
 	}
 	m := regular.Metrics()
 	w.ascentF = m.HAscent
-	w.cellW = math.Round(text.Advance("M", regular))
+	w.cellW = math.Round(text.AdvanceAt("M", 1, regular))
 	w.cellH = math.Ceil(m.HAscent + m.HDescent + m.HLineGap*0.5)
 	w.ascent = math.Round(m.HAscent + (w.cellH-m.HAscent-m.HDescent)/2)
 	w.glyphs = map[glyphKey]*ebiten.Image{}
@@ -450,6 +450,9 @@ func (w *window) keyboard() {
 			continue
 		}
 		if code, ok := specialKeys[k]; ok {
+			if w.scrollKey(code, mod) {
+				continue
+			}
 			buf = append(buf, encodeKey(uv.Key{Code: code, Mod: mod})...)
 			continue
 		}
@@ -475,6 +478,9 @@ func (w *window) keyboard() {
 		}
 	}
 	if len(buf) > 0 {
+		if w.scroll > 0 {
+			w.setScroll(0) // Tippen führt zurück nach unten
+		}
 		w.sendOrdered(buf)
 	}
 }
@@ -546,6 +552,16 @@ func (w *window) mouse() {
 		w.zoom(math.Copysign(1, wy))
 		return
 	}
+	if wy != 0 && w.localWheel(ebiten.IsKeyPressed(ebiten.KeyShift)) {
+		w.wheelAcc += wy
+		for ; w.wheelAcc >= 1; w.wheelAcc-- {
+			w.scrollWheel(true)
+		}
+		for ; w.wheelAcc <= -1; w.wheelAcc++ {
+			w.scrollWheel(false)
+		}
+		return
+	}
 	level := w.term.MouseTracking()
 	if level == termemu.MouseOff {
 		return
@@ -607,12 +623,20 @@ func (w *window) Draw(screen *ebiten.Image) {
 		w.white = ebiten.NewImage(1, 1)
 		w.white.Fill(color.White)
 	}
-	screen.Fill(defaultBg)
+	dFg, dBg := baseColors(w.term.DefaultColors())
+	curClr := w.term.CursorColor()
+	screen.Fill(dBg)
 
 	var cw, ch int
-	w.cells, cw, ch = w.term.Snapshot(w.cells)
+	if w.opts.attach {
+		w.followScroll()
+	}
+	w.cells, cw, ch = w.term.SnapshotAt(w.cells, w.scroll)
 	pad := math.Round(padding * w.scale)
 	curX, curY, curVis := w.term.Cursor()
+	if w.scroll > 0 {
+		curVis = false
+	}
 
 	// erst alle Hintergründe, dann Schrift: breite Zeichen dürfen in die
 	// Nachbarzelle ragen
@@ -622,9 +646,9 @@ func (w *window) Draw(screen *ebiten.Image) {
 			if c.Width == 0 && c.Content == "" && x > 0 {
 				continue
 			}
-			_, bg, set := cellColors(&c.Style)
+			_, bg, set := cellColors(&c.Style, dFg, dBg)
 			if curVis && x == curX && y == curY {
-				bg, set = cursorClr, true
+				bg, set = cursorColor(curClr, dFg, bg), true
 			}
 			if !set {
 				continue
@@ -636,7 +660,7 @@ func (w *window) Draw(screen *ebiten.Image) {
 	for y := 0; y < ch; y++ {
 		for x := 0; x < cw; x++ {
 			c := &w.cells[y*cw+x]
-			fg, bg, _ := cellColors(&c.Style)
+			fg, bg, _ := cellColors(&c.Style, dFg, dBg)
 			if curVis && x == curX && y == curY {
 				fg = bg
 			}

@@ -564,7 +564,7 @@ func CheckWebDAV(ctx context.Context, in WebDAVInput) *Report {
 	data := []byte("sshtermy")
 	resp, _, err := w.do(ctx, "PUT", test, data, nil)
 	if err != nil || (resp.StatusCode != 201 && resp.StatusCode != 204 && resp.StatusCode != 200) {
-		detail := i18n.T("Schreiben fehlgeschlagen")
+		var detail string
 		hint := permHint(in.Preset)
 		if err != nil {
 			detail = err.Error()

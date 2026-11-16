@@ -30,7 +30,6 @@ var (
 	parseHex         = theme.ParseHex
 	hexOf            = theme.Hex
 	mixColor         = theme.Mix
-	luminance        = theme.Luminance
 	contrast         = theme.Contrast
 	contrastProblems = theme.Problems
 	rgbOf            = theme.RGB

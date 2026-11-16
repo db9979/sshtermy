@@ -273,7 +273,7 @@ func (a *App) viewCmdSets() string {
 		case st.Problem != "":
 			state = s.Warn.Render(trunc(firstLine(st.Problem), max(10, w-74)))
 		}
-		line := name + " " + s.Muted.Render(id) + " " + s.Muted.Render(src) + " "
+		var line string
 		if i == c.sel {
 			mark = s.Accent.Render("▸ ")
 			line = s.Selected.Render(name) + " " + s.Muted.Render(id) + " " + s.Muted.Render(src) + " "

@@ -34,6 +34,7 @@ const (
 	hcCompanion
 	hcLogScan
 	hcVorgang
+	hcVuln
 )
 
 type helpSection struct {
@@ -115,7 +116,11 @@ var helpSections = []helpSection{
 		{"Alt+Z", "Bereich zoomen / zurück"},
 		{"Titel ziehen", "Bereiche tauschen"},
 		{"⇧F10", "Tab in eigenes Fenster (Sitzung bleibt offen)"},
+		{"Mausrad / ⇧Bild↑ Bild↓", "im Verlauf zurückblättern (Esc: unten)"},
+		{"⇧Pos1 / ⇧Ende", "Anfang / Ende des Verlaufs"},
 		{"Strg+F", "im Verlauf suchen"},
+		{"Alt+C", "per Tastatur markieren: v / V, y kopiert"},
+		{"Alt+X", "Bildschirm + Verlauf leeren, Eingabe bleibt"},
 		{"Alt+S", "in allen Tabs suchen"},
 		{"Alt+O", "Befehle des Tabs: Ausgabe kopieren, an KI"},
 		{"Alt+Bild↑ Bild↓", "von Befehl zu Befehl springen"},
@@ -123,10 +128,12 @@ var helpSections = []helpSection{
 		{"Alt+E", "Log-Blick: Auffälligkeiten"},
 		{"F7 / F8", "Tab wechseln"},
 		{"Alt+T", "alle Tabs (Liste)"},
-		{"Alt+N", "neuer Tab"},
+		{"Alt+G", "zum Tab, der wartet (? / ◆) oder sich meldet"},
+		{"Alt+N", "neuer Tab: Verbindung im Manager wählen"},
 		{"Alt+L", "lokale Shell (neuer Tab)"},
 		{"Alt+W", "Tab schließen"},
 		{"F10", "zum Manager"},
+		{"Strg+Q → a", "abkoppeln (Hintergrunddienst läuft weiter)"},
 		{"Abbruch", "verbindet neu (⏎ / Esc)"},
 		{"getrennt: e / k", "Verbindung bearbeiten / neuen Host-Key prüfen"},
 	}},
@@ -204,6 +211,10 @@ var helpSections = []helpSection{
 		{"b", "Switch-Config sichern"},
 		{"c", "Container (Docker, Podman, k8s)"},
 		{"l", "Log-Blick"},
+		{"s", "Sicherheitscheck · Switch: Firmware"},
+		{"h / a", "Härtungs-Check / Schlüssel-Inventar"},
+		{"i", "Inventar & Änderungen (e = CSV)"},
+		{"w", "Verlauf 24 h / 7 Tage"},
 		{"↑ ↓", "Sicherung wählen"},
 		{"d", "Diff zur Vorversion"},
 		{"v", "Sicherung ansehen"},
@@ -250,9 +261,30 @@ var helpSections = []helpSection{
 		{"n", "Was ist neu? (u zurückholen)"},
 		{"t", "Zeitleiste (←→, ⏎, k)"},
 		{"z", "Zeitraum 1 h … 7 Tage"},
-		{"w", "Logwache: Meldungen"},
+		{"w", "Logwache: gesammelte Meldungen ansehen"},
 		{"s", "Switch: Syslog an sshTermy senden"},
 		{"r / c", "neu lesen / kopieren"},
+	}},
+	{hcVuln, "■", "Sicherheitscheck", "F6 s", false, [][2]string{
+		{"⏎", "alle Lücken des Pakets"},
+		{"k", "KI erklärt (ohne Hostname)"},
+		{"u", "Update-Befehl einfügen"},
+		{"x / X", "betrifft uns nicht: Host / Ordner"},
+		{"n", "Ausgeblendete (x holt zurück)"},
+		{"f", "nur Pakete mit Update"},
+		{"o", "alle Server im Ordner prüfen"},
+		{"r / c", "neu prüfen / kopieren"},
+	}},
+	{hcVuln, "■", "Schlüssel-Inventar", "F6 a", false, [][2]string{
+		{"⏎", "wo steht der Schlüssel?"},
+		{"d", "entfernen (je Host j, mit Kopie)"},
+		{"←", "zurück zur Liste"},
+	}},
+	{hcVuln, "■", "Patch-Runde", "Palette", false, [][2]string{
+		{"j j", "starten (Ordner, erster Host)"},
+		{"w", "nach Prüfung weiter"},
+		{"x", "nach diesem Host beenden"},
+		{"c", "Bericht kopieren"},
 	}},
 	{hcLogs, "≡", "Sitzungsprotokolle", "l", false, [][2]string{
 		{"/", "suchen (auch Ausgabe)"},
@@ -267,6 +299,14 @@ var helpSections = []helpSection{
 		{"d", "löschen"},
 		{"a", "Mitschreiben an/aus"},
 		{"␣ Befehl", "nicht protokollieren"},
+	}},
+	{hcLogs, "▶", "Aufnahme abspielen", "Palette", false, [][2]string{
+		{"Space", "Pause / weiter"},
+		{"← → · ⇧← ⇧→", "5 s · 30 s spulen"},
+		{"↑ ↓", "Tempo 0,25× … 16×"},
+		{"/ · n", "Text suchen · nächster Treffer"},
+		{"m · .", "nächste Marke · Einzelschritt"},
+		{"i", "lange Pausen kürzen"},
 	}},
 	{hcBroadcast, "»", "Broadcast", "m", false, [][2]string{
 		{"Space / g / a", "Host / Ordner / alle"},
@@ -360,10 +400,12 @@ func (a *App) helpContext() helpCtx {
 		return hcManager
 	case scrSettings:
 		return hcSettings
-	case scrLogs:
+	case scrLogs, scrPlayer:
 		return hcLogs
 	case scrLogScan:
 		return hcLogScan
+	case scrVuln:
+		return hcVuln
 	case scrBroadcast:
 		return hcBroadcast
 	case scrScan:
@@ -473,7 +515,7 @@ var helpTabs = []helpTabDef{
 	{"Terminal", []string{"Terminal", "Suche im Verlauf", "Tunnel", "Host-Übersicht", "Dateien", "Gefahren & Aufnahme", "Systemprofil"}},
 	{"KI", []string{"Ziel-Modus", "KI fragen", "KI-Begleiter", "Vorgang über mehrere Fenster", "KI-Einstellungen"}},
 	{"Manager", []string{"Verbindungs-Manager", "Broadcast", "Netzwerk-Scan"}},
-	{"Logs", []string{"Log-Blick", "Sitzungsprotokolle"}},
+	{"Logs", []string{"Log-Blick", "Sicherheitscheck", "Schlüssel-Inventar", "Patch-Runde", "Sitzungsprotokolle", "Aufnahme abspielen"}},
 	{"Überall", []string{"Überall", "Befehlspalette", "Aussehen & Tasten", "Maus"}},
 }
 

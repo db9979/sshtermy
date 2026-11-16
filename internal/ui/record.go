@@ -60,7 +60,7 @@ func (a *App) stopRecording(s *session) {
 		a.flashErr(i18n.T("Aufnahme nicht gespeichert: ") + err.Error())
 		return
 	}
-	msg := fmt.Sprintf(i18n.T("Aufnahme gespeichert (%s): %s · abspielen mit „asciinema play“"), bcDur(r.Duration().Round(time.Second)), p)
+	msg := fmt.Sprintf(i18n.T("Aufnahme gespeichert (%s): %s · abspielen: Palette › Aufnahme abspielen"), bcDur(r.Duration().Round(time.Second)), p)
 	if r.Truncated() {
 		msg += i18n.T(" · gekürzt (Größengrenze)")
 	}
@@ -87,7 +87,8 @@ func exportPath(host string, at time.Time, ext string) string {
 	return filepath.Join(exportDir(), name)
 }
 
-// exportScrollback: Verlauf des Tabs als Text.
+// exportScrollback: Verlauf des Tabs als Text. Läuft tmux, liegt der
+// Verlauf dort: dann holt sshTermy ihn mit capture-pane vom Server.
 func (a *App) exportScrollback(s *session) tea.Cmd {
 	if s.term == nil {
 		return nil
@@ -97,14 +98,35 @@ func (a *App) exportScrollback(s *session) tea.Cmd {
 	for i := 0; i < n; i++ {
 		lines = append(lines, strings.TrimRight(s.term.PlainLine(i), " "))
 	}
-	text := strings.TrimRight(strings.Join(lines, "\n"), "\n") + "\n"
-	p := exportPath(s.conn.Alias, time.Now(), ".txt")
+	text := strings.Join(lines, "\n")
+	alias := s.conn.Alias
+	if s.inTmux() {
+		c := s.client
+		t, _ := tmuxTarget(s.mux.name)
+		a.flash(i18n.T("Hole den Verlauf aus tmux …"))
+		return func() tea.Msg {
+			out, err := c.Output("tmux capture-pane -p -J -S -"+t, 15*time.Second)
+			return relayMsg{apply: func(a *App) tea.Cmd {
+				if err == nil && strings.TrimSpace(out) != "" {
+					text = out
+				}
+				a.writeScrollback(alias, text)
+				return nil
+			}}
+		}
+	}
+	a.writeScrollback(alias, text)
+	return nil
+}
+
+func (a *App) writeScrollback(alias, text string) {
+	text = strings.TrimRight(text, "\n") + "\n"
+	p := exportPath(alias, time.Now(), ".txt")
 	if err := os.WriteFile(p, []byte(text), 0o600); err != nil {
 		a.flashErr(i18n.T("Export: ") + err.Error())
-		return nil
+		return
 	}
 	a.flash(i18n.T("Verlauf exportiert: ") + p)
-	return nil
 }
 
 // exportMenu: Protokoll exportieren (Logs-Ansicht, x).
@@ -122,6 +144,7 @@ func (a *App) exportMenu(l *sessionlog.Log) *modal {
 		{label: i18n.T("Markdown für Doku oder Wiki"), hint: ".md", run: func() tea.Cmd { return write(".md", []byte(l.Markdown())) }},
 		{label: i18n.T("Text, wie im Terminal"), hint: ".txt", run: func() tea.Cmd { return write(".txt", []byte(l.Text())) }},
 		{label: i18n.T("Abspielbare Aufnahme (asciinema)"), hint: ".cast", run: func() tea.Cmd { return write(".cast", l.Cast(2*time.Second)) }},
+		{label: i18n.T("Gleich hier abspielen"), hint: "▶", run: func() tea.Cmd { return a.playCast(l.Host+".cast", l.Cast(2*time.Second)) }},
 	}
 	return &modal{kind: mMenu, title: i18n.T("Exportieren nach ") + exportDir(), items: items}
 }

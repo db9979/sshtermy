@@ -29,4 +29,4 @@
                                                 │
                                                 │
                                                 │
- Ctrl+Space Commands 1Help  ⇧F9 explain  ⏎ collapse  n new here  e edit  d delete  v move  g open as grid  / search
+ Ctrl+Space Commands 1Help  ⏎ collapse  n new here  e edit  d delete  v move  / search  Ctrl+Q quit

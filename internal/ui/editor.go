@@ -40,6 +40,7 @@ type remoteEdit struct {
 	mod    time.Time
 	sum    [32]byte
 	busy   bool
+	sudo   bool // einmal mit sudo gespeichert: weitere Speichern auch (filesudo.go)
 }
 
 type editOpenedMsg struct {
@@ -218,6 +219,9 @@ func (a *App) editMsg(msg tea.Msg) (tea.Cmd, bool) {
 			}
 			e.busy = false
 			if m.err != nil {
+				if s := a.byID(m.sid); s != nil && a.offerEditSudo(s, e, m.err) {
+					return nil, true
+				}
 				a.flashErr(fmt.Sprintf(i18n.T("%s nicht zurückgeschrieben: %v · Kopie: %s"), path.Base(e.remote), m.err, e.local))
 				return nil, true
 			}
@@ -257,6 +261,10 @@ func (a *App) editTick() tea.Cmd {
 			continue // nur angefasst, nicht geändert
 		}
 		e.busy = true
+		if e.sudo && s.sudo != nil && s.sudoFor == s.client && s.editFSFor() != nil {
+			cmds = append(cmds, a.editSudoSave(s, e, data, sum))
+			continue
+		}
 		fs, c, sid, remote, local := s.editFSFor(), s.client, s.id, e.remote, e.local
 		cmds = append(cmds, func() tea.Msg {
 			var opened *sshx.RemoteFS

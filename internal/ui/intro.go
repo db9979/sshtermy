@@ -118,14 +118,32 @@ func (a *App) introMsg(msg tea.Msg) (tea.Cmd, bool) {
 		}
 		return introFrame(), true
 	case tea.KeyPressMsg, tea.MouseClickMsg:
-		a.intro = nil // überspringen; die Taste selbst wirkt nicht weiter
-		return nil, true
+		if !introFits(a.w, a.h) {
+			// Fenster zu klein: Die Animation ist gar nicht zu sehen (View
+			// zeigt dann gleich die Oberfläche). Die Taste nicht zum
+			// Überspringen verbrauchen, sonst geht sie unbemerkt verloren.
+			a.intro = nil
+			return nil, false
+		}
+		a.intro = nil // überspringen
+		if k, ok := msg.(tea.KeyPressMsg); ok && a.scr == scrUnlock && introTypes(k) {
+			return nil, false // schon das Passwort getippt: das Zeichen zählt mit
+		}
+		return nil, true // sonst wirkt die Taste nicht weiter
 	case unlockedMsg:
 		if m.err == nil {
 			a.intro.unlocked = true
 		}
 	}
 	return nil, false
+}
+
+// introTypes: Zeichen, das in das Passwortfeld dahinter gehört (kein
+// Leerzeichen, kein Kürzel): Wer während der Animation schon das
+// Master-Passwort tippt, verliert sonst das erste Zeichen und bekommt
+// „Falsches Passwort“.
+func introTypes(k tea.KeyPressMsg) bool {
+	return k.Text != "" && k.Text != " " && k.Mod&(tea.ModCtrl|tea.ModAlt|tea.ModMeta|tea.ModSuper) == 0
 }
 
 // ---------------------------------------------------------------- Logo

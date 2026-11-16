@@ -227,15 +227,17 @@ func (a *App) openScheduleForm(sc domain.Schedule) tea.Cmd {
 	}
 	f := &form{title: title}
 	f.text("name", "Name", sc.Name, i18n.T("z. B. „Switch-Configs sichern“"))
-	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)"), i18n.T("Ordner-Scan (Logs)")}
+	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)"), i18n.T("Ordner-Scan (Logs)"), i18n.T("Sicherheitscheck (OSV)")}
 	kindCur := kinds[0]
 	switch sc.Kind {
 	case domain.ScheduleBackup:
 		kindCur = kinds[1]
 	case domain.ScheduleLogs:
 		kindCur = kinds[2]
+	case domain.ScheduleVuln:
+		kindCur = kinds[3]
 	}
-	f.choice("kind", i18n.T("Art"), kinds, kindCur, i18n.T("Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert · Ordner-Scan: Log-Blick je Host, Ergebnis mit neuen Mustern"))
+	f.choice("kind", i18n.T("Art"), kinds, kindCur, i18n.T("Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert · Ordner-Scan: Log-Blick je Host, Ergebnis mit neuen Mustern · Sicherheitscheck: Pakete je Server gegen OSV, meldet neu betroffene"))
 	isBackup := func(f *form) bool { return f.sel("kind") != kinds[0] }
 	f.text("at", i18n.T("Uhrzeit"), sc.At, i18n.T("HH:MM, Ortszeit dieses Rechners"))
 	var days []string
@@ -350,9 +352,11 @@ func (a *App) saveScheduleForm() error {
 		sc.Kind = domain.ScheduleBackup
 	case i18n.T("Ordner-Scan (Logs)"):
 		sc.Kind = domain.ScheduleLogs
+	case i18n.T("Sicherheitscheck (OSV)"):
+		sc.Kind = domain.ScheduleVuln
 	}
 	sc.RunbookID, sc.Steps = a.schedRBIDs[f.sel("runbook")], nil
-	if sc.Kind == domain.ScheduleBackup || sc.Kind == domain.ScheduleLogs {
+	if sc.Kind == domain.ScheduleBackup || sc.Kind == domain.ScheduleLogs || sc.Kind == domain.ScheduleVuln {
 		sc.RunbookID = ""
 	} else if sc.RunbookID == "" {
 		for _, st := range strings.Split(f.str("steps"), schedStepSep) {
@@ -366,6 +370,9 @@ func (a *App) saveScheduleForm() error {
 	}
 	if sc.Name == "" && sc.Kind == domain.ScheduleLogs {
 		sc.Name = i18n.T("Ordner-Scan (Logs)")
+	}
+	if sc.Name == "" && sc.Kind == domain.ScheduleVuln {
+		sc.Name = i18n.T("Sicherheitscheck (OSV)")
 	}
 	if sc.Name == "" {
 		sc.Name = orDefault(firstOf(sc.Steps), i18n.T("Zeitplan"))
@@ -487,6 +494,12 @@ func (a *App) schedConns(sc domain.Schedule) []domain.Connection {
 			}
 			continue
 		}
+		if sc.Kind == domain.ScheduleVuln {
+			if vulnScanable(c) {
+				out = append(out, c)
+			}
+			continue
+		}
 		if c.Protocol.Raw() {
 			continue
 		}
@@ -516,6 +529,9 @@ func (a *App) schedSteps(sc domain.Schedule) ([]string, error) {
 	}
 	if sc.Kind == domain.ScheduleLogs {
 		return []string{"log-scan"}, nil
+	}
+	if sc.Kind == domain.ScheduleVuln {
+		return []string{"osv-scan"}, nil
 	}
 	steps := sc.Steps
 	if sc.RunbookID != "" {
@@ -615,6 +631,9 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 	a.schedRun[sc.ID] = true
 	if sc.Kind == domain.ScheduleLogs {
 		return a.startScheduleLogs(sc, conns)
+	}
+	if sc.Kind == domain.ScheduleVuln {
+		return a.startScheduleVuln(sc, conns)
 	}
 	job := broadcast.Job{Conns: conns, Steps: steps}
 	if sc.Kind == "" && !stepsReadOnly(steps) {

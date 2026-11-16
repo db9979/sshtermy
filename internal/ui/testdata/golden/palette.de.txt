@@ -1,30 +1,30 @@
  >_ sshTermy                                                          ↕ Sync aus   ● KI qwen3-coder
- Verbindunge┌─ ◆ Befehlspalette  20 Einträge ────────────────────────────────────── × ─┐
+ Verbindunge┌─ ◆ Befehlspalette  19 Einträge ────────────────────────────────────── × ─┐
             │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
-   ○ # switc│ // häufig                                                                │
- ▾ Produktio│ [+] Neue Verbindung                                                    n │
-   ▾ Web    │ [$] Lokale Shell in neuem Tab                                      Alt+L │
-▌    ○   web│ [*] Broadcast: Befehl auf mehreren Hosts                               m │ft …
-▌    ○   web│ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
-▌  ○   db-01│ [#] Sitzungsprotokolle durchsuchen                                     l │s Menü ·
- ○   nas    │ [!] Ordner-Scan: Logs aller Hosts im Ordner …                       Logs │
- ○   spark  │ // verbindungen                                                          │
+   ○ # switc│ ── HÄUFIG ────────────────────────────────────────────────────────────── │
+ ▾ Produktio│ ▶   Neue Verbindung                                                    n │
+   ▾ Web    │     › Formular für eine neue Verbindung: SSH, Telnet, seriell, lokal     │
+▌    ○   web│       oder PowerShell.                                                   │ft …
+▌    ○   web│ [$] Lokale Shell in neuem Tab                                      Alt+L │
+▌  ○   db-01│ [*] Broadcast: Befehl auf mehreren Hosts                               m │s Menü ·
+ ○   nas    │ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
+ ○   spark  │ [#] Sitzungsprotokolle durchsuchen                                     l │
+            │ ── VERBINDUNGEN ──────────────────────────────────────────────────────── │
             │ [·] nas                                                  admin@nas.local │
             │ [·] spark                                              dominik@spark.lan │
             │ [#] switch-core  Netzwerk                            manager@192.168.1.2 │
             │ [·] db-01  Produktion                                  postgres@10.0.1.5 │
             │ [·] web-01  Produktion / Web                            deploy@10.0.0.11 │
             │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │
-            │ // alle aktionen                                                         │
-            │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         3 │
+            │ ── ALLE AKTIONEN ─────────────────────────────────────────────────────── │
+            │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         4 │
             │ [T] Tabs & Ansicht ›  neu, teilen, Zoom, Arbeitsplätze                 2 │
-            │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switches   5 │
+            │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switch…   11 │
             │ [&] Team & Teilen ›  live teilen, Team-Ordner                          4 │
             │ [=] Verbindungen & Daten ›  neu, SSH-Key, Import/Export, Sicherung     6 │
-            │ [:] Einstellungen ›  Maus, Aussehen, Sprache, KI …                    27 │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘
                                         │
- Strg+Space Befehle 1Hilfe  ⇧F9 erklären  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen
+ Strg+Space Befehle 1Hilfe  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen  v verschieben

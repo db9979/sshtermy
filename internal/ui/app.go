@@ -42,6 +42,7 @@ import (
 	"github.com/db9979/sshtermy/internal/update"
 	"github.com/db9979/sshtermy/internal/vault"
 	"github.com/db9979/sshtermy/internal/version"
+	"github.com/db9979/sshtermy/internal/vuln"
 )
 
 type screen int
@@ -78,8 +79,10 @@ const (
 	scrScheduleForm  // Zeitplan (schedule.go)
 	scrRulesForm     // Regeln für Switch-Configs (configrules.go)
 	scrLogScan       // Log-Blick (logscan.go)
+	scrVuln          // Sicherheitscheck (vuln.go)
 	scrCmdSets       // Befehlssätze (cmdsets.go)
 	scrCmdSetForm    // eigener Befehlssatz bearbeiten
+	scrPlayer        // Aufnahme abspielen (player.go)
 )
 
 // App ist das Wurzel-Modell.
@@ -98,6 +101,17 @@ type App struct {
 	fresh         storeFresh        // zweites sshTermy hat gespeichert (storefresh.go)
 	quickVals     map[string]string // zuletzt eingegebene Platzhalter-Werte (quickvars.go)
 	lfold         folderScanState   // Ordner-Scan (logfolder.go)
+	vscan         vulnState         // Sicherheitscheck (vuln.go)
+	vfold         vulnFolderState   // Sicherheitscheck über einen Ordner (vulnfolder.go)
+	vsum          map[string]vulnSum
+	voff          *vuln.Offline     // Offline-Datenbank (bleibt im Speicher)
+	fwchk         fwState           // Firmware-Hinweise (firmware.go)
+	patch         patchState        // Patch-Runde (patchround.go)
+	hard          hardenState       // Härtungs-Check (harden.go)
+	kinv          keyinvState       // Schlüssel-Inventar (keyinv.go)
+	trend         trendState        // Verlaufskurven F6 (trend.go)
+	inv           invState          // Inventar & Änderungen (inventory.go)
+	play          playerState       // Aufnahme abspielen (player.go)
 	compUse       companionUsage    // Begleiter: Anfragen, Tokens (companion.go)
 	recap         *recapState       // Begleiter: laufender Rückblick
 	windowed      bool              // im eigenen Fenster (internal/gui), SetWindowed
@@ -154,13 +168,25 @@ type App struct {
 	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
 	perf         perfState      // Bildrate und Leistungsanzeige (perf.go)
 	styleGen     int            // zählt Theme-Wechsel (termView)
+	ovMemo       overlayMemo    // Hintergrund unter dem Modal (overlay)
 	toastTicking bool
 	animTicking  bool       // Takt für Bewegung (motion.go)
 	hov          hoverState // Karte unter der Maus (motion.go)
 	rel          *update.Release
 	// restartPending: installierte, noch nicht gestartete Version.
 	restartPending string
-	restart        bool // nach dem Beenden neu starten (siehe Restart)
+	keeperDetach   func(string) // Hintergrunddienst: Fenster abkoppeln (keeper.go)
+	hdrOut         string       // eigener Befehl in der Kopfzeile: Ausgabe (headerfields.go)
+	hdrFor         string       // … für diesen Befehl
+	hdrAt          time.Time    // … zuletzt gestartet
+	hdrBusy        bool
+	mcpWaits       []*mcpWaiter // MCP wait_tab, die noch warten (mcpcontrol.go)
+	jumpSID        int          // Tab der letzten Desktop-Meldung (notify.go)
+	jumpAt         time.Time    // … und wann sie kam
+	restoreArmed   bool         // Tabs vom letzten Mal angeboten, ab jetzt sichern (restore.go)
+	restoreAt      time.Time    // letzte Sicherung der offenen Tabs
+	restoreSig     string       // Inhalt der letzten Sicherung (nur bei Änderung schreiben)
+	restart        bool         // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
 
 	hl      hlState       // Farbregeln (highlight.go)
@@ -282,6 +308,9 @@ func (a *App) byID(id int) *session {
 }
 
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if a.scr != scrManager {
+		a.mgr.forTab = false // „+“-Auswahl gilt nur, solange der Manager offen ist
+	}
 	a.perf.skip = false // jede Nachricht außer Ausgabeflut zeichnet sofort (perf.go)
 	switch msg.(type) {
 	case WindowClosedMsg:
@@ -392,12 +421,22 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 			if !a.sessionVisible(s) {
 				s.unseen = true
 			}
-			clip = a.takeClipboard(s)
+			clip = tea.Batch(a.takeClipboard(s), a.aheadTick(s))
 		}
 		return tea.Batch(a.listen(), clip, a.onOutputFrame(time.Now()), a.takePixels(m.sid)), true
+	case aheadMsg:
+		return a.onAhead(m), true
 	case tea.FocusMsg:
 		a.blurred = false
+		a.onRefocus() // nach einer Desktop-Meldung in deren Tab (notify.go)
 		a.clearNotices()
+		return nil, true
+	case headerOutMsg:
+		a.onHeaderOut(m)
+		return nil, true
+	case notifyClickMsg:
+		a.jumpSID = 0
+		a.jumpToNotified(m.sid, i18n.T("Desktop-Meldung angeklickt"))
 		return nil, true
 	case tea.BlurMsg:
 		a.blurred = true
@@ -468,6 +507,11 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 			a.profileConnected(s)
 			a.learnKeychain(s)
 			a.flashOK(i18n.T("Verbunden: ") + s.conn.Alias)
+			if m.client != nil {
+				if w := m.client.WeakNote(); w != "" {
+					a.flash(w) // „Vorsicht: …“ = gelber Toast
+				}
+			}
 			for _, t := range a.st.Tunnels(s.conn.ID) {
 				if t.AutoStart && s.tunnels != nil {
 					if _, err := s.tunnels.Start(t); err != nil {
@@ -616,6 +660,33 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if cmd, ok := a.folderScanMsg(msg); ok {
 		return cmd, true
 	}
+	if cmd, ok := a.vulnMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.firmwareMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.patchMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.hardenMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.playerMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.invMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.keyinvMsgs(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.vulnFolderMsg(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.schedVulnMsg(msg); ok {
+		return cmd, true
+	}
 	if cmd, ok := a.watchMsg(msg); ok {
 		return cmd, true
 	}
@@ -632,6 +703,9 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return cmd, true
 	}
 	if cmd, ok := a.filesMsg(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.sudoMsg(msg); ok {
 		return cmd, true
 	}
 	if cmd, ok := a.hostMsg(msg); ok {
@@ -674,7 +748,7 @@ func (a *App) overlayMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if a.pal != nil {
 			return a.paletteKey(k), true
 		}
-		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs || a.scr == scrLogScan) {
+		if a.keys.is(actPalette, k.String()) && (a.scr == scrTerminal || a.scr == scrManager || a.scr == scrLogs || a.scr == scrLogScan || a.scr == scrVuln) {
 			return a.openPalette(), true
 		}
 		if a.keys.is(actLocal, k.String()) && (a.scr == scrTerminal || a.scr == scrManager) && a.lock == nil {
@@ -723,6 +797,10 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 		return a.updateLogs(msg)
 	case scrLogScan:
 		return a.updateLogScan(msg)
+	case scrVuln:
+		return a.updateVuln(msg)
+	case scrPlayer:
+		return a.updatePlayer(msg)
 	case scrCmdSets:
 		return a.updateCmdSets(msg)
 	case scrImport:
@@ -751,6 +829,7 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 type WindowClosedMsg struct{}
 
 func (a *App) quit() tea.Cmd {
+	a.restoreOnQuit()  // offene Tabs fürs nächste Mal merken (restore.go)
 	a.finishUndo()     // offenes Löschen endgültig machen (undo.go)
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
 	a.cleanupEdits()
@@ -797,6 +876,11 @@ func (a *App) onTick() tea.Cmd {
 		cmds = append(cmds, c)
 	}
 	a.watchTick()
+	a.restoreTick(time.Now())
+	a.mcpWaitTick(time.Now()) // MCP wait_tab (mcpcontrol.go)
+	if c := a.headerTick(time.Now()); c != nil {
+		cmds = append(cmds, c) // eigener Befehl in der Kopfzeile (headerfields.go)
+	}
 	if c := a.vgTick(); c != nil {
 		cmds = append(cmds, c)
 	}
@@ -805,6 +889,8 @@ func (a *App) onTick() tea.Cmd {
 			a.noticeBell(s)
 		}
 		a.alertTick(s)
+		a.waitTick(s, time.Now()) // wartet auf dich / KI-Agent (waitmark.go)
+		a.flushAhead(s)           // vorausgetippt beim Verbinden (typeahead.go)
 		s.recordLatency(time.Now())
 		a.shareTick(s)
 		if c := a.takeClipboard(s); c != nil {
@@ -877,6 +963,10 @@ func (a *App) viewFrame() tea.View {
 		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrLogScan:
 		body = a.frame(a.viewLogScan(), a.logScanKeys())
+	case scrVuln:
+		body = a.frame(a.viewVuln(), a.vulnKeys())
+	case scrPlayer:
+		body = a.frame(a.viewPlayer(), a.playerKeys())
 	case scrCmdSets:
 		body = a.frame(a.viewCmdSets(), a.cmdSetsKeys())
 	case scrImport:
@@ -924,7 +1014,14 @@ func (a *App) viewFrame() tea.View {
 		a.z.reset() // während der Animation ist nichts klickbar
 		body, cur = a.viewIntro(), nil
 	}
-	v := tea.NewView(body)
+	if cur != nil && !a.s.T.Dark {
+		// Helle Themes: Cursor selbst zeichnen und den des Terminals
+		// ausblenden, dessen Farbe (oft Weiß) wir nicht sicher setzen können.
+		body, cur = paintCursor(body, cur.X, cur.Y, a.s.T), nil // fillbg.go
+	}
+	// Grundfarben in jede Zelle (fillbg.go): sonst bleiben helle Themes in
+	// Terminals ohne OSC 11 dunkel.
+	v := tea.NewView(fillDefaultColors(body, a.s.T.Text, a.s.T.Bg))
 	v.AltScreen = true
 	v.MouseMode = a.mouseMode()
 	v.Cursor = cur
@@ -942,7 +1039,12 @@ func (a *App) viewFrame() tea.View {
 // Über-Dialog (F12), im Startbild und beim Entsperren, nicht in der Kopfzeile:
 // dort kosteten sie im schmalen Fenster die Tabnamen.
 func (a *App) headerLeft() string {
-	return a.logoChip(">_ " + version.Name) // gradient.go
+	logo := a.logoChip(">_ " + version.Name) // gradient.go
+	if a.scr == scrTerminal && len(a.sessions) > 0 {
+		// Klick aufs Logo: Manager für einen weiteren Tab, wie „+“ (tabs.go)
+		return a.z.click(logo, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() })
+	}
+	return logo
 }
 
 // headerTint: Kopfzeile links mit einem Hauch Akzent, der nach rechts
@@ -1166,12 +1268,35 @@ func (a *App) overlay(base, box string) string {
 	}
 	a.z.rects = a.z.rects[:0]
 	box = a.z.scan(box, x, y)
-	layers := []*lipgloss.Layer{lipgloss.NewLayer(base)}
-	if shadowsOn() {
-		layers = a.shadowLayers(base, x, y, bw, bh) // frames.go
+	return stamp(a.overlayBackground(base, x, y, bw, bh), box, x, y, a.w)
+}
+
+// overlayMemo: abgedunkelter Hintergrund samt Schatten unter dem Modal.
+// Beim Blättern in der Befehlspalette ändert sich nur das Modal; der
+// Hintergrund darunter bleibt gleich. Ihn jedes Bild neu abzudunkeln und
+// durch den Compositor zu schicken kostete den Großteil der Zeichenzeit,
+// der Auswahlbalken zog dadurch spürbar nach.
+type overlayMemo struct {
+	base         string
+	x, y, bw, bh int
+	gen, w, h    int
+	shadow       bool
+	out          string
+}
+
+func (a *App) overlayBackground(base string, x, y, bw, bh int) string {
+	m := &a.ovMemo
+	sh := shadowsOn()
+	if m.out != "" && m.base == base && m.x == x && m.y == y && m.bw == bw && m.bh == bh &&
+		m.gen == a.styleGen && m.w == a.w && m.h == a.h && m.shadow == sh {
+		return m.out
 	}
-	c := lipgloss.NewCompositor(append(layers, lipgloss.NewLayer(box).X(x).Y(y).Z(2))...)
-	return c.Render()
+	out := base
+	if sh {
+		out = lipgloss.NewCompositor(a.shadowLayers(base, x, y, bw, bh)...).Render() // frames.go
+	}
+	*m = overlayMemo{base: base, x: x, y: y, bw: bw, bh: bh, gen: a.styleGen, w: a.w, h: a.h, shadow: sh, out: out}
+	return out
 }
 
 func plural(n int, one, many string) string {

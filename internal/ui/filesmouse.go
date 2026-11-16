@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"sort"
@@ -312,11 +313,11 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 			hint = many
 		}
 		items = append(items,
-			menuItem{label: toOther, hint: hint, run: func() tea.Cmd {
+			menuItem{label: toOther, hint: hint, sep: true, run: func() tea.Cmd {
 				return a.startTransfer(s, p.fs, paths, other.fs, other.path, side == 0, false)
 			}},
 			menuItem{label: sendTo, run: func() tea.Cmd { return a.askSendTo(s, side, paths) }},
-			menuItem{label: i18n.T("Umbenennen"), hint: "F2", run: func() tea.Cmd { return a.askRename(s, side, i) }},
+			menuItem{label: i18n.T("Umbenennen"), hint: "F2", sep: true, run: func() tea.Cmd { return a.askRename(s, side, i) }},
 			menuItem{label: i18n.T("Rechte ändern"), hint: modeString(e.Mode), run: func() tea.Cmd { return a.askChmod(s, side, i) }},
 			menuItem{label: i18n.T("Pfad kopieren"), hint: "y", run: func() tea.Cmd { return a.copyPath(full) }},
 		)
@@ -331,7 +332,7 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 		if many != "" {
 			del = fmt.Sprintf(i18n.T("%s löschen …"), many)
 		}
-		items = append(items, menuItem{label: del, hint: "d", run: func() tea.Cmd { return a.askDelete(s, side, paths) }})
+		items = append(items, menuItem{label: del, hint: "d", sep: true, run: func() tea.Cmd { return a.askDelete(s, side, paths) }})
 	} else {
 		hidden := i18n.T("Versteckte zeigen")
 		if f.hidden {
@@ -340,9 +341,9 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 		items = append(items,
 			menuItem{label: i18n.T("Neuer Ordner"), hint: "n", run: func() tea.Cmd { return a.filesMkdir(s) }},
 			menuItem{label: i18n.T("Neu laden"), hint: "r", run: func() tea.Cmd { p.load(f.hidden); return nil }},
-			menuItem{label: hidden, hint: ".", run: func() tea.Cmd { a.filesToggleHidden(s); return nil }},
+			menuItem{label: hidden, hint: ".", sep: true, run: func() tea.Cmd { a.filesToggleHidden(s); return nil }},
 			menuItem{label: i18n.T("Sortieren nach …"), hint: sortLabel((p.sortBy + 1) % 3), run: func() tea.Cmd { p.sortClick((p.sortBy+1)%3, f.hidden); return nil }},
-			menuItem{label: i18n.T("Pfad kopieren"), hint: "y", run: func() tea.Cmd { return a.copyPath(p.path) }},
+			menuItem{label: i18n.T("Pfad kopieren"), hint: "y", sep: true, run: func() tea.Cmd { return a.copyPath(p.path) }},
 		)
 		if remote && s.state == stConnected {
 			dir := p.path
@@ -350,7 +351,7 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 		}
 		if len(p.marked) > 0 {
 			paths := p.picked()
-			items = append(items, menuItem{label: fmt.Sprintf(i18n.T("%d markierte kopieren"), len(paths)), hint: "c",
+			items = append(items, menuItem{label: fmt.Sprintf(i18n.T("%d markierte kopieren"), len(paths)), hint: "c", sep: true,
 				run: func() tea.Cmd { return a.startTransfer(s, p.fs, paths, other.fs, other.path, side == 0, false) }})
 		}
 	}
@@ -384,6 +385,11 @@ func (a *App) askSendTo(s *session, side int, paths []string) tea.Cmd {
 			dir = dst.fs.Join(dst.fs.Home(), strings.TrimPrefix(strings.TrimPrefix(dir, "~"), "/"))
 		}
 		if err := dst.fs.Mkdir(dir); err != nil {
+			if side == 0 && a.offerSudo(s, dst.fs, i18n.T("Hochladen nach ")+dir, err, func() tea.Cmd {
+				return a.startSudoTransfer(s, src.fs, paths, dst.fs, dir, true)
+			}) {
+				return nil
+			}
 			a.flashErr(err.Error())
 			return nil
 		}
@@ -409,15 +415,26 @@ func (a *App) askRename(s *session, side, i int) tea.Cmd {
 			a.flashErr(i18n.T("Der Name darf kein / oder \\ enthalten"))
 			return nil
 		}
-		if err := p.fs.Rename(p.fs.Join(p.path, old), p.fs.Join(p.path, name)); err != nil {
-			a.flashErr(i18n.T("Umbenennen ging nicht: ") + err.Error())
+		from, to := p.fs.Join(p.path, old), p.fs.Join(p.path, name)
+		done := func(err error) tea.Cmd {
+			if err != nil {
+				return nil
+			}
+			p.load(f.hidden)
+			p.selectName(name)
+			p.peek = nil
+			a.flashOK(fmt.Sprintf(i18n.T("„%s“ heißt jetzt „%s“"), old, name))
 			return nil
 		}
-		p.load(f.hidden)
-		p.selectName(name)
-		p.peek = nil
-		a.flashOK(fmt.Sprintf(i18n.T("„%s“ heißt jetzt „%s“"), old, name))
-		return nil
+		if err := p.fs.Rename(from, to); err != nil {
+			if !a.offerSudo(s, p.fs, i18n.T("Umbenennen: ")+from+" → "+name, err, func() tea.Cmd {
+				return a.runSudo(s, "mv "+from+" "+to, func(ctx context.Context, sx *sshx.Sudo) error { return sx.Rename(ctx, from, to) }, done)
+			}) {
+				a.flashErr(i18n.T("Umbenennen ging nicht: ") + err.Error())
+			}
+			return nil
+		}
+		return done(nil)
 	})
 	return nil
 }
@@ -448,14 +465,24 @@ func (a *App) askChmod(s *session, side, i int) tea.Cmd {
 		if n&0o1000 != 0 {
 			mode |= fs.ModeSticky
 		}
-		if err := p.fs.Chmod(full, mode); err != nil {
-			a.flashErr(i18n.T("Rechte ändern ging nicht: ") + err.Error())
+		done := func(err error) tea.Cmd {
+			if err != nil {
+				return nil
+			}
+			p.load(f.hidden)
+			p.selectName(e.Name)
+			a.flashOK(fmt.Sprintf(i18n.T("Rechte von „%s“: %o"), e.Name, n))
 			return nil
 		}
-		p.load(f.hidden)
-		p.selectName(e.Name)
-		a.flashOK(fmt.Sprintf(i18n.T("Rechte von „%s“: %o"), e.Name, n))
-		return nil
+		if err := p.fs.Chmod(full, mode); err != nil {
+			if !a.offerSudo(s, p.fs, fmt.Sprintf(i18n.T("Rechte ändern: %s → %o"), full, n), err, func() tea.Cmd {
+				return a.runSudo(s, fmt.Sprintf("chmod %o %s", n, full), func(ctx context.Context, sx *sshx.Sudo) error { return sx.Chmod(ctx, full, mode) }, done)
+			}) {
+				a.flashErr(i18n.T("Rechte ändern ging nicht: ") + err.Error())
+			}
+			return nil
+		}
+		return done(nil)
 	})
 	return nil
 }
@@ -486,15 +513,24 @@ func (a *App) askDelete(s *session, side int, paths []string) tea.Cmd {
 		body = fmt.Sprintf(i18n.T("%s: %d Einträge in %s\n(%s%s)\nendgültig löschen, Ordner mit allem darin?"), i18n.T(p.fs.Label()), len(paths), p.path, strings.Join(names, ", "), more)
 	}
 	a.modal = confirmModal(i18n.T("Löschen?"), body, func() tea.Cmd {
-		for _, x := range paths {
+		done := func(error) tea.Cmd {
+			p.marked = nil
+			p.load(f.hidden)
+			return nil
+		}
+		for i, x := range paths {
 			if err := p.fs.RemoveAll(x); err != nil {
+				rest := paths[i:]
+				if a.offerSudo(s, p.fs, i18n.T("Löschen:\n")+sudoListNames(rest), err, func() tea.Cmd {
+					return a.runSudo(s, "rm -rf "+strings.Join(rest, " "), func(ctx context.Context, sx *sshx.Sudo) error { return sx.Remove(ctx, rest...) }, done)
+				}) {
+					return done(nil)
+				}
 				p.err = err.Error()
 				break
 			}
 		}
-		p.marked = nil
-		p.load(f.hidden)
-		return nil
+		return done(nil)
 	})
 	return nil
 }

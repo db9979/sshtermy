@@ -42,6 +42,12 @@ const (
 type modal struct {
 	kind     modalKind
 	copy     string // mText: c kopiert diesen Text
+	vuln     bool   // mText: Ergebnis des Sicherheitschecks über einen Ordner (vulnfolder.go)
+	fw       bool   // mText: Firmware-Hinweise (firmware.go)
+	patch    bool   // mText: Patch-Runde (patchround.go)
+	harden   bool   // mText: Härtungs-Check (harden.go)
+	keyinv   bool   // mText: Schlüssel-Inventar, ein Schlüssel (keyinv.go)
+	inv      bool   // mText: Inventar & Änderungen (inventory.go)
 	mail     string // mText: m öffnet diese mailto:-Adresse im Mailprogramm
 	title    string
 	body     string
@@ -68,9 +74,10 @@ type modal struct {
 	anchored bool        // am Mauszeiger statt mittig
 	hints    [][2]string // Tastenhinweise (setzt modalView aus modalKeys)
 
-	crash *crash.Report // nur Absturzbericht
-	recap bool          // Menü ist der Rückblick des Begleiters (companion.go)
-	quit  bool          // Rückfrage beim Beenden (quitask.go)
+	crash *crash.Report             // nur Absturzbericht
+	recap bool                      // Menü ist der Rückblick des Begleiters (companion.go)
+	quit  bool                      // Rückfrage beim Beenden (quitask.go)
+	alt   map[string]func() tea.Cmd // Bestätigung: weitere Tasten (z. B. a = abkoppeln)
 
 	guardUntil time.Time // von selbst aufgegangen: bis dahin keine Tasten (modalguard.go)
 	twice      bool      // Bestätigen: Gefahr, j zweimal
@@ -195,6 +202,10 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		m.in, cmd = m.in.Update(k)
 		return cmd
 	case mConfirm:
+		if f := m.alt[key]; f != nil {
+			a.modal = nil
+			return f()
+		}
 		switch yesNo(k) {
 		case 1:
 			if m.twice && !m.yesArmed {
@@ -281,6 +292,21 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	case mQuick:
 		return a.quickModalKey(key)
 	case mText:
+		if m.patch {
+			if cmd, ok := a.patchKey(key); ok {
+				return cmd
+			}
+		}
+		if m.keyinv {
+			if cmd, ok := a.keyinvKey(key); ok {
+				return cmd
+			}
+		}
+		if m.inv {
+			if cmd, ok := a.invKey(key); ok {
+				return cmd
+			}
+		}
 		if m.textKey(key) {
 			a.modal = nil
 		}

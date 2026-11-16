@@ -80,8 +80,9 @@ type Set struct {
 	Parse    Parse     `yaml:"parse,omitempty"`
 	Logs     Logs      `yaml:"logs,omitempty"`
 	Syslog   Syslog    `yaml:"syslog,omitempty"`
-	Read     []string  `yaml:"read,omitempty"`   // nur eingebaut: weitere Lesebefehle (ganze Zeile)
-	Danger   []Danger  `yaml:"danger,omitempty"` // zusätzliche Gefahrenregeln
+	Advisory Advisory  `yaml:"advisory,omitempty"` // Firmware-Sicherheitshinweise (NVD)
+	Read     []string  `yaml:"read,omitempty"`     // nur eingebaut: weitere Lesebefehle (ganze Zeile)
+	Danger   []Danger  `yaml:"danger,omitempty"`   // zusätzliche Gefahrenregeln
 	Variants []Variant `yaml:"variants,omitempty"`
 	Samples  []Sample  `yaml:"samples,omitempty"`
 
@@ -91,6 +92,17 @@ type Set struct {
 	Raw    []byte `yaml:"-"`
 	From   string `yaml:"-"` // Team: wer ihn geteilt hat (aus dem Paket)
 	famEff string // geerbte Familie (Install)
+}
+
+// Advisory: woran sshTermy Sicherheitsmeldungen zur Firmware findet.
+// CPE: Produkt in der NVD („cpe:2.3:o:fortinet:fortios“), mehrere bei
+// Produktfamilien (Cisco IOS und IOS XE). Version: Suchmuster mit einer
+// Gruppe, das aus der Firmware-Angabe die Version in NVD-Schreibweise holt.
+// URL: Seite des Herstellers mit Sicherheitsmeldungen und Downloads.
+type Advisory struct {
+	CPE     []string `yaml:"cpe,omitempty"`
+	Version string   `yaml:"version,omitempty"`
+	URL     string   `yaml:"url,omitempty"`
 }
 
 // Detect: Merkmale, an denen man das System erkennt (Suchmuster).
@@ -360,6 +372,7 @@ func (s *Set) Validate() error {
 	s.checkParse("parse", s.Parse, bad)
 	s.checkLogs("logs", s.Logs, bad)
 	checkSyslog("syslog", s.Syslog, bad)
+	checkAdvisory(s.Advisory, bad)
 	if len(s.Variants) > maxVariants {
 		bad("höchstens %d Varianten", maxVariants)
 	}
@@ -557,4 +570,21 @@ func SyslogSteps(steps []string, ip string, port int) ([]string, error) {
 		}))
 	}
 	return out, nil
+}
+
+var reCPE = regexp.MustCompile(`^cpe:2\.3:[aoh]:[a-z0-9_\-.]+:[a-z0-9_\-.]+$`)
+
+func checkAdvisory(a Advisory, bad func(string, ...any)) {
+	if len(a.CPE) > 4 {
+		bad("advisory.cpe: höchstens 4 Produkte")
+	}
+	for _, c := range a.CPE {
+		if !reCPE.MatchString(c) {
+			bad("advisory.cpe „%s“: Form cpe:2.3:o:hersteller:produkt", c)
+		}
+	}
+	pat("advisory.version", a.Version, false, bad)
+	if a.URL != "" && (!strings.HasPrefix(a.URL, "https://") || strings.ContainsAny(a.URL, " \t\n\"'<>")) {
+		bad("advisory.url: nur https-Adressen")
+	}
 }

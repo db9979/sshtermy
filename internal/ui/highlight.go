@@ -213,7 +213,7 @@ func (a *App) alertTick(s *session) {
 		if a.lock != nil {
 			body = i18n.T("Farbregel hat angeschlagen") // gesperrt: keinen Inhalt verraten
 		}
-		a.sendDesktop("sshTermy · "+s.tabName(), body)
+		a.sendDesktopFor(s, "sshTermy · "+s.tabName(), body)
 	}
 }
 

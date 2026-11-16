@@ -12,3 +12,7 @@ parse:
   firmware: '(?i)(SFOS\s+[\d.]+(?:\s+MR-\d+)?)'
 syslog:
   note: "Sophos Firewall: System services › Log settings › Syslog servers › Hinzufügen (IP, UDP, Port)."
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:o:sophos:sfos]
+  url: https://www.sophos.com/en-us/security-advisories

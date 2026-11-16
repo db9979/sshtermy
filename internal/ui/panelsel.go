@@ -186,7 +186,8 @@ func (s *session) panelSelText() string {
 		return ""
 	}
 	a, b := s.psel.norm()
-	var out []string
+	var out strings.Builder
+	prev := -1 // vorige kopierte Zeile (für umbrochene Kästen)
 	for l := max(0, a.line); l <= b.line && l < len(s.pplain); l++ {
 		line := s.pplain[l]
 		from, to := 0, ansi.StringWidth(line)
@@ -200,9 +201,81 @@ func (s *session) panelSelText() string {
 		if to > from {
 			t = ansi.Cut(line, from, to)
 		}
-		out = append(out, strings.TrimRight(t, " "))
+		t = stripFrame(t)
+		if a.line != b.line && frameOnly(t) {
+			continue // ┌───┐ / └───┘ eines Kastens
+		}
+		switch {
+		case prev < 0:
+		case wrappedInFrame(s.pplain[prev], line):
+			out.WriteByte(' ') // vom Kasten umbrochen: eine Zeile, kein Enter
+		default:
+			out.WriteByte('\n')
+		}
+		out.WriteString(t)
+		prev = l
 	}
-	return strings.Trim(strings.Join(out, "\n"), "\n")
+	return strings.Trim(out.String(), "\n")
+}
+
+// Kästen im Panel (Rahmen │ … │, siehe Styles.Panel) gehören nicht zum
+// kopierten Text. Sonst landete beim Einfügen „vi │\n│ /data/…“ in der Shell:
+// zwei Zeilen mit Rahmenstrichen statt eines Befehls.
+
+const frameRunes = "│┃║"
+
+// stripFrame: Rahmenstriche am Anfang/Ende einer kopierten Zeile entfernen.
+func stripFrame(t string) string {
+	t = strings.TrimRight(t, " ")
+	if r, n := utf8.DecodeLastRuneInString(t); n > 0 && strings.ContainsRune(frameRunes, r) {
+		t = strings.TrimRight(t[:len(t)-n], " ")
+	}
+	if r, n := utf8.DecodeRuneInString(t); n > 0 && strings.ContainsRune(frameRunes, r) {
+		t = strings.TrimPrefix(t[n:], " ")
+	}
+	return t
+}
+
+// frameOnly: nur Rahmenlinie (┌──┐, └──┘, ├──┤) und Leerraum.
+func frameOnly(t string) bool {
+	if strings.TrimSpace(t) == "" {
+		return false
+	}
+	for _, r := range t {
+		if r != ' ' && (r < 0x2500 || r > 0x257F) {
+			return false
+		}
+	}
+	return true
+}
+
+// frameInner: Inhalt einer Kastenzeile „│ … │“ und seine Breite.
+func frameInner(line string) (string, int, bool) {
+	t := strings.TrimSpace(line)
+	first, n1 := utf8.DecodeRuneInString(t)
+	last, n2 := utf8.DecodeLastRuneInString(t)
+	if n1 == 0 || len(t) <= n1+n2 || !strings.ContainsRune(frameRunes, first) || !strings.ContainsRune(frameRunes, last) {
+		return "", 0, false
+	}
+	inner := t[n1 : len(t)-n2]
+	w := ansi.StringWidth(inner) - 2 // Innenabstand links/rechts
+	return strings.TrimSpace(inner), w, w > 0
+}
+
+// wrappedInFrame: ist next die Fortsetzung von prev, weil der Kasten das
+// nächste Wort umbrochen hat? Das ist so, wenn das erste Wort von next nicht
+// mehr in den Rest von prev gepasst hätte (gleiche Regel wie beim Umbrechen).
+func wrappedInFrame(prev, next string) bool {
+	p, w, ok := frameInner(prev)
+	n, w2, ok2 := frameInner(next)
+	if !ok || !ok2 || w != w2 || p == "" || n == "" {
+		return false
+	}
+	word := n
+	if i := strings.IndexByte(n, ' '); i > 0 {
+		word = n[:i]
+	}
+	return ansi.StringWidth(p)+1+ansi.StringWidth(word) > w
 }
 
 // copyPanelSel kopiert die Markierung im Panel (Betriebssystem + OSC 52).

@@ -33,6 +33,28 @@ und dieser Schlüssel liegt nur als Secret im Repository.
    gebaute App prüft sie vor jedem Update. Ältere Versionen ohne eingebauten Schlüssel
    aktualisieren sich weiter wie bisher und haben danach die Prüfung.
 
+## Was signiert wird (seit November 2026)
+
+Der Release-Workflow hat drei Jobs: **build** (Tests, Bauen, ohne Secrets), **sign** (nur hier liegt
+`UPDATE_SIGNING_KEY`; kein Checkout, kein `go`, nur das in *build* gebaute `sshtermy-sign`) und
+**publish** (Herkunftsnachweis, Release, Homebrew).
+
+Die erste Zeile von `checksums.txt` nennt die Version, z. B. `# sshtermy v1.0.380`. Sie ist mit
+signiert, und die App installiert nur, wenn sie zur angekündigten Version passt. So lässt sich ein
+älteres, ebenfalls signiertes Release nicht als neues ausgeben. Ältere Apps überlesen die Zeile.
+Übergang: Releases von vor dieser Änderung haben die Zeile nicht und werden von neuen Apps nicht
+mehr installiert; beim Kanal „stabil“ gibt es deshalb nach dem Umstieg ein paar Tage lang kein Update.
+
+Zusätzlich hat jedes Release einen Herkunftsnachweis von GitHub (Sigstore) und eine
+Bibliotheksliste (SBOM). Prüfen:
+
+```
+gh attestation verify sshtermy_linux_amd64 --repo db9979/sshtermy
+```
+
+Empfehlung: unter **Settings → General → Releases** „Release immutability“ einschalten. Dann lässt
+sich ein veröffentlichtes Release (Dateien und Tag) nachträglich nicht mehr verändern.
+
 ## Kontrolle
 
 - Im Release `v…` gibt es die Datei `checksums.txt.sig`.

@@ -202,6 +202,10 @@ func (a *App) termHeader(s *session) string {
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
 	hb := a.hostBadge(s)
+	extra := a.headerFields() // Uhrzeit, eigener Befehl (headerfields.go)
+	if s.copy != nil {
+		goal = st.Badge.Foreground(st.T.Warn).Bold(true).Render(i18n.T("■ MARKIEREN")) + " " + goal
+	}
 
 	// rechte Hälfte in Stufen: erst wer@wo, dann Leitung, Host, Tunnel und
 	// zuletzt die Breite der KI-Anzeige opfern.
@@ -215,6 +219,9 @@ func (a *App) termHeader(s *session) string {
 		}
 		if stage < 2 && len(line) > 0 {
 			parts = append(parts, strings.Join(line, ""))
+		}
+		if stage < 3 && extra != "" {
+			parts = append(parts, extra)
 		}
 		if goal != "" {
 			parts = append(parts, goal)

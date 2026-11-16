@@ -20,3 +20,7 @@ danger:
     reason: leert oder deaktiviert die Firewall
   - rx: '\b(/etc/rc\.initial\.defaults|rc\.initial\.defaults)\b'
     reason: löscht Konfiguration oder Speicher des Geräts
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:a:netgate:pfsense]
+  url: https://docs.netgate.com/advisories/

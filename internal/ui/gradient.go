@@ -57,24 +57,6 @@ func barTint(tint, base color.Color, strength float64, fade int) func(x int) col
 	}
 }
 
-// gradFg: Schrift im Verlauf fgA → fgB auf festem Hintergrund.
-func gradFg(s string, fgA, fgB, bg color.Color, bold bool) string {
-	r := []rune(s)
-	var b strings.Builder
-	for i, ch := range r {
-		k := 0.0
-		if len(r) > 1 {
-			k = float64(i) / float64(len(r)-1)
-		}
-		st := lipgloss.NewStyle().Foreground(mixColor(fgA, fgB, k)).Bold(bold)
-		if bg != nil {
-			st = st.Background(bg)
-		}
-		b.WriteString(st.Render(string(ch)))
-	}
-	return b.String()
-}
-
 func sameColor(a, b color.Color) bool {
 	if a == nil || b == nil {
 		return a == b

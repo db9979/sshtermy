@@ -438,17 +438,6 @@ func (a *App) quickRawItems(c domain.Connection) []palItem {
 
 func (s *session) isSerial() bool { return s.conn.Protocol == domain.ProtoSerial }
 
-// remoteString: Systembeschreibung für die Gefahren-Einstufung.
-func (s *session) remoteString() string {
-	if s.client != nil {
-		return s.client.Remote.String()
-	}
-	if s.isLocal() && localWindowsShell(s.prof) || s.isWinRM() {
-		return "Windows " + s.profileSummary()
-	}
-	return s.profileSummary()
-}
-
 // syncProtoPort: Wechsel SSH ↔ Telnet im Formular passt den Standard-Port an,
 // solange dort noch der Standard des anderen Protokolls steht.
 func syncProtoPort(f *form) {

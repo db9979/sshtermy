@@ -58,3 +58,7 @@ samples:
       name: fw1
       cpu: 4
       mem: 38
+# Firmware-Sicherheitshinweise: Produkt in der NVD (nur der Produktname wird gesendet).
+advisory:
+  cpe: [cpe:2.3:a:cisco:adaptive_security_appliance_software]
+  url: https://sec.cloudapps.cisco.com/security/center/publicationListing.x
