@@ -158,18 +158,28 @@ func (s *session) run(ctx context.Context, wsURL string, inv sharewire.Invite, h
 	c := &conn{ws}
 	s.call("stage", "code")
 	jctx, jcancel := context.WithTimeout(ctx, 4*time.Minute)
-	// Antwortet der Gastgeber nicht binnen 20 s auf den Code, nicht ewig warten.
+	// Antwortet der Gastgeber nicht binnen 20 s auf den Code, nicht ewig
+	// warten. Die Uhr läuft erst, wenn der Code gesendet ist: Ohne JIT (Edge
+	// „Sicherheit im Web erhöhen“) rechnet der Browser vorher lange.
 	var checked atomic.Bool
-	quiet := time.AfterFunc(20*time.Second, func() {
-		if !checked.Load() {
-			jcancel()
+	var quiet *time.Timer
+	sharewire.Stage = func(st string) {
+		s.call("stage", st)
+		if st == "gesendet" {
+			quiet = time.AfterFunc(20*time.Second, func() {
+				if !checked.Load() {
+					jcancel()
+				}
+			})
 		}
-	})
+	}
 	w, err := sharewire.Join(jctx, c, inv, hello, func(chk [3]string) {
 		checked.Store(true)
 		s.call("check", strings.ToUpper(strings.Join(chk[:], " · ")))
 	})
-	quiet.Stop()
+	if quiet != nil {
+		quiet.Stop()
+	}
 	jcancel()
 	if err != nil {
 		if !checked.Load() && ctx.Err() == nil {

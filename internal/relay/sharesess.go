@@ -35,7 +35,7 @@ type GuestState struct {
 
 // HostUI: was die Oberfläche erfährt.
 type HostUI struct {
-	Kind string // klopft, falsch, weg, hand, tasten, zuschauer, ende
+	Kind string // klopft, falsch, gesperrt, weg, hand, tasten, zuschauer, ende
 	G    *GuestState
 	Data []byte
 	N    int
@@ -148,8 +148,17 @@ func (h *HostSession) burn() {
 func (h *HostSession) guestMsg(g *GuestState, b []byte) (HostUI, bool) {
 	switch b[0] {
 	case MsgPakeA:
-		if g.ready || g.keys.Key != nil || h.locked {
+		if g.ready || g.keys.Key != nil {
 			return HostUI{}, false
+		}
+		if h.locked {
+			// Nicht stumm bleiben: sonst wartet der Zuschauer ewig auf „Prüfe den Code“.
+			v := g.V
+			go func() {
+				_ = h.Sh.To(v, append([]byte{MsgNo}, "gesperrt"...))
+				_ = h.Sh.Kick(v)
+			}()
+			return HostUI{Kind: "gesperrt", G: g}, true
 		}
 		msgB, k, err := HostPake(h.Words, h.Sh.Platz, b[1:])
 		if err != nil {
