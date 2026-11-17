@@ -63,16 +63,16 @@ type palItem struct {
 	// dot: Online-Punkt hinter dem Symbol (Verbindungen, reachDot)
 	dot      string
 	dotColor color.Color
-	label     string
-	sub       string // gedimmt hinter dem Namen (Ordner)
-	hint      string
-	danger    string
-	more      bool   // „weitere im Manager“: gedimmt
-	menu      string // Untermenü ("" = Übersicht), siehe palMenus
-	keys      string // weitere Suchwörter (z. B. englisch)
-	state     palState
-	keep      bool // Palette bleibt nach dem Ausführen offen (Schalter)
-	run       func() tea.Cmd
+	label    string
+	sub      string // gedimmt hinter dem Namen (Ordner)
+	hint     string
+	danger   string
+	more     bool   // „weitere im Manager“: gedimmt
+	menu     string // Untermenü ("" = Übersicht), siehe palMenus
+	keys     string // weitere Suchwörter (z. B. englisch)
+	state    palState
+	keep     bool // Palette bleibt nach dem Ausführen offen (Schalter)
+	run      func() tea.Cmd
 	// cycle: Durchschalt-Eintrag (‹ Wert › rechts). ⏎, → und Klick gehen
 	// einen Wert weiter, ← einen zurück.
 	cycle func(dir int) tea.Cmd
