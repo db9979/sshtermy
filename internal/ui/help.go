@@ -50,6 +50,7 @@ var helpSections = []helpSection{
 	{hcNone, "◆", "Überall", "", false, [][2]string{
 		{"Strg+Space", "Befehlspalette"},
 		{"F1", "diese Hilfe"},
+		{"F1 ↑↓ ⏎", "Zeile der Hilfe ausführen"},
 		{"⇧F9", "Tastenzeile erklären"},
 		{"F12", "Über & Update"},
 		{"F12 w", "Was ist neu"},
@@ -336,6 +337,11 @@ var helpSections = []helpSection{
 		{"user@host", "schnell verbinden"},
 		{"⏎", "ausführen"},
 		{"Tab", "KI fragen"},
+		{"→ (Treffer)", "dort zeigen, wo er im Menü steht"},
+		{"* / Rechtsklick", "anheften (oben in der Übersicht)"},
+		{"„alt+e“, „f6“", "Taste nachschlagen"},
+		{"„!“", "geänderte Einstellungen zeigen"},
+		{"Entf", "Einstellung auf Standard"},
 		{"◈ Einstellungen ›", "Schalter, Aussehen, Sprache"},
 		{"Esc / ← (Untermenü)", "zurück"},
 		{"↓ „umschreiben“", "Befehl fürs System anpassen"},
@@ -388,7 +394,7 @@ const (
 )
 
 func (a *App) helpModal() *modal {
-	return &modal{kind: mHelp, title: i18n.T("Tastenkürzel"), ctx: a.helpContext()}
+	return &modal{kind: mHelp, title: i18n.T("Tastenkürzel"), ctx: a.helpContext(), helpSel: -1}
 }
 
 func (a *App) helpContext() helpCtx {
@@ -542,9 +548,36 @@ func helpSectionByTitle(title string) (helpSection, bool) {
 	return helpSection{}, false
 }
 
+// helpPick: Auswahl in der Hilfe (F1). Beim Zeichnen zählt helpBlock die
+// sichtbaren Zeilen durch und merkt sich, wo die gewählte steht.
+type helpPick struct {
+	sel   int         // gewählte Zeile (-1 = keine)
+	n     int         // Zeilen bisher
+	rows  [][2]string // Taste und Beschriftung (übersetzt) je Zeile
+	block int         // Abschnitt mit der Auswahl (-1 = keiner)
+	line  int         // Zeile der Auswahl im Abschnitt
+	cur   int         // Abschnitt, der gerade gezeichnet wird
+}
+
+// helpMatch: passt die Zeile zum Suchtext? Wie die Palette verzeihend
+// (Tippfehler, ä/ae); getippte Tasten („alt+e“) nur genau.
+func helpMatch(filter, text string) bool {
+	f := strings.ToLower(filter)
+	if strings.Contains(strings.ToLower(text), f) {
+		return true
+	}
+	if palKeyQuery(filter) != "" {
+		return false
+	}
+	words := strings.Fields(foldText(text))
+	s, _ := palScore(filter, palHay{label: words, labelS: foldText(text)})
+	return s > 0
+}
+
 // helpBlock: ein Abschnitt in Spaltenbreite cw. Beschreibungen brechen um
-// statt mit „…“ abgeschnitten zu werden.
-func (s Styles) helpBlock(sec helpSection, ctx helpCtx, cw int, filter string) []string {
+// statt mit „…“ abgeschnitten zu werden. hp (optional) zählt die Zeilen für
+// die Auswahl und hebt die gewählte hervor.
+func (s Styles) helpBlock(sec helpSection, ctx helpCtx, cw int, filter string, hp *helpPick) []string {
 	head := s.Accent
 	if sec.ai {
 		head = lipgloss.NewStyle().Foreground(s.T.AI).Bold(true)
@@ -556,29 +589,54 @@ func (s Styles) helpBlock(sec helpSection, ctx helpCtx, cw int, filter string) [
 	if sec.ctx != hcNone && sec.ctx == ctx {
 		title += " " + s.Badge.Render(i18n.T("hier"))
 	}
-	rows := make([][2]string, 0, len(sec.rows))
-	f := strings.ToLower(filter)
+	rows := make([][3]string, 0, len(sec.rows))
 	for _, r := range sec.rows {
 		k, d := relabelDefault(r[0], sec.ctx), i18n.T(r[1])
-		if f != "" && !strings.Contains(strings.ToLower(k+" "+d+" "+i18n.T(sec.title)), f) {
+		if filter != "" && !helpMatch(filter, k+" "+d+" "+i18n.T(sec.title)) {
 			continue
 		}
-		rows = append(rows, [2]string{k, d})
+		rows = append(rows, [3]string{k, d, r[1]})
 	}
 	if len(rows) == 0 {
 		return nil
 	}
+	pair := make([][2]string, len(rows))
+	byKey := map[[2]string]string{}
+	for i, r := range rows {
+		pair[i] = [2]string{r[0], r[1]}
+		byKey[pair[i]] = r[2]
+	}
 	lines := []string{title}
-	for _, r := range sortFKeys(rows, activeKeys.label(actPalette)) {
+	for _, r := range sortFKeys(pair, activeKeys.label(actPalette)) {
+		chosen := false
+		if hp != nil {
+			chosen = hp.n == hp.sel
+			if chosen {
+				hp.block, hp.line = hp.cur, len(lines)
+			}
+			hp.rows = append(hp.rows, r)
+			hp.n++
+		}
 		k := s.Key.Render(r[0])
 		kw := max(helpKeyW, lipgloss.Width(k)+1)
-		dw := max(10, cw-kw)
+		badge := ""
+		if menuFresh[byKey[r]] {
+			badge = " " + lipgloss.NewStyle().Background(s.T.OK).Foreground(inkOn(s.T, s.T.OK)).Bold(true).Render(i18n.T("NEU"))
+		}
+		dw := max(10, cw-kw-lipgloss.Width(badge))
 		for i, l := range strings.Split(ansi.Wrap(r[1], dw, " "), "\n") {
+			var line string
 			if i == 0 {
-				lines = append(lines, k+strings.Repeat(" ", kw-lipgloss.Width(k))+s.Text.Render(l))
+				line = k + strings.Repeat(" ", kw-lipgloss.Width(k)) + s.Text.Render(l) + badge
 			} else {
-				lines = append(lines, strings.Repeat(" ", kw)+s.Text.Render(l))
+				line = strings.Repeat(" ", kw) + s.Text.Render(l)
 			}
+			if chosen {
+				bar := lipgloss.NewStyle().Background(s.T.Accent).Foreground(inkOn(s.T, s.T.Accent)).Bold(true)
+				plain := ansi.Strip(line)
+				line = bar.Render(plain + strings.Repeat(" ", max(0, cw-lipgloss.Width(plain))))
+			}
+			lines = append(lines, line)
 		}
 	}
 	return lines
@@ -636,12 +694,19 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	}
 	var blocks [][]string
 	var heights []int
+	hp := &helpPick{sel: m.helpSel, block: -1}
 	for _, sec := range secs {
-		if b := s.helpBlock(sec, m.ctx, cw, m.filter); b != nil {
+		hp.cur = len(blocks)
+		if b := s.helpBlock(sec, m.ctx, cw, m.filter, hp); b != nil {
 			blocks = append(blocks, b)
 			heights = append(heights, len(b))
 		}
 	}
+	m.helpRows = hp.rows
+	if m.helpSel >= len(hp.rows) {
+		m.helpSel = len(hp.rows) - 1
+	}
+	selY := -1 // Zeile der Auswahl im fertigen Text
 	var body string
 	if len(blocks) == 0 {
 		body = s.Muted.Render(i18n.T("Keine Taste passt. Backspace löscht, Esc leert die Suche."))
@@ -652,6 +717,9 @@ func (m *modal) helpView(s Styles, w, h int) string {
 			for j, i := range idx {
 				if j > 0 {
 					lines = append(lines, "")
+				}
+				if i == hp.block {
+					selY = len(lines) + hp.line
 				}
 				lines = append(lines, blocks[i]...)
 			}
@@ -683,15 +751,23 @@ func (m *modal) helpView(s Styles, w, h int) string {
 		bodyLines = append(bodyLines, strings.Split(foot[1:], "\n")...)
 		foot, maxBody = "", max(3, h-2-4-2-2)
 	}
-	keys := [][2]string{{"←/→", i18n.T("Reiter")}, {"Esc", i18n.T("schließen")}}
+	keys := [][2]string{{"←/→", i18n.T("Reiter")}, {"⏎", i18n.T("ausführen")}, {"Esc", i18n.T("schließen")}}
 	if m.filter != "" {
-		keys = [][2]string{{"Backspace", i18n.T("Suche kürzen")}, {"Esc", i18n.T("Suche leeren")}}
+		keys = [][2]string{{"⏎", i18n.T("ausführen")}, {"Backspace", i18n.T("Suche kürzen")}, {"Esc", i18n.T("Suche leeren")}}
 	}
 	info := ""
 	if total := len(bodyLines); total > maxBody {
+		if selY >= 0 && m.helpFollow { // Auswahl sichtbar halten
+			if selY < m.scroll {
+				m.scroll = selY
+			} else if selY >= m.scroll+maxBody {
+				m.scroll = selY - maxBody + 1
+			}
+		}
+		m.helpFollow = false
 		m.scroll = max(0, min(m.scroll, total-maxBody))
 		bodyLines = bodyLines[m.scroll : m.scroll+maxBody]
-		keys = append([][2]string{{"↑↓", i18n.T("blättern")}}, keys...)
+		keys = append([][2]string{{"↑↓", i18n.T("wählen")}}, keys...)
 		if m.scroll+maxBody < total {
 			info = i18n.T("▾ mehr")
 		}
@@ -711,11 +787,18 @@ func (m *modal) helpKey(key string) (closeIt bool) {
 	}
 	switch key {
 	case "up":
-		m.scroll = max(0, m.scroll-1)
+		m.helpSel = max(0, m.helpSel-1)
+		m.helpFollow = true
 		return false
 	case "down":
-		m.scroll++
+		m.helpSel = min(len(m.helpRows)-1, m.helpSel+1)
+		m.helpFollow = true
 		return false
+	case "enter":
+		if m.helpSel >= 0 && m.helpSel < len(m.helpRows) {
+			m.helpGo = 1 // ausführen (helpGoCmd in palfind.go)
+		}
+		return true
 	case "pgup":
 		m.scroll = max(0, m.scroll-10)
 		return false
@@ -724,16 +807,16 @@ func (m *modal) helpKey(key string) (closeIt bool) {
 		return false
 	case "right", "tab":
 		m.helpTab = m.helpTab%len(helpTabs) + 1
-		m.filter, m.scroll = "", 0
+		m.filter, m.scroll, m.helpSel = "", 0, -1
 		return false
 	case "left", "shift+tab":
 		m.helpTab = (m.helpTab+len(helpTabs)-2)%len(helpTabs) + 1
-		m.filter, m.scroll = "", 0
+		m.filter, m.scroll, m.helpSel = "", 0, -1
 		return false
 	case "backspace":
 		if r := []rune(m.filter); len(r) > 0 {
 			m.filter = string(r[:len(r)-1])
-			m.scroll = 0
+			m.scroll, m.helpSel = 0, -1
 		}
 		return false
 	case "esc":
@@ -753,8 +836,29 @@ func (m *modal) helpKey(key string) (closeIt bool) {
 	// tippen filtert über alle Reiter
 	if r := []rune(key); len(r) == 1 && r[0] >= ' ' {
 		m.filter += key
-		m.scroll = 0
+		m.scroll, m.helpSel = 0, 0
+		return false
+	}
+	if activeKeys.is(actPalette, key) {
+		if m.helpSel >= 0 && m.helpSel < len(m.helpRows) {
+			m.helpGo = 2 // in der Palette zeigen
+		}
+		return true
+	}
+	// Taste drücken: zeigt, was sie tut (statt die Hilfe zu schließen).
+	if !activeKeys.is(actHelp, key) && helpPressable(key) {
+		m.filter, m.scroll, m.helpSel = keyLabel(key), 0, 0
 		return false
 	}
 	return true
+}
+
+// helpPressable: Tasten, die in der Hilfe nachgeschlagen statt als
+// „schließen“ verstanden werden: mit Strg/Alt oder F-Tasten.
+func helpPressable(key string) bool {
+	if strings.HasPrefix(key, "ctrl+") || strings.HasPrefix(key, "alt+") {
+		return true
+	}
+	k := strings.TrimPrefix(key, "shift+")
+	return len(k) >= 2 && k[0] == 'f' && strings.Trim(k[1:], "0123456789") == ""
 }

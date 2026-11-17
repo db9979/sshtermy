@@ -1,8 +1,11 @@
 package ui
 
 import (
+	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/i18n"
 )
@@ -355,4 +358,46 @@ func relabelDefault(lbl string, ctx helpCtx) string {
 		}
 	}
 	return i18n.T(lbl)
+}
+
+// pressNamed: Tastennamen der Keymap mit eigenem Code.
+var pressNamed = map[string]rune{
+	"enter": tea.KeyEnter, "esc": tea.KeyEscape, "tab": tea.KeyTab, "space": tea.KeySpace,
+	"backspace": tea.KeyBackspace, "delete": tea.KeyDelete, "up": tea.KeyUp, "down": tea.KeyDown, "left": tea.KeyLeft,
+	"right": tea.KeyRight, "pgup": tea.KeyPgUp, "pgdown": tea.KeyPgDown, "home": tea.KeyHome, "end": tea.KeyEnd,
+}
+
+// keyPressOf: Tastendruck zu einem Tastennamen der Keymap („alt+e“, „f6“,
+// „shift+f10“), z. B. um eine Aktion aus Palette oder Hilfe auszulösen.
+func keyPressOf(s string) tea.KeyPressMsg {
+	var mod tea.KeyMod
+	for {
+		switch {
+		case strings.HasPrefix(s, "ctrl+") && len(s) > 5:
+			mod |= tea.ModCtrl
+			s = s[5:]
+			continue
+		case strings.HasPrefix(s, "shift+") && len(s) > 6:
+			mod |= tea.ModShift
+			s = s[6:]
+			continue
+		case strings.HasPrefix(s, "alt+") && len(s) > 4:
+			mod |= tea.ModAlt
+			s = s[4:]
+			continue
+		}
+		break
+	}
+	if r, ok := pressNamed[s]; ok {
+		return tea.KeyPressMsg{Code: r, Mod: mod}
+	}
+	if n, err := strconv.Atoi(strings.TrimPrefix(s, "f")); err == nil && strings.HasPrefix(s, "f") && n >= 1 && n <= 63 {
+		return tea.KeyPressMsg{Code: tea.KeyF1 + rune(n-1), Mod: mod}
+	}
+	r, _ := utf8.DecodeRuneInString(s)
+	k := tea.KeyPressMsg{Code: r, Mod: mod}
+	if mod == 0 {
+		k.Text = s
+	}
+	return k
 }

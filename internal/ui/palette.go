@@ -40,13 +40,21 @@ const (
 	pgSetLook
 	pgSetSetup
 	pgHelp
-	pgTop   // Übersicht: häufige Aktionen
-	pgAreas // Übersicht: Ordner der Bereiche, Einstellungen, Hilfe
+	pgTop     // Übersicht: häufige Aktionen
+	pgAreas   // Übersicht: Ordner der Bereiche, Einstellungen, Hilfe
+	pgHits    // Suchtreffer nach Güte (palfind.go)
+	pgHere    // Übersicht: Aktionen des aktuellen Bildschirms (palhere.go)
+	pgPinned  // Übersicht: angeheftet (palstate.go)
+	pgKey     // getippte Taste: was sie tut (palfind.go)
+	pgMaybe   // nichts gefunden: „Meintest du …“
+	pgNew     // Hilfe › Neu seit dem letzten Update
+	pgChanged // „!“: geänderte Einstellungen
 )
 
 var palGroupName = map[palGroup]string{pgAI: "KI", pgSuggest: "VORSCHLÄGE", pgQuick: "SCHNELLBEFEHLE", pgRunbook: "RUNBOOKS", pgTunnel: "TUNNEL", pgConnect: "VERBINDEN", pgAction: "AKTIONEN", pgConns: "VERBINDUNGEN",
 	pgSetBehave: "ALLGEMEIN", pgSetSafe: "SICHERHEIT", pgSetLook: "AUSSEHEN", pgSetSetup: "EINRICHTEN", pgHelp: "HILFE & INFO",
-	pgTop: "HÄUFIG", pgAreas: "ALLE AKTIONEN"}
+	pgTop: "HÄUFIG", pgAreas: "ALLE AKTIONEN", pgHits: "TREFFER", pgHere: "HIER", pgPinned: "ANGEHEFTET", pgKey: "TASTE",
+	pgMaybe: "MEINTEST DU", pgNew: "NEU SEIT DEM LETZTEN UPDATE", pgChanged: "GEÄNDERT"}
 
 type palItem struct {
 	group     palGroup
@@ -80,6 +88,12 @@ type palItem struct {
 	// pos: Position des Werts (i von n) bei Durchschalt-Einträgen, für die
 	// Punkte ●○○ (palstyle.go); n = 0 heißt keine Punkte.
 	pos [2]int
+	// home: ursprüngliche Gruppe, wenn der Eintrag als Treffer, angeheftet
+	// oder geändert in einer anderen Gruppe steht (Reiter beim Hinspringen).
+	home    palGroup
+	fresh   bool // NEU-Marke (palstate.go)
+	changed bool // weicht vom Standard ab (palhere.go)
+	tabRun  bool // Tab führt den Eintrag aus (KI fragen: Wo finde ich …)
 }
 
 // palState: Schalter zeigen rechts „an“ oder „aus“ statt eines Hinweises.
@@ -98,6 +112,10 @@ type palette struct {
 	menu  string    // offenes Untermenü, "" = Übersicht
 	mo    palMotion // Übergänge (motion2.go)
 	tab   palGroup  // Reiter der Einstellungen (palstyle.go)
+	note  string    // Zeile über der Liste (Antwort der KI auf „Wo finde ich …?“)
+	// counting: zählt gerade die NEU-Einträge (verhindert, dass der Ordner
+	// sich beim Zählen selbst wieder zählt)
+	counting bool
 }
 
 func isPaletteKey(k string) bool { return activeKeys.is(actPalette, k) }
@@ -117,16 +135,91 @@ func (a *App) paletteItems() []palItem {
 	q := strings.TrimSpace(a.pal.in.Value())
 	ql := strings.ToLower(q)
 	match := func(x string) bool { return ql == "" || strings.Contains(strings.ToLower(x), ql) }
-	if m := a.pal.menu; m != "" && !palIsArea(m) {
-		return a.palSubmenu(m, ql, match)
+	m := a.pal.menu
+	switch {
+	case m == "help/new":
+		return palMark(a.palNewItems(q))
+	case q == "!" && (m == "" || strings.HasPrefix(m, "settings")):
+		return palMark(a.palChangedItems())
+	case m != "" && !palIsArea(m):
+		return palMark(a.palSubmenu(m, q))
 	}
 	s := a.current()
 	inTerm := a.scr == scrTerminal && s != nil && s.state == stConnected
 	inMgr := a.scr == scrManager
 	items := a.palDirect(q, s, inTerm, match)
-	// Aktionen: jede gehört zu einem Bereich (palAreas). Ohne Text zeigt die
-	// Übersicht nur die häufigen (top) und je Bereich einen Ordner; mit Text
-	// kommen alle Treffer direkt.
+	actions := a.palActions(s, inTerm, inMgr)
+	for i := range items {
+		if g := items[i].group; g == pgQuick || g == pgRunbook || g == pgTunnel {
+			items[i].area = "quick"
+		}
+	}
+	if area := m; area != "" {
+		// Ein Bereich ist offen: seine Einträge, mit Text nach Güte.
+		var out []palItem
+		for _, x := range append(items, actions...) {
+			if x.area == area && (!x.hidden || ql != "") {
+				x.top = false
+				out = append(out, x)
+			}
+		}
+		if ql != "" {
+			out = a.palRank(q, out)
+			for i := range out {
+				out[i].group = pgHits
+			}
+		}
+		return palMark(out)
+	}
+	if ql == "" {
+		return palMark(a.palOverview(items, actions))
+	}
+	// Suche: Taste nachschlagen, dann was sich aus dem Text ergibt (Ziel,
+	// Frage, Verbindungen …), dann Aktionen, Ordner, Einstellungen und
+	// Hilfe nach Güte, mit dem Weg grau dahinter.
+	cands := append([]palItem(nil), actions...)
+	for _, x := range a.palHereAll() {
+		x.sub = "· " + i18n.T("hier")
+		cands = append(cands, x)
+	}
+	cands = append(cands, a.palFolders(append(items, actions...))...)
+	for _, x := range a.palMenuItems() {
+		if x.open == "" || palParent(x.open) != "" {
+			cands = append(cands, x)
+		}
+	}
+	out := a.palKeyItems(q)
+	out = append(out, items...)
+	ranked := a.palRank(q, cands)
+	for i := range ranked {
+		ranked[i].group = pgHits
+	}
+	if len(ranked) == 0 {
+		out = append(out, a.palMaybe(q, cands)...)
+		if !inTerm || a.palWhereFirst(q) {
+			out = append(out, a.palAskWhereItem(q, cands))
+		}
+	}
+	return palMark(append(out, ranked...))
+}
+
+// palWhereFirst: klingt die Eingabe nach „Wo finde ich …?“ (dann bietet
+// die Palette die Menü-Suche der KI auch im Terminal an).
+func (a *App) palWhereFirst(q string) bool {
+	f := " " + foldText(q) + " "
+	for _, w := range []string{" wo ", " where ", " finde ", " find ", " einstellung ", " setting ", " menue ", " menu "} {
+		if strings.Contains(f, w) {
+			return true
+		}
+	}
+	return false
+}
+
+// palActions: alle Aktionen der Übersicht im aktuellen Zusammenhang. Jede
+// gehört zu einem Bereich (palAreas). Ohne Text zeigt die Übersicht nur die
+// häufigen (top) und je Bereich einen Ordner; mit Text kommen alle Treffer
+// direkt.
+func (a *App) palActions(s *session, inTerm, inMgr bool) []palItem {
 	var actions []palItem
 	add := func(area string, its ...palItem) {
 		for _, it := range its {
@@ -154,68 +247,35 @@ func (a *App) paletteItems() []palItem {
 	for i := range actions {
 		actions[i].group = pgAction
 	}
-	for i := range items {
-		if g := items[i].group; g == pgQuick || g == pgRunbook || g == pgTunnel {
-			items[i].area = "quick"
-		}
-	}
-	if area := a.pal.menu; area != "" {
-		// Ein Bereich ist offen: seine Einträge, gefiltert nach dem Text.
-		var out []palItem
-		for _, x := range append(items, actions...) {
-			if x.area == area && (!x.hidden || ql != "") && x.matches(match) {
-				x.top = false
-				out = append(out, x)
-			}
-		}
-		return out
-	}
-	if ql == "" {
-		return a.palOverview(items, actions)
-	}
-	for _, x := range actions {
-		if x.matches(match) {
-			items = append(items, x)
-		}
-	}
-	// Ordner (Bereiche, Einstellungen, Hilfe) mit passendem Namen, dazu die
-	// Treffer aus Einstellungen und Hilfe (mit dem Untermenü grau dahinter).
-	for _, f := range a.palFolders(append(items, actions...)) {
-		if match(f.label + " " + f.keys) {
-			items = append(items, f)
-		}
-	}
-	for _, x := range a.palMenuItems() {
-		if x.open == "" && x.matches(match) {
-			x.sub = "· " + palMenuPath(x.menu)
-			x.group = pgAction
-			items = append(items, x)
-		}
-	}
-	return items
+	return actions
 }
 
 // palAdd hängt Aktionen eines Bereichs an die Liste der Palette.
 type palAdd func(area string, its ...palItem)
 
 // palSubmenu: ein Untermenü (Einstellungen, Hilfe) ist offen.
-func (a *App) palSubmenu(m, ql string, match func(string) bool) []palItem {
+func (a *App) palSubmenu(m, q string) []palItem {
 	// Ohne Text: nur die Einträge dieser Ebene. Mit Text: Treffer auch
-	// aus den Unterordnern und die Einzelwerte hinter Durchschalt-Einträgen.
+	// aus den Unterordnern und die Einzelwerte hinter Durchschalt-Einträgen,
+	// nach Güte und mit dem Weg grau dahinter.
 	var items []palItem
 	for _, x := range a.palMenuItems() {
 		switch {
-		case ql == "":
+		case q == "":
 			// Einstellungen: nur der offene Reiter (palstyle.go).
 			if x.menu == m && !x.hidden && (m != "settings" || x.group == a.pal.tab) {
 				items = append(items, x)
 			}
-		case x.open == "" && (x.menu == m || strings.HasPrefix(x.menu, m+"/")) && x.matches(match):
-			if x.menu != m {
-				x.sub = "· " + i18n.T(palMenuLabel(x.menu))
-			}
+		case x.open == "" && (x.menu == m || strings.HasPrefix(x.menu, m+"/")):
 			items = append(items, x)
 		}
+	}
+	if q == "" {
+		return items
+	}
+	items = a.palRank(q, items)
+	for i := range items {
+		items[i].group = pgHits
 	}
 	return items
 }
@@ -652,7 +712,9 @@ func palIsArea(id string) bool {
 }
 
 // palOverview: Übersicht ohne Text. Oben was gerade passt (KI, Vorschläge),
-// dann „Häufig“, die Verbindungen und die Ordner.
+// die Aktionen des Bildschirms („Hier“), Angeheftetes, dann „Häufig“ (eigene
+// Nutzung zuerst, aufgefüllt mit den Standard-Einträgen), die Verbindungen
+// und die Ordner.
 func (a *App) palOverview(items, actions []palItem) []palItem {
 	var out []palItem
 	for _, x := range items {
@@ -660,11 +722,39 @@ func (a *App) palOverview(items, actions []palItem) []palItem {
 			out = append(out, x)
 		}
 	}
-	for _, x := range actions {
-		if x.top {
-			x.group = pgTop
-			out = append(out, x)
+	if _, here := a.palHere(); len(here) > 0 {
+		out = append(out, here...)
+	}
+	pins := a.palPins(actions)
+	out = append(out, pins...)
+	skip := map[string]bool{}
+	for _, x := range pins {
+		skip[i18n.German(x.label)] = true
+	}
+	top := a.palMine(actions, skip)
+	for _, x := range top {
+		skip[i18n.German(x.label)] = true
+	}
+	limit := menuTopMax
+	if len(top) == 0 { // ohne eigene Nutzung bleibt „Häufig“ wie gewohnt
+		for _, x := range actions {
+			if x.top {
+				limit++
+			}
 		}
+		limit = max(menuTopMax, limit-menuTopMax)
+	}
+	for _, x := range actions {
+		if len(top) >= limit {
+			break
+		}
+		if x.top && !skip[i18n.German(x.label)] {
+			top = append(top, x)
+		}
+	}
+	for _, x := range top {
+		x.group, x.top = pgTop, false
+		out = append(out, x)
 	}
 	for _, x := range items {
 		if x.group == pgConns {
@@ -673,7 +763,7 @@ func (a *App) palOverview(items, actions []palItem) []palItem {
 	}
 	out = append(out, a.palFolders(append(items, actions...))...)
 	for _, x := range actions {
-		if x.area == "" && !x.top && !x.hidden {
+		if x.area == "" && !x.top && !x.hidden && !skip[i18n.German(x.label)] {
 			x.group = pgAreas
 			out = append(out, x)
 		}
@@ -717,6 +807,7 @@ var palSubMenus = []palMenu{
 	{"settings/net", "backup", "Netzwerkgeräte", "Befehlssätze, Regeln für Switch-Configs", "switch netzwerk befehlssatz"},
 	{"settings/osv", "lock", "Sicherheitscheck (OSV)", "Quelle online/offline, eigener Spiegel, Container, NVD-Schlüssel", "sicherheit security osv cve schwachstellen"},
 	{"help/debug", "sesslog", "Fehlersuche", "Debug-Protokoll, Leistungsanzeige", "debug fehler leistung"},
+	{"help/new", "news", "Neu seit dem letzten Update", "neue Einträge, 14 Tage markiert", "neu new neues update neuerungen"},
 }
 
 // palParent: übergeordnetes Menü ("settings/ki" → "settings", "settings" → "").
@@ -745,10 +836,6 @@ func palMenuLabel(id string) string {
 		}
 	}
 	return ""
-}
-
-func (it palItem) matches(match func(string) bool) bool {
-	return match(it.label) || (it.keys != "" && match(it.keys))
 }
 
 // palEnter öffnet ein Untermenü ("" = zurück zur Übersicht).
@@ -842,6 +929,8 @@ func (a *App) palMenuItems() []palItem {
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
+		// nur über die Suche („Tipps“), der Tipp selbst nennt den Weg
+		hide(palToggle(ic("keys"), i18n.T("Tipps zu Tasten"), a.tipsOn(), "tipp tipps tasten kürzel shortcut hint lernen", func() tea.Cmd { return a.toggleTips() })),
 		// nur über die Suche („Tabs vom letzten Mal“), die Rückfrage beim Start nennt den Weg
 		hide(palCycle(pgSetBehave, ic("reconnect"), i18n.T("Tabs vom letzten Mal beim Start öffnen"), restoreLabel(a.restoreMode()),
 			"tabs wiederherstellen restore session sitzung weitermachen start letzte mal",
@@ -1020,6 +1109,7 @@ func (a *App) palMenuItems() []palItem {
 		help("help", palCycle(pgHelp, ic("news"), i18n.T("Updates anbieten"), updateWaitLabel(set.UpdateWaitH), "update kanal channel stabil stable sofort neue version release",
 			func(dir int) tea.Cmd { return a.cycleUpdateWait(dir) })),
 		a.palFolder("help/debug"),
+		a.palNewFolder(),
 
 		// Hilfe & Info › Fehlersuche
 		proItem(help("help/debug", palToggle(ic("sesslog"), i18n.T("Debug-Protokoll für Fehlerberichte"), a.debugOn(), "debug log protokoll fehler bug support", func() tea.Cmd { return a.toggleDebug() }))),
@@ -1029,7 +1119,32 @@ func (a *App) palMenuItems() []palItem {
 			keys: "debug log protokoll leeren löschen clear", run: func() tea.Cmd { return a.clearDebug() }},
 		proItem(help("help/debug", palToggle(ic("sesslog"), i18n.T("Leistungsanzeige (Bildrate, Zeichenzeit)"), a.perf.on, "leistung performance fps bildrate langsam ruckelt debug", func() tea.Cmd { return a.togglePerf() }))),
 	)
-	return a.simpleHide(items)
+	out := items[:0]
+	for _, it := range items {
+		if it.label == "" { // leerer Ordner (Neu seit dem letzten Update)
+			continue
+		}
+		it.home = it.group
+		out = append(out, it)
+	}
+	return a.simpleHide(out)
+}
+
+// palNewFolder: Hilfe › „Neu seit dem letzten Update“, nur wenn es etwas
+// Neues gibt; rechts die Zahl.
+func (a *App) palNewFolder() palItem {
+	n := 0
+	if p := a.pal; len(menuFresh) > 0 && p != nil && !p.counting {
+		p.counting = true // palNewCount fragt selbst palMenuItems
+		n = a.palNewCount()
+		p.counting = false
+	}
+	if n == 0 {
+		return palItem{}
+	}
+	it := a.palFolder("help/new")
+	it.hint = fmt.Sprint(n)
+	return it
 }
 
 // palIOItems: Import, Export und Gesamtsicherung. Das sind Aktionen, keine
@@ -1075,6 +1190,11 @@ func palAskItem(items []palItem) (palItem, bool) {
 			return it, true
 		}
 	}
+	for _, it := range items {
+		if it.tabRun {
+			return it, true
+		}
+	}
 	return palItem{}, false
 }
 
@@ -1102,6 +1222,14 @@ func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.palRun(palItem{menu: cur.menu, keep: true, run: func() tea.Cmd { return cur.cycle(dir) }})
 	case key == "right" && cur.open != "" && p.in.Value() == "":
 		return a.palRun(cur)
+	case key == "right" && p.in.Value() != "" && palCanJump(cur) && cur.group != pgPinned && a.palAtEnd():
+		a.palJump(cur) // Treffer: dorthin, wo er wohnt
+		return nil
+	case key == "delete" && cur.changed:
+		return a.palReset(cur)
+	case key == "*" && p.in.Value() == "" && (palTrackable(cur) || cur.group == pgPinned):
+		a.palTogglePin(cur)
+		return nil
 	case key == "esc" && p.menu != "":
 		a.palEnter(palParent(p.menu))
 		return nil
@@ -1119,6 +1247,9 @@ func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 		return nil
 	case key == "tab":
 		if it, ok := palAskItem(items); ok {
+			if it.keep {
+				return it.run()
+			}
 			a.pal = nil
 			return it.run()
 		}
@@ -1138,9 +1269,16 @@ func (a *App) paletteKey(k tea.KeyPressMsg) tea.Cmd {
 	before := p.in.Value()
 	p.in, cmd = p.in.Update(k)
 	if p.in.Value() != before {
-		p.sel, p.armed = 0, -1
+		p.sel, p.armed, p.note = 0, -1, ""
 	}
 	return cmd
+}
+
+// palAtEnd: steht der Cursor am Ende der Eingabe? Nur dann gehört → dem
+// Sprung zum Treffer, sonst bewegt es den Cursor.
+func (a *App) palAtEnd() bool {
+	p := a.pal
+	return p.in.Line() == p.in.LineCount()-1 && p.in.Column() >= len([]rune(p.in.Value()))
 }
 
 func (a *App) viewPalette() string {
@@ -1164,6 +1302,12 @@ func (a *App) viewPalette() string {
 	b.WriteString(promptBlock(st.Accent.Render("$ "), p.in.View()) + "\n")
 	b.WriteString(lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w-4)) + "\n")
 	maxRows := max(5, a.h-12)
+	if p.note != "" {
+		for _, l := range strings.Split(lipgloss.NewStyle().Width(w-6).Render(p.note), "\n") {
+			b.WriteString(lipgloss.NewStyle().Foreground(st.T.AI).Render("◆ "+strings.TrimRight(l, " ")) + "\n")
+			maxRows--
+		}
+	}
 	tabbed := a.palTabbed()
 	if tabbed {
 		b.WriteString(a.palTabsRow() + "\n")
@@ -1207,8 +1351,15 @@ func (a *App) viewPalette() string {
 			last = it.group
 			if !tabbed {
 				head := i18n.T(palGroupName[it.group])
-				if it.group == pgConns {
+				switch it.group {
+				case pgConns:
 					head = a.palConnHeader(p.in.Value())
+				case pgHere:
+					head, _ = a.palHere()
+				case pgKey:
+					if k := palKeyQuery(query); k != "" {
+						head += "  " + keyLabel(k)
+					}
 				}
 				b.WriteString(a.palGroupRule(head, w-4, gcol, gaps && rows > 0) + "\n")
 			} else if rows == 0 {
@@ -1228,22 +1379,32 @@ func (a *App) viewPalette() string {
 		it.icon = padIcon(it.icon)
 		iw := lipgloss.Width(it.icon) - 1
 		hint := a.palHint(it, p.armed == i)
+		if it.changed {
+			hint = st.Warn.Render("● ") + hint // weicht vom Standard ab
+		}
+		badge := ""
+		if it.fresh {
+			badge = " " + lipgloss.NewStyle().Background(st.T.OK).Foreground(inkOn(st.T, st.T.OK)).Bold(true).Render(i18n.T("NEU"))
+		}
+		if it.group == pgPinned {
+			badge += " " + st.Warn.Render("*")
+		}
 		if k := p.glowK(it.label, now); k > 0 {
 			// umgeschalteter Wert leuchtet kurz auf (Bewegung)
 			hint = lipgloss.NewStyle().Background(mixColor(st.T.Surface, st.T.Warn, 0.55*k)).Render(ansi.Strip(hint))
 		}
-		label := trunc(it.label, w-8-iw-lipgloss.Width(hint))
+		label := trunc(it.label, w-8-iw-lipgloss.Width(hint)-lipgloss.Width(badge))
 		sub := ""
-		if room := w - 11 - iw - lipgloss.Width(label) - lipgloss.Width(hint); it.sub != "" && room >= 6 {
+		if room := w - 11 - iw - lipgloss.Width(label) - lipgloss.Width(badge) - lipgloss.Width(hint); it.sub != "" && room >= 6 {
 			sub = "  " + trunc(it.sub, room)
 		}
-		gap := max(1, w-6-iw-lipgloss.Width(label)-lipgloss.Width(sub)-lipgloss.Width(hint))
+		gap := max(1, w-6-iw-lipgloss.Width(label)-lipgloss.Width(badge)-lipgloss.Width(sub)-lipgloss.Width(hint))
 		labelStyle := st.Text
 		if it.more {
 			labelStyle = st.Muted
 		}
 		hits := fuzzyHits(query, label) // getroffene Buchstaben leuchten (motion2.go)
-		line := iconStyle.Render(it.icon) + " " + hitLabel(label, hits, labelStyle, st.Accent.Bold(true), glow) + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
+		line := iconStyle.Render(it.icon) + " " + hitLabel(label, hits, labelStyle, st.Accent.Bold(true), glow) + badge + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
 		if i == p.sel {
 			// Auswahl als Balken in Akzentfarbe mit ▶ (wie der aktive Tab).
 			// Sofort voll da, ohne Einblenden oder Nachleuchten: bei
@@ -1252,20 +1413,26 @@ func (a *App) viewPalette() string {
 			ink := inkOn(st.T, fill)
 			mark := "▶" + strings.Repeat(" ", max(0, lipgloss.Width(it.icon)-1))
 			bar := lipgloss.NewStyle().Background(fill).Foreground(ink)
-			line = bar.Bold(true).Render(mark+" "+label) + bar.Render(ansi.Strip(sub)+strings.Repeat(" ", gap)) + bar.Bold(true).Render(ansi.Strip(hint))
+			line = bar.Bold(true).Render(mark+" "+label) + bar.Bold(true).Render(ansi.Strip(badge)) + bar.Render(ansi.Strip(sub)+strings.Repeat(" ", gap)) + bar.Bold(true).Render(ansi.Strip(hint))
 		}
 		if k := p.rowK(rows, now); k < 1 {
 			line = fadeANSI(line, st.T, k) // Zeilen blenden nacheinander ein
 		}
 		i, it := i, it
-		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+		line = a.z.mark(line, zoneAction{click: func(tea.Mouse, bool) tea.Cmd {
 			p.sel = i
 			if it.danger != "" && p.armed != i {
 				p.armed = i // rot: erst scharf schalten, zweiter Klick führt aus
 				return nil
 			}
 			return a.palRunTrack(it)
-		})
+		}, menu: func(tea.Mouse) tea.Cmd { // Rechtsklick: anheften / lösen
+			p.sel = i
+			if palTrackable(it) || it.group == pgPinned {
+				a.palTogglePin(it)
+			}
+			return nil
+		}})
 		b.WriteString(line + "\n")
 		if i == p.sel {
 			for k, l := range helpLines {
@@ -1279,7 +1446,11 @@ func (a *App) viewPalette() string {
 		rows++
 	}
 	if len(items) == 0 {
-		b.WriteString(st.Muted.Render(i18n.T("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.")) + "\n")
+		msg := i18n.T("Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.")
+		if p.in.Value() == "!" {
+			msg = i18n.T("Alle Einstellungen stehen auf dem Standard.")
+		}
+		b.WriteString(st.Muted.Render(msg) + "\n")
 	}
 	keys := a.palKeys(items)
 	title := i18n.T("Befehlspalette")
@@ -1323,6 +1494,7 @@ func (a *App) palRunTrack(it palItem) tea.Cmd {
 	if a.pal != nil && (it.cycle != nil || it.state != palNoState) {
 		a.pal.palChanged(it.label)
 	}
+	a.menuUsed(it) // für „Häufig“ und den Tipp zur Taste (palstate.go)
 	return a.palRun(it)
 }
 

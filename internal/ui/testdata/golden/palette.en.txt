@@ -1,15 +1,18 @@
  >_ sshTermy                                                          ↕ sync off   ● AI qwen3-coder
- connections┌─ ◆ Command palette  19 entries ────────────────────────────────────── × ─┐
+ connections┌─ ◆ Command palette  23 entries ────────────────────────────────────── × ─┐
             │ $ Goal, question, command, tunnel, connection or user@host:port …        │
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
-   ○ # switc│ ── FREQUENT ──────────────────────────────────────────────────────────── │
- ▾ Produktio│ ▶   New connection                                                     n │
-   ▾ Web    │     › Form for a new connection: SSH, Telnet, serial, local or           │
-▌    ○   web│       PowerShell.                                                        │
-▌    ○   web│ [$] Local shell in a new tab                                       Alt+L │
-▌  ○   db-01│ [*] Broadcast: command on several hosts                                m │ menu ·
- ○   nas    │ [/] Network scan: find SSH devices                                     f │
- ○   spark  │ [#] Search session logs                                                l │
+   ○ # switc│ ── HERE · NETZWERK ───────────────────────────────────────────────────── │
+ ▾ Produktio│ ▶   New connection here …                                              n │
+   ▾ Web    │ [=] Open all as grid                                                   g │
+▌    ○   web│ [=] Edit …                                                             e │
+▌    ○   web│ [=] Move to folder …                                                   v │
+▌  ○   db-01│ ── FREQUENT ──────────────────────────────────────────────────────────── │ menu ·
+ ○   nas    │ [+] New connection                                                     n │
+ ○   spark  │ [$] Local shell in a new tab                                       Alt+L │
+            │ [*] Broadcast: command on several hosts                                m │
+            │ [/] Network scan: find SSH devices                                     f │
+            │ [#] Search session logs                                                l │
             │ ── CONNECTIONS ───────────────────────────────────────────────────────── │
             │ [·] nas                                                  admin@nas.local │
             │ [·] spark                                              dominik@spark.lan │
@@ -21,10 +24,7 @@
             │ [/] Search & logs ›  scrollback, all tabs, log glance, session logs    4 │
             │ [T] Tabs & view ›  new, split, zoom, workspaces                        2 │
             │ [*] Several hosts & network ›  broadcast, scan, schedules, switches   11 │
-            │ [&] Team & sharing ›  live sharing, team folders                       4 │
-            │ [=] Connections & data ›  new, SSH key, import/export, backup          6 │
             │                                                                          │
             │  ↑↓ select    ⏎ run    Esc close                                         │
             └──────────────────────────────────────────────────────────────────────────┘
-                                        │
  Ctrl+Space Commands 1Help  ⏎ collapse  n new here  e edit  d delete  v move  / search  Ctrl+Q quit

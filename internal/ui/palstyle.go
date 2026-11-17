@@ -244,6 +244,20 @@ func (a *App) palKeys(items []palItem) [][2]string {
 	default:
 		keys = append(keys, [2]string{"⏎", i18n.T("ausführen")})
 	}
+	switch {
+	case !have:
+	case cur.changed:
+		keys = append(keys, [2]string{i18n.T("Entf"), i18n.T("auf Standard")})
+	case p.in.Value() != "" && palCanJump(cur) && cur.group != pgPinned:
+		keys = append(keys, [2]string{"→", i18n.T("dort zeigen")})
+		if _, ask := palAskItem(items); ask && p.menu == "" {
+			keys = keys[1:] // Platz für „Tab KI fragen“: ↑↓ kennt jeder
+		}
+	case p.in.Value() == "" && cur.group == pgPinned:
+		keys = append(keys, [2]string{"*", i18n.T("lösen")})
+	case p.in.Value() == "" && p.menu == "" && palTrackable(cur):
+		keys = append(keys, [2]string{"*", i18n.T("anheften")})
+	}
 	if p.menu == "" {
 		if _, ok := palAskItem(items); ok {
 			keys = append(keys, [2]string{"Tab", i18n.T("KI fragen")})
@@ -287,6 +301,12 @@ func (a *App) palDetail(it palItem, w, h int) string {
 		out = append(out, "", st.Muted.Render(i18n.T("Jetzt: "))+a.palHint(it, false))
 	case it.hint != "" && it.open == "" && it.hint != "›":
 		out = append(out, "", st.Muted.Render(i18n.T("Taste / Wert: "))+lipgloss.NewStyle().Background(t.Surface2).Foreground(col).Bold(true).Render(" "+it.hint+" "))
+	}
+	if def, ch := palDefault(it); ch {
+		out = append(out, st.Warn.Render("● ")+st.Muted.Render(i18n.T("Standard: "))+st.Text.Render(def))
+	}
+	if w := palWhere(it); w != "" && (it.group == pgHits || it.group == pgPinned || it.group == pgTop || it.group == pgNew || it.group == pgChanged || it.group == pgMaybe) {
+		out = append(out, st.Muted.Render(i18n.T("Zu finden unter: "))+st.Text.Render(w))
 	}
 	if pv := a.palPreview(it, w); pv != "" {
 		out = append(out, "")

@@ -7,17 +7,17 @@
    ▾ Web                             2  │ In diesem Ordner
 ▌    ○   web-01         deploy@10.0.0…  │  ○ switch-core     manager@192.…  ◌ wird geprüft …
 ▌    ○   web-02         deploy@10.0.0…  │
-▌  ○   db-01            postgres@10.0…  │  Doppelklick verbindet · Rechtsklick öffnet das Menü ·
- ○   nas               admin@nas.local  │  Zeilen links lassen sich auf Ordner ziehen.
- ○   spark  ┌─ ◆ Befehlspalette  0 Einträge ─────────────────────────────────────── × ─┐
-            │ $ tunnel                                                                 │
-            │ ──────────────────────────────────────────────────────────────────────── │
-            │ Nichts gefunden. Im Terminal wird Text zum Ziel oder zur Frage.          │
+▌  ○   db-01┌─ ◆ Befehlspalette  2 Einträge ─────────────────────────────────────── × ─┐s Menü ·
+ ○   nas    │ $ tunnel                                                                 │
+ ○   spark  │ ──────────────────────────────────────────────────────────────────────── │
+            │ ── MEINTEST DU ───────────────────────────────────────────────────────── │
+            │ ▶   Farbschema wählen …  · Einstellungen › Aussehen       Dunkel (Nacht) │
+            │     › 26 Farbschemas, hell und dunkel, mit Vorschau. ⏎ öffnet die        │
+            │       Auswahl.                                                           │
+            │ [~] KI fragen: Wo finde ich „tunnel“?                                Tab │
             │                                                                          │
-            │  ↑↓ wählen    Esc schließen                                              │
+            │  ⏎ ausführen    → dort zeigen    Tab KI fragen    Esc schließen          │
             └──────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        │
                                         │
                                         │
                                         │

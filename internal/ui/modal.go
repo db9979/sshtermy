@@ -40,31 +40,35 @@ const (
 )
 
 type modal struct {
-	kind     modalKind
-	copy     string // mText: c kopiert diesen Text
-	vuln     bool   // mText: Ergebnis des Sicherheitschecks über einen Ordner (vulnfolder.go)
-	fw       bool   // mText: Firmware-Hinweise (firmware.go)
-	patch    bool   // mText: Patch-Runde (patchround.go)
-	harden   bool   // mText: Härtungs-Check (harden.go)
-	keyinv   bool   // mText: Schlüssel-Inventar, ein Schlüssel (keyinv.go)
-	inv      bool   // mText: Inventar & Änderungen (inventory.go)
-	mail     string // mText: m öffnet diese mailto:-Adresse im Mailprogramm
-	title    string
-	body     string
-	hk       hostKeyAskMsg
-	sec      secretAskMsg
-	in       textinput.Model
-	onYes    func() tea.Cmd
-	onText   func(string) tea.Cmd // nur Texteingabe
-	onCancel func() tea.Cmd       // Texteingabe mit Esc verlassen (optional)
-	ctx      helpCtx              // nur Hilfe: aktueller Bereich
-	helpTab  int                  // nur Hilfe: gewählter Reiter (helpTabs)
-	filter   string               // nur Hilfe: getippter Suchtext über alle Reiter
-	scroll   int                  // Hilfe/Changelog/Text: Scroll-Position; Schnellbefehle: Auswahl
-	quickSID int                  // nur Schnellbefehle: Sitzung
-	armed    int                  // nur Schnellbefehle: roter Befehl nach dem ersten ⏎
-	lines    []string             // Changelog/Text: fertig gestaltete Zeilen
-	styled   bool                 // Text: Zeilen tragen schon Farben (ANSI)
+	kind       modalKind
+	copy       string // mText: c kopiert diesen Text
+	vuln       bool   // mText: Ergebnis des Sicherheitschecks über einen Ordner (vulnfolder.go)
+	fw         bool   // mText: Firmware-Hinweise (firmware.go)
+	patch      bool   // mText: Patch-Runde (patchround.go)
+	harden     bool   // mText: Härtungs-Check (harden.go)
+	keyinv     bool   // mText: Schlüssel-Inventar, ein Schlüssel (keyinv.go)
+	inv        bool   // mText: Inventar & Änderungen (inventory.go)
+	mail       string // mText: m öffnet diese mailto:-Adresse im Mailprogramm
+	title      string
+	body       string
+	hk         hostKeyAskMsg
+	sec        secretAskMsg
+	in         textinput.Model
+	onYes      func() tea.Cmd
+	onText     func(string) tea.Cmd // nur Texteingabe
+	onCancel   func() tea.Cmd       // Texteingabe mit Esc verlassen (optional)
+	ctx        helpCtx              // nur Hilfe: aktueller Bereich
+	helpTab    int                  // nur Hilfe: gewählter Reiter (helpTabs)
+	filter     string               // nur Hilfe: getippter Suchtext über alle Reiter
+	helpSel    int                  // nur Hilfe: gewählte Zeile (-1 = keine)
+	helpRows   [][2]string          // nur Hilfe: sichtbare Zeilen (Taste, Text) beim letzten Zeichnen
+	helpGo     int                  // nur Hilfe: 1 = Zeile ausführen, 2 = in der Palette zeigen
+	helpFollow bool                 // nur Hilfe: Auswahl beim nächsten Zeichnen sichtbar machen
+	scroll     int                  // Hilfe/Changelog/Text: Scroll-Position; Schnellbefehle: Auswahl
+	quickSID   int                  // nur Schnellbefehle: Sitzung
+	armed      int                  // nur Schnellbefehle: roter Befehl nach dem ersten ⏎
+	lines      []string             // Changelog/Text: fertig gestaltete Zeilen
+	styled     bool                 // Text: Zeilen tragen schon Farben (ANSI)
 
 	paste    *pasteCheck // nur Einfügeschutz
 	danger   *dangerAsk  // nur Gefahren-Check
@@ -279,6 +283,9 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 	case mHelp:
 		if m.helpKey(key) {
 			a.modal = nil
+			if m.helpGo != 0 {
+				return a.helpGoCmd(m)
+			}
 		}
 	case mChangelog:
 		if key == "b" {

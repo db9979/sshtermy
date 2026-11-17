@@ -163,6 +163,7 @@ type App struct {
 
 	modal        *modal
 	pal          *palette
+	mst          *menuState // Menü-Nutzung, Anheften, NEU (palstate.go)
 	llm          llmUI
 	lh           llmHealthState // KI-Status (llmhealth.go)
 	reach        reachState     // Online-Punkt im Manager (reach.go)
@@ -612,6 +613,9 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 // featureMsg reicht die Nachricht an die Bereiche weiter (Broadcast, Sync,
 // KI, Dateien …); jeder nimmt nur seine eigenen.
 func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
+	if m, ok := msg.(palFindMsg); ok { // „Wo finde ich …?“ (palask.go)
+		return a.palFindDone(m), true
+	}
 	if cmd, ok := a.trzMsg(msg); ok {
 		return cmd, true
 	}

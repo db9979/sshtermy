@@ -30,7 +30,7 @@
 ┃│   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                      │┃
 ┃│  Esc leads back to the terminal from every panel.                                                                  │┃
 ┃│                                                                                                                    │┃
-┃│  ▾ more   ↑↓ scroll    ←/→ tab    Esc close                                                                        │┃
+┃│  ▾ more   ↑↓ select    ←/→ tab    ⏎ run    Esc close                                                               │┃
 ┗│                                                                                                                    │┛
  └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  Ctrl+Space Commands 1Help 2Goal 3AI 4Tunnel 5Files 6Host 9Quick 10Manager  ⇧F9 explain  Ctrl+F Search  Ctrl+T Split

@@ -30,7 +30,7 @@
  │   RED  Dangerous commands need ⏎ twice or Alt+N. AI suggestions are only inserted, never run.                      │
  │  Esc leads back to the terminal from every panel.                                                                  │
  │                                                                                                                    │
- │  ▾ more   ↑↓ scroll    ←/→ tab    Esc close                                                                        │
+ │  ▾ more   ↑↓ select    ←/→ tab    ⏎ run    Esc close                                                               │
  │                                                                                                                    │
  └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  Ctrl+Space Commands 1Help  ⏎ collapse  n new here  e edit  d delete  v move  / search  Ctrl+Q quit

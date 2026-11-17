@@ -483,6 +483,8 @@ func taskLabel(t string) string {
 		return i18n.T("Zusammenfassung")
 	case agent.TaskReport:
 		return i18n.T("Änderungsbericht")
+	case agent.TaskMenu:
+		return i18n.T("Menü-Suche")
 	}
 	return t
 }

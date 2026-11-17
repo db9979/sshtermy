@@ -1,15 +1,18 @@
  >_ sshTermy                                                          ↕ Sync aus   ● KI qwen3-coder
- Verbindunge┌─ ◆ Befehlspalette  19 Einträge ────────────────────────────────────── × ─┐
+ Verbindunge┌─ ◆ Befehlspalette  23 Einträge ────────────────────────────────────── × ─┐
             │ $ Ziel, Frage, Befehl, Tunnel, Verbindung oder user@host:port …          │
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
-   ○ # switc│ ── HÄUFIG ────────────────────────────────────────────────────────────── │
- ▾ Produktio│ ▶   Neue Verbindung                                                    n │
-   ▾ Web    │     › Formular für eine neue Verbindung: SSH, Telnet, seriell, lokal     │
-▌    ○   web│       oder PowerShell.                                                   │ft …
-▌    ○   web│ [$] Lokale Shell in neuem Tab                                      Alt+L │
-▌  ○   db-01│ [*] Broadcast: Befehl auf mehreren Hosts                               m │s Menü ·
- ○   nas    │ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
- ○   spark  │ [#] Sitzungsprotokolle durchsuchen                                     l │
+   ○ # switc│ ── HIER · NETZWERK ───────────────────────────────────────────────────── │
+ ▾ Produktio│ ▶   Neue Verbindung hier …                                             n │
+   ▾ Web    │ [=] Alle als Raster öffnen                                             g │
+▌    ○   web│ [=] Bearbeiten …                                                       e │ft …
+▌    ○   web│ [=] In Ordner verschieben …                                            v │
+▌  ○   db-01│ ── HÄUFIG ────────────────────────────────────────────────────────────── │s Menü ·
+ ○   nas    │ [+] Neue Verbindung                                                    n │
+ ○   spark  │ [$] Lokale Shell in neuem Tab                                      Alt+L │
+            │ [*] Broadcast: Befehl auf mehreren Hosts                               m │
+            │ [/] Netzwerk-Scan: SSH-Geräte finden                                   f │
+            │ [#] Sitzungsprotokolle durchsuchen                                     l │
             │ ── VERBINDUNGEN ──────────────────────────────────────────────────────── │
             │ [·] nas                                                  admin@nas.local │
             │ [·] spark                                              dominik@spark.lan │
@@ -21,10 +24,7 @@
             │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         4 │
             │ [T] Tabs & Ansicht ›  neu, teilen, Zoom, Arbeitsplätze                 2 │
             │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switch…   11 │
-            │ [&] Team & Teilen ›  live teilen, Team-Ordner                          4 │
-            │ [=] Verbindungen & Daten ›  neu, SSH-Key, Import/Export, Sicherung     6 │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │
             └──────────────────────────────────────────────────────────────────────────┘
-                                        │
  Strg+Space Befehle 1Hilfe  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen  v verschieben

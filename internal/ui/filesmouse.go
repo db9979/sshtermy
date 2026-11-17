@@ -277,11 +277,28 @@ func (a *App) entryClick(s *session, side, i int, m tea.Mouse, double bool) tea.
 // fileMenu: Menü zu Eintrag i der Seite side (i < 1: zum Ordner selbst).
 func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 	f := &s.files
-	p := f.panes[side]
-	if p == nil {
+	if f.panes[side] == nil {
 		return nil
 	}
 	f.side, f.drag = side, nil
+	title, items := a.fileMenuBuild(s, side, i)
+	a.modal = &modal{kind: mMenu, title: trunc(title, 40), items: items, at: [2]int{x, y}, anchored: true}
+	return nil
+}
+
+// fileMenuItems: Einträge des Rechtsklick-Menüs (auch für „Hier“ in der
+// Befehlspalette, palhere.go).
+func (a *App) fileMenuItems(s *session, side, i int) []menuItem {
+	if s.files.panes[side] == nil {
+		return nil
+	}
+	_, items := a.fileMenuBuild(s, side, i)
+	return items
+}
+
+func (a *App) fileMenuBuild(s *session, side, i int) (string, []menuItem) {
+	f := &s.files
+	p := f.panes[side]
 	other := f.panes[1-side]
 	toOther := i18n.T("Nach rechts kopieren (↑ Server)")
 	sendTo := i18n.T("Hochladen nach …")
@@ -355,8 +372,7 @@ func (a *App) fileMenu(s *session, side, i, x, y int) tea.Cmd {
 				run: func() tea.Cmd { return a.startTransfer(s, p.fs, paths, other.fs, other.path, side == 0, false) }})
 		}
 	}
-	a.modal = &modal{kind: mMenu, title: trunc(title, 40), items: items, at: [2]int{x, y}, anchored: true}
-	return nil
+	return title, items
 }
 
 func modeString(m fs.FileMode) string {

@@ -172,7 +172,7 @@ func TestPaletteSettingsCompact(t *testing.T) {
 	// Import/Export sind Aktionen im Bereich „Verbindungen & Daten“.
 	a.palEnter("")
 	a.pal.in.SetValue("csv")
-	if it, ok := hasLabel(a.paletteItems(), "Verbindungen als CSV"); !ok || it.group != pgAction {
+	if it, ok := hasLabel(a.paletteItems(), "Verbindungen als CSV"); !ok || it.group != pgHits {
 		t.Fatalf("CSV-Export: %+v", it)
 	}
 }
