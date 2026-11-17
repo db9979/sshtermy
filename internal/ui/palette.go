@@ -838,10 +838,6 @@ func palMenuLabel(id string) string {
 	return ""
 }
 
-func (it palItem) matches(match func(string) bool) bool {
-	return match(it.label) || (it.keys != "" && match(it.keys))
-}
-
 // palEnter öffnet ein Untermenü ("" = zurück zur Übersicht).
 func (a *App) palEnter(menu string) {
 	p := a.pal

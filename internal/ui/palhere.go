@@ -72,12 +72,9 @@ func (a *App) palHereN(limit int) (string, []palItem) {
 
 // palNewItems: alle Einträge mit NEU-Marke (Aktionen und Einstellungen).
 func (a *App) palNewItems(q string) []palItem {
-	var all []palItem
 	s := a.current()
 	inTerm := a.scr == scrTerminal && s != nil && s.state == stConnected
-	for _, it := range a.palActions(s, inTerm, a.scr == scrManager) {
-		all = append(all, it)
-	}
+	all := a.palActions(s, inTerm, a.scr == scrManager)
 	all = append(all, a.palMenuItems()...)
 	var out []palItem
 	seen := map[string]bool{}
