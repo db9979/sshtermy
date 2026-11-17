@@ -22,7 +22,9 @@ import (
 // erreichbar ist. Es wird kein SSH-Handshake gemacht und nichts angemeldet,
 // die Verbindung wird sofort wieder geschlossen. Hosts hinter einem
 // Jump-Host bleiben „unbekannt“, weil sie von hier aus nicht direkt
-// erreichbar sein müssen. Abschalten über die Befehlspalette.
+// erreichbar sein müssen. Abschalten über die Befehlspalette. Die
+// Befehlspalette zeigt denselben Punkt bei ihren Verbindungen (zuletzt
+// benutzt, Treffer); solange sie offen ist, werden genau diese geprüft.
 
 const (
 	reachEvery   = time.Minute
@@ -99,12 +101,20 @@ func (a *App) reachVisibleIDs() map[string]bool {
 // aufgeklappt, Suche, neu angelegt), kommt die Runde sofort.
 func (a *App) reachTick() tea.Cmd {
 	mode := a.reachMode()
-	if a.scr != scrManager || a.intro != nil || mode == reachOff || a.reach.running {
+	inMgr := a.scr == scrManager
+	pal := a.palReachIDs() // Palette zeigt Verbindungen: auch die prüfen
+	if (!inMgr && len(pal) == 0) || a.intro != nil || mode == reachOff || a.reach.running {
 		return nil
 	}
 	var vis map[string]bool
-	if mode == reachVisible {
-		vis = a.reachVisibleIDs()
+	if mode == reachVisible || !inMgr {
+		vis = map[string]bool{}
+		if inMgr {
+			vis = a.reachVisibleIDs()
+		}
+		for id := range pal {
+			vis[id] = true
+		}
 	}
 	var todo, via []domain.Connection
 	fresh := false

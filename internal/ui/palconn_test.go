@@ -85,3 +85,57 @@ func labels(items []palItem) []string {
 	}
 	return out
 }
+
+// Die Palette zeigt bei ihren Verbindungen denselben Online-Punkt wie der
+// Manager und lässt genau diese auch außerhalb des Managers prüfen.
+func TestPalConnReachDot(t *testing.T) {
+	a := manyConnsApp(t, 40)
+	a.scr = scrTerminal
+	if cmd := a.reachTick(); cmd != nil || a.reach.running {
+		t.Fatal("ohne Manager und ohne Palette darf nichts geprüft werden")
+	}
+	a.openPalette()
+	ids := a.palReachIDs()
+	if len(ids) != palRecent {
+		t.Fatalf("Palette zeigt %d Verbindungen zum Prüfen, erwartet %d", len(ids), palRecent)
+	}
+	if cmd := a.reachTick(); cmd == nil || !a.reach.running {
+		t.Fatal("offene Palette prüft ihre Verbindungen nicht")
+	}
+	a.reach.running = false
+
+	items := a.palConnItems("")
+	up, down := items[0], items[1]
+	var upID, downID string
+	for _, c := range a.st.Connections() {
+		switch c.Alias {
+		case up.label:
+			upID = c.ID
+		case down.label:
+			downID = c.ID
+		}
+	}
+	if !ids[upID] || !ids[downID] {
+		t.Fatal("geprüfte Verbindungen passen nicht zur Liste")
+	}
+	if up.dot != "○" {
+		t.Fatalf("ohne Ergebnis %q, erwartet ○", up.dot)
+	}
+	a.reach.res = map[string]reachResult{upID: {ok: true, at: time.Now()}, downID: {err: "timeout", at: time.Now()}}
+	items = a.palConnItems("")
+	if items[0].dot != "●" || items[0].dotColor == a.s.T.Danger || items[0].dotColor == a.s.T.Muted {
+		t.Fatalf("erreichbar: %q", items[0].dot)
+	}
+	if d := items[1].dot; (d != "●" && d != "×") || items[1].dotColor != a.s.T.Danger {
+		t.Fatalf("nicht erreichbar: %q", d)
+	}
+	a.scr = scrManager
+	if v := a.View().Content; !strings.Contains(v, "●") {
+		t.Fatal("Punkt erscheint nicht in der Palette")
+	}
+
+	a.pal.in.SetValue("srv-003")
+	if ids := a.palReachIDs(); len(ids) != 1 {
+		t.Fatalf("mit Text: %d Treffer zum Prüfen", len(ids))
+	}
+}

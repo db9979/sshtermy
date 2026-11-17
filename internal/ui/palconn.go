@@ -129,8 +129,55 @@ func (a *App) palConnItems(q string) []palItem {
 	if len(all) == 0 {
 		return nil
 	}
-	var picked []domain.Connection
-	rest := 0
+	picked, rest := a.palPickConns(all, q)
+	var items []palItem
+	for _, c := range picked {
+		c := c
+		// Gerätesymbol wie bisher, davor der Online-Punkt wie im Manager
+		// (reach.go): ◉ verbunden, ● erreichbar, ● rot nicht, ○ unbekannt.
+		icon, col := a.devIcon(c)
+		dot, dotC := a.reachDot(c)
+		items = append(items, palItem{group: pgConns, icon: icon, iconColor: col, dot: dot, dotColor: dotC, label: c.Alias,
+			sub: c.Group, hint: shortTarget(c), run: func() tea.Cmd { return a.openOrConnect(c) }})
+	}
+	if rest > 0 {
+		label := fmt.Sprintf(i18n.T("Alle %d Verbindungen im Manager"), len(all))
+		hint := i18n.T("Name, Ordner oder #Tag tippen")
+		if strings.TrimSpace(q) != "" {
+			label = fmt.Sprintf(i18n.T("%d weitere Treffer im Manager zeigen"), rest)
+			hint = i18n.T("genauer tippen")
+		}
+		items = append(items, palItem{group: pgConns, icon: ic("more"), label: label, hint: hint, more: true,
+			run: func() tea.Cmd {
+				a.scr = scrManager
+				a.mgr.search.SetValue(strings.TrimSpace(q))
+				return nil
+			}})
+	}
+	return items
+}
+
+// palReachIDs: Verbindungen, die die offene Palette gerade zeigt; für sie
+// läuft die Erreichbarkeitsprüfung auch außerhalb des Managers (reachTick).
+func (a *App) palReachIDs() map[string]bool {
+	if a.pal == nil || a.pal.menu != "" {
+		return nil
+	}
+	all := a.st.Connections()
+	if len(all) == 0 {
+		return nil
+	}
+	picked, _ := a.palPickConns(all, a.pal.in.Value())
+	ids := make(map[string]bool, len(picked))
+	for _, c := range picked {
+		ids[c.ID] = true
+	}
+	return ids
+}
+
+// palPickConns: welche Verbindungen die Palette für q zeigt, und wie viele
+// Treffer darüber hinaus nur im Manager stehen.
+func (a *App) palPickConns(all []domain.Connection, q string) (picked []domain.Connection, rest int) {
 	if strings.TrimSpace(q) == "" {
 		picked = a.palRecentConns(all)
 		rest = len(all) - len(picked)
@@ -162,31 +209,7 @@ func (a *App) palConnItems(q string) []palItem {
 		}
 		rest = len(hits) - len(picked)
 	}
-	var items []palItem
-	for _, c := range picked {
-		c := c
-		icon, col := a.devIcon(c)
-		if a.connected(c.ID) {
-			icon, col = "◉", a.s.T.OK
-		}
-		items = append(items, palItem{group: pgConns, icon: icon, iconColor: col, label: c.Alias,
-			sub: c.Group, hint: shortTarget(c), run: func() tea.Cmd { return a.openOrConnect(c) }})
-	}
-	if rest > 0 {
-		label := fmt.Sprintf(i18n.T("Alle %d Verbindungen im Manager"), len(all))
-		hint := i18n.T("Name, Ordner oder #Tag tippen")
-		if strings.TrimSpace(q) != "" {
-			label = fmt.Sprintf(i18n.T("%d weitere Treffer im Manager zeigen"), rest)
-			hint = i18n.T("genauer tippen")
-		}
-		items = append(items, palItem{group: pgConns, icon: ic("more"), label: label, hint: hint, more: true,
-			run: func() tea.Cmd {
-				a.scr = scrManager
-				a.mgr.search.SetValue(strings.TrimSpace(q))
-				return nil
-			}})
-	}
-	return items
+	return picked, rest
 }
 
 // palRecentConns: offene Verbindungen, dann zuletzt benutzte; ohne Verlauf
