@@ -75,6 +75,7 @@ func (a *App) updateUnlock(msg tea.Msg) tea.Cmd {
 		a.loadCmdSets()
 		a.mgr = newManager()
 		a.showWhatsNew(u.setup)
+		a.menuFreshCheck() // NEU-Marken nach einem Update (palstate.go)
 		a.maybeTour(u.setup)
 		a.checkCrash()
 		a.showStartNotice()

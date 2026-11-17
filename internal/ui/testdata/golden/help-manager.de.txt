@@ -30,7 +30,7 @@
  │   ROT  Gefährliche Befehle brauchen zweimal ⏎ bzw. Alt+N. KI-Vorschläge werden nur eingefügt, nie ausgeführt.      │
  │  Esc führt aus jedem Panel zurück ins Terminal.                                                                    │
  │                                                                                                                    │
- │  ▾ mehr   ↑↓ blättern    ←/→ Reiter    Esc schließen                                                               │
+ │  ▾ mehr   ↑↓ wählen    ←/→ Reiter    ⏎ ausführen    Esc schließen                                                  │
  │                                                                                                                    │
  └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
  Strg+Space Befehle 1Hilfe  ⏎ zuklappen  n neu hier  e bearbeiten  d löschen  v verschieben  / suchen  Strg+Q beenden

@@ -17,7 +17,8 @@ export const de = {
   page1: [
     { t: 'Überall', ic: '◆', rows: [
       ['Strg+Space', 'Befehlspalette: Ziel, Frage, Aktionen, Verbindungen'],
-      ['F1', 'Hilfe: Reiter ←/→, tippen filtert'],
+      ['→ · * · „!“', 'Palette: Treffer zeigen · anheften · Geändertes'],
+      ['F1', 'Hilfe: Reiter ←/→, tippen filtert, ⏎ startet'],
       ['⇧F9', 'Tastenzeile mit Erklärungen'],
       ['F10', 'Manager ↔ Terminal (Sitzungen laufen weiter)'],
       ['F12 · w / l', 'Update · Neues / Sprache'],
@@ -204,7 +205,8 @@ export const en = {
   page1: [
     { t: 'Everywhere', ic: '◆', rows: [
       ['Ctrl+Space', 'command palette: goal, question, actions, hosts'],
-      ['F1', 'help: tabs ←/→, type to filter'],
+      ['→ · * · “!”', 'palette: go to match · pin · changed'],
+      ['F1', 'help: tabs ←/→, type to filter, ⏎ runs'],
       ['⇧F9', 'key bar with explanations'],
       ['F10', 'manager ↔ terminal (sessions keep running)'],
       ['F12 · w / l', "update · what's new / language"],

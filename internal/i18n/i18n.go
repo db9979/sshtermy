@@ -8,6 +8,7 @@ package i18n
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -93,4 +94,54 @@ func Pick(de, en string) string {
 		return en
 	}
 	return de
+}
+
+// ---------------------------------------------------------------- Suche
+
+var (
+	revOnce sync.Once
+	rev     map[string]string // englisch → deutsch
+)
+
+func reverse() map[string]string {
+	revOnce.Do(func() {
+		rev = make(map[string]string, len(en))
+		for de, e := range en {
+			if _, dup := rev[e]; !dup {
+				rev[e] = de
+			}
+		}
+	})
+	return rev
+}
+
+// German liefert zu einem angezeigten Text den deutschen Schlüssel (auf
+// Deutsch der Text selbst). Unbekannte Texte bleiben, wie sie sind.
+func German(shown string) string {
+	if Lang() != EN {
+		return shown
+	}
+	if de, ok := reverse()[shown]; ok {
+		return de
+	}
+	return shown
+}
+
+// Other: derselbe Text in der jeweils anderen Sprache ("" = keiner). Die
+// Suche findet so Einträge auf Deutsch und auf Englisch.
+func Other(shown string) string {
+	if Lang() == EN {
+		return reverse()[shown]
+	}
+	return en[shown]
+}
+
+// Catalog: alle deutschen Texte mit englischer Fassung (unsortiert). Damit
+// erkennt die Oberfläche nach einem Update neue Einträge.
+func Catalog() []string {
+	out := make([]string, 0, len(en))
+	for de := range en {
+		out = append(out, de)
+	}
+	return out
 }

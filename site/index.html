@@ -95,7 +95,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <div class="demo">
     <div class="text">
       <h3>One palette for everything</h3>
-      <p><kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the command palette: frequent actions and recent connections on top, everything else sorted into folders (AI, session, search &amp; logs, tabs &amp; view, network, team …), typing finds it all at once. Plain text becomes a goal (Enter) or a question to the AI (Tab). A detail column on the right explains the selected entry with a preview; settings have tabs.</p>
+      <p><kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the command palette: frequent actions and recent connections on top, everything else sorted into folders (AI, session, search &amp; logs, tabs &amp; view, network, team …), typing finds it all at once. Plain text becomes a goal (Enter) or a question to the AI (Tab). A detail column on the right explains the selected entry with a preview; settings have tabs. Search forgives typos and everyday words (German or English), shows where each hit lives (<kbd>→</kbd> jumps there), finds keys (“alt+e”), learns your frequent actions, pins entries with <kbd>*</kbd>, marks new entries NEW for 14 days, lists changed settings with “!” (<kbd>Del</kbd> resets), and asks the AI “where do I find …?” when nothing matches.</p>
     </div>
     <figure><img src="gifs/palette-en.gif" width="962" height="594" alt="Command palette filters actions, then a question goes to the AI with terminal context" loading="lazy"></figure>
   </div>
@@ -215,7 +215,8 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <table>
     <tr><th>Key</th><th>Effect</th></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>Command palette</td></tr>
-    <tr><td><kbd>F1</kbd></td><td>Help in tabs (Terminal, AI, Manager, Logs, Everywhere): <kbd>←</kbd>/<kbd>→</kbd> switch, typing filters</td></tr>
+    <tr><td><kbd>F1</kbd></td><td>Help in tabs (Terminal, AI, Manager, Logs, Everywhere): <kbd>←</kbd>/<kbd>→</kbd> switch, typing filters, <kbd>↑</kbd>/<kbd>↓</kbd> + <kbd>⏎</kbd> runs a line</td></tr>
+    <tr><td><kbd>→</kbd> / <kbd>*</kbd> / <kbd>Del</kbd> (palette)</td><td>Show where a hit lives / pin entry / reset setting to default; type “!” for changed settings, “alt+e” to look up a key</td></tr>
     <tr><td><kbd>F2</kbd></td><td>Goal mode (agent)</td></tr>
     <tr><td><kbd>F2</kbd> → <kbd>v</kbd> / <kbd>s</kbd> / <kbd>r</kbd></td><td>Goal mode, file step: view the file / skip it; at the end delete the work folder (<kbd>⏎</kbd> creates the file)</td></tr>
     <tr><td><kbd>F2</kbd> → <kbd>?</kbd> / <kbd>⇧S</kbd> / <kbd>f</kbd> / <kbd>u</kbd></td><td>Goal mode: instruct the AI / skip with a reason / follow-up goal / restore the files the goal changed; <kbd>↑</kbd><kbd>↓</kbd> in the empty goal field picks an earlier goal; if a command asks for input: <kbd>j</kbd> <kbd>n</kbd> <kbd>q</kbd> <kbd>Space</kbd></td></tr>

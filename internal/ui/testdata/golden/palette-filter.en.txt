@@ -7,17 +7,17 @@
    ▾ Web                             2  │ In this folder
 ▌    ○   web-01         deploy@10.0.0…  │  ○ switch-core     manager@192.…  ◌ checking …
 ▌    ○   web-02         deploy@10.0.0…  │
-▌  ○   db-01            postgres@10.0…  │  Double-click connects · right-click opens the menu ·
- ○   nas               admin@nas.local  │  drag rows on the left onto folders.
- ○   spark  ┌─ ◆ Command palette  0 entries ─────────────────────────────────────── × ─┐
-            │ $ tunnel                                                                 │
-            │ ──────────────────────────────────────────────────────────────────────── │
-            │ Nothing found. In the terminal, text becomes a goal or a question.       │
+▌  ○   db-01┌─ ◆ Command palette  2 entries ─────────────────────────────────────── × ─┐ menu ·
+ ○   nas    │ $ tunnel                                                                 │
+ ○   spark  │ ──────────────────────────────────────────────────────────────────────── │
+            │ ── DID YOU MEAN ──────────────────────────────────────────────────────── │
+            │ ▶   Choose color scheme …  · Settings › Appearance          Dark (night) │
+            │     › 26 color schemes, light and dark, with preview. ⏎ opens the        │
+            │       picker.                                                            │
+            │ [~] Ask AI: where do I find “tunnel”?                                Tab │
             │                                                                          │
-            │  ↑↓ select    Esc close                                                  │
+            │  ⏎ run    → show where    Tab Ask AI    Esc close                        │
             └──────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        │
                                         │
                                         │
                                         │
