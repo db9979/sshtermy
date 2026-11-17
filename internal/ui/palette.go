@@ -60,16 +60,19 @@ type palItem struct {
 	group     palGroup
 	icon      string
 	iconColor color.Color // nil = Farbe der Gruppe
-	label     string
-	sub       string // gedimmt hinter dem Namen (Ordner)
-	hint      string
-	danger    string
-	more      bool   // „weitere im Manager“: gedimmt
-	menu      string // Untermenü ("" = Übersicht), siehe palMenus
-	keys      string // weitere Suchwörter (z. B. englisch)
-	state     palState
-	keep      bool // Palette bleibt nach dem Ausführen offen (Schalter)
-	run       func() tea.Cmd
+	// dot: Online-Punkt hinter dem Symbol (Verbindungen, reachDot)
+	dot      string
+	dotColor color.Color
+	label    string
+	sub      string // gedimmt hinter dem Namen (Ordner)
+	hint     string
+	danger   string
+	more     bool   // „weitere im Manager“: gedimmt
+	menu     string // Untermenü ("" = Übersicht), siehe palMenus
+	keys     string // weitere Suchwörter (z. B. englisch)
+	state    palState
+	keep     bool // Palette bleibt nach dem Ausführen offen (Schalter)
+	run      func() tea.Cmd
 	// cycle: Durchschalt-Eintrag (‹ Wert › rechts). ⏎, → und Klick gehen
 	// einen Wert weiter, ← einen zurück.
 	cycle func(dir int) tea.Cmd
@@ -1378,6 +1381,12 @@ func (a *App) viewPalette() string {
 		}
 		it.icon = padIcon(it.icon)
 		iw := lipgloss.Width(it.icon) - 1
+		dot, dotPlain := "", ""
+		if it.dot != "" {
+			dotPlain = it.dot + " "
+			dot = lipgloss.NewStyle().Foreground(it.dotColor).Render(it.dot) + " "
+			iw += lipgloss.Width(dotPlain)
+		}
 		hint := a.palHint(it, p.armed == i)
 		if it.changed {
 			hint = st.Warn.Render("● ") + hint // weicht vom Standard ab
@@ -1404,7 +1413,7 @@ func (a *App) viewPalette() string {
 			labelStyle = st.Muted
 		}
 		hits := fuzzyHits(query, label) // getroffene Buchstaben leuchten (motion2.go)
-		line := iconStyle.Render(it.icon) + " " + hitLabel(label, hits, labelStyle, st.Accent.Bold(true), glow) + badge + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
+		line := iconStyle.Render(it.icon) + " " + dot + hitLabel(label, hits, labelStyle, st.Accent.Bold(true), glow) + badge + st.Muted.Render(sub) + strings.Repeat(" ", gap) + hint
 		if i == p.sel {
 			// Auswahl als Balken in Akzentfarbe mit ▶ (wie der aktive Tab).
 			// Sofort voll da, ohne Einblenden oder Nachleuchten: bei
@@ -1413,7 +1422,7 @@ func (a *App) viewPalette() string {
 			ink := inkOn(st.T, fill)
 			mark := "▶" + strings.Repeat(" ", max(0, lipgloss.Width(it.icon)-1))
 			bar := lipgloss.NewStyle().Background(fill).Foreground(ink)
-			line = bar.Bold(true).Render(mark+" "+label) + bar.Bold(true).Render(ansi.Strip(badge)) + bar.Render(ansi.Strip(sub)+strings.Repeat(" ", gap)) + bar.Bold(true).Render(ansi.Strip(hint))
+			line = bar.Bold(true).Render(mark+" "+dotPlain+label) + bar.Bold(true).Render(ansi.Strip(badge)) + bar.Render(ansi.Strip(sub)+strings.Repeat(" ", gap)) + bar.Bold(true).Render(ansi.Strip(hint))
 		}
 		if k := p.rowK(rows, now); k < 1 {
 			line = fadeANSI(line, st.T, k) // Zeilen blenden nacheinander ein
