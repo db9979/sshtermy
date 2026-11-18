@@ -18,6 +18,7 @@ const undoLife = 10 * time.Second
 
 type undoState struct {
 	trash    *store.Trash
+	restore  func() error // statt trash: eigenes Zurückholen (Dateien-Papierkorb, filetrash.go)
 	toast    string
 	until    time.Time
 	finalize func() // nach Ablauf (darf nil sein)
@@ -33,6 +34,14 @@ func (a *App) offerUndo(what string, tr *store.Trash, finalize, restored func())
 	a.toasts = append(a.toasts, toastItem{text: text, kind: toastWarn, born: now, until: now.Add(undoLife), undo: true})
 	if len(a.toasts) > maxToasts {
 		a.toasts = a.toasts[len(a.toasts)-maxToasts:]
+	}
+}
+
+// offerUndoFn: wie offerUndo, aber mit eigenem Zurückholen.
+func (a *App) offerUndoFn(what string, restore func() error, restored func()) {
+	a.offerUndo(what, nil, nil, restored)
+	if a.undo != nil {
+		a.undo.restore = restore
 	}
 }
 
@@ -65,7 +74,11 @@ func (a *App) doUndo() tea.Cmd {
 	}
 	a.undo = nil
 	a.dropToast(u.toast)
-	if err := a.st.Restore(u.trash); err != nil {
+	restore := func() error { return a.st.Restore(u.trash) }
+	if u.restore != nil {
+		restore = u.restore
+	}
+	if err := restore(); err != nil {
 		a.flashErr(i18n.T("Rückgängig fehlgeschlagen: ") + err.Error())
 		return nil
 	}

@@ -54,8 +54,13 @@ type fileView struct {
 	size   int64
 	lines  []string
 	binary bool
-	note   string // „nur Anfang und Ende“ …
-	log    bool   // Log-Datei: Fehler/Warnungen färben
+	note   string   // „nur Anfang und Ende“ …
+	log    bool     // Log-Datei: Fehler/Warnungen färben
+	kind   string   // kindArchive, kindMD, kindCSV (filepreview.go)
+	table  bool     // CSV als Tabelle (t schaltet um)
+	raw    []string // CSV: Zeilen als Text
+	code   []bool   // Markdown: Zeile im Codeblock
+	lang   *langDef // Programmcode: Sprache
 	err    string
 	busy   bool
 	seq    int
@@ -101,6 +106,8 @@ func (v *viewSel) norm() (viewPos, viewPos) {
 // filePeek: Vorschau unter der Liste.
 type filePeek struct {
 	name    string // voller Pfad
+	dir     bool   // Ordner: Inhalt zeigen
+	kind    string // kindDir, kindArchive … (filepreview.go)
 	lines   []string
 	binary  bool
 	err     string
@@ -110,6 +117,7 @@ type filePeek struct {
 
 type fileViewMsg struct {
 	sid, seq int
+	kind     string // kindArchive, kindMD, kindCSV (filepreview.go)
 	lines    []string
 	binary   bool
 	note     string
@@ -135,6 +143,7 @@ type filePeekTick struct{ sid, side, seq int }
 type filePeekMsg struct {
 	sid, side, seq int
 	name           string
+	kind           string
 	lines          []string
 	binary         bool
 	err            error
@@ -270,6 +279,12 @@ func readForView(fsys sshx.FS, p string) (m fileViewMsg) {
 		return
 	}
 	m.size = st.Size
+	if previewKind(p) == kindArchive {
+		m.kind = kindArchive
+		m.lines, m.err = archiveLines(fsys, p, archivePeekMax)
+		return
+	}
+	m.kind = previewKind(p)
 	r, err := fsys.Open(p)
 	if err != nil {
 		m.err = err
@@ -370,21 +385,41 @@ func readMore(fsys sshx.FS, p string, off int64, carry string) (m fileFollowMsg)
 	return
 }
 
-// readPeek: die ersten Zeilen für die Vorschau.
-func readPeek(fsys sshx.FS, p string) (lines []string, binary bool, err error) {
+// readPeek: die ersten Zeilen für die Vorschau; Ordner zeigen ihren
+// Inhalt, Archive ihre Dateien, Bilder Format und Größe.
+func readPeek(fsys sshx.FS, p string, dir bool) (lines []string, binary bool, kind string, err error) {
+	switch {
+	case dir:
+		lines, err = dirLines(fsys, p, 60)
+		return lines, false, kindDir, err
+	case previewKind(p) == kindArchive:
+		lines, err = archiveLines(fsys, p, 60)
+		return lines, false, kindArchive, err
+	case previewKind(p) == kindImage:
+		lines, err = imageLines(fsys, p)
+		return lines, false, kindImage, err
+	}
 	r, err := fsys.Open(p)
 	if err != nil {
-		return nil, false, err
+		return nil, false, "", err
 	}
 	defer r.Close()
 	data, err := io.ReadAll(io.LimitReader(r, peekBytes))
 	if err != nil {
-		return nil, false, err
+		return nil, false, "", err
 	}
 	if looksBinary(data) {
-		return nil, true, nil
+		return nil, true, "", nil
 	}
-	return textLines(decodeText(data)), false, nil
+	lines = textLines(decodeText(data))
+	kind = previewKind(p)
+	if kind == kindCSV {
+		if t, ok := csvTable(lines, p); ok {
+			return t, false, kind, nil
+		}
+		kind = kindText
+	}
+	return lines, false, kind, nil
 }
 
 // ---------------------------------------------------------------- Öffnen
@@ -493,6 +528,7 @@ func (a *App) fileViewMsgs(msg tea.Msg) (tea.Cmd, bool) {
 			return nil, true
 		}
 		v.lines, v.binary, v.note, v.size, v.off, v.carry = m.lines, m.binary, m.note, m.size, m.off, m.carry
+		v.setKind(m.kind)
 		v.top = min(v.top, max(0, len(v.lines)-1))
 		if v.follow {
 			v.toEnd()
@@ -545,10 +581,10 @@ func (a *App) fileViewMsgs(msg tea.Msg) (tea.Cmd, bool) {
 		if pk == nil || pk.seq != m.seq || !pk.loading {
 			return nil, true
 		}
-		sid, side, seq, fsys, name := s.id, m.side, m.seq, p.fs, pk.name
+		sid, side, seq, fsys, name, dir := s.id, m.side, m.seq, p.fs, pk.name, pk.dir
 		return func() tea.Msg {
-			lines, bin, err := readPeek(fsys, name)
-			return filePeekMsg{sid, side, seq, name, lines, bin, err}
+			lines, bin, kind, err := readPeek(fsys, name, dir)
+			return filePeekMsg{sid, side, seq, name, kind, lines, bin, err}
 		}, true
 	case filePeekMsg:
 		s := a.byID(m.sid)
@@ -559,7 +595,7 @@ func (a *App) fileViewMsgs(msg tea.Msg) (tea.Cmd, bool) {
 		if pk == nil || pk.seq != m.seq {
 			return nil, true
 		}
-		pk.loading, pk.lines, pk.binary = false, m.lines, m.binary
+		pk.loading, pk.lines, pk.binary, pk.kind = false, m.lines, m.binary, m.kind
 		if m.err != nil {
 			pk.err = m.err.Error()
 		}
@@ -584,7 +620,7 @@ func (a *App) filesPeek(s *session) tea.Cmd {
 		return nil
 	}
 	p := f.panes[f.side]
-	if p.sel <= 0 || p.sel >= len(p.entries) || p.entries[p.sel].IsDir {
+	if p.sel <= 0 || p.sel >= len(p.entries) {
 		return nil
 	}
 	e := p.entries[p.sel]
@@ -596,8 +632,8 @@ func (a *App) filesPeek(s *session) tea.Cmd {
 	if p.peek != nil {
 		seq = p.peek.seq + 1
 	}
-	p.peek = &filePeek{name: full, loading: true, seq: seq}
-	if opensWithSystem(e.Name) {
+	p.peek = &filePeek{name: full, dir: e.IsDir, loading: true, seq: seq}
+	if !e.IsDir && opensWithSystem(e.Name) && previewKind(e.Name) != kindImage {
 		p.peek.loading = false
 		return nil
 	}
@@ -630,6 +666,11 @@ func (a *App) viewPeek(s *session, p *pane, side int, w, h int) string {
 	pk := p.peek
 	e := p.entries[p.sel]
 	info := humanBytes(e.Size)
+	if n, ok := p.sizeOf(e); e.IsDir && ok {
+		info = humanBytes(n)
+	} else if e.IsDir {
+		info = i18n.T("Ordner")
+	}
 	var b strings.Builder
 	b.WriteString(lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w)) + "\n")
 	head := st.TabActive.Foreground(st.T.Accent).Render(i18n.T("Vorschau")) + " " + st.Text.Render(trunc(e.Name, max(8, w/2))) + st.Muted.Render(" · "+info)
@@ -637,7 +678,7 @@ func (a *App) viewPeek(s *session, p *pane, side int, w, h int) string {
 	rows := h - 2
 	var body []string
 	switch {
-	case opensWithSystem(e.Name):
+	case !e.IsDir && opensWithSystem(e.Name) && previewKind(e.Name) != kindImage:
 		body = []string{st.Muted.Render(i18n.T(" Doppelklick öffnet mit dem Standardprogramm"))}
 	case pk.loading:
 		body = []string{st.Muted.Render(" …")}
@@ -645,8 +686,39 @@ func (a *App) viewPeek(s *session, p *pane, side int, w, h int) string {
 		body = []string{st.Danger.Render(trunc(" × "+pk.err, w))}
 	case pk.binary:
 		body = []string{st.Muted.Render(i18n.T(" Binärdatei · Doppelklick zeigt Hex, o öffnet mit dem Standardprogramm"))}
+	case pk.kind == kindDir || pk.kind == kindArchive || pk.kind == kindImage:
+		for i, l := range pk.lines {
+			if i >= rows {
+				break
+			}
+			if i == rows-1 && len(pk.lines) > rows {
+				more := i18n.T(" … ⏎ öffnet den Ordner")
+				if pk.kind == kindArchive {
+					more = i18n.T(" … ⏎ zeigt die ganze Liste")
+				}
+				body = append(body, st.Muted.Render(more))
+				break
+			}
+			line := " " + trunc(l, w-2)
+			switch {
+			case i == 0:
+				body = append(body, st.Accent.Render(line))
+			case strings.HasPrefix(l, "▸"):
+				body = append(body, st.Accent.Render(line))
+			default:
+				body = append(body, st.Text.Render(line))
+			}
+		}
 	default:
 		gw := len(fmt.Sprint(min(len(pk.lines), rows))) + 1
+		var code []bool
+		if pk.kind == kindMD {
+			code = mdCodeLines(pk.lines)
+		}
+		var lang *langDef
+		if len(pk.lines) > 0 {
+			lang = langFor(pk.name, pk.lines[0])
+		}
 		for i, l := range pk.lines {
 			if i >= rows {
 				break
@@ -659,7 +731,19 @@ func (a *App) viewPeek(s *session, p *pane, side int, w, h int) string {
 			if len(r) > w-gw-1 {
 				r = r[:max(0, w-gw-1)]
 			}
-			body = append(body, st.Muted.Render(fmt.Sprintf("%*d ", gw, i+1))+a.colorCode(string(r), false))
+			seg := string(r)
+			var colored string
+			switch {
+			case pk.kind == kindMD:
+				colored = a.colorMD(seg, l, code[i])
+			case pk.kind == kindCSV:
+				colored = a.colorCSV(seg, i)
+			case lang != nil:
+				colored = a.colorLang(seg, l, lang)
+			default:
+				colored = a.colorCode(seg, false)
+			}
+			body = append(body, st.Muted.Render(fmt.Sprintf("%*d ", gw, i+1))+colored)
 		}
 	}
 	for len(body) < rows {
@@ -802,7 +886,7 @@ func (a *App) viewFileView(s *session, w, h int) string {
 			case v.binary:
 				body = st.Text.Render(seg)
 			default:
-				body = a.colorLine(seg, v.lines[r.line], v.log)
+				body = a.colorView(v, seg, r.line)
 			}
 			numSt := st.Muted
 			if r.line == v.hit {
@@ -1166,9 +1250,27 @@ func (a *App) fileViewKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		v.findNext(max(v.hit, v.top), 1, false)
 	case "N":
 		v.findNext(max(v.hit, v.top), -1, false)
+	case "t":
+		if v.kind == kindCSV {
+			v.toggleTable()
+		}
+	case "u":
+		if v.kind == kindArchive {
+			p := f.panes[v.side]
+			name := baseName(p.fs, v.path)
+			for i, e := range p.entries {
+				if e.Name == name && p.fs.Join(p.path, e.Name) == v.path {
+					f.view = nil
+					return a.unpack(s, v.side, i)
+				}
+			}
+		}
 	case "f":
-		if v.binary {
+		if v.binary || v.kind == kindArchive {
 			return nil
+		}
+		if v.table {
+			v.toggleTable() // mitlesen geht nur als Text
 		}
 		v.follow = !v.follow
 		if v.follow {
