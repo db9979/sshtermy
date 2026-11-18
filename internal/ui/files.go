@@ -37,6 +37,11 @@ type pane struct {
 	sortBy  int             // sortName/sortSize/sortTime (filesmouse.go)
 	desc    bool
 	peek    *filePeek // Vorschau der Auswahl (fileview.go)
+
+	sizes     map[string]int64 // Ordnergrößen nach i (filespace.go)
+	sizesPath string           // … für diesen Ordner
+	back, fwd []string         // Verlauf für Alt+← / Alt+→ (fileplaces.go)
+	histMove  bool             // gerade im Verlauf unterwegs: nicht neu merken
 }
 
 // fileDrag: Ziehen eines Eintrags mit der Maus.
@@ -72,6 +77,10 @@ type filesState struct {
 	drag    *fileDrag
 	pending []string  // abgelegte Dateien, die nach dem Öffnen hochgeladen werden
 	view    *fileView // Datei im Betrachter (fileview.go)
+
+	job        *fileJob   // Packen, Suchen, Größen … (filejob.go)
+	cut        *fileCut   // ausgeschnitten mit x (filecut.go)
+	placeCache [2][]place // Laufwerke, übliche Ordner (fileplaces.go)
 }
 
 type filesOpenMsg struct {
@@ -100,6 +109,7 @@ func (a *App) toggleFiles(s *session) tea.Cmd {
 		return nil
 	}
 	f.open = true
+	f.placeCache = [2][]place{}
 	if f.remote != nil || f.opening || s.client == nil {
 		return nil
 	}
@@ -203,6 +213,7 @@ func (p *pane) cd(dir string, hidden bool) {
 		p.err = e
 		return
 	}
+	p.pushHist(old)
 	if dir == ".." { // den Ordner markieren, aus dem man kam
 		for i, e := range p.entries {
 			if p.fs.Join(p.path, e.Name) == old {
@@ -214,6 +225,13 @@ func (p *pane) cd(dir string, hidden bool) {
 
 func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 	switch m := msg.(type) {
+	case fileJobMsg:
+		return a.fileJobDone(m), true
+	case findLoadedMsg:
+		a.findLoaded(m)
+		return nil, true
+	case bulkRenTick:
+		return a.bulkRenameTick(), true
 	case filesOpenMsg:
 		s := a.byID(m.sid)
 		if s == nil {
@@ -508,11 +526,20 @@ func (a *App) filesKey(s *session, k tea.KeyPressMsg) tea.Cmd {
 		return a.fileViewKey(s, k)
 	}
 	if key == "esc" {
+		if f.cut != nil {
+			f.cut = nil
+			a.flash(i18n.T("Ausschneiden vergessen"))
+			return nil
+		}
 		f.open = false
 		return nil
 	}
 	if key == "x" && f.xfer != nil {
 		f.xfer.cancel()
+		return nil
+	}
+	if key == "x" && f.job != nil {
+		f.job.cancel()
 		return nil
 	}
 	if f.panes[0] == nil {
@@ -593,7 +620,40 @@ func (a *App) filesListKey(s *session, key string) tea.Cmd {
 	case "n":
 		return a.filesMkdir(s)
 	case "d", "delete":
+		return a.trashPaths(s, f.side, p.picked())
+	case "D", "shift+d", "shift+delete":
 		return a.askDelete(s, f.side, p.picked())
+	case "z":
+		return a.askPack(s, f.side, p.picked())
+	case "u":
+		return a.unpack(s, f.side, p.sel)
+	case "/":
+		return a.openFind(s)
+	case "i":
+		return a.dirSizes(s)
+	case "I", "shift+i":
+		return a.findDups(s)
+	case "g":
+		return a.openPlaces(s, f.side)
+	case "m":
+		return a.toggleFileMark(s, f.side)
+	case "alt+left":
+		if !p.histGo(-1, f.hidden) {
+			a.flash(i18n.T("Kein voriger Ordner"))
+		}
+	case "alt+right":
+		if !p.histGo(1, f.hidden) {
+			a.flash(i18n.T("Kein nächster Ordner"))
+		}
+	case "shift+f2", "R", "shift+r":
+		return a.startBulkRename(s, f.side)
+	case "x":
+		return a.cutPicked(s, f.side, p.picked())
+	case "p":
+		return a.pasteCut(s, f.side)
+	}
+	if a.keys.is(actUndo, key) {
+		return a.doUndo()
 	}
 	return nil
 }
@@ -623,10 +683,13 @@ func (a *App) filesKeys(s *session) [][2]string {
 	if s.files.view != nil {
 		return a.fileViewKeys(s.files.view)
 	}
-	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ↔")}, {"e", i18n.T("im Editor")}, {"o", i18n.T("Programm")}, {"Space", i18n.T("markieren")}, {"F2", i18n.T("umbenennen")},
-		{"n", i18n.T("Ordner")}, {"d", i18n.T("löschen")}, {"s", i18n.T("sortieren")}, {"v", i18n.T("Vorschau")}, {"Esc/F5", "Terminal"}}
-	if s.files.xfer != nil {
+	k := [][2]string{{"Tab", i18n.T("Seite")}, {"⏎/←", i18n.T("öffnen/zurück")}, {"c", i18n.T("kopieren ↔")}, {"x/p", i18n.T("ausschneiden/einfügen")}, {"e", i18n.T("im Editor")}, {"Space", i18n.T("markieren")}, {"F2", i18n.T("umbenennen")},
+		{"d", i18n.T("Papierkorb")}, {"/", i18n.T("finden")}, {"g", i18n.T("Orte")}, {"z/u", i18n.T("packen/entpacken")}, {"i", i18n.T("Größen")}, {"n", i18n.T("Ordner")}, {"s", i18n.T("sortieren")}, {"v", i18n.T("Vorschau")}, {"Esc/F5", "Terminal"}}
+	switch {
+	case s.files.xfer != nil || s.files.job != nil:
 		k = append([][2]string{{"x", i18n.T("abbrechen")}}, k...)
+	case s.files.cut != nil:
+		k = append([][2]string{{"p", i18n.T("hier einfügen")}, {"Esc", i18n.T("vergessen")}}, k...)
 	}
 	return k
 }
@@ -653,6 +716,14 @@ func (a *App) viewFiles(s *session, w, h int) string {
 		status = st.Accent.Render(i18n.T(" Neuer Ordner: ")) + themedInput(*f.mkdir)
 	case f.xfer != nil:
 		status = a.xferStatus(f.xfer, w) // xferview.go, zwei Zeilen
+	case f.job != nil:
+		status = st.AI.Render(fmt.Sprintf(i18n.T(" ⠿ %s … (%s, x bricht ab)"), f.job.what, shortDur(time.Since(f.job.start).Truncate(time.Second))))
+	case f.cut != nil:
+		what := baseName(f.cut.fs, f.cut.paths[0])
+		if len(f.cut.paths) > 1 {
+			what = fmt.Sprintf(i18n.T("%d Einträge"), len(f.cut.paths))
+		}
+		status = st.Warn.Render(fmt.Sprintf(i18n.T(" » %s ausgeschnitten · p fügt im Ordner der aktiven Seite ein · Esc vergisst"), what))
 	case f.drag != nil && f.drag.moved:
 		if n, dir := f.dragTarget(); dir != "" {
 			status = st.Accent.Render(fmt.Sprintf(i18n.T(" Loslassen kopiert %d → %s"), n, dir))
@@ -662,13 +733,22 @@ func (a *App) viewFiles(s *session, w, h int) string {
 	case f.last != "":
 		status = " " + f.last
 	default:
-		status = st.Muted.Render(i18n.T(" Doppelklick öffnet/zeigt an · Rechtsklick: Menü · Ziehen kopiert auf die andere Seite · Strg+Klick markiert · Dateien aus Explorer/Finder ablegen lädt hoch"))
+		status = st.Muted.Render(i18n.T(" Doppelklick öffnet/zeigt an · Rechtsklick: Menü · Ziehen kopiert auf die andere Seite · / findet · g Orte · Dateien aus Explorer/Finder ablegen lädt hoch"))
 	}
 	ph := h - 1 - lipgloss.Height(status)
-	lw := (w - 1) / 2
-	rw := w - 1 - lw
 	sep := lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("│\n", ph-1) + "│")
+	var bar string
+	pw := w
+	if w >= sidebarMinW { // Orte-Leiste links (fileplaces.go)
+		bar = a.viewPlacesBar(s, sidebarWidth, ph)
+		pw = w - sidebarWidth - 1
+	}
+	lw := (pw - 1) / 2
+	rw := pw - 1 - lw
 	cols := lipgloss.JoinHorizontal(lipgloss.Top, a.viewPane(s, 0, lw, ph), sep, a.viewPane(s, 1, rw, ph))
+	if bar != "" {
+		cols = lipgloss.JoinHorizontal(lipgloss.Top, bar, sep, cols)
+	}
 	return cols + "\n" + lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w)) + "\n" + ansiTruncate(status, w)
 }
 
@@ -709,6 +789,9 @@ func (a *App) viewPane(s *session, side, w, h int) string {
 			name += "/"
 			if e.Name != ".." {
 				date = e.ModTime.Format("02.01. 15:04")
+				if n, ok := p.sizeOf(e); ok {
+					size = humanBytes(n)
+				}
 			}
 		} else {
 			size, date = humanBytes(e.Size), e.ModTime.Format("02.01. 15:04")
@@ -718,6 +801,9 @@ func (a *App) viewPane(s *session, side, w, h int) string {
 		}
 		if p.marked[e.Name] {
 			icon = "✓ "
+		}
+		if f.cut.has(p.fs, p.fs.Join(p.path, e.Name)) {
+			icon = "» "
 		}
 		line := fmt.Sprintf("%s%-*s %*s %*s", icon, nameW, trunc(name, nameW), sizeW, size, dateW, date)
 		switch {
@@ -729,6 +815,8 @@ func (a *App) viewPane(s *session, side, w, h int) string {
 			line = lipgloss.NewStyle().Background(st.T.Surface).Width(w).Render(line)
 		case p.marked[e.Name]:
 			line = st.Warn.Render(line)
+		case icon == "» ":
+			line = st.Muted.Render(line)
 		case e.IsDir:
 			line = st.Accent.Render(line)
 		default:

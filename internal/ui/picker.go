@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -44,7 +45,12 @@ type picker struct {
 	onMenu func(it pickItem, m tea.Mouse) tea.Cmd
 	reload func() []pickItem
 	keys   [][2]string
+	// fuzzy: Buchstaben der Suche der Reihe nach im Namen (Datei finden,
+	// filefind.go), beste Treffer zuerst, höchstens fuzzyMax.
+	fuzzy bool
 }
+
+const fuzzyMax = 400
 
 func newPicker(title, placeholder string, items []pickItem, current string, onPick func(pickItem) tea.Cmd) *picker {
 	in := newInput("", false)
@@ -66,6 +72,9 @@ func (p *picker) visible() []pickItem {
 			out = append(out, *it)
 		}
 	}
+	if p.fuzzy && q != "" {
+		return append(out, fuzzyPick(p.items, q)...)
+	}
 	words := strings.Fields(q)
 	for _, it := range p.items {
 		hay := strings.ToLower(ansi.Strip(it.label + " " + it.detail + " " + it.hint + " " + it.search))
@@ -79,6 +88,38 @@ func (p *picker) visible() []pickItem {
 		if ok {
 			out = append(out, it)
 		}
+	}
+	return out
+}
+
+// fuzzyPick: Einträge, deren label die Buchstaben von q der Reihe nach
+// enthält; kurze, zusammenhängende Treffer im Dateinamen zuerst.
+func fuzzyPick(items []pickItem, q string) []pickItem {
+	type hit struct {
+		it    pickItem
+		score int
+	}
+	var hs []hit
+	for _, it := range items {
+		if it.disabled != "" {
+			continue
+		}
+		h := fuzzyHits(q, it.label)
+		if h == nil {
+			continue
+		}
+		score := h[len(h)-1] - h[0] // Spanne
+		base := strings.LastIndexAny(it.label, "/\\") + 1
+		if h[0] < len([]rune(it.label[:base])) {
+			score += 50 // Treffer nicht im Dateinamen selbst
+		}
+		score += len([]rune(it.label)) / 8
+		hs = append(hs, hit{it, score})
+	}
+	sort.SliceStable(hs, func(i, j int) bool { return hs[i].score < hs[j].score })
+	out := make([]pickItem, 0, min(len(hs), fuzzyMax))
+	for i := 0; i < len(hs) && i < fuzzyMax; i++ {
+		out = append(out, hs[i].it)
 	}
 	return out
 }

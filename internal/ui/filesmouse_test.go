@@ -190,7 +190,7 @@ func TestFilesRightClickMenu(t *testing.T) {
 		labels = append(labels, it.label)
 	}
 	all := strings.Join(labels, "|")
-	for _, want := range []string{"Ansehen", "Umbenennen", "Rechte ändern", "Pfad kopieren", "Im Terminal: cd hierhin", "Löschen …"} {
+	for _, want := range []string{"Ansehen", "Umbenennen", "Rechte ändern", "Pfad kopieren", "Im Terminal: cd hierhin", "In den Papierkorb", "Endgültig löschen …"} {
 		if !strings.Contains(all, want) {
 			t.Fatalf("%q fehlt im Menü: %s", want, all)
 		}

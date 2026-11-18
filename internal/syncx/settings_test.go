@@ -87,6 +87,7 @@ var localSettings = map[string]bool{
 	"CmdSetApproved": true,
 	"Share":          true,
 	"FilesNoPeek":    true, // Vorschau im Dateibrowser: Platz je Bildschirm
+	"FileMarks":      true, // gemerkte lokale Ordner gibt es nur auf diesem Rechner
 	"Vuln":           true, // Sicherheitscheck je Rechner
 	"Header":         true, // eigener Befehl in der Kopfzeile läuft nur hier
 	"RestoreTabs":    true, // Tabs vom letzten Mal: je Rechner

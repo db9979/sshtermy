@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/packx"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -43,15 +45,18 @@ func (p *pane) sortEntries() {
 	if p.entries[0].Name != ".." {
 		es = p.entries
 	}
+	mixed := p.sortBy == sortSize && p.sizes != nil && p.sizesPath == p.path // Platzfresser: Ordner und Dateien gemischt
 	sort.SliceStable(es, func(i, j int) bool {
 		a, b := es[i], es[j]
-		if a.IsDir != b.IsDir {
+		if a.IsDir != b.IsDir && !mixed {
 			return a.IsDir
 		}
 		var less, eq bool
 		switch p.sortBy {
 		case sortSize:
-			less, eq = a.Size < b.Size, a.Size == b.Size
+			na, _ := p.sizeOf(a)
+			nb, _ := p.sizeOf(b)
+			less, eq = na < nb, na == nb
 		case sortTime:
 			less, eq = a.ModTime.Before(b.ModTime), a.ModTime.Equal(b.ModTime)
 		default:
@@ -113,7 +118,9 @@ func (p *pane) goTo(dir string, hidden bool) {
 		p.path = old
 		p.load(hidden)
 		p.err = e
+		return
 	}
+	p.pushHist(old)
 }
 
 // crumbs: Teile des Pfads (Text, Ziel), vom Wurzelordner an.
@@ -160,6 +167,7 @@ func (a *App) filesPaneTitle(s *session, f *filesState, side, w int) string {
 		hiddenTip = i18n.T("versteckte Dateien ausblenden (.)")
 	}
 	buttons := []button{
+		{"♦", i18n.T("Orte (g)"), func() tea.Cmd { return a.openPlaces(s, side) }},
 		{"↑", i18n.T("eine Ebene hoch (←)"), func() tea.Cmd { p.cd("..", f.hidden); return nil }},
 		{"~", i18n.T("Home-Ordner (~)"), func() tea.Cmd { p.goTo(p.fs.Home(), f.hidden); return nil }},
 		{"◌", i18n.T("neu laden (r)"), func() tea.Cmd { p.load(f.hidden); return nil }},
@@ -167,7 +175,7 @@ func (a *App) filesPaneTitle(s *session, f *filesState, side, w int) string {
 		{".", hiddenTip, func() tea.Cmd { a.filesToggleHidden(s); return nil }},
 	}
 	var bar string
-	if w >= 44 {
+	if w >= 48 {
 		for _, b := range buttons {
 			b := b
 			bar += " " + a.z.mark(btn.Render(" "+b.label+" "), zoneAction{
@@ -337,7 +345,12 @@ func (a *App) fileMenuBuild(s *session, side, i int) (string, []menuItem) {
 			menuItem{label: i18n.T("Umbenennen"), hint: "F2", sep: true, run: func() tea.Cmd { return a.askRename(s, side, i) }},
 			menuItem{label: i18n.T("Rechte ändern"), hint: modeString(e.Mode), run: func() tea.Cmd { return a.askChmod(s, side, i) }},
 			menuItem{label: i18n.T("Pfad kopieren"), hint: "y", run: func() tea.Cmd { return a.copyPath(full) }},
+			menuItem{label: i18n.T("Ausschneiden"), hint: "x", run: func() tea.Cmd { return a.cutPicked(s, side, paths) }},
+			menuItem{label: i18n.T("Packen …"), hint: "z", sep: true, run: func() tea.Cmd { return a.askPack(s, side, paths) }},
 		)
+		if !e.IsDir && packx.IsArchive(e.Name) {
+			items = append(items, menuItem{label: i18n.T("Entpacken"), hint: "u", run: func() tea.Cmd { return a.unpack(s, side, i) }})
+		}
 		if remote && s.state == stConnected {
 			dir := p.path
 			if e.IsDir {
@@ -345,11 +358,16 @@ func (a *App) fileMenuBuild(s *session, side, i int) (string, []menuItem) {
 			}
 			items = append(items, menuItem{label: i18n.T("Im Terminal: cd hierhin"), hint: trunc(dir, 24), run: func() tea.Cmd { return a.cdInTerminal(s, dir) }})
 		}
-		del := i18n.T("Löschen …")
+		del := i18n.T("Endgültig löschen …")
 		if many != "" {
-			del = fmt.Sprintf(i18n.T("%s löschen …"), many)
+			del = fmt.Sprintf(i18n.T("%s endgültig löschen …"), many)
 		}
-		items = append(items, menuItem{label: del, hint: "d", sep: true, run: func() tea.Cmd { return a.askDelete(s, side, paths) }})
+		if !inTrash(p.fs, full) {
+			items = append(items, menuItem{label: i18n.T("In den Papierkorb"), hint: "d", sep: true, run: func() tea.Cmd { return a.trashPaths(s, side, paths) }})
+			items = append(items, menuItem{label: del, hint: "⇧D", run: func() tea.Cmd { return a.askDelete(s, side, paths) }})
+		} else {
+			items = append(items, menuItem{label: del, hint: "d", sep: true, run: func() tea.Cmd { return a.askDelete(s, side, paths) }})
+		}
 	} else {
 		hidden := i18n.T("Versteckte zeigen")
 		if f.hidden {
@@ -370,6 +388,26 @@ func (a *App) fileMenuBuild(s *session, side, i int) (string, []menuItem) {
 			paths := p.picked()
 			items = append(items, menuItem{label: fmt.Sprintf(i18n.T("%d markierte kopieren"), len(paths)), hint: "c", sep: true,
 				run: func() tea.Cmd { return a.startTransfer(s, p.fs, paths, other.fs, other.path, side == 0, false) }})
+		}
+		if f.cut != nil {
+			items = append(items, menuItem{label: i18n.T("Hier einfügen (verschieben)"), hint: "p", sep: true, run: func() tea.Cmd { return a.pasteCut(s, side) }})
+		}
+		mark := i18n.T("Ordner merken ♦")
+		if slices.Contains(a.fileMarks(s, side), p.path) {
+			mark = i18n.T("Ordner vergessen ♦")
+		}
+		items = append(items,
+			menuItem{label: i18n.T("Datei finden …"), hint: "/", sep: true, run: func() tea.Cmd { return a.openFind(s) }},
+			menuItem{label: i18n.T("Orte …"), hint: "g", run: func() tea.Cmd { return a.openPlaces(s, side) }},
+			menuItem{label: mark, hint: "m", run: func() tea.Cmd { return a.toggleFileMark(s, side) }},
+			menuItem{label: i18n.T("Ordnergrößen"), hint: "i", sep: true, run: func() tea.Cmd { return a.dirSizes(s) }},
+			menuItem{label: i18n.T("Doppelte Dateien suchen"), hint: "⇧I", run: func() tea.Cmd { return a.findDups(s) }},
+			menuItem{label: i18n.T("Namen im Editor ändern"), hint: "⇧F2", run: func() tea.Cmd { return a.startBulkRename(s, side) }},
+		)
+		if inTrash(p.fs, p.path) {
+			items = append(items, menuItem{label: i18n.T("Papierkorb leeren …"), sep: true, run: func() tea.Cmd { return a.emptyTrash(s, side) }})
+		} else {
+			items = append(items, menuItem{label: i18n.T("Papierkorb öffnen"), sep: true, run: func() tea.Cmd { return a.openTrash(s, side) }})
 		}
 	}
 	return title, items

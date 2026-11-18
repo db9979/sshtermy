@@ -136,6 +136,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback (mouse wheel or <kbd>⇧</kbd>+<kbd>PgUp</kbd>), tabs, split view, search.</p></div>
     <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen. After sleep or a network change every line is checked within seconds.</p></div>
     <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right. <kbd>e</kbd> opens a server file in VS Code, Notepad++ or TextEdit, saving uploads it back. While copying: percent, MB/s, time left and a speed curve. “Permission denied”? sshTermy offers to repeat it with sudo (<kbd>j</kbd> twice).</p></div>
+    <div class="card"><h3>Files like a file manager</h3><p>In F5: <kbd>d</kbd> moves to the trash, <kbd>Ctrl</kbd>+<kbd>Z</kbd> restores. <kbd>z</kbd>/<kbd>u</kbd> pack and extract right on the server, <kbd>/</kbd> finds files fuzzily in the whole folder tree, <kbd>i</kbd> shows the space hogs, <kbd>⇧I</kbd> duplicate files. <kbd>g</kbd> opens places with bookmarked folders and drives, <kbd>x</kbd>/<kbd>p</kbd> moves, <kbd>⇧F2</kbd> renames many files in your own editor. The preview shows folders, archives, image sizes, Markdown and CSV as a table.</p></div>
     <div class="card"><h3>Files with the mouse</h3><p>Double-click a file to view it right in sshTermy: colors, search, select and copy, follow like <code>tail -f</code>. Images and PDFs open with your default app. A single click shows a preview, right-click opens a menu with rename, permissions, copy path and <code>cd</code> here. Clickable path, sortable columns, Ctrl/Shift+click to mark.</p></div>
     <div class="card"><h3>Color rules</h3><p>Errors red, warnings yellow, IP blue, MAC purple, switch syslog by severity; your own rules, with <code>!</code> a hidden tab notifies you.</p></div>
     <div class="card"><h3>Images in the terminal</h3><p>Sixel, kitty graphics and iTerm2 images (img2sixel, icat, viu, imgcat) as colored half blocks, in any terminal; pixel-perfect in kitty, Ghostty and sshTermy's own window.</p></div>
@@ -248,8 +249,14 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F6</kbd> → <kbd>i</kbd> / <kbd>w</kbd></td><td>Inventory &amp; changes since last time (<kbd>e</kbd> CSV) / curves 24 h ↔ 7 days</td></tr>
     <tr><td><kbd>F6</kbd> → <kbd>t</kbd> / <kbd>z</kbd></td><td>Live graphs: range 5 min / 1 h, large view</td></tr>
     <tr><td><kbd>F5</kbd> → <kbd>e</kbd></td><td>Server file in your own editor (saving uploads it)</td></tr>
-    <tr><td><kbd>F5</kbd> → <kbd>⏎</kbd> / double-click</td><td>View file (<kbd>/</kbd> search, <kbd>f</kbd> follow, <kbd>w</kbd> wrap), <kbd>o</kbd> default app</td></tr>
-    <tr><td><kbd>F5</kbd> → right-click</td><td>Menu: rename (<kbd>F2</kbd>), permissions, copy path (<kbd>y</kbd>), <code>cd</code> here, delete · <kbd>s</kbd> sort, <kbd>v</kbd> preview</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>⏎</kbd> / double-click</td><td>View file (<kbd>/</kbd> search, <kbd>f</kbd> follow, <kbd>w</kbd> wrap, <kbd>t</kbd> CSV table), <kbd>o</kbd> default app</td></tr>
+    <tr><td><kbd>F5</kbd> → right-click</td><td>Menu: rename (<kbd>F2</kbd>), permissions, copy path (<kbd>y</kbd>), <code>cd</code> here, cut, pack, trash · <kbd>s</kbd> sort, <kbd>v</kbd> preview</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>d</kbd> / <kbd>⇧D</kbd> / <kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Move to trash / delete permanently / restore</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>z</kbd> / <kbd>u</kbd></td><td>Pack (.tar.gz, .zip, .tar) / extract archive, on the server without downloading</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>/</kbd></td><td>Find file, fuzzy across the whole folder tree</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>i</kbd> / <kbd>⇧I</kbd></td><td>Folder sizes (largest on top) / duplicate files</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>g</kbd> / <kbd>m</kbd> / <kbd>Alt</kbd>+<kbd>←</kbd> <kbd>→</kbd></td><td>Places / bookmark folder / previous, next folder</td></tr>
+    <tr><td><kbd>F5</kbd> → <kbd>x</kbd> / <kbd>p</kbd> / <kbd>⇧F2</kbd></td><td>Cut / paste (move) / change many names in your editor</td></tr>
     <tr><td><kbd>F5</kbd> → “permission denied” → <kbd>j</kbd> <kbd>j</kbd></td><td>Repeat copy, delete, rename, permissions or editor save with sudo (password from login, keychain or prompt)</td></tr>
     <tr><td><kbd>l</kbd> → <kbd>b</kbd></td><td>Session logs: AI change report</td></tr>
     <tr><td>Palette › Play recording</td><td><kbd>Space</kbd> pause, <kbd>←</kbd> <kbd>→</kbd> seek, <kbd>↑</kbd> <kbd>↓</kbd> speed, <kbd>/</kbd> search text, <kbd>n</kbd> next, <kbd>m</kbd> marker, <kbd>i</kbd> shorten pauses</td></tr>

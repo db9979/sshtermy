@@ -147,6 +147,7 @@ type App struct {
 	returnToTerminal bool
 	shareForm        shareFormState // Teilen-Dialog (sharedialog.go)
 	undo             *undoState     // Löschen rückgängig machen (undo.go)
+	bulkRen          *bulkRename    // Namen im Editor umbenennen (filerename.go)
 
 	sessions []*session
 	cur      int

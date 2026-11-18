@@ -79,6 +79,9 @@ type Connection struct {
 	// Sitzung. Gefährliche Befehle lehnt das Formular ab; aus einem
 	// Team-Paket wird er nie übernommen.
 	StartCmd string `json:"start_cmd,omitempty"`
+	// FileMarks: gemerkte Server-Ordner im Dateien-Fenster (F5, Taste m),
+	// erscheinen unter „Orte“ (g).
+	FileMarks []string `json:"file_marks,omitempty"`
 	// MAC: Hardware-Adresse für Wake-on-LAN (aa:bb:cc:dd:ee:ff). Leer =
 	// sshTermy merkt sie sich beim Verbinden selbst, wenn es sie findet.
 	MAC string `json:"mac,omitempty"`
@@ -524,15 +527,16 @@ type Settings struct {
 	UseDPAPI bool   `json:"use_dpapi"` // Windows: Store-Schlüssel zusätzlich per DPAPI
 	// UpdateWaitH: Updates erst anbieten, wenn sie so viele Stunden
 	// veröffentlicht sind (Kanal „stabil“). 0 = sofort.
-	UpdateWaitH  int    `json:"update_wait_h,omitempty"`
-	LockAfterMin int    `json:"lock_after_min"`           // 0 = nie automatisch sperren
-	Language     string `json:"language"`                 // "de" | "en"
-	NoMouse      bool   `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
-	FilesNoPeek  bool   `json:"files_no_peek,omitempty"`  // Dateien (F5): keine Vorschau unter der Liste
-	NoSessionLog bool   `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
-	NoPasteGuard bool   `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
-	DangerAll    bool   `json:"danger_all,omitempty"`     // Gefahren-Check beim Tippen auf allen Hosts, nicht nur Produktiv
-	LastVersion  string `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
+	UpdateWaitH  int      `json:"update_wait_h,omitempty"`
+	LockAfterMin int      `json:"lock_after_min"`           // 0 = nie automatisch sperren
+	Language     string   `json:"language"`                 // "de" | "en"
+	NoMouse      bool     `json:"no_mouse,omitempty"`       // Maus nicht einfangen (Terminalfenster markiert selbst)
+	FilesNoPeek  bool     `json:"files_no_peek,omitempty"`  // Dateien (F5): keine Vorschau unter der Liste
+	FileMarks    []string `json:"file_marks,omitempty"`     // Dateien (F5): gemerkte Ordner auf diesem Rechner (Orte, g)
+	NoSessionLog bool     `json:"no_session_log,omitempty"` // Sitzungen nicht mitschreiben
+	NoPasteGuard bool     `json:"no_paste_guard,omitempty"` // mehrzeiliges Einfügen ohne Vorschau (Gefahrenregeln greifen trotzdem)
+	DangerAll    bool     `json:"danger_all,omitempty"`     // Gefahren-Check beim Tippen auf allen Hosts, nicht nur Produktiv
+	LastVersion  string   `json:"last_version,omitempty"`   // zuletzt gestartete Version (für „Was ist neu“)
 	// NoAutoReconnect: abgerissene Sitzungen nicht von selbst neu verbinden.
 	NoAutoReconnect bool `json:"no_auto_reconnect,omitempty"`
 	TourDone        bool `json:"tour_done,omitempty"`
@@ -711,6 +715,7 @@ type Workspace struct {
 // ein Theme, das auf einem anderen Rechner gerade umgestellt wurde.
 func (s Settings) SyncedPart() Settings {
 	s.UseDPAPI, s.NoMouse, s.LastVersion, s.NerdFont, s.FilesNoPeek = false, false, "", "", false
+	s.FileMarks = nil                                                   // lokale Ordner gibt es nur auf diesem Rechner
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false
