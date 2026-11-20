@@ -204,13 +204,14 @@
 
 <section id="hilfe">
   <h2>Fehler melden</h2>
+  <p>Zuerst die <strong>Selbstprüfung</strong>: Hilfe › Fehlersuche › „Selbstprüfung“ oder <code>sshtermy doctor</code>. Sie prüft Datenordner, Tresor, Schlüsselbund, SSH-Agent, Update-Signatur, Internet, Uhr und den KI-Endpunkt; <kbd>c</kbd> kopiert das Ergebnis.</p>
   <ol>
     <li>Einstellungen › „Debug-Protokoll für Fehlerberichte“ einschalten (oder <code>sshtermy --debug</code> starten).</li>
     <li>Den Fehler nachstellen.</li>
     <li>Hilfe › „Debug-Protokoll bereinigt speichern“: eine Kopie ohne Hosts, IPs, Benutzernamen und Passwörter landet in Downloads.</li>
     <li>Ein <a href="https://github.com/db9979/sshtermy/issues/new">Issue auf GitHub</a> öffnen und die Datei anhängen.</li>
   </ol>
-  <p>Stürzt sshTermy ab, bietet es beim nächsten Start einen bereinigten Absturzbericht an.</p>
+  <p>Ein Fehler an einer Stelle (KI-Antwort, Geräteausgabe, Dateiansicht) wird abgefangen: sshTermy läuft mit allen Verbindungen weiter, schreibt einen bereinigten Bericht und zeigt eine Meldung. Stürzt es doch ab, bietet es beim nächsten Start einen bereinigten Absturzbericht an.</p>
 </section>
 
 <section id="tasten">
@@ -247,6 +248,7 @@
   <h3>Start und Tipps</h3>
   <table>
     <tr><td><code>sshtermy backup</code> · <code>sshtermy mcp</code></td><td>alles sichern · MCP-Server für KI-Clients</td></tr>
+    <tr><td><code>sshtermy doctor</code></td><td>Selbstprüfung für Fehlerberichte</td></tr>
     <tr><td><code>--no-intro</code> · <code>--debug</code></td><td>ohne Startanimation · Debug-Protokoll</td></tr>
     <tr><td><code>-window</code> · <code>-tui</code></td><td>eigenes Fenster · immer im Terminal</td></tr>
     <tr><td><code>tsz</code> / <code>trz</code></td><td>Datei vom / zum Server (trzsz)</td></tr>

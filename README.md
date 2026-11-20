@@ -251,6 +251,8 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   AI requests (host/model only). Each line is chained and signed with a key from the store, so changes, deleted or
   reordered lines are detected. “Verify and save audit log” writes the check result and a readable copy to Downloads.
   Commands with a leading space appear only as “(privat)”
+- **Keeps running after errors:** an error in one part (AI answer, device output, file view) is caught instead of
+  ending sshTermy with all connections; **self-check** with `sshtermy doctor` or palette › Help › Troubleshooting.
 - **Debug log for bug reports** (Settings or `sshtermy --debug`): connection attempts, drops, updates, AI requests and
   sync as events, never passwords or screen content. Help › “Save cleaned debug log” writes a copy without hosts, IPs and
   user names to Downloads, ready to attach to a GitHub issue. Very slow frames (over 50 ms) are logged there too
@@ -327,6 +329,7 @@ sshtermy --debug      # write a debug log for this run (debug.log in the config 
 sshtermy backup [file]   # full backup of all data (asks for the master password)
 sshtermy restore <file>  # restore a full backup (replaces all data, keeps the old folder)
 sshtermy mcp             # MCP server for AI clients (stdin/stdout), see “sshTermy as MCP server”
+sshtermy doctor          # self-check: data folder, vault, keychain, SSH agent, update signature, internet, clock
 ```
 
 ## Usage
@@ -727,11 +730,18 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
   stack trace. **Before saving**, all passwords, keys, passphrases and API keys from the store are removed
   verbatim, as are hosts, aliases, IP addresses, the home folder and typical patterns (`password=…`, `Bearer …`,
   private keys).
-- A crash in the interface is caught: the terminal is restored and sshTermy asks whether to report it as a
+- **Crash protection:** an error in one part (reading an AI answer, parsing device output, the file view, a
+  background task) no longer ends sshTermy and all your connections. The error is caught, a report is written,
+  a message appears top right, and everything else keeps running. Only if errors pile up (more than 5 in a
+  minute) does sshTermy end as before.
+- A crash in the interface that cannot be caught: the terminal is restored and sshTermy asks whether to report it as a
   GitHub issue. A hard crash (the process ends immediately) is turned into a report after the next unlock and
   shown in a dialog (`g` = report as issue, `o` = open report).
 - Nothing is sent automatically. The issue opens in the browser with the report pre-filled; you see everything
-  before you submit. The last 10 reports are kept. Try it: `sshtermy -crash-test ui` (or `cmd`, `fatal`).
+  before you submit. The last 10 reports are kept. Try it: `sshtermy -crash-test ui` or `cmd` (caught, sshTermy keeps running) or `fatal`.
+- **Self-check** (palette › Help › Troubleshooting › “Self-check” or `sshtermy doctor`): data folder and permissions,
+  vault, keychain, SSH agent, update signature, internet and clock (a wrong clock breaks one-time codes and
+  certificates), crash reports and, in the app, the AI endpoint. `c` copies the result for a bug report.
 
 ### Auto-update
 
