@@ -11,7 +11,6 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/broadcast"
@@ -528,7 +527,7 @@ func (a *App) bcRunKey(k tea.KeyPressMsg) tea.Cmd {
 	case "c":
 		if b.sel < n {
 			text := b.results[b.sel].Output
-			go func() { _ = clipboard.WriteAll(text) }()
+			go func() { _ = clipWrite(text) }()
 			a.flash(i18n.T("Ausgabe von ") + b.results[b.sel].Alias + i18n.T(" kopiert"))
 			return tea.SetClipboard(text)
 		}

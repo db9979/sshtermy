@@ -373,6 +373,7 @@ func (a *App) llmStatusView() string {
 			b.WriteString(line + "\n")
 		}
 	}
+	b.WriteString(a.aiUsageView(time.Now()))
 	if chain := a.st.LLM().Chain(); len(chain) > 1 {
 		b.WriteString("\n" + s.Accent.Render(i18n.T("Ersatz-Anbieter")) + s.Muted.Render(i18n.T(" · springen der Reihe nach ein, wenn der Endpunkt nicht antwortet")) + "\n")
 		for i, e := range chain[1:] {

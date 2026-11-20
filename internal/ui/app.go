@@ -91,6 +91,7 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	usageSaved time.Time // KI-Verbrauch zuletzt gespeichert (aiusage.go)
 	// Absturzschutz (safety.go): letztes gutes Bild, wartende Empfänger
 	lastView  tea.View
 	listening atomic.Int32
@@ -260,6 +261,7 @@ func New(st *store.Store) (*App, error) {
 	a.inputLog = openInputLog(st.Dir)
 	a.hookSync()
 	a.hookFresh()
+	a.hookAIUsage() // KI-Verbrauch zählen (aiusage.go)
 	if IntroEnabled(st.Dir) {
 		a.intro = &introState{}
 	}
@@ -854,7 +856,8 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 type WindowClosedMsg struct{}
 
 func (a *App) quit() tea.Cmd {
-	a.restoreOnQuit()  // offene Tabs fürs nächste Mal merken (restore.go)
+	a.restoreOnQuit() // offene Tabs fürs nächste Mal merken (restore.go)
+	_ = a.st.SaveAIUsage(time.Now())
 	a.finishUndo()     // offenes Löschen endgültig machen (undo.go)
 	a.rememberLayout() // geteilte Ansicht als „Zuletzt“ (workspace.go)
 	a.cleanupEdits()
@@ -902,6 +905,7 @@ func (a *App) onTick() tea.Cmd {
 	}
 	a.watchTick()
 	a.restoreTick(time.Now())
+	a.aiUsageTick(time.Now())
 	a.mcpWaitTick(time.Now()) // MCP wait_tab (mcpcontrol.go)
 	if c := a.headerTick(time.Now()); c != nil {
 		cmds = append(cmds, c) // eigener Befehl in der Kopfzeile (headerfields.go)

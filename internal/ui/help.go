@@ -98,7 +98,7 @@ var helpSections = []helpSection{
 		{"Strg+S", "speichern"},
 	}},
 	{hcTerminal, "▸", "Terminal", "", false, [][2]string{
-		{"Tab / →", "Ghost-Text übernehmen"},
+		{"Tab / →", "Ghost-Text übernehmen (zuerst aus dem Verlauf)"},
 		{"Alt+1…4", "Folgebefehl einfügen"},
 		{"Alt+0", "Fehler: Warum? & Fix"},
 		{"⇧F1…F8", "Schnellbefehl ausführen"},
@@ -121,6 +121,8 @@ var helpSections = []helpSection{
 		{"⇧Pos1 / ⇧Ende", "Anfang / Ende des Verlaufs"},
 		{"Strg+F", "im Verlauf suchen"},
 		{"Alt+C", "per Tastatur markieren: v / V, y kopiert"},
+		{"Alt+Y", "Zwischenablage-Verlauf: wieder einfügen"},
+		{"Rechtsklick auf Markierung", "kopieren, im Web suchen"},
 		{"Alt+X", "Bildschirm + Verlauf leeren, Eingabe bleibt"},
 		{"Alt+S", "in allen Tabs suchen"},
 		{"Alt+O", "Befehle des Tabs: Ausgabe kopieren, an KI"},

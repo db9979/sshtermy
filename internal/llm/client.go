@@ -74,6 +74,10 @@ type response struct {
 	Error *struct {
 		Message string `json:"message"`
 	} `json:"error,omitempty"`
+	Usage *struct {
+		Prompt     int `json:"prompt_tokens"`
+		Completion int `json:"completion_tokens"`
+	} `json:"usage,omitempty"`
 }
 
 // conn ist ein einzelner Endpunkt (Hauptendpunkt oder ein Ersatz).
@@ -378,6 +382,8 @@ type Result struct {
 	Content      string
 	Reasoning    string // getrennt gelieferte Gedanken (nur zur Diagnose)
 	FinishReason string // "stop", "length", …
+	// In/Out: verbrauchte Tokens laut Server (0 = Server nennt sie nicht).
+	In, Out int
 }
 
 // Truncated: das Modell wurde vom Token-Limit abgeschnitten.
@@ -465,7 +471,11 @@ func (c *conn) completeResult(ctx context.Context, msgs []Message, o Opts) (Resu
 	if reasoning == "" {
 		reasoning = ch.Message.Reasoning
 	}
-	return Result{Content: ch.Message.Content, Reasoning: reasoning, FinishReason: ch.FinishReason}, nil
+	res := Result{Content: ch.Message.Content, Reasoning: reasoning, FinishReason: ch.FinishReason}
+	if r.Usage != nil {
+		res.In, res.Out = r.Usage.Prompt, r.Usage.Completion
+	}
+	return res, nil
 }
 
 func (c *conn) do(ctx context.Context, body any, stream bool) (*http.Response, error) {

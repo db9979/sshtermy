@@ -6,7 +6,6 @@ import (
 	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -284,7 +283,7 @@ func (a *App) copyPanelSel(s *session) tea.Cmd {
 	if strings.TrimSpace(text) == "" {
 		return nil
 	}
-	go func() { _ = clipboard.WriteAll(text) }()
+	go func() { _ = clipWrite(text) }()
 	if lines := strings.Count(text, "\n") + 1; lines > 1 {
 		a.flash(i18n.T("Kopiert: ") + plural(lines, i18n.T("Zeile"), i18n.T("Zeilen")))
 	} else {

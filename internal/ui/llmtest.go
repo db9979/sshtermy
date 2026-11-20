@@ -71,6 +71,9 @@ func (a *App) formLLM() domain.LLMConfig {
 	c.SuggestEnabled, c.SuggestDelayMS = f.flag("suggest"), f.num("delay")
 	c.SendScreen, c.ContextLines, c.GoalStepsMin = f.flag("screen"), f.num("lines"), f.num("steps")
 	c.AllowInsecure = f.flag("insecure")
+	if in, out, ok := parsePrices(f.str("price")); ok {
+		c.PriceIn, c.PriceOut = in, out
+	}
 	return c
 }
 

@@ -13,7 +13,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -181,7 +180,7 @@ func (a *App) openBlocks(s *session) tea.Cmd {
 
 func (a *App) copyBlock(b cmdBlock) tea.Cmd {
 	text := strings.TrimRight(b.out, "\n")
-	go func() { _ = clipboard.WriteAll(text) }()
+	go func() { _ = clipWrite(text) }()
 	a.flash(i18n.T("Kopiert: Ausgabe von ") + trunc(b.cmd, 40) + " (" + plural(countLines(text), i18n.T("Zeile"), i18n.T("Zeilen")) + ")")
 	return tea.SetClipboard(text)
 }

@@ -990,6 +990,7 @@ func (a *App) openSettings() tea.Cmd {
 	f.number("lines", i18n.T("Kontext-Zeilen"), c.ContextLines, "")
 	f.number("steps", i18n.T("Ziel: Schritte/min"), c.GoalStepsMin, i18n.T("Ratenlimit im Ziel-Modus"))
 	f.toggle("insecure", i18n.T("http mit API-Key"), c.AllowInsecure, i18n.T("nur wenn du weißt, was du tust"))
+	f.text("price", i18n.T("Preis/1 Mio. Tokens"), fmtPrices(c.PriceIn, c.PriceOut), i18n.T("Eingabe / Ausgabe, z. B. 3 / 15; leer = keine Kosten zeigen (eigener Server)"))
 	f.text("rules", i18n.T("Hausregeln"), c.Rules, i18n.T("gelten für jede KI-Aufgabe, z. B. „Debian 12, nie reboot vorschlagen“; Ordner: e im Manager"))
 	f.pick("fallbacks", i18n.T("Ersatz-Anbieter"), "", func(string) string { return a.fallbackSummary(a.st.LLM()) },
 		func() tea.Cmd { return a.settingsToFallbacks() }, i18n.T("⏎ öffnet: springen ein, wenn der Endpunkt nicht antwortet"))

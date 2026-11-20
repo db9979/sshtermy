@@ -117,6 +117,7 @@ type session struct {
 
 	// Ghost-Text
 	ghost, ghostFor string
+	ghostHist       bool // Vorschlag kam aus dem Verlauf, nicht von der KI (histghost.go)
 	ghostSeq        int
 	ghostCancel     context.CancelFunc
 	ghostMemo       map[string]ghostMemo // letzte Antworten je Eingabe (ghost.go)

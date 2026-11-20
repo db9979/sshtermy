@@ -89,6 +89,13 @@ type anthropicResponse struct {
 	Error      *struct {
 		Message string `json:"message"`
 	} `json:"error,omitempty"`
+	Usage *struct {
+		In  int `json:"input_tokens"`
+		Out int `json:"output_tokens"`
+		// Prompt-Cache: gelesene und neu geschriebene Tokens zählen zur Eingabe.
+		CacheRead  int `json:"cache_read_input_tokens"`
+		CacheWrite int `json:"cache_creation_input_tokens"`
+	} `json:"usage,omitempty"`
 }
 
 type anthropicEvent struct {
@@ -202,5 +209,9 @@ func (c *conn) anthropicComplete(ctx context.Context, msgs []Message, o Opts) (R
 	case "end_turn", "stop_sequence":
 		finish = "stop"
 	}
-	return Result{Content: b.String(), FinishReason: finish}, nil
+	res := Result{Content: b.String(), FinishReason: finish}
+	if r.Usage != nil {
+		res.In, res.Out = r.Usage.In+r.Usage.CacheRead+r.Usage.CacheWrite, r.Usage.Out
+	}
+	return res, nil
 }

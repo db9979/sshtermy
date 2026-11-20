@@ -253,9 +253,8 @@ func (a *App) filesMsg(msg tea.Msg) (tea.Cmd, bool) {
 		f.remote = m.rfs
 		l := &pane{fs: sshx.LocalFS{}}
 		l.path = l.fs.Home()
-		r := &pane{fs: m.rfs, path: m.rfs.Home()}
+		r := startPath(s, m.rfs, f.hidden) // Ordner des Terminals (filecwd.go)
 		l.load(f.hidden)
-		r.load(f.hidden)
 		f.panes, f.side = [2]*pane{l, r}, 1
 		if len(f.pending) > 0 {
 			paths := f.pending

@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 	"strings"
 	"sync"
@@ -1134,7 +1133,7 @@ func (m *modal) textKey(key string) (closeIt bool) {
 	case "c":
 		if m.copy != "" {
 			txt := m.copy
-			go func() { _ = clipboard.WriteAll(txt) }()
+			go func() { _ = clipWrite(txt) }()
 		}
 	case "m":
 		if m.mail != "" {

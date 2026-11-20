@@ -15,7 +15,6 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/atotto/clipboard"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -1138,7 +1137,7 @@ func (a *App) copyViewSel(v *fileView) tea.Cmd {
 	if t == "" {
 		return nil
 	}
-	go func() { _ = clipboard.WriteAll(t) }()
+	go func() { _ = clipWrite(t) }()
 	n := strings.Count(t, "\n") + 1
 	if n > 1 {
 		a.flash(fmt.Sprintf(i18n.T("%d Zeilen kopiert"), n))
@@ -1336,7 +1335,7 @@ func (a *App) openPathWithSystem(s *session, side int, full string) tea.Cmd {
 }
 
 func (a *App) copyPath(p string) tea.Cmd {
-	go func() { _ = clipboard.WriteAll(p) }()
+	go func() { _ = clipWrite(p) }()
 	a.flash(i18n.T("Pfad kopiert: ") + trunc(p, 60))
 	return tea.SetClipboard(p)
 }

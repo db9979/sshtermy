@@ -264,6 +264,7 @@ func (a *App) takeClipboard(s *session) tea.Cmd {
 	if txt == "" || !a.osc52On() || s.conn.Protocol == domain.ProtoWatch {
 		return nil
 	}
+	clipRemember(txt, s.conn.Alias)
 	go func() { _ = clipboard.WriteAll(txt) }()
 	if n := countLines(txt); n > 1 {
 		a.flash(i18n.T("Vom Server kopiert: ") + plural(n, i18n.T("Zeile"), i18n.T("Zeilen")))
