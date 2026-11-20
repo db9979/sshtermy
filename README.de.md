@@ -24,6 +24,7 @@ sshTermy ist eine schlanke Terminal-Anwendung (TUI, eine einzige Datei, ~9 MB, k
 - **Einfacher Modus** (Palette › Einstellungen › Allgemein): blendet Profi-Funktionen (Broadcast, Netzwerk, Team, Agent, Aufzeichnung, MCP, Audit …) aus Palette-Übersicht, Einstellungen und Tastenzeile aus; die Suche in der Palette findet weiter alles
 - **Schnellverbinden**: `user@host:port` oder `ssh -p 2222 user@host` in die Palette tippen, ohne die Verbindung anzulegen (Agent/Standard-Keys, sonst Passwort)
 - **Mehrere Verbindungen auf einmal ändern**: Im Manager markiert die Leertaste eine Verbindung, `*` alle sichtbaren (mit Suche oder `#tag` also alle Treffer). Danach gelten `e` (Sammeländerung: Tags hinzufügen oder entfernen, Benutzer, Schutz, Farbe), `v` (verschieben) und `d` (löschen, mit Rückgängig) für alle markierten; Esc hebt die Auswahl auf.
+- **Aufgaben je Verbindung oder Ordner** (`u` im Manager, Alt+A im Terminal): offene Arbeiten mit Fälligkeit („Zertifikat erneuern bis 12.12.“). ⏎ startet eine Aufgabe als Ziel im offenen Tab der Verbindung (Ziel- oder Agent-Modus, wie zuletzt gewählt); danach steht sie „zur Abnahme“ mit der Meldung der KI und dem Befund der Gegenprüfung, `a` hakt sie ab. Ordner-Aufgaben gelten für jede Verbindung darin (⇧N legt eine an). Die Detailspalte im Manager zeigt offene und fällige Aufgaben, beim Start erinnert eine Meldung an fällige. Gehen mit dem Sync, nie in ein Team-Paket.
 - **Notiz je Verbindung**: ein freies Feld nur für dich (Ansprechpartner, Wartungsfenster, Standort). Steht im Manager rechts, die Suche findet es, an die KI geht es nie. Die „KI-Notizen“ bleiben das Feld für Hinweise an die KI.
 - **Startbefehl je Verbindung** (Formular › Erweitert): wird nach dem Anmelden einmal sichtbar eingetippt, z. B. `cd /srv/app` oder `sudo -i`. Gefährliche Befehle lehnt das Formular ab; aus einem Team-Paket wird ein Startbefehl nie übernommen.
 - **Wake-on-LAN**: Ein ausgeschalteter Rechner im eigenen Netz lässt sich aus dem Manager wecken (Klick auf „Wake-on-LAN senden“, Palette „aufwecken“ oder `w` im getrennten Tab). Die MAC-Adresse merkt sich sshTermy beim ersten Verbinden von selbst oder du trägst sie unter Erweitert ein.
@@ -150,6 +151,8 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
     ↑↓ im Zielfeld, ⏎ startet es erneut, Strg+D entfernt es. Der Tab zeigt den Zustand des Ziels (◎ läuft, gelb = wartet auf
     dich, grün = erreicht) und die Zahl der Schritte; wartet ein Ziel in einem verdeckten Tab auf dich, kommt eine Einblendung,
     ist sshTermy im Hintergrund, eine Desktop-Benachrichtigung.
+  - **Änderungen ansehen** (`d` nach Ziel oder Agent): Jede Datei, die ein Schritt geändert hat, als Diff (vorher → jetzt) mit +/− je Datei, neu angelegte und gelöschte markiert; nur mit sudo lesbare Dateien liest sshTermy mit `sudo -n cat`. `u` holt danach alles zurück.
+  - **Gegenprüfung** (Standard an): Meldet die KI „Ziel erreicht“, prüft eine zweite, unabhängige KI-Anfrage nach (ein Ersatz-Anbieter, wenn eingerichtet, sonst dasselbe Modell mit frischem Blick). Sie darf bis zu drei rein lesende Prüfbefehle vorschlagen, die sshTermy unsichtbar in einem eigenen SSH-Kanal ausführt (was nicht sicher nur liest, fällt weg), und urteilt dann: *bestätigt* oder *Zweifel* mit Befund, unter „Ziel erreicht“; Zweifel kommen auch als Meldung. `g` prüft von Hand (noch einmal); abschalten in der Palette („Gegenprüfung“).
   - **Agent-Modus** (F2, Tab wählt den Modus): Der Agent arbeitet selbstständig bis zum Ziel. Er führt Befehle aus,
     sieht Ausgabe und Exit-Code, legt Skripte per SFTP in `~/.sshtermy-agent/<lauf>/` an und führt sie aus (erst Probelauf).
     Stufen: *Vorsichtig* (Standard; nur Lesendes läuft allein), *Normal* (alles außer Gefahr, sudo und Code in der Zeile wie `python -c`, `bash -c`, `eval`; als root angemeldet oder unter Windows fragt jede Änderung, weil es dort kein sudo zum Anhalten gibt), *Voll* (auch sudo).
@@ -363,6 +366,7 @@ sshtermy doctor           # Selbstprüfung: Datenordner, Tresor, Schlüsselbund,
 | | c / q | SSH-Schlüssel erzeugen oder übertragen / Schnellbefehle bearbeiten |
 | | m / f / z | Broadcast an mehrere Hosts / Netzwerk-Scan / Zeitpläne (Strg+N neu, Strg+E bearbeiten, Strg+R jetzt, Strg+O an/aus, ⏎ letztes Ergebnis) |
 | | w / g | Arbeitsplätze (gespeicherte Aufteilungen) / Ordner als Raster öffnen |
+| | u | Aufgaben der Verbindung bzw. des Ordners: ⏎ als Ziel starten, n neu (⇧N für den Ordner), a abhaken, e ändern, Entf löschen |
 | Ordner | o / r / v / d | Ordner anlegen („A / B“ verschachtelt) / bearbeiten (Name, KI-Hausregeln) / verschieben / auflösen (Inhalt bleibt) |
 | | ← → Space / - + | Ordner zu-/aufklappen / alle zu bzw. auf |
 | | Shift+↑↓ (Alt+↑↓), Maus ziehen | Reihenfolge ändern, in einen Ordner ziehen |
@@ -381,6 +385,7 @@ sshtermy doctor           # Selbstprüfung: Datenordner, Tresor, Schlüsselbund,
 | | Alt+G | zum nächsten Tab, der wartet (`?`, Passwort, `[j/N]`, Pager) oder sich gemeldet hat (`◆` KI-Agent wartet auf Freigabe, ✓/×) |
 | | Alt+C | per Tastatur markieren: Pfeile/hjkl, w/b/e, v markieren, V Zeilen, y kopieren, Esc beenden |
 | | Alt+Y | Zwischenablage-Verlauf: zuletzt Kopiertes, ⏎/Ziffer fügt ein |
+| | Alt+A | Aufgaben dieser Verbindung |
 | | Alt+X | Bildschirm und Verlauf leeren, die Eingabezeile bleibt |
 | | Alt+Bild↑ / Alt+Bild↓ / Alt+O | zum vorigen / nächsten Befehl springen / Befehle des Tabs als Liste (⏎ hinspringen, Strg+C Ausgabe kopieren, Strg+K KI fragen, Strg+L lesen) |
 | | Alt+N / Alt+W | neuer Tab / Tab schließen (auch `+` und `×` in der Tab-Leiste; `+`, Alt+N und ein Klick aufs Logo `>_ sshTermy` öffnen den Verbindungs-Manager: ⏎ oder Doppelklick startet die Verbindung in einem zusätzlichen Tab, die offenen Tabs bleiben, Esc führt zurück; Rechtsklick auf einen Tab öffnet sein Menü mit *Verbindung bearbeiten …* (Farbe, Notiz) und *Daneben zeigen (geteilt)*, Maus darauf zeigt Ziel, Dauer und Latenz) |
@@ -418,6 +423,7 @@ sshtermy doctor           # Selbstprüfung: Datenordner, Tresor, Schlüsselbund,
 | | ? / ⇧S | KI anweisen (gilt ab dem nächsten Schritt) / überspringen mit Grund |
 | | j / n / q / Leertaste / Strg+C | der laufende Befehl fragt nach: mit den Knöpfen antworten (Esc: selbst im Terminal) |
 | | f / u | nach dem Ziel: Folgeziel / vom Ziel geänderte Dateien zurückholen (Strg+R im leeren Zielfeld) |
+| | d / g | nach dem Ziel: Änderungen als Diff ansehen / Gegenprüfung (noch einmal) |
 | | ⏎ nach Abbruch | Ziel fortsetzen, sobald die Verbindung wieder steht |
 | Ziel-Modus, Datei-Schritt | ⏎ / v / s | Datei auf dem Host anlegen / ansehen / überspringen; am Ende löscht `r` den Arbeitsordner |
 | | ⏎ / i / e / s / r / x | ausführen / nur einfügen (Dry-Run) / bearbeiten / überspringen / neu / beenden |

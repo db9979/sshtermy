@@ -270,6 +270,8 @@ func (a *App) modalKey(k tea.KeyPressMsg) tea.Cmd {
 		return a.dangerKey(k)
 	case mMenu:
 		return a.menuKey(key)
+	case mTasks:
+		return a.tasksKey(key)
 	case mLLM:
 		return a.llmStatusKey(key)
 	case mLayout:
@@ -374,6 +376,8 @@ func (a *App) modalView() string {
 		return a.dangerView(a.modal)
 	case mMenu:
 		return a.menuView(a.modal)
+	case mTasks:
+		return a.tasksView()
 	case mQuick:
 		return a.quickModalView(a.modal)
 	case mLLM:

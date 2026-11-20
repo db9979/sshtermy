@@ -170,20 +170,22 @@ type App struct {
 	sdrag    *splitDrag
 	dropOn   int // Titel wird gezogen: Zielbereich+1
 
-	modal        *modal
-	pal          *palette
-	mst          *menuState // Menü-Nutzung, Anheften, NEU (palstate.go)
-	llm          llmUI
-	lh           llmHealthState // KI-Status (llmhealth.go)
-	reach        reachState     // Online-Punkt im Manager (reach.go)
-	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
-	perf         perfState      // Bildrate und Leistungsanzeige (perf.go)
-	styleGen     int            // zählt Theme-Wechsel (termView)
-	ovMemo       overlayMemo    // Hintergrund unter dem Modal (overlay)
-	toastTicking bool
-	animTicking  bool       // Takt für Bewegung (motion.go)
-	hov          hoverState // Karte unter der Maus (motion.go)
-	rel          *update.Release
+	modal         *modal
+	taskL         *taskList // Aufgabenliste (tasks.go)
+	tasksReminded bool      // an fällige Aufgaben erinnert (tasks.go)
+	pal           *palette
+	mst           *menuState // Menü-Nutzung, Anheften, NEU (palstate.go)
+	llm           llmUI
+	lh            llmHealthState // KI-Status (llmhealth.go)
+	reach         reachState     // Online-Punkt im Manager (reach.go)
+	toasts        []toastItem    // Einblendungen oben rechts (toast.go)
+	perf          perfState      // Bildrate und Leistungsanzeige (perf.go)
+	styleGen      int            // zählt Theme-Wechsel (termView)
+	ovMemo        overlayMemo    // Hintergrund unter dem Modal (overlay)
+	toastTicking  bool
+	animTicking   bool       // Takt für Bewegung (motion.go)
+	hov           hoverState // Karte unter der Maus (motion.go)
+	rel           *update.Release
 	// restartPending: installierte, noch nicht gestartete Version.
 	restartPending string
 	keeperDetach   func(string) // Hintergrunddienst: Fenster abkoppeln (keeper.go)
@@ -906,6 +908,7 @@ func (a *App) onTick() tea.Cmd {
 	a.watchTick()
 	a.restoreTick(time.Now())
 	a.aiUsageTick(time.Now())
+	a.tasksReminder(time.Now())
 	a.mcpWaitTick(time.Now()) // MCP wait_tab (mcpcontrol.go)
 	if c := a.headerTick(time.Now()); c != nil {
 		cmds = append(cmds, c) // eigener Befehl in der Kopfzeile (headerfields.go)

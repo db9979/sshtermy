@@ -89,6 +89,8 @@ const (
 	actNextNotice   action = "next_notice"
 	actCopyMode     action = "copy_mode"
 	actClipHist     action = "clip_history"
+	actTasks        action = "tasks"
+	actTasksTerm    action = "tasks_terminal"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -142,6 +144,7 @@ var actionDefs = []actionDef{
 	{actScrollBottom, "Zurück nach unten (Ende des Verlaufs)", "Terminal", []string{"shift+end"}},
 	{actCopyMode, "Markieren per Tastatur (v, y kopiert)", "Terminal", []string{"alt+c"}},
 	{actClipHist, "Zwischenablage-Verlauf (zuletzt Kopiertes einfügen)", "Terminal", []string{"alt+y"}},
+	{actTasksTerm, "Aufgaben dieser Verbindung", "Terminal", []string{"alt+a"}},
 	{actClearScreen, "Bildschirm und Verlauf leeren (Eingabezeile bleibt)", "Terminal", []string{"alt+x"}},
 	{actPrevCmd, "Zum vorigen Befehl springen", "Terminal", []string{"alt+pgup"}},
 	{actNextCmd, "Zum nächsten Befehl springen", "Terminal", []string{"alt+pgdown"}},
@@ -175,6 +178,7 @@ var actionDefs = []actionDef{
 	{actBroadcast, "Broadcast an mehrere Hosts", "Manager", []string{"m"}},
 	{actScan, "Netzwerk-Scan", "Manager", []string{"f"}},
 	{actWorkspace, "Arbeitsplätze", "Manager", []string{"w"}},
+	{actTasks, "Aufgaben der Verbindung bzw. des Ordners", "Manager", []string{"u"}},
 	{actFolderGrid, "Ordner als Raster öffnen", "Manager", []string{"g"}},
 	{actSchedule, "Zeitpläne (Broadcast/Runbook nach Uhrzeit)", "Manager", []string{"z"}},
 }

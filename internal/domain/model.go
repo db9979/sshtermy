@@ -74,6 +74,8 @@ type Connection struct {
 	// Standort). Nur für Menschen: Sie geht nie an die KI (dafür gibt es die
 	// KI-Notizen im Systemprofil) und nicht in ein Team-Paket.
 	Note string `json:"note,omitempty"`
+	// Tasks: offene Arbeiten an dieser Verbindung (domain/tasks.go).
+	Tasks []Task `json:"tasks,omitempty"`
 	// StartCmd: Befehl, den sshTermy nach dem Anmelden einmal sichtbar am
 	// Prompt eintippt (z. B. „cd /srv/app“). Nicht zusammen mit einer festen
 	// Sitzung. Gefährliche Befehle lehnt das Formular ab; aus einem
@@ -606,6 +608,8 @@ type Settings struct {
 
 	// DimPanes: in der geteilten Ansicht die nicht aktiven Bereiche abdunkeln.
 	DimPanes bool `json:"dim_panes,omitempty"`
+	// NoVerify: keine Gegenprüfung nach Ziel/Agent (ui/goalverify.go).
+	NoVerify bool `json:"no_verify,omitempty"`
 	// WebSearch: Suchmaschine für „Im Web suchen“ ("" = DuckDuckGo, ui/websearch.go).
 	WebSearch string `json:"web_search,omitempty"`
 	// NoHistGhost: Ghost-Text nicht zuerst aus dem Befehlsverlauf (ui/histghost.go).
@@ -736,6 +740,7 @@ func (s Settings) SyncedPart() Settings {
 	s.Header = HeaderConfig{}              // lokaler Befehl in der Kopfzeile: nie per Sync
 	s.RestoreTabs = ""                     // Tabs vom letzten Mal: je Rechner
 	s.WebSearch, s.NoHistGhost = "", false // Suchmaschine, Ghost aus dem Verlauf: je Rechner
+	s.NoVerify = false                     // Gegenprüfung: je Rechner
 	return s
 }
 

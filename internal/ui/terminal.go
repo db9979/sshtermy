@@ -347,6 +347,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if a.keys.is(actClipHist, key) {
 			return a.openClipHist()
 		}
+		if a.keys.is(actTasksTerm, key) {
+			return a.openTasks(s.conn.ID, s.conn.Group)
+		}
 		if s.state == stReconnect {
 			switch key {
 			case "enter", "r":

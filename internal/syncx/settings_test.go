@@ -93,6 +93,7 @@ var localSettings = map[string]bool{
 	"RestoreTabs":    true, // Tabs vom letzten Mal: je Rechner
 	"WebSearch":      true, // Suchmaschine je Rechner
 	"NoHistGhost":    true, // Ghost-Text aus dem Verlauf: je Rechner
+	"NoVerify":       true, // Gegenprüfung: je Rechner
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der

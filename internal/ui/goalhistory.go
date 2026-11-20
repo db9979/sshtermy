@@ -25,6 +25,9 @@ const goalHistShown = 5
 // recordGoal schreibt das aktuelle Ziel in den Verlauf (einmal je Ziel).
 func (a *App) recordGoal(s *session, state string) {
 	g := &s.goal
+	if !g.recorded && !g.undoing {
+		a.taskGoalEnded(s, state) // Aufgabe zur Abnahme bzw. wieder offen (tasks.go)
+	}
 	if g.recorded || strings.TrimSpace(g.goal) == "" || g.undoing {
 		return
 	}

@@ -83,6 +83,8 @@ type goalState struct {
 	lost      bool // Verbindung war weg: wartet auf ⏎ zum Fortsetzen
 	manualNew bool // du hast nach dem Vorschlag selbst etwas ausgeführt
 	backups   []fileBackup
+	task      *goalTask    // Ziel kam aus einer Aufgabe (tasks.go)
+	verify    *verifyState // Gegenprüfung nach dem Ziel (goalverify.go)
 	backingUp bool
 	undoing   bool // stellt gerade die Sicherungen wieder her
 	undoBack  bool // nach Abbruch zurück zu „Ziel erreicht“
@@ -266,6 +268,10 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 				a.agentFinished(s)
 				a.flash(i18n.T("Agent: Ziel erreicht"))
 			}
+			g.verify = nil
+			if a.verifyOn() {
+				return a.startVerify(s), true // Gegenprüfung (goalverify.go)
+			}
 		case m.step.Question != "":
 			st := m.step
 			g.cur, g.optSel = &st, -1
@@ -296,6 +302,12 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return a.agentFileDone(m), true
 	case goalBackupMsg:
 		return a.goalBackupDone(m), true
+	case verifyMsg:
+		a.verifyDone(m)
+		return nil, true
+	case goalDiffMsg:
+		a.goalDiffDone(m)
+		return nil, true
 	case goalUndoMsg:
 		return a.goalUndoDone(m), true
 	case agentCleanMsg:
@@ -597,6 +609,10 @@ func (a *App) goalKey(s *session, msg tea.Msg) tea.Cmd {
 			return a.startFollowGoal(s)
 		case "u":
 			return a.startUndo(s)
+		case "d":
+			return a.showGoalDiff(s)
+		case "g":
+			return a.startVerify(s)
 		}
 		if key == "enter" || key == "x" {
 			g.done, g.rbSel, g.runbookID, g.recipe = false, -1, "", nil
@@ -890,7 +906,7 @@ func (a *App) panelKeys(s *session) [][2]string {
 			if g.done {
 				k := [][2]string{{"c", i18n.T("kopieren")}, {"l", i18n.T("ganz lesen")}, {"Strg+S", i18n.T("als Runbook merken")}, {"f", i18n.T("Folgeziel")}}
 				if len(g.backups) > 0 {
-					k = append(k, [2]string{"u", i18n.T("zurückholen")})
+					k = append(k, [2]string{"d", i18n.T("Änderungen")}, [2]string{"u", i18n.T("zurückholen")})
 				}
 				return append(k, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{"Esc", "Terminal"}, [2]string{a.keys.label(actGoal), i18n.T("schließen")})
 			}
@@ -1133,6 +1149,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 			hk = append(hk[:3:3], append([][2]string{{"r", i18n.T("Arbeitsordner löschen")}}, hk[3:]...)...)
 		}
 		b.WriteString(st.OK.Render(i18n.T("✓ Ziel erreicht")) + "\n" + wrap(st.Text.Render(g.doneReason), w) + "\n\n" + a.hintsIn(s, st.Muted, hk...))
+		a.viewVerify(b, s, w) // Gegenprüfung (goalverify.go)
 		a.viewBackups(b, s, w, "u")
 		if s.panelFocus && g.done {
 			g.active = false

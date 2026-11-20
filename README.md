@@ -24,6 +24,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Simple mode** (palette › Settings › General): hides pro features (broadcast, network, team, agent, recording, MCP, audit …) from the palette overview, settings and key bar; searching in the palette still finds everything
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Change several connections at once**: in the manager Space marks a connection, `*` all visible ones (with a search or `#tag`, all hits). After that `e` (bulk change: add or remove tags, user, protection, color), `v` (move) and `d` (delete, with undo) apply to all marked ones; Esc clears the selection.
+- **Tasks per connection or folder** (`u` in the manager, Alt+A in the terminal): open work with a due date (“renew certificate by 12/12”). ⏎ starts a task as a goal in the connection's open tab (goal or agent mode, as last chosen); afterwards it waits “to review” with the AI's message and the cross-check's finding, `a` checks it off. Folder tasks apply to every connection in it (⇧N adds one). The manager's detail column shows open and due tasks, and a notice at start reminds you of due ones. They travel with the sync, never into a team package.
 - **Note per connection**: a free field just for you (contact person, maintenance window, location). It shows in the manager on the right, the search finds it, and it is never sent to the AI. “AI notes” remain the field for hints to the AI.
 - **Start command per connection** (form › Advanced): typed visibly once after login, e.g. `cd /srv/app` or `sudo -i`. The form rejects dangerous commands; a start command is never taken over from a team package.
 - **Wake-on-LAN**: a powered-off machine in your own network can be woken from the manager (click “Send Wake-on-LAN”, palette “wake”, or `w` in a disconnected tab). sshTermy remembers the MAC address on the first connect, or you enter it under Advanced.
@@ -148,6 +149,8 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
     again, Ctrl+D removes it. The tab shows the goal's state (◎ running, yellow = waiting for you, green = reached) and the
     number of steps; if a goal is waiting for you in a hidden tab, a notification pops up, with sshTermy in the background a
     desktop notification.
+  - **See the changes** (`d` after a goal or agent run): every file a step changed as a diff (before → now) with +/− per file, new and deleted files marked; files readable only with sudo are read with `sudo -n cat`. `u` then restores everything.
+  - **Cross-check** (on by default): when the AI reports “goal reached”, a second, independent AI request checks (a fallback provider if set up, otherwise the same model with a fresh look). It may suggest up to three read-only check commands that sshTermy runs invisibly in a separate SSH channel (anything not surely read-only is dropped), then judges: *confirmed* or *doubts* with a finding, below “Goal reached”; doubts also come as a notice. `g` checks by hand (again); turn it off in the palette (“cross-check”).
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
     Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),
@@ -352,6 +355,7 @@ sshtermy doctor          # self-check: data folder, vault, keychain, SSH agent, 
 | | c / q | create or copy an SSH key / edit quick commands |
 | | m / f / z | broadcast to several hosts / network scan / schedules (Ctrl+N new, Ctrl+E edit, Ctrl+R now, Ctrl+O on/off, ⏎ last result) |
 | | w / g | workspaces (saved split layouts) / open a folder as a grid |
+| | u | tasks of the connection or folder: ⏎ start as goal, n new (⇧N for the folder), a check off, e edit, Del delete |
 | Folders | o / r / v / d | create folder (“A / B” nested) / edit (name, AI house rules) / move / dissolve (content stays) |
 | | ← → Space / - + | collapse/expand folder / collapse or expand all |
 | | Shift+↑↓ (Alt+↑↓), drag with the mouse | change the order, drag into a folder |
@@ -370,6 +374,7 @@ sshtermy doctor          # self-check: data folder, vault, keychain, SSH agent, 
 | | Alt+G | go to the next tab that waits (`?`, password, `[y/N]`, pager) or has a notice (`◆` AI agent waiting for approval, ✓/×) |
 | | Alt+C | select by keys: arrows/hjkl, w/b/e, v select, V lines, y copy, Esc end |
 | | Alt+Y | clipboard history: recently copied, ⏎/digit pastes |
+| | Alt+A | tasks of this connection |
 | | Alt+X | clear screen and scrollback, the input line stays |
 | | Alt+PgUp / Alt+PgDn / Alt+O | jump to the previous / next command / list of the tab's commands (⏎ jump, Ctrl+C copy output, Ctrl+K ask AI, Ctrl+L read) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar; `+`, Alt+N and a click on the `>_ sshTermy` logo open the connection manager: ⏎ or a double-click starts the connection in an additional tab, the open tabs stay, Esc goes back; right-click a tab for its menu with *Edit connection …* (color, note) and *Show alongside (split)*, hover it for target, duration and latency) |
@@ -407,6 +412,7 @@ sshtermy doctor          # self-check: data folder, vault, keychain, SSH agent, 
 | | ? / ⇧S | instruct the AI (applies from the next step) / skip with a reason |
 | | j / n / q / Space / Ctrl+C | the running command asks for input: answer with the buttons (Esc: answer in the terminal) |
 | | f / u | after the goal: follow-up goal / restore the files the goal changed (Ctrl+R in the empty goal field) |
+| | d / g | after the goal: see the changes as a diff / cross-check (again) |
 | | ⏎ after a drop | continue the goal once the connection is back |
 | Goal mode, file step | ⏎ / v / s | create the file on the host / view it / skip; at the end `r` deletes the work folder |
 | | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |
