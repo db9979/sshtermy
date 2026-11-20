@@ -345,11 +345,14 @@ func (a *App) startSyslog(port int) context.CancelFunc {
 			if h, _, e := net.SplitHostPort(ip); e == nil {
 				ip = h
 			}
-			for _, line := range strings.Split(string(buf[:n]), "\n") {
-				if e, ok := logscan.SyslogPacket(line, time.Now()); ok {
-					b.add(watchItem{addr: ip, kind: logscan.KindNetwork, e: e})
+			// ein kaputtes Paket kostet nur sich selbst, nicht den Empfang
+			safe.Run("ui/logwatch.go syslog", func() {
+				for _, line := range strings.Split(string(buf[:n]), "\n") {
+					if e, ok := logscan.SyslogPacket(line, time.Now()); ok {
+						b.add(watchItem{addr: ip, kind: logscan.KindNetwork, e: e})
+					}
 				}
-			}
+			})
 		}
 	}()
 	safe.Go("ui/logwatch.go", func() { a.resolveHosts(ctx) })
