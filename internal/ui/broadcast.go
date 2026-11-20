@@ -18,6 +18,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/runbook"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -363,6 +364,7 @@ func (a *App) bcStart(targets []domain.Connection, steps []string, per [][]strin
 		job.Canary, job.StopAfter = !b.noCanary, bcStopAfter
 	}
 	go func() {
+		defer safe.Recover("ui/broadcast.go")
 		broadcast.Run(ctx, job, dial, func(i int, r broadcast.Result) { ev <- bcUpdateMsg{seq, i, r} })
 		ev <- bcDoneMsg{seq}
 	}()
@@ -601,7 +603,7 @@ func (a *App) viewBcSetup() string {
 			m = s.Accent.Render("▌ ")
 			st = lipgloss.NewStyle().Foreground(s.T.Text).Bold(true).Width(20)
 		}
-		return m + a.z.click(st.Render(title), func(tea.Mouse, bool) tea.Cmd { return b.setFocus(focus) })
+		return m + a.z.Click(st.Render(title), func(tea.Mouse, bool) tea.Cmd { return b.setFocus(focus) })
 	}
 
 	// Hosts
@@ -646,7 +648,7 @@ func (a *App) viewBcSetup() string {
 			line = s.Selected.Width(w - 4).Render(ansi.Strip(line))
 		}
 		i, id := i, c.ID
-		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+		line = a.z.Click(line, func(tea.Mouse, bool) tea.Cmd {
 			b.cur, b.picked[id], b.err = i, !b.picked[id], ""
 			return b.setFocus(bcFocusHosts)
 		})
@@ -663,7 +665,7 @@ func (a *App) viewBcSetup() string {
 			p = s.Selected.Render(" " + trunc(n, 24) + " ")
 		}
 		i := i
-		parts = append(parts, a.z.click(p, func(tea.Mouse, bool) tea.Cmd { b.src = i; return b.setFocus(bcFocusSource) }))
+		parts = append(parts, a.z.Click(p, func(tea.Mouse, bool) tea.Cmd { b.src = i; return b.setFocus(bcFocusSource) }))
 	}
 	src := strings.Join(parts, "")
 	if lipgloss.Width(src) > w-24 {

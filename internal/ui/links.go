@@ -450,7 +450,7 @@ func (a *App) menuView(m *modal) string {
 				b.WriteString(lipgloss.NewStyle().Foreground(st.T.Border).Render(strings.Repeat("─", w)) + "\n")
 			}
 		}
-		b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+		b.WriteString(a.z.Click(line, func(tea.Mouse, bool) tea.Cmd {
 			m.sel = i
 			return a.menuRun()
 		}))

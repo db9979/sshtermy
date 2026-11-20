@@ -21,6 +21,7 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // X11-Weiterleitung (wie ssh -X)
@@ -69,8 +70,9 @@ func (c *Client) requestX11(sess *ssh.Session) {
 		}
 		c.x11 = f
 		go func() {
+			defer safe.Recover("sshx/x11.go")
 			for nc := range ch {
-				go f.serve(nc)
+				safe.Go("sshx/x11.go", func() { f.serve(nc) })
 			}
 		}()
 	})
@@ -193,6 +195,7 @@ func (f *x11Fwd) serve(nc ssh.NewChannel) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
+		defer safe.Recover("sshx/x11.go")
 		defer wg.Done()
 		_, _ = io.Copy(local, ch)
 		if cw, ok := local.(interface{ CloseWrite() error }); ok {

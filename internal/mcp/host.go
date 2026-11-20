@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/localsock"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Verbindung Brücke ↔ App: erste Zeile das Token aus mcp.json, danach je
@@ -71,7 +72,7 @@ func Listen(dataDir string, h Handler) (*Host, error) {
 		x.Close()
 		return nil, err
 	}
-	go x.accept()
+	safe.Go("mcp/host.go", func() { x.accept() })
 	return x, nil
 }
 
@@ -88,7 +89,7 @@ func (x *Host) accept() {
 		if err != nil {
 			return
 		}
-		go x.serve(nc)
+		safe.Go("mcp/host.go", func() { x.serve(nc) })
 	}
 }
 
@@ -110,6 +111,7 @@ func (x *Host) serve(nc net.Conn) {
 			return
 		}
 		go func() {
+			defer safe.Recover("mcp/host.go")
 			text, err := x.handle(q.Tool, q.Args)
 			resp := wireResp{ID: q.ID, Text: text}
 			if err != nil {
@@ -162,7 +164,7 @@ func (r *Remote) connect() error {
 		return ErrNotRunning
 	}
 	r.nc, r.enc, r.wait = nc, json.NewEncoder(nc), map[int64]chan wireResp{}
-	go r.read(nc)
+	safe.Go("mcp/host.go", func() { r.read(nc) })
 	return nil
 }
 

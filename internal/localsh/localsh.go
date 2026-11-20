@@ -15,6 +15,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // ptyFile: Pseudo-Terminal je System (pty_unix.go, pty_windows.go).
@@ -62,10 +64,12 @@ func Start(shell, dir string, cols, rows int, out io.Writer) (*Stream, error) {
 	s := &Stream{Shell: argv[0], Done: make(chan error, 1), pty: p, cmd: cmd}
 	readDone := make(chan struct{})
 	go func() {
+		defer safe.Recover("localsh/localsh.go")
 		defer close(readDone)
 		_, _ = io.Copy(out, p)
 	}()
 	go func() {
+		defer safe.Recover("localsh/localsh.go")
 		err := waitProcess(cmd)
 		// Nach dem Ende der Shell den Rest der Ausgabe noch abholen. Hält ein
 		// Hintergrundprozess das Terminal offen (oder bei ConPTY, das erst

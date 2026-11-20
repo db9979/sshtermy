@@ -147,8 +147,8 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		if m.Button != tea.MouseWheelUp && m.Button != tea.MouseWheelDown {
 			return nil
 		}
-		if act := a.z.at(m.X, m.Y, true); act != nil {
-			return act.wheel(up)
+		if act := a.z.At(m.X, m.Y, true); act != nil {
+			return act.Wheel(up)
 		}
 		if a.modal != nil && (a.modal.kind == mHelp || a.modal.kind == mChangelog) {
 			return a.pressKey(wheelKey(up))
@@ -195,15 +195,15 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		return a.mgrDragMouse(msg)
 	}
 	if isClick && (m.Button == tea.MouseRight || m.Button == tea.MouseMiddle) {
-		if act := a.z.atMenu(m.X, m.Y); act != nil {
-			return act.menu(m)
+		if act := a.z.AtMenu(m.X, m.Y); act != nil {
+			return act.Menu(m)
 		}
 	}
 	if !isClick || m.Button != tea.MouseLeft {
 		return nil
 	}
-	if act := a.z.at(m.X, m.Y, false); act != nil {
-		cmd := act.click(m, clicks >= 2)
+	if act := a.z.At(m.X, m.Y, false); act != nil {
+		cmd := act.Click(m, clicks >= 2)
 		a.formChanged() // Klick auf eine Auswahl wirkt wie ←/→
 		return cmd
 	}
@@ -335,7 +335,7 @@ func (a *App) keyZone(label, rendered string) string {
 	if _, ok := keyFromLabel(label); !ok {
 		return rendered
 	}
-	return a.z.click(rendered, func(tea.Mouse, bool) tea.Cmd { return a.pressKey(label) })
+	return a.z.Click(rendered, func(tea.Mouse, bool) tea.Cmd { return a.pressKey(label) })
 }
 
 // keyChip: Taste + Beschreibung als ein Knopf (Fußzeile).
@@ -378,7 +378,7 @@ func (a *App) hintsIn(s *session, style lipgloss.Style, items ...[2]string) stri
 			b.WriteString(r)
 			continue
 		}
-		b.WriteString(a.z.click(r, func(tea.Mouse, bool) tea.Cmd {
+		b.WriteString(a.z.Click(r, func(tea.Mouse, bool) tea.Cmd {
 			if s != nil {
 				s.panelFocus = true
 			}

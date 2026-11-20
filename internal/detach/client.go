@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/x/term"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Texte des Fensters; sshTermy setzt sie übersetzt (i18n liegt eine Ebene höher).
@@ -53,6 +55,7 @@ func Attach(dir string) int {
 
 	// Tasten → sshTermy
 	go func() {
+		defer safe.Recover("detach/client.go")
 		buf := make([]byte, 4096)
 		for {
 			n, err := os.Stdin.Read(buf)
@@ -69,7 +72,7 @@ func Attach(dir string) int {
 	// Fenstergröße beobachten
 	stop := make(chan struct{})
 	defer close(stop)
-	go watchSize(out, stop, func(c, r int) { _ = fw.write(frResize, sizePayload(c, r)) })
+	safe.Go("detach/client.go", func() { watchSize(out, stop, func(c, r int) { _ = fw.write(frResize, sizePayload(c, r)) }) })
 
 	for {
 		f, err := readFrame(nc)
@@ -110,6 +113,7 @@ func waitKey() {
 	fmt.Print(MsgPressKey)
 	done := make(chan struct{})
 	go func() {
+		defer safe.Recover("detach/client.go")
 		b := make([]byte, 1)
 		_, _ = os.Stdin.Read(b)
 		close(done)

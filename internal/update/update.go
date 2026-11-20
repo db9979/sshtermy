@@ -61,9 +61,23 @@ var errRedirect = errors.New("redirect")
 // httpClient: Tests setzen einen eigenen ein.
 var httpClient = client
 
+// Zeitgrenzen: Abfragen (JSON) dürfen insgesamt jsonTimeout dauern. Die
+// Programmdatei (30–40 MB) kann auf langsamen Leitungen länger brauchen;
+// dort zählt, dass Daten fließen: stallTimeout ohne ein einziges Byte = Abbruch
+// und neuer Versuch, binTimeout ist die äußerste Grenze.
+var (
+	jsonTimeout  = 2 * time.Minute
+	binTimeout   = 30 * time.Minute
+	stallTimeout = 60 * time.Second
+)
+
+var errStalled = errors.New("update: download stalled")
+
 func client() *http.Client {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.ResponseHeaderTimeout = 30 * time.Second
 	return &http.Client{
-		Timeout: 2 * time.Minute,
+		Transport: tr,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if req.URL.Scheme != "https" || !allowedHosts[req.URL.Hostname()] || len(via) > 5 {
 				return fmt.Errorf("%w: "+i18n.T("update: Weiterleitung nach %s abgelehnt"), errRedirect, req.URL.Host)
@@ -96,13 +110,23 @@ func get(ctx context.Context, u, accept string, limit int64) ([]byte, error) {
 	}
 }
 
-func getOnce(ctx context.Context, u, accept string, limit int64) ([]byte, bool, error) {
+func getOnce(parent context.Context, u, accept string, limit int64) ([]byte, bool, error) {
+	total := jsonTimeout
+	if accept == acceptBin {
+		total = binTimeout
+	}
+	tctx, tcancel := context.WithTimeout(parent, total)
+	defer tcancel()
+	ctx, cancel := context.WithCancelCause(tctx)
+	defer cancel(nil)
+	idle := time.AfterFunc(stallTimeout, func() { cancel(errStalled) })
+	defer idle.Stop()
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	req.Header.Set("User-Agent", version.Short())
 	req.Header.Set("Accept", accept)
 	resp, err := httpClient().Do(req)
 	if err != nil {
-		return nil, ctx.Err() == nil && !errors.Is(err, errRedirect), err
+		return nil, parent.Err() == nil && !errors.Is(err, errRedirect), err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
@@ -111,8 +135,27 @@ func getOnce(ctx context.Context, u, accept string, limit int64) ([]byte, bool, 
 		}
 		return nil, false, fmt.Errorf(i18n.T("update: HTTP %d"), resp.StatusCode)
 	}
-	b, err := io.ReadAll(io.LimitReader(resp.Body, limit))
-	return b, err != nil && ctx.Err() == nil, err
+	b, err := io.ReadAll(io.LimitReader(stallReader{resp.Body, idle}, limit))
+	// Auch ohne Lesefehler: wurde wegen Stillstand abgebrochen, kann das Ende
+	// des Körpers abgeschnitten sein (Verbindung zu = scheinbar fertig).
+	if errors.Is(context.Cause(ctx), errStalled) && parent.Err() == nil {
+		return nil, true, fmt.Errorf(i18n.T("update: Download kam %s lang nicht voran"), stallTimeout)
+	}
+	return b, err != nil && parent.Err() == nil, err
+}
+
+// stallReader verlängert die Leerlauf-Frist bei jedem empfangenen Byte.
+type stallReader struct {
+	r    io.Reader
+	idle *time.Timer
+}
+
+func (s stallReader) Read(p []byte) (int, error) {
+	n, err := s.r.Read(p)
+	if n > 0 {
+		s.idle.Reset(stallTimeout)
+	}
+	return n, err
 }
 
 const (

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // CVE: eine Lücke in einem Paket.
@@ -404,6 +405,7 @@ func enrich(ctx context.Context, src Source, fs map[string]*Finding, step func(s
 	for _, id := range ids {
 		wg.Add(1)
 		go func() {
+			defer safe.Recover("vuln/scan.go")
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()

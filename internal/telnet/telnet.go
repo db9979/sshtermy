@@ -12,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Telnet-Befehle und -Optionen.
@@ -73,7 +75,7 @@ func Dial(ctx context.Context, addr string, cols, rows int, out io.Writer) (*Con
 
 func newConn(nc net.Conn, cols, rows int, out io.Writer) *Conn {
 	c := &Conn{c: nc, Done: make(chan error, 1), cols: cols, rows: rows}
-	go c.read(out)
+	safe.Go("telnet/telnet.go", func() { c.read(out) })
 	return c
 }
 

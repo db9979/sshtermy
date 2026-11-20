@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // ServeOptions für `sshtermy vermittler start`.
@@ -101,8 +102,9 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	if cert != nil {
 		hs.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{*cert}}
 	}
-	go s.Watch(ctx)
+	safe.Go("relay/serve.go", func() { s.Watch(ctx) })
 	go func() {
+		defer safe.Recover("relay/serve.go")
 		<-ctx.Done()
 		sc, c := context.WithTimeout(context.Background(), 3*time.Second)
 		defer c()

@@ -15,6 +15,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/inventory"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Inventar & Änderungen (F6 i, Palette): Pakete, Benutzer, Admins, Cron,
@@ -106,6 +107,7 @@ func (a *App) runInventoryFolder(folder string) tea.Cmd {
 	}
 	seq, ev, run := v.seq, a.events, invRunHost(a)
 	go func() {
+		defer safe.Recover("ui/inventory.go")
 		defer cancel()
 		forHosts(ctx, conns, 4, func(ctx context.Context, i int, c domain.Connection) {
 			if ctx.Err() != nil {

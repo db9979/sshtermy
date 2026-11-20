@@ -20,6 +20,8 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // Datei ansehen (Dateien, F5)
@@ -750,7 +752,7 @@ func (a *App) viewPeek(s *session, p *pane, side int, w, h int) string {
 		body = append(body, "")
 	}
 	b.WriteString(strings.Join(body[:rows], "\n"))
-	return a.z.mark(lipgloss.NewStyle().Width(w).Height(h).MaxHeight(h).Render(b.String()), zoneAction{block: true, click: func(tea.Mouse, bool) tea.Cmd {
+	return a.z.Mark(lipgloss.NewStyle().Width(w).Height(h).MaxHeight(h).Render(b.String()), clickzone.Action{Block: true, Click: func(tea.Mouse, bool) tea.Cmd {
 		return a.openEntry(s, side, p.sel)
 	}})
 }
@@ -811,7 +813,7 @@ func (a *App) viewFileView(s *session, w, h int) string {
 	if v.follow {
 		info += i18n.T(" · liest mit")
 	}
-	closeBtn := a.z.click(st.Danger.Render(i18n.T(" × zu ")), func(tea.Mouse, bool) tea.Cmd { f.view = nil; return nil })
+	closeBtn := a.z.Click(st.Danger.Render(i18n.T(" × zu ")), func(tea.Mouse, bool) tea.Cmd { f.view = nil; return nil })
 	tag := st.TabActive.Foreground(st.T.Accent).Render(i18n.T("Ansehen"))
 	if v.follow {
 		tag = st.TabActive.Foreground(st.T.OK).Render(i18n.T("Mitlesen"))
@@ -899,10 +901,10 @@ func (a *App) viewFileView(s *session, w, h int) string {
 		lines = append(lines, "")
 	}
 	text := lipgloss.NewStyle().Width(w).Height(bodyH).MaxHeight(bodyH).Render(strings.Join(lines[:bodyH], "\n"))
-	text = a.z.mark(text, zoneAction{
-		block: true,
-		click: func(m tea.Mouse, double bool) tea.Cmd { return a.viewClick(s, m, double) },
-		menu: func(tea.Mouse) tea.Cmd {
+	text = a.z.Mark(text, clickzone.Action{
+		Block: true,
+		Click: func(m tea.Mouse, double bool) tea.Cmd { return a.viewClick(s, m, double) },
+		Menu: func(tea.Mouse) tea.Cmd {
 			if v.sel != nil && v.sel.a != v.sel.b {
 				cmd := a.copyViewSel(v)
 				v.sel = nil
@@ -910,7 +912,7 @@ func (a *App) viewFileView(s *session, w, h int) string {
 			}
 			return nil
 		},
-		wheel: func(up bool) tea.Cmd {
+		Wheel: func(up bool) tea.Cmd {
 			if up {
 				v.scroll(-3)
 			} else {

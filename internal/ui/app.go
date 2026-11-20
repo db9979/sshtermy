@@ -25,6 +25,7 @@ import (
 	"image/color"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -44,6 +45,8 @@ import (
 	"github.com/db9979/sshtermy/internal/vault"
 	"github.com/db9979/sshtermy/internal/version"
 	"github.com/db9979/sshtermy/internal/vuln"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 type screen int
@@ -88,6 +91,10 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	// Absturzschutz (safety.go): letztes gutes Bild, wartende Empfänger
+	lastView  tea.View
+	listening atomic.Int32
+
 	// asyncModals: Rückfragen, die von selbst kamen, während schon ein Dialog
 	// offen war (modalguard.go). Sie überschreiben ihn nicht, sie warten.
 	asyncModals []*modal
@@ -222,8 +229,8 @@ type App struct {
 	keys      keymap        // aktuelle Tastenbelegung
 	lookSig   string        // Theme+Tasten, zuletzt übernommen
 
-	z     zones      // klickbare Bereiche des letzten Bildes
-	click clickState // für Doppel-/Dreifachklick
+	z     clickzone.Map // klickbare Bereiche des letzten Bildes
+	click clickState    // für Doppel-/Dreifachklick
 
 	pick *picker // Auswahlliste mit Suche (Jump-Host, Ordner, Tag)
 
@@ -261,7 +268,11 @@ func New(st *store.Store) (*App, error) {
 
 func (a *App) listen() tea.Cmd {
 	ev := a.events
-	return func() tea.Msg { return <-ev }
+	return func() tea.Msg {
+		a.listening.Add(1) // safety.go: nach abgefangenem Fehler neu anstoßen?
+		defer a.listening.Add(-1)
+		return <-ev
+	}
 }
 
 type tickMsg time.Time
@@ -289,7 +300,7 @@ func (a *App) checkUpdate() tea.Cmd {
 // checkRelease: Variable für Tests.
 var checkRelease = update.CheckAged
 
-func (a *App) Init() tea.Cmd {
+func (a *App) init0() tea.Cmd {
 	var intro tea.Cmd
 	if a.intro != nil {
 		a.intro.start = time.Now()
@@ -314,7 +325,7 @@ func (a *App) byID(id int) *session {
 	return nil
 }
 
-func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (a *App) update0(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if a.scr != scrManager {
 		a.mgr.forTab = false // „+“-Auswahl gilt nur, solange der Manager offen ist
 	}
@@ -614,6 +625,10 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 // featureMsg reicht die Nachricht an die Bereiche weiter (Broadcast, Sync,
 // KI, Dateien …); jeder nimmt nur seine eigenen.
 func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
+	if m, ok := msg.(doctorMsg); ok { // Selbstprüfung (doctor.go)
+		a.doctorDone(m)
+		return nil, true
+	}
 	if m, ok := msg.(palFindMsg); ok { // „Wo finde ich …?“ (palask.go)
 		return a.palFindDone(m), true
 	}
@@ -935,11 +950,8 @@ func (a *App) onTick() tea.Cmd {
 
 // ---------------------------------------------------------------- Layout
 
-// View: gemessen, bei Ausgabeflut gedrosselt (perf.go).
-func (a *App) View() tea.View { return a.view() }
-
 func (a *App) viewFrame() tea.View {
-	a.z.reset()
+	a.z.Reset()
 	var body string
 	var cur *tea.Cursor
 	switch a.scr {
@@ -996,9 +1008,9 @@ func (a *App) viewFrame() tea.View {
 	case scrScan:
 		body = a.frame(a.viewScan(), a.scanKeys())
 	}
-	body = a.z.scan(body, 0, 0)
+	body = a.z.Scan(body, 0, 0)
 	if a.lock != nil {
-		a.z.reset() // gesperrt: nichts klickbar, nichts zu sehen
+		a.z.Reset() // gesperrt: nichts klickbar, nichts zu sehen
 		body, cur = a.viewLock(), nil
 	} else if a.modal != nil {
 		body = a.overlay(body, a.modalView())
@@ -1021,7 +1033,7 @@ func (a *App) viewFrame() tea.View {
 		body = a.withPerf(body)
 	}
 	if a.intro != nil && introFits(a.w, a.h) {
-		a.z.reset() // während der Animation ist nichts klickbar
+		a.z.Reset() // während der Animation ist nichts klickbar
 		body, cur = a.viewIntro(), nil
 	}
 	if cur != nil && !a.s.T.Dark {
@@ -1052,7 +1064,7 @@ func (a *App) headerLeft() string {
 	logo := a.logoChip(">_ " + version.Name) // gradient.go
 	if a.scr == scrTerminal && len(a.sessions) > 0 {
 		// Klick aufs Logo: Manager für einen weiteren Tab, wie „+“ (tabs.go)
-		return a.z.click(logo, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() })
+		return a.z.Click(logo, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() })
 	}
 	return logo
 }
@@ -1276,8 +1288,8 @@ func (a *App) overlay(base, box string) string {
 	if k, run := a.fadeLevel(); run && !a.fx.out {
 		box = fadeANSI(box, a.s.T, k)
 	}
-	a.z.rects = a.z.rects[:0]
-	box = a.z.scan(box, x, y)
+	a.z.ClearRects()
+	box = a.z.Scan(box, x, y)
 	return stamp(a.overlayBackground(base, x, y, bw, bh), box, x, y, a.w)
 }
 

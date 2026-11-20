@@ -261,7 +261,7 @@ func (a *App) viewVuln() string {
 	for i := v.top; i < min(len(vis), v.top+room); i++ {
 		i := i
 		row := a.vulnRow(vis[i], cols, i == v.sel, fresh[vis[i].Key()] && v.prev != nil)
-		b.WriteString(a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(a.z.Click(row, func(_ tea.Mouse, double bool) tea.Cmd {
 			v.sel = i
 			if double {
 				a.showVulnDetail(vis[i])

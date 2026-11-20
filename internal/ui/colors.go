@@ -215,7 +215,7 @@ func (a *App) viewColors() string {
 		if th.Name == ThemeByName(e.c.Base).Name {
 			chip = s.Badge.Foreground(t.Accent).Bold(true).Render("✓ " + short)
 		}
-		line += a.z.click(chip, func(tea.Mouse, bool) tea.Cmd {
+		line += a.z.Click(chip, func(tea.Mouse, bool) tea.Cmd {
 			e.sel, e.c = 0, domain.CustomColors{Base: th.Name}
 			a.previewColors()
 			return nil
@@ -245,7 +245,7 @@ func (a *App) viewColors() string {
 			name = s.Text.Render(name)
 		}
 		row := name + sw + "  " + val + mark
-		b.WriteString(a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(a.z.Click(row, func(_ tea.Mouse, double bool) tea.Cmd {
 			e.sel = i + 1
 			if double {
 				e.editing, e.buf = true, hexOf(f.of(CustomTheme(e.c)))

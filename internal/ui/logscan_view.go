@@ -135,7 +135,7 @@ func (a *App) viewLogScan() string {
 	for i := l.top; i < min(len(vis), l.top+room); i++ {
 		i := i
 		row := a.findingRow(vis[i], cols, i == l.sel)
-		b.WriteString(a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(a.z.Click(row, func(_ tea.Mouse, double bool) tea.Cmd {
 			l.sel = i
 			if double {
 				a.showFindingLines(vis[i])
@@ -287,7 +287,7 @@ func (a *App) findingDetail(f logscan.Finding, w int) []string {
 			used += cw
 			s := a.byID(a.lscan.sid)
 			cmd := c
-			chips = append(chips, a.z.click(chip, func(tea.Mouse, bool) tea.Cmd {
+			chips = append(chips, a.z.Click(chip, func(tea.Mouse, bool) tea.Cmd {
 				if s == nil {
 					return nil
 				}

@@ -204,13 +204,14 @@
 
 <section id="bugs">
   <h2>Reporting bugs</h2>
+  <p>First try the <strong>self-check</strong>: Help › Troubleshooting › “Self-check” or <code>sshtermy doctor</code>. It checks the data folder, vault, keychain, SSH agent, update signature, internet, clock and the AI endpoint; <kbd>c</kbd> copies the result.</p>
   <ol>
     <li>Turn on Settings › “Debug log for bug reports” (or start <code>sshtermy --debug</code>).</li>
     <li>Reproduce the problem.</li>
     <li>Help › “Save cleaned debug log”: a copy without hosts, IPs, user names and passwords lands in Downloads.</li>
     <li>Open an <a href="https://github.com/db9979/sshtermy/issues/new">issue on GitHub</a> and attach the file.</li>
   </ol>
-  <p>If sshTermy crashes, it offers a cleaned crash report on the next start.</p>
+  <p>An error in one part (AI answer, device output, file view) is caught: sshTermy keeps running with all connections, writes a cleaned report and shows a message. If it does crash, it offers a cleaned crash report on the next start.</p>
 </section>
 
 <section id="keys">
@@ -247,6 +248,7 @@
   <h3>Start and tips</h3>
   <table>
     <tr><td><code>sshtermy backup</code> · <code>sshtermy mcp</code></td><td>full backup · MCP server for AI clients</td></tr>
+    <tr><td><code>sshtermy doctor</code></td><td>self-check for bug reports</td></tr>
     <tr><td><code>--no-intro</code> · <code>--debug</code></td><td>no start animation · debug log</td></tr>
     <tr><td><code>-window</code> · <code>-tui</code></td><td>own window · always in the terminal</td></tr>
     <tr><td><code>tsz</code> / <code>trz</code></td><td>file from / to the server (trzsz)</td></tr>

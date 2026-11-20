@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"go.bug.st/serial"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Port: eine gefundene serielle Schnittstelle.
@@ -151,13 +153,16 @@ type Stream struct {
 	closed atomic.Bool
 }
 
+// openPort: Variable für Tests (Gerät ohne echtes Kabel).
+var openPort = serial.Open
+
 // Open öffnet die Schnittstelle; alles, was ankommt, geht an out.
 func Open(name string, baud int, frame string, out io.Writer) (*Stream, error) {
 	mode, err := Mode(baud, frame)
 	if err != nil {
 		return nil, err
 	}
-	p, err := serial.Open(name, mode)
+	p, err := openPort(name, mode)
 	if err != nil {
 		return nil, explain(name, err)
 	}
@@ -165,7 +170,7 @@ func Open(name string, baud int, frame string, out io.Writer) (*Stream, error) {
 	_ = p.SetDTR(true)
 	_ = p.SetRTS(true)
 	s := &Stream{Name: name, Done: make(chan error, 1), p: p}
-	go s.read(out)
+	safe.Go("serialx/serial.go", func() { s.read(out) })
 	return s, nil
 }
 

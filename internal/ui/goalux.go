@@ -32,6 +32,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
@@ -174,7 +175,7 @@ func (a *App) viewInputWait(b *strings.Builder, s *session, w int) {
 	for _, k := range agent.InputKeys(g.inputWait) {
 		send := k.Send
 		lbl := st.Accent.Render("["+inputKeyLabel(k.Key)+"]") + " " + st.Text.Render(i18n.T(k.Label))
-		row = append(row, a.z.click(lbl, func(tea.Mouse, bool) tea.Cmd {
+		row = append(row, a.z.Click(lbl, func(tea.Mouse, bool) tea.Cmd {
 			a.sendInputAnswer(s, send)
 			return nil
 		}))
@@ -406,6 +407,7 @@ func readBackups(local bool, cl *sshx.Client, need []agent.FileChange) []fileBac
 	}
 	done := make(chan []fileBackup, 1)
 	go func() {
+		defer safe.Recover("ui/goalux.go")
 		res := make([]fileBackup, len(need))
 		copy(res, out)
 		fsys, closeFn, err := agentFS(local, cl)
@@ -649,7 +651,7 @@ func (a *App) viewBackups(b *strings.Builder, s *session, w int, key string) {
 	}
 	head := st.Warn.Render("← " + plural(len(g.backups), i18n.T("Datei geändert"), i18n.T("Dateien geändert")))
 	if n > 0 {
-		head += st.Muted.Render(" · ") + a.z.click(st.Accent.Render(key)+" "+st.Text.Render(i18n.T("zurückholen")), func(tea.Mouse, bool) tea.Cmd {
+		head += st.Muted.Render(" · ") + a.z.Click(st.Accent.Render(key)+" "+st.Text.Render(i18n.T("zurückholen")), func(tea.Mouse, bool) tea.Cmd {
 			s.panelFocus = true
 			return a.startUndo(s)
 		})

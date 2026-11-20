@@ -11,6 +11,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // Auswahlliste mit Suche (Jump-Host, Ordner, Tag-Filter). Liegt als Overlay
@@ -229,30 +231,30 @@ func (a *App) viewPicker() string {
 			line = s.Selected.Width(w - 4).Render(ansi.Strip(line))
 		}
 		i, it := i, it
-		act := zoneAction{click: func(tea.Mouse, bool) tea.Cmd {
+		act := clickzone.Action{Click: func(tea.Mouse, bool) tea.Cmd {
 			p.sel = i
 			return a.pickerChoose(it)
 		}}
 		if p.onMenu != nil {
-			act.menu = func(m tea.Mouse) tea.Cmd {
+			act.Menu = func(m tea.Mouse) tea.Cmd {
 				p.sel = i
 				return p.onMenu(it, m)
 			}
 		}
-		line = a.z.mark(line, act)
+		line = a.z.Mark(line, act)
 		list.WriteString(line + "\n")
 	}
 	if len(vis) == 0 {
 		list.WriteString(a.keyZone("Esc", s.Muted.Render(i18n.T("  nichts gefunden · Esc zurück, Rücktaste ändert die Suche"))) + "\n")
 	}
-	b.WriteString(a.z.mark(list.String(), zoneAction{wheel: func(up bool) tea.Cmd {
+	b.WriteString(a.z.Mark(list.String(), clickzone.Action{Wheel: func(up bool) tea.Cmd {
 		if up {
 			p.sel = max(0, p.sel-1)
 		} else {
 			p.sel = min(len(vis)-1, p.sel+1)
 		}
 		return nil
-	}, block: true}))
+	}, Block: true}))
 	more := ""
 	if len(vis) > rows {
 		more = strconv.Itoa(p.top+1) + "–" + strconv.Itoa(min(len(vis), p.top+rows)) + i18n.T(" von ") + strconv.Itoa(len(vis))

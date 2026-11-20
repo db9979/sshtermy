@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/webwatch"
 	"golang.org/x/crypto/ssh"
 )
@@ -493,6 +494,7 @@ func (s *Server) anchorCtrl(w http.ResponseWriter, r *http.Request) {
 		s.log("anker_zu", n)
 	}()
 	go func() {
+		defer safe.Recover("relay/server.go")
 		t := time.NewTicker(pingEvery)
 		defer t.Stop()
 		for {

@@ -56,6 +56,9 @@ func main() {
 			os.Exit(runBackup(os.Args[2:]))
 		case "restore", "einspielen":
 			os.Exit(runRestore(os.Args[2:]))
+		case "doctor", "pruefen", "prüfen":
+			// Selbstprüfung für Fehlerberichte (internal/doctor)
+			os.Exit(runDoctor(dir))
 		case "mcp":
 			// MCP-Server für KI-Clients über stdin/stdout (internal/mcp)
 			if err := mcp.Serve(os.Stdin, os.Stdout, &mcp.Remote{DataDir: dir}); err != nil {
@@ -160,6 +163,8 @@ func main() {
 	}
 	// Absturzbericht: ab hier landen Paniken im crash-Ordner (internal/crash).
 	guard := crash.Start(st.Dir)
+	// Absturzschutz: einzelne Fehler abfangen statt alles zu beenden (internal/safe)
+	app.CatchPanics()
 	// Bibliotheken (z. B. der SSH-Agent bei der Weiterleitung) schreiben
 	// Meldungen mit log.Printf nach stderr: das würde das Bild zerreißen.
 	log.SetOutput(io.Discard)

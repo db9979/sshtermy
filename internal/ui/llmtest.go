@@ -11,6 +11,8 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/llm"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // KI-Einstellungen: Endpunkt testen (Strg+T) und Modell aus der Liste des
@@ -243,9 +245,9 @@ func (a *App) viewLLMExtra(w int) string {
 				line = a.s.Selected.Width(w - 2).Render("  " + trunc(vis[i], w-6))
 			}
 			i := i
-			line = a.z.mark(line, zoneAction{
-				click: func(tea.Mouse, bool) tea.Cmd { p.sel = i; return a.pressKey("⏎") },
-				wheel: func(up bool) tea.Cmd { return a.pressKey(wheelKey(up)) },
+			line = a.z.Mark(line, clickzone.Action{
+				Click: func(tea.Mouse, bool) tea.Cmd { p.sel = i; return a.pressKey("⏎") },
+				Wheel: func(up bool) tea.Cmd { return a.pressKey(wheelKey(up)) },
 			})
 			b.WriteString(line + "\n")
 		}

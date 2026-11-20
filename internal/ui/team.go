@@ -540,7 +540,7 @@ func (a *App) viewTeam() string {
 			}
 		}
 		i := i
-		out = a.z.click(out, func(tea.Mouse, bool) tea.Cmd {
+		out = a.z.Click(out, func(tea.Mouse, bool) tea.Cmd {
 			t.sel = i
 			t.items[i].on = !t.items[i].on
 			return nil

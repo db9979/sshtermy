@@ -246,7 +246,7 @@ func (a *App) viewKeys() string {
 		if i == e.sel {
 			selLine = len(lines)
 		}
-		lines = append(lines, a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+		lines = append(lines, a.z.Click(line, func(_ tea.Mouse, double bool) tea.Cmd {
 			e.sel = i
 			if double {
 				e.capturing = true

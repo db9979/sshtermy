@@ -6,12 +6,23 @@ PKG     := github.com/db9979/sshtermy/internal/version
 LDFLAGS := -s -w -X $(PKG).Version=$(VERSION) -X $(PKG).Commit=$(COMMIT) -X $(PKG).Date=$(DATE) -X $(PKG).UpdatePubKey=$(UPDATE_PUBKEY)
 TARGETS := windows/arm64 windows/386 windows/amd64 darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 linux/arm linux/riscv64
 
-.PHONY: build test bench loadtest dist clean run golden handout fuzz vuln icon zusehen
+.PHONY: build test check soak bench loadtest dist clean run golden handout fuzz vuln icon zusehen
 build:
 	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/sshtermy ./cmd/sshtermy
 
 test:
 	go vet ./... && go test ./...
+	cd third_party/vt && go test ./...
+	cd third_party/ansi && go test ./...
+
+# Vor dem Push: dasselbe wie die CI-Jobs test + lint (Format, vet, staticcheck,
+# Tests in zufälliger Reihenfolge). Spart den Umweg über einen roten CI-Lauf.
+check:
+	tools/check-fmt.sh
+	go vet ./...
+	# staticcheck mit dem Go dieses Projekts bauen (sonst versteht es neuere Sprachstände nicht)
+	GOTOOLCHAIN=$$(go env GOVERSION) go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+	go test -shuffle=on ./...
 	cd third_party/vt && go test ./...
 	cd third_party/ansi && go test ./...
 
@@ -22,6 +33,11 @@ bench:
 # Lasttest mit 1000 Hosts (Manager, Palette, Online-Prüfung, Broadcast, Sync, MCP)
 loadtest:
 	SSHTERMY_LOAD=1 go test -run TestLoad1000 -v -count=1 ./internal/ui
+
+# Dauerlauf: Tabs öffnen/schließen, Verbindungen abreißen, Lecks messen (nachts in CI)
+SOAK ?= 10m
+soak:
+	SSHTERMY_SOAK=$(SOAK) go test -run TestSoak -v -count=1 -timeout 0 ./internal/ui
 
 # Fuzz-Tests (Parser für Daten von fremden Geräten), je FUZZTIME lang
 FUZZTIME ?= 20s

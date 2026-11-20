@@ -16,6 +16,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/relay"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -172,6 +173,7 @@ func (a *App) fetchAll(rs []domain.Relay) {
 	for _, r := range rs {
 		wg.Add(1)
 		go func(id string) {
+			defer safe.Recover("ui/relay.go")
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()

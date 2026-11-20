@@ -1071,7 +1071,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 					row = st.Selected.Width(w).Render(line + strings.Repeat(" ", gap) + meta)
 				}
 				i, rb := i, rb
-				b.WriteString(a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+				b.WriteString(a.z.Click(row, func(_ tea.Mouse, double bool) tea.Cmd {
 					s.panelFocus = true
 					g.rbSel = i
 					g.input.SetValue(rb.Goal)
@@ -1148,7 +1148,7 @@ func (a *App) viewGoal(b *strings.Builder, s *session, w int) {
 				mark, style = "● ", st.Accent
 			}
 			line := st.Muted.Render(mark) + style.Render(trunc(o, w-3))
-			b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+			b.WriteString(a.z.Click(line, func(tea.Mouse, bool) tea.Cmd {
 				s.panelFocus = true
 				return a.answerQuestion(s, o)
 			}) + "\n")
@@ -1286,7 +1286,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 			sw = st.OK.Render("● " + i18n.T("an") + " ")
 		}
 		i, t := i, t
-		sw = a.z.click(sw, func(tea.Mouse, bool) tea.Cmd {
+		sw = a.z.Click(sw, func(tea.Mouse, bool) tea.Cmd {
 			s.panelFocus, s.tunSel = true, i
 			a.toggleTunnel(s, t)
 			return nil
@@ -1299,7 +1299,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		if i == s.tunSel {
 			name = st.Selected.Render(name)
 		}
-		b.WriteString(sw + " " + a.z.click(name+auto, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(sw + " " + a.z.Click(name+auto, func(_ tea.Mouse, double bool) tea.Cmd {
 			s.panelFocus, s.tunSel = true, i
 			if double {
 				a.toggleTunnel(s, t)
@@ -1309,7 +1309,7 @@ func (a *App) viewTunnels(b *strings.Builder, s *session, w int) {
 		b.WriteString("  " + st.Muted.Render(trunc(t.Spec()+via, w-2)) + "\n")
 		if at != nil {
 			if u := at.URL(); u != "" {
-				b.WriteString("  " + a.z.click(st.Accent.Underline(true).Render(u)+st.Muted.Render(i18n.T("  o öffnen")),
+				b.WriteString("  " + a.z.Click(st.Accent.Underline(true).Render(u)+st.Muted.Render(i18n.T("  o öffnen")),
 					func(tea.Mouse, bool) tea.Cmd { _ = sshx.OpenBrowser(u); return nil }) + "\n")
 			} else {
 				b.WriteString("  " + st.Text.Render(i18n.T("lauscht auf ")+at.Addr) + "\n")

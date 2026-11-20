@@ -581,7 +581,7 @@ func (a *App) mgrDragMouse(msg tea.MouseMsg) tea.Cmd {
 	m := msg.Mouse()
 	switch msg.(type) {
 	case tea.MouseMotionMsg:
-		if r := a.z.rowAt(m.X, m.Y); r >= 0 {
+		if r := a.z.RowAt(m.X, m.Y); r >= 0 {
 			if r != d.from {
 				d.moved = true
 			}
@@ -596,7 +596,7 @@ func (a *App) mgrDragMouse(msg tea.MouseMsg) tea.Cmd {
 		return nil
 	case tea.MouseReleaseMsg:
 		a.mgr.drag = nil
-		r := a.z.rowAt(m.X, m.Y)
+		r := a.z.RowAt(m.X, m.Y)
 		rows := a.mgr.rows
 		if !d.moved || r == d.from {
 			if d.from < len(rows) && rows[d.from].isFolder() && !d.dbl {
@@ -679,7 +679,7 @@ func (a *App) viewFolderDetails(n *domain.TreeNode, w int) string {
 				line += "  " + ansi.Truncate(a.reachText(c), rest, "…")
 			}
 			c := c
-			b.WriteString(a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+			b.WriteString(a.z.Click(line, func(_ tea.Mouse, double bool) tea.Cmd {
 				if double {
 					return a.connect(c)
 				}

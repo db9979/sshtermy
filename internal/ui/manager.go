@@ -23,6 +23,8 @@ import (
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/wol"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 type managerState struct {
@@ -438,7 +440,7 @@ func (a *App) viewManager() string {
 		info = s.OK.Render(fmt.Sprintf(i18n.T("  ✓ %d markiert"), n)) // vorn: bleibt lesbar, wenn die Zeile voll ist
 	}
 	if m.tag != "" {
-		info += a.z.click(s.Accent.Render(" #"+m.tag+" ×"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
+		info += a.z.Click(s.Accent.Render(" #"+m.tag+" ×"), func(tea.Mouse, bool) tea.Cmd { m.tag = ""; return nil })
 	}
 	if a.mgrFiltering() {
 		n := 0
@@ -523,7 +525,7 @@ func (a *App) viewManager() string {
 			line = lipgloss.NewStyle().Foreground(s.T.Warn).Underline(true).Width(leftW - 1).Render(plain)
 		}
 		i, r := i, r
-		line = a.z.mark(line, zoneAction{row: i + 1, click: func(_ tea.Mouse, double bool) tea.Cmd {
+		line = a.z.Mark(line, clickzone.Action{Row: i + 1, Click: func(_ tea.Mouse, double bool) tea.Cmd {
 			m.sel = i
 			m.drag = &mgrDrag{from: i, over: i, dbl: double}
 			if double && !r.isFolder() {
@@ -531,7 +533,7 @@ func (a *App) viewManager() string {
 				return a.connect(r.conn)
 			}
 			return nil
-		}, menu: func(ms tea.Mouse) tea.Cmd {
+		}, Menu: func(ms tea.Mouse) tea.Cmd {
 			if ms.Button != tea.MouseRight {
 				return nil
 			}
@@ -549,7 +551,7 @@ func (a *App) viewManager() string {
 			lb.WriteString(a.mgrEmpty(leftW))
 		}
 	}
-	listBox := a.z.mark(lb.String(), zoneAction{block: true, wheel: func(up bool) tea.Cmd {
+	listBox := a.z.Mark(lb.String(), clickzone.Action{Block: true, Wheel: func(up bool) tea.Cmd {
 		if up {
 			m.sel = max(0, m.sel-1)
 		} else {
@@ -670,7 +672,7 @@ func (a *App) mgrConnDetails(c domain.Connection, rightW int, now time.Time) str
 		row(i18n.T("Startbefehl"), c.StartCmd)
 	}
 	if canWake(c) && !a.connected(c.ID) {
-		rb.WriteString(" " + label.Render(i18n.T("Aufwecken")) + a.z.click(s.Key.Render(i18n.T("Wake-on-LAN senden")), func(tea.Mouse, bool) tea.Cmd { return a.wake(c) }) + s.Muted.Render("  "+c.MAC) + "\n")
+		rb.WriteString(" " + label.Render(i18n.T("Aufwecken")) + a.z.Click(s.Key.Render(i18n.T("Wake-on-LAN senden")), func(tea.Mouse, bool) tea.Cmd { return a.wake(c) }) + s.Muted.Render("  "+c.MAC) + "\n")
 	}
 	if c.Profile != nil && !c.Profile.Empty() {
 		sum := c.Profile.Summary()
@@ -710,7 +712,7 @@ func (a *App) mgrConnDetails(c domain.Connection, rightW int, now time.Time) str
 		}
 		t := t
 		line := fmt.Sprintf("  %s %-20s %s%s", icon, trunc(t.Name, 20), s.Muted.Render(t.Spec()), auto)
-		rb.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd { return a.openTunnelForm(t) }) + "\n")
+		rb.WriteString(a.z.Click(line, func(tea.Mouse, bool) tea.Cmd { return a.openTunnelForm(t) }) + "\n")
 	}
 	return rb.String()
 }
@@ -1461,5 +1463,5 @@ func (a *App) syncChip() string {
 	if a.st.SyncConfig().Enabled() {
 		txt = " ↕ Sync " + ansi.Strip(a.syncStatus()) + " "
 	}
-	return a.z.click(s.Header.Foreground(s.T.Muted).Render(trunc(txt, 40)), func(tea.Mouse, bool) tea.Cmd { return a.openSync() }) + s.Header.Render(" ")
+	return a.z.Click(s.Header.Foreground(s.T.Muted).Render(trunc(txt, 40)), func(tea.Mouse, bool) tea.Cmd { return a.openSync() }) + s.Header.Render(" ")
 }

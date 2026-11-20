@@ -18,6 +18,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 const (
@@ -81,6 +82,7 @@ func (a *App) liveStart(s *session) tea.Cmd {
 	ch := make(chan liveEvent, 8)
 	cl := s.client
 	go func() {
+		defer safe.Recover("ui/hostlive.go")
 		defer close(ch)
 		var p hostinfo.LiveParser
 		var prev *hostinfo.LiveSample

@@ -19,6 +19,7 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Sitzung live teilen
@@ -136,7 +137,7 @@ func (c *Client) StartShare(ctx context.Context) (*ShareHost, error) {
 	ws.SetReadLimit(64 * 1024)
 	sh := &ShareHost{Link: ShareLink{Base: c.Base, ID: r.ID, Key: key, FP: c.FP}, ws: ws,
 		viewers: make(chan int, 8), done: make(chan struct{})}
-	go sh.readCtrl()
+	safe.Go("relay/share.go", func() { sh.readCtrl() })
 	return sh, nil
 }
 

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/webwatch"
 )
 
@@ -86,7 +87,7 @@ func StartLAN() (*LAN, error) {
 	}
 	if u, err := net.ListenUDP("udp4", &net.UDPAddr{Port: LANPort}); err == nil {
 		l.udp = u
-		go l.answer()
+		safe.Go("relay/lan.go", func() { l.answer() })
 	}
 	return l, nil
 }

@@ -25,6 +25,8 @@ import (
 
 	"github.com/masterzen/winrm"
 	"github.com/masterzen/winrm/soap"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Auth: Anmeldeverfahren.
@@ -70,6 +72,7 @@ func Dial(ctx context.Context, cfg Config, cols int, out io.Writer) (*Stream, er
 	}
 	ch := make(chan res, 1)
 	go func() {
+		defer safe.Recover("psremote/winrm.go")
 		w, err := openWSMan(cfg)
 		ch <- res{w, err}
 	}()
@@ -82,6 +85,7 @@ func Dial(ctx context.Context, cfg Config, cols int, out io.Writer) (*Stream, er
 		w = r.w
 	case <-ctx.Done():
 		go func() {
+			defer safe.Recover("psremote/winrm.go")
 			if r := <-ch; r.w != nil {
 				r.w.close()
 			}
@@ -196,7 +200,7 @@ func (w *wsman) start(dir string, h handlers) (proc, error) {
 		return nil, err
 	}
 	c := &wsCmd{w: w, id: id, quit: make(chan struct{})}
-	go c.receive(h)
+	safe.Go("psremote/winrm.go", func() { c.receive(h) })
 	return c, nil
 }
 

@@ -15,6 +15,8 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // Orte und Verlauf im Dateien-Fenster (F5)
@@ -339,9 +341,9 @@ func (a *App) viewPlacesBar(s *session, w, h int) string {
 			style = st.Selected.Width(w)
 		}
 		target := pl.path
-		b.WriteString(a.z.mark(style.Render(label), zoneAction{
-			click: func(tea.Mouse, bool) tea.Cmd { return a.goPlace(s, side, target) },
-			tip:   func() string { return target },
+		b.WriteString(a.z.Mark(style.Render(label), clickzone.Action{
+			Click: func(tea.Mouse, bool) tea.Cmd { return a.goPlace(s, side, target) },
+			Tip:   func() string { return target },
 		}) + "\n")
 		n++
 	}

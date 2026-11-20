@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // ErrNetDevice: Exec-Abfragen sind bei Netzwerkgeräten tabu, weil z. B.
@@ -62,6 +63,7 @@ func (c *Client) StreamScript(ctx context.Context, script string, line func(stri
 		return err
 	}
 	go func() {
+		defer safe.Recover("sshx/run.go")
 		<-ctx.Done()
 		_ = s.Close() // beendet auch das Lesen unten
 	}()

@@ -296,7 +296,7 @@ func (a *App) viewImport() string {
 			}
 		}
 		i := i
-		out = a.z.click(out, func(_ tea.Mouse, double bool) tea.Cmd {
+		out = a.z.Click(out, func(_ tea.Mouse, double bool) tea.Cmd {
 			m.sel = i
 			m.items[i].on = !m.items[i].on
 			return nil

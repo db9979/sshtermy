@@ -178,8 +178,9 @@ func Resolve(base string) { _ = os.Remove(filepath.Join(Dir(base), prevName)) }
 type Kind int
 
 const (
-	KindUI    Kind = iota // Panik in der Oberfläche, Terminal wurde wiederhergestellt
-	KindFatal             // Prozess sofort beendet, Bericht beim nächsten Start
+	KindUI     Kind = iota // Panik in der Oberfläche, Terminal wurde wiederhergestellt
+	KindFatal              // Prozess sofort beendet, Bericht beim nächsten Start
+	KindCaught             // Fehler abgefangen (internal/safe), sshTermy lief weiter
 )
 
 // Report ist ein fertiger, bereinigter Bericht.
@@ -210,8 +211,11 @@ func Write(base string, kind Kind, raw string, sensitive []string) (*Report, err
 func Build(kind Kind, raw string, sensitive []string, at time.Time) *Report {
 	clean := Clean(raw, sensitive)
 	what := i18n.T("Absturz in der Oberfläche (Terminal wurde wiederhergestellt)")
-	if kind == KindFatal {
+	switch kind {
+	case KindFatal:
 		what = i18n.T("Programm wurde sofort beendet (Bericht beim nächsten Start erstellt)")
+	case KindCaught:
+		what = i18n.T("Fehler abgefangen, sshTermy lief weiter")
 	}
 	msg := firstMeaningful(clean)
 	var b strings.Builder

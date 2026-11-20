@@ -13,6 +13,8 @@ import (
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/safety"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // KI-Antworten als Karten: Befehle aus Codeblöcken stehen in eigenen,
@@ -224,7 +226,7 @@ func (a *App) viewAnswer(b *strings.Builder, s *session, ans string, w int) {
 			arrow, hint = "▸ ", i18n.T("ausklappen")
 		}
 		head := st.AI.Render(arrow+i18n.T("Erklärung")) + st.Muted.Render("  z "+hint)
-		b.WriteString(a.z.click(head, func(tea.Mouse, bool) tea.Cmd {
+		b.WriteString(a.z.Click(head, func(tea.Mouse, bool) tea.Cmd {
 			q.collapsed = !q.collapsed
 			s.panelFocus = true
 			return nil
@@ -357,7 +359,7 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 			if withText && (!armed || bt.key == "a") { // scharf: nur die Rückfrage zählt
 				txt += lipgloss.NewStyle().Foreground(st.T.Muted).Render(" " + bt.text)
 			}
-			out = append(out, a.z.click(txt, func(tea.Mouse, bool) tea.Cmd {
+			out = append(out, a.z.Click(txt, func(tea.Mouse, bool) tea.Cmd {
 				s.ask.sel = i
 				return bt.f()
 			}))
@@ -377,7 +379,7 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 		content += "\n" + bar
 	}
 	card := box.Render(content)
-	return a.z.mark(card, zoneAction{block: true, click: func(_ tea.Mouse, double bool) tea.Cmd {
+	return a.z.Mark(card, clickzone.Action{Block: true, Click: func(_ tea.Mouse, double bool) tea.Cmd {
 		s.ask.sel, s.panelFocus = i, true
 		if double && cd.runnable() {
 			return a.cardInsert(s, i)

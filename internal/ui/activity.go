@@ -95,7 +95,7 @@ func (a *App) activityBlock(rb *strings.Builder, logs []*sessionlog.Log, w int, 
 			}
 			if n := perDay[d]; n > 0 {
 				day := d
-				cell = a.z.click(cell, func(tea.Mouse, bool) tea.Cmd { a.jumpToDay(day); return nil })
+				cell = a.z.Click(cell, func(tea.Mouse, bool) tea.Cmd { a.jumpToDay(day); return nil })
 			}
 			line.WriteString(cell + " ")
 		}

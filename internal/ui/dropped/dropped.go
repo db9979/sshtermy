@@ -1,4 +1,6 @@
-package ui
+// Package dropped erkennt Dateien, die ins Terminalfenster gezogen wurden
+// (aus internal/ui ausgelagert, erster Schritt der Aufteilung).
+package dropped
 
 import (
 	"net/url"
@@ -20,16 +22,16 @@ import (
 //	GNOME/Konsole      '/home/me/My File.txt' '/home/me/b.txt'
 //	manche Linux-DEs   file:///home/me/My%20File.txt
 //
-// droppedPaths erkennt das: Nur wenn der eingefügte Text ausschließlich aus
+// Paths erkennt das: Nur wenn der eingefügte Text ausschließlich aus
 // absoluten Pfaden besteht, die es auf diesem Rechner gibt, gilt er als
 // „abgelegte Dateien“. Sonst ist es normaler Text.
 
-const maxDropped = 500
+const Max = 500
 
-// droppedPaths: die abgelegten Dateien, oder nil, wenn der Text keine ist.
-func droppedPaths(text string) []string {
-	toks := splitDropped(text, runtime.GOOS == "windows")
-	if len(toks) == 0 || len(toks) > maxDropped {
+// Paths: die abgelegten Dateien, oder nil, wenn der Text keine ist.
+func Paths(text string) []string {
+	toks := Split(text, runtime.GOOS == "windows")
+	if len(toks) == 0 || len(toks) > Max {
 		return nil
 	}
 	for _, p := range toks {
@@ -40,10 +42,10 @@ func droppedPaths(text string) []string {
 	return toks
 }
 
-// splitDropped zerlegt den Text in Pfade (ohne Prüfung, ob es sie gibt).
+// Split zerlegt den Text in Pfade (ohne Prüfung, ob es sie gibt).
 // nil, wenn ein Teil kein absoluter Pfad ist. win: Backslash ist dann
 // Pfadtrenner und kein Fluchtzeichen.
-func splitDropped(text string, win bool) []string {
+func Split(text string, win bool) []string {
 	text = strings.TrimSpace(strings.TrimPrefix(text, "\ufeff"))
 	if text == "" {
 		return nil
@@ -101,7 +103,7 @@ func splitDropped(text string, win bool) []string {
 				p = p[1:] // /C:/x → C:/x
 			}
 		}
-		if !isAbsPath(p, win) {
+		if !IsAbs(p, win) {
 			return nil
 		}
 		out[i] = p
@@ -109,7 +111,7 @@ func splitDropped(text string, win bool) []string {
 	return out
 }
 
-func isAbsPath(p string, win bool) bool {
+func IsAbs(p string, win bool) bool {
 	if !win {
 		return strings.HasPrefix(p, "/")
 	}

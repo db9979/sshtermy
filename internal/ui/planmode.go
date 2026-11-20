@@ -248,7 +248,7 @@ func (a *App) viewPlan(b *strings.Builder, s *session, w int) {
 			line = st.Selected.Width(w).Render(fmt.Sprintf("%2d ", i+1) + map[bool]string{true: "− ", false: "  "}[g.planOff[i]] + text)
 		}
 		i := i
-		b.WriteString(a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(a.z.Click(line, func(_ tea.Mouse, double bool) tea.Cmd {
 			s.panelFocus, g.planSel = true, i
 			if double {
 				g.planOff[i] = !g.planOff[i]

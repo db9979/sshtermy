@@ -16,6 +16,7 @@ import (
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/logscan"
 	"github.com/db9979/sshtermy/internal/psremote"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Ordner-Scan: Log-Blick für alle Hosts eines Ordners auf einmal, nur
@@ -142,6 +143,7 @@ func (a *App) runFolderScan(folder string) tea.Cmd {
 		conns[i] = h.conn
 	}
 	go func() {
+		defer safe.Recover("ui/logfolder.go")
 		defer cancel()
 		scanHosts(ctx, conns, hours, scan, func(i int, r *logscan.Report, err error) {
 			ev <- folderHostMsg{seq: seq, i: i, rep: r, err: err}
@@ -159,6 +161,7 @@ func scanHosts(ctx context.Context, conns []domain.Connection, hours int,
 	for i, c := range conns {
 		wg.Add(1)
 		go func() {
+			defer safe.Recover("ui/logfolder.go")
 			defer wg.Done()
 			select {
 			case sem <- struct{}{}:

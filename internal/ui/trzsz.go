@@ -198,7 +198,7 @@ func (a *App) trzMsg(msg tea.Msg) (tea.Cmd, bool) {
 	case zmodemMsg:
 		if s := a.byID(m.sid); s != nil && s.shell != nil {
 			// Abbruch: fünfmal CAN, dann Backspaces (so bricht lrzsz ab)
-			_, _ = s.shell.Write([]byte("\x18\x18\x18\x18\x18\x08\x08\x08\x08\x08"))
+			s.term.SendRaw([]byte("\x18\x18\x18\x18\x18\x08\x08\x08\x08\x08"))
 			a.flashErr(i18n.T("ZMODEM (sz/rz) kann sshTermy nicht; auf dem Server trzsz nutzen (tsz/trz) oder F5 (SFTP)"))
 		}
 		return a.listen(), true

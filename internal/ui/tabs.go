@@ -140,7 +140,7 @@ func (a *App) tabDragMouse(msg tea.MouseMsg) tea.Cmd {
 		a.tabDrag = nil
 	case tea.MouseMotionMsg:
 		i := a.indexOf(a.byID(d.id))
-		j := a.z.tabAt(m.X, m.Y)
+		j := a.z.TabAt(m.X, m.Y)
 		if i < 0 {
 			a.tabDrag = nil
 			return nil

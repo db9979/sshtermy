@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Woher die Einträge kommen:
@@ -194,6 +195,7 @@ func (o *Online) Find(ctx context.Context, qs []Query, step func(string)) ([][]*
 	for _, r := range uniq {
 		wg.Add(1)
 		go func() {
+			defer safe.Recover("vuln/source.go")
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()

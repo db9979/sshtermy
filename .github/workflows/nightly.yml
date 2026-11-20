@@ -1,0 +1,41 @@
+# Nachts: Dauerlauf (Lecks über lange Zeit) und längere Zufallstests als im
+# PR. Fehler kommen als rote Markierung in Actions und per Mail von GitHub.
+name: nightly
+
+on:
+  schedule:
+    - cron: "17 2 * * *" # 2:17 UTC, außerhalb der Stoßzeiten
+  workflow_dispatch:
+    inputs:
+      soak:
+        description: "Dauer des Dauerlaufs"
+        default: "45m"
+
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+          check-latest: true
+      - run: make soak SOAK=${{ github.event.inputs.soak || '45m' }}
+
+  fuzz-long:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+          check-latest: true
+      - run: FUZZTIME=3m tools/fuzz/run.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: fuzz-funde-nachts
+          path: internal/**/testdata/fuzz/
+          if-no-files-found: ignore

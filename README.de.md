@@ -260,6 +260,8 @@ nicht als Beweis. Die Liste: Palette *Logwache: Meldungen* oder `w` im Log-Blick
   Schlüssel aus dem Store signiert; geänderte, gelöschte oder umsortierte Zeilen fallen auf. „Audit-Protokoll prüfen
   und speichern“ legt Prüfergebnis und lesbare Fassung in Downloads. Befehle mit führendem Leerzeichen erscheinen nur
   als „(privat)“
+- **Läuft nach Fehlern weiter:** Ein Fehler an einer Stelle (KI-Antwort, Geräteausgabe, Dateiansicht) wird abgefangen,
+  statt sshTermy samt allen Verbindungen zu beenden; **Selbstprüfung** mit `sshtermy doctor` oder Palette › Hilfe › Fehlersuche.
 - **Debug-Protokoll für Fehlerberichte** (Einstellungen oder `sshtermy --debug`): Verbindungsversuche, Abbrüche,
   Updates, KI-Anfragen und Sync als Ereignisse, nie Passwörter oder Bildschirminhalte. Hilfe › „Debug-Protokoll
   bereinigt speichern“ legt eine Kopie ohne Hosts, IPs und Benutzernamen in Downloads, fertig für ein GitHub-Issue.
@@ -338,6 +340,7 @@ sshtermy --debug      # Debug-Protokoll für diesen Start (debug.log im Konfigur
 sshtermy backup [datei]   # Gesamtsicherung aller Daten (fragt das Master-Passwort)
 sshtermy restore <datei>  # Gesamtsicherung einspielen (ersetzt alles, alter Ordner bleibt)
 sshtermy mcp              # MCP-Server für KI-Clients (stdin/stdout), siehe „sshTermy als MCP-Server“
+sshtermy doctor           # Selbstprüfung: Datenordner, Tresor, Schlüsselbund, SSH-Agent, Update-Signatur, Internet, Uhr
 ```
 
 ## Bedienung
@@ -742,11 +745,18 @@ Claude Desktop (`claude_desktop_config.json`): `{"mcpServers": {"sshtermy": {"co
   die Stelle im Programm (Stack). **Vor dem Speichern** werden alle Passwörter, Keys, Passphrasen und API-Keys aus
   dem Store wörtlich entfernt, dazu Hosts, Aliase, IP-Adressen, der Home-Ordner und typische Muster
   (`password=…`, `Bearer …`, Private Keys).
-- Ein Absturz in der Oberfläche wird abgefangen: Das Terminal wird wiederhergestellt und sshTermy fragt, ob der
+- **Absturzschutz:** Ein Fehler an einer Stelle (KI-Antwort auslesen, Geräteausgabe auswerten, Dateiansicht,
+  Hintergrundarbeit) beendet sshTermy nicht mehr samt allen Verbindungen. Der Fehler wird abgefangen, ein Bericht
+  geschrieben, oben rechts erscheint eine Meldung, und alles andere läuft weiter. Erst wenn sich Fehler häufen
+  (mehr als 5 in einer Minute), endet sshTermy wie früher.
+- Ein Absturz in der Oberfläche, der sich nicht abfangen lässt: Das Terminal wird wiederhergestellt und sshTermy fragt, ob der
   Bericht als GitHub-Issue gemeldet werden soll. Bei einem harten Absturz (Prozess endet sofort) entsteht der
   Bericht nach dem nächsten Entsperren und erscheint in einem Dialog (`g` = als Issue melden, `o` = Bericht öffnen).
 - Nichts wird automatisch verschickt. Das Issue öffnet sich im Browser mit dem Bericht; du siehst alles vor dem
-  Absenden. Die letzten 10 Berichte bleiben liegen. Ausprobieren: `sshtermy -crash-test ui` (oder `cmd`, `fatal`).
+  Absenden. Die letzten 10 Berichte bleiben liegen. Ausprobieren: `sshtermy -crash-test ui` oder `cmd` (abgefangen, sshTermy läuft weiter) oder `fatal`.
+- **Selbstprüfung** (Palette › Hilfe › Fehlersuche › „Selbstprüfung“ oder `sshtermy doctor`): Datenordner und Rechte,
+  Tresor, Schlüsselbund, SSH-Agent, Update-Signatur, Internet und Uhr (eine falsche Uhr lässt Einmal-Codes und
+  Zertifikate scheitern), Absturzberichte und in der App der KI-Endpunkt. `c` kopiert das Ergebnis für den Fehlerbericht.
 
 ### Auto-Update
 

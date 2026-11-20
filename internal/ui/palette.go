@@ -15,6 +15,8 @@ import (
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/relay"
 	"github.com/db9979/sshtermy/internal/sshx"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // Befehlspalette (Strg+Leertaste): ein Einstieg für alles. Was getippt wird,
@@ -1115,6 +1117,8 @@ func (a *App) palMenuItems() []palItem {
 		a.palNewFolder(),
 
 		// Hilfe & Info › Fehlersuche
+		palItem{group: pgHelp, menu: "help/debug", icon: ic("llmcheck"), label: i18n.T("Selbstprüfung (Ordner, Tresor, KI, Internet, Uhr)"), hint: "doctor",
+			keys: "selbstprüfung doctor check prüfen diagnose fehler problem geht nicht", run: func() tea.Cmd { return a.runDoctor() }},
 		proItem(help("help/debug", palToggle(ic("sesslog"), i18n.T("Debug-Protokoll für Fehlerberichte"), a.debugOn(), "debug log protokoll fehler bug support", func() tea.Cmd { return a.toggleDebug() }))),
 		palItem{group: pgHelp, menu: "help/debug", icon: ic("export"), label: i18n.T("Debug-Protokoll bereinigt speichern (für Fehlerbericht)"), hint: ".txt",
 			keys: "debug log protokoll fehler bug support issue", run: func() tea.Cmd { return a.exportDebug() }},
@@ -1428,14 +1432,14 @@ func (a *App) viewPalette() string {
 			line = fadeANSI(line, st.T, k) // Zeilen blenden nacheinander ein
 		}
 		i, it := i, it
-		line = a.z.mark(line, zoneAction{click: func(tea.Mouse, bool) tea.Cmd {
+		line = a.z.Mark(line, clickzone.Action{Click: func(tea.Mouse, bool) tea.Cmd {
 			p.sel = i
 			if it.danger != "" && p.armed != i {
 				p.armed = i // rot: erst scharf schalten, zweiter Klick führt aus
 				return nil
 			}
 			return a.palRunTrack(it)
-		}, menu: func(tea.Mouse) tea.Cmd { // Rechtsklick: anheften / lösen
+		}, Menu: func(tea.Mouse) tea.Cmd { // Rechtsklick: anheften / lösen
 			p.sel = i
 			if palTrackable(it) || it.group == pgPinned {
 				a.palTogglePin(it)
@@ -1486,7 +1490,7 @@ func (a *App) viewPalette() string {
 	}
 	box := st.dialog(dialog{icon: "◆", title: title, sub: sub, tone: st.T.AI,
 		body: body, keys: keys, width: width, maxW: maxW, compact: true}, a.w)
-	return a.z.mark(box, zoneAction{block: true, wheel: func(up bool) tea.Cmd {
+	return a.z.Mark(box, clickzone.Action{Block: true, Wheel: func(up bool) tea.Cmd {
 		if up {
 			p.sel = max(0, p.sel-1)
 		} else {

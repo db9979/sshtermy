@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Hintergrunddienst (Idee aus herdr): sshTermy läuft als eigener Prozess
@@ -64,7 +66,7 @@ func ListenHub(dir string) (*Hub, error) {
 		h.Close()
 		return nil, err
 	}
-	go h.acceptLoop()
+	safe.Go("detach/hub.go", func() { h.acceptLoop() })
 	return h, nil
 }
 
@@ -79,6 +81,7 @@ func (h *Hub) acceptLoop() {
 			return
 		}
 		go func() {
+			defer safe.Recover("detach/hub.go")
 			c, cols, rows, err := handshake(nc, h.token)
 			if err != nil {
 				nc.Close() // Probe von HubAlive oder falsches Zugangswort
@@ -157,6 +160,7 @@ func dialTimeout(network, addr string, d time.Duration) (net.Conn, error) {
 		return r.c, r.err
 	case <-time.After(d):
 		go func() {
+			defer safe.Recover("detach/hub.go")
 			if r := <-ch; r.c != nil {
 				r.c.Close()
 			}

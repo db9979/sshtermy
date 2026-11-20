@@ -14,6 +14,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/version"
 )
 
@@ -223,7 +224,12 @@ func Serve(in io.Reader, out io.Writer, b Backend) error {
 			wg.Add(1)
 			go func(id json.RawMessage) {
 				defer wg.Done()
-				text, err := b.Call(p.Name, p.Arguments)
+				var text string
+				var err error
+				// Fehler im Werkzeug: dem Client trotzdem antworten, sonst wartet er ewig
+				if !safe.Run("mcp/mcp.go "+p.Name, func() { text, err = b.Call(p.Name, p.Arguments) }) {
+					err = errors.New("internal error in sshTermy (report written)")
+				}
 				res := map[string]any{"content": []textContent{{"text", text}}}
 				if err != nil {
 					res = map[string]any{"content": []textContent{{"text", err.Error()}}, "isError": true}

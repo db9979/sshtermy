@@ -72,7 +72,7 @@ func TestShareAndWatchV2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, _ := typedSession(domain.Connection{Alias: "web"}, "$ ", "cat geheim-von-vorher")
+	s, host := typedSession(domain.Connection{Alias: "web"}, "$ ", "cat geheim-von-vorher")
 	sh := &shareShell{}
 	s.shell = sh
 	a.sessions = append(a.sessions, s)
@@ -153,20 +153,23 @@ func TestShareAndWatchV2(t *testing.T) {
 	_, _ = ws.Write([]byte("rm -rf /\r"))
 	time.Sleep(200 * time.Millisecond)
 	pumpUntil(t, a, "nichts", func() bool { return true })
-	if sh.String() != "" {
-		t.Fatalf("Zuschauer-Tasten kamen an: %q", sh.String())
+	s.term.Flush(time.Second)
+	if sh.String() != "" || host.String() != "" {
+		t.Fatalf("Zuschauer-Tasten kamen an: %q %q", sh.String(), host.String())
 	}
 	g := o.hs.Guests()[0]
 	_ = o.hs.SetWrite(g.V, time.Now().Add(time.Minute))
 	pumpUntil(t, a, "Schreibrecht beim Zuschauer", func() bool { return ws.(*watch2Stream).writeTo.Load() > 0 })
 	_, _ = ws.Write([]byte("uptime\r"))
 	pumpUntil(t, a, "⏎-Rückfrage (produktiv)", func() bool { return a.modal != nil && strings.Contains(a.modal.title, "⏎") })
-	if sh.String() != "uptime" {
-		t.Fatalf("vor der Bestätigung: %q", sh.String())
+	s.term.Flush(time.Second) // Gast-Tasten laufen über die Warteschlange (SendRaw)
+	if host.String() != "uptime" {
+		t.Fatalf("vor der Bestätigung: %q", host.String())
 	}
 	a.modal.onYes()
-	if sh.String() != "uptime\r" {
-		t.Fatalf("nach der Bestätigung: %q", sh.String())
+	s.term.Flush(time.Second)
+	if host.String() != "uptime\r" {
+		t.Fatalf("nach der Bestätigung: %q", host.String())
 	}
 	a.modal = nil
 

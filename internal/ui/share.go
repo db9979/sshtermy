@@ -22,6 +22,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/relay"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/termemu"
@@ -334,7 +335,7 @@ func (a *App) shareMsg(msg tea.Msg) (tea.Cmd, bool) {
 			m.lan.Announce(m.sh.Platz, true)
 		}
 		s.share.Store(o)
-		go o.pump(s.id, a.events)
+		safe.Go("ui/share.go", func() { o.pump(s.id, a.events) })
 		a.shareLog(s, fmt.Sprintf(i18n.T("# Teilen gestartet (%s, %d min, höchstens %d Zuschauer)"), o.via, m.opts.minutes, m.opts.max))
 		a.showInvite(s, o)
 		return nil, true
@@ -462,14 +463,14 @@ func (a *App) shareGuestKeys(s *session, o *shareOut, g *relay.GuestState, data 
 	}
 	i := strings.IndexAny(string(data), "\r\n")
 	if i < 0 || !isProduction(s.conn) {
-		_, _ = s.shell.Write(data)
+		s.term.SendRaw(data) // Warteschlange: hängt nie die Oberfläche auf
 		if i >= 0 {
 			a.shareLog(s, fmt.Sprintf(i18n.T("# ⏎ von %s (mitschreiben)"), g.Hello.Name))
 		}
 		return nil
 	}
 	if i > 0 {
-		_, _ = s.shell.Write(data[:i])
+		s.term.SendRaw(data[:i])
 	}
 	line := strings.TrimSpace(s.term.CursorLine())
 	name := g.Hello.Name
@@ -477,7 +478,7 @@ func (a *App) shareGuestKeys(s *session, o *shareOut, g *relay.GuestState, data 
 		fmt.Sprintf(i18n.T("%s darf mitschreiben und möchte ⏎ drücken. %s gilt als produktiv.\n\nZeile: %s\n\nj = ausführen   n = verwerfen (Zeile bleibt stehen)"), name, s.conn.Alias, trunc(line, 200)),
 		func() tea.Cmd {
 			if s.shell != nil {
-				_, _ = s.shell.Write([]byte{'\r'})
+				s.term.SendRaw([]byte{'\r'})
 				a.shareLog(s, fmt.Sprintf(i18n.T("# ⏎ von %s (mitschreiben, bestätigt)"), name))
 			}
 			return nil
@@ -856,6 +857,7 @@ func dialWatchV1(sid int, link string, out io.Writer, ev chan<- tea.Msg) (termSt
 	}
 	done := make(chan error, 1)
 	go func() {
+		defer safe.Recover("ui/share.go")
 		for {
 			typ, p, err := v.Next(context.Background())
 			if err != nil {
@@ -998,6 +1000,7 @@ func (a *App) dialWatch(sid int, link string, out io.Writer, ev chan<- tea.Msg) 
 	say(fmt.Sprintf("\x1b[2m%s\x1b[0m\n", fmt.Sprintf(i18n.T("sshTermy: Freigabe %d gefunden (%s). Prüfe den Code …"), inv.Platz, strings.TrimPrefix(base, "https://"))))
 	done := make(chan error, 1)
 	go func() {
+		defer safe.Recover("ui/share.go")
 		name, host := localName()
 		wctx, wcancel := context.WithTimeout(jctx, 4*time.Minute)
 		w, err := relay.Join(wctx, g, inv, relay.Hello{Name: name, Rechner: host, Version: version.Version}, func(chk [3]string) {

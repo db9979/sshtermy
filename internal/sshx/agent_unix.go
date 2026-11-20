@@ -19,3 +19,12 @@ func dialAgent() (net.Conn, error) {
 	}
 	return net.Dial("unix", sock)
 }
+
+// AgentReachable: läuft ein SSH-Agent, den sshTermy erreicht (Selbstprüfung)?
+func AgentReachable() error {
+	c, err := dialAgent()
+	if err != nil {
+		return err
+	}
+	return c.Close()
+}

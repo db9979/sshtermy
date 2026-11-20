@@ -15,6 +15,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/netscan"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/store"
 )
 
@@ -130,6 +131,7 @@ func (a *App) scanStart() tea.Cmd {
 	sc.phase = scRun
 	ev := a.events
 	go func() {
+		defer safe.Recover("ui/scan.go")
 		last := time.Time{}
 		netscan.Scan(ctx, addrs, netscan.Options{Port: port},
 			func(d, n int) {
@@ -426,7 +428,7 @@ func (a *App) viewScan() string {
 			line = ansi.Truncate(line, w-4, "…")
 		}
 		i, k := i, k
-		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd { sc.cur, sc.picked[k] = i, !sc.picked[k]; return nil })
+		line = a.z.Click(line, func(tea.Mouse, bool) tea.Cmd { sc.cur, sc.picked[k] = i, !sc.picked[k]; return nil })
 		o.WriteString(line + "\n")
 	}
 	return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, s.Panel.Width(w).Render(o.String()))

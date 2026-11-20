@@ -9,6 +9,8 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // Auswahl der Aufteilung (Strg+T)
@@ -127,7 +129,7 @@ func (a *App) layoutView() string {
 		if i == m.sel {
 			box = lipgloss.NewStyle().Background(st.T.Surface).Render(box)
 		}
-		cells = append(cells, a.z.mark(box, zoneAction{block: true, click: func(tea.Mouse, bool) tea.Cmd {
+		cells = append(cells, a.z.Mark(box, clickzone.Action{Block: true, Click: func(tea.Mouse, bool) tea.Cmd {
 			a.applyLayout(i)
 			return nil
 		}}))

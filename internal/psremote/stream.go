@@ -12,6 +12,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // backend: wo PowerShell läuft (WinRM, in Tests ein lokaler Prozess).
@@ -103,7 +105,7 @@ func newStream(be backend, cols int, out io.Writer, timeout time.Duration) (*Str
 	}
 	s := &Stream{Done: make(chan error, 1), be: be, out: out, cols: cols, atBOL: true, compWait: -1,
 		ready1: make(chan struct{}), sendq: make(chan sendItem, 256)}
-	go s.sender()
+	safe.Go("psremote/stream.go", func() { s.sender() })
 	if err := s.startProc(""); err != nil {
 		close(s.sendq)
 		be.close()
@@ -228,6 +230,7 @@ func (s *Stream) finish(err error) {
 	close(s.sendq)
 	s.mu.Unlock()
 	go func() {
+		defer safe.Recover("psremote/stream.go")
 		if p != nil {
 			p.stop()
 		}
@@ -737,7 +740,7 @@ func (s *Stream) basePrompt() string {
 // finishLater: exit/Strg+D; finish nimmt s.mu selbst.
 func (s *Stream) finishLater() {
 	s.ready = false
-	go s.finish(nil)
+	safe.Go("psremote/stream.go", func() { s.finish(nil) })
 }
 
 func (s *Stream) enter() {
@@ -812,6 +815,7 @@ func (s *Stream) interrupt() {
 	s.p = nil
 	s.gen++ // Ausgaben des alten Prozesses verwerfen
 	go func() {
+		defer safe.Recover("psremote/stream.go")
 		if old != nil {
 			old.stop()
 		}

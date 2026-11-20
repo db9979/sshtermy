@@ -18,6 +18,8 @@ import (
 
 	"github.com/db9979/sshtermy/internal/broadcast"
 	"github.com/db9979/sshtermy/internal/i18n"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 const (
@@ -137,16 +139,16 @@ func (a *App) bcTile(i, w, h, bodyH int) (string, int) {
 	}
 	tb.WriteString(bs.Render(string(bc[0]) + strings.Repeat("─", inner) + string(bc[1])))
 	i2 := i
-	tile := a.z.mark(tb.String(), zoneAction{
-		block: true,
-		click: func(_ tea.Mouse, double bool) tea.Cmd {
+	tile := a.z.Mark(tb.String(), clickzone.Action{
+		Block: true,
+		Click: func(_ tea.Mouse, double bool) tea.Cmd {
 			b.sel = i2
 			if double {
 				b.zoom = !b.zoom
 			}
 			return nil
 		},
-		wheel: func(up bool) tea.Cmd {
+		Wheel: func(up bool) tea.Cmd {
 			if up {
 				b.scroll = max(0, b.scroll-3)
 			} else {

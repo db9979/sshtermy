@@ -24,6 +24,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/termemu"
 	"github.com/db9979/sshtermy/internal/winstate"
 )
@@ -96,6 +97,7 @@ func Run(model tea.Model, opts Options) (tea.Model, error) {
 	var final tea.Model
 	var runErr error
 	go func() {
+		defer safe.Recover("gui/window.go")
 		final, runErr = prog.Run()
 		close(w.done)
 	}()
@@ -161,7 +163,7 @@ func (w *window) output() io.Writer {
 
 // run öffnet das Fenster und kehrt zurück, wenn done zu ist.
 func (w *window) run() error {
-	go w.resizer()
+	safe.Go("gui/window.go", func() { w.resizer() })
 	w.setFaces(1)
 	ebiten.SetWindowTitle(w.opts.Title)
 	ebiten.SetWindowSize(int(float64(startCols)*w.cellW+2*padding), int(float64(startRows)*w.cellH+2*padding))
@@ -524,6 +526,7 @@ func keyRune(k ebiten.Key) rune {
 
 func (w *window) paste() {
 	go func() {
+		defer safe.Recover("gui/window.go")
 		s, err := clipboard.ReadAll()
 		if err == nil && s != "" {
 			w.term.Paste(s)
