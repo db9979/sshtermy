@@ -9,7 +9,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/atotto/clipboard"
 
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sessionlog"
@@ -75,7 +74,7 @@ func (a *App) reportMsg(msg tea.Msg) (tea.Cmd, bool) {
 		name = ""
 	}
 	a.logs.report, a.logs.reportFile, a.logs.group, a.logs.scroll = m.text, name, "", 0
-	go func() { _ = clipboard.WriteAll(doc) }()
+	go func() { _ = clipWrite(doc) }()
 	a.flashOK(i18n.T("Änderungsbericht kopiert"))
 	return tea.SetClipboard(doc), true
 }

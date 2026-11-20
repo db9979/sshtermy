@@ -12,7 +12,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/atotto/clipboard"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -401,7 +400,7 @@ func (a *App) setupPair(p *setupPlan) tea.Cmd {
 			a.modal = nil
 			if err != nil {
 				if line != "" {
-					go func() { _ = clipboard.WriteAll(line) }()
+					go func() { _ = clipWrite(line) }()
 				}
 				a.modal = &modal{kind: mInfo, title: i18n.T("Vermittler einrichten · Koppeln"), body: err.Error()}
 				return nil
@@ -485,7 +484,7 @@ func (a *App) relayNewLine(r domain.Relay, kind string) tea.Cmd {
 				a.flashErr(err.Error())
 				return nil
 			}
-			go func() { _ = clipboard.WriteAll(line) }()
+			go func() { _ = clipWrite(line) }()
 			var lines []string
 			if kind == relay.CodeAnchor {
 				lines = []string{i18n.T("Auf dem Server, der erreichbar werden soll (gilt 10 Minuten, einmal):"), "",

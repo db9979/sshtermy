@@ -344,6 +344,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			a.clearKeepLine(s)
 			return nil
 		}
+		if a.keys.is(actClipHist, key) {
+			return a.openClipHist()
+		}
 		if s.state == stReconnect {
 			switch key {
 			case "enter", "r":
@@ -496,7 +499,7 @@ func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
 	if key == "enter" || key == "ctrl+c" {
 		return nil
 	}
-	return tea.Batch(a.scheduleGhost(s), a.companionTyped(s))
+	return tea.Batch(a.scheduleGhost(s), a.scheduleHistGhost(s), a.companionTyped(s))
 }
 
 // ---------------------------------------------------------------- Ghost-Text
@@ -514,6 +517,7 @@ func (a *App) scheduleGhost(s *session) tea.Cmd {
 		return nil
 	}
 	s.ghostSeq++
+	s.ghostHist = false
 	if s.ghostCancel != nil {
 		s.ghostCancel()
 		s.ghostCancel = nil

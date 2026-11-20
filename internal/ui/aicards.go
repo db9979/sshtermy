@@ -8,7 +8,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/atotto/clipboard"
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -453,7 +452,7 @@ func (a *App) cardCopy(s *session, i int) tea.Cmd {
 		return nil
 	}
 	c := cd.code
-	go func() { _ = clipboard.WriteAll(c) }()
+	go func() { _ = clipWrite(c) }()
 	if !strings.Contains(c, "\n") {
 		a.flash(i18n.T("Kopiert: ") + trunc(c, 50))
 	} else {

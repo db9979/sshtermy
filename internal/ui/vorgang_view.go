@@ -11,7 +11,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/agent"
@@ -663,7 +662,7 @@ func (a *App) vgKey(k tea.KeyPressMsg) tea.Cmd {
 			a.vgRecapRunbook()
 		case "c":
 			txt := a.vgRecapText()
-			go func() { _ = clipboard.WriteAll(txt) }()
+			go func() { _ = clipWrite(txt) }()
 			a.flash(i18n.T("Rückblick kopiert (Markdown)"))
 			return tea.SetClipboard(txt)
 		case "a", "backspace":
@@ -851,7 +850,7 @@ func (a *App) vgAskKey(k tea.KeyPressMsg) tea.Cmd {
 		for i, st := range g.steps {
 			txt += fmt.Sprintf("%d. %s %d: %s\n", i+1, i18n.T("Fenster"), st.Win, st.Command)
 		}
-		go func() { _ = clipboard.WriteAll(txt) }()
+		go func() { _ = clipWrite(txt) }()
 		a.flash(i18n.T("Antwort kopiert"))
 		return tea.SetClipboard(txt)
 	default:

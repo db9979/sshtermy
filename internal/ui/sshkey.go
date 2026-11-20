@@ -9,8 +9,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/atotto/clipboard"
-
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/db9979/sshtermy/internal/domain"
@@ -348,7 +346,7 @@ func (a *App) sshKeyDone(m sshKeyDoneMsg) tea.Cmd {
 	var cmd tea.Cmd
 	if m.pub != "" {
 		pub := m.pub
-		go func() { _ = clipboard.WriteAll(pub) }()
+		go func() { _ = clipWrite(pub) }()
 		cmd = tea.SetClipboard(pub)
 		lines = append(lines, "", i18n.T("Öffentlicher Schlüssel (in der Zwischenablage):"), a.s.Muted.Render(pub))
 	}

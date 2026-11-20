@@ -14,7 +14,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/atotto/clipboard"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -250,7 +249,7 @@ func (a *App) linkMenu(s *session, l link, x, y int) *modal {
 	var items []menuItem
 	copyIt := func(t string) menuItem {
 		return menuItem{label: i18n.T("Kopieren"), hint: trunc(t, 30), run: func() tea.Cmd {
-			go func() { _ = clipboard.WriteAll(t) }()
+			go func() { _ = clipWrite(t) }()
 			a.flash(i18n.T("Kopiert: ") + trunc(t, 50))
 			return tea.SetClipboard(t)
 		}}

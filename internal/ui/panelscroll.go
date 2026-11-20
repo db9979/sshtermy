@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -105,7 +104,7 @@ func (g *goalState) doneText() string {
 // copyDone kopiert Ziel und Zusammenfassung (c nach „✓ Ziel erreicht“).
 func (a *App) copyDone(s *session) tea.Cmd {
 	text := s.goal.doneText()
-	go func() { _ = clipboard.WriteAll(text) }()
+	go func() { _ = clipWrite(text) }()
 	a.flash(i18n.T("Kopiert: Zusammenfassung"))
 	return tea.SetClipboard(text)
 }

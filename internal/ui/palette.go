@@ -606,6 +606,16 @@ func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 			palItem{icon: ic("export"), label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }},
 			palItem{icon: ic("copy"), label: i18n.T("Markieren per Tastatur (v, y kopiert)"), hint: a.keys.label(actCopyMode),
 				keys: "copy kopieren markieren auswahl tastatur keyboard select vi tmux copy-mode", run: func() tea.Cmd { a.startCopyMode(s); return nil }},
+			palItem{icon: ic("copy"), label: i18n.T("Zwischenablage-Verlauf (zuletzt Kopiertes einfügen)"), hint: a.keys.label(actClipHist),
+				keys: "zwischenablage clipboard verlauf history kopiert einfügen paste ringpuffer", run: func() tea.Cmd { return a.openClipHist() }},
+			palItem{icon: ic("open"), label: i18n.T("Zuletzt Kopiertes im Web suchen"), hint: func() string { _, e := a.searchEngine(); return e.label }(),
+				keys: "web suchen google duckduckgo fehler error meldung browser internet search", run: func() tea.Cmd {
+					if l := clipEntries(); len(l) > 0 {
+						return a.webSearch(l[0].text)
+					}
+					a.flash(i18n.T("Nichts zu suchen: erst Text markieren"))
+					return nil
+				}},
 			palItem{icon: ic("break"), label: i18n.T("Bildschirm und Verlauf leeren (Eingabezeile bleibt)"), hint: a.keys.label(actClearScreen),
 				keys: "clear leeren löschen bildschirm screen verlauf scrollback cls reset", run: func() tea.Cmd { a.clearKeepLine(s); return nil }})
 		if s.netDevice() {
@@ -1059,6 +1069,12 @@ func (a *App) palMenuItems() []palItem {
 			"mcp claude model context protocol ki ai client server zugriff", func(dir int) tea.Cmd { return a.cycleMCP(dir) }))),
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("Letzte KI-Anfrage ansehen"), hint: i18n.T("was ging hinaus"),
 			keys: "ki ai datenschutz privacy anfrage request prompt gesendet", run: func() tea.Cmd { a.modal = a.lastRequestModal(); return nil }},
+		hide(look(palCycle(pgSetLook, ic("open"), i18n.T("Suchmaschine für „Im Web suchen“"), func() string { _, e := a.searchEngine(); return e.label }(),
+			"web suche suchmaschine search engine google duckduckgo bing startpage ecosia", func(dir int) tea.Cmd { return a.cycleSearchEngine(dir) }))),
+		hide(sub("settings/ki", palToggle(ic("ai"), i18n.T("Ghost-Text zuerst aus dem Verlauf"), a.histGhostOn(),
+			"ghost text verlauf history vervollständigen autocomplete tab ohne ki offline", func() tea.Cmd { return a.toggleHistGhost() }))),
+		hide(palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Verbrauch (Tokens, Kosten)"), keys: "ki ai verbrauch usage tokens kosten cost preis geld budget",
+			run: func() tea.Cmd { return a.openLLMStatus() }}),
 		palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("llmcheck"), label: i18n.T("KI-Status: Endpunkt erreichbar? jetzt prüfen"), keys: "ai llm status",
 			run: func() tea.Cmd { a.openLLMStatus(); return a.llmProbeCmd() }},
 

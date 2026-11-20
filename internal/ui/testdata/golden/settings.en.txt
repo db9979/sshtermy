@@ -3,7 +3,6 @@
 
 
 
-
      ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
      │ AI copilot: Spark/vLLM, Ollama, OpenAI, Claude or any OpenAI-compatible server                   │
      │ ▌ Provider               Spark / compatible  Ollama  OpenAI  Claude                              │
@@ -20,6 +19,7 @@
      │   Context lines          80                                                                      │
      │   Goal: steps/min        6                                                                       │
      │   http with API key      ○ off                                                                   │
+     │   Price per 1M tokens                                                                            │
      │   House rules                                                                                    │
      │   Fallback providers     none · ⏎ set up ▾                                                       │
      │                                                                                                  │

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/atotto/clipboard"
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
@@ -268,7 +267,7 @@ func (a *App) persistPalette(s *session) []palItem {
 		}},
 		{icon: ic("copy"), label: i18n.T("Befehl zum Mitschauen kopieren"), hint: i18n.T("für andere Rechner"), run: func() tea.Cmd {
 			cmd := watchCommand(s.conn, m.name)
-			go func() { _ = clipboard.WriteAll(cmd) }()
+			go func() { _ = clipWrite(cmd) }()
 			a.flashOK(i18n.T("Kopiert: ") + cmd)
 			return nil
 		}},

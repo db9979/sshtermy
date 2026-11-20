@@ -14,7 +14,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/agent"
@@ -632,7 +631,7 @@ func (a *App) showInvite(s *session, o *shareOut) {
 	if web != "" {
 		clip = web // geht für beide: Browser öffnet die Seite, sshTermy liest den Code daraus
 	}
-	go func() { _ = clipboard.WriteAll(clip) }()
+	go func() { _ = clipWrite(clip) }()
 	st := a.s
 	code := strings.ReplaceAll(inv.Code(), "-", " – ")
 	lines := []string{

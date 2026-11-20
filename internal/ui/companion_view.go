@@ -7,7 +7,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/agent"
@@ -190,7 +189,7 @@ func (a *App) companionKey(s *session, key string) tea.Cmd {
 	case "c":
 		if _, sg := c.chosen(); sg != nil {
 			cmd := sg.Command
-			go func() { _ = clipboard.WriteAll(cmd) }()
+			go func() { _ = clipWrite(cmd) }()
 			a.flash(i18n.T("Kopiert: ") + trunc(cmd, 50))
 			return tea.SetClipboard(cmd)
 		}

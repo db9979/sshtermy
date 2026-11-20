@@ -95,6 +95,7 @@ func (c *Client) CompleteResult(ctx context.Context, msgs []Message, o Opts) (Re
 		k.observe(t0, err, false)
 		if err == nil {
 			recordTask(o.Task, k.cfg.Model, time.Since(t0))
+			recordUsage(o.Task, k.cfg, msgs, r)
 			return r, nil
 		}
 		if !failed(ctx, err) {
@@ -110,6 +111,7 @@ func (c *Client) CompleteResult(ctx context.Context, msgs []Message, o Opts) (Re
 		if err == nil {
 			markUp(k.sig())
 			recordTask(o.Task, k.cfg.Model, time.Since(t0))
+			recordUsage(o.Task, k.cfg, msgs, r)
 			return r, nil
 		}
 		if !failed(ctx, err) {
@@ -136,14 +138,18 @@ func (c *Client) Stream(ctx context.Context, msgs []Message, o Opts, onDelta fun
 		k.observe(t0, err, true) // Kopfzeilen da: der Server antwortet
 		if err == nil {
 			markUp(k.sig())
-			once := false
-			return k.readStream(resp, func(d string) {
+			once, got := false, 0
+			err := k.readStream(resp, func(d string) {
 				if !once && d != "" {
 					once = true
 					recordTask(o.Task, k.cfg.Model, time.Since(t0))
 				}
+				got += len(d)
 				onDelta(d)
 			})
+			// Streams nennen ihren Verbrauch nicht überall: geschätzt.
+			recordUsage(o.Task, k.cfg, msgs, Result{Out: (got + 3) / 4})
+			return err
 		}
 		if !failed(ctx, err) {
 			return err

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"image/color"
 	"io"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -45,6 +46,7 @@ type Term struct {
 	// OSC 52: Text, den ein Programm auf dem Server in die Zwischenablage
 	// legen will (tmux, vim, neovim …). Die Oberfläche holt ihn ab.
 	clip string
+	cwd  string // Ordner aus OSC 7 / 633;P;Cwd (Cwd)
 
 	// OSC 10/11: Grundfarben, die das Programm fürs Terminal wünscht (nil =
 	// keine). Das eigene Fenster zeichnet damit Rand und leere Zellen.
@@ -100,6 +102,10 @@ func New(cols, rows int, toHost io.Writer) *Term {
 				t.exitSeq++
 				t.exitCode = code
 				t.mu.Unlock()
+			} else if p, ok := parseVSCwd(string(data)); ok {
+				t.mu.Lock()
+				t.cwd = p
+				t.mu.Unlock()
 			}
 			return true // A/B/C (Prompt-Marker) still schlucken
 		})
@@ -124,6 +130,16 @@ func New(cols, rows int, toHost io.Writer) *Term {
 			return false
 		})
 	}
+	// OSC 7 „aktueller Ordner“ (file://host/pfad), wie bash/zsh/fish mit
+	// Shell-Integration und viele Distributionen (vte.sh) ihn melden.
+	t.emu.RegisterOscHandler(7, func(data []byte) bool {
+		if p, ok := parseCwd(string(data)); ok {
+			t.mu.Lock()
+			t.cwd = p
+			t.mu.Unlock()
+		}
+		return true
+	})
 	// OSC 52 „Zwischenablage setzen“: "c;<base64>". Abfragen („?“) werden
 	// nie beantwortet, sonst könnte jeder Server die Zwischenablage lesen.
 	t.emu.RegisterOscHandler(52, func(data []byte) bool {
@@ -248,6 +264,49 @@ func (t *Term) TakeClipboard() string {
 	c := t.clip
 	t.clip = ""
 	return c
+}
+
+// parseCwd liest OSC 7: "file://host/pfad" (Prozent-kodiert), auch mit
+// "7;" davor. Nur absolute Pfade.
+func parseCwd(s string) (string, bool) {
+	s = strings.TrimPrefix(s, "7;")
+	if !strings.HasPrefix(s, "file://") {
+		return "", false
+	}
+	rest := s[len("file://"):]
+	i := strings.IndexByte(rest, '/')
+	if i < 0 {
+		return "", false
+	}
+	p, err := url.PathUnescape(rest[i:])
+	if err != nil || p == "" || strings.ContainsAny(p, "\x00\n") {
+		return "", false
+	}
+	// Windows-Pfade kommen als /C:/Users/…
+	if len(p) >= 3 && p[0] == '/' && p[2] == ':' {
+		p = p[1:]
+	}
+	return p, true
+}
+
+// parseVSCwd liest "633;P;Cwd=/pfad" (VS-Code-Shell-Integration).
+func parseVSCwd(s string) (string, bool) {
+	s = strings.TrimPrefix(strings.TrimPrefix(s, "633;"), "133;")
+	if !strings.HasPrefix(s, "P;Cwd=") {
+		return "", false
+	}
+	p := s[len("P;Cwd="):]
+	if p == "" || strings.ContainsAny(p, "\x00\n") {
+		return "", false
+	}
+	return p, true
+}
+
+// Cwd: zuletzt per OSC 7 (oder 633;P;Cwd) gemeldeter Ordner ("" = keiner).
+func (t *Term) Cwd() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.cwd
 }
 
 // LastExit: Zähler und Exit-Code der letzten OSC-133-D-Meldung. Ändert sich

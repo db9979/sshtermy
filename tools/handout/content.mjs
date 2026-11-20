@@ -55,7 +55,7 @@ export const de = {
       ['⇧F1 … ⇧F8', 'Schnellbefehl direkt ausführen'],
       ['Mausrad / ⇧Bild↑↓', 'zurückblättern · ⇧Pos1/⇧Ende · Esc unten'],
       ['Strg+F', 'suchen · Alt+C markieren · Alt+X leeren'],
-      ['⇧F10', 'Tab in eigenes Fenster / zurück'],
+      ['⇧F10 · Alt+Y', 'eigenes Fenster · Zwischenablage-Verlauf'],
     ]},
     { t: 'Tabs', ic: '▭', rows: [
       ['F7 / F8', 'Tab zurück / vor'],
@@ -79,7 +79,7 @@ export const de = {
     ]},
     { t: 'Maus', ic: '◦', rows: [
       ['_Ziehen_', 'markieren + kopieren, auch im Panel'],
-      ['_Rechtsklick_', 'einfügen · auf Link/IP: Menü'],
+      ['_Rechtsklick_', 'einfügen · Markierung/Link: Menü, Web-Suche'],
       ['Strg+_Klick_', 'URL im Browser öffnen'],
       ['⇧+_Ziehen_', 'markieren in htop / vim'],
       ['_Ablegen_', 'Datei aus Explorer/Finder hochladen'],
@@ -243,7 +243,7 @@ export const en = {
       ['⇧F1 … ⇧F8', 'run a quick command directly'],
       ['wheel / ⇧PgUp/Dn', 'scroll back · ⇧Home/⇧End · Esc bottom'],
       ['Ctrl+F', 'search · Alt+C select · Alt+X clear'],
-      ['Alt+C / X', 'select by keys (v, y) / clear screen'],
+      ['Alt+Y', 'clipboard history: paste again'],
       ['⇧F10', 'tab to its own window / back'],
     ]},
     { t: 'Tabs', ic: '▭', rows: [
@@ -268,7 +268,7 @@ export const en = {
     ]},
     { t: 'Mouse', ic: '◦', rows: [
       ['_drag_', 'select + copy, also in the panel'],
-      ['_right-click_', 'paste · on a link/IP: menu'],
+      ['_right-click_', 'paste · selection/link: menu, web search'],
       ['Ctrl+_click_', 'open URL in the browser'],
       ['⇧+_drag_', 'select inside htop / vim'],
       ['_drop_', 'upload a file from Explorer/Finder'],

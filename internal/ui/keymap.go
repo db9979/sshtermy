@@ -88,6 +88,7 @@ const (
 	actClearScreen  action = "clear_screen"
 	actNextNotice   action = "next_notice"
 	actCopyMode     action = "copy_mode"
+	actClipHist     action = "clip_history"
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -140,6 +141,7 @@ var actionDefs = []actionDef{
 	{actScrollTop, "Zum Anfang des Verlaufs", "Terminal", []string{"shift+home"}},
 	{actScrollBottom, "Zurück nach unten (Ende des Verlaufs)", "Terminal", []string{"shift+end"}},
 	{actCopyMode, "Markieren per Tastatur (v, y kopiert)", "Terminal", []string{"alt+c"}},
+	{actClipHist, "Zwischenablage-Verlauf (zuletzt Kopiertes einfügen)", "Terminal", []string{"alt+y"}},
 	{actClearScreen, "Bildschirm und Verlauf leeren (Eingabezeile bleibt)", "Terminal", []string{"alt+x"}},
 	{actPrevCmd, "Zum vorigen Befehl springen", "Terminal", []string{"alt+pgup"}},
 	{actNextCmd, "Zum nächsten Befehl springen", "Terminal", []string{"alt+pgdown"}},

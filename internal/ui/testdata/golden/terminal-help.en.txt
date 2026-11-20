@@ -15,7 +15,7 @@
 ┃│   F10         to manager                                   ↑ ↓         choose backup                               │┃
 ┃│   ⇧F1…F8      run quick command                            d           diff to previous                            │┃
 ┃│   ⇧F10        Tab to own window (session stays open)       v           view backup                                 │┃
-┃│   Tab / →     accept ghost text                            g           Warning limits                              │┃
+┃│   Tab / →     accept ghost text (history first)            g           Warning limits                              │┃
 ┃│   Alt+1…4     insert follow-up command                     t           graphs: 5 min / 1 h                         │┃
 ┃│   Alt+0       Error: Why? & Fix                            z           graphs large                                │┃
 ┃│   Alt+K       AI companion: off/quiet/chatty/coach         x           cancel query                                │┃

@@ -488,6 +488,11 @@ type LLMConfig struct {
 
 	// Fallbacks: der Reihe nach, wenn der Endpunkt oben nicht antwortet.
 	Fallbacks []LLMBackup `json:"fallbacks,omitempty"`
+
+	// PriceIn/PriceOut: Preis je 1 Mio. Tokens (Eingabe/Ausgabe) für die
+	// Kostenschätzung im KI-Status. 0 = keine Kosten zeigen (eigener Server).
+	PriceIn  float64 `json:"price_in,omitempty"`
+	PriceOut float64 `json:"price_out,omitempty"`
 }
 
 // Chain: der Endpunkt und alle eingerichteten Ersatz-Anbieter, jeweils als
@@ -506,6 +511,7 @@ func (c LLMConfig) Chain() []LLMConfig {
 			e.BaseURL = b.Provider.DefaultBaseURL()
 		}
 		e.AllowInsecure = false
+		e.PriceIn, e.PriceOut = 0, 0 // Preis gilt nur für den Hauptendpunkt
 		out = append(out, e)
 	}
 	return out
@@ -600,6 +606,10 @@ type Settings struct {
 
 	// DimPanes: in der geteilten Ansicht die nicht aktiven Bereiche abdunkeln.
 	DimPanes bool `json:"dim_panes,omitempty"`
+	// WebSearch: Suchmaschine für „Im Web suchen“ ("" = DuckDuckGo, ui/websearch.go).
+	WebSearch string `json:"web_search,omitempty"`
+	// NoHistGhost: Ghost-Text nicht zuerst aus dem Befehlsverlauf (ui/histghost.go).
+	NoHistGhost bool `json:"no_hist_ghost,omitempty"`
 	// NoTabFrames: keine farbigen Rahmen um die Terminals (ui/tabframe.go).
 	NoTabFrames bool `json:"no_tab_frames,omitempty"`
 	// Workspaces: gespeicherte Arbeitsplätze (Aufteilung + Verbindungen),
@@ -719,12 +729,13 @@ func (s Settings) SyncedPart() Settings {
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false
-	s.UpdateWaitH = 0         // Update-Kanal gilt je Rechner
-	s.CmdSetApproved = nil    // Freigaben gelten für die Team-Dateien dieses Rechners
-	s.Share = ShareConfig{}   // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
-	s.Vuln = VulnConfig{}     // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
-	s.Header = HeaderConfig{} // lokaler Befehl in der Kopfzeile: nie per Sync
-	s.RestoreTabs = ""        // Tabs vom letzten Mal: je Rechner
+	s.UpdateWaitH = 0                      // Update-Kanal gilt je Rechner
+	s.CmdSetApproved = nil                 // Freigaben gelten für die Team-Dateien dieses Rechners
+	s.Share = ShareConfig{}                // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
+	s.Vuln = VulnConfig{}                  // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
+	s.Header = HeaderConfig{}              // lokaler Befehl in der Kopfzeile: nie per Sync
+	s.RestoreTabs = ""                     // Tabs vom letzten Mal: je Rechner
+	s.WebSearch, s.NoHistGhost = "", false // Suchmaschine, Ghost aus dem Verlauf: je Rechner
 	return s
 }
 

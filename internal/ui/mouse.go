@@ -513,9 +513,13 @@ func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 
 	case isClick && m.Button == tea.MouseRight:
 		if s.sel != nil && !s.sel.Empty() {
-			cmd := a.copySel(s)
+			text := s.term.Text(*s.sel)
 			s.sel = nil
-			return cmd
+			if strings.TrimSpace(text) == "" {
+				return nil
+			}
+			a.modal = a.selMenu(s, text, m.X, m.Y) // Kopieren · Im Web suchen (websearch.go)
+			return nil
 		}
 		if cmd, ok := a.termLinkClick(s, m, tx, ty, false); ok {
 			return cmd
@@ -541,7 +545,7 @@ func (a *App) copySel(s *session) tea.Cmd {
 	if strings.TrimSpace(text) == "" {
 		return nil
 	}
-	go func() { _ = clipboard.WriteAll(text) }()
+	go func() { _ = clipWrite(text) }()
 	n := utf8.RuneCountInString(text)
 	if lines := strings.Count(text, "\n") + 1; lines > 1 {
 		a.flash(i18n.T("Kopiert: ") + plural(lines, i18n.T("Zeile"), i18n.T("Zeilen")) + i18n.T(" · Rechtsklick fügt ein"))

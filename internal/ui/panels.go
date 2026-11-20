@@ -208,6 +208,11 @@ func (a *App) panelOpened(s *session) tea.Cmd {
 // sessionMsg verteilt asynchrone Ergebnisse an ihre Sitzung.
 func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 	switch m := msg.(type) {
+	case histGhostTickMsg:
+		if s := a.byID(m.sid); s != nil {
+			a.fireHistGhost(s, m.seq)
+		}
+		return nil, true
 	case ghostTickMsg:
 		if s := a.byID(m.sid); s != nil {
 			return a.fireGhost(s, m.seq), true
@@ -218,8 +223,8 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			if m.ok {
 				s.ghostRemember(m.typed, m.rest, time.Now())
 			}
-			if m.seq == s.ghostSeq {
-				s.ghost, s.ghostFor = m.rest, m.typed
+			if m.seq == s.ghostSeq && (m.rest != "" || !s.ghostHist || a.visibleGhost(s) == "") {
+				s.ghost, s.ghostFor, s.ghostHist = m.rest, m.typed, false
 			}
 		}
 		return nil, true
