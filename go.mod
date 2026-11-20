@@ -4,15 +4,15 @@ go 1.27.0
 
 require (
 	charm.land/bubbles/v2 v2.2.1
-	charm.land/bubbletea/v2 v2.1.1
-	charm.land/lipgloss/v2 v2.1.0
+	charm.land/bubbletea/v2 v2.1.2
+	charm.land/lipgloss/v2 v2.1.1
 	filippo.io/cpace v0.0.0-20210101143347-24d601e2e469
 	github.com/Microsoft/go-winio v0.6.4
 	github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/colorprofile v0.4.3
-	github.com/charmbracelet/ultraviolet v0.0.0-20261023060817-a45b7c86333f
-	github.com/charmbracelet/x/ansi v0.11.9
+	github.com/charmbracelet/ultraviolet v0.0.0-20261119151026-8ecbcf0e188c
+	github.com/charmbracelet/x/ansi v0.11.10
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/charmbracelet/x/vt v0.1.0
 	github.com/charmbracelet/x/xpty v0.1.4
@@ -21,7 +21,7 @@ require (
 	github.com/hajimehoshi/ebiten/v2 v2.10.6
 	github.com/jcmturner/gofork v1.7.6
 	github.com/jcmturner/gokrb5/v8 v8.4.4
-	github.com/masterzen/winrm v0.0.0-20261004123143-57b335310d59
+	github.com/masterzen/winrm v0.0.0-20261114181639-d693523ae428
 	github.com/pkg/sftp v1.13.12
 	go.bug.st/serial v1.8.0
 	golang.org/x/crypto v0.59.0
@@ -32,7 +32,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/Azure/go-ntlmssp v0.1.2-0.20260824092057-1c8077778c2c // indirect
+	github.com/Azure/go-ntlmssp v0.1.2-0.20261111092545-5846b35b583b // indirect
 	github.com/ChrisTrenkamp/goxpath v0.0.0-20210404020558-97928f7e12b6 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
 	github.com/charmbracelet/x/exp/ordered v0.1.0 // indirect

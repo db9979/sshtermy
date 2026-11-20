@@ -43,8 +43,9 @@ func TestGoCatches(t *testing.T) {
 	wg.Add(1)
 	SetHandler(func(c Caught) { wg.Done() })
 	Go("bg", func() {
-		var m map[string]int
-		m["x"] = 1 // nil map: echte Laufzeit-Panik
+		var xs []int
+		i := len(xs)
+		_ = xs[i] // Index außerhalb: echte Laufzeit-Panik
 	})
 	done := make(chan struct{})
 	go func() { wg.Wait(); close(done) }()

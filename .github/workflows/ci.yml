@@ -4,9 +4,15 @@ name: ci
 on:
   pull_request:
 
+# Neuer Push auf denselben PR: den alten Lauf abbrechen (spart Wartezeit)
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30 # hängender Test bricht ab statt stundenlang zu laufen
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -14,7 +20,9 @@ jobs:
           # neuester Patch von Go 1.27: Sicherheitskorrekturen der Standardbibliothek
           go-version: "1.27.x"
           check-latest: true
-      - run: go vet ./... && go test ./...
+      # zufällige Reihenfolge: Tests, die voneinander abhängen, fallen auf
+      # (bei Fehlern steht „-test.shuffle N“ im Protokoll zum Nachstellen)
+      - run: go vet ./... && go test -shuffle=on ./...
       - name: Terminal-Emulator (eigene Kopie in third_party/vt)
         run: cd third_party/vt && go test ./...
       - name: ANSI-Parser (eigene Kopie in third_party/ansi)
@@ -39,6 +47,7 @@ jobs:
   # Datenrennen (Terminal-Emulator, Vermittler, SSH) früh finden
   race:
     runs-on: ubuntu-latest
+    timeout-minutes: 30 # hängender Test bricht ab statt stundenlang zu laufen
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -52,6 +61,7 @@ jobs:
   # wahre Bedingungen. Abweichungen von der Vorgabe in staticcheck.conf.
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15 # hängender Test bricht ab statt stundenlang zu laufen
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -71,6 +81,7 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 40 # hängender Test bricht ab statt stundenlang zu laufen
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -90,6 +101,7 @@ jobs:
   # Bekannte Sicherheitslücken in Go und allen Bibliotheken, die wirklich aufgerufen werden
   vuln:
     runs-on: ubuntu-latest
+    timeout-minutes: 10 # hängender Test bricht ab statt stundenlang zu laufen
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -101,6 +113,7 @@ jobs:
   # Parser für Daten von fremden Geräten kurz mit Zufallsdaten beschießen
   fuzz:
     runs-on: ubuntu-latest
+    timeout-minutes: 20 # hängender Test bricht ab statt stundenlang zu laufen
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -121,6 +134,7 @@ jobs:
     # ubuntu-latest (26.04) holte apt-utils am 2026-11-11 stundenlang nur von
     # security.ubuntu.com, das der Runner nicht auflösen konnte.
     runs-on: ubuntu-24.04
+    timeout-minutes: 15 # Paketquellen können hängen
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Paketquellen können kurz nicht erreichbar sein (DNS beim Runner):
