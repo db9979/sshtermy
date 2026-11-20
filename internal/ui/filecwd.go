@@ -8,6 +8,7 @@ package ui
 // bleibt es beim Home-Ordner.
 
 import (
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -42,6 +43,9 @@ func termCwd(s *session, fs sshx.FS) string {
 		return fs.Home()
 	case strings.HasPrefix(p, "~/"):
 		return fs.Join(fs.Home(), p[2:])
+	}
+	if _, local := fs.(sshx.LocalFS); local {
+		p = filepath.FromSlash(p) // Windows: OSC 7 schickt C:/Users/…
 	}
 	return p
 }

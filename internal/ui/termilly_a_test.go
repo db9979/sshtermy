@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -142,7 +143,11 @@ func TestCwdFromPrompt(t *testing.T) {
 func TestStartPathFollowsTerm(t *testing.T) {
 	dir := t.TempDir()
 	s, _ := typedSession(domain.Connection{}, "", "")
-	_, _ = s.term.Write([]byte("\x1b]7;file://host" + dir + "\x07$ "))
+	u := filepath.ToSlash(dir)
+	if !strings.HasPrefix(u, "/") {
+		u = "/" + u // Windows: file://host/C:/…
+	}
+	_, _ = s.term.Write([]byte("\x1b]7;file://host" + u + "\x07$ "))
 	p := startPath(s, sshx.LocalFS{}, false)
 	if p.path != dir {
 		t.Errorf("Ordner %q, erwartet %q", p.path, dir)
