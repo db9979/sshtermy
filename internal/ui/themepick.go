@@ -165,7 +165,7 @@ func (a *App) viewThemes() string {
 				row = s.Text.Render(row)
 			}
 			line := row + swatch(t) + " " + mark
-			list = append(list, a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+			list = append(list, a.z.Click(line, func(_ tea.Mouse, double bool) tea.Cmd {
 				p.sel = i
 				a.previewTheme()
 				if double {

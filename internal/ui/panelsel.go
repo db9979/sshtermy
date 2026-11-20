@@ -128,7 +128,7 @@ func (a *App) panelSelMouse(s *session, msg tea.MouseMsg, clicks int) (tea.Cmd, 
 	}
 	// Anklickbares bleibt anklickbar (Hinweise, Vorschläge, Runbooks); nur
 	// große Blöcke (KI-Karten) lassen sich zusätzlich markieren.
-	if act := a.z.at(m.X, m.Y, false); act != nil && !act.block {
+	if act := a.z.At(m.X, m.Y, false); act != nil && !act.Block {
 		s.psel = nil
 		return nil, false
 	}
@@ -148,8 +148,8 @@ func (a *App) panelSelMouse(s *session, msg tea.MouseMsg, clicks int) (tea.Cmd, 
 	}
 	s.psel = &panelSel{a: p, b: p, dragging: true}
 	// Klick auf eine KI-Karte wählt sie weiterhin aus.
-	if act := a.z.at(m.X, m.Y, false); act != nil {
-		return act.click(m, false), true
+	if act := a.z.At(m.X, m.Y, false); act != nil {
+		return act.Click(m, false), true
 	}
 	return nil, true
 }

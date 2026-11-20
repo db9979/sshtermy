@@ -20,7 +20,7 @@ var enStability = map[string]string{
 	"Absturzberichte":                        "Crash reports",
 	"Alles in Ordnung.":                      "Everything is fine.",
 	"Ausgabe ist kein Terminal (umgeleitet)": "Output is not a terminal (redirected)",
-	"Es gibt Probleme (Zeilen mit ✗). Text kopieren und dem Fehlerbericht beilegen.": "There are problems (lines with ✗). Copy this text and attach it to your bug report.",
+	"Es gibt Probleme (Zeilen mit ×). Text kopieren und dem Fehlerbericht beilegen.": "There are problems (lines with ×). Copy this text and attach it to your bug report.",
 	"GitHub erreichbar":                                        "GitHub reachable",
 	"GitHub erreichbar, Uhr stimmt":                            "GitHub reachable, clock is correct",
 	"GitHub nicht erreichbar, Updates gehen nicht: ":           "GitHub not reachable, updates won't work: ",

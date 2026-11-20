@@ -12,6 +12,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // fieldKind: Text, Geheimnis, Zahl, Auswahl oder Schalter.
@@ -271,7 +273,7 @@ func (f *form) update(msg tea.Msg) (submit bool, cmd tea.Cmd) {
 // Ruhig gehalten: Auswahlfelder zeigen ohne Fokus nur den gewählten Wert,
 // die Hilfe steht in einer festen Zeile unten (statt sich unter das Feld
 // zu schieben) und das Formular wird nie wieder kleiner, solange es offen ist.
-func (f *form) view(s Styles, width int, z *zones) string {
+func (f *form) view(s Styles, width int, z *clickzone.Map) string {
 	var b strings.Builder
 	lines := 0
 	out := func(str string) { b.WriteString(str + "\n"); lines++ }
@@ -343,7 +345,7 @@ func (f *form) view(s Styles, width int, z *zones) string {
 		row := marker + label + val
 		if z != nil {
 			i, fl := i, fl
-			row = z.click(row, func(_ tea.Mouse, _ bool) tea.Cmd {
+			row = z.Click(row, func(_ tea.Mouse, _ bool) tea.Cmd {
 				if fl.kind == fBool {
 					fl.on = !fl.on
 				}
@@ -413,7 +415,7 @@ func (f *form) view(s Styles, width int, z *zones) string {
 
 // choiceView: mit Fokus alle Optionen (passt es nicht, ‹ Wert › zum
 // Durchschalten), ohne Fokus nur der gewählte Wert.
-func (f *form) choiceView(s Styles, i int, fl *field, focused bool, tint color.Color, inW int, z *zones) string {
+func (f *form) choiceView(s Styles, i int, fl *field, focused bool, tint color.Color, inW int, z *clickzone.Map) string {
 	if fl.opt >= len(fl.options) {
 		return ""
 	}
@@ -448,7 +450,7 @@ func (f *form) choiceView(s Styles, i int, fl *field, focused bool, tint color.C
 		}
 		if z != nil {
 			j := j
-			parts[j] = z.click(parts[j], func(tea.Mouse, bool) tea.Cmd { fl.opt = j; return f.setFocus(i) })
+			parts[j] = z.Click(parts[j], func(tea.Mouse, bool) tea.Cmd { fl.opt = j; return f.setFocus(i) })
 		}
 	}
 	val := strings.Join(parts, "")
@@ -460,7 +462,7 @@ func (f *form) choiceView(s Styles, i int, fl *field, focused bool, tint color.C
 }
 
 // headerRow: „── Anmeldung ──────“; einklappbar mit ▸/▾ und Zusammenfassung.
-func (f *form) headerRow(s Styles, i int, fl *field, focused bool, tint color.Color, width int, z *zones) string {
+func (f *form) headerRow(s Styles, i int, fl *field, focused bool, tint color.Color, width int, z *clickzone.Map) string {
 	tc := lipgloss.NewStyle().Foreground(tint)
 	title := tc.Bold(true).Render(fl.label)
 	lead := tc.Render("━━ ")
@@ -484,7 +486,7 @@ func (f *form) headerRow(s Styles, i int, fl *field, focused bool, tint color.Co
 		row += tc.Faint(true).Render(strings.Repeat("─", rest))
 	}
 	if fl.fold && z != nil {
-		row = z.click(row, func(tea.Mouse, bool) tea.Cmd { fl.on = !fl.on; return f.setFocus(i) })
+		row = z.Click(row, func(tea.Mouse, bool) tea.Cmd { fl.on = !fl.on; return f.setFocus(i) })
 	}
 	return row
 }

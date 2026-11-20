@@ -91,7 +91,7 @@ func (a *App) companionLine(s *session) string {
 		l += strings.Repeat(" ", max(0, a.w-lipgloss.Width(l)-lipgloss.Width(end))) + end
 		out[i] = ansi.Truncate(l, a.w, "")
 	}
-	return a.z.click(strings.Join(out, "\n"), func(tea.Mouse, bool) tea.Cmd { return a.toggleCompanionBar(s) })
+	return a.z.Click(strings.Join(out, "\n"), func(tea.Mouse, bool) tea.Cmd { return a.toggleCompanionBar(s) })
 }
 
 // toggleCompanionBar: Leiste ein/aus (Taste, Klick).

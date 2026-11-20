@@ -258,7 +258,7 @@ func (a *App) viewErrorList(s *session, w, h int) string {
 			line = st.Selected.Render(padRight(num+text, w))
 		}
 		i := i
-		lines = append(lines, a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+		lines = append(lines, a.z.Click(line, func(_ tea.Mouse, double bool) tea.Cmd {
 			sr.idx = i
 			if double {
 				sr.list = false

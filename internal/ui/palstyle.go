@@ -177,7 +177,7 @@ func (a *App) palTabsRow() string {
 			s = lipgloss.NewStyle().Background(st.T.Surface2).Foreground(st.T.Muted).Render(" " + name + " ")
 		}
 		g := g
-		parts = append(parts, a.z.click(s, func(tea.Mouse, bool) tea.Cmd {
+		parts = append(parts, a.z.Click(s, func(tea.Mouse, bool) tea.Cmd {
 			p.tab, p.sel, p.armed = g, 0, -1
 			return nil
 		}))

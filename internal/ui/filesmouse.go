@@ -15,6 +15,8 @@ import (
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/packx"
 	"github.com/db9979/sshtermy/internal/sshx"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // Dateien (F5) mit der Maus
@@ -154,7 +156,7 @@ func (a *App) filesPaneTitle(s *session, f *filesState, side, w int) string {
 	if active {
 		ts = st.TabActive.Foreground(st.T.Accent)
 	}
-	tr := a.z.click(ts.Render(title), func(tea.Mouse, bool) tea.Cmd { f.side = side; return a.filesPeek(s) })
+	tr := a.z.Click(ts.Render(title), func(tea.Mouse, bool) tea.Cmd { f.side = side; return a.filesPeek(s) })
 
 	// Knöpfe rechts (nur wenn Platz ist)
 	btn := lipgloss.NewStyle().Background(st.T.Surface2).Foreground(st.T.Accent)
@@ -178,9 +180,9 @@ func (a *App) filesPaneTitle(s *session, f *filesState, side, w int) string {
 	if w >= 48 {
 		for _, b := range buttons {
 			b := b
-			bar += " " + a.z.mark(btn.Render(" "+b.label+" "), zoneAction{
-				click: func(tea.Mouse, bool) tea.Cmd { f.side = side; return b.run() },
-				tip:   func() string { return b.tip },
+			bar += " " + a.z.Mark(btn.Render(" "+b.label+" "), clickzone.Action{
+				Click: func(tea.Mouse, bool) tea.Cmd { f.side = side; return b.run() },
+				Tip:   func() string { return b.tip },
 			})
 		}
 	}
@@ -207,9 +209,9 @@ func (a *App) filesPaneTitle(s *session, f *filesState, side, w int) string {
 		if i == len(parts)-1 {
 			style = st.Text
 		}
-		shown = append(shown, a.z.mark(style.Render(label), zoneAction{
-			click: func(tea.Mouse, bool) tea.Cmd { f.side = side; p.goTo(target, f.hidden); return nil },
-			tip:   func() string { return target },
+		shown = append(shown, a.z.Mark(style.Render(label), clickzone.Action{
+			Click: func(tea.Mouse, bool) tea.Cmd { f.side = side; p.goTo(target, f.hidden); return nil },
+			Tip:   func() string { return target },
 		}))
 		used += wid
 	}
@@ -243,9 +245,9 @@ func (a *App) paneHeader(p *pane, f *filesState, side, nameW, sizeW, dateW int) 
 		if right {
 			txt = fmt.Sprintf("%*s", wid, trunc(label, wid))
 		}
-		return a.z.mark(style.Render(txt), zoneAction{
-			click: func(tea.Mouse, bool) tea.Cmd { f.side = side; p.sortClick(c, f.hidden); return nil },
-			tip:   func() string { return i18n.T("sortieren (s)") },
+		return a.z.Mark(style.Render(txt), clickzone.Action{
+			Click: func(tea.Mouse, bool) tea.Cmd { f.side = side; p.sortClick(c, f.hidden); return nil },
+			Tip:   func() string { return i18n.T("sortieren (s)") },
 		})
 	}
 	return "  " + col(sortName, nameW, false) + " " + col(sortSize, sizeW, true) + " " + col(sortTime, dateW, true)
@@ -599,7 +601,7 @@ func (a *App) filesBack(s *session, x, y int) tea.Cmd {
 	if f.panes[0] == nil {
 		return nil
 	}
-	side, _ := a.z.fileAt(x, y)
+	side, _ := a.z.FileAt(x, y)
 	if side < 0 {
 		side = f.side
 	}

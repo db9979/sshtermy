@@ -185,7 +185,7 @@ func (a *App) llmChip() string {
 		txt += a.s.Header.Foreground(a.llmColor(h.level)).Render(" " + h.badgeText())
 	}
 	txt += a.s.Header.Render(" ")
-	return a.z.click(txt, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
+	return a.z.Click(txt, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
 }
 
 // llmTick plant die Hintergrundprüfung (einmal pro Sekunde aufgerufen).

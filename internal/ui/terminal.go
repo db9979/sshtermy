@@ -15,6 +15,10 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/llm"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
+
+	"github.com/db9979/sshtermy/internal/ui/dropped"
 )
 
 const (
@@ -97,7 +101,7 @@ func (a *App) panelRail(s *session, h int) string {
 		}
 		lines[i] = side + ansi.Truncate(c, 1, "") + " "
 	}
-	return a.z.mark(strings.Join(lines, "\n"), zoneAction{block: true, click: func(tea.Mouse, bool) tea.Cmd {
+	return a.z.Mark(strings.Join(lines, "\n"), clickzone.Action{Block: true, Click: func(tea.Mouse, bool) tea.Cmd {
 		s.panelFocus = true
 		return nil
 	}})
@@ -163,7 +167,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		// Dateien aus dem Explorer/Finder ins Fenster gezogen: hochladen?
 		if s.client != nil && s.state == stConnected && s.term != nil && !s.term.AltScreen() {
-			if paths := droppedPaths(m.Content); paths != nil {
+			if paths := dropped.Paths(m.Content); paths != nil {
 				a.dropMenu(s, m.Content, paths)
 				return nil
 			}
@@ -706,12 +710,12 @@ func (a *App) chipBar(s *session) string {
 	st := a.s
 	var b strings.Builder
 	if g := a.visibleGhost(s); g != "" {
-		b.WriteString(a.z.click(st.AI.Render(" ◆ ")+st.Muted.Render(i18n.T("Tab übernimmt: "))+st.Ghost.Render(trunc(g, 60)),
+		b.WriteString(a.z.Click(st.AI.Render(" ◆ ")+st.Muted.Render(i18n.T("Tab übernimmt: "))+st.Ghost.Render(trunc(g, 60)),
 			func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("Tab") }) + "  ")
 	} else {
 		if f := s.fail; f != nil {
 			why := orDefault(f.Reason, i18n.T("fehlgeschlagen"))
-			b.WriteString(a.z.click(st.Danger.Render(" × "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(i18n.T(" Warum? & Fix ")),
+			b.WriteString(a.z.Click(st.Danger.Render(" × "+trunc(why, 34))+" "+st.Key.Render("Alt+0")+st.AI.Render(i18n.T(" Warum? & Fix ")),
 				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey("alt+0") }) + " ")
 		}
 		a.chipList(s, &b)
@@ -734,7 +738,7 @@ func (a *App) chipList(s *session, b *strings.Builder) {
 			}
 			id := []action{actChip1, actChip2, actChip3, actChip4}[min(i, 3)]
 			lbl := a.keys.label(id)
-			b.WriteString(a.z.click(st.Key.Render(lbl)+style.Render(trunc(c.Command, 34)),
+			b.WriteString(a.z.Click(st.Key.Render(lbl)+style.Render(trunc(c.Command, 34)),
 				func(tea.Mouse, bool) tea.Cmd { s.panelFocus = false; return a.pressKey(lbl) }) + " ")
 		}
 		if len(s.chips) > 0 && s.chips[0].Reason != "" {
@@ -947,25 +951,25 @@ func (a *App) tabStrip(room int) string {
 		if i == a.cur {
 			end = ""
 		}
-		tab := a.z.mark(ts.Render(stripe+dot+ts.UnsetPadding().Render(text+end)), zoneAction{
-			tab: i + 1,
-			click: func(m tea.Mouse, _ bool) tea.Cmd {
+		tab := a.z.Mark(ts.Render(stripe+dot+ts.UnsetPadding().Render(text+end)), clickzone.Action{
+			Tab: i + 1,
+			Click: func(m tea.Mouse, _ bool) tea.Cmd {
 				a.focusSession(i)
 				a.tabDrag = &tabDrag{id: x.id, x: m.X} // Ziehen sortiert um (tabs.go)
 				return nil
 			},
-			menu: func(m tea.Mouse) tea.Cmd {
+			Menu: func(m tea.Mouse) tea.Cmd {
 				if m.Button == tea.MouseMiddle {
 					return a.closeTabAsk(x, nil)
 				}
 				a.modal = a.tabMenu(x, m.X, m.Y, nil)
 				return nil
 			},
-			tip: func() string { return a.tabTip(x) },
+			Tip: func() string { return a.tabTip(x) },
 		})
 		if i == a.cur {
 			// × schließt den aktiven Tab (bei laufender Verbindung mit Rückfrage)
-			close := a.z.click(ts.Padding(0, 1, 0, 0).UnsetBold().Render("×"), func(tea.Mouse, bool) tea.Cmd {
+			close := a.z.Click(ts.Padding(0, 1, 0, 0).UnsetBold().Render("×"), func(tea.Mouse, bool) tea.Cmd {
 				return a.closeTabAsk(x, nil)
 			})
 			tab += close
@@ -975,6 +979,6 @@ func (a *App) tabStrip(room int) string {
 	if to < n {
 		b.WriteString(st.Header.Foreground(st.T.Muted).Render(" ›"))
 	}
-	b.WriteString(a.z.click(plus, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() }))
+	b.WriteString(a.z.Click(plus, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() }))
 	return b.String()
 }

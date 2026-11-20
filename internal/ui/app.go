@@ -45,6 +45,8 @@ import (
 	"github.com/db9979/sshtermy/internal/vault"
 	"github.com/db9979/sshtermy/internal/version"
 	"github.com/db9979/sshtermy/internal/vuln"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 type screen int
@@ -227,8 +229,8 @@ type App struct {
 	keys      keymap        // aktuelle Tastenbelegung
 	lookSig   string        // Theme+Tasten, zuletzt übernommen
 
-	z     zones      // klickbare Bereiche des letzten Bildes
-	click clickState // für Doppel-/Dreifachklick
+	z     clickzone.Map // klickbare Bereiche des letzten Bildes
+	click clickState    // für Doppel-/Dreifachklick
 
 	pick *picker // Auswahlliste mit Suche (Jump-Host, Ordner, Tag)
 
@@ -949,7 +951,7 @@ func (a *App) onTick() tea.Cmd {
 // ---------------------------------------------------------------- Layout
 
 func (a *App) viewFrame() tea.View {
-	a.z.reset()
+	a.z.Reset()
 	var body string
 	var cur *tea.Cursor
 	switch a.scr {
@@ -1006,9 +1008,9 @@ func (a *App) viewFrame() tea.View {
 	case scrScan:
 		body = a.frame(a.viewScan(), a.scanKeys())
 	}
-	body = a.z.scan(body, 0, 0)
+	body = a.z.Scan(body, 0, 0)
 	if a.lock != nil {
-		a.z.reset() // gesperrt: nichts klickbar, nichts zu sehen
+		a.z.Reset() // gesperrt: nichts klickbar, nichts zu sehen
 		body, cur = a.viewLock(), nil
 	} else if a.modal != nil {
 		body = a.overlay(body, a.modalView())
@@ -1031,7 +1033,7 @@ func (a *App) viewFrame() tea.View {
 		body = a.withPerf(body)
 	}
 	if a.intro != nil && introFits(a.w, a.h) {
-		a.z.reset() // während der Animation ist nichts klickbar
+		a.z.Reset() // während der Animation ist nichts klickbar
 		body, cur = a.viewIntro(), nil
 	}
 	if cur != nil && !a.s.T.Dark {
@@ -1062,7 +1064,7 @@ func (a *App) headerLeft() string {
 	logo := a.logoChip(">_ " + version.Name) // gradient.go
 	if a.scr == scrTerminal && len(a.sessions) > 0 {
 		// Klick aufs Logo: Manager für einen weiteren Tab, wie „+“ (tabs.go)
-		return a.z.click(logo, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() })
+		return a.z.Click(logo, func(tea.Mouse, bool) tea.Cmd { return a.openNewTab() })
 	}
 	return logo
 }
@@ -1286,8 +1288,8 @@ func (a *App) overlay(base, box string) string {
 	if k, run := a.fadeLevel(); run && !a.fx.out {
 		box = fadeANSI(box, a.s.T, k)
 	}
-	a.z.rects = a.z.rects[:0]
-	box = a.z.scan(box, x, y)
+	a.z.ClearRects()
+	box = a.z.Scan(box, x, y)
 	return stamp(a.overlayBackground(base, x, y, bw, bh), box, x, y, a.w)
 }
 

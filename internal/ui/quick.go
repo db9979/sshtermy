@@ -325,7 +325,7 @@ func (a *App) quickModalView(m *modal) string {
 			}
 		}
 		i := i
-		lines = append(lines, a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+		lines = append(lines, a.z.Click(row, func(_ tea.Mouse, double bool) tea.Cmd {
 			if m.scroll == i || double {
 				return a.quickModalKey("enter")
 			}
@@ -352,7 +352,7 @@ func (a *App) quickModalView(m *modal) string {
 					row = st.ChipDanger.Render(ansi.Strip(row))
 				}
 			}
-			lines = append(lines, a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+			lines = append(lines, a.z.Click(row, func(_ tea.Mouse, double bool) tea.Cmd {
 				if m.scroll == i || double {
 					return a.quickModalKey("enter")
 				}

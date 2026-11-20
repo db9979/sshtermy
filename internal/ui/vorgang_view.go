@@ -73,7 +73,7 @@ func (a *App) viewVorgang() string {
 		l = ansi.Truncate(" "+l, w, "…")
 		out = append(out, l+strings.Repeat(" ", max(0, w-lipgloss.Width(l))))
 	}
-	return a.z.click(strings.Join(out, "\n"), func(tea.Mouse, bool) tea.Cmd {
+	return a.z.Click(strings.Join(out, "\n"), func(tea.Mouse, bool) tea.Cmd {
 		g.focus = true
 		_ = st
 		return a.vgFocusInput()
@@ -271,7 +271,7 @@ func (a *App) vgStepLine(i, w int, run bool) string {
 	room := max(10, w-lipgloss.Width(left)-lipgloss.Width(kind)-lipgloss.Width(extra)-lipgloss.Width(note)-6)
 	line := left + st.Accent.Render(trunc(cmd, room)) + "  " + kind + extra + note
 	idx := i
-	return a.z.click(line, func(_ tea.Mouse, double bool) tea.Cmd {
+	return a.z.Click(line, func(_ tea.Mouse, double bool) tea.Cmd {
 		g.focus = true
 		if run {
 			return nil

@@ -91,7 +91,7 @@ func (a *App) termHeader(s *session) string {
 			b.WriteString(st.ChipDanger.Render(i18n.T("● REC")))
 		}
 		if chip := a.shareChip(s); chip != "" {
-			b.WriteString(a.z.click(chip, func(tea.Mouse, bool) tea.Cmd {
+			b.WriteString(a.z.Click(chip, func(tea.Mouse, bool) tea.Cmd {
 				if o := s.share.Load(); o != nil {
 					return a.openShareManage(s, o)
 				}
@@ -176,7 +176,7 @@ func (a *App) termHeader(s *session) string {
 			}
 		}
 		ai = st.Badge.Foreground(a.llmColor(h.level)).PaddingRight(0).Render(h.dot(a.lh.probing)) + ai
-		return a.z.click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
+		return a.z.Click(ai, func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
 	}
 	tun := func(short bool) string {
 		txt := "↔ " + plural(nT, i18n.Pick("Tunnel", "tunnel"), i18n.Pick("Tunnel", "tunnels"))
@@ -199,7 +199,7 @@ func (a *App) termHeader(s *session) string {
 		}
 	}
 	if s.scroll > 0 {
-		goal = a.z.click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf(i18n.T("⇡ Verlauf −%d · Esc"), s.scroll)),
+		goal = a.z.Click(st.Badge.Foreground(st.T.Warn).Render(fmt.Sprintf(i18n.T("⇡ Verlauf −%d · Esc"), s.scroll)),
 			func(tea.Mouse, bool) tea.Cmd { s.scroll, s.sel = 0, nil; return nil }) + " " + goal
 	}
 	hb := a.hostBadge(s)

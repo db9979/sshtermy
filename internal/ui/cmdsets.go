@@ -281,7 +281,7 @@ func (a *App) viewCmdSets() string {
 			line = s.Text.Render(name) + " " + s.Muted.Render(id) + " " + s.Muted.Render(src) + " "
 		}
 		i := i
-		b.WriteString(a.z.click(" "+mark+line+state, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(a.z.Click(" "+mark+line+state, func(_ tea.Mouse, double bool) tea.Cmd {
 			c.sel = i
 			if double {
 				a.modal = textModal(rows[i].Set.Name, a.cmdsetDetails(rows[i]))

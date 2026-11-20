@@ -161,7 +161,7 @@ func (a *App) viewGoalHist(b *strings.Builder, s *session, w, base int) {
 			row = st.Selected.Width(w).Render(line + strings.Repeat(" ", gap) + meta)
 		}
 		r := r
-		b.WriteString(a.z.click(row, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(a.z.Click(row, func(_ tea.Mouse, double bool) tea.Cmd {
 			s.panelFocus = true
 			a.goalPickSet(s, idx)
 			if double {

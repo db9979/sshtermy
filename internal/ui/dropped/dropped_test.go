@@ -1,4 +1,4 @@
-package ui
+package dropped
 
 import (
 	"os"
@@ -29,7 +29,7 @@ func TestSplitDropped(t *testing.T) {
 		{`/tmp`, true, nil}, // unter Windows nicht absolut
 	}
 	for _, c := range cases {
-		if got := splitDropped(c.in, c.win); !reflect.DeepEqual(got, c.want) {
+		if got := Split(c.in, c.win); !reflect.DeepEqual(got, c.want) {
 			t.Errorf("splitDropped(%q, %v) = %q, want %q", c.in, c.win, got, c.want)
 		}
 	}
@@ -44,10 +44,10 @@ func TestDroppedPathsMustExist(t *testing.T) {
 	if filepath.Separator != '/' {
 		t.Skip("Pfade im Test sind Unix-Schreibweise")
 	}
-	if got := droppedPaths("'" + a + "' "); !reflect.DeepEqual(got, []string{a}) {
+	if got := Paths("'" + a + "' "); !reflect.DeepEqual(got, []string{a}) {
 		t.Fatalf("got %q", got)
 	}
-	if got := droppedPaths("'" + a + "' " + filepath.Join(dir, "fehlt")); got != nil {
+	if got := Paths("'" + a + "' " + filepath.Join(dir, "fehlt")); got != nil {
 		t.Fatalf("fehlende Datei: got %q", got)
 	}
 }

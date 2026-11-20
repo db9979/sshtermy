@@ -960,7 +960,7 @@ func (a *App) viewHost(b *strings.Builder, s *session, w int) {
 			line = st.Text.Render(line)
 		}
 		i := i
-		b.WriteString(a.z.click(mark+line, func(_ tea.Mouse, double bool) tea.Cmd {
+		b.WriteString(a.z.Click(mark+line, func(_ tea.Mouse, double bool) tea.Cmd {
 			s.panelFocus, h.sel = true, i
 			if double {
 				a.showBackupDiff(s)

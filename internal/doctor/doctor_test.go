@@ -82,7 +82,7 @@ func TestOfflineAndBrokenDir(t *testing.T) {
 	if Worst(rs) != Fail {
 		t.Fatal("Worst")
 	}
-	if !strings.Contains(Format(rs), "✗") {
+	if !strings.Contains(Format(rs), "×") {
 		t.Fatal("Fehlerzeile fehlt")
 	}
 }

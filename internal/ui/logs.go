@@ -487,7 +487,7 @@ func (a *App) viewLogs() string {
 			st = lipgloss.NewStyle().Background(s.T.Accent).Foreground(s.T.Bg).Bold(true).Padding(0, 1)
 		}
 		f := f
-		chips += a.z.click(st.Render(label), func(tea.Mouse, bool) tea.Cmd { a.logs.filter = f; a.selectLog(0); return nil })
+		chips += a.z.Click(st.Render(label), func(tea.Mouse, bool) tea.Cmd { a.logs.filter = f; a.selectLog(0); return nil })
 	}
 	if view != "" && lipgloss.Width(chips)+lipgloss.Width(view)+3 <= leftW {
 		chips += strings.Repeat(" ", leftW-lipgloss.Width(chips)-lipgloss.Width(view)-2) + a.keyZone("Tab", s.Muted.Render(view))
@@ -527,7 +527,7 @@ func (a *App) viewLogs() string {
 	for i := start; i < len(rows) && i < start+room; i++ {
 		i := i
 		line := a.logRowLine(rows[i], i == m.sel, timeW, nameW, sessW, leftW, now)
-		lb.WriteString(a.z.click(line, func(_ tea.Mouse, _ bool) tea.Cmd {
+		lb.WriteString(a.z.Click(line, func(_ tea.Mouse, _ bool) tea.Cmd {
 			if a.logs.sel == i {
 				if rs := a.logRows(); i < len(rs) {
 					a.setLogOpen(rs[i], !rs[i].open)

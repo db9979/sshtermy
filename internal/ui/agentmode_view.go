@@ -36,7 +36,7 @@ func (a *App) viewModeChoice(b *strings.Builder, s *session, w int) {
 		}
 		line := mark + style.Render(trunc(o.name, max(4, w-2)))
 		o := o
-		b.WriteString(a.z.click(line, func(tea.Mouse, bool) tea.Cmd {
+		b.WriteString(a.z.Click(line, func(tea.Mouse, bool) tea.Cmd {
 			s.panelFocus = true
 			g.auto, g.level, g.planFirst = o.auto, o.level, o.plan
 			return g.input.Focus()

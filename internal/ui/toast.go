@@ -9,6 +9,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 )
 
 // Toasts: kurze Einblendungen oben rechts („verbunden“, „kopiert“, Fehler),
@@ -197,7 +199,7 @@ func (a *App) withToasts(base string) string {
 		t := a.toasts[i]
 		text, undo := t.text, t.undo
 		box := a.toastBox(t, w, now)
-		box = a.z.mark(box, zoneAction{block: true, click: func(tea.Mouse, bool) tea.Cmd {
+		box = a.z.Mark(box, clickzone.Action{Block: true, Click: func(tea.Mouse, bool) tea.Cmd {
 			if undo && a.undo != nil && a.undo.toast == text {
 				return a.doUndo()
 			}
@@ -219,7 +221,7 @@ func (a *App) withToasts(base string) string {
 			}
 			box = strings.Join(ls, "\n")
 		}
-		box = a.z.scan(box, x, y)
+		box = a.z.Scan(box, x, y)
 		base = stamp(base, box, x, y, a.w) // stamp.go
 		y += bh
 	}

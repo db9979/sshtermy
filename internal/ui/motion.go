@@ -388,16 +388,16 @@ func (a *App) trackHover(m tea.Mouse) {
 		a.hov = hoverState{}
 		return
 	}
-	act, r := a.z.tipAt(m.X, m.Y)
+	act, r := a.z.TipAt(m.X, m.Y)
 	if act == nil {
 		a.hov = hoverState{}
 		return
 	}
-	key := [2]int{r.x0, r.y0}
+	key := [2]int{r.X0, r.Y0}
 	if a.hov.tip != nil && a.hov.key == key {
 		return
 	}
-	a.hov = hoverState{tip: act.tip, x: r.x0, y: r.y1 + 1, key: key, since: time.Now(), mx: m.X, my: m.Y}
+	a.hov = hoverState{tip: act.Tip, x: r.X0, y: r.Y1 + 1, key: key, since: time.Now(), mx: m.X, my: m.Y}
 }
 
 // withHover legt die Karte über das Bild, sobald die Maus kurz verweilt.

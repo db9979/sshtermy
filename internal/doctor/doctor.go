@@ -42,7 +42,7 @@ func (s Status) Mark() string {
 	case Warn:
 		return "!"
 	case Fail:
-		return "✗"
+		return "×"
 	}
 	return "·"
 }
@@ -125,7 +125,7 @@ func Format(rs []Result) string {
 	case Warn:
 		b.WriteString("\n" + i18n.T("Läuft, aber nicht alles ist eingerichtet (Zeilen mit !).") + "\n")
 	default:
-		b.WriteString("\n" + i18n.T("Es gibt Probleme (Zeilen mit ✗). Text kopieren und dem Fehlerbericht beilegen.") + "\n")
+		b.WriteString("\n" + i18n.T("Es gibt Probleme (Zeilen mit ×). Text kopieren und dem Fehlerbericht beilegen.") + "\n")
 	}
 	return b.String()
 }

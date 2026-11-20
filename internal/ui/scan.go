@@ -428,7 +428,7 @@ func (a *App) viewScan() string {
 			line = ansi.Truncate(line, w-4, "…")
 		}
 		i, k := i, k
-		line = a.z.click(line, func(tea.Mouse, bool) tea.Cmd { sc.cur, sc.picked[k] = i, !sc.picked[k]; return nil })
+		line = a.z.Click(line, func(tea.Mouse, bool) tea.Cmd { sc.cur, sc.picked[k] = i, !sc.picked[k]; return nil })
 		o.WriteString(line + "\n")
 	}
 	return lipgloss.Place(a.w, a.h-2, lipgloss.Center, lipgloss.Center, s.Panel.Width(w).Render(o.String()))

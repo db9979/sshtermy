@@ -16,6 +16,10 @@ import (
 
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/sshx"
+
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
+
+	"github.com/db9979/sshtermy/internal/ui/dropped"
 )
 
 // Dateien (F5): links lokal, rechts der Server, per SFTP über dieselbe
@@ -417,7 +421,7 @@ func (a *App) filesPaste(s *session, m tea.PasteMsg) tea.Cmd {
 		*f.mkdir, cmd = f.mkdir.Update(m)
 		return cmd
 	}
-	if paths := droppedPaths(m.Content); paths != nil {
+	if paths := dropped.Paths(m.Content); paths != nil {
 		return a.uploadDropped(s, paths)
 	}
 	a.flash(i18n.T("Hier lassen sich nur Dateien aus dem Explorer/Finder ablegen"))
@@ -445,7 +449,7 @@ func (a *App) filesDragMouse(s *session, msg tea.MouseMsg) tea.Cmd {
 	f := &s.files
 	d := f.drag
 	m := msg.Mouse()
-	side, row := a.z.fileAt(m.X, m.Y)
+	side, row := a.z.FileAt(m.X, m.Y)
 	switch msg.(type) {
 	case tea.MouseMotionMsg:
 		d.over, d.overRow = side, row
@@ -823,9 +827,9 @@ func (a *App) viewPane(s *session, side, w, h int) string {
 			line = st.Text.Render(line)
 		}
 		i := i
-		line = a.z.mark(line, zoneAction{pane: side + 1, row: i + 1,
-			click: func(m tea.Mouse, double bool) tea.Cmd { return a.entryClick(s, side, i, m, double) },
-			menu:  func(m tea.Mouse) tea.Cmd { return a.fileMenu(s, side, i, m.X, m.Y) },
+		line = a.z.Mark(line, clickzone.Action{Pane: side + 1, Row: i + 1,
+			Click: func(m tea.Mouse, double bool) tea.Cmd { return a.entryClick(s, side, i, m, double) },
+			Menu:  func(m tea.Mouse) tea.Cmd { return a.fileMenu(s, side, i, m.X, m.Y) },
 		})
 		b.WriteString(line + "\n")
 	}
@@ -837,12 +841,12 @@ func (a *App) viewPane(s *session, side, w, h int) string {
 		list += "\n" + a.viewPeek(s, p, side, w, peekH)
 	}
 	box := lipgloss.NewStyle().Width(w).Height(h).MaxHeight(h).Render(list)
-	return a.z.mark(box, zoneAction{
-		block: true,
-		pane:  side + 1,
-		click: func(tea.Mouse, bool) tea.Cmd { f.side = side; return nil },
-		menu:  func(m tea.Mouse) tea.Cmd { return a.fileMenu(s, side, -1, m.X, m.Y) },
-		wheel: func(up bool) tea.Cmd {
+	return a.z.Mark(box, clickzone.Action{
+		Block: true,
+		Pane:  side + 1,
+		Click: func(tea.Mouse, bool) tea.Cmd { f.side = side; return nil },
+		Menu:  func(m tea.Mouse) tea.Cmd { return a.fileMenu(s, side, -1, m.X, m.Y) },
+		Wheel: func(up bool) tea.Cmd {
 			f.side = side
 			if up {
 				p.sel = max(0, p.sel-3)
