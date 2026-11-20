@@ -153,13 +153,16 @@ type Stream struct {
 	closed atomic.Bool
 }
 
+// openPort: Variable für Tests (Gerät ohne echtes Kabel).
+var openPort = serial.Open
+
 // Open öffnet die Schnittstelle; alles, was ankommt, geht an out.
 func Open(name string, baud int, frame string, out io.Writer) (*Stream, error) {
 	mode, err := Mode(baud, frame)
 	if err != nil {
 		return nil, err
 	}
-	p, err := serial.Open(name, mode)
+	p, err := openPort(name, mode)
 	if err != nil {
 		return nil, explain(name, err)
 	}
