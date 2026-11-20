@@ -34,6 +34,11 @@ bench:
 loadtest:
 	SSHTERMY_LOAD=1 go test -run TestLoad1000 -v -count=1 ./internal/ui
 
+# Dauerlauf: Tabs öffnen/schließen, Verbindungen abreißen, Lecks messen (nachts in CI)
+SOAK ?= 10m
+soak:
+	SSHTERMY_SOAK=$(SOAK) go test -run TestSoak -v -count=1 -timeout 0 ./internal/ui
+
 # Fuzz-Tests (Parser für Daten von fremden Geräten), je FUZZTIME lang
 FUZZTIME ?= 20s
 fuzz:
