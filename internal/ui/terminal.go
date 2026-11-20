@@ -386,6 +386,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 }
 
 func (a *App) closeTab(s *session) {
+	if s.conn.Protocol != domain.ProtoWatch {
+		a.rememberClosed(s)
+	}
 	a.vgForget(s)
 	a.endLog(s)
 	a.stopRecording(s)

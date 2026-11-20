@@ -610,6 +610,8 @@ type Settings struct {
 	DimPanes bool `json:"dim_panes,omitempty"`
 	// NoVerify: keine Gegenprüfung nach Ziel/Agent (ui/goalverify.go).
 	NoVerify bool `json:"no_verify,omitempty"`
+	// Push: Handy-Meldungen über ntfy, Gotify oder Webhook, wenn niemand am Rechner ist.
+	Push PushConfig `json:"push,omitzero"`
 	// WebSearch: Suchmaschine für „Im Web suchen“ ("" = DuckDuckGo, ui/websearch.go).
 	WebSearch string `json:"web_search,omitempty"`
 	// NoHistGhost: Ghost-Text nicht zuerst aus dem Befehlsverlauf (ui/histghost.go).
@@ -741,7 +743,15 @@ func (s Settings) SyncedPart() Settings {
 	s.RestoreTabs = ""                     // Tabs vom letzten Mal: je Rechner
 	s.WebSearch, s.NoHistGhost = "", false // Suchmaschine, Ghost aus dem Verlauf: je Rechner
 	s.NoVerify = false                     // Gegenprüfung: je Rechner
+	s.Push = PushConfig{}                  // Handy-Meldungen: je Rechner (sonst melden alle Rechner doppelt)
 	return s
+}
+
+// PushConfig: Handy-Meldungen über ntfy, Gotify oder Webhook (push.go). Lokal.
+type PushConfig struct {
+	Kind  string `json:"kind,omitempty"` // "" = aus, ntfy, gotify, webhook
+	URL   string `json:"url,omitempty"`
+	Token Secret `json:"token,omitempty"`
 }
 
 // HeaderConfig: eigene Felder rechts in der Kopfzeile.
@@ -1111,7 +1121,8 @@ type Schedule struct {
 	Conns     []string  `json:"conns,omitempty"`
 	Kind      string    `json:"kind,omitempty"` // "" = Befehle/Runbook, "backup" = Switch-Configs sichern, "logs" = Ordner-Scan
 	RunbookID string    `json:"runbook_id,omitempty"`
-	Steps     []string  `json:"steps,omitempty"` // ohne Runbook
+	Steps     []string  `json:"steps,omitempty"`  // ohne Runbook
+	Prompt    string    `json:"prompt,omitempty"` // KI-Prüfung: Prüfauftrag in eigenen Worten
 	Off       bool      `json:"off,omitempty"`
 	LastRun   time.Time `json:"last_run,omitempty"`
 	LastOK    int       `json:"last_ok,omitempty"`
@@ -1140,6 +1151,9 @@ const ScheduleBackup = "backup"
 
 // ScheduleLogs: Zeitplan macht einen Ordner-Scan der Logs (Log-Blick je Host).
 const ScheduleLogs = "logs"
+
+// ScheduleAI: Zeitplan lässt die KI rein lesend prüfen (Prompt).
+const ScheduleAI = "ai"
 
 // ScheduleVuln: Zeitplan prüft die Pakete aller Server im Ziel gegen OSV.
 const ScheduleVuln = "osv"

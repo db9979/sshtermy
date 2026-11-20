@@ -102,12 +102,13 @@ func TestGuardCmdNested(t *testing.T) {
 }
 
 func TestOutputPanicDropsBlock(t *testing.T) {
-	_ = safetyApp(t)
+	a := safetyApp(t)
 	w := outWriter{s: nil, ev: nil} // nil-Sitzung: write0 stürzt ab
 	n, err := w.Write([]byte("hallo"))
 	if n != 5 || err != nil {
 		t.Fatalf("Block muss verworfen werden, Verbindung bleibt: %d %v", n, err)
 	}
+	waitCaught(t, a) // Bericht fertig, bevor der Testordner verschwindet
 }
 
 func TestWithoutHandlerPanicsStillSurface(t *testing.T) {

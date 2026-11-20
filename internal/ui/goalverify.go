@@ -139,7 +139,7 @@ func (a *App) verifyDone(m verifyMsg) {
 	a.taskVerified(s, m.v.OK, m.v.Finding)
 	if !m.v.OK {
 		a.pushToast(toastWarn, i18n.T("Gegenprüfung hat Zweifel: ")+trunc(m.v.Finding, 80))
-		if a.desktopNotifyOn() && a.blurred {
+		if a.notifyAway() {
 			a.sendDesktopFor(s, i18n.T("Gegenprüfung hat Zweifel"), s.conn.Alias+": "+trunc(m.v.Finding, 120))
 		}
 	}

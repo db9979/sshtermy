@@ -477,3 +477,25 @@ func (l *Log) Transcript(maxBytes int) string {
 	}
 	return s
 }
+
+// Tail: die letzten Zeilen der Sitzung als Text (Prompt, Befehl, Ausgabe),
+// für „Ausgabe vom letzten Mal“ in einem wieder geöffneten Tab.
+func (l *Log) Tail(maxLines int) []string {
+	if l == nil || maxLines <= 0 {
+		return nil
+	}
+	pr := l.prompt()
+	var out []string
+	for i := len(l.Entries) - 1; i >= 0 && len(out) < maxLines; i-- {
+		e := l.Entries[i]
+		block := []string{pr + e.Command}
+		if o := strings.TrimRight(e.Output, "\n "); o != "" {
+			block = append(block, strings.Split(o, "\n")...)
+		}
+		out = append(block, out...)
+	}
+	if len(out) > maxLines {
+		out = out[len(out)-maxLines:]
+	}
+	return out
+}

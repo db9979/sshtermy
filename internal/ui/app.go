@@ -196,10 +196,13 @@ type App struct {
 	mcpWaits       []*mcpWaiter // MCP wait_tab, die noch warten (mcpcontrol.go)
 	jumpSID        int          // Tab der letzten Desktop-Meldung (notify.go)
 	jumpAt         time.Time    // … und wann sie kam
+	pushErrAt      time.Time    // letzte Fehlermeldung der Handy-Meldungen (pushnotify.go)
 	restoreArmed   bool         // Tabs vom letzten Mal angeboten, ab jetzt sichern (restore.go)
 	restoreAt      time.Time    // letzte Sicherung der offenen Tabs
 	restoreSig     string       // Inhalt der letzten Sicherung (nur bei Änderung schreiben)
-	restart        bool         // nach dem Beenden neu starten (siehe Restart)
+	closed         []restoreTab // zuletzt geschlossene Tabs (closedtabs.go)
+	closedLoaded   bool
+	restart        bool // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
 
 	hl   hlState  // Farbregeln (highlight.go)
@@ -711,6 +714,12 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 		return cmd, true
 	}
 	if cmd, ok := a.vulnFolderMsg(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.schedAIMsg(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.pushMsg(msg); ok {
 		return cmd, true
 	}
 	if cmd, ok := a.schedVulnMsg(msg); ok {

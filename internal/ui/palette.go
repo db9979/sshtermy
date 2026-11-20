@@ -243,6 +243,8 @@ func (a *App) palActions(s *session, inTerm, inMgr bool) []palItem {
 	if inMgr {
 		add("tabs", palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }})
 	}
+	add("tabs", palItem{icon: ic("reconnect"), label: i18n.T("Zuletzt geschlossene Tabs …"), hint: i18n.T("mit Ausgabe"),
+		keys: "zuletzt geschlossen wieder öffnen reopen closed tab rückgängig undo close verlauf", run: func() tea.Cmd { return a.openClosed() }})
 	add("", palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
 	if a.Keeper() {
 		add("", palItem{icon: ic("reconnect"), label: i18n.T("Abkoppeln: Fenster zu, Sitzungen laufen weiter"), hint: "sshtermy",
@@ -945,6 +947,10 @@ func (a *App) palMenuItems() []palItem {
 			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }).at(a.notifyLevel(), 3),
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
+		// nur über die Suche („Handy“, „ntfy“), Hilfe und Webseite nennen den Weg
+		hide(palItem{icon: ic("news"), label: i18n.T("Handy-Meldungen (ntfy, Gotify, Webhook) …"), hint: pushKindLabel(a.st.Settings().Push.Kind),
+			keys: "handy smartphone push ntfy gotify webhook telefon mobil benachrichtigung unterwegs slack mattermost", run: func() tea.Cmd { return a.openPushSetup() }}),
+		hide(palItem{icon: ic("news"), label: i18n.T("Probemeldung ans Handy schicken"), keys: "handy push ntfy gotify webhook test probe", run: func() tea.Cmd { return a.pushTest() }}),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
 		// nur über die Suche („Tipps“), der Tipp selbst nennt den Weg
 		hide(palToggle(ic("keys"), i18n.T("Tipps zu Tasten"), a.tipsOn(), "tipp tipps tasten kürzel shortcut hint lernen", func() tea.Cmd { return a.toggleTips() })),

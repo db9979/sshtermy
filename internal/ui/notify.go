@@ -55,7 +55,7 @@ func (a *App) toggleDesktopNotify() tea.Cmd {
 	on := !a.desktopNotifyOn()
 	_ = a.st.UpdateSettings(func(s *domain.Settings) { s.NoDesktopNotify = !on })
 	if on {
-		a.sendDesktop(i18n.T("Desktop-Benachrichtigungen sind an"), i18n.T("So sieht eine Meldung aus, wenn ein langer Befehl fertig ist."))
+		desktopSend(i18n.T("Desktop-Benachrichtigungen sind an"), i18n.T("So sieht eine Meldung aus, wenn ein langer Befehl fertig ist."), nil)
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func (a *App) cycleNotify(dir int) tea.Cmd {
 		s.NoDesktopNotify = next < 2
 	})
 	if next == 2 {
-		a.sendDesktop(i18n.T("Desktop-Benachrichtigungen sind an"), i18n.T("So sieht eine Meldung aus, wenn ein langer Befehl fertig ist."))
+		desktopSend(i18n.T("Desktop-Benachrichtigungen sind an"), i18n.T("So sieht eine Meldung aus, wenn ein langer Befehl fertig ist."), nil)
 	}
 	return nil
 }
@@ -100,7 +100,14 @@ var desktopSend = func(title, body string, click func()) {
 	notify.SendClick(title, body, i18n.T("Öffnen"), click)
 }
 
-func (a *App) sendDesktop(title, body string) { desktopSend(title, body, nil) }
+// Geht zusätzlich als Handy-Meldung raus, wenn eingerichtet und niemand am
+// Rechner ist (pushnotify.go).
+func (a *App) sendDesktop(title, body string) {
+	if a.desktopAway() {
+		desktopSend(title, body, nil)
+	}
+	a.pushSend(title, body)
+}
 
 // Klick auf eine Desktop-Meldung (oder zurück ins Fenster danach) führt in
 // den Tab, um den es ging. Linux meldet den Klick (notify-send --action);
@@ -114,6 +121,10 @@ type notifyClickMsg struct{ sid int }
 
 // sendDesktopFor: Meldung zu Tab s; merkt ihn für den Sprung.
 func (a *App) sendDesktopFor(s *session, title, body string) {
+	a.pushSend(title, body)
+	if !a.desktopAway() {
+		return
+	}
 	a.jumpSID, a.jumpAt = s.id, time.Now()
 	ev, sid := a.events, s.id
 	desktopSend(title, body, func() {
@@ -187,6 +198,9 @@ func (a *App) noticeDone(s *session, cmd string, dur time.Duration, failed, inte
 	}
 	seen := a.sessionVisible(s) && !a.blurred
 	if seen {
+		if a.pushAway() { // vor dem Bildschirm, aber lange keine Taste: nur aufs Handy
+			a.pushSend("sshTermy · "+s.tabName(), trunc(cmd, 80)+" "+doneWord(failed)+" ("+fmtDur(dur)+")")
+		}
 		return
 	}
 	kind, word := noticeOK, i18n.T("fertig")
@@ -205,13 +219,20 @@ func (a *App) noticeDone(s *session, cmd string, dur time.Duration, failed, inte
 	} else {
 		a.flashOK(msg)
 	}
-	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() {
+	if a.notifyAway() {
 		body := trunc(cmd, 80) + " " + word
 		if a.lock != nil {
 			body = i18n.T("Befehl ") + word // gesperrt: keinen Befehl verraten
 		}
 		a.sendDesktopFor(s, "sshTermy · "+s.tabName(), body+" ("+fmtDur(dur)+")")
 	}
+}
+
+func doneWord(failed bool) string {
+	if failed {
+		return i18n.T("fehlgeschlagen")
+	}
+	return i18n.T("fertig")
 }
 
 // noticeBell: BEL vom Server.
@@ -227,7 +248,7 @@ func (a *App) noticeBell(s *session) {
 	}
 	s.bellAt = time.Now()
 	a.flash("♦ " + s.tabName() + ": " + i18n.T("Glocke (BEL) im Terminal"))
-	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() {
+	if a.notifyAway() {
 		a.sendDesktopFor(s, "sshTermy · "+s.tabName(), i18n.T("Glocke (BEL) im Terminal"))
 	}
 }
