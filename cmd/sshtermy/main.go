@@ -56,6 +56,9 @@ func main() {
 			os.Exit(runBackup(os.Args[2:]))
 		case "restore", "einspielen":
 			os.Exit(runRestore(os.Args[2:]))
+		case "doctor", "pruefen", "prüfen":
+			// Selbstprüfung für Fehlerberichte (internal/doctor)
+			os.Exit(runDoctor(dir))
 		case "mcp":
 			// MCP-Server für KI-Clients über stdin/stdout (internal/mcp)
 			if err := mcp.Serve(os.Stdin, os.Stdout, &mcp.Remote{DataDir: dir}); err != nil {

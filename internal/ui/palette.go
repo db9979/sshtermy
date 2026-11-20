@@ -1115,6 +1115,8 @@ func (a *App) palMenuItems() []palItem {
 		a.palNewFolder(),
 
 		// Hilfe & Info › Fehlersuche
+		palItem{group: pgHelp, menu: "help/debug", icon: ic("llmcheck"), label: i18n.T("Selbstprüfung (Ordner, Tresor, KI, Internet, Uhr)"), hint: "doctor",
+			keys: "selbstprüfung doctor check prüfen diagnose fehler problem geht nicht", run: func() tea.Cmd { return a.runDoctor() }},
 		proItem(help("help/debug", palToggle(ic("sesslog"), i18n.T("Debug-Protokoll für Fehlerberichte"), a.debugOn(), "debug log protokoll fehler bug support", func() tea.Cmd { return a.toggleDebug() }))),
 		palItem{group: pgHelp, menu: "help/debug", icon: ic("export"), label: i18n.T("Debug-Protokoll bereinigt speichern (für Fehlerbericht)"), hint: ".txt",
 			keys: "debug log protokoll fehler bug support issue", run: func() tea.Cmd { return a.exportDebug() }},

@@ -623,6 +623,10 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 // featureMsg reicht die Nachricht an die Bereiche weiter (Broadcast, Sync,
 // KI, Dateien …); jeder nimmt nur seine eigenen.
 func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
+	if m, ok := msg.(doctorMsg); ok { // Selbstprüfung (doctor.go)
+		a.doctorDone(m)
+		return nil, true
+	}
 	if m, ok := msg.(palFindMsg); ok { // „Wo finde ich …?“ (palask.go)
 		return a.palFindDone(m), true
 	}

@@ -21,3 +21,13 @@ func dialAgent() (net.Conn, error) {
 	t := 3 * time.Second
 	return winio.DialPipe(pipe, &t)
 }
+
+// AgentReachable: läuft ein SSH-Agent (Pageant oder OpenSSH-Dienst), den
+// sshTermy erreicht (Selbstprüfung)?
+func AgentReachable() error {
+	c, err := dialAgent()
+	if err != nil {
+		return err
+	}
+	return c.Close()
+}
