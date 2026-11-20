@@ -150,6 +150,8 @@ type App struct {
 	formBulk         []string // Verbindungen der Sammeländerung (bulk.go)
 	searchAllLast    string   // letzter Suchbegriff der Suche über alle Tabs
 	tabDrag          *tabDrag // Tab wird mit der Maus gezogen (tabs.go)
+	panelDrag        bool     // Panelrand wird gezogen (dock.go)
+	dragW, dragH     int
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
 	returnToTerminal bool
@@ -601,7 +603,11 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if a.lock != nil {
 			return nil, true
 		}
-		return a.mouse(msg.(tea.MouseMsg)), true
+		cmd := a.mouse(msg.(tea.MouseMsg))
+		if a.scr == scrTerminal || a.scr == scrLogScan {
+			a.fitCurrent() // F5 daneben per Klick geschlossen: Terminal wieder breit (dock.go)
+		}
+		return cmd, true
 	case pasteMsg:
 		return a.onPaste(m), true
 	case pingDoneMsg:
@@ -828,13 +834,17 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrShareForm, scrRelaySetup, scrMasterForm, scrBackupForm, scrBulkForm:
 		return a.updateForm(msg)
 	case scrTerminal:
-		return a.updateTerminal(msg)
+		cmd := a.updateTerminal(msg)
+		a.fitCurrent() // F5 daneben auf/zu: Terminal breiter oder schmaler (dock.go)
+		return cmd
 	case scrSync:
 		return a.updateSync(msg)
 	case scrLogs:
 		return a.updateLogs(msg)
 	case scrLogScan:
-		return a.updateLogScan(msg)
+		cmd := a.updateLogScan(msg)
+		a.fitCurrent()
+		return cmd
 	case scrVuln:
 		return a.updateVuln(msg)
 	case scrPlayer:
@@ -1000,6 +1010,10 @@ func (a *App) viewFrame() tea.View {
 	case scrLogs:
 		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrLogScan:
+		if a.logBeside(a.current()) {
+			body, _ = a.viewTerminal() // neben dem Terminal (dock.go)
+			break
+		}
 		body = a.frame(a.viewLogScan(), a.logScanKeys())
 	case scrVuln:
 		body = a.frame(a.viewVuln(), a.vulnKeys())

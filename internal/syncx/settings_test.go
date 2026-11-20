@@ -95,6 +95,11 @@ var localSettings = map[string]bool{
 	"NoHistGhost":    true, // Ghost-Text aus dem Verlauf: je Rechner
 	"NoVerify":       true, // Gegenprüfung: je Rechner
 	"Push":           true, // Handy-Meldungen: je Rechner
+	"PanelDock":      true, // Panel-Lage: je Bildschirm
+	"PanelW":         true,
+	"PanelH":         true,
+	"FilesBeside":    true,
+	"NoPaneStatus":   true,
 }
 
 // ownMerge: gehen mit dem Sync, aber pro Eintrag statt als Teil der

@@ -1049,7 +1049,7 @@ func (a *App) viewPosAt(s *session, x, y int) (p viewPos, dy int, ok bool) {
 	if v == nil || len(v.vrows) == 0 {
 		return p, 0, false
 	}
-	r := a.termRect(s)
+	r := a.filesRect(s)
 	row := y - (r.y + 2)
 	if row < 0 {
 		dy = -1

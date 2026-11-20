@@ -43,7 +43,7 @@ func (a *App) syncTargets(s *session) []*session {
 	var out []*session
 	for _, id := range a.panes {
 		x := a.byID(id)
-		if x == nil || x == s || x.term == nil || x.state != stConnected || x.detached() || x.panelFocus || x.files.open {
+		if x == nil || x == s || x.term == nil || x.state != stConnected || x.detached() || x.panelFocus || x.filesFocus() {
 			continue
 		}
 		out = append(out, x)

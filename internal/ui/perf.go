@@ -368,7 +368,7 @@ func (a *App) withPerf(base string) string {
 	bw := lipgloss.Width(box)
 	x, y := a.w-bw-1, 1
 	if s := a.current(); a.scr == scrTerminal && s != nil {
-		tr := a.termRect(s)
+		tr := a.termBox(s)
 		cols, _ := a.paneSize(s)
 		y = tr.y
 		if cols >= bw+2 {

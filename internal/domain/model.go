@@ -610,6 +610,15 @@ type Settings struct {
 	DimPanes bool `json:"dim_panes,omitempty"`
 	// NoVerify: keine Gegenprüfung nach Ziel/Agent (ui/goalverify.go).
 	NoVerify bool `json:"no_verify,omitempty"`
+	// PanelDock: Seitenpanel rechts (""), links ("left") oder unten ("bottom");
+	// PanelW/PanelH: mit der Maus gezogene Größe, 0 = automatisch (ui/dock.go).
+	PanelDock string `json:"panel_dock,omitempty"`
+	PanelW    int    `json:"panel_w,omitempty"`
+	PanelH    int    `json:"panel_h,omitempty"`
+	// NoPaneStatus: keine Statuszeile (Ordner, letzter Befehl, Last) je Bereich (ui/panestatus.go).
+	NoPaneStatus bool `json:"no_pane_status,omitempty"`
+	// FilesBeside: F5 und Log-Blick in breiten Fenstern neben dem Terminal (ui/dock.go).
+	FilesBeside bool `json:"files_beside,omitempty"`
 	// Push: Handy-Meldungen über ntfy, Gotify oder Webhook, wenn niemand am Rechner ist.
 	Push PushConfig `json:"push,omitzero"`
 	// WebSearch: Suchmaschine für „Im Web suchen“ ("" = DuckDuckGo, ui/websearch.go).
@@ -735,15 +744,16 @@ func (s Settings) SyncedPart() Settings {
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false
-	s.UpdateWaitH = 0                      // Update-Kanal gilt je Rechner
-	s.CmdSetApproved = nil                 // Freigaben gelten für die Team-Dateien dieses Rechners
-	s.Share = ShareConfig{}                // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
-	s.Vuln = VulnConfig{}                  // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
-	s.Header = HeaderConfig{}              // lokaler Befehl in der Kopfzeile: nie per Sync
-	s.RestoreTabs = ""                     // Tabs vom letzten Mal: je Rechner
-	s.WebSearch, s.NoHistGhost = "", false // Suchmaschine, Ghost aus dem Verlauf: je Rechner
-	s.NoVerify = false                     // Gegenprüfung: je Rechner
-	s.Push = PushConfig{}                  // Handy-Meldungen: je Rechner (sonst melden alle Rechner doppelt)
+	s.UpdateWaitH = 0                                                                       // Update-Kanal gilt je Rechner
+	s.CmdSetApproved = nil                                                                  // Freigaben gelten für die Team-Dateien dieses Rechners
+	s.Share = ShareConfig{}                                                                 // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
+	s.Vuln = VulnConfig{}                                                                   // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
+	s.Header = HeaderConfig{}                                                               // lokaler Befehl in der Kopfzeile: nie per Sync
+	s.RestoreTabs = ""                                                                      // Tabs vom letzten Mal: je Rechner
+	s.WebSearch, s.NoHistGhost = "", false                                                  // Suchmaschine, Ghost aus dem Verlauf: je Rechner
+	s.NoVerify = false                                                                      // Gegenprüfung: je Rechner
+	s.PanelDock, s.PanelW, s.PanelH, s.FilesBeside, s.NoPaneStatus = "", 0, 0, false, false // Panel-Lage passt zum Bildschirm dieses Rechners
+	s.Push = PushConfig{}                                                                   // Handy-Meldungen: je Rechner (sonst melden alle Rechner doppelt)
 	return s
 }
 

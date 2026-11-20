@@ -947,6 +947,15 @@ func (a *App) palMenuItems() []palItem {
 			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }).at(a.notifyLevel(), 3),
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
+		// nur über die Suche („Panel links“, „unten“); Rand mit der Maus ziehen ändert die Größe
+		hide(palCycle(pgSetBehave, ic("split"), i18n.T("Seitenpanel andocken"), dockLabel(a.dockSetting()),
+			"panel seitenpanel andocken dock links rechts unten left right bottom position seite breite höhe", func(dir int) tea.Cmd { return a.cycleDock(dir) }).at(dockIndex(a.dockSetting()), len(dockOrder))),
+		hide(palToggle(ic("split"), i18n.T("Statuszeile je Bereich (Ordner, letzter Befehl, Last)"), a.paneStatusOn(),
+			"status statuszeile bereich geteilt split ordner exit last load titel pane", func() tea.Cmd { return a.togglePaneStatus() })),
+		hide(palToggle(ic("files"), i18n.T("F5 und Log-Blick neben dem Terminal (breite Fenster)"), a.filesBesideOn(),
+			"dateien files f5 log-blick daneben nebeneinander seite beside side breit", func() tea.Cmd { return a.toggleFilesBeside() })),
+		hide(palItem{icon: ic("split"), label: i18n.T("Panelgröße wieder automatisch"), keys: "panel breite höhe größe zurücksetzen reset size width",
+			run: func() tea.Cmd { return a.resetPanelSize() }}),
 		// nur über die Suche („Handy“, „ntfy“), Hilfe und Webseite nennen den Weg
 		hide(palItem{icon: ic("news"), label: i18n.T("Handy-Meldungen (ntfy, Gotify, Webhook) …"), hint: pushKindLabel(a.st.Settings().Push.Kind),
 			keys: "handy smartphone push ntfy gotify webhook telefon mobil benachrichtigung unterwegs slack mattermost", run: func() tea.Cmd { return a.openPushSetup() }}),

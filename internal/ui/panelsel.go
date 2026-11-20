@@ -52,10 +52,9 @@ func selectablePanel(k panelKind) bool {
 // begrenzt (Ziehen über den Rand); dy sagt dann, ob oben (-1) oder unten (+1)
 // hinausgezogen wurde.
 func (a *App) panelTextPos(s *session, x, y int, clampIt bool) (p pselPos, dy int, ok bool) {
-	r := a.termRect(s)
-	pw := a.panelShown(s)
-	x0, y0 := r.x+r.w-pw+2, r.y+1 // Rahmen + Innenabstand
-	w := pw - 4
+	pb := a.panelBox(s)      // rechts, links oder unten (dock.go)
+	x0, y0 := pb.x+2, pb.y+1 // Rahmen + Innenabstand
+	w := pb.w - 4
 	vis := s.pscroll.vis
 	if s.pscroll.total <= vis || vis <= 0 {
 		vis = s.pscroll.total
@@ -79,7 +78,7 @@ func (a *App) panelTextPos(s *session, x, y int, clampIt bool) (p pselPos, dy in
 // panelSelMouse: Markieren im Panel. ok = false: Ereignis gehört nicht hierher.
 func (a *App) panelSelMouse(s *session, msg tea.MouseMsg, clicks int) (tea.Cmd, bool) {
 	if a.scr != scrTerminal || s == nil || a.modal != nil || a.pal != nil || a.pick != nil ||
-		!selectablePanel(s.panel) || s.files.open || (s.panel == panelHost && s.host.live.wide) {
+		!selectablePanel(s.panel) || s.filesFocus() || (s.panel == panelHost && s.host.live.wide) {
 		return nil, false
 	}
 	if a.panelCollapsed(s) && !s.panelFocus {

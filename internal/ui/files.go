@@ -69,6 +69,7 @@ type xfer struct {
 
 type filesState struct {
 	open    bool
+	blur    bool // daneben geöffnet, Tasten gehen gerade ans Terminal (dock.go)
 	opening bool
 	err     string
 	remote  *sshx.RemoteFS
@@ -104,16 +105,22 @@ func filesTick(sid int) tea.Cmd {
 
 func (a *App) toggleFiles(s *session) tea.Cmd {
 	f := &s.files
+	if f.open && f.blur {
+		f.blur = false // daneben: F5 holt die Dateien nach vorn
+		return nil
+	}
 	if f.open {
 		f.open, f.view = false, nil
+		a.resize(s)
 		return nil
 	}
 	if s.conn.Protocol.Raw() {
 		a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
 		return nil
 	}
-	f.open = true
+	f.open, f.blur = true, false
 	f.placeCache = [2][]place{}
+	a.resize(s) // daneben: Terminal wird schmaler
 	if f.remote != nil || f.opening || s.client == nil {
 		return nil
 	}

@@ -125,6 +125,7 @@ var helpSections = []helpSection{
 		{"Alt+Y", "Zwischenablage-Verlauf: wieder einfügen"},
 		{"Alt+A", "Aufgaben dieser Verbindung"},
 		{"Rechtsklick auf Markierung", "kopieren, im Web suchen"},
+		{"Panelrand ziehen", "Panel breiter/höher (Palette: links, rechts, unten)"},
 		{"Alt+X", "Bildschirm + Verlauf leeren, Eingabe bleibt"},
 		{"Alt+S", "in allen Tabs suchen"},
 		{"Alt+O", "Befehle des Tabs: Ausgabe kopieren, an KI"},
@@ -430,7 +431,7 @@ func (a *App) helpContext() helpCtx {
 	case scrScan:
 		return hcScan
 	case scrTerminal:
-		if s := a.current(); s != nil && s.files.open {
+		if s := a.current(); s != nil && s.filesFocus() {
 			return hcFiles
 		}
 		if s := a.current(); s != nil && s.search.open && !s.panelFocus {
