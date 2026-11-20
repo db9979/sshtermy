@@ -6,6 +6,8 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/db9979/sshtermy/internal/fuzzguard"
 )
 
 type nopBackend struct{}
@@ -21,14 +23,16 @@ func FuzzServe(f *testing.F) {
 	f.Add(`{"id":null}`)
 	f.Add("\x00{\n}")
 	f.Fuzz(func(t *testing.T, in string) {
-		var out bytes.Buffer
-		if err := Serve(strings.NewReader(in), &out, nopBackend{}); err != nil && err != io.EOF {
-			return // z. B. Zeile zu lang: Fehler ist erlaubt, Absturz nicht
-		}
-		for _, line := range strings.Split(strings.TrimSpace(out.String()), "\n") {
-			if line != "" && !json.Valid([]byte(line)) {
-				t.Fatalf("Antwort ist kein JSON: %q", line)
+		fuzzguard.Run(t, func() {
+			var out bytes.Buffer
+			if err := Serve(strings.NewReader(in), &out, nopBackend{}); err != nil && err != io.EOF {
+				return // z. B. Zeile zu lang: Fehler ist erlaubt, Absturz nicht
 			}
-		}
+			for _, line := range strings.Split(strings.TrimSpace(out.String()), "\n") {
+				if line != "" && !json.Valid([]byte(line)) {
+					t.Errorf("Antwort ist kein JSON: %q", line)
+				}
+			}
+		})
 	})
 }

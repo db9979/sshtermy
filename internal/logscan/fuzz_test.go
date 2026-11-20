@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/hostinfo"
+
+	"github.com/db9979/sshtermy/internal/fuzzguard"
 )
 
 // Syslog kommt per UDP von irgendwem, Protokolle von fremden Servern und
@@ -16,11 +18,13 @@ func FuzzSyslog(f *testing.F) {
 	f.Add("2026-11-20T09:00:00+01:00 web kernel: EXT4-fs error (device sda1)")
 	f.Add("<999999999999999999999>")
 	f.Fuzz(func(t *testing.T, s string) {
-		_, _ = SyslogPacket(s, now)
-		_ = ParseUnix(s, 24, now)
-		_ = ParseWindows(s, 24, now)
-		for _, v := range []hostinfo.Vendor{hostinfo.VendorUnknown, hostinfo.VendorProCurve, hostinfo.VendorCisco, hostinfo.VendorUniFi} {
-			_ = ParseNetwork(v, []string{s, s}, s, 24, now)
-		}
+		fuzzguard.Run(t, func() {
+			_, _ = SyslogPacket(s, now)
+			_ = ParseUnix(s, 24, now)
+			_ = ParseWindows(s, 24, now)
+			for _, v := range []hostinfo.Vendor{hostinfo.VendorUnknown, hostinfo.VendorProCurve, hostinfo.VendorCisco, hostinfo.VendorUniFi} {
+				_ = ParseNetwork(v, []string{s, s}, s, 24, now)
+			}
+		})
 	})
 }

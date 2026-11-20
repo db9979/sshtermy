@@ -1,6 +1,10 @@
 package agent
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/db9979/sshtermy/internal/fuzzguard"
+)
 
 // Antworten der KI sind fremder Text: halbes JSON, Markdown drumherum,
 // falsche Typen. Lesen darf scheitern, aber nie abstürzen.
@@ -11,14 +15,16 @@ func FuzzAnswers(f *testing.F) {
 	f.Add(`{"pick":3}`)
 	f.Add(`[`)
 	f.Fuzz(func(t *testing.T, s string) {
-		for _, kind := range []string{"unix", "windows", "network"} {
-			_, _ = parseStep(s, kind)
-			_, _ = parsePlan(s, kind, true)
-			_, _ = parseAuto(s, kind, true)
-			_, _ = parseReview(s, 3, kind)
-			_ = ParseStepCommand(s, kind)
-		}
-		_, _ = ParseMulti(s, []Window{{N: 1, Name: "web"}, {N: 2, Name: "db", Prod: true}})
-		_ = ParseMenuPick(s, 5)
+		fuzzguard.Run(t, func() {
+			for _, kind := range []string{"unix", "windows", "network"} {
+				_, _ = parseStep(s, kind)
+				_, _ = parsePlan(s, kind, true)
+				_, _ = parseAuto(s, kind, true)
+				_, _ = parseReview(s, 3, kind)
+				_ = ParseStepCommand(s, kind)
+			}
+			_, _ = ParseMulti(s, []Window{{N: 1, Name: "web"}, {N: 2, Name: "db", Prod: true}})
+			_ = ParseMenuPick(s, 5)
+		})
 	})
 }

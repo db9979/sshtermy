@@ -2,6 +2,8 @@ package syncx
 
 import (
 	"testing"
+
+	"github.com/db9979/sshtermy/internal/fuzzguard"
 )
 
 // Die Sync-Datei liegt in einem fremden Ordner (Cloud, WebDAV, USB-Stick):
@@ -19,7 +21,9 @@ func FuzzDecode(f *testing.F) {
 	f.Add([]byte(`{"format":"sshtermy-sync","version":99}`))
 	f.Add([]byte(`{}`))
 	f.Fuzz(func(t *testing.T, raw []byte) {
-		_, _ = Decode(k, raw)
-		_, _ = ParseKey(string(raw))
+		fuzzguard.Run(t, func() {
+			_, _ = Decode(k, raw)
+			_, _ = ParseKey(string(raw))
+		})
 	})
 }
