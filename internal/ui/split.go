@@ -901,10 +901,15 @@ func (a *App) paneTitle(s *session, w int, focused, grip bool) string {
 		}
 		marks = append(marks, i18n.F("■ Zoom · %d weitere verdeckt · %s zurück", n, a.keys.label(actZoom)))
 	}
-	if focused && len(marks) == 0 && w >= 60 {
+	// Statuszeile je Bereich (panestatus.go): Ordner, letzter Befehl, Last
+	stat := a.paneStatus(s, time.Now())
+	if focused && len(marks) == 0 && w >= 60 && stat == "" {
 		marks = append(marks, i18n.T("Strg+Pfeil wechselt"))
 	}
 	right := strings.Join(marks, " · ")
+	if stat != "" && ansi.StringWidth(left)+ansi.StringWidth(stat)+ansi.StringWidth(right)+6 < w-gw {
+		right = strings.TrimSuffix(stat+" · "+right, " · ") // nur, wenn Name und Adresse noch passen
+	}
 	if right != "" {
 		right += " "
 	}

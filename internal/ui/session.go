@@ -42,6 +42,8 @@ const (
 
 // session ist eine offene SSH-Sitzung (ein Tab).
 type session struct {
+	oldOut     string       // Ausgabe vom letzten Mal, kommt beim Verbinden vor die neue (closedtabs.go)
+	oldLog     string       // Protokoll, aus dem oldOut stammt (für die nächste Sicherung)
 	connNote   string       // Hinweis während des Verbindens (z. B. Sicherheitsschlüssel berühren)
 	connStep   int          // Schritt beim Verbinden (sshx.Step…), Karte in motion2.go
 	connStepAt [4]time.Time // Beginn jedes Schritts
@@ -298,6 +300,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 		if !keepTerm {
 			s.term = termemu.New(cols, rows, shellWriter{s})
 			s.pixelImages() // pixelgenaue Bilder, wenn das Terminal es kann (pixels.go)
+			s.seedOld()     // Ausgabe vom letzten Mal (closedtabs.go)
 		}
 		sh, err := c.OpenShell(cols, rows, outWriter{s, ev})
 		if err != nil {

@@ -74,6 +74,8 @@ type Connection struct {
 	// Standort). Nur für Menschen: Sie geht nie an die KI (dafür gibt es die
 	// KI-Notizen im Systemprofil) und nicht in ein Team-Paket.
 	Note string `json:"note,omitempty"`
+	// Tasks: offene Arbeiten an dieser Verbindung (domain/tasks.go).
+	Tasks []Task `json:"tasks,omitempty"`
 	// StartCmd: Befehl, den sshTermy nach dem Anmelden einmal sichtbar am
 	// Prompt eintippt (z. B. „cd /srv/app“). Nicht zusammen mit einer festen
 	// Sitzung. Gefährliche Befehle lehnt das Formular ab; aus einem
@@ -606,6 +608,19 @@ type Settings struct {
 
 	// DimPanes: in der geteilten Ansicht die nicht aktiven Bereiche abdunkeln.
 	DimPanes bool `json:"dim_panes,omitempty"`
+	// NoVerify: keine Gegenprüfung nach Ziel/Agent (ui/goalverify.go).
+	NoVerify bool `json:"no_verify,omitempty"`
+	// PanelDock: Seitenpanel rechts (""), links ("left") oder unten ("bottom");
+	// PanelW/PanelH: mit der Maus gezogene Größe, 0 = automatisch (ui/dock.go).
+	PanelDock string `json:"panel_dock,omitempty"`
+	PanelW    int    `json:"panel_w,omitempty"`
+	PanelH    int    `json:"panel_h,omitempty"`
+	// NoPaneStatus: keine Statuszeile (Ordner, letzter Befehl, Last) je Bereich (ui/panestatus.go).
+	NoPaneStatus bool `json:"no_pane_status,omitempty"`
+	// FilesBeside: F5 und Log-Blick in breiten Fenstern neben dem Terminal (ui/dock.go).
+	FilesBeside bool `json:"files_beside,omitempty"`
+	// Push: Handy-Meldungen über ntfy, Gotify oder Webhook, wenn niemand am Rechner ist.
+	Push PushConfig `json:"push,omitzero"`
 	// WebSearch: Suchmaschine für „Im Web suchen“ ("" = DuckDuckGo, ui/websearch.go).
 	WebSearch string `json:"web_search,omitempty"`
 	// NoHistGhost: Ghost-Text nicht zuerst aus dem Befehlsverlauf (ui/histghost.go).
@@ -729,14 +744,24 @@ func (s Settings) SyncedPart() Settings {
 	s.LastLayout, s.Editor, s.Schedules, s.KeysHere = nil, "", nil, nil // Zeitpläne: eigener Abgleich
 	s.Debug, s.Audit, s.MCP = false, false, ""
 	s.SyslogPort, s.SyslogAny = 0, false
-	s.UpdateWaitH = 0                      // Update-Kanal gilt je Rechner
-	s.CmdSetApproved = nil                 // Freigaben gelten für die Team-Dateien dieses Rechners
-	s.Share = ShareConfig{}                // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
-	s.Vuln = VulnConfig{}                  // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
-	s.Header = HeaderConfig{}              // lokaler Befehl in der Kopfzeile: nie per Sync
-	s.RestoreTabs = ""                     // Tabs vom letzten Mal: je Rechner
-	s.WebSearch, s.NoHistGhost = "", false // Suchmaschine, Ghost aus dem Verlauf: je Rechner
+	s.UpdateWaitH = 0                                                                       // Update-Kanal gilt je Rechner
+	s.CmdSetApproved = nil                                                                  // Freigaben gelten für die Team-Dateien dieses Rechners
+	s.Share = ShareConfig{}                                                                 // Teilen: Vorgaben und Weg gelten je Rechner (Vermittler sind lokal)
+	s.Vuln = VulnConfig{}                                                                   // Sicherheitscheck: Quelle/Spiegel/Ausnahmen je Rechner
+	s.Header = HeaderConfig{}                                                               // lokaler Befehl in der Kopfzeile: nie per Sync
+	s.RestoreTabs = ""                                                                      // Tabs vom letzten Mal: je Rechner
+	s.WebSearch, s.NoHistGhost = "", false                                                  // Suchmaschine, Ghost aus dem Verlauf: je Rechner
+	s.NoVerify = false                                                                      // Gegenprüfung: je Rechner
+	s.PanelDock, s.PanelW, s.PanelH, s.FilesBeside, s.NoPaneStatus = "", 0, 0, false, false // Panel-Lage passt zum Bildschirm dieses Rechners
+	s.Push = PushConfig{}                                                                   // Handy-Meldungen: je Rechner (sonst melden alle Rechner doppelt)
 	return s
+}
+
+// PushConfig: Handy-Meldungen über ntfy, Gotify oder Webhook (push.go). Lokal.
+type PushConfig struct {
+	Kind  string `json:"kind,omitempty"` // "" = aus, ntfy, gotify, webhook
+	URL   string `json:"url,omitempty"`
+	Token Secret `json:"token,omitempty"`
 }
 
 // HeaderConfig: eigene Felder rechts in der Kopfzeile.
@@ -1106,7 +1131,8 @@ type Schedule struct {
 	Conns     []string  `json:"conns,omitempty"`
 	Kind      string    `json:"kind,omitempty"` // "" = Befehle/Runbook, "backup" = Switch-Configs sichern, "logs" = Ordner-Scan
 	RunbookID string    `json:"runbook_id,omitempty"`
-	Steps     []string  `json:"steps,omitempty"` // ohne Runbook
+	Steps     []string  `json:"steps,omitempty"`  // ohne Runbook
+	Prompt    string    `json:"prompt,omitempty"` // KI-Prüfung: Prüfauftrag in eigenen Worten
 	Off       bool      `json:"off,omitempty"`
 	LastRun   time.Time `json:"last_run,omitempty"`
 	LastOK    int       `json:"last_ok,omitempty"`
@@ -1135,6 +1161,9 @@ const ScheduleBackup = "backup"
 
 // ScheduleLogs: Zeitplan macht einen Ordner-Scan der Logs (Log-Blick je Host).
 const ScheduleLogs = "logs"
+
+// ScheduleAI: Zeitplan lässt die KI rein lesend prüfen (Prompt).
+const ScheduleAI = "ai"
 
 // ScheduleVuln: Zeitplan prüft die Pakete aller Server im Ziel gegen OSV.
 const ScheduleVuln = "osv"

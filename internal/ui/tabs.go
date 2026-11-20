@@ -211,6 +211,7 @@ func (a *App) tabMenu(s *session, x, y int, after func()) *modal {
 		group(menuItem{label: i18n.T("Nach rechts"), run: func() tea.Cmd { a.moveTab(s, 1); return nil }})
 	}
 	items = append(items, menuItem{label: i18n.T("Tab schließen"), hint: k.label(actCloseTab), sep: true, run: func() tea.Cmd { return a.closeTabAsk(s, after) }})
+	items = append(items, menuItem{label: i18n.T("Zuletzt geschlossen …"), run: func() tea.Cmd { return a.openClosed() }})
 	if len(a.sessions) > 1 {
 		items = append(items, menuItem{label: i18n.T("Andere Tabs schließen"), run: func() tea.Cmd { return a.closeOtherTabs(s) }})
 	}

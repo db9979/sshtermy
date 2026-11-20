@@ -49,7 +49,9 @@ type restoreTab struct {
 	Adhoc   *domain.Connection `json:"adhoc,omitempty"` // nicht gespeicherte Verbindung, ohne Geheimnisse
 	Mux     string             `json:"mux,omitempty"`
 	MuxName string             `json:"mux_name,omitempty"`
-	Title   string             `json:"title,omitempty"` // umbenannter Tab
+	Title   string             `json:"title,omitempty"`  // umbenannter Tab
+	LogID   string             `json:"log_id,omitempty"` // Sitzungsprotokoll: Ausgabe vom letzten Mal
+	Closed  time.Time          `json:"closed,omitzero"`  // nur „Zuletzt geschlossen“
 }
 
 type restoreState struct {
@@ -96,12 +98,7 @@ func (a *App) saveRestoreAs(reason string) {
 		}
 		tabOf[s.id] = len(st.Tabs)
 		s.checkMuxGone()
-		t := restoreTab{Mux: s.mux.kind, MuxName: s.mux.name, Title: s.title}
-		if _, ok := a.st.Connection(s.conn.ID); ok && s.conn.ID != "" {
-			t.ConnID = s.conn.ID
-		} else {
-			t.Adhoc = adhocCopy(s.conn)
-		}
+		t := a.tabRef(s)
 		if i == a.cur {
 			st.Active = len(st.Tabs)
 		}
@@ -277,28 +274,11 @@ func (a *App) openRestored(st *restoreState) tea.Cmd {
 	first := len(a.sessions)
 	made := make([]*session, len(st.Tabs)) // Tab-Nummer → neue Sitzung
 	for ti, t := range st.Tabs {
-		var c domain.Connection
-		switch {
-		case t.ConnID != "":
-			cc, ok := a.st.Connection(t.ConnID)
-			if !ok {
-				continue // inzwischen gelöscht (z. B. per Sync)
-			}
-			c = cc
-		case t.Adhoc != nil && (t.Adhoc.Host != "" || t.Adhoc.Protocol.NoHost()):
-			c = *t.Adhoc
-		default:
-			continue
+		s, cmd := a.openRef(t)
+		if s == nil {
+			continue // inzwischen gelöscht (z. B. per Sync)
 		}
-		cmd := a.connect(c)
-		if s := a.current(); s != nil {
-			s.title = t.Title
-			made[ti] = s
-		}
-		// Feste Sitzung: hängt sich nach dem Verbinden selbst an (geteilt, ohne -d)
-		if s := a.current(); s != nil && (t.Mux == "tmux" || t.Mux == "screen") && !c.Protocol.Raw() && c.Persist == "" {
-			s.mux, s.muxPending = muxState{kind: t.Mux, name: t.MuxName}, true
-		}
+		made[ti] = s
 		cmds = append(cmds, cmd)
 	}
 	n := len(a.sessions) - first
@@ -316,6 +296,51 @@ func (a *App) openRestored(st *restoreState) tea.Cmd {
 		a.flashOK(plural(n, i18n.T("Sitzung"), i18n.T("Sitzungen")) + i18n.T(" von vor dem Update wieder geöffnet"))
 	}
 	return tea.Batch(cmds...)
+}
+
+// tabRef: Verweis auf den Tab, ohne Geheimnisse.
+func (a *App) tabRef(s *session) restoreTab {
+	t := restoreTab{Mux: s.mux.kind, MuxName: s.mux.name, Title: s.title}
+	if _, ok := a.st.Connection(s.conn.ID); ok && s.conn.ID != "" {
+		t.ConnID = s.conn.ID
+	} else {
+		t.Adhoc = adhocCopy(s.conn)
+	}
+	if s.log != nil && len(s.log.Entries) > 0 && a.logsEnabled() {
+		t.LogID = s.log.ID
+	} else if a.logsEnabled() {
+		t.LogID = s.oldLog // seit dem Wiederöffnen nichts getippt
+	}
+	return t
+}
+
+// openRef verbindet einen gemerkten Tab; nil, wenn die Verbindung fehlt.
+func (a *App) openRef(t restoreTab) (*session, tea.Cmd) {
+	var c domain.Connection
+	switch {
+	case t.ConnID != "":
+		cc, ok := a.st.Connection(t.ConnID)
+		if !ok {
+			return nil, nil
+		}
+		c = cc
+	case t.Adhoc != nil && (t.Adhoc.Host != "" || t.Adhoc.Protocol.NoHost()):
+		c = *t.Adhoc
+	default:
+		return nil, nil
+	}
+	old := a.oldOutput(t.LogID)
+	cmd := a.connect(c)
+	s := a.current()
+	if s == nil {
+		return nil, cmd
+	}
+	s.title, s.oldOut, s.oldLog = t.Title, old, t.LogID
+	// Feste Sitzung: hängt sich nach dem Verbinden selbst an (geteilt, ohne -d)
+	if (t.Mux == "tmux" || t.Mux == "screen") && !c.Protocol.Raw() && c.Persist == "" {
+		s.mux, s.muxPending = muxState{kind: t.Mux, name: t.MuxName}, true
+	}
+	return s, cmd
 }
 
 // restoreSplit stellt die geteilte Ansicht von vor dem Neustart wieder her.

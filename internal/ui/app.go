@@ -150,6 +150,8 @@ type App struct {
 	formBulk         []string // Verbindungen der Sammeländerung (bulk.go)
 	searchAllLast    string   // letzter Suchbegriff der Suche über alle Tabs
 	tabDrag          *tabDrag // Tab wird mit der Maus gezogen (tabs.go)
+	panelDrag        bool     // Panelrand wird gezogen (dock.go)
+	dragW, dragH     int
 	formQuickPreset  []string // Schnellbefehle: Vorbelegung zum Vergleich
 	formSID          int      // Schlüsseldatei-Abfrage: Sitzung, die danach neu verbindet
 	returnToTerminal bool
@@ -170,20 +172,22 @@ type App struct {
 	sdrag    *splitDrag
 	dropOn   int // Titel wird gezogen: Zielbereich+1
 
-	modal        *modal
-	pal          *palette
-	mst          *menuState // Menü-Nutzung, Anheften, NEU (palstate.go)
-	llm          llmUI
-	lh           llmHealthState // KI-Status (llmhealth.go)
-	reach        reachState     // Online-Punkt im Manager (reach.go)
-	toasts       []toastItem    // Einblendungen oben rechts (toast.go)
-	perf         perfState      // Bildrate und Leistungsanzeige (perf.go)
-	styleGen     int            // zählt Theme-Wechsel (termView)
-	ovMemo       overlayMemo    // Hintergrund unter dem Modal (overlay)
-	toastTicking bool
-	animTicking  bool       // Takt für Bewegung (motion.go)
-	hov          hoverState // Karte unter der Maus (motion.go)
-	rel          *update.Release
+	modal         *modal
+	taskL         *taskList // Aufgabenliste (tasks.go)
+	tasksReminded bool      // an fällige Aufgaben erinnert (tasks.go)
+	pal           *palette
+	mst           *menuState // Menü-Nutzung, Anheften, NEU (palstate.go)
+	llm           llmUI
+	lh            llmHealthState // KI-Status (llmhealth.go)
+	reach         reachState     // Online-Punkt im Manager (reach.go)
+	toasts        []toastItem    // Einblendungen oben rechts (toast.go)
+	perf          perfState      // Bildrate und Leistungsanzeige (perf.go)
+	styleGen      int            // zählt Theme-Wechsel (termView)
+	ovMemo        overlayMemo    // Hintergrund unter dem Modal (overlay)
+	toastTicking  bool
+	animTicking   bool       // Takt für Bewegung (motion.go)
+	hov           hoverState // Karte unter der Maus (motion.go)
+	rel           *update.Release
 	// restartPending: installierte, noch nicht gestartete Version.
 	restartPending string
 	keeperDetach   func(string) // Hintergrunddienst: Fenster abkoppeln (keeper.go)
@@ -194,10 +198,13 @@ type App struct {
 	mcpWaits       []*mcpWaiter // MCP wait_tab, die noch warten (mcpcontrol.go)
 	jumpSID        int          // Tab der letzten Desktop-Meldung (notify.go)
 	jumpAt         time.Time    // … und wann sie kam
+	pushErrAt      time.Time    // letzte Fehlermeldung der Handy-Meldungen (pushnotify.go)
 	restoreArmed   bool         // Tabs vom letzten Mal angeboten, ab jetzt sichern (restore.go)
 	restoreAt      time.Time    // letzte Sicherung der offenen Tabs
 	restoreSig     string       // Inhalt der letzten Sicherung (nur bei Änderung schreiben)
-	restart        bool         // nach dem Beenden neu starten (siehe Restart)
+	closed         []restoreTab // zuletzt geschlossene Tabs (closedtabs.go)
+	closedLoaded   bool
+	restart        bool // nach dem Beenden neu starten (siehe Restart)
 	lastKey        time.Time
 
 	hl   hlState  // Farbregeln (highlight.go)
@@ -596,7 +603,11 @@ func (a *App) coreMsg(msg tea.Msg) (tea.Cmd, bool) {
 		if a.lock != nil {
 			return nil, true
 		}
-		return a.mouse(msg.(tea.MouseMsg)), true
+		cmd := a.mouse(msg.(tea.MouseMsg))
+		if a.scr == scrTerminal || a.scr == scrLogScan {
+			a.fitCurrent() // F5 daneben per Klick geschlossen: Terminal wieder breit (dock.go)
+		}
+		return cmd, true
 	case pasteMsg:
 		return a.onPaste(m), true
 	case pingDoneMsg:
@@ -711,6 +722,12 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if cmd, ok := a.vulnFolderMsg(msg); ok {
 		return cmd, true
 	}
+	if cmd, ok := a.schedAIMsg(msg); ok {
+		return cmd, true
+	}
+	if cmd, ok := a.pushMsg(msg); ok {
+		return cmd, true
+	}
 	if cmd, ok := a.schedVulnMsg(msg); ok {
 		return cmd, true
 	}
@@ -817,13 +834,17 @@ func (a *App) screenMsg(msg tea.Msg) tea.Cmd {
 	case scrConnForm, scrSettings, scrTunnelForm, scrQuickForm, scrMonitorForm, scrFolderForm, scrHighlightForm, scrScheduleForm, scrRulesForm, scrCmdSetForm, scrKeyForm, scrSSHKeyForm, scrRelayForm, scrShareForm, scrRelaySetup, scrMasterForm, scrBackupForm, scrBulkForm:
 		return a.updateForm(msg)
 	case scrTerminal:
-		return a.updateTerminal(msg)
+		cmd := a.updateTerminal(msg)
+		a.fitCurrent() // F5 daneben auf/zu: Terminal breiter oder schmaler (dock.go)
+		return cmd
 	case scrSync:
 		return a.updateSync(msg)
 	case scrLogs:
 		return a.updateLogs(msg)
 	case scrLogScan:
-		return a.updateLogScan(msg)
+		cmd := a.updateLogScan(msg)
+		a.fitCurrent()
+		return cmd
 	case scrVuln:
 		return a.updateVuln(msg)
 	case scrPlayer:
@@ -906,6 +927,7 @@ func (a *App) onTick() tea.Cmd {
 	a.watchTick()
 	a.restoreTick(time.Now())
 	a.aiUsageTick(time.Now())
+	a.tasksReminder(time.Now())
 	a.mcpWaitTick(time.Now()) // MCP wait_tab (mcpcontrol.go)
 	if c := a.headerTick(time.Now()); c != nil {
 		cmds = append(cmds, c) // eigener Befehl in der Kopfzeile (headerfields.go)
@@ -988,6 +1010,10 @@ func (a *App) viewFrame() tea.View {
 	case scrLogs:
 		body = a.frame(a.viewLogs(), a.logsKeys())
 	case scrLogScan:
+		if a.logBeside(a.current()) {
+			body, _ = a.viewTerminal() // neben dem Terminal (dock.go)
+			break
+		}
 		body = a.frame(a.viewLogScan(), a.logScanKeys())
 	case scrVuln:
 		body = a.frame(a.viewVuln(), a.vulnKeys())

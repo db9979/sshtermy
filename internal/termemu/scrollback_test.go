@@ -108,6 +108,12 @@ func TestScrollbackMemory(t *testing.T) {
 		t.Skip("misst Speicher")
 	}
 	mb := sessionHeapMB(t, 2)
+	for i := 0; i < 3 && mb < 0; i++ {
+		mb = sessionHeapMB(t, 2) // anderer Test hat dazwischen Speicher freigegeben
+	}
+	if mb < 0 {
+		t.Skip("Messung gestört (Heap schrumpfte während der Messung)")
+	}
 	t.Logf("%.1f MB pro Tab mit vollem Verlauf", mb)
 	if mb > 20 {
 		t.Fatalf("%.1f MB pro Tab, erwartet unter 20", mb)
@@ -133,7 +139,9 @@ func sessionHeapMB(tb testing.TB, n int) float64 {
 		}
 		tm.Close()
 	}
-	return float64(m1.HeapAlloc-m0.HeapAlloc) / 1e6 / float64(n)
+	// vorzeichenbehaftet: gibt ein anderer Test dazwischen Speicher frei,
+	// wäre die Differenz ohne Vorzeichen riesig statt negativ
+	return float64(int64(m1.HeapAlloc)-int64(m0.HeapAlloc)) / 1e6 / float64(n)
 }
 
 // typische farbige Ausgabezeile (ls --color, Logs): ~150 Zeichen

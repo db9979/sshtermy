@@ -36,6 +36,9 @@ func (a *App) panelWidth(s *session) int {
 	if w < panelNarrow {
 		return panelRailW
 	}
+	if pw, _ := a.panelSizes(); pw > 0 { // mit der Maus gezogen (dock.go)
+		return clamp(pw, panelMinW, max(panelMinW, w-20))
+	}
 	if w >= 110 {
 		return 48
 	}
@@ -117,8 +120,8 @@ func (a *App) termSize(s *session) (int, int) {
 
 // paneSize: Platz für das Terminal hier im Fenster.
 func (a *App) paneSize(s *session) (int, int) {
-	r := a.termRect(s)
-	return max(20, r.w-a.panelWidth(s)), max(3, r.h)
+	b := a.termBox(s) // ohne Panel (dock.go)
+	return max(20, b.w), max(3, b.h)
 }
 
 func (a *App) resize(s *session) {
@@ -153,13 +156,13 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if s.detached() && !s.panelFocus {
 			return nil // Einfügen geht im eigenen Fenster
 		}
-		if s.search.open && !s.panelFocus && !s.files.open {
+		if s.search.open && !s.panelFocus && !s.filesFocus() {
 			return a.searchPaste(s, m)
 		}
 		if g := a.vg; g != nil && g.focus && g.open {
 			return a.vgPaste(m)
 		}
-		if s.files.open {
+		if s.filesFocus() {
 			return a.filesPaste(s, m)
 		}
 		if s.panelFocus {
@@ -183,29 +186,29 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			a.movePane(dir)
 			return nil
 		}
-		if s.search.open && !s.panelFocus && !s.files.open {
+		if s.search.open && !s.panelFocus && !s.filesFocus() {
 			if cmd, ok := a.searchKey(s, m); ok {
 				return cmd
 			}
 		}
 		// Markieren per Tastatur (copymode.go): hat alle Tasten außer den F-Tasten
-		if s.copy != nil && !s.panelFocus && !s.files.open {
+		if s.copy != nil && !s.panelFocus && !s.filesFocus() {
 			if m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12 {
 				a.stopCopyMode(s)
 			} else {
 				return a.copyKey(s, m)
 			}
 		}
-		if a.keys.is(actCopyMode, key) && !s.panelFocus && !s.files.open && s.term != nil {
+		if a.keys.is(actCopyMode, key) && !s.panelFocus && !s.filesFocus() && s.term != nil {
 			a.startCopyMode(s)
 			return nil
 		}
 		// Tippen beendet Markierung und Rückblick (Esc nur das)
-		if s.scroll > 0 && key == "esc" && !s.panelFocus && !s.files.open {
+		if s.scroll > 0 && key == "esc" && !s.panelFocus && !s.filesFocus() {
 			s.scroll, s.sel = 0, nil
 			return nil
 		}
-		if !s.panelFocus && !s.files.open && s.term != nil {
+		if !s.panelFocus && !s.filesFocus() && s.term != nil {
 			switch a.keys.which(key, actPrevCmd, actNextCmd, actCmdList) { // Befehle als Blöcke (cmdblocks.go)
 			case actPrevCmd:
 				a.jumpBlock(s, -1)
@@ -217,7 +220,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 				return a.openBlocks(s)
 			}
 		}
-		if !s.panelFocus && !s.files.open && s.term != nil {
+		if !s.panelFocus && !s.filesFocus() && s.term != nil {
 			if act := a.keys.which(key, actScrollUp, actScrollDown, actScrollTop, actScrollBottom); act != "" {
 				if !s.term.AltScreen() {
 					a.scrollKey(s, act)
@@ -229,7 +232,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			}
 		}
 		s.sel, s.selecting = nil, false
-		if !s.panelFocus && !s.files.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
+		if !s.panelFocus && !s.filesFocus() && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
 			s.scroll = 0
 		}
 		if a.keys.is(actVorgang, key) {
@@ -281,7 +284,7 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			}
 			return nil
 		}
-		if s.files.open {
+		if s.filesFocus() {
 			return a.filesKey(s, m)
 		}
 		if s.detached() && !s.panelFocus {
@@ -347,6 +350,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		if a.keys.is(actClipHist, key) {
 			return a.openClipHist()
 		}
+		if a.keys.is(actTasksTerm, key) {
+			return a.openTasks(s.conn.ID, s.conn.Group)
+		}
 		if s.state == stReconnect {
 			switch key {
 			case "enter", "r":
@@ -383,6 +389,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 }
 
 func (a *App) closeTab(s *session) {
+	if s.conn.Protocol != domain.ProtoWatch {
+		a.rememberClosed(s)
+	}
 	a.vgForget(s)
 	a.endLog(s)
 	a.stopRecording(s)
@@ -636,7 +645,7 @@ func (a *App) viewTerminal() (string, *tea.Cursor) {
 func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	st := a.s
 	cols, rows := a.paneSize(s)
-	tr := a.termRect(s)
+	tr := a.termBox(s) // Terminal ohne Panel: links angedockt rückt es nach rechts
 	if s.search.open {
 		a.refreshSearch(s, false)
 	}
@@ -686,8 +695,16 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 	if s.fixedCols > 0 {
 		body = cropView(body, cols, rows)
 	}
-	if s.files.open {
-		body, cur = a.viewFiles(s, tr.w, rows), nil
+	if a.logBeside(s) {
+		body, cur = beside(body, cols, a.logPaneView(a.filesWidth(s), rows)), nil // Log-Blick daneben (dock.go)
+	} else if s.files.open && a.filesBeside(s) {
+		fr := a.filesRect(s)
+		body = beside(body, cols, a.viewFiles(s, fr.w, fr.h)) // F5 neben dem Terminal (dock.go)
+		if !s.files.blur {
+			cur = nil
+		}
+	} else if s.files.open {
+		body, cur = a.viewFiles(s, a.termRect(s).w, rows), nil
 	} else if s.panel == panelHost && s.host.live.wide && s.host.live.hasLive() {
 		body, cur = a.viewPanel(s, tr.w, rows), nil // F6 groß: über dem Terminal, ohne dessen Größe zu ändern
 	} else if a.panelCollapsed(s) {
@@ -704,7 +721,7 @@ func (a *App) paneBody(s *session, focused bool) (string, *tea.Cursor) {
 			body = beside(body, cols, a.panelRail(s, rows)) // perf.go
 		}
 	} else if s.panel != panelNone {
-		body = beside(body, cols, a.viewPanel(s, a.panelWidth(s), rows))
+		body = a.dockCompose(s, body) // rechts, links oder unten (dock.go)
 	}
 
 	return body, cur
@@ -755,7 +772,10 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	if g := a.vg; g != nil && g.focus && g.open {
 		return a.vgKeys()
 	}
-	if s.files.open {
+	if a.scr == scrLogScan {
+		return a.logScanKeys() // Log-Blick daneben hat die Tasten
+	}
+	if s.filesFocus() {
 		return a.filesKeys(s)
 	}
 	if s.panelFocus {

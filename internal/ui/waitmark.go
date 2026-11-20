@@ -94,7 +94,7 @@ func (a *App) waitTick(s *session, now time.Time) {
 		msg += " · " + trunc(line, 50)
 	}
 	a.pushToast(toastWarn, "? "+msg)
-	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() {
+	if a.notifyAway() {
 		body := waitLabel(kind)
 		if a.lock == nil && kind != "secret" {
 			body += ": " + trunc(line, 80)
@@ -203,7 +203,7 @@ func (a *App) agentNotice(s *session, kind noticeKind, text string) {
 	} else {
 		a.flashOK("◆ " + s.tabName() + ": " + text)
 	}
-	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() {
+	if a.notifyAway() {
 		a.sendDesktopFor(s, "sshTermy · "+s.tabName(), text)
 	}
 }

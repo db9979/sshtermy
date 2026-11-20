@@ -34,7 +34,7 @@ func (a *App) palHereN(limit int) (string, []palItem) {
 	var items []menuItem
 	icon := ic("command")
 	switch {
-	case a.scr == scrTerminal && a.current() != nil && a.current().files.open:
+	case a.scr == scrTerminal && a.current() != nil && a.current().filesFocus():
 		s := a.current()
 		f := &s.files
 		if p := f.panes[f.side]; p != nil {

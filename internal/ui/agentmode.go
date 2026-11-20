@@ -524,6 +524,10 @@ func (a *App) agentKey(s *session, key string) (tea.Cmd, bool) {
 			return a.startFollowGoal(s), true
 		case "u":
 			return a.startUndo(s), true
+		case "d":
+			return a.showGoalDiff(s), true
+		case "g":
+			return a.startVerify(s), true
 		}
 		return nil, false
 	}

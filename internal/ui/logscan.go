@@ -103,6 +103,7 @@ func (a *App) openLogScan(s *session) tea.Cmd {
 	}
 	a.lscan.back = back
 	a.scr = scrLogScan
+	a.fitCurrent() // daneben: Terminal wird schmaler (dock.go)
 	a.lsApplyFocus()
 	if a.lscan.rep == nil && !a.lscan.busy {
 		return a.runLogScan(s)

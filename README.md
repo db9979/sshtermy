@@ -24,6 +24,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Simple mode** (palette › Settings › General): hides pro features (broadcast, network, team, agent, recording, MCP, audit …) from the palette overview, settings and key bar; searching in the palette still finds everything
 - **Quick connect**: type `user@host:port` or `ssh -p 2222 user@host` into the palette without saving the connection (agent/default keys, otherwise password)
 - **Change several connections at once**: in the manager Space marks a connection, `*` all visible ones (with a search or `#tag`, all hits). After that `e` (bulk change: add or remove tags, user, protection, color), `v` (move) and `d` (delete, with undo) apply to all marked ones; Esc clears the selection.
+- **Tasks per connection or folder** (`u` in the manager, Alt+A in the terminal): open work with a due date (“renew certificate by 12/12”). ⏎ starts a task as a goal in the connection's open tab (goal or agent mode, as last chosen); afterwards it waits “to review” with the AI's message and the cross-check's finding, `a` checks it off. Folder tasks apply to every connection in it (⇧N adds one). The manager's detail column shows open and due tasks, and a notice at start reminds you of due ones. They travel with the sync, never into a team package.
 - **Note per connection**: a free field just for you (contact person, maintenance window, location). It shows in the manager on the right, the search finds it, and it is never sent to the AI. “AI notes” remain the field for hints to the AI.
 - **Start command per connection** (form › Advanced): typed visibly once after login, e.g. `cd /srv/app` or `sudo -i`. The form rejects dangerous commands; a start command is never taken over from a team package.
 - **Wake-on-LAN**: a powered-off machine in your own network can be woken from the manager (click “Send Wake-on-LAN”, palette “wake”, or `w` in a disconnected tab). sshTermy remembers the MAC address on the first connect, or you enter it under Advanced.
@@ -32,6 +33,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Who is waiting for you**: a tab that waits for a password, a `[y/N]` question, a key or a pager (`--More--`) gets a `?` in the tab bar; Alt+G jumps to the next tab that waits or has a notice. **AI coding agents** in a tab (Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI, Cursor Agent, Qwen Code) are recognized: the tab shows whether the agent is working, waiting for your approval (`◆`, plus a desktop notification) or done. The tab list (Alt+T) shows the state as text.
 - **Click on a desktop notification** (Linux; on Windows and macOS by bringing sshTermy to the front) jumps straight into the tab it was about.
 - **Tabs from last time**: when you start sshTermy, it offers to reopen the tabs (with split view) of the last session; palette › “Tabs from last time” sets it to always or never.
+- **Output from last time and “Recently closed”**: when sshTermy reopens a tab (after a restart or from the list of recently closed tabs: right-click a tab or palette *Recently closed tabs*), what last ran in it appears dimmed above the new session, up to 200 lines with a separator. The lines come from the encrypted session log; with the log off the tab stays empty.
 - **Background service** (palette › “Background service”, when sshTermy runs in a terminal): sessions keep running when you close the terminal window; start `sshtermy` again to attach. Ctrl+Q then offers `a` = detach (window closes, sessions keep running) next to quitting.
 - **Clipboard history** (Alt+Y): the last nine things you copied in sshTermy (selection, panel text, commands, paths, OSC 52 from the server) as a list; ⏎ or the digit pastes at the prompt (with paste protection). Kept in memory only until sshTermy quits; lines that look like a password, token or key never go in.
 - **Search the web**: right-click a selection for a small menu: *Copy* (as before, ⏎), *Search the web* (e.g. an error message), *Paste*. Only the selected text is sent, without passwords, at most 300 characters; pick the search engine (DuckDuckGo, Google, Bing, Startpage, Ecosia) in the palette (“search engine”).
@@ -43,6 +45,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **New tab via the manager**: `+` in the tab bar, Alt+N or a click on the `>_ sshTermy` logo opens the connection manager with folders, search and tags; the connection you pick (⏎ or double-click) opens in an additional tab, the current tabs stay open. Esc goes back without a new tab.
 - **Drag tabs with the mouse**: a tab can be dragged to another position in the tab bar.
 - **Finished in the background**: a command that ran 10 s or longer in a hidden tab marks the tab (✓ / ×) and shows a toast; if the sshTermy window is in the background you also get a desktop notification (Windows, macOS, Linux). The terminal bell marks the tab too. Both can be switched off in the palette
+- **Phone notifications** (palette *Phone notifications*: ntfy, Gotify or webhook): whatever comes as a desktop notification (long command done, schedule ran, log watch, color rule with `!`, a program or AI agent waiting for you, cross-check with doubt) also goes to your phone when you are away: window in the background, locked or no key for 5 minutes. The text passes the secret filter, when locked no command is in it; failures and waiting come with high priority. A test notification follows the setup. Per computer, not synced.
 - **Agent forwarding** per connection (like `ssh -A`): `git pull`, `ssh` and `scp` on the server use your local keys from ssh-agent, Pageant or the Windows OpenSSH agent, the keys never leave your computer
 - **X11 forwarding** per connection (like `ssh -X`): graphical programs from the server open here; needs a local X server (XQuartz, VcXsrv, WSLg), the X cookie never leaves your computer
 - **FIDO2 security keys** (`id_ed25519_sk`, `id_ecdsa_sk`, e.g. YubiKey) are used directly; sshTermy asks you to touch the key (needs OpenSSH ssh-agent/ssh-add)
@@ -56,6 +59,7 @@ sshTermy is a lean terminal application (TUI, a single file, ~9 MB, no installer
 - **Images in the terminal**: Sixel (`img2sixel`, `chafa -f sixel`, gnuplot), the kitty graphics protocol (`kitty +kitten icat`, `viu`, `timg`) and iTerm2 inline images (`imgcat`) show up as colored half blocks right in the text, in every terminal with 24-bit color, in the scrollback and in split view. Two pixels per cell, so plots and photos are recognizable, not pixel-perfect. In kitty, Ghostty and sshTermy's own window the images show pixel-perfect instead (kitty graphics with Unicode placeholders, so they still scroll with the text; off with `SSHTERMY_NO_PIXELS=1`)
 - **Clipboard from the server (OSC 52)**: what you copy in tmux or vim on the server lands in your local clipboard. The server can never read it
 - **Split view** (Ctrl+T): up to six sessions at once in seven layouts, resize with the mouse or Alt+⇧+arrow, zoom one pane (Alt+Z), swap panes by dragging their title, optionally dim the other panes. The layout survives updates; **workspaces** (w in the manager) save layout and connections to reopen in one go, “Last used” is remembered on quit, `g` on a folder opens all its connections as a grid
+- **Panel left, right or bottom**: the side panel (goal, ask AI, companion, tunnels, F6) sits on the right, left or bottom (palette *Dock the side panel*); drag its edge with the mouse to make it wider or taller, sshTermy remembers the size. In wide windows **F5 and the log view sit beside the terminal** instead of over it (palette *F5 and log view beside the terminal*): click into the terminal to keep typing there, F5 brings the files back to the front. In split view the **title line of every pane** shows the folder, the last command with result and duration (✓ 2 s, × 1) and the load if F6 knows it.
 - **Type into all split panes** (Alt+I in split view): what you type goes live to every visible host, e.g. the same change on four switches. Enter only goes through if the line is harmless on every host
 - **SSH certificates**: keys signed by a company CA (`id_ed25519-cert.pub` next to the key, or any path in the connection) are used automatically; an expired certificate is reported with its date
 - **Files right in the terminal (trzsz)**: run `tsz file` on the server to download into your Downloads folder (sshTermy asks first and never overwrites an existing file), or `trz` to upload; works through `sudo su`, several hops and devices without SFTP. ZMODEM (`sz`/`rz`) is detected and cancelled with a hint instead of hanging
@@ -107,6 +111,7 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
   dangerous steps and runbooks with variables cannot be scheduled at all. The result per host is in the list
   (⏎), plus a toast or desktop notification. Schedules travel with the sync but run only on one computer
   (“Runs on” in the form, default: the computer that created it), so two computers never start the same run
+- **AI check as a schedule** (kind *AI check (read-only)*): a check task in your own words, e.g. “is nginx running, is a disk above 90 %, are there new errors in the journal?”, for all Linux/Unix servers of a folder. The AI picks up to five commands once that only read (anything not surely read-only is dropped), they run on every server, then the AI judges per host: fine or finding. The result with the commands is in the schedule, findings come as a notification (and to the phone, if set up).
 - **Runbooks with variables:** `{{vlan}}` or `{{vlan=20}}` in a step is asked before the run, `{{host}}`, `{{alias}}`,
   `{{user}}`, `{{port}}` are filled in per host. In the broadcast `e` loads a runbook for editing, `Ctrl+R` saves,
   `Ctrl+D` deletes. Before the run `k` lets the AI check the steps against each host's system profile and suggest
@@ -148,6 +153,8 @@ lets them in. The AI status report treats syslog lines as hints, not as proof. T
     again, Ctrl+D removes it. The tab shows the goal's state (◎ running, yellow = waiting for you, green = reached) and the
     number of steps; if a goal is waiting for you in a hidden tab, a notification pops up, with sshTermy in the background a
     desktop notification.
+  - **See the changes** (`d` after a goal or agent run): every file a step changed as a diff (before → now) with +/− per file, new and deleted files marked; files readable only with sudo are read with `sudo -n cat`. `u` then restores everything.
+  - **Cross-check** (on by default): when the AI reports “goal reached”, a second, independent AI request checks (a fallback provider if set up, otherwise the same model with a fresh look). It may suggest up to three read-only check commands that sshTermy runs invisibly in a separate SSH channel (anything not surely read-only is dropped), then judges: *confirmed* or *doubts* with a finding, below “Goal reached”; doubts also come as a notice. `g` checks by hand (again); turn it off in the palette (“cross-check”).
   - **Agent mode** (F2, Tab picks the mode): the agent works on its own until the goal is reached. It runs commands,
     sees their output and exit code, writes scripts via SFTP to `~/.sshtermy-agent/<run>/` and runs them (dry run first).
     Levels: *Careful* (default; only read-only commands run on their own), *Normal* (everything except danger, sudo and inline code such as `python -c`, `bash -c`, `eval`; signed in as root or on Windows every change asks, because there is no sudo to stop at),
@@ -352,6 +359,7 @@ sshtermy doctor          # self-check: data folder, vault, keychain, SSH agent, 
 | | c / q | create or copy an SSH key / edit quick commands |
 | | m / f / z | broadcast to several hosts / network scan / schedules (Ctrl+N new, Ctrl+E edit, Ctrl+R now, Ctrl+O on/off, ⏎ last result) |
 | | w / g | workspaces (saved split layouts) / open a folder as a grid |
+| | u | tasks of the connection or folder: ⏎ start as goal, n new (⇧N for the folder), a check off, e edit, Del delete |
 | Folders | o / r / v / d | create folder (“A / B” nested) / edit (name, AI house rules) / move / dissolve (content stays) |
 | | ← → Space / - + | collapse/expand folder / collapse or expand all |
 | | Shift+↑↓ (Alt+↑↓), drag with the mouse | change the order, drag into a folder |
@@ -370,6 +378,7 @@ sshtermy doctor          # self-check: data folder, vault, keychain, SSH agent, 
 | | Alt+G | go to the next tab that waits (`?`, password, `[y/N]`, pager) or has a notice (`◆` AI agent waiting for approval, ✓/×) |
 | | Alt+C | select by keys: arrows/hjkl, w/b/e, v select, V lines, y copy, Esc end |
 | | Alt+Y | clipboard history: recently copied, ⏎/digit pastes |
+| | Alt+A | tasks of this connection |
 | | Alt+X | clear screen and scrollback, the input line stays |
 | | Alt+PgUp / Alt+PgDn / Alt+O | jump to the previous / next command / list of the tab's commands (⏎ jump, Ctrl+C copy output, Ctrl+K ask AI, Ctrl+L read) |
 | | Alt+N / Alt+W | new tab / close tab (also `+` and `×` in the tab bar; `+`, Alt+N and a click on the `>_ sshTermy` logo open the connection manager: ⏎ or a double-click starts the connection in an additional tab, the open tabs stay, Esc goes back; right-click a tab for its menu with *Edit connection …* (color, note) and *Show alongside (split)*, hover it for target, duration and latency) |
@@ -407,6 +416,7 @@ sshtermy doctor          # self-check: data folder, vault, keychain, SSH agent, 
 | | ? / ⇧S | instruct the AI (applies from the next step) / skip with a reason |
 | | j / n / q / Space / Ctrl+C | the running command asks for input: answer with the buttons (Esc: answer in the terminal) |
 | | f / u | after the goal: follow-up goal / restore the files the goal changed (Ctrl+R in the empty goal field) |
+| | d / g | after the goal: see the changes as a diff / cross-check (again) |
 | | ⏎ after a drop | continue the goal once the connection is back |
 | Goal mode, file step | ⏎ / v / s | create the file on the host / view it / skip; at the end `r` deletes the work folder |
 | | ⏎ / i / e / s / r / x | run / only insert (dry run) / edit / skip / suggest again / end |

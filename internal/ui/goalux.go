@@ -239,7 +239,7 @@ func (a *App) goalNotifyTick(s *session) {
 		a.flash(ic("ai") + " " + s.tabName() + ": " + why)
 		s.flashTab(a.s.T.Warn)
 	}
-	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() && time.Since(g.attnDesk) > 20*time.Second {
+	if a.notifyAway() && time.Since(g.attnDesk) > 20*time.Second {
 		g.attnDesk = time.Now()
 		body := why
 		if a.lock != nil {
@@ -651,6 +651,9 @@ func (a *App) viewBackups(b *strings.Builder, s *session, w int, key string) {
 	}
 	head := st.Warn.Render("← " + plural(len(g.backups), i18n.T("Datei geändert"), i18n.T("Dateien geändert")))
 	if n > 0 {
+		head += st.Muted.Render(" · ") + a.z.Click(st.Accent.Render("d")+" "+st.Text.Render(i18n.T("Änderungen")), func(tea.Mouse, bool) tea.Cmd {
+			return a.showGoalDiff(s)
+		})
 		head += st.Muted.Render(" · ") + a.z.Click(st.Accent.Render(key)+" "+st.Text.Render(i18n.T("zurückholen")), func(tea.Mouse, bool) tea.Cmd {
 			s.panelFocus = true
 			return a.startUndo(s)

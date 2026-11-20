@@ -82,6 +82,7 @@ var helpSections = []helpSection{
 		{"m", "Broadcast an mehrere Hosts"},
 		{"f", "Netzwerk-Scan"},
 		{"z", "Zeitpläne"},
+		{"u", "Aufgaben (To-do) der Verbindung / des Ordners"},
 		{"s", "KI-Einstellungen"},
 		{"y", "Sync zwischen Rechnern"},
 		{"i", "Verbindungen importieren"},
@@ -122,7 +123,9 @@ var helpSections = []helpSection{
 		{"Strg+F", "im Verlauf suchen"},
 		{"Alt+C", "per Tastatur markieren: v / V, y kopiert"},
 		{"Alt+Y", "Zwischenablage-Verlauf: wieder einfügen"},
+		{"Alt+A", "Aufgaben dieser Verbindung"},
 		{"Rechtsklick auf Markierung", "kopieren, im Web suchen"},
+		{"Panelrand ziehen", "Panel breiter/höher (Palette: links, rechts, unten)"},
 		{"Alt+X", "Bildschirm + Verlauf leeren, Eingabe bleibt"},
 		{"Alt+S", "in allen Tabs suchen"},
 		{"Alt+O", "Befehle des Tabs: Ausgabe kopieren, an KI"},
@@ -152,6 +155,8 @@ var helpSections = []helpSection{
 		{"j n q Leertaste", "Befehl fragt nach: Antwort-Knöpfe"},
 		{"f", "Folgeziel (kennt die Schritte davor)"},
 		{"u", "Änderungen des Ziels zurückholen"},
+		{"d", "Änderungen als Diff ansehen"},
+		{"g", "Gegenprüfung (zweite KI, nur lesend)"},
 		{"⏎ nach Abbruch", "Ziel fortsetzen"},
 		{"↑ ↓", "Runbook oder früheres Ziel wählen"},
 		{"Strg+S", "als Runbook speichern"},
@@ -426,7 +431,7 @@ func (a *App) helpContext() helpCtx {
 	case scrScan:
 		return hcScan
 	case scrTerminal:
-		if s := a.current(); s != nil && s.files.open {
+		if s := a.current(); s != nil && s.filesFocus() {
 			return hcFiles
 		}
 		if s := a.current(); s != nil && s.search.open && !s.panelFocus {

@@ -177,6 +177,7 @@ func (a *App) viewAgentDone(b *strings.Builder, s *session, w int) {
 	}
 	keys = append(keys, [2]string{"f", i18n.T("Folgeziel")}, [2]string{"⏎", i18n.T("neues Ziel")})
 	b.WriteString(a.hintsIn(s, st.Muted, keys...))
+	a.viewVerify(b, s, w) // Gegenprüfung (goalverify.go)
 	a.viewBackups(b, s, w, "u")
 }
 
@@ -192,7 +193,7 @@ func (a *App) agentPanelKeys(s *session) [][2]string {
 			k = append(k, [2]string{"r", i18n.T("aufräumen")}, [2]string{"v", i18n.T("Skript ansehen")})
 		}
 		if len(g.backups) > 0 {
-			k = append(k, [2]string{"u", i18n.T("zurückholen")})
+			k = append(k, [2]string{"d", i18n.T("Änderungen")}, [2]string{"u", i18n.T("zurückholen")})
 		}
 		return append(k, [2]string{"f", i18n.T("Folgeziel")}, [2]string{"⏎", i18n.T("neues Ziel")}, [2]string{"Esc", "Terminal"})
 	case !g.active:

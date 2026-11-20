@@ -219,6 +219,7 @@ func Strip(c domain.Connection, o Options) domain.Connection {
 	c.LastUsed = time.Time{}
 	c.Note, c.StartCmd = "", "" // eigene Notiz und Startbefehl bleiben hier
 	c.FileMarks = nil           // gemerkte Ordner sind persönlich
+	c.Tasks = nil               // Aufgaben sind persönlich
 	return c
 }
 

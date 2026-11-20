@@ -26,7 +26,9 @@ type Folder struct {
 	Collapsed bool    `json:"collapsed,omitempty"`
 	// AIRules: Hausregeln für die KI, gelten für alle Verbindungen in diesem
 	// Ordner und seinen Unterordnern (zusätzlich zu LLMConfig.Rules).
-	AIRules   string    `json:"ai_rules,omitempty"`
+	AIRules string `json:"ai_rules,omitempty"`
+	// Tasks: Aufgaben für alle Verbindungen in diesem Ordner (tasks.go).
+	Tasks     []Task    `json:"tasks,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }

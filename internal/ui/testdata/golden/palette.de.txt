@@ -22,7 +22,7 @@
             │ [=] Alle 6 Verbindungen im Manager         Name, Ordner oder #Tag tippen │
             │ ── ALLE AKTIONEN ─────────────────────────────────────────────────────── │
             │ [/] Suchen & Logs ›  Verlauf, alle Tabs, Log-Blick, Protokolle         4 │
-            │ [T] Tabs & Ansicht ›  neu, teilen, Zoom, Arbeitsplätze                 2 │
+            │ [T] Tabs & Ansicht ›  neu, teilen, Zoom, Arbeitsplätze                 3 │
             │ [*] Mehrere Hosts & Netzwerk ›  Broadcast, Scan, Zeitpläne, Switch…   11 │
             │                                                                          │
             │  ↑↓ wählen    ⏎ ausführen    Esc schließen                               │

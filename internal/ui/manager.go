@@ -141,9 +141,17 @@ func (a *App) updateManager(msg tea.Msg) tea.Cmd {
 		}
 	}
 	switch a.keys.which(k.String(), actUndo, actManager, actHelp, actAbout, actImport, actNextLook, actKeys, actBroadcast, actScan, actCheat, actQuickEdit, actSSHKey,
-		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll, actWorkspace, actFolderGrid, actSchedule) {
+		actFolderNew, actRename, actMoveTo, actMoveUp, actMoveDown, actTagFilter, actFoldAll, actUnfoldAll, actWorkspace, actFolderGrid, actSchedule, actTasks) {
 	case actUndo:
 		return a.doUndo()
+	case actTasks:
+		if r, ok := a.mgrCur(); ok {
+			if r.isFolder() {
+				return a.openTasks("", r.node.Path)
+			}
+			return a.openTasks(r.conn.ID, r.conn.Group)
+		}
+		return nil
 	case actSchedule:
 		return a.openSchedules()
 	case actWorkspace:
@@ -667,6 +675,9 @@ func (a *App) mgrConnDetails(c domain.Connection, rightW int, now time.Time) str
 			}
 			row(k, l)
 		}
+	}
+	if tb := tasksBadge(append(append([]domain.Task(nil), c.Tasks...), a.folderTasksUp(c.Group)...), time.Now()); tb != "" {
+		row(i18n.T("Aufgaben"), tb)
 	}
 	if c.StartCmd != "" {
 		row(i18n.T("Startbefehl"), c.StartCmd)

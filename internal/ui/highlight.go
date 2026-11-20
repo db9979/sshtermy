@@ -238,7 +238,7 @@ func (a *App) alertTick(s *session) {
 		msg += fmt.Sprintf(i18n.T(" (+%d weitere)"), len(hits)-1)
 	}
 	a.pushToast(toastWarn, msg)
-	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() {
+	if a.notifyAway() {
 		body := trunc(h.line, 100)
 		if a.lock != nil {
 			body = i18n.T("Farbregel hat angeschlagen") // gesperrt: keinen Inhalt verraten

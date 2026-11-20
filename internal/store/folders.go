@@ -370,3 +370,38 @@ func (s *Store) ChangeConns(ids []string, f func(c *domain.Connection) bool) (in
 	}
 	return n, s.save()
 }
+
+// FolderTasks: Aufgaben eines Ordners (nur genau dieser Pfad).
+func (s *Store) FolderTasks(path string) []domain.Task {
+	path = domain.NormPath(path)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data == nil || path == "" {
+		return nil
+	}
+	if i := s.folderIdx(path); i >= 0 {
+		return append([]domain.Task(nil), s.data.Folders[i].Tasks...)
+	}
+	return nil
+}
+
+// SetFolderTasks ersetzt die Aufgaben eines Ordners.
+func (s *Store) SetFolderTasks(path string, ts []domain.Task) error {
+	s.Fresh()
+	path = domain.NormPath(path)
+	if path == "" {
+		return errors.New(i18n.T("kein Ordner gewählt"))
+	}
+	if err := s.lockData(); err != nil {
+		return err
+	}
+	now := time.Now().UTC()
+	if len(ts) == 0 && s.folderIdx(path) < 0 {
+		s.mu.Unlock()
+		return nil
+	}
+	i := s.ensureFolder(path, now)
+	s.data.Folders[i].Tasks, s.data.Folders[i].UpdatedAt = ts, now
+	s.mu.Unlock()
+	return s.save()
+}

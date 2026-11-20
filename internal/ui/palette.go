@@ -243,6 +243,8 @@ func (a *App) palActions(s *session, inTerm, inMgr bool) []palItem {
 	if inMgr {
 		add("tabs", palItem{icon: ic("split"), label: i18n.T("Arbeitsplätze …"), hint: a.keys.label(actWorkspace), keys: "workspace layout", run: func() tea.Cmd { return a.openWorkspaces() }})
 	}
+	add("tabs", palItem{icon: ic("reconnect"), label: i18n.T("Zuletzt geschlossene Tabs …"), hint: i18n.T("mit Ausgabe"),
+		keys: "zuletzt geschlossen wieder öffnen reopen closed tab rückgängig undo close verlauf", run: func() tea.Cmd { return a.openClosed() }})
 	add("", palItem{icon: ic("sshkey"), label: i18n.T("Jetzt sperren"), hint: i18n.T("Master-Passwort"), run: func() tea.Cmd { return a.lockNow() }})
 	if a.Keeper() {
 		add("", palItem{icon: ic("reconnect"), label: i18n.T("Abkoppeln: Fenster zu, Sitzungen laufen weiter"), hint: "sshtermy",
@@ -606,6 +608,8 @@ func (a *App) palActsTerminal(add palAdd, s *session, inTerm bool) {
 			palItem{icon: ic("export"), label: i18n.T("Terminal-Verlauf als Text exportieren"), hint: ".txt", run: func() tea.Cmd { return a.exportScrollback(s) }},
 			palItem{icon: ic("copy"), label: i18n.T("Markieren per Tastatur (v, y kopiert)"), hint: a.keys.label(actCopyMode),
 				keys: "copy kopieren markieren auswahl tastatur keyboard select vi tmux copy-mode", run: func() tea.Cmd { a.startCopyMode(s); return nil }},
+			palItem{icon: ic("goal"), label: i18n.T("Aufgaben dieser Verbindung"), hint: a.keys.label(actTasksTerm),
+				keys: "aufgaben todo to-do tasks offen fällig erledigen abnahme liste pendenzen", run: func() tea.Cmd { return a.openTasks(s.conn.ID, s.conn.Group) }},
 			palItem{icon: ic("copy"), label: i18n.T("Zwischenablage-Verlauf (zuletzt Kopiertes einfügen)"), hint: a.keys.label(actClipHist),
 				keys: "zwischenablage clipboard verlauf history kopiert einfügen paste ringpuffer", run: func() tea.Cmd { return a.openClipHist() }},
 			palItem{icon: ic("open"), label: i18n.T("Zuletzt Kopiertes im Web suchen"), hint: func() string { _, e := a.searchEngine(); return e.label }(),
@@ -943,6 +947,19 @@ func (a *App) palMenuItems() []palItem {
 			"notify benachrichtigung glocke bell desktop", func(dir int) tea.Cmd { return a.cycleNotify(dir) }).at(a.notifyLevel(), 3),
 		hide(palToggle(ic("news"), i18n.T("Meldung, wenn lange Befehle im Hintergrund fertig sind"), a.notifyOn(), "notify benachrichtigung glocke bell", func() tea.Cmd { return a.toggleNotify() })),
 		hide(palToggle(ic("news"), i18n.T("Desktop-Benachrichtigung, wenn sshTermy im Hintergrund ist"), a.desktopNotifyOn(), "notify desktop benachrichtigung", func() tea.Cmd { return a.toggleDesktopNotify() })),
+		// nur über die Suche („Panel links“, „unten“); Rand mit der Maus ziehen ändert die Größe
+		hide(palCycle(pgSetBehave, ic("split"), i18n.T("Seitenpanel andocken"), dockLabel(a.dockSetting()),
+			"panel seitenpanel andocken dock links rechts unten left right bottom position seite breite höhe", func(dir int) tea.Cmd { return a.cycleDock(dir) }).at(dockIndex(a.dockSetting()), len(dockOrder))),
+		hide(palToggle(ic("split"), i18n.T("Statuszeile je Bereich (Ordner, letzter Befehl, Last)"), a.paneStatusOn(),
+			"status statuszeile bereich geteilt split ordner exit last load titel pane", func() tea.Cmd { return a.togglePaneStatus() })),
+		hide(palToggle(ic("files"), i18n.T("F5 und Log-Blick neben dem Terminal (breite Fenster)"), a.filesBesideOn(),
+			"dateien files f5 log-blick daneben nebeneinander seite beside side breit", func() tea.Cmd { return a.toggleFilesBeside() })),
+		hide(palItem{icon: ic("split"), label: i18n.T("Panelgröße wieder automatisch"), keys: "panel breite höhe größe zurücksetzen reset size width",
+			run: func() tea.Cmd { return a.resetPanelSize() }}),
+		// nur über die Suche („Handy“, „ntfy“), Hilfe und Webseite nennen den Weg
+		hide(palItem{icon: ic("news"), label: i18n.T("Handy-Meldungen (ntfy, Gotify, Webhook) …"), hint: pushKindLabel(a.st.Settings().Push.Kind),
+			keys: "handy smartphone push ntfy gotify webhook telefon mobil benachrichtigung unterwegs slack mattermost", run: func() tea.Cmd { return a.openPushSetup() }}),
+		hide(palItem{icon: ic("news"), label: i18n.T("Probemeldung ans Handy schicken"), keys: "handy push ntfy gotify webhook test probe", run: func() tea.Cmd { return a.pushTest() }}),
 		palToggle(ic("explain"), i18n.T("Tastenzeile: Tasten erklären"), a.cheatOn(), "cheat fußzeile footer", func() tea.Cmd { return a.toggleCheat() }),
 		// nur über die Suche („Tipps“), der Tipp selbst nennt den Weg
 		hide(palToggle(ic("keys"), i18n.T("Tipps zu Tasten"), a.tipsOn(), "tipp tipps tasten kürzel shortcut hint lernen", func() tea.Cmd { return a.toggleTips() })),
@@ -1071,6 +1088,8 @@ func (a *App) palMenuItems() []palItem {
 			keys: "ki ai datenschutz privacy anfrage request prompt gesendet", run: func() tea.Cmd { a.modal = a.lastRequestModal(); return nil }},
 		hide(look(palCycle(pgSetLook, ic("open"), i18n.T("Suchmaschine für „Im Web suchen“"), func() string { _, e := a.searchEngine(); return e.label }(),
 			"web suche suchmaschine search engine google duckduckgo bing startpage ecosia", func(dir int) tea.Cmd { return a.cycleSearchEngine(dir) }))),
+		hide(sub("settings/ki", palToggle(ic("ai"), i18n.T("Gegenprüfung nach Ziel und Agent (zweite KI, nur lesend)"), a.verifyOn(),
+			"gegenprüfung prüfen verify review zweite ki vier augen kontrolle bestätigen ziel agent", func() tea.Cmd { return a.toggleVerify() }))),
 		hide(sub("settings/ki", palToggle(ic("ai"), i18n.T("Ghost-Text zuerst aus dem Verlauf"), a.histGhostOn(),
 			"ghost text verlauf history vervollständigen autocomplete tab ohne ki offline", func() tea.Cmd { return a.toggleHistGhost() }))),
 		hide(palItem{group: pgSetSetup, menu: "settings/ki", icon: ic("ai"), label: i18n.T("KI-Verbrauch (Tokens, Kosten)"), keys: "ki ai verbrauch usage tokens kosten cost preis geld budget",

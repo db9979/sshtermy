@@ -227,7 +227,7 @@ func (a *App) openScheduleForm(sc domain.Schedule) tea.Cmd {
 	}
 	f := &form{title: title}
 	f.text("name", "Name", sc.Name, i18n.T("z. B. „Switch-Configs sichern“"))
-	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)"), i18n.T("Ordner-Scan (Logs)"), i18n.T("Sicherheitscheck (OSV)")}
+	kinds := []string{i18n.T("Befehle oder Runbook"), i18n.T("Config-Sicherung (Switches)"), i18n.T("Ordner-Scan (Logs)"), i18n.T("Sicherheitscheck (OSV)"), i18n.T("KI-Prüfung (nur lesend)")}
 	kindCur := kinds[0]
 	switch sc.Kind {
 	case domain.ScheduleBackup:
@@ -236,9 +236,14 @@ func (a *App) openScheduleForm(sc domain.Schedule) tea.Cmd {
 		kindCur = kinds[2]
 	case domain.ScheduleVuln:
 		kindCur = kinds[3]
+	case domain.ScheduleAI:
+		kindCur = kinds[4]
 	}
 	f.choice("kind", i18n.T("Art"), kinds, kindCur, i18n.T("Config-Sicherung: show running-config je Switch, verschlüsselt gespeichert · Ordner-Scan: Log-Blick je Host, Ergebnis mit neuen Mustern · Sicherheitscheck: Pakete je Server gegen OSV, meldet neu betroffene"))
 	isBackup := func(f *form) bool { return f.sel("kind") != kinds[0] }
+	f.text("prompt", i18n.T("Prüfauftrag"), sc.Prompt, i18n.T("in eigenen Worten · die KI wählt Befehle, die nur lesen, und meldet je Server, was auffällt")).hidden = func(f *form) bool {
+		return f.sel("kind") != kinds[4]
+	}
 	f.text("at", i18n.T("Uhrzeit"), sc.At, i18n.T("HH:MM, Ortszeit dieses Rechners"))
 	var days []string
 	for _, d := range dayChoices {
@@ -354,9 +359,15 @@ func (a *App) saveScheduleForm() error {
 		sc.Kind = domain.ScheduleLogs
 	case i18n.T("Sicherheitscheck (OSV)"):
 		sc.Kind = domain.ScheduleVuln
+	case i18n.T("KI-Prüfung (nur lesend)"):
+		sc.Kind = domain.ScheduleAI
+	}
+	sc.Prompt = ""
+	if sc.Kind == domain.ScheduleAI {
+		sc.Prompt = strings.TrimSpace(f.str("prompt"))
 	}
 	sc.RunbookID, sc.Steps = a.schedRBIDs[f.sel("runbook")], nil
-	if sc.Kind == domain.ScheduleBackup || sc.Kind == domain.ScheduleLogs || sc.Kind == domain.ScheduleVuln {
+	if sc.Kind == domain.ScheduleBackup || sc.Kind == domain.ScheduleLogs || sc.Kind == domain.ScheduleVuln || sc.Kind == domain.ScheduleAI {
 		sc.RunbookID = ""
 	} else if sc.RunbookID == "" {
 		for _, st := range strings.Split(f.str("steps"), schedStepSep) {
@@ -374,12 +385,18 @@ func (a *App) saveScheduleForm() error {
 	if sc.Name == "" && sc.Kind == domain.ScheduleVuln {
 		sc.Name = i18n.T("Sicherheitscheck (OSV)")
 	}
+	if sc.Name == "" && sc.Kind == domain.ScheduleAI {
+		sc.Name = trunc(sc.Prompt, 40)
+	}
 	if sc.Name == "" {
 		sc.Name = orDefault(firstOf(sc.Steps), i18n.T("Zeitplan"))
 	}
 	if len(a.schedConns(sc)) == 0 {
 		if sc.Kind == domain.ScheduleBackup {
 			return errors.New(i18n.T("Kein Switch im Ziel (Server werden bei der Config-Sicherung übersprungen)"))
+		}
+		if sc.Kind == domain.ScheduleAI {
+			return errors.New(i18n.T("Kein Linux- oder Unix-Server im Ziel (die KI-Prüfung läuft nicht auf Switches und Windows)"))
 		}
 		return errors.New(i18n.T("Kein Ziel: Ordner wählen oder Verbindungen eintragen"))
 	}
@@ -503,6 +520,9 @@ func (a *App) schedConns(sc domain.Schedule) []domain.Connection {
 		if c.Protocol.Raw() {
 			continue
 		}
+		if sc.Kind == domain.ScheduleAI && (isNetConn(c) || (c.Profile != nil && c.Profile.Family == domain.FamilyWindows)) {
+			continue // ein Satz Befehle für alle: nur Unix-Server
+		}
 		if sc.Kind == domain.ScheduleBackup && !maybeNetConn(c) {
 			continue
 		}
@@ -532,6 +552,12 @@ func (a *App) schedSteps(sc domain.Schedule) ([]string, error) {
 	}
 	if sc.Kind == domain.ScheduleVuln {
 		return []string{"osv-scan"}, nil
+	}
+	if sc.Kind == domain.ScheduleAI {
+		if strings.TrimSpace(sc.Prompt) == "" {
+			return nil, errors.New(i18n.T("Prüfauftrag fehlt: in eigenen Worten, was die KI prüfen soll"))
+		}
+		return []string{"ai-check"}, nil
 	}
 	steps := sc.Steps
 	if sc.RunbookID != "" {
@@ -634,6 +660,9 @@ func (a *App) startSchedule(sc domain.Schedule) tea.Cmd {
 	}
 	if sc.Kind == domain.ScheduleVuln {
 		return a.startScheduleVuln(sc, conns)
+	}
+	if sc.Kind == domain.ScheduleAI {
+		return a.startScheduleAI(sc, conns)
 	}
 	job := broadcast.Job{Conns: conns, Steps: steps}
 	if sc.Kind == "" && !stepsReadOnly(steps) {
@@ -745,7 +774,7 @@ func (a *App) scheduleMsg(msg tea.Msg) (tea.Cmd, bool) {
 }
 
 func (a *App) schedDesktop(name, body string) {
-	if (a.blurred || a.lock != nil) && a.desktopNotifyOn() && a.notifyOn() {
+	if a.notifyAway() && a.notifyOn() {
 		if a.lock != nil {
 			body = i18n.T("Zeitplan ist gelaufen")
 		}

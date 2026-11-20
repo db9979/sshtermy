@@ -103,6 +103,11 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		return cmd
 	}
 
+	// Panelrand ziehen: Breite bzw. Höhe des Panels (dock.go)
+	if cmd, ok := a.panelDragMouse(msg); ok {
+		return cmd
+	}
+
 	// Tab mit gedrückter Taste ziehen: Reihenfolge ändern (tabs.go)
 	if a.tabDrag != nil && !isClick && !isWheel {
 		if a.scr != scrTerminal || a.modal != nil || a.pal != nil || a.pick != nil {
@@ -122,15 +127,19 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 			if isClick {
 				a.focusSession(a.indexOf(p))
 				s = p
-			} else if isWheel && a.inTermArea(p, m.X, m.Y) && !p.files.open && !p.detached() {
+			} else if isWheel && a.inTermArea(p, m.X, m.Y) && !p.filesFocus() && !p.detached() {
 				return a.termMouse(p, msg, 0)
 			}
 		}
 	}
+	// F5 daneben: Klick wählt, ob Tasten ans Terminal oder an die Dateien gehen
+	if isClick && a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil && a.filesBeside(s) {
+		s.files.blur = !a.filesRect(s).has(m.X, m.Y)
+	}
 	if a.scr == scrTerminal && s != nil && a.modal == nil && a.pal == nil && a.pick == nil {
 		if s.search.open && s.search.list && !s.selecting && a.inTermArea(s, m.X, m.Y) && !isWheel {
 			// Fehlerliste: Zeilen sind Zonen
-		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.files.open && s.state == stConnected && !s.detached()) {
+		} else if s.selecting || s.fwdHeld || (a.inTermArea(s, m.X, m.Y) && !s.filesFocus() && s.state == stConnected && !s.detached()) {
 			// ohne laufende Sitzung (Verbinden, Reconnect, beendet) zeigt die
 			// Fläche anklickbare Hinweise, die Klicks gehen an die Zonen
 			return a.termMouse(s, msg, clicks)
@@ -179,7 +188,7 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		return nil
 	}
 	// Dateien: Maustaste „Zurück“ = Betrachter zu bzw. eine Ebene hoch
-	if isClick && m.Button == tea.MouseBackward && a.scr == scrTerminal && s != nil && s.files.open && a.modal == nil && a.pal == nil && a.pick == nil {
+	if isClick && m.Button == tea.MouseBackward && a.scr == scrTerminal && s != nil && s.filesFocus() && a.modal == nil && a.pal == nil && a.pick == nil {
 		return a.filesBack(s, m.X, m.Y)
 	}
 	// Markieren im Datei-Betrachter
@@ -392,21 +401,22 @@ func (a *App) hintsIn(s *session, style lipgloss.Style, items ...[2]string) stri
 
 func (a *App) inTermArea(s *session, x, y int) bool {
 	cols, rows := a.termSize(s)
-	r := a.termRect(s)
-	cols = min(cols, r.w-a.panelShown(s)) // aufgeklapptes Panel verdeckt einen Teil
+	r := a.termBox(s) // ohne Panel (dock.go)
+	if a.panelCollapsed(s) {
+		cols = min(cols, a.termRect(s).w-a.panelShown(s)) // aufgeklapptes Panel verdeckt einen Teil
+	}
 	return x >= r.x && x < r.x+cols && y >= r.y && y < r.y+rows
 }
 
 // inPanel: liegt (x, y) im Seitenpanel der Sitzung?
 func (a *App) inPanel(s *session, x, y int) bool {
-	r := a.termRect(s)
-	return r.has(x, y) && x >= r.x+r.w-a.panelShown(s)
+	return a.panelBox(s).has(x, y)
 }
 
 func (a *App) termMouse(s *session, msg tea.MouseMsg, clicks int) tea.Cmd {
 	m := msg.Mouse()
 	cols, rows := a.termSize(s)
-	r := a.termRect(s)
+	r := a.termBox(s)
 	tx, ty := m.X-r.x, m.Y-r.y
 	if s.term == nil || s.state != stConnected || s.detached() {
 		return nil
