@@ -20,6 +20,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/safety"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
@@ -165,7 +166,7 @@ func Run(ctx context.Context, j Job, dial Dialer, update func(i int, r Result)) 
 	}
 	for i := first; i < len(j.Conns); i++ {
 		wg.Add(1)
-		go start(i, j.Conns[i])
+		safe.Go("broadcast/broadcast.go", func() { start(i, j.Conns[i]) })
 	}
 	wg.Wait()
 	return res

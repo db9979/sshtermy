@@ -22,6 +22,8 @@ import (
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/vt"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Term ist ein emuliertes Terminal für genau eine SSH-Shell.
@@ -133,6 +135,7 @@ func New(cols, rows int, toHost io.Writer) *Term {
 		return true
 	})
 	go func() {
+		defer safe.Recover("termemu/term.go")
 		buf := make([]byte, 4096)
 		for {
 			n, err := t.emu.Read(buf)
@@ -293,6 +296,11 @@ func (t *Term) SendText(s string) {
 	}
 	t.emu.SendText(s)
 }
+
+// SendRaw schickt Bytes unverändert in die Warteschlange zum Server, in
+// derselben Reihenfolge wie Tasten. Kehrt sofort zurück, auch wenn die
+// Verbindung hängt (anders als ein direktes Schreiben in die Shell).
+func (t *Term) SendRaw(p []byte) { _, _ = t.host.Write(p) }
 
 // Paste nutzt Bracketed Paste, wenn die Shell es eingeschaltet hat.
 func (t *Term) Paste(s string) {

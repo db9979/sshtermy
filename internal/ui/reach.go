@@ -15,6 +15,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Online-Punkt im Manager: Solange der Manager offen ist, prüft sshTermy
@@ -179,6 +180,7 @@ func checkReach(conns []domain.Connection) map[string]reachResult {
 		wg.Add(1)
 		sem <- struct{}{}
 		go func(c domain.Connection) {
+			defer safe.Recover("ui/reach.go")
 			defer func() { <-sem; wg.Done() }()
 			ctx, cancel := context.WithTimeout(context.Background(), reachTimeout)
 			defer cancel()

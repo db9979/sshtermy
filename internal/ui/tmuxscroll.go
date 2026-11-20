@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/termemu"
 )
@@ -114,6 +115,7 @@ func (q *tmuxScroller) add(c *sshx.Client, name string, op tmuxOp) {
 	}
 	q.running = true
 	go func() {
+		defer safe.Recover("ui/tmuxscroll.go")
 		for {
 			q.mu.Lock()
 			if len(q.pending) == 0 {

@@ -119,7 +119,7 @@ func TestTrzszTriggerAndCancel(t *testing.T) {
 
 func TestZmodemHint(t *testing.T) {
 	a := dangerApp(t)
-	s, _ := typedSession(domain.Connection{Alias: "srv"}, "$ ", "")
+	s, host := typedSession(domain.Connection{Alias: "srv"}, "$ ", "")
 	sh := &fakeShell{}
 	s.setShell(sh)
 	a.sessions = []*session{s}
@@ -138,7 +138,8 @@ func TestZmodemHint(t *testing.T) {
 		}
 	}
 	a.trzMsg(m)
-	if !strings.Contains(sh.String(), "\x18\x18\x18\x18\x18") {
+	s.term.Flush(time.Second) // Abbruch läuft über die Warteschlange (SendRaw)
+	if !strings.Contains(host.String(), "\x18\x18\x18\x18\x18") {
 		t.Fatal("ZMODEM nicht abgebrochen")
 	}
 }

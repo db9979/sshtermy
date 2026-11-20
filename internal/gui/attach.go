@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/detach"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // RunAttach: abgetrennter Tab (⇧F10) im zweiten eigenen Fenster. Das
@@ -27,6 +28,7 @@ func RunAttach(dir string, opts Options) int {
 	w.onQuit = c.Close
 	out := w.output()
 	go func() {
+		defer safe.Recover("gui/attach.go")
 		defer close(w.done)
 		for {
 			m, err := c.Next()

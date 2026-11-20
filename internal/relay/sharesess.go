@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Gastgeber-Seite einer Freigabe v2 (Ablauf: siehe internal/sharewire/guest.go).
@@ -155,6 +156,7 @@ func (h *HostSession) guestMsg(g *GuestState, b []byte) (HostUI, bool) {
 			// Nicht stumm bleiben: sonst wartet der Zuschauer ewig auf „Prüfe den Code“.
 			v := g.V
 			go func() {
+				defer safe.Recover("relay/sharesess.go")
 				_ = h.Sh.To(v, append([]byte{MsgNo}, "gesperrt"...))
 				_ = h.Sh.Kick(v)
 			}()
@@ -176,6 +178,7 @@ func (h *HostSession) guestMsg(g *GuestState, b []byte) (HostUI, bool) {
 			h.burn()
 			v := g.V
 			go func() {
+				defer safe.Recover("relay/sharesess.go")
 				_ = h.Sh.To(v, append([]byte{MsgNo}, "Code passt nicht"...))
 				_ = h.Sh.Kick(v)
 			}()

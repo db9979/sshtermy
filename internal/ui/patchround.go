@@ -16,6 +16,7 @@ import (
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/logscan"
 	"github.com/db9979/sshtermy/internal/patchrun"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/vuln"
 )
@@ -356,6 +357,7 @@ func (a *App) patchNext() tea.Cmd {
 	job, seq, ev, ctx := p.jobs[i], p.seq, a.events, p.ctx
 	run := patchHostRun(a)
 	go func() {
+		defer safe.Recover("ui/patchround.go")
 		h := run(ctx, job, func(h patchHost) { ev <- patchHostMsg{seq: seq, i: i, h: h} })
 		ev <- patchHostMsg{seq: seq, i: i, h: h, final: true}
 	}()

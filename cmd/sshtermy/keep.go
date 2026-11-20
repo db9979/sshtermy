@@ -17,6 +17,7 @@ import (
 	"github.com/db9979/sshtermy/internal/crash"
 	"github.com/db9979/sshtermy/internal/detach"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/store"
 	"github.com/db9979/sshtermy/internal/ui"
 	"github.com/db9979/sshtermy/internal/update"
@@ -130,6 +131,7 @@ func runKeepServe(dir string, noIntro, debug bool) int {
 		scr.Attach(c, i18n.T("sshTermy wurde in einem anderen Fenster angehängt."))
 		// Send wartet, bis die Oberfläche läuft: daher nebenher
 		go func() {
+			defer safe.Recover("cmd/sshtermy/keep.go")
 			if again {
 				p.Send(tea.WindowSizeMsg{Width: cols, Height: rows})
 				p.Send(tea.ClearScreen()) // neues Fenster: alles neu zeichnen
@@ -137,6 +139,7 @@ func runKeepServe(dir string, noIntro, debug bool) int {
 			p.Send(tea.FocusMsg{})
 		}()
 		go func() {
+			defer safe.Recover("cmd/sshtermy/keep.go")
 			for {
 				ev, err := c.Read()
 				if err != nil {
@@ -156,6 +159,7 @@ func runKeepServe(dir string, noIntro, debug bool) int {
 	}
 	serve(f.c, f.cols, f.rows, false)
 	go func() {
+		defer safe.Recover("cmd/sshtermy/keep.go")
 		for {
 			c, cols, rows, err := hub.Accept()
 			if err != nil {
@@ -165,6 +169,7 @@ func runKeepServe(dir string, noIntro, debug bool) int {
 		}
 	}()
 	guard := crash.Start(st.Dir)
+	app.CatchPanics() // einzelne Fehler abfangen statt alles zu beenden (internal/safe)
 	_, err = p.Run()
 	bye := ""
 	if errors.Is(err, tea.ErrProgramPanic) {

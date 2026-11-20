@@ -15,6 +15,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/logscan"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -248,7 +249,7 @@ func (a *App) startWatch(s *session) *logStream {
 	st := &logStream{cancel: cancel, client: s.client}
 	ev := a.events
 	b := &watchBatcher{}
-	go b.run(ctx, ev)
+	safe.Go("ui/logwatch.go", func() { b.run(ctx, ev) })
 	sid := s.id
 	warn := a.watchLevel() == 2
 	end := func(err error) {
@@ -266,6 +267,7 @@ func (a *App) startWatch(s *session) *logStream {
 			lvl = 3
 		}
 		go func() {
+			defer safe.Recover("ui/logwatch.go")
 			since := time.Now().Add(-watchWinPoll).Unix()
 			for {
 				out, err := a.winrmRun(ctx, s, logscan.WindowsSinceScript(since, lvl))
@@ -294,6 +296,7 @@ func (a *App) startWatch(s *session) *logStream {
 	}
 	cl := s.client
 	go func() {
+		defer safe.Recover("ui/logwatch.go")
 		err := cl.StreamScript(ctx, logscan.UnixWatchScript(warn), func(line string) {
 			if e, ok := logscan.UnixWatchLine(line, time.Now()); ok {
 				b.add(watchItem{sid: sid, kind: logscan.KindUnix, e: e})
@@ -318,12 +321,14 @@ func (a *App) startSyslog(port int) context.CancelFunc {
 		a.flashErr(fmt.Sprintf(i18n.T("Syslog-Empfang auf UDP %d geht nicht: %v"), port, err))
 		return cancel
 	}
-	go b.run(ctx, ev)
+	safe.Go("ui/logwatch.go", func() { b.run(ctx, ev) })
 	go func() {
+		defer safe.Recover("ui/logwatch.go")
 		<-ctx.Done()
 		_ = pc.Close()
 	}()
 	go func() {
+		defer safe.Recover("ui/logwatch.go")
 		buf := make([]byte, 8192)
 		for {
 			n, addr, err := pc.ReadFrom(buf)
@@ -347,7 +352,7 @@ func (a *App) startSyslog(port int) context.CancelFunc {
 			}
 		}
 	}()
-	go a.resolveHosts(ctx)
+	safe.Go("ui/logwatch.go", func() { a.resolveHosts(ctx) })
 	return cancel
 }
 

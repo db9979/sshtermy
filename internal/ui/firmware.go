@@ -15,6 +15,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/hostinfo"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/vuln"
 )
 
@@ -198,6 +199,7 @@ func (a *App) runFirmware(title string, ts []fwTarget, single bool) tea.Cmd {
 	seq, ev := f.seq, a.events
 	get := fwProduct(a)
 	go func() {
+		defer safe.Recover("ui/firmware.go")
 		defer cancel()
 		ev <- fwDoneMsg{seq: seq, res: firmwareCheck(ctx, ts, get, fwKEV, func(s string) { ev <- fwStepMsg{seq, s} })}
 	}()

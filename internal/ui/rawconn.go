@@ -14,6 +14,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/localsh"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/serialx"
 	"github.com/db9979/sshtermy/internal/telnet"
 	"github.com/db9979/sshtermy/internal/termemu"
@@ -67,6 +68,7 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 		var st termStream
 		login := autologin.New(c.Username, c.Password.Reveal(), func(txt string) {
 			go func() {
+				defer safe.Recover("ui/rawconn.go")
 				<-ready
 				_, _ = st.Write([]byte(txt))
 			}()
@@ -128,6 +130,7 @@ func (a *App) connectRawCmd(s *session, cols, rows int, keepTerm bool) tea.Cmd {
 			_, _ = st.Write([]byte("\r"))
 		}
 		go func() {
+			defer safe.Recover("ui/rawconn.go")
 			err := <-done
 			// exit in der lokalen Shell ist ein gewolltes Ende, kein Abriss
 			ev <- shellClosedMsg{s.id, st, err, err != nil && c.Protocol != domain.ProtoLocal && c.Protocol != domain.ProtoWatch}

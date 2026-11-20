@@ -25,6 +25,7 @@ import (
 	"image/color"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -88,6 +89,10 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	// Absturzschutz (safety.go): letztes gutes Bild, wartende Empfänger
+	lastView  tea.View
+	listening atomic.Int32
+
 	// asyncModals: Rückfragen, die von selbst kamen, während schon ein Dialog
 	// offen war (modalguard.go). Sie überschreiben ihn nicht, sie warten.
 	asyncModals []*modal
@@ -261,7 +266,11 @@ func New(st *store.Store) (*App, error) {
 
 func (a *App) listen() tea.Cmd {
 	ev := a.events
-	return func() tea.Msg { return <-ev }
+	return func() tea.Msg {
+		a.listening.Add(1) // safety.go: nach abgefangenem Fehler neu anstoßen?
+		defer a.listening.Add(-1)
+		return <-ev
+	}
 }
 
 type tickMsg time.Time
@@ -289,7 +298,7 @@ func (a *App) checkUpdate() tea.Cmd {
 // checkRelease: Variable für Tests.
 var checkRelease = update.CheckAged
 
-func (a *App) Init() tea.Cmd {
+func (a *App) init0() tea.Cmd {
 	var intro tea.Cmd
 	if a.intro != nil {
 		a.intro.start = time.Now()
@@ -314,7 +323,7 @@ func (a *App) byID(id int) *session {
 	return nil
 }
 
-func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (a *App) update0(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if a.scr != scrManager {
 		a.mgr.forTab = false // „+“-Auswahl gilt nur, solange der Manager offen ist
 	}
@@ -934,9 +943,6 @@ func (a *App) onTick() tea.Cmd {
 }
 
 // ---------------------------------------------------------------- Layout
-
-// View: gemessen, bei Ausgabeflut gedrosselt (perf.go).
-func (a *App) View() tea.View { return a.view() }
 
 func (a *App) viewFrame() tea.View {
 	a.z.reset()

@@ -160,6 +160,8 @@ func main() {
 	}
 	// Absturzbericht: ab hier landen Paniken im crash-Ordner (internal/crash).
 	guard := crash.Start(st.Dir)
+	// Absturzschutz: einzelne Fehler abfangen statt alles zu beenden (internal/safe)
+	app.CatchPanics()
 	// Bibliotheken (z. B. der SSH-Agent bei der Weiterleitung) schreiben
 	// Meldungen mit log.Printf nach stderr: das würde das Bild zerreißen.
 	log.SetOutput(io.Discard)

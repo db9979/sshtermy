@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 const (
@@ -79,6 +81,7 @@ func (s *Server) Accept(timeout time.Duration) (*Conn, int, int, error) {
 	}
 	ch := make(chan res, 1)
 	go func() {
+		defer safe.Recover("detach/server.go")
 		for {
 			nc, err := s.ln.Accept()
 			if err != nil {

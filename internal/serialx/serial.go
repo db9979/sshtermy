@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"go.bug.st/serial"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Port: eine gefundene serielle Schnittstelle.
@@ -165,7 +167,7 @@ func Open(name string, baud int, frame string, out io.Writer) (*Stream, error) {
 	_ = p.SetDTR(true)
 	_ = p.SetRTS(true)
 	s := &Stream{Name: name, Done: make(chan error, 1), p: p}
-	go s.read(out)
+	safe.Go("serialx/serial.go", func() { s.read(out) })
 	return s, nil
 }
 

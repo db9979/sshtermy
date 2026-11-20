@@ -67,3 +67,44 @@ func TestGetRetries(t *testing.T) {
 		t.Fatalf("%v %d", err, n)
 	}
 }
+
+// Ein Download, der mittendrin stehen bleibt, wird nach stallTimeout
+// abgebrochen und neu versucht; ein langsamer, aber fließender läuft durch.
+func TestGetStallRetries(t *testing.T) {
+	oldWait, oldStall := retryWait, stallTimeout
+	retryWait = []time.Duration{time.Millisecond}
+	stallTimeout = 150 * time.Millisecond
+	defer func() { retryWait, stallTimeout = oldWait, oldStall }()
+	n := 0
+	release := make(chan struct{})
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		fl := w.(http.Flusher)
+		if n == 1 { // hängt nach dem ersten Stück
+			_, _ = w.Write([]byte("ha"))
+			fl.Flush()
+			select {
+			case <-release:
+			case <-r.Context().Done():
+			}
+			return
+		}
+		for _, c := range []string{"o", "k"} { // langsam, aber jedes Stück innerhalb der Frist
+			_, _ = w.Write([]byte(c))
+			fl.Flush()
+			time.Sleep(100 * time.Millisecond)
+		}
+	}))
+	defer ts.Close()
+	defer close(release)
+	u, _ := url.Parse(ts.URL)
+	allowedHosts[u.Hostname()] = true
+	defer delete(allowedHosts, u.Hostname())
+	oldClient := httpClient
+	httpClient = func() *http.Client { return ts.Client() }
+	defer func() { httpClient = oldClient }()
+	b, err := get(context.Background(), ts.URL, acceptBin, 100)
+	if err != nil || string(b) != "ok" || n != 2 {
+		t.Fatalf("%q %v %d", b, err, n)
+	}
+}

@@ -21,6 +21,7 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // AnchorConfig: was der Anker auf dem Server weiß (anker.json, 0600).
@@ -234,6 +235,7 @@ func (a *Anchor) once(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go func() {
+		defer safe.Recover("relay/anchor.go")
 		t := time.NewTicker(pingEvery)
 		defer t.Stop()
 		for {
@@ -263,7 +265,7 @@ func (a *Anchor) once(ctx context.Context) error {
 		if json.Unmarshal(b, &m) != nil || m.Typ != "kanal" || len(m.ID) != 32 {
 			continue
 		}
-		go a.channel(ctx, m.ID)
+		safe.Go("relay/anchor.go", func() { a.channel(ctx, m.ID) })
 	}
 }
 

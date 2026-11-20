@@ -14,6 +14,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/harden"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Härtungs-Check (F6 h, Palette „Härtungs-Check“): nur lesend, Bewertung
@@ -72,6 +73,7 @@ func forHosts(ctx context.Context, conns []domain.Connection, par int, fn func(c
 	for i, c := range conns {
 		wg.Add(1)
 		go func() {
+			defer safe.Recover("ui/harden.go")
 			defer wg.Done()
 			select {
 			case sem <- struct{}{}:
@@ -193,6 +195,7 @@ func (a *App) runHardenFolder(folder string) tea.Cmd {
 	}
 	seq, ev, run := h.seq, a.events, hardenRunHost(a)
 	go func() {
+		defer safe.Recover("ui/harden.go")
 		defer cancel()
 		forHosts(ctx, conns, 4, func(ctx context.Context, i int, c domain.Connection) {
 			if ctx.Err() != nil {

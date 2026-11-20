@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -208,6 +209,7 @@ func Scan(ctx context.Context, addrs []netip.Addr, o Options, progress func(done
 		case sem <- struct{}{}:
 			wg.Add(1)
 			go func(a netip.Addr) {
+				defer safe.Recover("netscan/netscan.go")
 				defer wg.Done()
 				defer func() { <-sem }()
 				h, ok := probe(ctx, a, o)

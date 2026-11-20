@@ -12,6 +12,7 @@ import (
 	"github.com/coder/websocket"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // Teilen v2: Einladung mit Code, Zulassung durch den Gastgeber
@@ -348,6 +349,7 @@ func (s *Server) watch2(w http.ResponseWriter, r *http.Request) {
 	hostText(host, map[string]any{"typ": "neu", "v": id, "ip": ip})
 	// Wer nicht zugelassen wird, fliegt nach pendingWait raus.
 	go func() {
+		defer safe.Recover("relay/share2.go")
 		t := time.NewTimer(pendingWait)
 		defer t.Stop()
 		select {
@@ -439,7 +441,7 @@ func (c *Client) StartShare2(ctx context.Context, minutes int) (*Share2, error) 
 	ws.SetReadLimit(guestMsgMax + 64)
 	sh := &Share2{ID: r.ID, Platz: r.Platz, Base: c.Base, FP: c.FP, Until: time.Unix(r.Bis, 0), ws: ws,
 		ev: make(chan HostEvent, 64), done: make(chan struct{})}
-	go sh.read()
+	safe.Go("relay/share2.go", func() { sh.read() })
 	return sh, nil
 }
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // ActiveTunnel ist ein laufendes Forwarding mit Zählern für die Oberfläche.
@@ -122,7 +123,7 @@ func (m *TunnelManager) Start(t domain.Tunnel) (*ActiveTunnel, error) {
 	m.active[t.ID] = a
 	m.mu.Unlock()
 
-	go m.serve(a)
+	safe.Go("sshx/tunnel.go", func() { m.serve(a) })
 	if t.AutoOpen && a.URL() != "" {
 		_ = OpenBrowser(a.URL())
 	}
@@ -140,6 +141,7 @@ func (m *TunnelManager) serve(a *ActiveTunnel) {
 		a.Conns.Add(1)
 		a.Total.Add(1)
 		go func() {
+			defer safe.Recover("sshx/tunnel.go")
 			defer a.Conns.Add(-1)
 			defer in.Close()
 			switch a.Spec.Kind {

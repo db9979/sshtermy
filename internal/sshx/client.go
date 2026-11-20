@@ -21,6 +21,7 @@ import (
 	"github.com/db9979/sshtermy/internal/debuglog"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sysprof"
 )
 
@@ -461,7 +462,7 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 			cl.Remote.OS = i18n.T("Windows (OpenSSH) oder unbekannt")
 		}
 	}
-	go cl.keepAlive(kctx, c.KeepAlive)
+	safe.Go("sshx/client.go", func() { cl.keepAlive(kctx, c.KeepAlive) })
 	return cl, nil
 }
 
@@ -471,6 +472,7 @@ func dial(ctx context.Context, c domain.Connection, o Options) (*Client, error) 
 func (c *Client) alive() bool {
 	done := make(chan error, 1)
 	go func() {
+		defer safe.Recover("sshx/client.go")
 		_, _, err := c.SendRequest("keepalive@openssh.com", true, nil)
 		done <- err
 	}()
@@ -492,6 +494,7 @@ func (c *Client) Check(d time.Duration) bool {
 	}
 	done := make(chan error, 1)
 	go func() {
+		defer safe.Recover("sshx/client.go")
 		_, _, err := c.SendRequest("keepalive@openssh.com", true, nil)
 		done <- err
 	}()
@@ -612,6 +615,7 @@ func (c *Client) keepAliveLoop(ctx context.Context, ping, deadAfter time.Duratio
 	send := func() {
 		inflight, sent = true, time.Now()
 		go func() {
+			defer safe.Recover("sshx/client.go")
 			_, _, err := c.SendRequest("keepalive@openssh.com", true, nil)
 			res <- err
 		}()

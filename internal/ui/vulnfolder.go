@@ -12,6 +12,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/vuln"
 )
 
@@ -150,6 +151,7 @@ func (a *App) runVulnFolder(folder string) tea.Cmd {
 	src, h := vulnSources(a)
 	scan := vulnScanHost(a)
 	go func() {
+		defer safe.Recover("ui/vulnfolder.go")
 		defer cancel()
 		vulnHosts(ctx, conns, func(ctx context.Context, c domain.Connection) (*vuln.Report, error) {
 			return scan(ctx, c, src, h, cfg)
@@ -168,6 +170,7 @@ func vulnHosts(ctx context.Context, conns []domain.Connection, scan func(context
 	for i, c := range conns {
 		wg.Add(1)
 		go func() {
+			defer safe.Recover("ui/vulnfolder.go")
 			defer wg.Done()
 			select {
 			case sem <- struct{}{}:

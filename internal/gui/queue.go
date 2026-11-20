@@ -3,6 +3,8 @@ package gui
 import (
 	"io"
 	"sync"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // queueWriter reicht Bytes in eigener Goroutine weiter, in Reihenfolge, und
@@ -25,7 +27,7 @@ type queueWriter struct {
 func newQueueWriter(dst io.Writer) *queueWriter {
 	q := &queueWriter{dst: dst}
 	q.cond = sync.NewCond(&q.mu)
-	go q.loop()
+	safe.Go("gui/queue.go", func() { q.loop() })
 	return q
 }
 

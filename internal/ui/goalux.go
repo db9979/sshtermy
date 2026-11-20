@@ -32,6 +32,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/agent"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
@@ -406,6 +407,7 @@ func readBackups(local bool, cl *sshx.Client, need []agent.FileChange) []fileBac
 	}
 	done := make(chan []fileBackup, 1)
 	go func() {
+		defer safe.Recover("ui/goalux.go")
 		res := make([]fileBackup, len(need))
 		copy(res, out)
 		fsys, closeFn, err := agentFS(local, cl)

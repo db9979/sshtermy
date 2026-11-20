@@ -16,6 +16,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/keyinv"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -213,6 +214,7 @@ func (a *App) runKeyinv(title string, conns []domain.Connection) tea.Cmd {
 	}
 	seq, ev, run := k.seq, a.events, keyinvRun(a)
 	go func() {
+		defer safe.Recover("ui/keyinv.go")
 		defer cancel()
 		forHosts(ctx, conns, 4, func(ctx context.Context, i int, c domain.Connection) {
 			if ctx.Err() != nil {

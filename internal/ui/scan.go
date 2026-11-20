@@ -15,6 +15,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/netscan"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/store"
 )
 
@@ -130,6 +131,7 @@ func (a *App) scanStart() tea.Cmd {
 	sc.phase = scRun
 	ev := a.events
 	go func() {
+		defer safe.Recover("ui/scan.go")
 		last := time.Time{}
 		netscan.Scan(ctx, addrs, netscan.Options{Port: port},
 			func(d, n int) {

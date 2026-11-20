@@ -68,8 +68,12 @@ func request(ctx context.Context, method, loc string, body []byte) (*http.Respon
 	if user != "" {
 		req.SetBasicAuth(user, pass)
 	}
-	return http.DefaultClient.Do(req)
+	return linkClient.Do(req)
 }
+
+// linkClient: eigene Zeitgrenze, auch wenn ein Aufrufer keine setzt (ein
+// hängender WebDAV-/HTTP-Server darf den Abgleich nicht ewig festhalten).
+var linkClient = &http.Client{Timeout: 60 * time.Second}
 
 // ReadLoc liest das Team-Paket von einem Ort.
 func ReadLoc(ctx context.Context, loc string) ([]byte, error) {

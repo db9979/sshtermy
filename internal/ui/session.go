@@ -14,6 +14,7 @@ import (
 	"github.com/db9979/sshtermy/internal/detach"
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sessionlog"
 	"github.com/db9979/sshtermy/internal/sshx"
 	"github.com/db9979/sshtermy/internal/termemu"
@@ -179,7 +180,18 @@ type outWriter struct {
 
 type outputMsg struct{ sid int }
 
-func (w outWriter) Write(p []byte) (int, error) {
+func (w outWriter) Write(p []byte) (n int, err error) {
+	// Serverausgabe läuft durch Emulator, Erkennung, Aufnahme, Teilen: ein
+	// Fehler dort darf nicht das ganze Programm beenden (safety.go). Der
+	// Block wird dann verworfen, die Verbindung bleibt.
+	n = len(p)
+	if !safe.Run("ui.output", func() { n, err = w.write0(p) }) {
+		return len(p), nil
+	}
+	return n, err
+}
+
+func (w outWriter) write0(p []byte) (int, error) {
 	full := len(p)
 	outBytes.Add(int64(full)) // Ausgaberate für die Bildrate (perf.go)
 	if p = w.s.trzScan(p, w.ev); len(p) == 0 {
@@ -292,6 +304,7 @@ func (a *App) connectCmd(s *session) tea.Cmd {
 			return connectErrMsg{s.id, err}
 		}
 		go func() {
+			defer safe.Recover("ui/session.go")
 			err := <-sh.Done
 			// exit/logout endet mit Exit-Status; ohne Status (oder mit Fehler)
 			// prüfen, ob die ganze Leitung weg ist → Auto-Reconnect.

@@ -12,6 +12,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/netwatch"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -68,7 +69,7 @@ func (a *App) onNetEvent(ev netwatch.Event) tea.Cmd {
 	}
 	return func() tea.Msg {
 		for _, c := range checks {
-			go netWatchCheck(c) // abgerissene melden sich als shellClosed → Auto-Reconnect
+			safe.Go("ui/netwatch.go", func() { netWatchCheck(c) }) // abgerissene melden sich als shellClosed → Auto-Reconnect
 		}
 		return nil
 	}

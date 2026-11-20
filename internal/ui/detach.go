@@ -12,6 +12,7 @@ import (
 
 	"github.com/db9979/sshtermy/internal/detach"
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/termemu"
 	"github.com/db9979/sshtermy/internal/version"
 )
@@ -100,6 +101,7 @@ func (a *App) toggleDetach(s *session) tea.Cmd {
 	s.panelFocus = false
 	sid, ev := s.id, a.events
 	go func() {
+		defer safe.Recover("ui/detach.go")
 		c, cols, rows, err := srv.Accept(20 * time.Second)
 		ev <- detachConnMsg{sid, srv, c, cols, rows, err}
 	}()
@@ -148,6 +150,7 @@ func (a *App) onDetachConn(m detachConnMsg) {
 	// Tasten und Größe aus dem Fenster
 	sid, ev, c := s.id, a.events, m.conn
 	go func() {
+		defer safe.Recover("ui/detach.go")
 		for {
 			e, err := c.Read()
 			if err != nil {

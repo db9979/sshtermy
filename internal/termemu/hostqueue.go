@@ -4,6 +4,8 @@ import (
 	"io"
 	"sync"
 	"time"
+
+	"github.com/db9979/sshtermy/internal/safe"
 )
 
 // hostQueueMax: so viel darf auf dem Weg zum Server warten. Mehr sammelt sich
@@ -28,7 +30,7 @@ type hostQueue struct {
 func newHostQueue(w io.Writer) *hostQueue {
 	q := &hostQueue{w: w}
 	q.cond = sync.NewCond(&q.mu)
-	go q.run()
+	safe.Go("termemu/hostqueue.go", func() { q.run() })
 	return q
 }
 

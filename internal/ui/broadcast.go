@@ -18,6 +18,7 @@ import (
 	"github.com/db9979/sshtermy/internal/domain"
 	"github.com/db9979/sshtermy/internal/i18n"
 	"github.com/db9979/sshtermy/internal/runbook"
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/sshx"
 )
 
@@ -363,6 +364,7 @@ func (a *App) bcStart(targets []domain.Connection, steps []string, per [][]strin
 		job.Canary, job.StopAfter = !b.noCanary, bcStopAfter
 	}
 	go func() {
+		defer safe.Recover("ui/broadcast.go")
 		broadcast.Run(ctx, job, dial, func(i int, r broadcast.Result) { ev <- bcUpdateMsg{seq, i, r} })
 		ev <- bcDoneMsg{seq}
 	}()

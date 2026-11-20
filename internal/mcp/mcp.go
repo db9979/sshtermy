@@ -14,6 +14,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/db9979/sshtermy/internal/safe"
 	"github.com/db9979/sshtermy/internal/version"
 )
 
@@ -222,6 +223,7 @@ func Serve(in io.Reader, out io.Writer, b Backend) error {
 			}
 			wg.Add(1)
 			go func(id json.RawMessage) {
+				defer safe.Recover("mcp/mcp.go")
 				defer wg.Done()
 				text, err := b.Call(p.Name, p.Arguments)
 				res := map[string]any{"content": []textContent{{"text", text}}}
