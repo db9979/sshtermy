@@ -136,7 +136,9 @@ func getOnce(parent context.Context, u, accept string, limit int64) ([]byte, boo
 		return nil, false, fmt.Errorf(i18n.T("update: HTTP %d"), resp.StatusCode)
 	}
 	b, err := io.ReadAll(io.LimitReader(stallReader{resp.Body, idle}, limit))
-	if err != nil && errors.Is(context.Cause(ctx), errStalled) && parent.Err() == nil {
+	// Auch ohne Lesefehler: wurde wegen Stillstand abgebrochen, kann das Ende
+	// des Körpers abgeschnitten sein (Verbindung zu = scheinbar fertig).
+	if errors.Is(context.Cause(ctx), errStalled) && parent.Err() == nil {
 		return nil, true, fmt.Errorf(i18n.T("update: Download kam %s lang nicht voran"), stallTimeout)
 	}
 	return b, err != nil && parent.Err() == nil, err
