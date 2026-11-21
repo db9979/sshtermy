@@ -464,8 +464,9 @@ unverschlüsselt in der Datei `language` im Konfigurationsordner, damit schon de
 Ohne diese Datei entscheidet die Systemsprache (`LANG`/`LC_ALL`, unter Windows die Anzeigesprache): Deutsch bei
 einem deutschen System, sonst Englisch. Die Hinweise an die KI bleiben deutsch; bei Englisch antwortet sie englisch.
 
-**Aussehen:** a im Manager wechselt Dunkel → Hell → Hochkontrast (dunkel/hell) → Farbenblind (dunkel/hell) → Matrix (grün) → Bernstein (Retro) → Neon (oder
-Palette → Einstellungen › „Aussehen“). **Farben anpassen** im selben Untermenü: Vorlage wählen, dann jede Farbe mit
+**Aussehen:** a im Manager (oder Palette → Einstellungen › „Aussehen“) öffnet die Farbschema-Auswahl mit allen 26 Themes,
+nach dunkel, hell und barrierefrei (Hochkontrast, farbenblind) gruppiert: ↑↓ zeigt jedes sofort auf der ganzen Oberfläche, ⏎ übernimmt,
+Esc behält das alte, e passt die Farben des markierten Themes an. **Farben anpassen** im selben Untermenü: Vorlage wählen, dann jede Farbe mit
 ←/→ (Farbton), +/− (Helligkeit) oder als Hex-Wert ändern; die Oberfläche zeigt die Änderung sofort, ein Kontrast-Check
 warnt vor schlecht lesbaren Farben, Strg+S speichert (geht mit dem Sync mit).
 
@@ -557,28 +558,64 @@ Die Bilder sind echte Aufnahmen der App (gegen einen Test-SSH-Server und ein Tes
 ## Architektur
 
 ```
-cmd/sshtermy/          Einstieg: Flags (--version, --update), Store öffnen, TUI starten
+cmd/sshtermy/          Einstieg: Flags und Unterbefehle (mcp, doctor, backup, relay, anchor, attach …), TUI oder eigenes Fenster starten
 cmd/sshtermy-sign/     Ed25519-Schlüssel erzeugen, Releases signieren (CI)
+cmd/zusehen-wasm/      Teilen-Protokoll als WebAssembly zum Zusehen im Browser
 internal/
+  Daten und Sicherheit
   domain/              reine Datenmodelle: Connection, Tunnel, LLMConfig, Settings, Secret
   vault/               Verschlüsselung: AES-256-GCM, Argon2id, DPAPI (Windows)
   store/               Repository über dem Vault: CRUD, Pfade (%APPDATA%\sshtermy)
-  sshx/                SSH: Dial (+Jump-Host), Auth (Passwort/Key/Agent), Host-Keys (TOFU),
-                       PTY-Shell, Tunnel-Manager (-L/-R/-D), SOCKS5-Server, Browser öffnen,
-                       Befehle per Exec oder in die Shell getippt (Netzwerkgeräte)
-  broadcast/           Befehl/Runbook parallel auf mehreren Hosts, Gefahrenprüfung
-  netscan/             Subnetz nach SSH durchsuchen, Banner lesen, Gerätetyp erkennen
-  llm/                 OpenAI-kompatibler Client (/v1/chat/completions, Streaming per SSE)
-  agent/               KI-Logik: Ghost-Text, Folgebefehle, Ziel-Modus, Frage; Prompts,
-                       striktes Parsen, Entfernen von Geheimnissen
-  sessionlog/          Sitzungsprotokolle: verschlüsselte Dateien je Sitzung, Suche, Markdown
-  safety/              feste Gefahrenregeln (Linux/macOS und Windows/PowerShell)
-  termemu/             Terminal-Emulation (charmbracelet/x/vt): Raster, Scrollback, Ghost-Overlay
-  update/              Auto-Update aus GitHub Releases (SHA-256 + Ed25519)
+  keychain/            Passwörter im Schlüsselbund des Systems (Windows, macOS, Linux Secret Service)
+  pwsource/            Passwörter und 2FA-Codes aus 1Password, Bitwarden, KeePassXC, pass
+  safety/              feste Gefahrenregeln (Linux/macOS, Windows/PowerShell, Netzwerkgeräte)
+  audit/               signiertes, verkettetes Audit-Protokoll
+  syncx/ team/         Sync zwischen Rechnern, verschlüsselte .sshteam-Pakete und Team-Ordner
+  fullbackup/          ganzer Datenordner in einer verschlüsselten Datei (Umzug auf neuen Rechner)
+  Verbindungen
+  sshx/                SSH: Dial (+Jump-Host), Auth (Passwort/Key/Agent/FIDO/Zertifikat/Kerberos), Host-Keys (TOFU),
+                       PTY-Shell, Tunnel-Manager (-L/-R/-D), SOCKS5-Server, Befehle per Exec oder in die Shell getippt
+  telnet/ serialx/     Telnet-Client, serielle Konsolenkabel; autologin/ tippt Benutzer und Passwort
+  psremote/            PowerShell über WinRM (NTLM, Kerberos), reines Go
+  localsh/             lokale Shell im PTY (ConPTY unter Windows)
+  relay/               Vermittler für Server hinter NAT/Firewall (Anker)
+  sharewire/ webwatch/ Sitzung live teilen (Code, PAKE, Verschlüsselung) und Zuschauerseite im Browser
+  trzsz/               Dateien direkt im Terminal übertragen (tsz/trz)
+  netwatch/ wol/       Ruhezustand/Netzwechsel erkennen, Wake-on-LAN
+  Hosts und Geräte
+  sysprof/ cmdset/     System und Dialekt erkennen, Befehlssätze je Hersteller als YAML (cmdsetcheck/ prüft sie)
+  hostinfo/ metrics/   Host-Übersicht (F6), Kurven über bis zu 8 Tage, Platten-Prognose
+  containers/          Docker, Podman, Kubernetes
+  vuln/ harden/        Sicherheitscheck (OSV, NVD-Firmware), Härtungs-Check
+  keyinv/ inventory/   Schlüssel-Inventar, Inventar & Änderungen
+  patchrun/            Patch-Runde in Stufen über einen Ordner
+  logscan/             Log-Blick: Muster, Zeitleiste, Logwache, Syslog
+  netmap/ netscan/     MAC-/ARP-/LLDP-Tabellen und Topologie, Subnetz-Scan
+  broadcast/ runbook/  Befehl/Runbook parallel auf mehreren Hosts, Runbook-Variablen
+  KI
+  llm/                 Client ohne SDK: OpenAI-kompatibel (/v1/chat/completions) und Anthropic, Streaming
+  agent/               KI-Logik: Ghost-Text, Folgebefehle, Ziel-/Agent-/Plan-Modus, Frage, Begleiter;
+                       Prompts, striktes Parsen, Entfernen von Geheimnissen
+  codeagent/           KI-Coding-Agenten im Tab erkennen (Claude Code, Codex …)
+  mcp/                 sshTermy als MCP-Server für KI-Clients
+  Oberfläche
+  ui/                  Oberfläche (bubbletea v2, lipgloss v2): Screens, Panels, Formulare, Palette
+  gui/ winstate/       eigenes Fenster ohne Terminal (Ebiten), seine Größe und Position
+  termemu/             Terminal-Emulation (gepatchtes charmbracelet/x/vt in third_party/vt): Raster, Scrollback, Bilder
+  highlight/           Farbregeln für die Ausgabe
+  sessionlog/ recording/ Sitzungsprotokolle (verschlüsselt, durchsuchbar) und asciicast-Aufnahmen
+  detach/ localsock/   Tab in eigenes Terminalfenster, Hintergrunddienst
+  notify/ push/        Desktop-Meldungen, Handy-Meldungen (ntfy, Gotify, Webhook)
+  i18n/                Sprache der Oberfläche: deutsche Texte sind die Schlüssel, en_*.go die englische Fassung
+  Betrieb
+  update/ changelog/   Auto-Update aus GitHub Releases (SHA-256 + Ed25519), Was ist neu
   version/             Name, Version, Credits an genau einer Stelle
-  i18n/                Sprache der Oberfläche: deutsche Texte sind die Schlüssel, en.go die englische Fassung
-  ui/                  Oberfläche (bubbletea v2, lipgloss v2): Screens, Panels, Formulare
+  safe/ crash/         Paniken in Hintergrundarbeit abfangen, bereinigter Absturzbericht
+  debuglog/ doctor/    Debug-Protokoll für Fehlerberichte, Selbstprüfung (sshtermy doctor)
+  packx/               Archive lokal packen und entpacken
+  devfake/ fuzzguard/  nachgebauter Aruba-Switch für Tests, Zeitlimit für Fuzz-Tests
 tools/dev/             Test-SSH-Server, Test-LLM, ANSI→HTML für Screenshots
+tools/handout/         Kurzreferenz zum Ausdrucken (make handout)
 ```
 
 Abhängigkeiten zeigen nur nach innen: `ui → agent/sshx/store/update → llm/safety/vault → domain`.

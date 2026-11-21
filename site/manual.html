@@ -85,8 +85,13 @@
     <li><kbd>⇧F10</kbd> moves a tab into its own terminal window.</li>
     <li><kbd>Ctrl</kbd>+<kbd>F</kbd> searches the scrollback, <kbd>Ctrl</kbd>+<kbd>E</kbd> jumps to error lines. <kbd>Alt</kbd>+<kbd>S</kbd> searches all open tabs.</li>
     <li><kbd>Alt</kbd>+<kbd>C</kbd> selects by keyboard: arrows or <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd>, <kbd>w</kbd>/<kbd>b</kbd>/<kbd>e</kbd> by word, <kbd>v</kbd> select, <kbd>V</kbd> whole lines, <kbd>y</kbd> copies, <kbd>Esc</kbd> ends. <kbd>Alt</kbd>+<kbd>X</kbd> clears screen and scrollback, the input line stays.</li>
+    <li><kbd>Alt</kbd>+<kbd>Y</kbd> shows what you copied recently and pastes it again. Right-click a selection: copy, search the web, paste.</li>
+    <li><b>Commands as blocks:</b> <kbd>Alt</kbd>+<kbd>PgUp</kbd>/<kbd>PgDn</kbd> jumps from command to command, <kbd>Alt</kbd>+<kbd>O</kbd> lists the tab's commands with time, duration and result: <kbd>Ctrl</kbd>+<kbd>C</kbd> copies exactly one output, <kbd>Ctrl</kbd>+<kbd>K</kbd> hands it to the AI.</li>
+    <li><b>Side panel:</b> right, left or bottom (palette “Dock the side panel”), drag its edge to resize. In wide windows F5 and the log view sit beside the terminal.</li>
+    <li><b>Log view</b> (<kbd>Alt</kbd>+<kbd>E</kbd>): reads the logs of the system you are on, read-only, and shows patterns instead of lines: <kbd>n</kbd> what is new, <kbd>t</kbd> timeline, <kbd>b</kbd> AI status report, <kbd>w</kbd> log watch in the background, <kbd>s</kbd> syslog setup on switches.</li>
+    <li><b>Phone notifications</b> (palette “Phone notifications”): when you are away, long commands, schedules and waiting agents notify your phone via ntfy, Gotify or a webhook, without secrets.</li>
     <li>A tab waiting for a password, a <code>[y/N]</code> question, a key or a pager gets a <code>?</code>. If an AI coding agent runs in it (Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI, Cursor Agent, Qwen Code), the tab shows whether it is working, waiting for your approval (<code>◆</code>, plus a desktop notification) or done. <kbd>Alt</kbd>+<kbd>G</kbd> jumps to the next tab that waits or has a notice; clicking the desktop notification opens it directly.</li>
-    <li><b>Tabs from last time</b>: at start sshTermy asks whether to reopen the tabs and split layout of the last session. Palette “Tabs from last time” sets it to always or never.</li>
+    <li><b>Tabs from last time</b>: at start sshTermy asks whether to reopen the tabs and split layout of the last session; reopened tabs show the output from last time, dimmed. Palette “Tabs from last time” sets it to always or never.</li>
     <li><b>Background service</b> (palette “Background service”, terminal mode only): sessions keep running when you close the terminal window; <code>sshtermy</code> attaches again. <kbd>Ctrl</kbd>+<kbd>Q</kbd> → <kbd>a</kbd> detaches, <kbd>y</kbd> really quits.</li>
     <li><b>Header</b>: palette “Header: show the time” and “Header: own command …”. The first line of the output shows on the right, e.g. <code>git -C ~/repo branch --show-current</code>; every 30 s, <code>@60</code> at the end for every 60 s.</li>
     <li><kbd>F9</kbd> and <kbd>⇧F1</kbd>…<kbd>⇧F8</kbd>: quick commands, preset for the device (Linux, Windows, Aruba, Cisco, Juniper, MikroTik, FortiGate …).</li>
@@ -98,10 +103,13 @@
 <section id="ai">
   <h2>AI copilot</h2>
   <ul>
-    <li><b>Ghost text:</b> a grey suggestion while you type, <kbd>Tab</kbd> or <kbd>→</kbd> accepts.</li>
+    <li><b>Ghost text:</b> a grey suggestion while you type, first from your history (instantly, without AI), <kbd>Tab</kbd> or <kbd>→</kbd> accepts.</li>
     <li><b>Next commands:</b> up to four suggestions after every command, <kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd> inserts (without Enter).</li>
     <li><b>Why? &amp; fix:</b> when a command fails, <kbd>Alt</kbd>+<kbd>0</kbd> explains the cause and suggests a fix.</li>
-    <li><b>Ask AI:</b> <kbd>F3</kbd>; the answer knows the screen, the system and your previous commands.</li>
+    <li><b>Ask AI:</b> <kbd>F3</kbd>; the answer knows the screen, the system and your previous commands. Commands come as cards: <kbd>a</kbd> runs, <kbd>c</kbd> copies; if one fails, the card shows a fix and <kbd>u</kbd> takes it over. <kbd>Esc</kbd> stops the answer, <kbd>f</kbd> asks a follow-up.</li>
+    <li><b>AI companion</b> (<kbd>Alt</kbd>+<kbd>K</kbd> level, <kbd>Alt</kbd>+<kbd>J</kbd> sidebar): reads along and speaks up on its own: quiet (errors, risky lines before Enter), chatty or coach (spots your goal, recap as runbook).</li>
+    <li><b>Task across windows</b> (<kbd>Alt</kbd>+<kbd>V</kbd>): link the windows of one job (web server, database, switch); the AI sees all of them and says which step belongs in which window.</li>
+    <li><b>House rules and fast model</b> (Settings › AI): rules like “Debian 12, never suggest reboot” go along with every AI task, folders can add their own; a smaller model handles ghost text and follow-ups. The AI status shows tokens and cost for today, 7 and 30 days.</li>
     <li><b>Fallback providers:</b> if the first one fails, the next takes over (Settings › AI).</li>
     <li><b>Learning per device:</b> correct an AI command and sshTermy remembers it for that device.</li>
   </ul>
@@ -118,11 +126,17 @@
     <tr><td>Plan first</td><td>the AI presents a plan, you edit and approve it</td></tr>
   </table>
   <p>Dangerous commands (e.g. <code>rm -rf</code>, formatting, switch reload) <b>never</b> run automatically. Successful goals can be saved as a runbook and later run on many hosts.</p>
+  <ul>
+    <li><kbd>?</kbd> gives the AI an instruction mid-goal, <kbd>⇧S</kbd> skips a step with a reason; when a command asks <code>[Y/n]</code>, the panel shows answer buttons.</li>
+    <li>After the goal: <kbd>f</kbd> follow-up goal, <kbd>u</kbd> restores the files the goal changed, <kbd>d</kbd> shows every change as a diff, <kbd>g</kbd> lets a second AI cross-check read-only whether the goal was really reached.</li>
+    <li><b>Tasks</b> (<kbd>u</kbd> in the manager, <kbd>Alt</kbd>+<kbd>A</kbd> in the terminal): open work per connection or folder with a due date; <kbd>⏎</kbd> starts a task as a goal.</li>
+    <li><b>AI check as a schedule:</b> let the AI check read-only at night, e.g. “is nginx running, is a disk full?”.</li>
+  </ul>
 </section>
 
 <section id="network">
   <h2>Switches, routers, firewalls</h2>
-  <p>sshTermy recognises ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, FortiGate, Comware and Huawei. On these devices there are never hidden exec channels: every query runs visibly at the prompt.</p>
+  <p>sshTermy brings 48 command sets (Cisco, Arista, Aruba, Comware, Huawei, Juniper, MikroTik, FortiGate, UniFi, Palo Alto, pfSense, Proxmox …); add your own as YAML (Settings › Network devices). On these devices there are never hidden exec channels: every query runs visibly at the prompt.</p>
   <ul>
     <li><kbd>F6</kbd> → <kbd>r</kbd>: firmware, model, CPU/RAM, ports and VLANs.</li>
     <li><kbd>F6</kbd> → <kbd>b</kbd>: back up the configuration encrypted (<code>show running-config</code>, Junos <code>show configuration | display set</code>, RouterOS <code>/export</code>, FortiOS <code>show full-configuration</code>); <kbd>d</kbd> shows the diff to the previous one.</li>
@@ -145,7 +159,8 @@
 <section id="files">
   <h2>Files and tunnels</h2>
   <ul>
-    <li><kbd>F5</kbd>: two-sided SFTP, copy with <kbd>c</kbd> or by dragging, <kbd>e</kbd> opens a server file in your own editor and uploads it on save.</li>
+    <li><kbd>F5</kbd>: two-sided SFTP that opens in the folder you are in, copy with <kbd>c</kbd> or by dragging, <kbd>e</kbd> opens a server file in your own editor and uploads it on save. Double-click views a file right in sshTermy (<kbd>/</kbd> search, <kbd>f</kbd> follow).</li>
+    <li>Like a file manager: <kbd>d</kbd> trash (<kbd>Ctrl</kbd>+<kbd>Z</kbd> restores), <kbd>z</kbd>/<kbd>u</kbd> pack and extract on the server, <kbd>/</kbd> find file, <kbd>i</kbd> folder sizes, <kbd>⇧I</kbd> duplicates, <kbd>g</kbd> places, <kbd>x</kbd>/<kbd>p</kbd> move, <kbd>⇧F2</kbd> rename many in your editor. “Permission denied”: <kbd>j</kbd> <kbd>j</kbd> repeats with sudo.</li>
     <li><code>tsz</code>/<code>trz</code> in the terminal transfer files even through jump hosts (trzsz).</li>
     <li><kbd>F4</kbd>: switch tunnels (local, remote, SOCKS) on and off; web services open in the browser.</li>
   </ul>
@@ -180,7 +195,7 @@
   <ul>
     <li><b>Sync</b> (<kbd>y</kbd>): connections, tunnels, runbooks and settings end-to-end encrypted through a cloud folder (OneDrive, Dropbox, iCloud, Syncthing) or WebDAV (NAS, Nextcloud).</li>
     <li><b>Team package:</b> share a folder encrypted as <code>.sshteam</code>; team folders can be subscribed to and stay current.</li>
-    <li><b>Share:</b> show a tab live; viewers watch along and type only if you allow it.</li>
+    <li><b>Share:</b> show a tab live with a short code like <code>7-taube-kompass-ofen</code>; in the same network without a relay. Viewers knock, you compare three check words; without sshTermy they watch in a browser. Typing only if you allow it.</li>
     <li><b>Relay:</b> reach servers behind NAT/firewalls through your own relay.</li>
   </ul>
 </section>

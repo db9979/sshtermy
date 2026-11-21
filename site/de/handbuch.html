@@ -85,8 +85,13 @@
     <li><kbd>⇧F10</kbd> verschiebt einen Tab in ein eigenes Terminalfenster.</li>
     <li><kbd>Strg</kbd>+<kbd>F</kbd> durchsucht den Verlauf, <kbd>Strg</kbd>+<kbd>E</kbd> springt zu Fehlerzeilen. <kbd>Alt</kbd>+<kbd>S</kbd> sucht in allen offenen Tabs.</li>
     <li><kbd>Alt</kbd>+<kbd>C</kbd> markiert per Tastatur: Pfeile oder <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd>, <kbd>w</kbd>/<kbd>b</kbd>/<kbd>e</kbd> wortweise, <kbd>v</kbd> markieren, <kbd>V</kbd> ganze Zeilen, <kbd>y</kbd> kopiert, <kbd>Esc</kbd> beendet. <kbd>Alt</kbd>+<kbd>X</kbd> leert Bildschirm und Verlauf, die Eingabezeile bleibt.</li>
+    <li><kbd>Alt</kbd>+<kbd>Y</kbd> zeigt, was du zuletzt kopiert hast, und fügt es wieder ein. Rechtsklick auf eine Markierung: kopieren, im Web suchen, einfügen.</li>
+    <li><b>Befehle als Blöcke:</b> <kbd>Alt</kbd>+<kbd>Bild↑</kbd>/<kbd>Bild↓</kbd> springt von Befehl zu Befehl, <kbd>Alt</kbd>+<kbd>O</kbd> listet die Befehle des Tabs mit Zeit, Dauer und Ergebnis: <kbd>Strg</kbd>+<kbd>C</kbd> kopiert genau eine Ausgabe, <kbd>Strg</kbd>+<kbd>K</kbd> gibt sie der KI.</li>
+    <li><b>Seitenpanel:</b> rechts, links oder unten (Palette „Seitenpanel andocken“), Rand ziehen ändert die Größe. In breiten Fenstern stehen F5 und der Log-Blick neben dem Terminal.</li>
+    <li><b>Log-Blick</b> (<kbd>Alt</kbd>+<kbd>E</kbd>): liest die Logs des Systems, auf dem du bist, nur lesend, und zeigt Muster statt Zeilen: <kbd>n</kbd> was neu ist, <kbd>t</kbd> Zeitleiste, <kbd>b</kbd> KI-Lagebericht, <kbd>w</kbd> Logwache im Hintergrund, <kbd>s</kbd> Syslog am Switch einrichten.</li>
+    <li><b>Handy-Meldungen</b> (Palette „Handy-Meldungen“): Bist du nicht am Rechner, melden lange Befehle, Zeitpläne und wartende Agenten sich per ntfy, Gotify oder Webhook auf dem Handy, ohne Geheimnisse.</li>
     <li>Wartet ein Tab auf ein Passwort, eine <code>[j/N]</code>-Frage, eine Taste oder im Pager, steht ein <code>?</code> an ihm. Läuft darin ein KI-Coding-Agent (Claude Code, Codex, Gemini CLI, OpenCode, Copilot CLI, Cursor Agent, Qwen Code), zeigt der Tab, ob er arbeitet, auf deine Freigabe wartet (<code>◆</code>, dazu eine Desktop-Meldung) oder fertig ist. <kbd>Alt</kbd>+<kbd>G</kbd> springt zum nächsten Tab, der wartet oder sich gemeldet hat; ein Klick auf die Desktop-Meldung öffnet ihn direkt.</li>
-    <li><b>Tabs vom letzten Mal</b>: Beim Start fragt sshTermy, ob es die Tabs und die Aufteilung der letzten Sitzung wieder öffnen soll. Palette „Tabs vom letzten Mal“ stellt auf immer oder nie.</li>
+    <li><b>Tabs vom letzten Mal</b>: Beim Start fragt sshTermy, ob es die Tabs und die Aufteilung der letzten Sitzung wieder öffnen soll; wieder geöffnete Tabs zeigen die Ausgabe vom letzten Mal gedämpft. Palette „Tabs vom letzten Mal“ stellt auf immer oder nie.</li>
     <li><b>Hintergrunddienst</b> (Palette „Hintergrunddienst“, nur im Terminal-Betrieb): Sitzungen laufen weiter, wenn du das Terminalfenster schließt; <code>sshtermy</code> hängt sich wieder an. <kbd>Strg</kbd>+<kbd>Q</kbd> → <kbd>a</kbd> koppelt ab, <kbd>j</kbd> beendet wirklich.</li>
     <li><b>Kopfzeile</b>: Palette „Kopfzeile: Uhrzeit zeigen“ und „Kopfzeile: eigener Befehl …“. Die erste Zeile der Ausgabe steht rechts, etwa <code>git -C ~/repo branch --show-current</code>; alle 30 s, mit <code>@60</code> am Ende alle 60 s.</li>
     <li><kbd>F9</kbd> und <kbd>⇧F1</kbd>…<kbd>⇧F8</kbd>: Schnellbefehle, passend zum Gerät vorbelegt (Linux, Windows, Aruba, Cisco, Juniper, MikroTik, FortiGate …).</li>
@@ -98,10 +103,13 @@
 <section id="ki">
   <h2>KI-Copilot</h2>
   <ul>
-    <li><b>Ghost-Text:</b> grauer Vorschlag beim Tippen, <kbd>Tab</kbd> oder <kbd>→</kbd> übernimmt.</li>
+    <li><b>Ghost-Text:</b> grauer Vorschlag beim Tippen, zuerst aus deinem Verlauf (sofort, ohne KI), <kbd>Tab</kbd> oder <kbd>→</kbd> übernimmt.</li>
     <li><b>Folgebefehle:</b> nach jedem Befehl bis zu vier Vorschläge, <kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>4</kbd> fügt ein (ohne Enter).</li>
     <li><b>Warum? &amp; Fix:</b> schlägt ein Befehl fehl, erklärt <kbd>Alt</kbd>+<kbd>0</kbd> die Ursache und schlägt eine Lösung vor.</li>
-    <li><b>KI fragen:</b> <kbd>F3</kbd>; die Antwort kennt Bildschirm, System und bisherige Befehle.</li>
+    <li><b>KI fragen:</b> <kbd>F3</kbd>; die Antwort kennt Bildschirm, System und bisherige Befehle. Befehle kommen als Karten: <kbd>a</kbd> führt aus, <kbd>c</kbd> kopiert; schlägt einer fehl, zeigt die Karte einen Fix, <kbd>u</kbd> übernimmt ihn. <kbd>Esc</kbd> bricht die Antwort ab, <kbd>f</kbd> stellt eine Folgefrage.</li>
+    <li><b>KI-Begleiter</b> (<kbd>Alt</kbd>+<kbd>K</kbd> Stufe, <kbd>Alt</kbd>+<kbd>J</kbd> Leiste): liest mit und meldet sich von selbst: leise (Fehler, riskante Zeilen vor Enter), gesprächig oder Coach (erkennt dein Vorhaben, Rückblick als Runbook).</li>
+    <li><b>Vorgang über mehrere Fenster</b> (<kbd>Alt</kbd>+<kbd>V</kbd>): verknüpft die Fenster einer Arbeit (Webserver, Datenbank, Switch); die KI sieht alle und sagt zu jedem Schritt, in welches Fenster er gehört.</li>
+    <li><b>Hausregeln und schnelles Modell</b> (Einstellungen › KI): Regeln wie „Debian 12, nie reboot vorschlagen“ gehen bei jeder KI-Aufgabe mit, Ordner können eigene ergänzen; ein kleineres Modell übernimmt Ghost-Text und Folgebefehle. Der KI-Status zeigt Tokens und Kosten für heute, 7 und 30 Tage.</li>
     <li><b>Ersatz-Anbieter:</b> fällt der erste aus, springt der nächste ein (Einstellungen › KI).</li>
     <li><b>Lernen pro Gerät:</b> korrigierst du einen KI-Befehl, merkt sich sshTermy das für dieses Gerät.</li>
   </ul>
@@ -118,11 +126,17 @@
     <tr><td>Erst planen</td><td>die KI legt einen Plan vor, du bearbeitest und gibst frei</td></tr>
   </table>
   <p>Gefährliche Befehle (z. B. <code>rm -rf</code>, Formatieren, Switch-Neustart) laufen <b>nie</b> automatisch. Erfolgreiche Ziele lassen sich als Runbook speichern und später auf vielen Hosts ausführen.</p>
+  <ul>
+    <li><kbd>?</kbd> gibt der KI mitten im Ziel eine Anweisung, <kbd>⇧S</kbd> überspringt einen Schritt mit Begründung; fragt ein Befehl <code>[J/n]</code>, zeigt das Panel Antwort-Knöpfe.</li>
+    <li>Nach dem Ziel: <kbd>f</kbd> Folgeziel, <kbd>u</kbd> holt die vom Ziel geänderten Dateien zurück, <kbd>d</kbd> zeigt jede Änderung als Diff, <kbd>g</kbd> lässt eine zweite KI nur lesend gegenprüfen, ob das Ziel wirklich erreicht ist.</li>
+    <li><b>Aufgaben</b> (<kbd>u</kbd> im Manager, <kbd>Alt</kbd>+<kbd>A</kbd> im Terminal): offene Arbeiten je Verbindung oder Ordner mit Fälligkeit; <kbd>⏎</kbd> startet eine Aufgabe als Ziel.</li>
+    <li><b>KI-Prüfung als Zeitplan:</b> die KI prüft nachts nur lesend, z. B. „läuft nginx, ist eine Platte voll?“.</li>
+  </ul>
 </section>
 
 <section id="netz">
   <h2>Switches, Router, Firewalls</h2>
-  <p>sshTermy erkennt ArubaOS-Switch/ProCurve, ArubaOS-CX, Cisco IOS, Juniper Junos, MikroTik RouterOS, FortiGate, Comware und Huawei. Dort gibt es nie versteckte Exec-Kanäle: alle Abfragen laufen sichtbar am Prompt.</p>
+  <p>sshTermy bringt 48 Befehlssätze mit (Cisco, Arista, Aruba, Comware, Huawei, Juniper, MikroTik, FortiGate, UniFi, Palo Alto, pfSense, Proxmox …); eigene kommen als YAML dazu (Einstellungen › Netzwerkgeräte). Dort gibt es nie versteckte Exec-Kanäle: alle Abfragen laufen sichtbar am Prompt.</p>
   <ul>
     <li><kbd>F6</kbd> → <kbd>r</kbd>: Firmware, Modell, CPU/RAM, Ports und VLANs.</li>
     <li><kbd>F6</kbd> → <kbd>b</kbd>: Konfiguration verschlüsselt sichern (<code>show running-config</code>, Junos <code>show configuration | display set</code>, RouterOS <code>/export</code>, FortiOS <code>show full-configuration</code>); <kbd>d</kbd> zeigt den Unterschied zum letzten Stand.</li>
@@ -145,7 +159,8 @@
 <section id="dateien">
   <h2>Dateien und Tunnel</h2>
   <ul>
-    <li><kbd>F5</kbd>: SFTP mit zwei Seiten, kopieren mit <kbd>c</kbd> oder Ziehen, <kbd>e</kbd> öffnet eine Server-Datei im eigenen Editor und lädt sie beim Speichern hoch.</li>
+    <li><kbd>F5</kbd>: SFTP mit zwei Seiten, öffnet im Ordner, in dem du gerade bist; kopieren mit <kbd>c</kbd> oder Ziehen, <kbd>e</kbd> öffnet eine Server-Datei im eigenen Editor und lädt sie beim Speichern hoch. Doppelklick zeigt eine Datei direkt in sshTermy (<kbd>/</kbd> suchen, <kbd>f</kbd> mitlaufen).</li>
+    <li>Wie ein Dateimanager: <kbd>d</kbd> Papierkorb (<kbd>Strg</kbd>+<kbd>Z</kbd> holt zurück), <kbd>z</kbd>/<kbd>u</kbd> packen und entpacken auf dem Server, <kbd>/</kbd> Datei finden, <kbd>i</kbd> Ordnergrößen, <kbd>⇧I</kbd> doppelte Dateien, <kbd>g</kbd> Orte, <kbd>x</kbd>/<kbd>p</kbd> verschieben, <kbd>⇧F2</kbd> viele im eigenen Editor umbenennen. „Permission denied“: <kbd>j</kbd> <kbd>j</kbd> wiederholt mit sudo.</li>
     <li><code>tsz</code>/<code>trz</code> im Terminal übertragen Dateien auch durch Jump-Hosts (trzsz).</li>
     <li><kbd>F4</kbd>: Tunnel (lokal, remote, SOCKS) an- und ausschalten; Web-Dienste öffnen sich im Browser.</li>
   </ul>
@@ -180,7 +195,7 @@
   <ul>
     <li><b>Sync</b> (<kbd>y</kbd>): Verbindungen, Tunnel, Runbooks und Einstellungen Ende-zu-Ende verschlüsselt über einen Cloud-Ordner (OneDrive, Dropbox, iCloud, Syncthing) oder WebDAV (NAS, Nextcloud).</li>
     <li><b>Team-Paket:</b> einen Ordner verschlüsselt als <code>.sshteam</code> weitergeben; Team-Ordner lassen sich abonnieren und bleiben aktuell.</li>
-    <li><b>Teilen:</b> einen Tab live zeigen; Zuschauer sehen mit, schreiben nur, wenn du es erlaubst.</li>
+    <li><b>Teilen:</b> einen Tab live zeigen, mit einem kurzen Code wie <code>7-taube-kompass-ofen</code>; im selben Netz ohne Vermittler. Zuschauer klopfen an, ihr vergleicht drei Prüfwörter; ohne sshTermy sehen sie im Browser zu. Schreiben nur, wenn du es erlaubst.</li>
     <li><b>Vermittler:</b> Server hinter NAT/Firewall über einen eigenen Vermittler erreichen.</li>
   </ul>
 </section>

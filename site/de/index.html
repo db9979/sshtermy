@@ -237,6 +237,9 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>F9</kbd>, <kbd>⇧</kbd>+<kbd>F1</kbd>…<kbd>F8</kbd></td><td>Schnellbefehle (<code>{{name}}</code> fragt nach einem Wert)</td></tr>
     <tr><td><kbd>Strg</kbd>+<kbd>T</kbd></td><td>Geteilte Ansicht: Aufteilung wählen (1…7)</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>Z</kbd> / <kbd>Alt</kbd>+<kbd>I</kbd></td><td>Bereich zoomen / in alle Bereiche tippen</td></tr>
+    <tr><td><kbd>Strg</kbd>+Pfeil / <kbd>Alt</kbd>+<kbd>⇧</kbd>+Pfeil</td><td>Geteilte Ansicht: Bereich wechseln / Trennlinie verschieben (oder mit der Maus ziehen)</td></tr>
+    <tr><td><kbd>⇧</kbd>+<kbd>⏎</kbd> / <kbd>Strg</kbd>+<kbd>J</kbd></td><td>Neue Zeile in Ziel, Frage und Palette</td></tr>
+    <tr><td><kbd>⇧</kbd>+<kbd>F9</kbd></td><td>Tastenzeile erklärt die Tasten des aktuellen Bereichs</td></tr>
     <tr><td>Mausrad / <kbd>⇧</kbd>+<kbd>Bild↑</kbd>/<kbd>Bild↓</kbd></td><td>Im Verlauf zurückblättern; <kbd>⇧</kbd>+<kbd>Pos1</kbd> an den Anfang, <kbd>⇧</kbd>+<kbd>Ende</kbd> oder <kbd>Esc</kbd> zurück nach unten; in tmux über dessen Copy-Mode</td></tr>
     <tr><td><kbd>Strg</kbd>+<kbd>F</kbd></td><td>Im Verlauf suchen</td></tr>
     <tr><td><kbd>Alt</kbd>+<kbd>S</kbd></td><td>In allen offenen Tabs suchen</td></tr>
@@ -308,7 +311,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <details><summary>Windows meldet „Der Computer wurde durch Windows geschützt“</summary><p>Die <code>.exe</code> ist noch nicht codesigniert, deshalb warnt SmartScreen beim ersten Start. „Weitere Informationen“ → „Trotzdem ausführen“. Mit winget installiert, kommt die Warnung meist nicht.</p></details>
   <details><summary>macOS meldet, die App „kann nicht geöffnet werden“</summary><p>Mit dem Browser geladene Dateien bekommen eine Quarantäne-Markierung. Nimm Homebrew oder den Einzeiler, oder entferne die Markierung: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
   <details><summary>Wo liegen meine Daten?</summary><p>Windows: <code>%APPDATA%\sshtermy</code>, macOS: <code>~/Library/Application Support/sshtermy</code>, Linux: <code>~/.config/sshtermy</code>. Die Umgebungsvariable <code>SSHTERMY_HOME</code> verlegt sie, z. B. auf einen USB-Stick.</p></details>
-  <details><summary>Welches Terminal soll ich nehmen?</summary><p>Unter Windows das Windows Terminal, unter macOS Terminal oder iTerm2, unter Linux jedes moderne Terminal. Funktionstasten und Truecolor sollten gehen.</p></details>
+  <details><summary>Welches Terminal soll ich nehmen?</summary><p>Unter Windows das Windows Terminal, unter macOS Terminal oder iTerm2, unter Linux jedes moderne Terminal. Funktionstasten und Truecolor sollten gehen. Nötig ist gar keins: Doppelklick auf die <code>.exe</code>, die <code>.app</code> oder <code>sshtermy -window</code> öffnet sshTermy im eigenen Fenster, dort kommt jede Taste an.</p></details>
   <details><summary>Geht das auch auf Englisch?</summary><p>Ja: <kbd>F12</kbd> → <kbd>l</kbd> oder Palette → „Sprache“. Beim ersten Start folgt sshTermy der Systemsprache.</p></details>
 </section>
 </main>
