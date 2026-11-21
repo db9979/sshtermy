@@ -83,6 +83,9 @@ type palItem struct {
 	hidden bool
 	// pro: Profi-Funktion, im einfachen Modus nur über die Suche (simple.go)
 	pro bool
+	// small: geht auch mit der kleinen Offline-KI; noAI: braucht keine KI
+	// (aitier.go blendet sonst KI-Einträge je nach Stufe aus).
+	small, noAI bool
 	// open: Eintrag öffnet ein Untermenü (z. B. "settings/ki" oder "view").
 	open string
 	// area: Bereich der Übersicht (palAreas), in dessen Ordner der Eintrag
@@ -251,6 +254,7 @@ func (a *App) palActions(s *session, inTerm, inMgr bool) []palItem {
 			keys: "abkoppeln detach hintergrund weiterlaufen schließen", run: func() tea.Cmd { return a.keepDetach() }})
 	}
 	actions = a.simpleHide(actions) // einfacher Modus (simple.go)
+	actions = a.aiHide(s, actions)  // nur, was mit der KI geht (aitier.go)
 	for i := range actions {
 		actions[i].group = pgAction
 	}
@@ -304,7 +308,7 @@ func (a *App) palDirect(q string, s *session, inTerm bool, match func(string) bo
 		items = append(items, palItem{icon: ic("scan"), label: i18n.T("Gerät finden: ") + q, hint: i18n.T("MAC/IP → Switch-Port"),
 			run: func() tea.Cmd { return a.netFind(q) }})
 	}
-	if q != "" && inTerm {
+	if q != "" && inTerm && a.aiTier(s) == tierFull {
 		items = append(items,
 			palItem{group: pgAI, icon: ic("goal"), label: i18n.T("Als Ziel starten: „") + trunc(oneLine(q), 50) + i18n.T("“"), hint: "⏎",
 				run: func() tea.Cmd { return a.startGoal(s, q) }},
@@ -312,12 +316,16 @@ func (a *App) palDirect(q string, s *session, inTerm bool, match func(string) bo
 				run: func() tea.Cmd { return a.startAsk(s, q) }},
 			palItem{group: pgAI, icon: ic("rewrite"), label: i18n.T("Für dieses System umschreiben: „") + trunc(oneLine(q), 40) + i18n.T("“"), hint: i18n.T("Befehl"),
 				run: func() tea.Cmd { return a.startAdapt(s, oneLine(q)) }})
+	} else if q != "" && inTerm && a.aiTier(s) == tierSmall {
+		items = append(items,
+			palItem{group: pgAI, icon: ic("ai"), label: i18n.T("Befehl dazu (Offline-KI): „") + trunc(oneLine(q), 50) + i18n.T("“"), hint: "⏎",
+				run: func() tea.Cmd { return a.startAsk(s, q) }})
 	}
-	if inTerm && s.fail != nil && match("fehler warum fix error why "+s.fail.Command) {
+	if inTerm && s.fail != nil && a.aiTier(s) == tierFull && match("fehler warum fix error why "+s.fail.Command) {
 		items = append(items, palItem{group: pgAI, icon: ic("fix"), label: i18n.T("Warum ist „") + trunc(oneLine(s.fail.Command), 40) + i18n.T("“ fehlgeschlagen? Fix vorschlagen"), hint: "Alt+0",
 			run: func() tea.Cmd { return a.explainFailure(s) }})
 	}
-	if hasSel := inTerm && s.sel != nil && !s.sel.Empty(); hasSel || (inTerm && q != "" && match(i18n.T("KI: Log/Ausgabe auswerten")+" log diagnose journalctl syslog analyse auswerten")) {
+	if hasSel := inTerm && s.sel != nil && !s.sel.Empty(); a.aiTier(s) == tierFull && (hasSel || (inTerm && q != "" && match(i18n.T("KI: Log/Ausgabe auswerten")+" log diagnose journalctl syslog analyse auswerten"))) {
 		label := i18n.T("KI: Log/Ausgabe auswerten (letzte 400 Zeilen)")
 		if hasSel {
 			label = i18n.T("KI: markierte Ausgabe auswerten")
@@ -408,7 +416,7 @@ func (a *App) palActsSession(add palAdd, s *session) {
 			}
 			return cmd
 		}},
-		palItem{icon: ic("ai"), label: i18n.T("KI fragen"), hint: a.keys.label(actAsk), run: func() tea.Cmd { withPanel(s, panelAsk); a.resize(s); return a.panelOpened(s) }},
+		palItem{icon: ic("ai"), label: i18n.T("KI fragen"), hint: a.keys.label(actAsk), small: true, run: func() tea.Cmd { withPanel(s, panelAsk); a.resize(s); return a.panelOpened(s) }},
 		palItem{area: "session", icon: ic("open"), label: i18n.T("Dateien (SFTP)"), hint: a.keys.label(actFiles), run: func() tea.Cmd { return a.toggleFiles(s) }},
 		palItem{area: "session", icon: ic("host"), label: i18n.T("Host-Übersicht"), hint: a.keys.label(actHost), top: true, run: func() tea.Cmd {
 			withPanel(s, panelHost)
@@ -422,6 +430,10 @@ func (a *App) palActsSession(add palAdd, s *session) {
 			keys: "begleiter companion leiste feed", run: func() tea.Cmd { return a.toggleCompanionBar(s) }},
 		palItem{icon: ic("ai"), label: i18n.T("Begleiter: Rückblick dieser Sitzung"), pro: true, hint: i18n.T("merken, Runbook"),
 			keys: "begleiter companion rückblick recap zusammenfassung runbook", run: func() tea.Cmd { return a.openRecap(s, false, nil) }},
+		palItem{icon: ic("ai"), label: i18n.T("Satz am Prompt wird zum Befehl"), hint: a.keys.label(actWish), small: true,
+			keys: "satz befehl worte sprache natürlich wish sentence command natural language prompt lxask strg+g", run: func() tea.Cmd { return a.startWish(s) }},
+		palItem{area: "session", icon: ic("command"), label: i18n.T("Befehl erklären (man-Seite, ohne KI)"), hint: a.keys.label(actExplain), noAI: true,
+			keys: "erklären explain man manpage hilfe optionen was macht befehl lxask", run: func() tea.Cmd { return a.startExplain(s) }},
 		palItem{icon: ic("ai"), label: i18n.T("Vorgang über mehrere Fenster (KI sieht alle)"), hint: a.keys.label(actVorgang), top: true,
 			keys: "vorgang mehrere fenster multi window alle tabs fahrplan bahnen task", run: func() tea.Cmd { return a.toggleVorgang() }})
 	add("quick",
@@ -1088,6 +1100,9 @@ func (a *App) palMenuItems() []palItem {
 			keys: "ki ai datenschutz privacy anfrage request prompt gesendet", run: func() tea.Cmd { a.modal = a.lastRequestModal(); return nil }},
 		hide(look(palCycle(pgSetLook, ic("open"), i18n.T("Suchmaschine für „Im Web suchen“"), func() string { _, e := a.searchEngine(); return e.label }(),
 			"web suche suchmaschine search engine google duckduckgo bing startpage ecosia", func(dir int) tea.Cmd { return a.cycleSearchEngine(dir) }))),
+		a.offlinePalItem(),
+		sub("settings/ki", palToggle(ic("llmcheck"), i18n.T("KI-Befehle vorab prüfen (man-Seiten des Hosts)"), a.cmdCheckOn(),
+			"prüfen vorab check verify man manpage optionen option lxask unbestätigt reparieren befehl", func() tea.Cmd { return a.toggleCmdCheck() })),
 		hide(sub("settings/ki", palToggle(ic("ai"), i18n.T("Gegenprüfung nach Ziel und Agent (zweite KI, nur lesend)"), a.verifyOn(),
 			"gegenprüfung prüfen verify review zweite ki vier augen kontrolle bestätigen ziel agent", func() tea.Cmd { return a.toggleVerify() }))),
 		hide(sub("settings/ki", palToggle(ic("ai"), i18n.T("Ghost-Text zuerst aus dem Verlauf"), a.histGhostOn(),

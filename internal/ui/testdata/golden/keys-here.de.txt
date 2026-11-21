@@ -19,14 +19,14 @@
  Dateien (SFTP)                F5
  Host-Übersicht                F6
  Log-Blick (Auffälligkeiten in den Logs)  Alt+E
+ Satz am Prompt wird zum Befehl  Strg+G
+ Befehl erklären (man-Seite, ohne KI)  Alt+H
  Tab zurück                    F7
  Tab vor                       F8
  Neuer Tab                     Alt+N
  Tab schließen                 Alt+W
  Alle Tabs (Liste)             Alt+T
  Zum nächsten Tab, der wartet oder sich gemeldet hat  Alt+G
- Schnellbefehle (Liste)        F9
- Schnellbefehl 1               Shift+F1 / F13
 
  Alt+⏎ ist gesperrt: Windows Terminal schaltet damit auf Vollbild.
  Schriftgröße: Strg + Plus/Minus im Terminalfenster (macOS: ⌘ + / −)

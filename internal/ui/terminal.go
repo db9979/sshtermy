@@ -236,6 +236,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			s.scroll = 0
 		}
 		if a.keys.is(actVorgang, key) {
+			if a.vg == nil && !a.needAI(s, true) {
+				return nil
+			}
 			return a.toggleVorgang()
 		}
 		if g := a.vg; g != nil && g.focus && g.open && !(m.Code >= tea.KeyF1 && m.Code <= tea.KeyF12) {
@@ -317,6 +320,12 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			return a.openLogScan(s)
 		}
 		switch a.keys.which(key, actCompanion, actCompanionBar) {
+		case actCompanion, actCompanionBar:
+			if !a.needAI(s, true) {
+				return nil
+			}
+		}
+		switch a.keys.which(key, actCompanion, actCompanionBar) {
 		case actCompanion:
 			return a.cycleCompanion(1)
 		case actCompanionBar:
@@ -327,6 +336,9 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 			if id == actTunnels && s.conn.Protocol.Raw() {
 				a.flash(i18n.T("Dateien und Tunnel gibt es nur bei SSH-Verbindungen"))
 				return nil
+			}
+			if (id == actGoal || id == actAsk) && !(s.panel == panelGoal && id == actGoal || s.panel == panelAsk && id == actAsk) && !a.needAI(s, id == actGoal) {
+				return nil // KI-Stufe reicht nicht (aitier.go)
 			}
 			kind := map[action]panelKind{actGoal: panelGoal, actAsk: panelAsk, actTunnels: panelTunnels, actHost: panelHost}[id]
 			if s.panel == kind && s.panelFocus {
@@ -352,6 +364,12 @@ func (a *App) updateTerminal(msg tea.Msg) tea.Cmd {
 		}
 		if a.keys.is(actTasksTerm, key) {
 			return a.openTasks(s.conn.ID, s.conn.Group)
+		}
+		switch a.keys.which(key, actWish, actExplain) { // wish.go
+		case actWish:
+			return a.startWish(s)
+		case actExplain:
+			return a.startExplain(s)
 		}
 		if s.state == stReconnect {
 			switch key {
@@ -445,6 +463,9 @@ func (a *App) terminalKeyOne(s *session, k tea.KeyPressMsg) tea.Cmd {
 	}
 	// fehlgeschlagener Befehl: Warum? & Fix
 	if key == "alt+0" && s.fail != nil {
+		if !a.needAI(s, true) {
+			return nil
+		}
 		return a.explainFailure(s)
 	}
 	// Folgebefehle einfügen (ohne Enter)
@@ -552,6 +573,9 @@ func (a *App) fireGhost(s *session, seq int) tea.Cmd {
 	if rest, hit := s.ghostLookup(typed, time.Now()); hit {
 		s.ghost, s.ghostFor = rest, typed
 		return nil
+	}
+	if a.aiTier(s) != tierFull {
+		return nil // ohne große KI: nur Ghost-Text aus dem Verlauf (histghost.go)
 	}
 	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
@@ -810,7 +834,13 @@ func (a *App) terminalKeys(s *session) [][2]string {
 		} else if len(s.chips) > 0 {
 			keys = append(keys, [2]string{i18n.T("Alt+1…") + strconv.Itoa(min(4, len(s.chips))), i18n.T("Vorschlag einfügen")})
 		}
-		keys = append(keys, [2]string{k.label(actGoal), i18n.T("Ziel")}, [2]string{k.label(actAsk), i18n.T("KI")}, [2]string{k.label(actTunnels), "Tunnel"},
+		switch a.aiTier(s) { // nur, was mit der KI auch geht (aitier.go)
+		case tierFull:
+			keys = append(keys, [2]string{k.label(actGoal), i18n.T("Ziel")}, [2]string{k.label(actAsk), i18n.T("KI")})
+		case tierSmall:
+			keys = append(keys, [2]string{k.label(actAsk), i18n.T("KI")}, [2]string{k.label(actWish), i18n.T("Satz→Befehl")})
+		}
+		keys = append(keys, [2]string{k.label(actTunnels), "Tunnel"},
 			[2]string{k.label(actFiles), i18n.T("Dateien")}, [2]string{k.label(actHost), "Host"}, [2]string{k.label(actQuickMenu), i18n.Pick("Schnell", "Quick")})
 	}
 	if len(a.sessions) > 1 {
@@ -831,7 +861,7 @@ func (a *App) terminalKeys(s *session) [][2]string {
 	}
 	keys = append(keys, [2]string{k.label(actQuit), i18n.T("beenden")})
 	// Anzeige-Reihenfolge (Palette, F1 … F12, ⇧F, Rest) macht footer().
-	if s.fail != nil {
+	if s.fail != nil && a.aiTier(s) == tierFull {
 		keys = append([][2]string{{"Alt+0", i18n.T("Warum? & Fix")}}, keys...)
 	}
 	return keys

@@ -53,7 +53,7 @@ const (
 func skip(rel string, d fs.DirEntry) bool {
 	top := strings.SplitN(filepath.ToSlash(rel), "/", 2)[0]
 	switch top {
-	case "crash", pendingName, "restore-tabs.json":
+	case "crash", pendingName, "restore-tabs.json", "offline-ki": // offline-ki: 1 GB Modell, lädt sich neu
 		return true
 	}
 	n := d.Name()

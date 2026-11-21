@@ -283,7 +283,7 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 	if sel {
 		border = st.T.AI
 	}
-	if open {
+	if open || s.ask.checkOpen(i, code) {
 		border = st.T.Warn
 	}
 	if len(danger) > 0 {
@@ -327,6 +327,9 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 		lines = append(lines, wrap(l, inner))
 	}
 	body := strings.Join(lines, "\n")
+	if cl := a.checkLines(s.ask.checks[i], code, inner); len(cl) > 0 && !open {
+		body += "\n" + strings.Join(cl, "\n")
+	}
 	if open {
 		body += "\n" + a.cardFixView(fx, inner)
 	}
@@ -350,6 +353,9 @@ func (a *App) commandCard(s *session, i int, cd card, sel, armed bool, kind stri
 		bs = append(bs, run)
 	}
 	bs = append(bs, button{"c", i18n.T("Kopieren"), st.Key, func() tea.Cmd { return a.cardCopy(s, i) }})
+	if cd.runnable() && a.checkable(s) {
+		bs = append(bs, button{"e", i18n.T("Erklären"), st.Key, func() tea.Cmd { return a.explainCommand(s, code, s.ask.question) }})
+	}
 	render := func(withText bool) string {
 		var out []string
 		for _, bt := range bs {
@@ -497,6 +503,11 @@ func (a *App) askCardKey(s *session, key string) (tea.Cmd, bool) {
 		return a.cardCopy(s, q.sel), true
 	case "u":
 		return a.adoptCardFix(s, q.sel), true
+	case "e":
+		if cd, ok := a.cardCode(s, q.sel); ok && cd.runnable() {
+			return a.explainCommand(s, cd.code, q.question), true
+		}
+		return nil, true
 	default:
 		return nil, false
 	}

@@ -126,6 +126,8 @@ type askState struct {
 	// Zustand nach einem Fehlschlag. Gelten nur für diese Antwort.
 	codes map[int]string
 	fixes map[int]*cardFix
+	// Prüfung vorab (cmdcheck.go): Einwände und Reparaturen je Karte.
+	checks map[int]*cardCheck
 }
 
 func (q *askState) cancel() {
@@ -144,7 +146,7 @@ func (q *askState) begin(question string) (context.Context, context.CancelFunc) 
 	q.shown = 0
 	q.err, q.busy, q.stopped, q.follow = "", true, false, false
 	q.sel, q.armed = 0, -1
-	q.codes, q.fixes = nil, nil
+	q.codes, q.fixes, q.checks = nil, nil, nil
 	q.seq++
 	q.input.Blur()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -326,7 +328,9 @@ func (a *App) sessionMsg(msg tea.Msg) (tea.Cmd, bool) {
 			s.ask.busy = false
 			if m.err != nil {
 				s.ask.err = m.err.Error()
+				return nil, true
 			}
+			return a.startCardChecks(s), true
 		}
 		return nil, true
 	}
@@ -1472,6 +1476,9 @@ func (a *App) startAskWith(s *session, text string, follow bool) tea.Cmd {
 	a.panelOpened(withPanel(s, panelAsk))
 	a.resize(s)
 	q := &s.ask
+	if a.aiTier(s) == tierSmall {
+		return a.startSmallAsk(s, text) // kleine Offline-KI: ein Befehl zur Frage (aitier.go)
+	}
 	ag, err := a.agentClientFor(s.conn)
 	if err != nil {
 		q.err = err.Error()

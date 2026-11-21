@@ -94,6 +94,7 @@ var localSettings = map[string]bool{
 	"WebSearch":      true, // Suchmaschine je Rechner
 	"NoHistGhost":    true, // Ghost-Text aus dem Verlauf: je Rechner
 	"NoVerify":       true, // Gegenprüfung: je Rechner
+	"NoCmdCheck":     true, // Befehle vorab prüfen: je Rechner
 	"Push":           true, // Handy-Meldungen: je Rechner
 	"PanelDock":      true, // Panel-Lage: je Bildschirm
 	"PanelW":         true,

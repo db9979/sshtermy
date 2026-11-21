@@ -110,6 +110,7 @@ func (a *App) palNewCount() int {
 // frische Installation nichts als geändert zeigt.
 var palDefaults = map[string]string{
 	"Einfacher Modus: Profi-Funktionen ausblenden":            "aus",
+	"KI-Befehle vorab prüfen (man-Seiten des Hosts)":          "an",
 	"Maus: klicken, markieren, scrollen":                      "an",
 	"Auto-Reconnect: nach Abbruch neu verbinden":              "an",
 	"Online-Punkt: Erreichbarkeit der Hosts prüfen":           "sichtbare",

@@ -50,7 +50,14 @@ func (a *App) aiLevel(conns ...domain.Connection) string {
 
 // agentClientFor: KI-Zugang unter Beachtung des Datenschutzes.
 func (a *App) agentClientFor(conns ...domain.Connection) (*agent.Agent, error) {
-	c, err := llm.NewWithPrivacy(a.st.LLM(), a.aiLevel(conns...))
+	level := a.aiLevel(conns...)
+	if level != llm.PrivacyOff && !a.mainAIUsable(level) {
+		if a.offlineReady() { // nur Satz → Befehl und einfache Fragen gehen (cmdAgent)
+			return nil, errNeedBigAI()
+		}
+		return nil, errNoAI()
+	}
+	c, err := llm.NewWithPrivacy(a.st.LLM(), level)
 	if errors.Is(err, llm.ErrAIOff) {
 		if a.st.LLM().Privacy == llm.PrivacyOff {
 			return nil, errors.New(i18n.T("KI ist ausgeschaltet (Einstellungen › KI › KI-Datenschutz)"))
@@ -61,6 +68,19 @@ func (a *App) agentClientFor(conns ...domain.Connection) (*agent.Agent, error) {
 		return nil, err
 	}
 	return &agent.Agent{C: c, Rules: a.aiRules(conns...)}, nil
+}
+
+// cmdAgent: KI für Aufgaben, die auch die kleine Offline-KI kann (Satz →
+// Befehl, einfache Befehlsfragen, Befehl nachbessern). Ohne andere KI
+// springt die Offline-KI ein.
+func (a *App) cmdAgent(s *session) (*agent.Agent, error) {
+	switch a.aiTier(s) {
+	case tierSmall:
+		return a.smallAgent()
+	case tierNone:
+		return nil, errNoAI()
+	}
+	return a.agentClientFor(s.conn)
 }
 
 // aiRules: Hausregeln aus den KI-Einstellungen und den Ordnern der
