@@ -72,8 +72,17 @@ func (e *Engine) ServerPath() string {
 	if p, err := exec.LookPath(exeName("llama-server")); err == nil {
 		return p
 	}
+	// Aus dem Finder gestartet fehlt Homebrew oft im PATH.
+	for _, d := range brewDirs {
+		if p := filepath.Join(d, exeName("llama-server")); fileExists(p) {
+			return p
+		}
+	}
 	return ""
 }
+
+// brewDirs: wo Homebrew (Mac, Linux) Programme ablegt.
+var brewDirs = []string{"/opt/homebrew/bin", "/usr/local/bin", "/home/linuxbrew/.linuxbrew/bin"}
 
 func fileExists(p string) bool {
 	st, err := os.Stat(p)

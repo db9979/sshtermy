@@ -39,6 +39,24 @@ func TestPickServer(t *testing.T) {
 	if _, ok := PickServer("linux", "riscv64", as); ok {
 		t.Error("riscv64 should have no build")
 	}
+	// umbenannte Pakete
+	for k, n := range map[string]string{
+		"darwin/arm64":  "llama-b8000-macos-arm64.tar.gz",
+		"darwin/amd64":  "llama-b8000-bin-osx-x86_64.tgz",
+		"linux/amd64":   "llama-b8000-bin-linux-x86_64.tar.gz",
+		"windows/amd64": "llama-b8000-bin-win-cpu-x64.zip",
+	} {
+		os_, arch, _ := strings.Cut(k, "/")
+		if got, ok := PickServer(os_, arch, names(n, "llama-b8000-bin-ubuntu-vulkan-x64.tar.gz")); !ok || got.Name != n {
+			t.Errorf("%s: %q, want %q", k, got.Name, n)
+		}
+	}
+	if got, ok := PickServer("darwin", "arm64", names("llama-b8000-bin-macos.zip")); !ok || got.Name != "llama-b8000-bin-macos.zip" {
+		t.Errorf("Mac-Universal-Build: %q", got.Name)
+	}
+	if _, ok := PickServer("darwin", "arm64", names("llama-b8000-bin-macos-x64.zip")); ok {
+		t.Error("arm64 must not take an x64 Mac build")
+	}
 	if _, ok := PickServer("linux", "arm64", names("llama-b1-bin-ubuntu-x64.zip")); ok {
 		t.Error("arm64 must not take an x64 build")
 	}
