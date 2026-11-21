@@ -3,10 +3,12 @@ package ui
 import (
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/db9979/sshtermy/internal/i18n"
+	"github.com/db9979/sshtermy/internal/ui/clickzone"
 	"github.com/db9979/sshtermy/internal/version"
 )
 
@@ -571,6 +573,15 @@ type helpPick struct {
 	block int         // Abschnitt mit der Auswahl (-1 = keiner)
 	line  int         // Zeile der Auswahl im Abschnitt
 	cur   int         // Abschnitt, der gerade gezeichnet wird
+	mz    *helpMouse  // Maus: Zeilen anklickbar (nil = ohne Zonen)
+	m     *modal
+}
+
+// helpMouse: Zonen der Hilfe (Reiter, Zeilen, Rad). press drückt eine Taste
+// wie die Tastatur (für Doppelklick = ⏎).
+type helpMouse struct {
+	z     *clickzone.Map
+	press func(string) tea.Cmd
 }
 
 // helpMatch: passt die Zeile zum Suchtext? Wie die Palette verzeihend
@@ -650,13 +661,28 @@ func (s Styles) helpBlock(sec helpSection, ctx helpCtx, cw int, filter string, h
 				plain := ansi.Strip(line)
 				line = bar.Render(plain + strings.Repeat(" ", max(0, cw-lipgloss.Width(plain))))
 			}
+			if hp != nil && hp.mz != nil && hp.m != nil {
+				// Klick wählt die Zeile, Doppelklick führt sie aus (wie ⏎)
+				idx, m, mz := hp.n-1, hp.m, hp.mz
+				line = mz.z.Mark(line, clickzone.Action{Click: func(_ tea.Mouse, double bool) tea.Cmd {
+					m.helpSel, m.helpFollow = idx, true
+					if double {
+						return mz.press("⏎")
+					}
+					return nil
+				}})
+			}
 			lines = append(lines, line)
 		}
 	}
 	return lines
 }
 
-func (m *modal) helpView(s Styles, w, h int) string {
+func (m *modal) helpView(s Styles, w, h int) string { return m.helpViewZ(s, w, h, nil) }
+
+// helpViewZ: wie helpView, mit Maus-Zonen (Reiter anklicken, Zeile wählen,
+// Doppelklick führt aus, Rad blättert).
+func (m *modal) helpViewZ(s Styles, w, h int, mz *helpMouse) string {
 	avail := dialog{maxW: 160}.innerMax(w)
 	if !m.helpTabSet() {
 		m.helpTab = helpTabFor(m.ctx) + 1
@@ -667,11 +693,21 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	var tb strings.Builder
 	for i, t := range helpTabs {
 		lbl := " " + i18n.T(t.title) + " "
+		var r string
 		if i == tab && m.filter == "" {
-			tb.WriteString(lipgloss.NewStyle().Background(s.T.Accent).Foreground(s.T.Bg).Bold(true).Render(lbl))
+			r = lipgloss.NewStyle().Background(s.T.Accent).Foreground(s.T.Bg).Bold(true).Render(lbl)
 		} else {
-			tb.WriteString(lipgloss.NewStyle().Background(s.T.Surface2).Foreground(s.T.Muted).Render(lbl))
+			r = lipgloss.NewStyle().Background(s.T.Surface2).Foreground(s.T.Muted).Render(lbl)
 		}
+		if mz != nil {
+			i := i
+			r = mz.z.Click(r, func(tea.Mouse, bool) tea.Cmd {
+				m.helpTab = i + 1
+				m.filter, m.scroll, m.helpSel = "", 0, -1
+				return nil
+			})
+		}
+		tb.WriteString(r)
 		tb.WriteString(" ")
 	}
 	if m.filter != "" {
@@ -708,7 +744,7 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	}
 	var blocks [][]string
 	var heights []int
-	hp := &helpPick{sel: m.helpSel, block: -1}
+	hp := &helpPick{sel: m.helpSel, block: -1, mz: mz, m: m}
 	for _, sec := range secs {
 		hp.cur = len(blocks)
 		if b := s.helpBlock(sec, m.ctx, cw, m.filter, hp); b != nil {
@@ -788,8 +824,21 @@ func (m *modal) helpView(s Styles, w, h int) string {
 	} else {
 		m.scroll = 0
 	}
+	bodyText := strings.Join(bodyLines, "\n")
+	if mz != nil {
+		// Rad: drei Zeilen je Schritt, unabhängig von der Auswahl
+		bodyText = mz.z.Mark(bodyText, clickzone.Action{Block: true, Wheel: func(up bool) tea.Cmd {
+			if up {
+				m.scroll = max(0, m.scroll-3)
+			} else {
+				m.scroll += 3
+			}
+			m.helpFollow = false
+			return nil
+		}})
+	}
 	return s.dialog(dialog{icon: "?", title: i18n.T("Tastenkürzel"), sub: version.Short(),
-		body: tabRow + "\n\n" + strings.Join(bodyLines, "\n") + foot, info: info, keys: keys, width: cw, maxW: 160}, w)
+		body: tabRow + "\n\n" + bodyText + foot, info: info, keys: keys, width: cw, maxW: 160}, w)
 }
 
 // helpTabSet: Reiter schon gewählt? (helpTab zählt ab 1, 0 = noch nicht)

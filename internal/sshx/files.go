@@ -2,7 +2,6 @@ package sshx
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -257,18 +256,21 @@ func Size(ctx context.Context, f FS, p string) (int64, int, error) {
 
 // Copy kopiert src (Datei oder Ordner) nach dstDir/<name>.
 func Copy(ctx context.Context, src FS, srcPath string, dst FS, dstDir string, pr *Progress) error {
+	_, local := src.(LocalFS)
 	name := filepath.Base(filepath.FromSlash(srcPath))
-	if src.Label() != "Lokal" {
+	if !local {
 		name = path.Base(srcPath)
 	}
-	if name == "" || name == "." || name == "/" || name == ".." {
-		return errors.New(i18n.T("ungültiger Name"))
+	// Namen vom Server dürfen keinen Pfad enthalten: Unter Windows wäre
+	// „..\..\x.bat“ sonst ein Weg aus dem Zielordner hinaus.
+	if !PlainName(name) && (!local || name == "" || name == "." || name == "/" || name == "..") {
+		return fmt.Errorf(i18n.T("ungültiger Name: %q"), name)
 	}
 	return copyAny(ctx, src, srcPath, dst, dst.Join(dstDir, name), pr)
 }
 
-// plainName: ein einzelner Name ohne Pfadanteile.
-func plainName(n string) bool {
+// PlainName: ein einzelner Name ohne Pfadanteile.
+func PlainName(n string) bool {
 	return n != "" && n != "." && n != ".." && !strings.ContainsAny(n, "/\\\x00")
 }
 
@@ -294,7 +296,7 @@ func copyAny(ctx context.Context, src FS, sp string, dst FS, dp string, pr *Prog
 		if c.Link && c.IsDir {
 			continue
 		}
-		if !plainName(c.Name) {
+		if !PlainName(c.Name) {
 			// Ein bösartiger SFTP-Server könnte „../../.bashrc“ melden und
 			// so beim Herunterladen eines Ordners lokal überall schreiben.
 			return fmt.Errorf(i18n.T("ungültiger Dateiname vom Server: %q"), c.Name)

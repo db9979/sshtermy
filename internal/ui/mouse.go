@@ -159,14 +159,21 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 		if act := a.z.At(m.X, m.Y, true); act != nil {
 			return act.Wheel(up)
 		}
-		if a.modal != nil && (a.modal.kind == mHelp || a.modal.kind == mChangelog) {
+		if a.modal != nil && a.modal.kind == mText {
+			for i := 0; i < 3; i++ { // drei Zeilen je Rasterschritt, wie im Terminal
+				a.pressKey(wheelKey(up))
+			}
+			return nil
+		}
+		if a.modal != nil && (a.modal.kind == mHelp || a.modal.kind == mChangelog || a.modal.kind == mQuick) {
 			return a.pressKey(wheelKey(up))
 		}
 		if a.modal != nil || a.pal != nil || a.pick != nil {
 			return nil
 		}
 		switch a.scr {
-		case scrManager, scrThemes:
+		case scrManager, scrThemes, scrLogs, scrLogScan, scrVuln, scrCmdSets, scrKeys, scrImport, scrScan, scrTeam, scrBroadcast:
+			// Listen: das Rad wirkt wie ↑/↓
 			return a.pressKey(wheelKey(up))
 		case scrTerminal:
 			if s != nil && s.panel != panelNone && !s.files.open {
@@ -208,6 +215,24 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 			return act.Menu(m)
 		}
 	}
+	// Seitentaste „Zurück“ der Maus: überall wie Esc (Dateien oben eigens)
+	if isClick && m.Button == tea.MouseBackward {
+		return a.mouseBack(s)
+	}
+	// Rechtsklick ins Leere: Untermenü der Palette eine Ebene zurück, sonst
+	// schließen wie ein Klick daneben
+	if isClick && m.Button == tea.MouseRight && a.z.At(m.X, m.Y, false) == nil {
+		if a.pal != nil && a.pal.menu != "" {
+			a.palEnter("")
+			return nil
+		}
+		if a.pick != nil || a.pal != nil || (a.modal != nil && a.modal.closesOnClickAway()) {
+			return a.pressKey("Esc")
+		}
+		if a.scr == scrManager && a.modal == nil {
+			return a.mgrBlankMenu(m.X, m.Y)
+		}
+	}
 	if !isClick || m.Button != tea.MouseLeft {
 		return nil
 	}
@@ -223,11 +248,44 @@ func (a *App) mouse(msg tea.MouseMsg) tea.Cmd {
 	case a.pal != nil:
 		a.pal = nil
 	case a.modal != nil:
-		if a.modal.kind == mHelp || a.modal.kind == mAbout || a.modal.kind == mChangelog || a.modal.kind == mMenu || a.modal.kind == mInfo || a.modal.kind == mLLM || a.modal.kind == mCrash || a.modal.kind == mLayout {
+		if a.modal.closesOnClickAway() {
+			if a.modal.kind == mText || a.modal.kind == mQuick {
+				return a.pressKey("Esc") // wie Esc: Panels/Listen räumen dabei auf
+			}
 			a.modal = nil
 		}
 	case a.scr == scrTerminal && s != nil && s.panel != panelNone && !s.files.open && a.inPanel(s, m.X, m.Y):
 		s.panelFocus = true
+	}
+	return nil
+}
+
+// closesOnClickAway: Fenster, die ein Klick daneben schließt. Rückfragen
+// (Ja/Nein, Passwort, Eingabe, Gefahr) bleiben offen, damit ein verirrter
+// Klick nichts entscheidet.
+func (m *modal) closesOnClickAway() bool {
+	switch m.kind {
+	case mHelp, mAbout, mChangelog, mMenu, mInfo, mLLM, mCrash, mLayout, mText, mQuick:
+		return true
+	}
+	return false
+}
+
+// mouseBack: Seitentaste „Zurück“ der Maus wirkt wie Esc, aber nie im
+// laufenden Terminal (dort ginge Esc an die Shell).
+func (a *App) mouseBack(s *session) tea.Cmd {
+	if a.pick != nil || a.pal != nil || a.modal != nil || a.scr != scrTerminal {
+		return a.pressKey("Esc")
+	}
+	if s == nil {
+		return nil
+	}
+	if s.search.open {
+		return a.pressKey("Esc")
+	}
+	if s.panel != panelNone {
+		s.panelFocus = true
+		return a.pressKey("Esc")
 	}
 	return nil
 }

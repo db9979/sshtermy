@@ -149,13 +149,13 @@ func TestEncoding(t *testing.T) {
 
 func TestPlainName(t *testing.T) {
 	for _, n := range []string{"a.txt", ".bashrc", "x y", "1:2.log"} {
-		if !plainName(n) {
-			t.Errorf("plainName(%q) = false", n)
+		if !PlainName(n) {
+			t.Errorf("PlainName(%q) = false", n)
 		}
 	}
 	for _, n := range []string{"", ".", "..", "../x", "a/b", `..\..\x`, "/etc/passwd"} {
-		if plainName(n) {
-			t.Errorf("plainName(%q) = true", n)
+		if PlainName(n) {
+			t.Errorf("PlainName(%q) = true", n)
 		}
 	}
 }

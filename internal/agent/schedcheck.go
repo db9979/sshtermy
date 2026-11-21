@@ -64,11 +64,18 @@ func (a *Agent) SchedChecks(ctx context.Context, task string, hosts []string, c 
 	if !strictJSON(out, &v) {
 		return nil, ErrUnreadable
 	}
+	return SafeChecks(v.B, c), nil
+}
+
+// SafeChecks: nur Befehle, die sicher nur lesen und keine Geheimnisse
+// ausgeben (höchstens MaxSchedChecks). Auch bestätigte Befehle laufen vor
+// jedem Lauf noch einmal hier durch.
+func SafeChecks(in []string, c Context) []string {
 	kind := c.kind()
 	var cmds []string
-	for _, x := range v.B {
+	for _, x := range in {
 		line, ok := oneLine(x, maxCmd)
-		if !ok || line == "" || !safety.ReadOnly(line, kind) {
+		if !ok || line == "" || !safety.ReadOnly(line, kind) || safety.Sensitive(line) != "" {
 			continue
 		}
 		cmds = append(cmds, line)
@@ -76,7 +83,7 @@ func (a *Agent) SchedChecks(ctx context.Context, task string, hosts []string, c 
 			break
 		}
 	}
-	return cmds, nil
+	return cmds
 }
 
 // SchedJudge: Urteil je Host und eine Zusammenfassung.

@@ -384,6 +384,9 @@ func (a *App) modalView() string {
 		return a.llmStatusView()
 	case mLayout:
 		return a.layoutView()
+	case mHelp:
+		a.modal.hints = a.modalKeys()
+		return a.modal.helpViewZ(a.s, a.w, a.h, &helpMouse{z: &a.z, press: a.pressKey})
 	}
 	a.modal.hints = a.modalKeys()
 	return a.modal.view(a.s, a.w, a.h)

@@ -1121,6 +1121,10 @@ func (a *App) updateForm(msg tea.Msg) tea.Cmd {
 	}
 	a.form = nil
 	a.scr = scrManager
+	if id := a.schedConfirm; id != "" {
+		a.schedConfirm = ""
+		next = tea.Batch(next, a.schedChooseChecks(id))
+	}
 	if a.returnToTerminal {
 		a.scr, a.returnToTerminal = scrTerminal, false
 	}

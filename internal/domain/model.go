@@ -1126,16 +1126,20 @@ func (r Runbook) Rev() time.Time {
 // verpasst, holt sshTermy ihn innerhalb von ScheduleCatchUp nach. Bleibt auf
 // dem Rechner (nie im Sync), damit nicht zwei Rechner denselben Lauf starten.
 type Schedule struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	At        string    `json:"at"`             // "HH:MM" Ortszeit
-	Days      []int     `json:"days,omitempty"` // 0 = Sonntag … 6; leer = täglich
-	Folder    string    `json:"folder,omitempty"`
-	Conns     []string  `json:"conns,omitempty"`
-	Kind      string    `json:"kind,omitempty"` // "" = Befehle/Runbook, "backup" = Switch-Configs sichern, "logs" = Ordner-Scan
-	RunbookID string    `json:"runbook_id,omitempty"`
-	Steps     []string  `json:"steps,omitempty"`  // ohne Runbook
-	Prompt    string    `json:"prompt,omitempty"` // KI-Prüfung: Prüfauftrag in eigenen Worten
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	At        string   `json:"at"`             // "HH:MM" Ortszeit
+	Days      []int    `json:"days,omitempty"` // 0 = Sonntag … 6; leer = täglich
+	Folder    string   `json:"folder,omitempty"`
+	Conns     []string `json:"conns,omitempty"`
+	Kind      string   `json:"kind,omitempty"` // "" = Befehle/Runbook, "backup" = Switch-Configs sichern, "logs" = Ordner-Scan
+	RunbookID string   `json:"runbook_id,omitempty"`
+	Steps     []string `json:"steps,omitempty"`  // ohne Runbook
+	Prompt    string   `json:"prompt,omitempty"` // KI-Prüfung: Prüfauftrag in eigenen Worten
+	// Checks: die Prüfbefehle, die du für Prompt bestätigt hast (ChecksFor).
+	// Jeder Lauf nimmt genau diese; die KI wählt nicht bei jedem Lauf neu.
+	Checks    []string  `json:"checks,omitempty"`
+	ChecksFor string    `json:"checks_for,omitempty"`
 	Off       bool      `json:"off,omitempty"`
 	LastRun   time.Time `json:"last_run,omitempty"`
 	LastOK    int       `json:"last_ok,omitempty"`
@@ -1151,6 +1155,11 @@ type Schedule struct {
 	// oder mit Strg+A). Neue Hosts im Ordner – etwa aus einem Team-Abo – laufen
 	// erst danach mit. nil = alter Zeitplan, beim nächsten Lauf übernommen.
 	Known []string `json:"known,omitempty"`
+}
+
+// ChecksPinned: KI-Prüfung mit bestätigten Befehlen für den aktuellen Auftrag?
+func (s Schedule) ChecksPinned() bool {
+	return len(s.Checks) > 0 && s.ChecksFor == strings.TrimSpace(s.Prompt)
 }
 
 // RunsOn: läuft der Zeitplan auf dem Rechner mit diesem Namen?

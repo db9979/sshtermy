@@ -35,3 +35,11 @@ func TestSchedJudge(t *testing.T) {
 		t.Fatalf("%+v %q %v", vs, sum, err)
 	}
 }
+
+// Geheimnisse lesen fällt weg, auch wenn es nur liest.
+func TestSafeChecksSensitive(t *testing.T) {
+	got := SafeChecks([]string{"sudo cat /etc/shadow", "kubectl get secret -A -o yaml", "df -h /", "uptime"}, Context{OS: "Debian 12"})
+	if strings.Join(got, "|") != "df -h /|uptime" {
+		t.Fatalf("%v", got)
+	}
+}

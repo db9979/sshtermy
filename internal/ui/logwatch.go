@@ -359,32 +359,57 @@ func (a *App) startSyslog(port int) context.CancelFunc {
 	return cancel
 }
 
+// resolveConnIPs: IP → Verbindungs-ID. Namen werden parallel aufgelöst (16
+// gleichzeitig, je 2 s), damit viele tote Namen die Runde nicht stundenlang
+// aufhalten. Bei mehreren Treffern gewinnt die erste Verbindung der Liste.
+func resolveConnIPs(ctx context.Context, conns []domain.Connection, lookup func(context.Context, string) ([]string, error)) map[string]string {
+	m := map[string]string{}
+	found := make([][]string, len(conns))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 16)
+	for i, c := range conns {
+		h := strings.TrimSpace(c.Host)
+		if h == "" || c.Protocol == domain.ProtoSerial || c.Protocol == domain.ProtoLocal {
+			continue
+		}
+		if net.ParseIP(h) != nil {
+			found[i] = []string{h}
+			continue
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			defer safe.Recover("ui/logwatch.go resolve")
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
+			defer func() { <-sem }()
+			lctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+			if ips, err := lookup(lctx, h); err == nil {
+				found[i] = ips
+			}
+		}()
+	}
+	wg.Wait()
+	for i, ips := range found {
+		for _, ip := range ips {
+			if _, ok := m[ip]; !ok {
+				m[ip] = conns[i].ID
+			}
+		}
+	}
+	return m
+}
+
 // resolveHosts: Hostnamen der Verbindungen zu IPs auflösen, damit Syslog
 // vom Gerät der richtigen Verbindung zugeordnet wird (alle 10 Minuten neu).
 func (a *App) resolveHosts(ctx context.Context) {
 	ev := a.events
 	for {
-		m := map[string]string{}
-		for _, c := range a.st.Connections() {
-			h := strings.TrimSpace(c.Host)
-			if h == "" || c.Protocol == domain.ProtoSerial || c.Protocol == domain.ProtoLocal {
-				continue
-			}
-			if net.ParseIP(h) != nil {
-				m[h] = c.ID
-				continue
-			}
-			lctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			ips, err := net.DefaultResolver.LookupHost(lctx, h)
-			cancel()
-			if err == nil {
-				for _, ip := range ips {
-					if _, ok := m[ip]; !ok {
-						m[ip] = c.ID
-					}
-				}
-			}
-		}
+		m := resolveConnIPs(ctx, a.st.Connections(), net.DefaultResolver.LookupHost)
 		select {
 		case ev <- watchResolvedMsg{m}:
 		case <-ctx.Done():

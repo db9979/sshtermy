@@ -12,6 +12,8 @@ package offlineai
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -41,6 +43,7 @@ type Engine struct {
 	mu       sync.Mutex
 	cmd      *exec.Cmd
 	port     int
+	key      string // Zugangsschlüssel dieses Laufs (--api-key)
 	lastUse  time.Time
 	starting chan struct{} // offen, solange ein Start läuft
 	startErr error
@@ -138,6 +141,20 @@ func (e *Engine) Port() int {
 	return e.port
 }
 
+// Key: Zugangsschlüssel des Servers für diesen Lauf. Ohne ihn beantwortet
+// llama-server keine Anfragen, andere Programme oder Benutzer auf dem Rechner
+// können die Offline-KI also nicht mitbenutzen.
+func (e *Engine) Key() string {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.key == "" {
+		b := make([]byte, 24)
+		_, _ = rand.Read(b)
+		e.key = hex.EncodeToString(b)
+	}
+	return e.key
+}
+
 func freePort() int {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -154,6 +171,7 @@ func (e *Engine) Ensure(ctx context.Context) error {
 		return errors.New(i18n.T("Offline-KI ist nicht heruntergeladen"))
 	}
 	port := e.Port()
+	key := e.Key()
 	e.mu.Lock()
 	e.lastUse = time.Now()
 	if e.cmd != nil {
@@ -176,7 +194,7 @@ func (e *Engine) Ensure(ctx context.Context) error {
 	e.starting = ch
 	e.mu.Unlock()
 
-	err := e.start(ctx, port)
+	err := e.start(ctx, port, key)
 	e.mu.Lock()
 	e.startErr, e.starting = err, nil
 	e.mu.Unlock()
@@ -184,9 +202,10 @@ func (e *Engine) Ensure(ctx context.Context) error {
 	return err
 }
 
-func (e *Engine) start(ctx context.Context, port int) error {
+func (e *Engine) start(ctx context.Context, port int, key string) error {
 	srv := e.ServerPath()
 	cmd := exec.Command(srv, "-m", e.ModelPath(), "--host", "127.0.0.1", "--port", strconv.Itoa(port), "-c", "4096")
+	cmd.Env = append(os.Environ(), "LLAMA_API_KEY="+key) // nicht in der Befehlszeile (ps)
 	cmd.Dir = filepath.Dir(srv)
 	hideWindow(cmd)
 	logf, _ := os.Create(filepath.Join(e.dir, "server.log"))
@@ -226,6 +245,10 @@ func (e *Engine) start(ctx context.Context, port int) error {
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
+				if !e.ours(port, key) {
+					_ = cmd.Process.Kill()
+					return fmt.Errorf(i18n.T("Port %d ist von einem anderen Programm belegt"), port)
+				}
 				e.mu.Lock()
 				e.cmd = cmd
 				e.mu.Unlock()
@@ -235,6 +258,30 @@ func (e *Engine) start(ctx context.Context, port int) error {
 	}
 	_ = cmd.Process.Kill()
 	return errors.New(i18n.T("llama-server antwortet nicht (Zeitüberschreitung beim Laden des Modells)"))
+}
+
+// ours: Antwortet auf dem Port unser Server? Nur er kennt den Schlüssel:
+// ohne Schlüssel lehnt er ab, mit Schlüssel nimmt er an.
+func (e *Engine) ours(port int, key string) bool {
+	get := func(withKey bool) int {
+		// /tokenize: billig, und anders als /health und /v1/models nicht öffentlich
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/tokenize", port), strings.NewReader(`{"content":"x"}`))
+		if err != nil {
+			return 0
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if withKey {
+			req.Header.Set("Authorization", "Bearer "+key)
+		}
+		c := &http.Client{Timeout: 5 * time.Second}
+		resp, err := c.Do(req)
+		if err != nil {
+			return 0
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	return get(false) == http.StatusUnauthorized && get(true) == http.StatusOK
 }
 
 // Touch: eine Anfrage lief (verschiebt das Ende im Leerlauf).

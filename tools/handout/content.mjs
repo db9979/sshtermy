@@ -83,6 +83,7 @@ export const de = {
       ['Strg+_Klick_', 'URL im Browser öffnen'],
       ['⇧+_Ziehen_', 'markieren in htop / vim'],
       ['_Ablegen_', 'Datei aus Explorer/Finder hochladen'],
+      ['_Zurück-Taste_', 'wie Esc · Rechtsklick ins Leere: zurück'],
     ]},
     { t: 'Anzeigen lesen', ic: 'i', legend: true, rows: [
       ['●', 'KI-Punkt grün: KI erreichbar', 'ok'],
@@ -272,6 +273,7 @@ export const en = {
       ['Ctrl+_click_', 'open URL in the browser'],
       ['⇧+_drag_', 'select inside htop / vim'],
       ['_drop_', 'upload a file from Explorer/Finder'],
+      ['_back button_', 'like Esc · right-click on empty: back'],
     ]},
     { t: 'Reading the screen', ic: 'i', legend: true, rows: [
       ['●', 'AI dot green: AI reachable', 'ok'],
