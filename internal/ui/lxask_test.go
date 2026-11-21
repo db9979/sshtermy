@@ -157,3 +157,23 @@ func TestCheckBackgroundStatic(t *testing.T) {
 		t.Fatalf("%+v", res)
 	}
 }
+
+// Absturz 2026-11-21: nach einem fehlgeschlagenen Download stand ein langer
+// Fehlertext als Hinweis neben „Kleine Offline-KI herunterladen“; trunc bekam
+// eine negative Länge und die Palette stürzte ab.
+func TestPaletteLongHintNoPanic(t *testing.T) {
+	if trunc("abc", -6) != "" || trunc("abc", 0) != "" || trunc("abc", 1) != "a" {
+		t.Fatal("trunc mit wenig Platz")
+	}
+	a := newPaletteTestApp(t)
+	a.offDL.err = strings.Repeat("Get \"https://api.github.com/repos/ggml-org/llama.cpp/releases/latest\": dial tcp: lookup failed ", 3)
+	a.openPalette()
+	a.pal.menu = "settings/ki"
+	for _, w := range []int{200, 82, 60, 40, 20} {
+		a.w = w
+		out := ansiStrip(a.viewPalette())
+		if w >= 82 && !strings.Contains(out, "Offline-KI") {
+			t.Fatalf("Breite %d: Eintrag fehlt:\n%s", w, out)
+		}
+	}
+}

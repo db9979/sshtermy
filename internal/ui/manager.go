@@ -790,8 +790,11 @@ func trunc(s string, n int) string {
 	if len(r) <= n {
 		return s
 	}
-	if n <= 1 {
-		return string(r[:n])
+	if n <= 0 {
+		return "" // kein Platz (schmales Fenster, langer Hinweis): nichts statt Absturz
+	}
+	if n == 1 {
+		return string(r[:1])
 	}
 	return string(r[:n-1]) + "…"
 }
