@@ -176,3 +176,53 @@ func TestManagerBlankMenu(t *testing.T) {
 		t.Fatalf("Neuer Ordner fehlt: %+v", a.modal.items)
 	}
 }
+
+// Hilfe (F1) mit der Maus: Reiter anklicken, Zeile wählen, Rad blättert, Esc schließt.
+func TestHelpMouse(t *testing.T) {
+	a := newPaletteTestApp(t)
+	a.pal, a.intro = nil, nil
+	a.scr = scrManager
+	a.w, a.h = 120, 30
+	a.modal = a.helpModal()
+	m := a.modal
+	x, y, ok := escZone(a, " Logs ")
+	if !ok {
+		t.Fatal("Reiter Logs nicht klickbar")
+	}
+	a.mouse(tea.MouseClickMsg{X: x + 1, Y: y, Button: tea.MouseLeft})
+	if m.helpTab-1 != 3 {
+		t.Fatalf("Reiter %d", m.helpTab-1)
+	}
+	_ = a.View()
+	lines := strings.Split(ansi.Strip(a.View().Content), "\n")
+	for y = range lines {
+		if i := strings.Index(lines[y], "Log-Blick"); i >= 0 {
+			x = ansi.StringWidth(lines[y][:i])
+			break
+		}
+	}
+	if a.z.At(x+2, y+1, false) == nil {
+		t.Fatalf("Zeile nicht klickbar:\n%s", strings.Join(lines, "\n"))
+	}
+	// eine Zeile unter dem Abschnittstitel steht die erste Taste
+	a.click = clickState{}
+	a.mouse(tea.MouseClickMsg{X: x + 2, Y: y + 1, Button: tea.MouseLeft})
+	if m.helpSel < 0 {
+		t.Fatal("Klick wählt keine Zeile")
+	}
+	_ = a.View()
+	before := m.scroll
+	a.mouse(tea.MouseWheelMsg{X: a.w / 2, Y: a.h / 2, Button: tea.MouseWheelDown})
+	_ = a.View()
+	if m.scroll == before && m.helpSel == 0 {
+		t.Fatal("Rad ohne Wirkung")
+	}
+	x, y, ok = escZone(a, "Esc")
+	if !ok {
+		t.Fatal("Esc nicht klickbar")
+	}
+	a.mouse(tea.MouseClickMsg{X: x, Y: y, Button: tea.MouseLeft})
+	if a.modal != nil {
+		t.Fatal("Esc schließt die Hilfe nicht")
+	}
+}
