@@ -76,7 +76,7 @@ func TestTickPanicKeepsTicking(t *testing.T) {
 }
 
 func TestGuardCmdNested(t *testing.T) {
-	_ = safetyApp(t)
+	a := safetyApp(t)
 	boom := func() tea.Msg { panic("cmd boom") }
 	ok := func() tea.Msg { return "fein" }
 	c := guardCmd(tea.Batch(boom, ok))
@@ -88,6 +88,9 @@ func TestGuardCmdNested(t *testing.T) {
 	if got := batch[0](); got != nil {
 		t.Fatalf("abgefangene Panik muss nil liefern, nicht %v", got)
 	}
+	// Bericht wird nebenher geschrieben: abwarten, sonst räumt Windows den
+	// Temp-Ordner nicht auf („directory is not empty“).
+	waitCaught(t, a)
 	if got := batch[1](); got != "fein" {
 		t.Fatalf("zweites Kommando: %v", got)
 	}
