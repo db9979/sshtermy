@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/db9979/sshtermy/internal/offlineai"
 	"image/color"
 	"os"
 	"strings"
@@ -91,6 +92,14 @@ const (
 
 // App ist das Wurzel-Modell.
 type App struct {
+	// Offline-KI und KI-Stufen (aitier.go)
+	offline    *offlineai.Engine
+	offDL      offlineDLState
+	offOK      bool
+	offAt      time.Time
+	offTest    *bool // Tests: Offline-KI gilt als (nicht) installiert
+	aiDownTest bool  // Tests: eingerichtete KI gilt als nie erreicht
+
 	usageSaved time.Time // KI-Verbrauch zuletzt gespeichert (aiusage.go)
 	// Absturzschutz (safety.go): letztes gutes Bild, wartende Empfänger
 	lastView  tea.View
@@ -668,6 +677,12 @@ func (a *App) featureMsg(msg tea.Msg) (tea.Cmd, bool) {
 	if cmd, ok := a.companionMsg(msg); ok {
 		return cmd, true
 	}
+	if cmd, ok := a.cmdCheckMsg(msg); ok { // Prüfen, Satz → Befehl (cmdcheck.go, wish.go)
+		return cmd, true
+	}
+	if cmd, ok := a.offlineMsg(msg); ok { // Offline-KI (aitier.go)
+		return cmd, true
+	}
 	if cmd, ok := a.sessionMsg(msg); ok {
 		return cmd, true
 	}
@@ -892,13 +907,15 @@ func (a *App) quit() tea.Cmd {
 	a.stopWatch()
 	a.closeBook()
 	a.stopMCP()
+	a.offline.Stop() // llama-server der Offline-KI
 	a.st.Lock()
 	return tea.Quit
 }
 
 func (a *App) onTick() tea.Cmd {
 	var cmds []tea.Cmd
-	a.applyLook() // Theme/Tasten können per Sync von einem anderen Rechner kommen
+	a.offlineTick(time.Now()) // Offline-KI nach langer Ruhe beenden (aitier.go)
+	a.applyLook()             // Theme/Tasten können per Sync von einem anderen Rechner kommen
 	// Auto-Sperre: ohne offene Sitzungen wird der Store gesperrt; mit
 	// Sitzungen nur der Bildschirm (die Shells laufen weiter, lock.go).
 	if set := a.st.Settings(); set.LockAfterMin > 0 && a.scr != scrUnlock && a.lock == nil &&

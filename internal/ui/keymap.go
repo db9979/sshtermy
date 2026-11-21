@@ -91,6 +91,8 @@ const (
 	actClipHist     action = "clip_history"
 	actTasks        action = "tasks"
 	actTasksTerm    action = "tasks_terminal"
+	actWish         action = "wish"        // Satz am Prompt wird zum Befehl (wish.go)
+	actExplain      action = "explain_cmd" // Befehl erklären ohne KI (wish.go)
 )
 
 // Schnellbefehle ⇧F1 … ⇧F8 (manche Terminals senden dafür F13 … F20).
@@ -120,6 +122,8 @@ var actionDefs = []actionDef{
 	{actFiles, "Dateien (SFTP)", "Terminal", []string{"f5"}},
 	{actHost, "Host-Übersicht", "Terminal", []string{"f6"}},
 	{actLogScan, "Log-Blick (Auffälligkeiten in den Logs)", "Terminal", []string{"alt+e"}},
+	{actWish, "Satz am Prompt wird zum Befehl", "Terminal", []string{"ctrl+g"}},
+	{actExplain, "Befehl erklären (man-Seite, ohne KI)", "Terminal", []string{"alt+h"}},
 	{actPrevTab, "Tab zurück", "Terminal", []string{"f7"}},
 	{actNextTab, "Tab vor", "Terminal", []string{"f8"}},
 	{actNewTab, "Neuer Tab", "Terminal", []string{"alt+n"}},

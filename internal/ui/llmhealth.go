@@ -486,6 +486,10 @@ func taskLabel(t string) string {
 		return i18n.T("Änderungsbericht")
 	case agent.TaskMenu:
 		return i18n.T("Menü-Suche")
+	case agent.TaskWish:
+		return i18n.T("Satz wird zum Befehl")
+	case agent.TaskRecheck:
+		return i18n.T("Befehl nachbessern")
 	}
 	return t
 }

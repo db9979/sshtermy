@@ -45,6 +45,8 @@ const (
 	TaskReview    = "review"
 	TaskSummary   = "summary"
 	TaskReport    = "report"
+	TaskWish      = "wish"    // Satz am Prompt wird zum Befehl
+	TaskRecheck   = "recheck" // Befehl nach Einwänden der Prüfung nachbessern
 )
 
 // Kontext je Aufgabe: Für den Ghost-Text reichen die letzten Zeilen, das

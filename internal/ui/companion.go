@@ -226,6 +226,9 @@ func (a *App) companionOff(s *session) string {
 	if a.compLevel() == domain.CompanionOff {
 		return i18n.T("aus")
 	}
+	if a.aiTier(s) != tierFull {
+		return i18n.T("braucht eine größere KI")
+	}
 	if hasTag(s.conn, "begleiter-aus", "companion-off") {
 		return i18n.T("für diese Verbindung aus (Tag begleiter-aus)")
 	}

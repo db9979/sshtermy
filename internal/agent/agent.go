@@ -84,6 +84,9 @@ type Agent struct {
 	// Rules: Hausregeln des Admins (Einstellungen und Ordner), hängen an
 	// jedem Systemprompt.
 	Rules string
+	// Small: die kleine Offline-KI (lxask-Modell). Sie kann nur einen
+	// Befehl zu einer Bitte schreiben, kein JSON und keine Erklärungen.
+	Small bool
 }
 
 var ctrl = regexp.MustCompile(`[\x{00}-\x{08}\x{0b}-\x{1f}\x{7f}-\x{9f}\x{200b}-\x{200f}\x{2028}-\x{202e}\x{2060}-\x{2064}\x{feff}]`)

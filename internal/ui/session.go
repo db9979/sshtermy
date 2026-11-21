@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"github.com/db9979/sshtermy/internal/cmdcheck"
 	"image/color"
 	"strings"
 	"sync"
@@ -130,7 +131,9 @@ type session struct {
 	blockNav    int        // Sprung zwischen Befehlen: Block+1 (0 = live)
 	blockScroll int        // s.scroll nach dem Sprung (anders = du hast selbst geblättert)
 	chips       []agent.Suggestion
-	aiPend      *aiPending // zuletzt eingefügter/ausgeführter KI-Befehl (learn.go)
+	aiPend      *aiPending    // zuletzt eingefügter/ausgeführter KI-Befehl (learn.go)
+	docs        cmdcheck.Docs // man-Seiten/--help des Hosts je Programm (cmdcheck.go)
+	wish        *wishState    // Satz am Prompt wird zum Befehl (wish.go)
 	chipSeq     int
 	chipArmed   int            // Index eines roten Chips nach dem ersten Druck, sonst -1
 	chipReplace bool           // Chips ersetzen die getippte Zeile (Begleiter: sicherere Variante)

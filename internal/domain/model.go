@@ -610,6 +610,9 @@ type Settings struct {
 	DimPanes bool `json:"dim_panes,omitempty"`
 	// NoVerify: keine Gegenprüfung nach Ziel/Agent (ui/goalverify.go).
 	NoVerify bool `json:"no_verify,omitempty"`
+	// NoCmdCheck: KI-Befehle nicht vorab gegen die man-Seiten des Hosts
+	// und die Frage prüfen (ui/cmdcheck.go).
+	NoCmdCheck bool `json:"no_cmd_check,omitempty"`
 	// PanelDock: Seitenpanel rechts (""), links ("left") oder unten ("bottom");
 	// PanelW/PanelH: mit der Maus gezogene Größe, 0 = automatisch (ui/dock.go).
 	PanelDock string `json:"panel_dock,omitempty"`
@@ -751,7 +754,7 @@ func (s Settings) SyncedPart() Settings {
 	s.Header = HeaderConfig{}                                                               // lokaler Befehl in der Kopfzeile: nie per Sync
 	s.RestoreTabs = ""                                                                      // Tabs vom letzten Mal: je Rechner
 	s.WebSearch, s.NoHistGhost = "", false                                                  // Suchmaschine, Ghost aus dem Verlauf: je Rechner
-	s.NoVerify = false                                                                      // Gegenprüfung: je Rechner
+	s.NoVerify, s.NoCmdCheck = false, false                                                 // Gegenprüfung, Befehle vorab prüfen: je Rechner
 	s.PanelDock, s.PanelW, s.PanelH, s.FilesBeside, s.NoPaneStatus = "", 0, 0, false, false // Panel-Lage passt zum Bildschirm dieses Rechners
 	s.Push = PushConfig{}                                                                   // Handy-Meldungen: je Rechner (sonst melden alle Rechner doppelt)
 	return s

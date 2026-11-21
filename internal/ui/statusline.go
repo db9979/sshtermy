@@ -169,6 +169,16 @@ func (a *App) termHeader(s *session) string {
 			txt += " · " + t
 		}
 		ai := st.BadgeAI.Render(txt)
+		if t := a.curTier(); t != tierFull { // keine KI bzw. Offline-KI (aitier.go)
+			lbl := i18n.T("◆ keine KI")
+			if t == tierSmall {
+				lbl = i18n.T("◆ Offline-KI")
+			}
+			if !full {
+				lbl = "◆"
+			}
+			return a.z.Click(st.Badge.Foreground(st.T.Muted).Render(lbl), func(tea.Mouse, bool) tea.Cmd { return a.openLLMStatus() })
+		}
 		if !cfg.SuggestEnabled {
 			ai = st.Badge.Foreground(st.T.Muted).Render(i18n.T("◆ Ghost aus"))
 			if !full {
