@@ -247,9 +247,6 @@ func firstOperand(args []Token) string {
 			return ""
 		}
 		if strings.HasPrefix(a.Text, "-") {
-			if strings.Contains(a.Text, "=") || !strings.HasPrefix(a.Text, "--") {
-				continue
-			}
 			continue
 		}
 		if regexp.MustCompile(`^[a-z][a-z0-9-]*$`).MatchString(a.Text) {

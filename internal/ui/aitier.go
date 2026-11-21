@@ -296,17 +296,6 @@ func (a *App) offlineRemove() tea.Cmd {
 	return nil
 }
 
-// tierLabel: kurze Beschreibung der Stufe (KI-Status, Hilfe).
-func tierLabel(t aiTierKind) string {
-	switch t {
-	case tierNone:
-		return i18n.T("keine KI")
-	case tierSmall:
-		return i18n.T("kleine Offline-KI (lxask)")
-	}
-	return i18n.T("volle KI")
-}
-
 // aiHide blendet KI-Einträge der Palette aus, die mit der Stufe nicht gehen.
 func (a *App) aiHide(s *session, items []palItem) []palItem {
 	t := a.aiTier(s)

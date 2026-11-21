@@ -380,7 +380,6 @@ var (
 	knownDir    = regexp.MustCompile(`^(?:/var/log|/etc|/var|/var/lib|/var/www|/home|/srv|/opt|/usr|/tmp|/root|\.|\.\.|~)$`)
 	lookOnly    = regexp.MustCompile(`(?i)^\s*(?:bitte\s+|please\s+)?(?:zeig|zeige|liste|list|show|display|print|finde?|find|welche|welcher|welches|which|what|was|wie\s+viele|how\s+many|prüfe?|check|inspect|count|zähle?|view|tell|anzeigen|gib\s+mir)\b`)
 	thenDeletes = regexp.MustCompile(`(?i)\b(?:und|dann|danach|anschließend|and|then|before|after)\s+(?:auch\s+|also\s+)?(?:lösch\w*|entfern\w*|delete|remove|rm|erase|wipe|purge|clean|aufräum\w*|shred)\b|,\s*(?:delete|remove|lösch\w*|entfern\w*)\b|\b(?:löschen|entfernen|delete|remove)\b`)
-	findDelete  = regexp.MustCompile(`(?:^|\s)-delete\b`)
 	shutDown    = regexp.MustCompile(`(?i)\b(?:shut\s*down|power\s*off|turn\s+off|halt|herunterfahren|ausschalten|abschalten|runterfahren|herunter|runter)\b`)
 	restart     = regexp.MustCompile(`(?i)\b(?:reboot|restart|neustart|neu\s*starten|neustarten)\b`)
 )
