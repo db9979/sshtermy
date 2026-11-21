@@ -459,8 +459,9 @@ in the file `language` in the config folder so that the unlock screen already kn
 language decides (`LANG`/`LC_ALL`, on Windows the display language): German on a German system, otherwise English.
 The instructions to the AI stay in German internally; with English selected, the AI answers in English.
 
-**Appearance:** a in the manager switches dark → light → high contrast (dark/light) → color-blind (dark/light) → Matrix (green) → Amber (retro) → Neon (or
-palette → Settings › "Appearance"). **Customize colors** in the same submenu: pick a template, then change each color
+**Appearance:** a in the manager (or palette → Settings › "Appearance") opens the color scheme picker with all 26 themes,
+grouped into dark, light and accessible (high contrast, color-blind): ↑↓ previews each one live on the whole UI, ⏎ applies it,
+Esc keeps the old one, e customizes the colors of the selected theme. **Customize colors** in the same submenu: pick a template, then change each color
 with ←/→ (hue), +/− (brightness) or as a hex value; the whole UI previews it live, a contrast check warns about hard to
 read colors, Ctrl+S saves (synced to your other computers).
 
@@ -552,28 +553,64 @@ The images are real captures of the app (against a test SSH server and a test LL
 ## Architecture
 
 ```
-cmd/sshtermy/          entry point: flags (--version, --update), open store, start TUI
+cmd/sshtermy/          entry point: flags and subcommands (mcp, doctor, backup, relay, anchor, attach …), start TUI or own window
 cmd/sshtermy-sign/     create Ed25519 keys, sign releases (CI)
+cmd/zusehen-wasm/      sharing protocol as WebAssembly for watching in the browser
 internal/
+  Data and security
   domain/              pure data models: Connection, Tunnel, LLMConfig, Settings, Secret
   vault/               encryption: AES-256-GCM, Argon2id, DPAPI (Windows)
   store/               repository on top of the vault: CRUD, paths (%APPDATA%\sshtermy)
-  sshx/                SSH: dial (+jump host), auth (password/key/agent), host keys (TOFU),
-                       PTY shell, tunnel manager (-L/-R/-D), SOCKS5 server, open browser,
-                       commands via exec or typed into the shell (network devices)
-  broadcast/           command/runbook in parallel on several hosts, danger check
-  netscan/             scan a subnet for SSH, read banners, detect device type
-  llm/                 OpenAI-compatible client (/v1/chat/completions, streaming via SSE)
-  agent/               AI logic: ghost text, follow-up commands, goal mode, questions; prompts,
-                       strict parsing, removal of secrets
-  sessionlog/          session logs: encrypted files per session, search, Markdown
-  safety/              fixed danger rules (Linux/macOS and Windows/PowerShell)
-  termemu/             terminal emulation (charmbracelet/x/vt): grid, scrollback, ghost overlay
-  update/              auto-update from GitHub Releases (SHA-256 + Ed25519)
+  keychain/            passwords in the OS keychain (Windows, macOS, Linux Secret Service)
+  pwsource/            passwords and 2FA codes from 1Password, Bitwarden, KeePassXC, pass
+  safety/              fixed danger rules (Linux/macOS, Windows/PowerShell, network devices)
+  audit/               signed, chained audit log
+  syncx/ team/         sync between computers, encrypted .sshteam packages and team folders
+  fullbackup/          whole data folder in one encrypted file (moving to a new computer)
+  Connections
+  sshx/                SSH: dial (+jump host), auth (password/key/agent/FIDO/certificate/Kerberos), host keys (TOFU),
+                       PTY shell, tunnel manager (-L/-R/-D), SOCKS5 server, commands via exec or typed into the shell
+  telnet/ serialx/     Telnet client, serial console cables; autologin/ types user and password
+  psremote/            PowerShell over WinRM (NTLM, Kerberos), pure Go
+  localsh/             local shell in a PTY (ConPTY on Windows)
+  relay/               relay for servers behind NAT/firewall (anchor)
+  sharewire/ webwatch/ live sharing (code, PAKE, encryption) and the browser viewer page
+  trzsz/               file transfer inside the terminal (tsz/trz)
+  netwatch/ wol/       notice sleep/network change, Wake-on-LAN
+  Hosts and devices
+  sysprof/ cmdset/     detect system and dialect, command sets per vendor as YAML (cmdsetcheck/ tests them)
+  hostinfo/ metrics/   host overview (F6), curves over up to 8 days, disk forecast
+  containers/          Docker, Podman, Kubernetes
+  vuln/ harden/        security check (OSV, NVD firmware), hardening check
+  keyinv/ inventory/   SSH key inventory, inventory & changes
+  patchrun/            staged patch round across a folder
+  logscan/             log view: patterns, timeline, log watch, syslog
+  netmap/ netscan/     MAC/ARP/LLDP tables and topology, subnet scan
+  broadcast/ runbook/  command/runbook in parallel on several hosts, runbook variables
+  AI
+  llm/                 client without SDK: OpenAI-compatible (/v1/chat/completions) and Anthropic, streaming
+  agent/               AI logic: ghost text, follow-up commands, goal/agent/plan mode, questions, companion;
+                       prompts, strict parsing, removal of secrets
+  codeagent/           recognize AI coding agents in a tab (Claude Code, Codex …)
+  mcp/                 sshTermy as an MCP server for AI clients
+  Interface
+  ui/                  interface (bubbletea v2, lipgloss v2): screens, panels, forms, palette
+  gui/ winstate/       own window without a terminal (Ebiten), its size and position
+  termemu/             terminal emulation (patched charmbracelet/x/vt in third_party/vt): grid, scrollback, images
+  highlight/           color rules for output
+  sessionlog/ recording/ session logs (encrypted, searchable) and asciicast recordings
+  detach/ localsock/   tab in its own terminal window, background service
+  notify/ push/        desktop notifications, phone notifications (ntfy, Gotify, webhook)
+  i18n/                interface language: the German texts are the keys, en_*.go hold the English version
+  Operation
+  update/ changelog/   auto-update from GitHub Releases (SHA-256 + Ed25519), what's new
   version/             name, version, credits in exactly one place
-  i18n/                interface language: the German texts are the keys, en.go holds the English version
-  ui/                  interface (bubbletea v2, lipgloss v2): screens, panels, forms
+  safe/ crash/         catch panics in background work, cleaned crash report
+  debuglog/ doctor/    debug log for bug reports, self-check (sshtermy doctor)
+  packx/               pack and extract archives locally
+  devfake/ fuzzguard/  fake Aruba switch for tests, time limit for fuzz tests
 tools/dev/             test SSH server, test LLM, ANSI→HTML for screenshots
+tools/handout/         printable quick reference (make handout)
 ```
 
 Dependencies only point inwards: `ui → agent/sshx/store/update → llm/safety/vault → domain`.
