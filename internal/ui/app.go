@@ -228,6 +228,7 @@ type App struct {
 	schedRBIDs    map[string]string // Runbook-Name → ID im Formular
 	schedMachines map[string]string // Rechner-Auswahl im Zeitplan-Formular → Name
 	schedRun      map[string]bool   // laufende Zeitpläne
+	schedConfirm  string            // KI-Prüfung: Befehle nach dem Speichern bestätigen (schedai.go)
 	netData       *netCache         // letzte Abfrage der Switches (netfind.go)
 	netBusy       bool
 	netScope      string // zuletzt gewähltes Netz (Ordner) für Gerät finden/Topologie
@@ -1259,7 +1260,9 @@ func (a *App) fitFooterAs(keys [][2]string, fbar bool) [][2]string {
 	for i, k := range keys {
 		out[i] = [2]string{strings.ReplaceAll(k[0], "Shift+", "⇧"), k[1]} // kürzer: ⇧F9
 	}
-	keep := func(k [2]string) bool { return k[0] == help || k[0] == explain }
+	// Esc (zurück/schließen) bleibt wie die Hilfe: sonst gibt es bei
+	// schmalem Fenster keinen Mausweg zurück.
+	keep := func(k [2]string) bool { return k[0] == help || k[0] == explain || k[0] == "Esc" }
 	// Breiten einmal messen und die Summe mitführen: lipgloss.Width über
 	// gerenderte Stile ist teuer, und die Schleifen unten fragten früher
 	// bei jedem Schritt die ganze Zeile neu ab (pro Bild Hunderte Mal).
@@ -1302,9 +1305,9 @@ func (a *App) fitFooterAs(keys [][2]string, fbar bool) [][2]string {
 			noDesc(i)
 		}
 	}
-	// 3. weitere Tasten von hinten weglassen, nie die Hilfe
+	// 3. weitere Tasten von hinten weglassen, nie Hilfe und Esc
 	for i := len(out) - 1; i >= 0 && total > a.w; i-- {
-		if out[i][0] != help {
+		if out[i][0] != help && out[i][0] != "Esc" {
 			drop(i)
 		}
 	}

@@ -29,4 +29,4 @@
 
 
 
- Tab Hosts/Quelle/Befehl  Space Host wählen  g Ordner  a alle  Strg+R als Runbook  Strg+S weiter  F1 Hilfe
+ Tab Hosts/Quelle/Befehl  Space Host wählen  g Ordner  a alle  Strg+R als Runbook  Esc abbrechen  F1 Hilfe

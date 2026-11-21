@@ -27,4 +27,4 @@
                                                   │
                                                   │
                                                   │
- ↑↓ wählen  ⏎ auf/zu  Tab nach Host  f Filter  / suchen  z KI-Zusammenfassung
+ ↑↓ wählen  ⏎ auf/zu  Tab nach Host  f Filter  / suchen  z KI-Zusammenfassung  Esc zurück

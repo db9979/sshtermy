@@ -104,21 +104,25 @@ func (a *App) startScheduleAI(sc domain.Schedule, conns []domain.Connection) tea
 	if err != nil {
 		return func() tea.Msg { return schedDoneMsg{id: id, err: err} }
 	}
-	actx, hosts := schedAIContext(sc, conns)
+	actx, _ := schedAIContext(sc, conns)
 	dial := schedDialer(a)
 	prompt := sc.Prompt
+	if !sc.ChecksPinned() {
+		return func() tea.Msg {
+			return schedDoneMsg{id: id, err: errors.New(i18n.T("Prüfbefehle noch nicht bestätigt: Zeitplan öffnen und speichern"))}
+		}
+	}
+	cmds := agent.SafeChecks(sc.Checks, actx)
+	if len(cmds) != len(sc.Checks) {
+		return func() tea.Msg {
+			return schedDoneMsg{id: id, err: errors.New(i18n.T("Ein bestätigter Prüfbefehl gilt nicht mehr als sicher: Zeitplan öffnen und speichern"))}
+		}
+	}
 	a.flash(i18n.T("Zeitplan startet: ") + sc.Name)
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		m := schedAIMsg{id: id}
-		m.cmds, m.err = ag.SchedChecks(ctx, prompt, hosts, actx)
-		if m.err == nil && len(m.cmds) == 0 {
-			m.err = errors.New(i18n.T("Die KI hat keinen Befehl vorgeschlagen, der sicher nur liest"))
-		}
-		if m.err != nil {
-			return m
-		}
+		m := schedAIMsg{id: id, cmds: cmds}
 		job := broadcast.Job{Conns: conns, Steps: []string{schedAILine(m.cmds)}, Timeout: 2 * time.Minute}
 		res := broadcast.Run(ctx, job, dial, func(int, broadcast.Result) {})
 		for _, r := range res {
@@ -133,6 +137,63 @@ func (a *App) startScheduleAI(sc domain.Schedule, conns []domain.Connection) tea
 		m.verdicts, m.sum, m.err = ag.SchedJudge(ctx, prompt, m.outs, actx)
 		return m
 	}
+}
+
+type schedChecksMsg struct {
+	id, prompt string
+	cmds       []string
+	err        error
+}
+
+// schedChooseChecks: Die KI schlägt die Prüfbefehle einmal vor; erst wenn
+// du sie bestätigst, laufen sie (dann bei jedem Lauf dieselben).
+func (a *App) schedChooseChecks(id string) tea.Cmd {
+	sc, ok := a.scheduleByID(id)
+	if !ok || sc.Kind != domain.ScheduleAI {
+		return nil
+	}
+	conns := a.schedConns(sc)
+	ag, err := a.agentClientFor(conns...)
+	if err != nil {
+		a.flashErr(err.Error())
+		return nil
+	}
+	actx, hosts := schedAIContext(sc, conns)
+	prompt := strings.TrimSpace(sc.Prompt)
+	a.flash(i18n.T("KI wählt die Prüfbefehle …"))
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		m := schedChecksMsg{id: id, prompt: prompt}
+		m.cmds, m.err = ag.SchedChecks(ctx, prompt, hosts, actx)
+		if m.err == nil && len(m.cmds) == 0 {
+			m.err = errors.New(i18n.T("Die KI hat keinen Befehl vorgeschlagen, der sicher nur liest"))
+		}
+		return m
+	}
+}
+
+func (a *App) onSchedChecks(m schedChecksMsg) tea.Cmd {
+	if m.err != nil {
+		a.flashErr(i18n.T("Zeitplan: ") + m.err.Error())
+		return nil
+	}
+	var b strings.Builder
+	b.WriteString(i18n.T("Diese Befehle laufen bei jedem Lauf auf allen Servern im Ziel, ohne Aufsicht:") + "\n\n")
+	for _, c := range m.cmds {
+		b.WriteString("  $ " + c + "\n")
+	}
+	b.WriteString("\n" + i18n.T("Übernehmen? Ohne Bestätigung läuft die KI-Prüfung nicht."))
+	a.showAsync(confirmModal(i18n.T("Prüfbefehle bestätigen"), b.String(), func() tea.Cmd {
+		a.updateSchedule(m.id, func(x *domain.Schedule) {
+			if strings.TrimSpace(x.Prompt) == m.prompt {
+				x.Checks, x.ChecksFor = m.cmds, m.prompt
+			}
+		})
+		a.flashOK(i18n.T("Prüfbefehle bestätigt"))
+		return nil
+	}))
+	return nil
 }
 
 // schedAIReport: Text für die Zeitplanliste, Zahl der Hosts ok / mit Befund.
@@ -173,6 +234,9 @@ func schedAIReport(m schedAIMsg) (text string, okN, badN int) {
 }
 
 func (a *App) schedAIMsg(msg tea.Msg) (tea.Cmd, bool) {
+	if c, ok := msg.(schedChecksMsg); ok {
+		return a.onSchedChecks(c), true
+	}
 	m, ok := msg.(schedAIMsg)
 	if !ok {
 		return nil, false

@@ -57,3 +57,15 @@ func TestSend(t *testing.T) {
 		t.Error("403 nicht gemeldet")
 	}
 }
+
+func TestPublicTopicLength(t *testing.T) {
+	if err := (Config{Kind: Ntfy, URL: "https://ntfy.sh/test"}).Check(); err == nil {
+		t.Error("kurzes Thema auf ntfy.sh angenommen")
+	}
+	if err := (Config{Kind: Ntfy, URL: RandomNtfyURL()}).Check(); err != nil {
+		t.Error(err)
+	}
+	if err := (Config{Kind: Ntfy, URL: "https://ntfy.example/test"}).Check(); err != nil {
+		t.Error("eigener Server: kurzes Thema ist erlaubt")
+	}
+}

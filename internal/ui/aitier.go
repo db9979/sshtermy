@@ -129,12 +129,12 @@ func (a *App) curTier() aiTierKind {
 // offlineLLM: Einstellung für den Endpunkt der Offline-KI.
 func (a *App) offlineLLM() domain.LLMConfig {
 	e := a.offlineEngine()
-	port := 0
+	port, key := 0, ""
 	if e != nil {
-		port = e.Port()
+		port, key = e.Port(), e.Key()
 	}
 	return domain.LLMConfig{
-		Provider: domain.ProviderCompat, BaseURL: fmt.Sprintf("http://127.0.0.1:%d/v1", port), Model: offlineai.Model,
+		Provider: domain.ProviderCompat, BaseURL: fmt.Sprintf("http://127.0.0.1:%d/v1", port), APIKey: domain.Secret(key), Model: offlineai.Model,
 		MaxTokens: 200, Temperature: 0.1, TimeoutSec: 120, SendScreen: false,
 	}
 }

@@ -25,7 +25,8 @@ func (a *App) mgrMenu(r mgrRow, x, y int) *modal {
 			menuItem{label: i18n.T("Tunnel …"), hint: "t", sep: true, run: func() tea.Cmd { return a.mgrNewTunnel(c) }},
 			menuItem{label: i18n.T("SSH-Schlüssel erzeugen / übertragen …"), hint: k.label(actSSHKey), run: func() tea.Cmd { return a.openSSHKeyForm(c) }})
 	}
-	items = append(items, menuItem{label: i18n.T("Schnellbefehle …"), hint: k.label(actQuickEdit), run: func() tea.Cmd { return a.openQuickForm(c, "") }})
+	items = append(items, menuItem{label: i18n.T("Schnellbefehle …"), hint: k.label(actQuickEdit), run: func() tea.Cmd { return a.openQuickForm(c, "") }},
+		menuItem{label: i18n.T("Aufgaben …"), hint: k.label(actTasks), run: func() tea.Cmd { return a.openTasks(c.ID, c.Group) }})
 	if !c.Protocol.NoHost() && c.JumpHostID == "" && !a.connected(c.ID) {
 		items = append(items, menuItem{label: i18n.T("Aufwecken (Wake-on-LAN)"), hint: orDefault(c.MAC, i18n.T("MAC fehlt")), run: func() tea.Cmd { return a.wake(c) }})
 	}
@@ -53,10 +54,37 @@ func (a *App) mgrFolderMenu(r mgrRow, x, y int) *modal {
 			c.Group = n.Path
 			return a.openConnForm(c)
 		}},
+		{label: i18n.T("Neuer Ordner hier …"), hint: k.label(actFolderNew), run: func() tea.Cmd { return a.newFolderDialog() }},
 		{label: i18n.T("Alle als Raster öffnen"), hint: k.label(actFolderGrid), run: func() tea.Cmd { return a.openFolderGrid(n.Path) }},
+		{label: i18n.T("Aufgaben …"), hint: k.label(actTasks), run: func() tea.Cmd { return a.openTasks("", n.Path) }},
 		{label: i18n.T("Bearbeiten …"), hint: "e", sep: true, run: func() tea.Cmd { return a.openFolderForm(n.Path) }},
 		{label: i18n.T("In Ordner verschieben …"), hint: k.label(actMoveTo), run: func() tea.Cmd { return a.moveToDialog(r) }},
 		{label: i18n.T("Löschen …"), hint: "d", sep: true, run: func() tea.Cmd { a.deleteFolderDialog(n); return nil }},
 	}
 	return &modal{kind: mMenu, title: trunc(r.name(), 30), items: items, at: [2]int{x, y}, anchored: true}
+}
+
+// mgrBlankMenu: Rechtsklick auf freie Fläche im Manager. Alles, was sonst
+// nur eine Taste hat, ist so auch per Maus erreichbar.
+func (a *App) mgrBlankMenu(x, y int) tea.Cmd {
+	k := a.keys
+	fold := func(collapse bool) func() tea.Cmd {
+		return func() tea.Cmd {
+			if err := a.st.SetCollapsed(collapse); err != nil {
+				a.flashErr(err.Error())
+			}
+			return nil
+		}
+	}
+	items := []menuItem{
+		{label: i18n.T("Neue Verbindung …"), hint: "n", run: func() tea.Cmd { return a.openConnForm(newConnDefaults()) }},
+		{label: i18n.T("Neuer Ordner …"), hint: k.label(actFolderNew), run: func() tea.Cmd { return a.newFolderDialog() }},
+		{label: i18n.T("Verbindungen importieren …"), hint: k.label(actImport), sep: true, run: func() tea.Cmd { return a.openImport() }},
+		{label: i18n.T("Netz scannen …"), hint: k.label(actScan), run: func() tea.Cmd { return a.openScan() }},
+		{label: i18n.T("Nach Tag filtern …"), hint: k.label(actTagFilter), sep: true, run: func() tea.Cmd { return a.tagDialog() }},
+		{label: i18n.T("Alle Ordner zuklappen"), hint: k.label(actFoldAll), run: fold(true)},
+		{label: i18n.T("Alle Ordner aufklappen"), hint: k.label(actUnfoldAll), run: fold(false)},
+	}
+	a.modal = &modal{kind: mMenu, title: i18n.T("Verbindungen"), items: items, at: [2]int{x, y}, anchored: true}
+	return nil
 }

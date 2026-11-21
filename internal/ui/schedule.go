@@ -413,6 +413,13 @@ func (a *App) saveScheduleForm() error {
 		sc.LastRun = time.Now()
 	}
 	sc.Machine = a.schedMachines[f.sel("machine")]
+	a.schedConfirm = ""
+	if sc.Kind != domain.ScheduleAI {
+		sc.Checks, sc.ChecksFor = nil, ""
+	} else if !sc.ChecksPinned() {
+		sc.Checks, sc.ChecksFor = nil, ""
+		a.schedConfirm = sc.ID // nach dem Speichern: Befehle wählen lassen und bestätigen
+	}
 	return a.st.UpdateSchedules(func(list []domain.Schedule) []domain.Schedule {
 		for i := range list {
 			if list[i].ID == sc.ID {

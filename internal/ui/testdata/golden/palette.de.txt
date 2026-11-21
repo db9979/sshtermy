@@ -4,9 +4,9 @@
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
    ○ # switc│ ── HIER · NETZWERK ───────────────────────────────────────────────────── │
  ▾ Produktio│ ▶   Neue Verbindung hier …                                             n │
-   ▾ Web    │ [=] Alle als Raster öffnen                                             g │
-▌    ○   web│ [=] Bearbeiten …                                                       e │ft …
-▌    ○   web│ [=] In Ordner verschieben …                                            v │
+   ▾ Web    │ [=] Neuer Ordner hier …                                                o │
+▌    ○   web│ [=] Alle als Raster öffnen                                             g │ft …
+▌    ○   web│ [=] Aufgaben …                                                         u │
 ▌  ○   db-01│ ── HÄUFIG ────────────────────────────────────────────────────────────── │s Menü ·
  ○   nas    │ [+] Neue Verbindung                                                    n │
  ○   spark  │ [$] Lokale Shell in neuem Tab                                      Alt+L │

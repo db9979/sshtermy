@@ -4,9 +4,9 @@
  ▾ Netzwerk │ ──────────────────────────────────────────────────────────────────────── │
    ○ # switc│ ── HERE · NETZWERK ───────────────────────────────────────────────────── │
  ▾ Produktio│ ▶   New connection here …                                              n │
-   ▾ Web    │ [=] Open all as grid                                                   g │
-▌    ○   web│ [=] Edit …                                                             e │
-▌    ○   web│ [=] Move to folder …                                                   v │
+   ▾ Web    │ [=] New folder here …                                                  o │
+▌    ○   web│ [=] Open all as grid                                                   g │
+▌    ○   web│ [=] Tasks …                                                            u │
 ▌  ○   db-01│ ── FREQUENT ──────────────────────────────────────────────────────────── │ menu ·
  ○   nas    │ [+] New connection                                                     n │
  ○   spark  │ [$] Local shell in a new tab                                       Alt+L │

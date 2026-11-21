@@ -36,9 +36,22 @@ type Progress struct {
 }
 
 type asset struct {
-	Name string `json:"name"`
-	URL  string `json:"browser_download_url"`
-	Size int64  `json:"size"`
+	Name   string `json:"name"`
+	URL    string `json:"browser_download_url"`
+	Size   int64  `json:"size"`
+	Digest string `json:"digest"` // "sha256:<hex>", von GitHub zu jeder Datei berechnet
+}
+
+// Sum: SHA-256 der Datei laut GitHub ("" = keine Angabe).
+func (a asset) Sum() string {
+	d, ok := strings.CutPrefix(strings.ToLower(strings.TrimSpace(a.Digest)), "sha256:")
+	if !ok || len(d) != 64 {
+		return ""
+	}
+	if _, err := hex.DecodeString(d); err != nil {
+		return ""
+	}
+	return d
 }
 
 type release struct {
@@ -145,7 +158,11 @@ func ParseSums(r io.Reader) map[string]string {
 }
 
 // download lädt url nach dest (über dest.part) und prüft die Prüfsumme.
+// Ohne Prüfsumme lädt es nicht.
 func download(ctx context.Context, url, dest, sum, step string, total int64, progress func(Progress)) error {
+	if len(sum) != 64 {
+		return fmt.Errorf(i18n.T("%s: keine Prüfsumme, Herunterladen abgebrochen"), filepath.Base(dest))
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -196,7 +213,7 @@ func download(ctx context.Context, url, dest, sum, step string, total int64, pro
 	if err := f.Close(); err != nil {
 		return err
 	}
-	if sum != "" && hex.EncodeToString(h.Sum(nil)) != sum {
+	if hex.EncodeToString(h.Sum(nil)) != sum {
 		os.Remove(part)
 		return fmt.Errorf(i18n.T("Prüfsumme von %s stimmt nicht"), filepath.Base(dest))
 	}
@@ -222,11 +239,21 @@ func (e *Engine) Download(ctx context.Context, progress func(Progress)) error {
 		if !ok {
 			return errors.New(i18n.T("im lxask-Release fehlt die Modelldatei"))
 		}
-		sum := ""
+		sum := model.Sum()
 		if sums.URL != "" {
-			if m, err := fetchSums(ctx, sums.URL); err == nil {
-				sum = m[model.Name]
+			m, err := fetchSums(ctx, sums.URL)
+			if err != nil {
+				return err
 			}
+			if s := m[model.Name]; s != "" {
+				if sum != "" && s != sum {
+					return fmt.Errorf(i18n.T("Prüfsumme von %s stimmt nicht"), model.Name)
+				}
+				sum = s
+			}
+		}
+		if sum == "" {
+			return fmt.Errorf(i18n.T("%s: keine Prüfsumme, Herunterladen abgebrochen"), model.Name)
 		}
 		if err := download(ctx, model.URL, e.ModelPath(), sum, i18n.T("Modell (lxask)"), model.Size, progress); err != nil {
 			return err
@@ -246,6 +273,9 @@ func fetchSums(ctx context.Context, url string) (map[string]string, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s: HTTP %d", url, resp.StatusCode)
+	}
 	return ParseSums(io.LimitReader(resp.Body, 1<<20)), nil
 }
 
@@ -258,8 +288,11 @@ func (e *Engine) downloadServer(ctx context.Context, progress func(Progress)) er
 	if !ok {
 		return fmt.Errorf(i18n.T("für %s/%s gibt es keinen fertigen llama-server; installiere llama.cpp selbst (llama-server im PATH)"), runtime.GOOS, runtime.GOARCH)
 	}
-	arch := filepath.Join(e.dir, a.Name)
-	if err := download(ctx, a.URL, arch, "", i18n.T("llama-server (llama.cpp)"), a.Size, progress); err != nil {
+	if a.Sum() == "" {
+		return fmt.Errorf(i18n.T("für %s gibt es keine Prüfsumme; installiere llama.cpp selbst (llama-server im PATH)"), a.Name)
+	}
+	arch := filepath.Join(e.dir, filepath.Base(a.Name))
+	if err := download(ctx, a.URL, arch, a.Sum(), i18n.T("llama-server (llama.cpp)"), a.Size, progress); err != nil {
 		return err
 	}
 	defer os.Remove(arch)
@@ -271,6 +304,10 @@ func (e *Engine) downloadServer(ctx context.Context, progress func(Progress)) er
 	srv := findFile(dst, exeName("llama-server"))
 	if srv == "" {
 		return errors.New(i18n.T("llama-server fehlt im heruntergeladenen Paket"))
+	}
+	// Ausführbar nur, was das Archiv so markiert, und der Server selbst
+	if err := os.Chmod(srv, 0o755); err != nil {
+		return err
 	}
 	return os.WriteFile(filepath.Join(e.dir, "server.path"), []byte(srv), 0o644)
 }
@@ -325,7 +362,7 @@ func Extract(archive, dst string) error {
 				}
 				continue
 			}
-			if err := writeFrom(p, f.Mode()|0o755, func() (io.ReadCloser, error) { return f.Open() }); err != nil {
+			if err := writeFrom(p, f.Mode()|0o644, func() (io.ReadCloser, error) { return f.Open() }); err != nil {
 				return err
 			}
 		}
@@ -361,7 +398,7 @@ func Extract(archive, dst string) error {
 				return err
 			}
 		case tar.TypeReg:
-			if err := writeFrom(p, os.FileMode(h.Mode)|0o755, func() (io.ReadCloser, error) { return io.NopCloser(tr), nil }); err != nil {
+			if err := writeFrom(p, os.FileMode(h.Mode)|0o644, func() (io.ReadCloser, error) { return io.NopCloser(tr), nil }); err != nil {
 				return err
 			}
 		}

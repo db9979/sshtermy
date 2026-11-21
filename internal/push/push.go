@@ -8,6 +8,8 @@ package push
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,19 +45,36 @@ type Message struct {
 	Category string // z. B. "befehl", "zeitplan", "freigabe" (Webhook)
 }
 
+// MinPublicTopic: so lang muss ein Thema auf ntfy.sh ohne Token sein.
+const MinPublicTopic = 16
+
+// RandomNtfyURL: ntfy.sh mit zufälligem, nicht erratbarem Thema.
+func RandomNtfyURL() string {
+	b := make([]byte, 12)
+	_, _ = rand.Read(b)
+	return "https://ntfy.sh/sshtermy-" + hex.EncodeToString(b)
+}
+
 // Client: in Tests austauschbar.
 var Client = &http.Client{Timeout: 15 * time.Second}
 
-// Check: Einstellungen plausibel?
-func (c Config) Check() error {
+// Check: Einstellungen plausibel? (beim Einrichten, mit Themenlänge)
+func (c Config) Check() error { return c.check(true) }
+
+func (c Config) check(setup bool) error {
 	u, err := url.Parse(strings.TrimSpace(c.URL))
 	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") {
 		return errors.New(i18n.T("Adresse mit http:// oder https:// angeben"))
 	}
 	switch c.Kind {
 	case Ntfy:
-		if strings.Trim(u.Path, "/") == "" {
+		topic := strings.Trim(u.Path, "/")
+		if topic == "" {
 			return errors.New(i18n.T("ntfy braucht ein Thema in der Adresse, z. B. https://ntfy.sh/mein-geheimes-thema"))
+		}
+		// Auf dem öffentlichen ntfy.sh liest jeder mit, der das Thema kennt.
+		if setup && strings.EqualFold(u.Hostname(), "ntfy.sh") && c.Token == "" && len(topic) < MinPublicTopic {
+			return fmt.Errorf(i18n.T("Auf ntfy.sh kann jeder ein kurzes Thema erraten und mitlesen: mindestens %d Zeichen, am besten zufällig"), MinPublicTopic)
 		}
 	case Gotify:
 		if c.Token == "" {
@@ -70,7 +89,7 @@ func (c Config) Check() error {
 
 // Send schickt eine Meldung.
 func Send(ctx context.Context, c Config, m Message) error {
-	if err := c.Check(); err != nil {
+	if err := c.check(false); err != nil { // alte, kurze Themen senden weiter
 		return err
 	}
 	base := strings.TrimRight(strings.TrimSpace(c.URL), "/")

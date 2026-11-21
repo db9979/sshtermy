@@ -27,4 +27,4 @@
                                                   │
                                                   │
                                                   │
- ↑↓ select  ⏎ expand  Tab by host  f Filter  / search  z AI summary  Z summarize all matches
+ ↑↓ select  ⏎ expand  Tab by host  f Filter  / search  z AI summary  Esc back

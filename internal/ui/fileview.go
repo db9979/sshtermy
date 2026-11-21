@@ -475,6 +475,41 @@ func (a *App) openWithSystem(s *session, side, i int) tea.Cmd {
 	if p == nil || i <= 0 || i >= len(p.entries) {
 		return nil
 	}
+	if name := p.entries[i].Name; runsWhenOpened(name) && !p.entries[i].IsDir {
+		_, local := p.fs.(sshx.LocalFS)
+		where := i18n.T("vom Server")
+		if local {
+			where = i18n.T("auf diesem Rechner")
+		}
+		a.modal = confirmModal(i18n.T("Programm starten?"),
+			fmt.Sprintf(i18n.T("„%s“ %s ist ein Programm oder Skript. Mit dem Standardprogramm öffnen heißt hier: es läuft auf diesem Rechner, mit deinen Rechten.\n\nNur starten, wenn du der Datei vertraust."), name, where),
+			func() tea.Cmd { return a.openWithSystemNow(s, side, i) })
+		return nil
+	}
+	return a.openWithSystemNow(s, side, i)
+}
+
+// runExt: Endungen, die das Standardprogramm ausführt statt anzeigt.
+var runExt = map[string]bool{
+	".exe": true, ".com": true, ".bat": true, ".cmd": true, ".ps1": true, ".psm1": true, ".vbs": true, ".vbe": true,
+	".js": true, ".jse": true, ".wsf": true, ".wsh": true, ".hta": true, ".msi": true, ".msp": true, ".scr": true,
+	".pif": true, ".lnk": true, ".url": true, ".reg": true, ".cpl": true, ".jar": true, ".appref-ms": true,
+	".application": true, ".msc": true, ".inf": true, ".settingcontent-ms": true, ".library-ms": true, ".search-ms": true,
+	".command": true, ".app": true, ".pkg": true, ".dmg": true, ".terminal": true, ".workflow": true, ".scpt": true,
+	".sh": true, ".desktop": true, ".appimage": true, ".run": true, ".py": true, ".pl": true, ".rb": true,
+}
+
+// runsWhenOpened: Datei, die beim Öffnen mit dem Standardprogramm läuft.
+func runsWhenOpened(name string) bool {
+	return runExt[strings.ToLower(filepath.Ext(strings.TrimRight(name, ". ")))]
+}
+
+func (a *App) openWithSystemNow(s *session, side, i int) tea.Cmd {
+	f := &s.files
+	p := f.panes[side]
+	if p == nil || i <= 0 || i >= len(p.entries) {
+		return nil
+	}
 	full := p.fs.Join(p.path, p.entries[i].Name)
 	if _, local := p.fs.(sshx.LocalFS); local {
 		if err := sshx.OpenBrowser(full); err != nil {
@@ -486,6 +521,10 @@ func (a *App) openWithSystem(s *session, side, i int) tea.Cmd {
 	}
 	if p.entries[i].IsDir {
 		a.flash(i18n.T("Ordner vom Server lassen sich nicht direkt öffnen, erst kopieren (c)"))
+		return nil
+	}
+	if !sshx.PlainName(p.entries[i].Name) {
+		a.flashErr(fmt.Sprintf(i18n.T("ungültiger Name: %q"), p.entries[i].Name))
 		return nil
 	}
 	dir, err := os.MkdirTemp("", "sshtermy-open-")

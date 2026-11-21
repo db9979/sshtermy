@@ -142,6 +142,8 @@ func (a *App) askPushURL(kind string, cur domain.PushConfig) tea.Cmd {
 	val := ""
 	if cur.Kind == kind {
 		val = cur.URL
+	} else if kind == push.Ntfy {
+		val = push.RandomNtfyURL() // zufälliges Thema: errät niemand
 	}
 	body := map[string]string{
 		push.Ntfy:    i18n.T("Adresse mit Thema, z. B. https://ntfy.sh/ein-langes-zufälliges-thema (das Thema wirkt wie ein Passwort). In der ntfy-App dasselbe Thema abonnieren."),
