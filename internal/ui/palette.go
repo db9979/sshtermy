@@ -1442,6 +1442,9 @@ func (a *App) viewPalette() string {
 			iw += lipgloss.Width(dotPlain)
 		}
 		hint := a.palHint(it, p.armed == i)
+		if hw := max(8, w/2); lipgloss.Width(hint) > hw {
+			hint = ansi.Truncate(hint, hw, "…") // langer Hinweis (z. B. Fehlertext) darf das Label nicht verdrängen
+		}
 		if it.changed {
 			hint = st.Warn.Render("● ") + hint // weicht vom Standard ab
 		}

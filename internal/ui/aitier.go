@@ -271,7 +271,7 @@ func (a *App) offlineStatus() string {
 	case a.offlineReady():
 		return fmt.Sprintf(i18n.T("bereit · %d MB"), a.offlineEngine().Size()>>20)
 	case d.err != "":
-		return i18n.T("Fehler: ") + trunc(d.err, 60)
+		return i18n.T("Fehler: ") + trunc(d.err, 32)
 	}
 	return i18n.T("ca. 1 GB, nicht installiert")
 }
