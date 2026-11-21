@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -25,8 +26,9 @@ import (
 
 // Quellen (je die neueste Veröffentlichung).
 var (
-	ServerRelease = "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest"
-	ModelRelease  = "https://api.github.com/repos/arxhr007/lxask/releases/latest"
+	ServerRelease  = "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest"
+	ServerReleases = "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=10"
+	ModelRelease   = "https://api.github.com/repos/arxhr007/lxask/releases/latest"
 )
 
 // Progress: Stand des Herunterladens.
@@ -84,42 +86,53 @@ func getJSON(ctx context.Context, url string, v any) error {
 // Ausschlüsse: Builds für Grafikkarten, wir nehmen den CPU-Build.
 var gpuBuild = regexp.MustCompile(`(?i)cuda|vulkan|hip|sycl|opencl|kompute|musa|rocm|cann|openvino|radeon|kleidiai|xcframework`)
 
-// PickServer wählt den llama.cpp-Build für dieses System.
+// PickServer wählt den llama.cpp-Build für dieses System. Der Name wird in
+// Teile zerlegt (llama-b7000-bin-macos-arm64.zip → llama, b7000, bin, macos,
+// arm64), damit auch umbenannte Pakete (ohne „bin“, .tgz, osx/darwin) passen.
 func PickServer(goos, goarch string, assets []asset) (asset, bool) {
-	osTok := map[string][]string{"windows": {"win"}, "darwin": {"macos", "mac"}, "linux": {"ubuntu", "linux"}}[goos]
+	osTok := map[string][]string{"windows": {"win", "windows"}, "darwin": {"macos", "mac", "osx", "darwin", "apple"}, "linux": {"ubuntu", "linux"}}[goos]
 	archTok := map[string][]string{"amd64": {"x64", "x86_64", "amd64"}, "arm64": {"arm64", "aarch64"}}[goarch]
 	if osTok == nil || archTok == nil {
 		return asset{}, false
 	}
+	allArch := []string{"x64", "x86_64", "amd64", "arm64", "aarch64", "x86", "i686", "armv7", "riscv64", "s390x"}
 	best, bestScore := asset{}, -1
 	for _, a := range assets {
 		n := strings.ToLower(a.Name)
-		if !strings.Contains(n, "-bin-") || gpuBuild.MatchString(n) || !(strings.HasSuffix(n, ".zip") || strings.HasSuffix(n, ".tar.gz")) {
+		isZip, isTar := strings.HasSuffix(n, ".zip"), strings.HasSuffix(n, ".tar.gz") || strings.HasSuffix(n, ".tgz")
+		if !strings.HasPrefix(n, "llama") || gpuBuild.MatchString(n) || !(isZip || isTar) {
 			continue
 		}
-		score := -1
-		for i, o := range osTok {
-			if strings.Contains(n, "-bin-"+o+"-") {
-				score = 10 - i
-				break
+		parts := strings.FieldsFunc(strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(n, ".zip"), ".gz"), ".tar"),
+			func(r rune) bool { return r == '-' || r == '_' || r == '.' })
+		has := func(toks []string) int {
+			for i, t := range toks {
+				if slices.Contains(parts, t) {
+					return i
+				}
 			}
+			return -1
 		}
-		if score < 0 {
+		oi := has(osTok)
+		if oi < 0 {
 			continue
 		}
-		archOK := false
-		for _, ar := range archTok {
-			if strings.Contains(n, "-"+ar+".") || strings.Contains(n, "-"+ar+"-") {
-				archOK = true
-			}
-		}
+		// x86_64 zerfällt in x86 und 64: als Ganzes prüfen
+		archOK := has(archTok) >= 0 || (goarch == "amd64" && strings.Contains(n, "x86_64"))
 		if !archOK {
-			continue
+			// ohne Architektur im Namen nur auf dem Mac (Universal-Build)
+			if goos != "darwin" || has(allArch) >= 0 || strings.Contains(n, "x86_64") {
+				continue
+			}
 		}
-		if strings.Contains(n, "-cpu-") {
+		score := 10 - oi
+		if archOK {
+			score += 3
+		}
+		if slices.Contains(parts, "cpu") {
 			score += 5
 		}
-		if strings.HasSuffix(n, ".zip") == (goos == "windows") {
+		if isZip == (goos == "windows") {
 			score++
 		}
 		if score > bestScore {
@@ -285,6 +298,21 @@ func (e *Engine) downloadServer(ctx context.Context, progress func(Progress)) er
 		return fmt.Errorf(i18n.T("llama.cpp-Veröffentlichung nicht erreichbar: %w"), err)
 	}
 	a, ok := PickServer(runtime.GOOS, runtime.GOARCH, rel.Assets)
+	ok = ok && a.Sum() != ""
+	if !ok {
+		// Der neueste Build hat manchmal (noch) nicht alle Pakete: die letzten zehn durchsehen.
+		var rels []release
+		if err := getJSON(ctx, ServerReleases, &rels); err == nil {
+			for _, r := range rels {
+				if a, ok = PickServer(runtime.GOOS, runtime.GOARCH, r.Assets); ok && a.Sum() != "" {
+					break
+				}
+			}
+		}
+	}
+	if !ok && runtime.GOOS == "darwin" {
+		return errors.New(i18n.T("kein fertiger llama-server für den Mac gefunden; im Terminal „brew install llama.cpp“ ausführen, dann erneut herunterladen"))
+	}
 	if !ok {
 		return fmt.Errorf(i18n.T("für %s/%s gibt es keinen fertigen llama-server; installiere llama.cpp selbst (llama-server im PATH)"), runtime.GOOS, runtime.GOARCH)
 	}

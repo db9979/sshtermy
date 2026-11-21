@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>sshTermy – SSH-Terminal mit KI-Copilot</title>
-<meta name="description" content="sshTermy ist ein SSH-Terminal (TUI) mit KI-Copilot für Windows, macOS und Linux: Verbindungsmanager, Ziel- und Agent-Modus, Ghost-Text, geteilte Ansicht, SFTP, Tunnel, Broadcast. Idee: Dominik Bornhäußer.">
+<title>sshTermy – das SSH-Terminal, das mitdenkt</title>
+<meta name="description" content="sshTermy ist ein kostenloses SSH-Terminal für Windows, macOS und Linux mit KI-Copilot: Verbindungsmanager, Ziel- und Agent-Modus, SFTP, Tunnel, Broadcast, Switches. Gefährliche Befehle warten immer auf dich. Idee: Dominik Bornhäußer.">
 <link rel="alternate" hreflang="en" href="../">
 <link rel="stylesheet" href="../style.css">
 <link rel="icon" type="image/png" href="../favicon.png">
@@ -15,39 +15,217 @@
   <div class="bar">
     <a class="logo" href="./"><img src="../logo.png" alt="" width="28" height="28"> sshTermy</a>
     <nav>
-      <a href="#installieren">Installieren</a>
-      <a href="#rundgang">Rundgang</a>
       <a href="#funktionen">Funktionen</a>
-      <a href="#ki">KI einrichten</a>
+      <a href="#rundgang">Rundgang</a>
+      <a href="#installieren">Installieren</a>
       <a href="#tasten">Tasten</a>
-      <a href="#kurzreferenz">Kurzreferenz</a>
-      <a href="#updates">Updates</a>
-      <a href="handbuch.html">Handbuch</a>
       <a href="#faq">Fragen</a>
+      <a href="handbuch.html">Handbuch</a>
       <a href="https://github.com/db9979/sshtermy">GitHub</a>
     </nav>
     <div class="lang"><a href="../">EN</a> · <b>DE</b></div>
+    <a class="btn sm primary navbtn" href="#installieren">Installieren</a>
   </div>
 </header>
 
 <main>
 <section class="hero">
-  <h1>SSH-Terminal mit <span class="accent">KI-Copilot</span></h1>
-  <p class="lead">Eine kleine Datei für Windows, macOS und Linux. Verbindungsmanager, echtes Terminal, SFTP und Tunnel, dazu eine KI, die Befehle vorschlägt, ein Ziel Schritt für Schritt oder als Agent selbstständig umsetzt und Fehler erklärt. Gefährliche Befehle warten immer auf dich.</p>
-  <p class="credit">Idee: Dominik Bornhäußer</p>
-  <div class="buttons">
-    <a class="btn primary" href="#installieren">Installieren</a>
-    <a class="btn" href="https://github.com/db9979/sshtermy/releases/latest">Download</a>
-    <a class="btn coffee" href="https://buymeacoffee.com/zquu1xu570">☕ Kaffee spendieren</a>
+  <div class="intro">
+    <h1>Das SSH-Terminal,<br>das <em>mitdenkt</em>.</h1>
+    <p class="lead">Verbindungen, Dateien und Tunnel in einem kleinen Programm, dazu eine KI, die Befehle vorschlägt und Fehler erklärt. Gefährliches wartet immer auf dich.</p>
+    <div class="itabs" data-copy="Kopieren">
+      <div class="ibar" role="tablist">
+        <button type="button" role="tab" data-os="win">Windows</button>
+        <button type="button" role="tab" data-os="mac">macOS</button>
+        <button type="button" role="tab" data-os="linux">Linux</button>
+      </div>
+      <div class="cmd" data-copy="Kopieren" data-os="win"><pre>winget install db9979.sshTermy</pre></div>
+      <div class="cmd" data-copy="Kopieren" data-os="mac" hidden><pre>brew tap db9979/sshtermy https://github.com/db9979/sshtermy
+brew install sshtermy</pre></div>
+      <div class="cmd" data-copy="Kopieren" data-os="linux" hidden><pre>echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
+sudo apt update && sudo apt install sshtermy</pre></div>
+      <p class="small">Oder <a href="https://github.com/db9979/sshtermy/releases/latest">die Datei direkt laden</a>, danach <code>sshtermy</code> starten. <a href="#installieren">Alle Wege</a></p>
+    </div>
+    <div class="buttons">
+      <a class="btn" href="#rundgang">Rundgang ansehen</a>
+      <a class="btn coffee" href="https://buymeacoffee.com/zquu1xu570">☕ Kaffee spendieren</a>
+    </div>
+    <p class="credit">Idee: Dominik Bornhäußer · kostenlos · MIT-Lizenz</p>
   </div>
-  <figure>
-    <img src="../gifs/goal-de.gif" width="962" height="594" alt="Ziel-Modus: die KI richtet Nginx Schritt für Schritt ein, jeder Befehl wird mit Enter bestätigt">
-    <figcaption>Ziel-Modus (F2): Ziel beschreiben, die KI schlägt immer genau einen Befehl vor, du bestätigst. Mehrzeilige Inhalte wie Konfigurationsabschnitte kommen als Datei (nach ⏎ per SFTP angelegt), Konfigurationsdateien werden ergänzt statt ersetzt. Bleibt ein Befehl am Fortsetzungs-Prompt <code>&gt;</code> der Shell hängen, bricht sshTermy ihn mit Strg+C ab und sagt es der KI, damit der nächste Befehl nicht verschluckt wird.</figcaption>
-  </figure>
+  <figure><img src="../bilder/03-ziel-modus.png" alt="Ziel-Modus: die KI richtet Docker und Nginx Befehl für Befehl ein, du bestätigst jeden Schritt"></figure>
+</section>
+
+<div class="promises">
+  <div><b>Ein Programm statt fünf</b><span>Terminal, Dateien, Tunnel, Überwachung und KI in einer kleinen Datei.</span></div>
+  <div><b>KI mit Bremse</b><span>Sie schlägt vor und erklärt. Was gefährlich ist, läuft nie ohne dich.</span></div>
+  <div><b>Server und Switches</b><span>Linux, Windows, macOS und 48 Netzwerk-Betriebssysteme.</span></div>
+</div>
+
+<section id="funktionen">
+  <h2>Was sshTermy kann</h2>
+  <p class="sub">Sechs Bereiche, ein Programm. „Mehr“ zeigt alle Einzelheiten.</p>
+  <div class="pillars">
+    <div class="pillar">
+      <span class="ic">>_</span>
+      <h3>Verbinden & arbeiten</h3>
+      <p class="pl">Alle Server an einem Ort, ein echtes Terminal.</p>
+      <ul><li>Verbindungsmanager mit Ordnern, Tags und Jump-Hosts, Import aus <code>~/.ssh/config</code>, PuTTY, MobaXterm</li><li>Tabs und geteilte Ansicht mit bis zu sechs Sitzungen</li><li>SSH, Telnet, serielle Konsole, PowerShell über WinRM, lokale Shell</li><li>Verbindet sich nach WLAN- oder VPN-Abbruch von selbst neu</li></ul>
+      <a class="more" href="#all-connect">Mehr →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">✦</span>
+      <h3>KI-Copilot</h3>
+      <p class="pl">Schlägt vor, erklärt, erledigt. Du entscheidest.</p>
+      <ul><li>Ghost-Text und passende Folgebefehle beim Tippen</li><li>Befehl fehlgeschlagen? <kbd>Alt</kbd>+<kbd>0</kbd> nennt Ursache und Lösung</li><li>Ziel-Modus: ein Befehl nach dem anderen, oder als Agent selbstständig</li><li>Jede OpenAI-kompatible KI, Claude, lokal, offline oder ganz ohne</li></ul>
+      <a class="more" href="#all-ai">Mehr →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">!</span>
+      <h3>Sicherheit</h3>
+      <p class="pl">Gefährliches wartet immer auf dich.</p>
+      <ul><li>Feste Gefahr-Regeln, auch beim Einfügen</li><li>Jede Verbindung gilt als produktiv: rote PROD-Marke</li><li>Verschlüsselter Speicher (AES-256, Argon2id) und Bildschirmsperre</li><li>Signiertes Audit-Protokoll, KI-Datenschutz je Verbindung</li></ul>
+      <a class="more" href="#all-safe">Mehr →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">⇄</span>
+      <h3>Switches & Netzwerk</h3>
+      <p class="pl">Für Netzwerker gemacht.</p>
+      <ul><li>48 Befehlssätze: Cisco, Aruba, Juniper, MikroTik, UniFi und mehr</li><li>Gerät finden: MAC oder IP rein, Switch, Port und VLAN raus</li><li>Topologie aus LLDP/CDP, Konfig-Sicherung nach Zeitplan</li><li>Broadcast: ein Befehl auf alle Geräte einer Gruppe</li></ul>
+      <a class="more" href="#all-net">Mehr →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">◎</span>
+      <h3>Server pflegen</h3>
+      <p class="pl">Sehen, was los ist, und es beheben.</p>
+      <ul><li>Host-Übersicht mit CPU, RAM, Platten und Live-Kurven</li><li>Log-Blick und Logwache mit KI-Diagnose</li><li>Sicherheitslücken (OSV), Härtungs-Check, Patch-Runde</li><li>Dateien per SFTP wie im Dateimanager, Tunnel per Klick</li></ul>
+      <a class="more" href="#all-ops">Mehr →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">⇅</span>
+      <h3>Team & unterwegs</h3>
+      <p class="pl">Überall gleich eingerichtet.</p>
+      <ul><li>Ende-zu-Ende-verschlüsselter Sync über OneDrive, Dropbox, iCloud, WebDAV</li><li>Team-Ordner halten die Verbindungen aller aktuell</li><li>Sitzung live teilen per Kurzcode, Zusehen im Browser</li><li>Umzug auf einen neuen Rechner mit einer Datei</li></ul>
+      <a class="more" href="#all-team">Mehr →</a>
+    </div>
+  </div>
+  <details class="all" id="all">
+    <summary>Alle 68 Funktionen im Detail</summary>
+    <h3 id="all-connect"><span class="ic">>_</span> Verbinden & arbeiten</h3>
+    <div class="features">
+    <div class="card"><h3>Verbindungsmanager</h3><p>Ordner, Tags, Jump-Hosts, Import aus <code>~/.ssh/config</code>, PuTTY und MobaXterm.</p></div>
+    <div class="card"><h3>Fehlerverzeihend</h3><p>Beenden fragt bei offenen Verbindungen nach, Löschen lässt sich 10 Sekunden lang rückgängig machen, <kbd>Strg</kbd>+<kbd>T</kbd> im Formular testet die Verbindung vor dem Speichern, und fehlgeschlagene Verbindungen erklären in Klartext, was los ist (mit Taste zum Beheben, z. B. neuen Host-Key nach Neuinstallation übernehmen). Der einfache Modus blendet Profi-Funktionen aus.</p></div>
+    <div class="card"><h3>Läuft weiter</h3><p>Ein Fehler an einer Stelle (eine seltsame KI-Antwort, ungewöhnliche Geräteausgabe, die Dateiansicht) reißt sshTermy nicht mehr samt allen Verbindungen mit: Er wird abgefangen, ein bereinigter Bericht entsteht, und eine Meldung erscheint. <code>sshtermy doctor</code> oder Hilfe › Fehlersuche › „Selbstprüfung“ prüft Ordner, Tresor, Schlüsselbund, SSH-Agent, Internet, Uhr und KI auf einen Blick.</p></div>
+    <div class="card"><h3>Eigenes Fenster</h3><p>Kein Terminal nötig: Doppelklick auf die <code>.exe</code>, die <code>.app</code> öffnen oder <code>sshtermy -window</code>. Schrift, Nerd-Font-Symbole und Emoji sind eingebaut, jede Taste kommt an (Alt+⏎, ⇧F-Tasten, Strg+Leertaste), Bilder erscheinen pixelgenau, abgelegte Dateien werden hochgeladen, ⇧F10 öffnet ein zweites Fenster, das den Verlauf mitnimmt und mit Mausrad oder <kbd>⇧</kbd>+<kbd>Bild↑</kbd> blättert. Startet im Vollbild (<kbd>F11</kbd> schaltet um; maximiert oder „wie zuletzt“ in den Einstellungen), Schriftgröße und Fensterposition werden gemerkt. Im Terminal gestartet läuft es wie bisher im Terminal.</p></div>
+    <div class="card"><h3>Wer auf dich wartet</h3><p>Ein Tab, der auf ein Passwort, eine <code>[j/N]</code>-Frage oder im Pager wartet, bekommt ein <code>?</code>; <kbd>Alt</kbd>+<kbd>G</kbd> springt hin. KI-Coding-Agenten im Tab (Claude Code, Codex, Gemini CLI und mehr) werden erkannt: arbeitet, wartet auf deine Freigabe (<code>◆</code> plus Desktop-Meldung) oder fertig. Ein Klick auf die Desktop-Meldung öffnet den richtigen Tab.</p></div>
+    <div class="card"><h3>Sitzungen laufen weiter</h3><p>Mit dem Hintergrunddienst überleben Sitzungen das Schließen des Terminalfensters; <code>sshtermy</code> hängt sich wieder an, <kbd>Strg</kbd>+<kbd>Q</kbd> → <kbd>a</kbd> koppelt ab. Beim Start bietet sshTermy an, die Tabs und die geteilte Ansicht vom letzten Mal wieder zu öffnen.</p></div>
+    <div class="card"><h3>Panels, wo du sie willst</h3><p>Das Seitenpanel steht rechts, links oder unten, den Rand ziehst du mit der Maus breiter. In breiten Fenstern stehen F5 und der Log-Blick neben dem Terminal, du tippst weiter, während du Dateien ansiehst. In der geteilten Ansicht zeigt jeder Bereich Ordner, letzten Befehl und Last.</p></div>
+    <div class="card"><h3>Weniger tippen, schneller finden</h3><p>Der Ghost-Text schlägt zuerst Befehle aus deinem Verlauf vor, sofort und ohne KI. <kbd>Alt</kbd>+<kbd>Y</kbd> zeigt, was du zuletzt kopiert hast, und fügt es wieder ein. Rechtsklick auf eine Markierung sucht eine Fehlermeldung im Web, F5 öffnet im Ordner, in dem du gerade bist, und der KI-Status zeigt Tokens und Kosten für heute, 7 und 30 Tage.</p></div>
+    <div class="card"><h3>Tastatur &amp; Kopfzeile</h3><p><kbd>Alt</kbd>+<kbd>C</kbd> markiert per Tastatur (<kbd>v</kbd>, <kbd>V</kbd> Zeilen, <kbd>y</kbd> kopiert), <kbd>Alt</kbd>+<kbd>X</kbd> leert Bildschirm und Verlauf, deine Eingabe bleibt. Die Kopfzeile zeigt auf Wunsch die Uhrzeit oder die Ausgabe eines eigenen Befehls (Git-Zweig, Akku …). KI-Clients können per MCP Tabs öffnen, tippen und warten, mit deiner Bestätigung.</p></div>
+    <div class="card"><h3>Befehle als Blöcke</h3><p><kbd>Alt</kbd>+<kbd>Bild↑</kbd>/<kbd>Bild↓</kbd> springt im Verlauf von Befehl zu Befehl. <kbd>Alt</kbd>+<kbd>O</kbd> listet die Befehle des Tabs mit Uhrzeit, Dauer und Ergebnis: genau eine Ausgabe kopieren, an die KI geben oder groß lesen.</p></div>
+    <div class="card"><h3>Echtes Terminal</h3><p>xterm-256color, Truecolor, vim, htop und tmux, Verlauf zum Zurückblättern (Mausrad oder <kbd>⇧</kbd>+<kbd>Bild↑</kbd>), Tabs, geteilte Ansicht, Suche.</p></div>
+    <div class="card"><h3>Auto-Reconnect</h3><p>Reißt WLAN oder VPN ab, kommt die Sitzung von selbst zurück, mit Tunneln und tmux/screen. Nach Ruhezustand oder Netzwechsel wird jede Leitung binnen Sekunden geprüft.</p></div>
+    <div class="card"><h3>Farbregeln</h3><p>Fehler rot, Warnungen gelb, IP blau, MAC lila, Switch-Syslog nach Schwere; eigene Regeln, mit <code>!</code> meldet sich ein verdeckter Tab.</p></div>
+    <div class="card"><h3>Bilder im Terminal</h3><p>Sixel, kitty-Grafik und iTerm2-Bilder (img2sixel, icat, viu, imgcat) als farbige Halbblöcke, in jedem Terminal; in kitty, Ghostty und im eigenen Fenster pixelgenau.</p></div>
+    <div class="card"><h3>Geteilte Ansicht &amp; Tabs</h3><p>Sieben Aufteilungen mit bis zu sechs Sitzungen, Zoom, Tauschen, Eingabe an alle; Tab-Leiste mit <code>+</code> (öffnet den Verbindungs-Manager, die gewählte Verbindung startet in einem zusätzlichen Tab), <code>×</code>, Rechtsklick-Menü und Tab-Liste (<kbd>Alt</kbd>+<kbd>T</kbd>); Tabs mit der Maus ziehen, <kbd>Alt</kbd>+<kbd>S</kbd> sucht in allen Tabs. Jeder Tab bekommt einen farbigen Rahmen, sein Name dieselbe Farbe; Rot nur für produktiv. Aktiver Tab und Bereich sind in ihrer Farbe gefüllt und mit ▶ markiert.</p></div>
+    <div class="card"><h3>Sammeländerung</h3><p>Im Manager mehrere Verbindungen markieren (<kbd>Leertaste</kbd>, <kbd>*</kbd> für alle Treffer) und in einem Schritt Tags, Benutzer, Schutz oder Farbe ändern, verschieben oder löschen.</p></div>
+    <div class="card"><h3>Notiz, Startbefehl, Wake-on-LAN</h3><p>Je Verbindung eine Notiz nur für dich, ein Befehl, der nach dem Anmelden getippt wird, und Aufwecken ausgeschalteter Rechner; die MAC-Adresse merkt sich sshTermy selbst.</p></div>
+    <div class="card"><h3>Telnet &amp; Konsole</h3><p>Telnet und USB-Konsolenkabel (z. B. Aruba-Switches), Kabel wird automatisch gewählt, Anmeldung getippt.</p></div>
+    <div class="card"><h3>PowerShell-Fernzugriff</h3><p>Auf Windows-Server einloggen wie mit <code>Enter-PSSession</code> über WinRM (NTLM oder Kerberos, verschlüsselt, oder HTTPS), mit Verlauf, Tab-Ergänzung vom Server und KI, die PowerShell spricht.</p></div>
+    <div class="card"><h3>Lokale Shell</h3><p>Deine eigene PowerShell, cmd, zsh oder bash als Tab (<kbd>Alt</kbd>+<kbd>L</kbd>), mit KI, Agent- und Plan-Modus, geteilter Ansicht und Protokoll; der Gefahren-Check gilt auch hier.</p></div>
+    <div class="card"><h3>Profi-SSH</h3><p>Agent-Weiterleitung, X11-Weiterleitung, FIDO2-Sicherheitsschlüssel, Kerberos/GSSAPI, SSH-Zertifikate, feste tmux/screen-Sitzungen. Quantensicherer Schlüsseltausch (ML-KEM), wo der Server ihn kann, und ein deutlicher Hinweis, wenn ein altes Gerät nur SHA-1/CBC spricht.</p></div>
+    <div class="card"><h3>Aussehen &amp; Tasten</h3><p>26 Themes mit Live-Vorschau, von Polarnacht, Abendrot und Tusche bis Papier und Minze, dazu Hochkontrast und Farbenblind, eigene Farben, vier Symbol-Stile, jede Taste frei belegbar. Serverausgabe bleibt in jedem Theme lesbar: Farben von Programmen, die das Theme nicht kennen, werden auf guten Kontrast angehoben.</p></div>
+    <div class="card"><h3>Aufgeräumter Bildschirm</h3><p>Eine Kopfzeile mit Tabs links und dem Zustand der Sitzung rechts, rote Marke ▲ PRODUKTIV statt roter Fläche, unten eine F-Tasten-Leiste (<code>1Hilfe 2Ziel 3KI …</code>). Der Manager zeigt rechts nur, was zur Auswahl gehört, ein Ordner seinen Inhalt mit Status. Die Hilfe (<kbd>F1</kbd>) hat Reiter, tippen filtert.</p></div>
+    <div class="card"><h3>Lebendige Oberfläche</h3><p>Verbindungsaufbau als Karte mit Schritten und Lichtlauf (was du dabei tippst, wartet auf den Prompt), Tabs leuchten bei Erfolg und Fehler auf, Karte beim Überfahren eines Tabs, atmende Online-Punkte (geprüft wird nur, was sichtbar ist) und Lastbalken, KI-Antwort tippt sich, Palette mit leuchtenden Treffern, Latenzkurve in der Kopfzeile, gleitender Rahmen in der geteilten Ansicht, Dialoge mit Schatten und wahlweise runden Ecken. Voll, dezent oder aus.</p></div>
+    <div class="card"><h3>Barrierearm &amp; Support</h3><p>Barrierearmer Modus ohne Animationen, mit Formen statt nur Farben. Debug-Protokoll für Fehlerberichte (<code>--debug</code>), bereinigt von Hosts, IPs und Passwörtern. Adaptive Bildrate bei Ausgabeflut, dazu eine Leistungsanzeige in der Palette, die die Zeichenzeit in Worten bewertet.</p></div>
+    </div>
+    <h3 id="all-ai"><span class="ic">✦</span> KI-Copilot</h3>
+    <div class="features">
+    <div class="card"><h3>Ziel-Modus im Einsatz</h3><p><kbd>?</kbd> gibt der KI mitten im Ziel eine Anweisung, <kbd>⇧S</kbd> überspringt einen Schritt mit Grund. Fragt ein Befehl <code>[Y/n]</code> oder wartet ein Pager, zeigt das Panel Antwort-Knöpfe. Dateien, die ein Schritt ändert, werden vorher gesichert, <kbd>u</kbd> holt alle zurück; <kbd>f</kbd> startet ein Folgeziel, frühere Ziele stehen im Verlauf. Nach einem Verbindungsabbruch setzt <kbd>⏎</kbd> fort, und der Tab zeigt, wenn ein Ziel auf dich wartet.</p></div>
+    <div class="card"><h3>Aufgaben, Diff und Gegenprüfung</h3><p>Offene Arbeiten je Verbindung oder Ordner mit Fälligkeit (<kbd>u</kbd> im Manager, <kbd>Alt</kbd>+<kbd>A</kbd>): <kbd>⏎</kbd> startet eine Aufgabe als Ziel, danach steht sie zur Abnahme. Nach jedem Ziel prüft eine zweite KI nur lesend nach, ob es wirklich erreicht ist, und <kbd>d</kbd> zeigt jede geänderte Datei als Diff.</p></div>
+    <div class="card"><h3>KI-Befehle auf dem Host geprüft</h3><p>Bevor ein Befehl aus einer Karte eingefügt oder ausgeführt wird, fragt sshTermy beim echten Host nach, ob es das Programm gibt und jede Option in dessen man-Seite oder <code>--help</code> steht. macOS-Formen unter Linux, der falsche Paketmanager und alles, was die Frage ausschließt („ohne lsof“), fallen auf, bekannte Ausrutscher werden repariert (<code>grep</code> auf einen Ordner bekommt <code>-r</code>). Was offen bleibt, ist als <em>unbestätigt</em> markiert und die KI versucht es noch einmal. Idee aus lxask.</p></div>
+    <div class="card"><h3>Satz → Befehl, erklären ohne KI</h3><p>Am Prompt in eigenen Worten tippen, was du willst, <kbd>Strg</kbd>+<kbd>G</kbd> macht daraus einen geprüften Befehl. <kbd>Alt</kbd>+<kbd>H</kbd> erklärt den getippten oder letzten Befehl Teil für Teil aus der man-Seite des Hosts, offline und ganz ohne KI.</p></div>
+    <div class="card"><h3>Kleine Offline-KI, oder gar keine</h3><p>Keine KI? Dann sind alle KI-Funktionen ausgeblendet, Prüfen und Erklären gehen trotzdem. Ein Knopf lädt eine kleine Offline-KI herunter (lxask-Modell über llama.cpp, etwa 1 GB, Windows, macOS, Linux, jede Datei mit SHA-256 geprüft), die einspringt, wenn sonst keine antwortet; Ziel-, Agent- und Plan-Modus bleiben ausgeblendet, bis eine größere KI angebunden ist.</p></div>
+    <div class="card"><h3>KI-Begleiter</h3><p>Liest mit und kommentiert von selbst: leise (Fehler, riskante Zeilen vor Enter, Wiederholungen), gesprächig (jeder Befehl) oder Coach (erkennt dein Ziel, Rückblick mit Runbook). Eigene KI-Server, auch extern, lassen sich eintragen. Schlägt ein Befehl aus einer Antwortkarte fehl, zeigt die Karte den Fehler und einen korrigierten Befehl; <kbd>u</kbd> übernimmt ihn und korrigiert denselben Fehler in den anderen Karten mit.</p></div>
+    <div class="card"><h3>Vorgang über Fenster</h3><p><kbd>Alt</kbd>+<kbd>V</kbd> verbindet die Fenster einer Arbeit (Webserver, Datenbank, Switch). Die KI sieht alle und sagt bei jedem Schritt, in welches Fenster er gehört; Fahrplan Fenster für Fenster mit übernommenen Werten, Plan in Bahnen, Rückblick als Change-Protokoll. Vor dem Vortippen prüft sshTermy das Zielfenster (Host-Key, Prompt, System) und fügt nichts ein, wenn es nicht passt.</p></div>
+    <div class="card"><h3>Agent- &amp; Plan-Modus</h3><p>Die KI arbeitet selbstständig aufs Ziel hin, legt Skripte an und führt sie aus; drei Stufen, gefährliche Schritte warten immer auf dich. Erst planen: den ganzen Plan prüfen und freigeben.</p></div>
+    </div>
+    <h3 id="all-safe"><span class="ic">!</span> Sicherheit</h3>
+    <div class="features">
+    <div class="card"><h3>Passwortmanager</h3><p>Passwörter und 2FA-Codes aus 1Password, Bitwarden, KeePassXC oder <code>pass</code>; gespeichert wird nur der Verweis.</p></div>
+    <div class="card"><h3>Gefahr-Regeln</h3><p>Feste Regeln markieren riskante Befehle rot; sie brauchen zweimal Enter, auch beim Einfügen. Jede Verbindung gilt als produktiv: Enter gedrückt halten, bis der Balken voll ist. Den Schutz nur einzeln abschalten, für Test- und Laborsysteme. Es gelten immer alle Regelgruppen, ein falsch erkannter Switch versteckt kein <code>erase</code>.</p></div>
+    <div class="card"><h3>Bildschirmsperre</h3><p>Sofort sperren oder nach 5 bis 60 Minuten Leerlauf; Sitzungen laufen hinter der Sperre weiter. Master-Passwort und Windows-Anmeldung jederzeit änderbar.</p></div>
+    <div class="card"><h3>Audit-Protokoll</h3><p>Wer hat wann wo was getan: Verbindungen, Befehle, Übertragungen, Config-Sicherungen. Signiert und verkettet, geänderte oder gelöschte Zeilen fallen auf.</p></div>
+    <div class="card"><h3>KI-Datenschutz</h3><p>Alle Anbieter, nur lokale KI im eigenen Netz oder gar keine KI, global oder pro Verbindung per Tag. Genau sehen, was zuletzt hinausging.</p></div>
+    </div>
+    <h3 id="all-net"><span class="ic">⇄</span> Switches & Netzwerk</h3>
+    <div class="features">
+    <div class="card"><h3>Broadcast</h3><p>Ein Befehl oder Runbook parallel auf einer ganzen Gruppe, je Host eine Kachel: grün wenn fertig, rot bei Fehler, pulsierend solange er läuft. Änderungen laufen erst auf einem Host als Probelauf und stoppen nach 3 Fehlern.</p></div>
+    <div class="card"><h3>Gerät finden</h3><p>MAC oder IP rein, Switch, Port und VLAN raus: sshTermy liest MAC-, ARP- und LLDP-Tabellen aller Switches, oder nur die eines Ordners, wenn du mehrere Netze betreust.</p></div>
+    <div class="card"><h3>Netzwerk-Topologie</h3><p>LLDP/CDP-Nachbarn werden zum Bild mit Kästen, Linien und Ports, dazu ein Mermaid-Diagramm; Config-Regeln prüfen jede Sicherung.</p></div>
+    <div class="card"><h3>Zeitpläne</h3><p>Broadcast oder Runbook zu einer Uhrzeit auf einem Ordner, z. B. nachts <code>show running-config</code> auf allen Switches. Neue Hosts im Ordner laufen erst nach deiner Bestätigung mit.</p></div>
+    <div class="card"><h3>Netzwerk-Scan</h3><p>SSH-Geräte in einem Subnetz finden und als Verbindungen anlegen.</p></div>
+    <div class="card"><h3>Systemprofil</h3><p>Kennt Linux-Distributionen, macOS, Windows und Netzwerk-Dialekte (Aruba, Cisco, Juniper, MikroTik, FortiGate, UniFi …), damit die KI passende Befehle vorschlägt.</p></div>
+    <div class="card"><h3>Befehlssätze</h3><p>48 Befehlssätze eingebaut (Cisco, Arista, Aruba, Comware, Huawei, Dell, Extreme, Ruckus, Palo Alto, Sophos, FortiGate, pfSense, Proxmox …). Eigene als YAML ergänzen, am Gerät testen oder von der KI entwerfen lassen, per Sync auf allen Rechnern; eigene und Team-Sätze können die eingebauten Sicherheitsregeln nie abschwächen.</p></div>
+    </div>
+    <h3 id="all-ops"><span class="ic">◎</span> Server pflegen</h3>
+    <div class="features">
+    <div class="card"><h3>Dateien (F5)</h3><p>SFTP über dieselbe Verbindung: links lokal, rechts der Server. <kbd>e</kbd> öffnet eine Server-Datei in VS Code, Notepad++ oder TextEdit, Speichern lädt sie zurück. Beim Kopieren: Prozent, MB/s, Restzeit und Tempo-Kurve. „Permission denied“? sshTermy bietet an, mit sudo zu wiederholen (<kbd>j</kbd> zweimal).</p></div>
+    <div class="card"><h3>Dateien wie im Dateimanager</h3><p>In F5: <kbd>d</kbd> legt in den Papierkorb, <kbd>Strg</kbd>+<kbd>Z</kbd> holt zurück. <kbd>z</kbd>/<kbd>u</kbd> packt und entpackt direkt auf dem Server, <kbd>/</kbd> findet Dateien unscharf im ganzen Ordnerbaum, <kbd>i</kbd> zeigt die Platzfresser, <kbd>⇧I</kbd> doppelte Dateien. <kbd>g</kbd> öffnet Orte mit gemerkten Ordnern und Laufwerken, <kbd>x</kbd>/<kbd>p</kbd> verschiebt, <kbd>⇧F2</kbd> benennt viele Dateien im eigenen Editor um. Die Vorschau zeigt Ordner, Archive, Bildgrößen, Markdown und CSV als Tabelle.</p></div>
+    <div class="card"><h3>Dateien mit der Maus</h3><p>Doppelklick auf eine Datei zeigt sie direkt in sshTermy: Farben, Suche, markieren und kopieren, mitlesen wie <code>tail -f</code>. Bilder und PDFs öffnen sich mit dem Standardprogramm. Ein Einfachklick zeigt eine Vorschau, Rechtsklick ein Menü mit Umbenennen, Rechten, Pfad kopieren und <code>cd</code> hierhin. Klickbarer Pfad, sortierbare Spalten, Strg/Umschalt+Klick markiert. Programme vom Server fragen vor dem Start.</p></div>
+    <div class="card"><h3>Alles mit der Maus</h3><p>Jedes Menü öffnet und schließt per Klick: <kbd>Esc</kbd> bleibt in der Fußzeile klickbar, das Mausrad blättert in allen Listen und Ergebnisfenstern, die Zurück-Taste der Maus wirkt wie <kbd>Esc</kbd>, Rechtsklick ins Leere führt eine Ebene zurück, in der Hilfe wechseln Reiter per Klick. Im Manager bietet ein Rechtsklick auf die freie Fläche neue Verbindung, neuen Ordner, Import, Scan und Tag-Filter.</p></div>
+    <div class="card"><h3>Container</h3><p>Docker, Podman und Kubernetes-Pods in einer Liste: Shell im Container, Logs live, KI-Auswertung der Logs.</p></div>
+    <div class="card"><h3>Host-Übersicht (F6)</h3><p>CPU, Last, RAM, alle Platten und Updates bei Servern, Live-Graphen aus Braille-Punkten über 5 min oder 1 h mit Top-Prozessen; Firmware, Ports und VLANs bei über 35 Switch-, Router- und Firewall-Systemen, mit Konfig-Sicherung und Diff.</p></div>
+    <div class="card"><h3>Tunnel</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) und Webdienste mit einem Klick.</p></div>
+    <div class="card"><h3>docker exec ohne -it</h3><p><code>docker exec gitea vi app.ini</code> endete ohne Terminal sofort. Beim Enter ergänzt sshTermy das fehlende <code>-it</code> (auch podman, <code>docker run</code>, <code>kubectl exec</code>); das nächste Enter führt aus.</p></div>
+    <div class="card"><h3>Sitzungsprotokoll</h3><p>Verschlüsselt, durchsuchbar, mit KI-Zusammenfassung, Markdown-Export und KI-Änderungsbericht (<kbd>b</kbd>) für Ticket oder Doku. Ein Aktivitätskalender zeigt, an welchen Tagen und zu welcher Uhrzeit gearbeitet wurde.</p></div>
+    <div class="card"><h3>KI-Logdiagnose</h3><p>Markierung oder die letzten 400 Zeilen (journalctl, <code>show logging</code>): Lage, Auffälliges mit Zeitpunkt, Ursache, Prüfbefehle.</p></div>
+    <div class="card"><h3>Log-Blick</h3><p><kbd>Alt</kbd>+<kbd>E</kbd> liest die Logs des Systems, auf dem du gerade bist (Linux, Windows, Switches, Firewalls), nur lesend, und zeigt Muster statt Zeilen: was seit dem letzten Blick neu ist, eine Zeitleiste mit Neustarts, Updates und deinen Befehlen, Rauschen pro Host oder Ordner ausblenden und ein KI-Lagebericht nur aus den verdichteten Mustern.</p></div>
+    <div class="card"><h3>Logwache &amp; Ordner-Scan</h3><p>Folgt im Hintergrund den Logs offener Tabs und meldet nur neue oder kritische Muster; empfängt Syslog von Switches und Firewalls. Der Ordner-Scan prüft alle Hosts eines Ordners auf einmal (auch nachts als Zeitplan) und zeigt, was mehrere gemeinsam haben. <kbd>s</kbd> im Log-Blick eines Switches richtet Syslog an sshTermy ein. Syslog von Absendern ohne gespeicherte Verbindung wird verworfen.</p></div>
+    <div class="card"><h3>Sicherheitscheck (OSV)</h3><p><kbd>F6</kbd> → <kbd>s</kbd> gleicht die installierten Pakete eines Linux-Servers (und seiner laufenden Container) mit der öffentlichen OSV-Datenbank ab. Zeigt nur, was zählt: Bewertung, Reparatur vorhanden, aktiv ausgenutzt (CISA KEV), von einem Dienst mit offenem Port genutzt. <kbd>u</kbd> fügt den Update-Befehl ein, <kbd>k</kbd> lässt die KI erklären. Online oder ganz offline, für einen ganzen Ordner oder wöchentlich als Zeitplan. Den Rechner verlassen nur Paketnamen und Versionen.</p></div>
+    <div class="card"><h3>Firmware-Hinweise &amp; Patch-Runde</h3><p><kbd>F6</kbd> → <kbd>s</kbd> am Switch oder an der Firewall prüft die Firmware gegen die NVD (FortiOS, Cisco, Junos, RouterOS, Aruba, PAN-OS …): aktiv ausgenutzt, behoben ab welcher Version. Die Patch-Runde spielt Updates gestaffelt über einen Ordner ein: erst ein Host, nach <kbd>w</kbd> der Rest, mit Vergleich von Diensten, Ports und Logs vorher/nachher und Neustarts einzeln.</p></div>
+    <div class="card"><h3>Härtungs-Check &amp; Schlüssel-Inventar</h3><p><kbd>F6</kbd> → <kbd>h</kbd> prüft einen Server nur lesend: root- und Passwort-Login, Firewall, Ports offen für alle (Redis, Docker-API …), automatische Updates, ablaufende TLS-Zertifikate, mit Vorschlag je Punkt. <kbd>F6</kbd> → <kbd>a</kbd> oder die Palette zeigt, welche SSH-Schlüssel in welchen <code>authorized_keys</code> eines Ordners stehen, und entfernt den Schlüssel eines ausgeschiedenen Kollegen Host für Host, mit Sicherungskopie.</p></div>
+    <div class="card"><h3>Inventar, Änderungen &amp; Platten-Vorwarnung</h3><p><kbd>F6</kbd> → <kbd>i</kbd> erfasst Pakete, Benutzer, Admins, Cron, lauschende Ports, Dienste und Kernel, nur lesend, und zeigt, was sich seit dem letzten Mal geändert hat: ein neuer Admin oder Port steht oben. Ordner-Lauf über die Palette, CSV-Export fürs Audit. Dazu zeichnet F6 kleine Kurven für CPU, RAM und Platten über 24 Stunden (<kbd>w</kbd>: 7 Tage) und warnt „Platte voll in ~N Tagen“.</p></div>
+    <div class="card"><h3>Aufnahmen abspielen</h3><p>Palette › <em>Aufnahme abspielen</em> spielt <code>.cast</code>-Dateien direkt in sshTermy: Pause, Tempo bis 16×, spulen, lange Pausen kürzen, und <kbd>/</kbd> springt zu der Stelle, an der ein Text auf dem Bildschirm stand, etwa die erste Fehlermeldung.</p></div>
+    <div class="card"><h3>Dateien im Terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) auch durch <code>sudo su</code> und mehrere Sprünge, Zwischenablage vom Server per OSC 52.</p></div>
+    </div>
+    <h3 id="all-team"><span class="ic">⇅</span> Team & unterwegs</h3>
+    <div class="features">
+    <div class="card"><h3>Aufs Handy, wenn du weg bist</h3><p>Langer Befehl fertig, Zeitplan gelaufen, ein Agent wartet auf Freigabe: Bist du nicht am Rechner, kommt die Meldung über ntfy, Gotify oder einen Webhook aufs Handy, ohne Geheimnisse. Ein Zeitplan kann die KI nachts nur lesend prüfen lassen („läuft nginx, ist eine Platte voll?“). Wieder geöffnete Tabs zeigen gedämpft die Ausgabe vom letzten Mal.</p></div>
+    <div class="card"><h3>Live teilen</h3><p>Ein kurzer Code wie <code>7-taube-kompass-ofen</code> genügt dem Kollegen (auf Wunsch als fertige E-Mail): im selben Netz ohne Vermittler, sonst über deinen. Er klopft an, ihr vergleicht drei Prüfwörter, du lässt ihn herein. Ohne sshTermy schaut er im Browser zu, auch am Handy per QR-Code. Endet von selbst, pausiert bei Passwortabfragen, Mitschreiben nur auf Bitte.</p></div>
+    <div class="card"><h3>Sync</h3><p>Ende-zu-Ende-verschlüsselt über OneDrive, Dropbox, iCloud, Syncthing oder WebDAV (Synology, Nextcloud). Tasten, Shell und Schnittstelle gehen auch pro Rechner, Zeitpläne laufen nur auf ihrem Rechner, Favoriten zählen über alle.</p></div>
+    <div class="card"><h3>Team-Freigabe</h3><p>Verschlüsselte <code>.sshteam</code>-Pakete und Team-Ordner, die die Verbindungen aller aktuell halten, ohne Passwörter.</p></div>
+    <div class="card"><h3>MCP-Server</h3><p>Claude und andere KI-Clients nutzen deine Verbindungen über <code>sshtermy mcp</code>: standardmäßig nur lesend, alles andere erst nach deiner Bestätigung.</p></div>
+    <div class="card"><h3>Umzug auf neuen Rechner</h3><p>Eine verschlüsselte Datei enthält alles: Verbindungen, Schlüssel, Protokolle, Switch-Sicherungen und Einstellungen. Auf dem neuen Rechner einspielen, der alte Stand bleibt als Kopie.</p></div>
+    </div>
+  </details>
+</section>
+
+<section id="rundgang">
+  <h2>Rundgang</h2>
+  <p class="sub">So sieht die Arbeit damit aus.</p>
+  <div class="tour">
+    <ol role="tablist">
+      <li><button type="button" role="tab" data-i="0" class="on">Entsperren, Host wählen, los</button></li>
+      <li><button type="button" role="tab" data-i="1">Ghost-Text und Fehler erklärt</button></li>
+      <li><button type="button" role="tab" data-i="2">Eine Palette für alles</button></li>
+      <li><button type="button" role="tab" data-i="3">Agent-Modus: das Ziel selbstständig erreichen</button></li>
+      <li><button type="button" role="tab" data-i="4">KI-Begleiter: liest mit und meldet sich</button></li>
+      <li><button type="button" role="tab" data-i="5">Geteilte Ansicht, Tabs und Arbeitsplätze</button></li>
+    </ol>
+    <div class="stage">
+      <figure data-i="0"><img src="../gifs/start-de.gif" width="962" height="594" alt="Startanimation, Entsperren mit dem Master-Passwort, Verbinden mit web-01" loading="lazy"><figcaption>Verbindungen, Passwörter und Schlüssel liegen in einem verschlüsselten Speicher (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI). Der Manager zeigt Ordner, Tags und Details, Enter verbindet. Die Details zeigen sofort Last, RAM und Platte des Servers.</figcaption></figure>
+      <figure data-i="1" hidden><img src="../gifs/ghost-de.gif" width="962" height="594" alt="Ghost-Text ergänzt systemctl status nginx, der Befehl schlägt fehl, Alt+0 erklärt den Grund und fügt den Fix ein" loading="lazy"><figcaption>Beim Tippen ergänzt die KI die Zeile in Grau, Tab übernimmt. Nach jedem Befehl gibt es Folgebefehle (Alt+1…4). Schlägt ein Befehl fehl, fragt Alt+0 die KI nach dem Grund, mit der Ausgabe als Kontext, und 1…9 fügt einen vorgeschlagenen Fix ein.</figcaption></figure>
+      <figure data-i="2" hidden><img src="../gifs/palette-de.gif" width="962" height="594" alt="Die Befehlspalette filtert Aktionen, dann geht eine Frage mit Terminal-Kontext an die KI" loading="lazy"><figcaption><kbd>Strg</kbd>+<kbd>Leertaste</kbd> öffnet die Befehlspalette: oben Häufiges und die letzten Verbindungen (mit Online-Punkt), alles andere in Ordnern (KI, Sitzung, Suchen &amp; Logs, Tabs &amp; Ansicht, Netzwerk, Team …), Tippen findet alles auf einmal. Freier Text wird ein Ziel (Enter) oder eine Frage an die KI (Tab). Rechts erklärt eine Detailspalte den gewählten Eintrag mit Vorschau; die Einstellungen haben Reiter. Die Suche verzeiht Tippfehler und versteht Alltagswörter (deutsch und englisch), zeigt zu jedem Treffer, wo er liegt (<kbd>→</kbd> springt hin), findet Tasten („alt+e“), lernt deine häufigen Aktionen, heftet mit <kbd>*</kbd> an, markiert neue Einträge 14 Tage mit NEU, listet mit „!“ geänderte Einstellungen (<kbd>Entf</kbd> setzt zurück) und fragt die KI „Wo finde ich …?“, wenn nichts passt.</figcaption></figure>
+      <figure data-i="3" hidden><img src="../bilder/16-agent.png" alt="Agent-Modus komprimiert alte Logs: rechts der Plan, ein Skript lief als Probelauf" loading="lazy"><figcaption>Im Ziel-Modus (<kbd>F2</kbd>) schaltet <kbd>Tab</kbd> auf den Agenten. Er führt Befehle aus, liest die Ausgabe, legt Skripte per SFTP an und startet sie, zuerst als Probelauf. Du wählst die Stufe: <em>Vorsichtig</em> (Standard, nur Lesendes allein), <em>Normal</em> (als root fragt jede Änderung) oder <em>Voll</em> (auch sudo). Gefährliche Befehle und alles, was Geheimnisse liest, warten immer auf dich, <kbd>Esc</kbd> hält an, <kbd>?</kbd> gibt eine Anweisung. Am Ende steht die vollständige Zusammenfassung: blättern, mit <kbd>c</kbd> kopieren oder mit <kbd>l</kbd> ganz lesen. Jeder Text im Panel, auch Fehlermeldungen, lässt sich mit der Maus markieren und wird gleich kopiert. Mit <em>Erst planen</em> sieht er sich nur lesend um, schreibt einen vollständigen Plan, und du streichst oder änderst Schritte, bevor du mit <kbd>⏎</kbd> freigibst.</figcaption></figure>
+      <figure data-i="4" hidden><img src="../bilder/20-begleiter.png" alt="Der Begleiter hat die Absicht „HTTPS für shop.example.de einrichten“ erkannt und bietet die fehlenden Schritte, Plan oder Agent an" loading="lazy"><figcaption><kbd>Alt</kbd>+<kbd>K</kbd> wählt die Stufe. <em>Leise</em> meldet sich nur, wenn ein Befehl fehlschlägt, eine getippte Zeile vor Enter riskant ist (<kbd>Alt</kbd>+<kbd>1</kbd> setzt die sicherere Variante ein) oder sich ein Befehl wiederholt. <em>Gesprächig</em> kommentiert jeden Befehl in der Leiste (<kbd>Alt</kbd>+<kbd>J</kbd>). <em>Coach</em> erkennt, worauf du hinarbeitest, gibt den Rest an Plan-Modus oder Agent und blickt beim Schließen des Tabs zurück. Grenzen pro Stunde und Tag, nichts bei Passwortabfragen, mit eigener KI lassen sich die Filter abschalten.</figcaption></figure>
+      <figure data-i="5" hidden><img src="../bilder/17-geteilt.png" alt="Geteilte Ansicht: links groß ein Produktiv-Host, rechts Datenbank und Switch" loading="lazy"><figcaption><kbd>Strg</kbd>+<kbd>T</kbd> zeigt bis zu sechs Sitzungen in sieben Aufteilungen. Trennlinien mit der Maus ziehen, einen Bereich mit <kbd>Alt</kbd>+<kbd>Z</kbd> zoomen, Bereiche per Titel tauschen, und <kbd>Alt</kbd>+<kbd>I</kbd> tippt in alle gleichzeitig. <kbd>w</kbd> im Manager speichert die ganze Anordnung als Arbeitsplatz.</figcaption></figure>
+    </div>
+  </div>
 </section>
 
 <section id="installieren">
   <h2>Installieren</h2>
+
   <p>Wähle dein System. Jeder Weg installiert dasselbe Release von GitHub.</p>
   <div class="os">
     <div class="card">
@@ -76,137 +254,10 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <p>Danach <code>sshtermy</code> eingeben. Beim ersten Start legst du ein Master-Passwort für deinen verschlüsselten Speicher fest.</p>
 </section>
 
-<section id="rundgang">
-  <h2>Rundgang</h2>
-  <div class="demo">
-    <div class="text">
-      <h3>Entsperren, Host wählen, los</h3>
-      <p>Verbindungen, Passwörter und Schlüssel liegen in einem verschlüsselten Speicher (AES-256-GCM, Argon2id, unter Windows zusätzlich DPAPI). Der Manager zeigt Ordner, Tags und Details, Enter verbindet. Die Details zeigen sofort Last, RAM und Platte des Servers.</p>
-    </div>
-    <figure><img src="../gifs/start-de.gif" width="962" height="594" alt="Startanimation, Entsperren mit dem Master-Passwort, Verbinden mit web-01" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>Ghost-Text und Fehler erklärt</h3>
-      <p>Beim Tippen ergänzt die KI die Zeile in Grau, Tab übernimmt. Nach jedem Befehl gibt es Folgebefehle (Alt+1…4). Schlägt ein Befehl fehl, fragt Alt+0 die KI nach dem Grund, mit der Ausgabe als Kontext, und 1…9 fügt einen vorgeschlagenen Fix ein.</p>
-    </div>
-    <figure><img src="../gifs/ghost-de.gif" width="962" height="594" alt="Ghost-Text ergänzt systemctl status nginx, der Befehl schlägt fehl, Alt+0 erklärt den Grund und fügt den Fix ein" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>Eine Palette für alles</h3>
-      <p><kbd>Strg</kbd>+<kbd>Leertaste</kbd> öffnet die Befehlspalette: oben Häufiges und die letzten Verbindungen (mit Online-Punkt), alles andere in Ordnern (KI, Sitzung, Suchen &amp; Logs, Tabs &amp; Ansicht, Netzwerk, Team …), Tippen findet alles auf einmal. Freier Text wird ein Ziel (Enter) oder eine Frage an die KI (Tab). Rechts erklärt eine Detailspalte den gewählten Eintrag mit Vorschau; die Einstellungen haben Reiter. Die Suche verzeiht Tippfehler und versteht Alltagswörter (deutsch und englisch), zeigt zu jedem Treffer, wo er liegt (<kbd>→</kbd> springt hin), findet Tasten („alt+e“), lernt deine häufigen Aktionen, heftet mit <kbd>*</kbd> an, markiert neue Einträge 14 Tage mit NEU, listet mit „!“ geänderte Einstellungen (<kbd>Entf</kbd> setzt zurück) und fragt die KI „Wo finde ich …?“, wenn nichts passt.</p>
-    </div>
-    <figure><img src="../gifs/palette-de.gif" width="962" height="594" alt="Die Befehlspalette filtert Aktionen, dann geht eine Frage mit Terminal-Kontext an die KI" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>Agent-Modus: das Ziel selbstständig erreichen</h3>
-      <p>Im Ziel-Modus (<kbd>F2</kbd>) schaltet <kbd>Tab</kbd> auf den Agenten. Er führt Befehle aus, liest die Ausgabe, legt Skripte per SFTP an und startet sie, zuerst als Probelauf. Du wählst die Stufe: <em>Vorsichtig</em> (Standard, nur Lesendes allein), <em>Normal</em> (als root fragt jede Änderung) oder <em>Voll</em> (auch sudo). Gefährliche Befehle und alles, was Geheimnisse liest, warten immer auf dich, <kbd>Esc</kbd> hält an, <kbd>?</kbd> gibt eine Anweisung. Am Ende steht die vollständige Zusammenfassung: blättern, mit <kbd>c</kbd> kopieren oder mit <kbd>l</kbd> ganz lesen. Jeder Text im Panel, auch Fehlermeldungen, lässt sich mit der Maus markieren und wird gleich kopiert. Mit <em>Erst planen</em> sieht er sich nur lesend um, schreibt einen vollständigen Plan, und du streichst oder änderst Schritte, bevor du mit <kbd>⏎</kbd> freigibst.</p>
-    </div>
-    <figure><img src="../bilder/16-agent.png" alt="Agent-Modus komprimiert alte Logs: rechts der Plan, ein Skript lief als Probelauf" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>KI-Begleiter: liest mit und meldet sich</h3>
-      <p><kbd>Alt</kbd>+<kbd>K</kbd> wählt die Stufe. <em>Leise</em> meldet sich nur, wenn ein Befehl fehlschlägt, eine getippte Zeile vor Enter riskant ist (<kbd>Alt</kbd>+<kbd>1</kbd> setzt die sicherere Variante ein) oder sich ein Befehl wiederholt. <em>Gesprächig</em> kommentiert jeden Befehl in der Leiste (<kbd>Alt</kbd>+<kbd>J</kbd>). <em>Coach</em> erkennt, worauf du hinarbeitest, gibt den Rest an Plan-Modus oder Agent und blickt beim Schließen des Tabs zurück. Grenzen pro Stunde und Tag, nichts bei Passwortabfragen, mit eigener KI lassen sich die Filter abschalten.</p>
-    </div>
-    <figure><img src="../bilder/20-begleiter.png" alt="Der Begleiter hat die Absicht „HTTPS für shop.example.de einrichten“ erkannt und bietet die fehlenden Schritte, Plan oder Agent an" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>Geteilte Ansicht, Tabs und Arbeitsplätze</h3>
-      <p><kbd>Strg</kbd>+<kbd>T</kbd> zeigt bis zu sechs Sitzungen in sieben Aufteilungen. Trennlinien mit der Maus ziehen, einen Bereich mit <kbd>Alt</kbd>+<kbd>Z</kbd> zoomen, Bereiche per Titel tauschen, und <kbd>Alt</kbd>+<kbd>I</kbd> tippt in alle gleichzeitig. <kbd>w</kbd> im Manager speichert die ganze Anordnung als Arbeitsplatz.</p>
-    </div>
-    <figure><img src="../bilder/17-geteilt.png" alt="Geteilte Ansicht: links groß ein Produktiv-Host, rechts Datenbank und Switch" loading="lazy"></figure>
-  </div>
-</section>
-
-<section id="funktionen">
-  <h2>Funktionen</h2>
-  <div class="features">
-    <div class="card"><h3>Verbindungsmanager</h3><p>Ordner, Tags, Jump-Hosts, Import aus <code>~/.ssh/config</code>, PuTTY und MobaXterm.</p></div>
-    <div class="card"><h3>Fehlerverzeihend</h3><p>Beenden fragt bei offenen Verbindungen nach, Löschen lässt sich 10 Sekunden lang rückgängig machen, <kbd>Strg</kbd>+<kbd>T</kbd> im Formular testet die Verbindung vor dem Speichern, und fehlgeschlagene Verbindungen erklären in Klartext, was los ist (mit Taste zum Beheben, z. B. neuen Host-Key nach Neuinstallation übernehmen). Der einfache Modus blendet Profi-Funktionen aus.</p></div>
-    <div class="card"><h3>Läuft weiter</h3><p>Ein Fehler an einer Stelle (eine seltsame KI-Antwort, ungewöhnliche Geräteausgabe, die Dateiansicht) reißt sshTermy nicht mehr samt allen Verbindungen mit: Er wird abgefangen, ein bereinigter Bericht entsteht, und eine Meldung erscheint. <code>sshtermy doctor</code> oder Hilfe › Fehlersuche › „Selbstprüfung“ prüft Ordner, Tresor, Schlüsselbund, SSH-Agent, Internet, Uhr und KI auf einen Blick.</p></div>
-    <div class="card"><h3>Eigenes Fenster</h3><p>Kein Terminal nötig: Doppelklick auf die <code>.exe</code>, die <code>.app</code> öffnen oder <code>sshtermy -window</code>. Schrift, Nerd-Font-Symbole und Emoji sind eingebaut, jede Taste kommt an (Alt+⏎, ⇧F-Tasten, Strg+Leertaste), Bilder erscheinen pixelgenau, abgelegte Dateien werden hochgeladen, ⇧F10 öffnet ein zweites Fenster, das den Verlauf mitnimmt und mit Mausrad oder <kbd>⇧</kbd>+<kbd>Bild↑</kbd> blättert. Startet im Vollbild (<kbd>F11</kbd> schaltet um; maximiert oder „wie zuletzt“ in den Einstellungen), Schriftgröße und Fensterposition werden gemerkt. Im Terminal gestartet läuft es wie bisher im Terminal.</p></div>
-    <div class="card"><h3>Ziel-Modus im Einsatz</h3><p><kbd>?</kbd> gibt der KI mitten im Ziel eine Anweisung, <kbd>⇧S</kbd> überspringt einen Schritt mit Grund. Fragt ein Befehl <code>[Y/n]</code> oder wartet ein Pager, zeigt das Panel Antwort-Knöpfe. Dateien, die ein Schritt ändert, werden vorher gesichert, <kbd>u</kbd> holt alle zurück; <kbd>f</kbd> startet ein Folgeziel, frühere Ziele stehen im Verlauf. Nach einem Verbindungsabbruch setzt <kbd>⏎</kbd> fort, und der Tab zeigt, wenn ein Ziel auf dich wartet.</p></div>
-    <div class="card"><h3>Wer auf dich wartet</h3><p>Ein Tab, der auf ein Passwort, eine <code>[j/N]</code>-Frage oder im Pager wartet, bekommt ein <code>?</code>; <kbd>Alt</kbd>+<kbd>G</kbd> springt hin. KI-Coding-Agenten im Tab (Claude Code, Codex, Gemini CLI und mehr) werden erkannt: arbeitet, wartet auf deine Freigabe (<code>◆</code> plus Desktop-Meldung) oder fertig. Ein Klick auf die Desktop-Meldung öffnet den richtigen Tab.</p></div>
-    <div class="card"><h3>Sitzungen laufen weiter</h3><p>Mit dem Hintergrunddienst überleben Sitzungen das Schließen des Terminalfensters; <code>sshtermy</code> hängt sich wieder an, <kbd>Strg</kbd>+<kbd>Q</kbd> → <kbd>a</kbd> koppelt ab. Beim Start bietet sshTermy an, die Tabs und die geteilte Ansicht vom letzten Mal wieder zu öffnen.</p></div>
-    <div class="card"><h3>Aufgaben, Diff und Gegenprüfung</h3><p>Offene Arbeiten je Verbindung oder Ordner mit Fälligkeit (<kbd>u</kbd> im Manager, <kbd>Alt</kbd>+<kbd>A</kbd>): <kbd>⏎</kbd> startet eine Aufgabe als Ziel, danach steht sie zur Abnahme. Nach jedem Ziel prüft eine zweite KI nur lesend nach, ob es wirklich erreicht ist, und <kbd>d</kbd> zeigt jede geänderte Datei als Diff.</p></div>
-    <div class="card"><h3>Panels, wo du sie willst</h3><p>Das Seitenpanel steht rechts, links oder unten, den Rand ziehst du mit der Maus breiter. In breiten Fenstern stehen F5 und der Log-Blick neben dem Terminal, du tippst weiter, während du Dateien ansiehst. In der geteilten Ansicht zeigt jeder Bereich Ordner, letzten Befehl und Last.</p></div>
-    <div class="card"><h3>Aufs Handy, wenn du weg bist</h3><p>Langer Befehl fertig, Zeitplan gelaufen, ein Agent wartet auf Freigabe: Bist du nicht am Rechner, kommt die Meldung über ntfy, Gotify oder einen Webhook aufs Handy, ohne Geheimnisse. Ein Zeitplan kann die KI nachts nur lesend prüfen lassen („läuft nginx, ist eine Platte voll?“). Wieder geöffnete Tabs zeigen gedämpft die Ausgabe vom letzten Mal.</p></div>
-    <div class="card"><h3>Weniger tippen, schneller finden</h3><p>Der Ghost-Text schlägt zuerst Befehle aus deinem Verlauf vor, sofort und ohne KI. <kbd>Alt</kbd>+<kbd>Y</kbd> zeigt, was du zuletzt kopiert hast, und fügt es wieder ein. Rechtsklick auf eine Markierung sucht eine Fehlermeldung im Web, F5 öffnet im Ordner, in dem du gerade bist, und der KI-Status zeigt Tokens und Kosten für heute, 7 und 30 Tage.</p></div>
-    <div class="card"><h3>Tastatur &amp; Kopfzeile</h3><p><kbd>Alt</kbd>+<kbd>C</kbd> markiert per Tastatur (<kbd>v</kbd>, <kbd>V</kbd> Zeilen, <kbd>y</kbd> kopiert), <kbd>Alt</kbd>+<kbd>X</kbd> leert Bildschirm und Verlauf, deine Eingabe bleibt. Die Kopfzeile zeigt auf Wunsch die Uhrzeit oder die Ausgabe eines eigenen Befehls (Git-Zweig, Akku …). KI-Clients können per MCP Tabs öffnen, tippen und warten, mit deiner Bestätigung.</p></div>
-    <div class="card"><h3>Befehle als Blöcke</h3><p><kbd>Alt</kbd>+<kbd>Bild↑</kbd>/<kbd>Bild↓</kbd> springt im Verlauf von Befehl zu Befehl. <kbd>Alt</kbd>+<kbd>O</kbd> listet die Befehle des Tabs mit Uhrzeit, Dauer und Ergebnis: genau eine Ausgabe kopieren, an die KI geben oder groß lesen.</p></div>
-    <div class="card"><h3>Echtes Terminal</h3><p>xterm-256color, Truecolor, vim, htop und tmux, Verlauf zum Zurückblättern (Mausrad oder <kbd>⇧</kbd>+<kbd>Bild↑</kbd>), Tabs, geteilte Ansicht, Suche.</p></div>
-    <div class="card"><h3>Auto-Reconnect</h3><p>Reißt WLAN oder VPN ab, kommt die Sitzung von selbst zurück, mit Tunneln und tmux/screen. Nach Ruhezustand oder Netzwechsel wird jede Leitung binnen Sekunden geprüft.</p></div>
-    <div class="card"><h3>Dateien (F5)</h3><p>SFTP über dieselbe Verbindung: links lokal, rechts der Server. <kbd>e</kbd> öffnet eine Server-Datei in VS Code, Notepad++ oder TextEdit, Speichern lädt sie zurück. Beim Kopieren: Prozent, MB/s, Restzeit und Tempo-Kurve. „Permission denied“? sshTermy bietet an, mit sudo zu wiederholen (<kbd>j</kbd> zweimal).</p></div>
-    <div class="card"><h3>Dateien wie im Dateimanager</h3><p>In F5: <kbd>d</kbd> legt in den Papierkorb, <kbd>Strg</kbd>+<kbd>Z</kbd> holt zurück. <kbd>z</kbd>/<kbd>u</kbd> packt und entpackt direkt auf dem Server, <kbd>/</kbd> findet Dateien unscharf im ganzen Ordnerbaum, <kbd>i</kbd> zeigt die Platzfresser, <kbd>⇧I</kbd> doppelte Dateien. <kbd>g</kbd> öffnet Orte mit gemerkten Ordnern und Laufwerken, <kbd>x</kbd>/<kbd>p</kbd> verschiebt, <kbd>⇧F2</kbd> benennt viele Dateien im eigenen Editor um. Die Vorschau zeigt Ordner, Archive, Bildgrößen, Markdown und CSV als Tabelle.</p></div>
-    <div class="card"><h3>Dateien mit der Maus</h3><p>Doppelklick auf eine Datei zeigt sie direkt in sshTermy: Farben, Suche, markieren und kopieren, mitlesen wie <code>tail -f</code>. Bilder und PDFs öffnen sich mit dem Standardprogramm. Ein Einfachklick zeigt eine Vorschau, Rechtsklick ein Menü mit Umbenennen, Rechten, Pfad kopieren und <code>cd</code> hierhin. Klickbarer Pfad, sortierbare Spalten, Strg/Umschalt+Klick markiert. Programme vom Server fragen vor dem Start.</p></div>
-    <div class="card"><h3>Alles mit der Maus</h3><p>Jedes Menü öffnet und schließt per Klick: <kbd>Esc</kbd> bleibt in der Fußzeile klickbar, das Mausrad blättert in allen Listen und Ergebnisfenstern, die Zurück-Taste der Maus wirkt wie <kbd>Esc</kbd>, Rechtsklick ins Leere führt eine Ebene zurück, in der Hilfe wechseln Reiter per Klick. Im Manager bietet ein Rechtsklick auf die freie Fläche neue Verbindung, neuen Ordner, Import, Scan und Tag-Filter.</p></div>
-    <div class="card"><h3>Farbregeln</h3><p>Fehler rot, Warnungen gelb, IP blau, MAC lila, Switch-Syslog nach Schwere; eigene Regeln, mit <code>!</code> meldet sich ein verdeckter Tab.</p></div>
-    <div class="card"><h3>Bilder im Terminal</h3><p>Sixel, kitty-Grafik und iTerm2-Bilder (img2sixel, icat, viu, imgcat) als farbige Halbblöcke, in jedem Terminal; in kitty, Ghostty und im eigenen Fenster pixelgenau.</p></div>
-    <div class="card"><h3>Container</h3><p>Docker, Podman und Kubernetes-Pods in einer Liste: Shell im Container, Logs live, KI-Auswertung der Logs.</p></div>
-    <div class="card"><h3>Host-Übersicht (F6)</h3><p>CPU, Last, RAM, alle Platten und Updates bei Servern, Live-Graphen aus Braille-Punkten über 5 min oder 1 h mit Top-Prozessen; Firmware, Ports und VLANs bei über 35 Switch-, Router- und Firewall-Systemen, mit Konfig-Sicherung und Diff.</p></div>
-    <div class="card"><h3>Tunnel</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) und Webdienste mit einem Klick.</p></div>
-    <div class="card"><h3>Broadcast</h3><p>Ein Befehl oder Runbook parallel auf einer ganzen Gruppe, je Host eine Kachel: grün wenn fertig, rot bei Fehler, pulsierend solange er läuft. Änderungen laufen erst auf einem Host als Probelauf und stoppen nach 3 Fehlern.</p></div>
-    <div class="card"><h3>Live teilen</h3><p>Ein kurzer Code wie <code>7-taube-kompass-ofen</code> genügt dem Kollegen (auf Wunsch als fertige E-Mail): im selben Netz ohne Vermittler, sonst über deinen. Er klopft an, ihr vergleicht drei Prüfwörter, du lässt ihn herein. Ohne sshTermy schaut er im Browser zu, auch am Handy per QR-Code. Endet von selbst, pausiert bei Passwortabfragen, Mitschreiben nur auf Bitte.</p></div>
-    <div class="card"><h3>Gerät finden</h3><p>MAC oder IP rein, Switch, Port und VLAN raus: sshTermy liest MAC-, ARP- und LLDP-Tabellen aller Switches, oder nur die eines Ordners, wenn du mehrere Netze betreust.</p></div>
-    <div class="card"><h3>Netzwerk-Topologie</h3><p>LLDP/CDP-Nachbarn werden zum Bild mit Kästen, Linien und Ports, dazu ein Mermaid-Diagramm; Config-Regeln prüfen jede Sicherung.</p></div>
-    <div class="card"><h3>Zeitpläne</h3><p>Broadcast oder Runbook zu einer Uhrzeit auf einem Ordner, z. B. nachts <code>show running-config</code> auf allen Switches. Neue Hosts im Ordner laufen erst nach deiner Bestätigung mit.</p></div>
-    <div class="card"><h3>Passwortmanager</h3><p>Passwörter und 2FA-Codes aus 1Password, Bitwarden, KeePassXC oder <code>pass</code>; gespeichert wird nur der Verweis.</p></div>
-    <div class="card"><h3>Netzwerk-Scan</h3><p>SSH-Geräte in einem Subnetz finden und als Verbindungen anlegen.</p></div>
-    <div class="card"><h3>Gefahr-Regeln</h3><p>Feste Regeln markieren riskante Befehle rot; sie brauchen zweimal Enter, auch beim Einfügen. Jede Verbindung gilt als produktiv: Enter gedrückt halten, bis der Balken voll ist. Den Schutz nur einzeln abschalten, für Test- und Laborsysteme. Es gelten immer alle Regelgruppen, ein falsch erkannter Switch versteckt kein <code>erase</code>.</p></div>
-    <div class="card"><h3>docker exec ohne -it</h3><p><code>docker exec gitea vi app.ini</code> endete ohne Terminal sofort. Beim Enter ergänzt sshTermy das fehlende <code>-it</code> (auch podman, <code>docker run</code>, <code>kubectl exec</code>); das nächste Enter führt aus.</p></div>
-    <div class="card"><h3>Sitzungsprotokoll</h3><p>Verschlüsselt, durchsuchbar, mit KI-Zusammenfassung, Markdown-Export und KI-Änderungsbericht (<kbd>b</kbd>) für Ticket oder Doku. Ein Aktivitätskalender zeigt, an welchen Tagen und zu welcher Uhrzeit gearbeitet wurde.</p></div>
-    <div class="card"><h3>KI-Logdiagnose</h3><p>Markierung oder die letzten 400 Zeilen (journalctl, <code>show logging</code>): Lage, Auffälliges mit Zeitpunkt, Ursache, Prüfbefehle.</p></div>
-    <div class="card"><h3>Log-Blick</h3><p><kbd>Alt</kbd>+<kbd>E</kbd> liest die Logs des Systems, auf dem du gerade bist (Linux, Windows, Switches, Firewalls), nur lesend, und zeigt Muster statt Zeilen: was seit dem letzten Blick neu ist, eine Zeitleiste mit Neustarts, Updates und deinen Befehlen, Rauschen pro Host oder Ordner ausblenden und ein KI-Lagebericht nur aus den verdichteten Mustern.</p></div>
-    <div class="card"><h3>Logwache &amp; Ordner-Scan</h3><p>Folgt im Hintergrund den Logs offener Tabs und meldet nur neue oder kritische Muster; empfängt Syslog von Switches und Firewalls. Der Ordner-Scan prüft alle Hosts eines Ordners auf einmal (auch nachts als Zeitplan) und zeigt, was mehrere gemeinsam haben. <kbd>s</kbd> im Log-Blick eines Switches richtet Syslog an sshTermy ein. Syslog von Absendern ohne gespeicherte Verbindung wird verworfen.</p></div>
-    <div class="card"><h3>Sicherheitscheck (OSV)</h3><p><kbd>F6</kbd> → <kbd>s</kbd> gleicht die installierten Pakete eines Linux-Servers (und seiner laufenden Container) mit der öffentlichen OSV-Datenbank ab. Zeigt nur, was zählt: Bewertung, Reparatur vorhanden, aktiv ausgenutzt (CISA KEV), von einem Dienst mit offenem Port genutzt. <kbd>u</kbd> fügt den Update-Befehl ein, <kbd>k</kbd> lässt die KI erklären. Online oder ganz offline, für einen ganzen Ordner oder wöchentlich als Zeitplan. Den Rechner verlassen nur Paketnamen und Versionen.</p></div>
-    <div class="card"><h3>Firmware-Hinweise &amp; Patch-Runde</h3><p><kbd>F6</kbd> → <kbd>s</kbd> am Switch oder an der Firewall prüft die Firmware gegen die NVD (FortiOS, Cisco, Junos, RouterOS, Aruba, PAN-OS …): aktiv ausgenutzt, behoben ab welcher Version. Die Patch-Runde spielt Updates gestaffelt über einen Ordner ein: erst ein Host, nach <kbd>w</kbd> der Rest, mit Vergleich von Diensten, Ports und Logs vorher/nachher und Neustarts einzeln.</p></div>
-    <div class="card"><h3>Härtungs-Check &amp; Schlüssel-Inventar</h3><p><kbd>F6</kbd> → <kbd>h</kbd> prüft einen Server nur lesend: root- und Passwort-Login, Firewall, Ports offen für alle (Redis, Docker-API …), automatische Updates, ablaufende TLS-Zertifikate, mit Vorschlag je Punkt. <kbd>F6</kbd> → <kbd>a</kbd> oder die Palette zeigt, welche SSH-Schlüssel in welchen <code>authorized_keys</code> eines Ordners stehen, und entfernt den Schlüssel eines ausgeschiedenen Kollegen Host für Host, mit Sicherungskopie.</p></div>
-    <div class="card"><h3>Inventar, Änderungen &amp; Platten-Vorwarnung</h3><p><kbd>F6</kbd> → <kbd>i</kbd> erfasst Pakete, Benutzer, Admins, Cron, lauschende Ports, Dienste und Kernel, nur lesend, und zeigt, was sich seit dem letzten Mal geändert hat: ein neuer Admin oder Port steht oben. Ordner-Lauf über die Palette, CSV-Export fürs Audit. Dazu zeichnet F6 kleine Kurven für CPU, RAM und Platten über 24 Stunden (<kbd>w</kbd>: 7 Tage) und warnt „Platte voll in ~N Tagen“.</p></div>
-    <div class="card"><h3>Aufnahmen abspielen</h3><p>Palette › <em>Aufnahme abspielen</em> spielt <code>.cast</code>-Dateien direkt in sshTermy: Pause, Tempo bis 16×, spulen, lange Pausen kürzen, und <kbd>/</kbd> springt zu der Stelle, an der ein Text auf dem Bildschirm stand, etwa die erste Fehlermeldung.</p></div>
-    <div class="card"><h3>Sync</h3><p>Ende-zu-Ende-verschlüsselt über OneDrive, Dropbox, iCloud, Syncthing oder WebDAV (Synology, Nextcloud). Tasten, Shell und Schnittstelle gehen auch pro Rechner, Zeitpläne laufen nur auf ihrem Rechner, Favoriten zählen über alle.</p></div>
-    <div class="card"><h3>Systemprofil</h3><p>Kennt Linux-Distributionen, macOS, Windows und Netzwerk-Dialekte (Aruba, Cisco, Juniper, MikroTik, FortiGate, UniFi …), damit die KI passende Befehle vorschlägt.</p></div>
-    <div class="card"><h3>Befehlssätze</h3><p>48 Befehlssätze eingebaut (Cisco, Arista, Aruba, Comware, Huawei, Dell, Extreme, Ruckus, Palo Alto, Sophos, FortiGate, pfSense, Proxmox …). Eigene als YAML ergänzen, am Gerät testen oder von der KI entwerfen lassen, per Sync auf allen Rechnern; eigene und Team-Sätze können die eingebauten Sicherheitsregeln nie abschwächen.</p></div>
-    <div class="card"><h3>KI-Befehle auf dem Host geprüft</h3><p>Bevor ein Befehl aus einer Karte eingefügt oder ausgeführt wird, fragt sshTermy beim echten Host nach, ob es das Programm gibt und jede Option in dessen man-Seite oder <code>--help</code> steht. macOS-Formen unter Linux, der falsche Paketmanager und alles, was die Frage ausschließt („ohne lsof“), fallen auf, bekannte Ausrutscher werden repariert (<code>grep</code> auf einen Ordner bekommt <code>-r</code>). Was offen bleibt, ist als <em>unbestätigt</em> markiert und die KI versucht es noch einmal. Idee aus lxask.</p></div>
-    <div class="card"><h3>Satz → Befehl, erklären ohne KI</h3><p>Am Prompt in eigenen Worten tippen, was du willst, <kbd>Strg</kbd>+<kbd>G</kbd> macht daraus einen geprüften Befehl. <kbd>Alt</kbd>+<kbd>H</kbd> erklärt den getippten oder letzten Befehl Teil für Teil aus der man-Seite des Hosts, offline und ganz ohne KI.</p></div>
-    <div class="card"><h3>Kleine Offline-KI, oder gar keine</h3><p>Keine KI? Dann sind alle KI-Funktionen ausgeblendet, Prüfen und Erklären gehen trotzdem. Ein Knopf lädt eine kleine Offline-KI herunter (lxask-Modell über llama.cpp, etwa 1 GB, Windows, macOS, Linux, jede Datei mit SHA-256 geprüft), die einspringt, wenn sonst keine antwortet; Ziel-, Agent- und Plan-Modus bleiben ausgeblendet, bis eine größere KI angebunden ist.</p></div>
-    <div class="card"><h3>KI-Begleiter</h3><p>Liest mit und kommentiert von selbst: leise (Fehler, riskante Zeilen vor Enter, Wiederholungen), gesprächig (jeder Befehl) oder Coach (erkennt dein Ziel, Rückblick mit Runbook). Eigene KI-Server, auch extern, lassen sich eintragen. Schlägt ein Befehl aus einer Antwortkarte fehl, zeigt die Karte den Fehler und einen korrigierten Befehl; <kbd>u</kbd> übernimmt ihn und korrigiert denselben Fehler in den anderen Karten mit.</p></div>
-    <div class="card"><h3>Vorgang über Fenster</h3><p><kbd>Alt</kbd>+<kbd>V</kbd> verbindet die Fenster einer Arbeit (Webserver, Datenbank, Switch). Die KI sieht alle und sagt bei jedem Schritt, in welches Fenster er gehört; Fahrplan Fenster für Fenster mit übernommenen Werten, Plan in Bahnen, Rückblick als Change-Protokoll. Vor dem Vortippen prüft sshTermy das Zielfenster (Host-Key, Prompt, System) und fügt nichts ein, wenn es nicht passt.</p></div>
-    <div class="card"><h3>Agent- &amp; Plan-Modus</h3><p>Die KI arbeitet selbstständig aufs Ziel hin, legt Skripte an und führt sie aus; drei Stufen, gefährliche Schritte warten immer auf dich. Erst planen: den ganzen Plan prüfen und freigeben.</p></div>
-    <div class="card"><h3>Geteilte Ansicht &amp; Tabs</h3><p>Sieben Aufteilungen mit bis zu sechs Sitzungen, Zoom, Tauschen, Eingabe an alle; Tab-Leiste mit <code>+</code> (öffnet den Verbindungs-Manager, die gewählte Verbindung startet in einem zusätzlichen Tab), <code>×</code>, Rechtsklick-Menü und Tab-Liste (<kbd>Alt</kbd>+<kbd>T</kbd>); Tabs mit der Maus ziehen, <kbd>Alt</kbd>+<kbd>S</kbd> sucht in allen Tabs. Jeder Tab bekommt einen farbigen Rahmen, sein Name dieselbe Farbe; Rot nur für produktiv. Aktiver Tab und Bereich sind in ihrer Farbe gefüllt und mit ▶ markiert.</p></div>
-    <div class="card"><h3>Sammeländerung</h3><p>Im Manager mehrere Verbindungen markieren (<kbd>Leertaste</kbd>, <kbd>*</kbd> für alle Treffer) und in einem Schritt Tags, Benutzer, Schutz oder Farbe ändern, verschieben oder löschen.</p></div>
-    <div class="card"><h3>Notiz, Startbefehl, Wake-on-LAN</h3><p>Je Verbindung eine Notiz nur für dich, ein Befehl, der nach dem Anmelden getippt wird, und Aufwecken ausgeschalteter Rechner; die MAC-Adresse merkt sich sshTermy selbst.</p></div>
-    <div class="card"><h3>Telnet &amp; Konsole</h3><p>Telnet und USB-Konsolenkabel (z. B. Aruba-Switches), Kabel wird automatisch gewählt, Anmeldung getippt.</p></div>
-    <div class="card"><h3>PowerShell-Fernzugriff</h3><p>Auf Windows-Server einloggen wie mit <code>Enter-PSSession</code> über WinRM (NTLM oder Kerberos, verschlüsselt, oder HTTPS), mit Verlauf, Tab-Ergänzung vom Server und KI, die PowerShell spricht.</p></div>
-    <div class="card"><h3>Lokale Shell</h3><p>Deine eigene PowerShell, cmd, zsh oder bash als Tab (<kbd>Alt</kbd>+<kbd>L</kbd>), mit KI, Agent- und Plan-Modus, geteilter Ansicht und Protokoll; der Gefahren-Check gilt auch hier.</p></div>
-    <div class="card"><h3>Profi-SSH</h3><p>Agent-Weiterleitung, X11-Weiterleitung, FIDO2-Sicherheitsschlüssel, Kerberos/GSSAPI, SSH-Zertifikate, feste tmux/screen-Sitzungen. Quantensicherer Schlüsseltausch (ML-KEM), wo der Server ihn kann, und ein deutlicher Hinweis, wenn ein altes Gerät nur SHA-1/CBC spricht.</p></div>
-    <div class="card"><h3>Dateien im Terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) auch durch <code>sudo su</code> und mehrere Sprünge, Zwischenablage vom Server per OSC 52.</p></div>
-    <div class="card"><h3>Team-Freigabe</h3><p>Verschlüsselte <code>.sshteam</code>-Pakete und Team-Ordner, die die Verbindungen aller aktuell halten, ohne Passwörter.</p></div>
-    <div class="card"><h3>Aussehen &amp; Tasten</h3><p>26 Themes mit Live-Vorschau, von Polarnacht, Abendrot und Tusche bis Papier und Minze, dazu Hochkontrast und Farbenblind, eigene Farben, vier Symbol-Stile, jede Taste frei belegbar. Serverausgabe bleibt in jedem Theme lesbar: Farben von Programmen, die das Theme nicht kennen, werden auf guten Kontrast angehoben.</p></div>
-    <div class="card"><h3>Aufgeräumter Bildschirm</h3><p>Eine Kopfzeile mit Tabs links und dem Zustand der Sitzung rechts, rote Marke ▲ PRODUKTIV statt roter Fläche, unten eine F-Tasten-Leiste (<code>1Hilfe 2Ziel 3KI …</code>). Der Manager zeigt rechts nur, was zur Auswahl gehört, ein Ordner seinen Inhalt mit Status. Die Hilfe (<kbd>F1</kbd>) hat Reiter, tippen filtert.</p></div>
-    <div class="card"><h3>Lebendige Oberfläche</h3><p>Verbindungsaufbau als Karte mit Schritten und Lichtlauf (was du dabei tippst, wartet auf den Prompt), Tabs leuchten bei Erfolg und Fehler auf, Karte beim Überfahren eines Tabs, atmende Online-Punkte (geprüft wird nur, was sichtbar ist) und Lastbalken, KI-Antwort tippt sich, Palette mit leuchtenden Treffern, Latenzkurve in der Kopfzeile, gleitender Rahmen in der geteilten Ansicht, Dialoge mit Schatten und wahlweise runden Ecken. Voll, dezent oder aus.</p></div>
-    <div class="card"><h3>Barrierearm &amp; Support</h3><p>Barrierearmer Modus ohne Animationen, mit Formen statt nur Farben. Debug-Protokoll für Fehlerberichte (<code>--debug</code>), bereinigt von Hosts, IPs und Passwörtern. Adaptive Bildrate bei Ausgabeflut, dazu eine Leistungsanzeige in der Palette, die die Zeichenzeit in Worten bewertet.</p></div>
-    <div class="card"><h3>Bildschirmsperre</h3><p>Sofort sperren oder nach 5 bis 60 Minuten Leerlauf; Sitzungen laufen hinter der Sperre weiter. Master-Passwort und Windows-Anmeldung jederzeit änderbar.</p></div>
-    <div class="card"><h3>MCP-Server</h3><p>Claude und andere KI-Clients nutzen deine Verbindungen über <code>sshtermy mcp</code>: standardmäßig nur lesend, alles andere erst nach deiner Bestätigung.</p></div>
-    <div class="card"><h3>Audit-Protokoll</h3><p>Wer hat wann wo was getan: Verbindungen, Befehle, Übertragungen, Config-Sicherungen. Signiert und verkettet, geänderte oder gelöschte Zeilen fallen auf.</p></div>
-    <div class="card"><h3>Umzug auf neuen Rechner</h3><p>Eine verschlüsselte Datei enthält alles: Verbindungen, Schlüssel, Protokolle, Switch-Sicherungen und Einstellungen. Auf dem neuen Rechner einspielen, der alte Stand bleibt als Kopie.</p></div>
-    <div class="card"><h3>KI-Datenschutz</h3><p>Alle Anbieter, nur lokale KI im eigenen Netz oder gar keine KI, global oder pro Verbindung per Tag. Genau sehen, was zuletzt hinausging.</p></div>
-  </div>
-  <div class="shots">
-    <figure><img src="../bilder/02-manager.png" alt="Verbindungsmanager" loading="lazy"><figcaption>Verbindungsmanager</figcaption></figure>
-    <figure><img src="../bilder/14-host-switch.png" alt="Host-Übersicht eines Switches" loading="lazy"><figcaption>Host-Übersicht eines Switches (F6)</figcaption></figure>
-    <figure><img src="../bilder/12-dateien.png" alt="Dateien per SFTP" loading="lazy"><figcaption>Dateien per SFTP (F5)</figcaption></figure>
-    <figure><img src="../bilder/04-gefahr.png" alt="Gefährlicher Befehl braucht Bestätigung" loading="lazy"><figcaption>Gefahr-Regeln</figcaption></figure>
-    <figure><img src="../bilder/18-tabs.png" alt="Tab-Liste mit allen offenen Sitzungen" loading="lazy"><figcaption>Tab-Liste (Alt+T)</figcaption></figure>
-    <figure><img src="../bilder/19-protokolle.png" alt="Sitzungsprotokolle nach Tagen gruppiert" loading="lazy"><figcaption>Sitzungsprotokolle nach Tagen oder Host (l)</figcaption></figure>
-  </div>
-</section>
-
+<div class="two">
 <section id="ki">
   <h2>KI einrichten</h2>
+
   <p>sshTermy spricht mit jedem OpenAI-kompatiblen Endpunkt (<code>/v1/chat/completions</code>): Ollama, vLLM, SGLang, LiteLLM, LocalAI oder OpenAI selbst, außerdem Claude (Anthropic). Mit einem lokalen Modell bleibt dein Terminal-Inhalt auf deiner eigenen Hardware.</p>
   <ol>
     <li>Im Manager <kbd>s</kbd> drücken (KI-Einstellungen).</li>
@@ -219,8 +270,56 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <p>Der Punkt oben rechts zeigt, ob die KI erreichbar ist (grün, gelb bei langsamer Antwort, rot bei Fehler). Schritt für Schritt schlägt die KI nur vor, und du entscheidest, was läuft. Im Agent-Modus führt sie Befehle im Rahmen der gewählten Stufe aus; gefährliche Befehle und jede Änderung auf Produktiv-Hosts und Netzwerkgeräten warten trotzdem auf dich. Passwörter und Geheimnisse werden vor dem Senden aus dem Kontext entfernt.</p>
 </section>
 
+<section id="updates">
+  <h2>Updates</h2>
+
+  <p>Ein direkter Download oder der Einzeiler aktualisiert sich selbst: sshTermy fragt einmal am Tag bei GitHub nach, prüft Prüfsumme und Signatur (die auch die Version nennt) und tauscht die Datei aus (<kbd>F12</kbd> → <kbd>u</kbd> oder <code>sshtermy --update</code>).</p>
+  <p>Über eine Paketquelle installiert, aktualisiert die Paketquelle:</p>
+  <table>
+    <tr><td>Homebrew</td><td><code>brew upgrade sshtermy</code></td></tr>
+    <tr><td>apt</td><td><code>sudo apt update && sudo apt upgrade</code></td></tr>
+    <tr><td>winget</td><td><code>winget upgrade db9979.sshTermy</code> (das eingebaute Update geht auch)</td></tr>
+  </table>
+</section>
+</div>
+
+<div class="two">
 <section id="tasten">
-  <h2>Tasten</h2>
+  <h2>Die wichtigsten Tasten</h2>
+  <p class="sub">Alle Tasten sind frei belegbar (<kbd>b</kbd> im Manager). <kbd>F1</kbd> zeigt in der App den Rest.</p>
+  <div class="topkeys">
+    <div><span><kbd>Strg</kbd>+<kbd>Leertaste</kbd></span><span>Befehlspalette: alles finden</span></div>
+    <div><span><kbd>F1</kbd></span><span>Hilfe</span></div>
+    <div><span><kbd>F2</kbd></span><span>Ziel-Modus / Agent</span></div>
+    <div><span><kbd>F3</kbd></span><span>KI fragen</span></div>
+    <div><span><kbd>F5</kbd></span><span>Dateien (SFTP)</span></div>
+    <div><span><kbd>F6</kbd></span><span>Host-Übersicht</span></div>
+    <div><span><kbd>Strg</kbd>+<kbd>T</kbd></span><span>Geteilte Ansicht</span></div>
+    <div><span><kbd>Alt</kbd>+<kbd>N</kbd></span><span>Neuer Tab</span></div>
+    <div><span><kbd>Tab</kbd></span><span>Ghost-Text übernehmen</span></div>
+    <div><span><kbd>Alt</kbd>+<kbd>0</kbd></span><span>Fehler erklären</span></div>
+    <div><span><kbd>F10</kbd></span><span>Zurück zum Manager</span></div>
+    <div><span><kbd>Strg</kbd>+<kbd>Q</kbd></span><span>Beenden</span></div>
+  </div>
+  <div class="buttons" id="kurzreferenz">
+    <a class="btn primary" href="../handout/sshtermy-kurzreferenz-de.pdf">⤓ Kurzreferenz (PDF)</a>
+    <a class="btn" href="../handout/sshtermy-quickref-en.pdf">Quick reference (English)</a>
+  </div>
+  <p class="small">Alle Tasten, Modi und Funktionen auf zwei A4-Seiten, druckerfreundlich (weißer Hintergrund, wenig Tinte). Am besten neben die Tastatur legen.</p>
+</section>
+
+<section id="faq">
+  <h2>Fragen</h2>
+  <details><summary>Windows meldet „Der Computer wurde durch Windows geschützt“</summary><p>Die <code>.exe</code> ist noch nicht codesigniert, deshalb warnt SmartScreen beim ersten Start. „Weitere Informationen“ → „Trotzdem ausführen“. Mit winget installiert, kommt die Warnung meist nicht.</p></details>
+  <details><summary>macOS meldet, die App „kann nicht geöffnet werden“</summary><p>Mit dem Browser geladene Dateien bekommen eine Quarantäne-Markierung. Nimm Homebrew oder den Einzeiler, oder entferne die Markierung: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
+  <details><summary>Wo liegen meine Daten?</summary><p>Windows: <code>%APPDATA%\sshtermy</code>, macOS: <code>~/Library/Application Support/sshtermy</code>, Linux: <code>~/.config/sshtermy</code>. Die Umgebungsvariable <code>SSHTERMY_HOME</code> verlegt sie, z. B. auf einen USB-Stick.</p></details>
+  <details><summary>Welches Terminal soll ich nehmen?</summary><p>Unter Windows das Windows Terminal, unter macOS Terminal oder iTerm2, unter Linux jedes moderne Terminal. Funktionstasten und Truecolor sollten gehen. Nötig ist gar keins: Doppelklick auf die <code>.exe</code>, die <code>.app</code> oder <code>sshtermy -window</code> öffnet sshTermy im eigenen Fenster, dort kommt jede Taste an.</p></details>
+  <details><summary>Geht das auch auf Englisch?</summary><p>Ja: <kbd>F12</kbd> → <kbd>l</kbd> oder Palette → „Sprache“. Beim ersten Start folgt sshTermy der Systemsprache.</p></details>
+</section>
+</div>
+
+<details class="all" id="allkeys">
+  <summary>Alle Tasten</summary>
   <table>
     <tr><th>Taste</th><th>Wirkung</th></tr>
     <tr><td><kbd>Strg</kbd>+<kbd>Leertaste</kbd></td><td>Befehlspalette</td></tr>
@@ -290,36 +389,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>→</kbd> / <kbd>*</kbd> / <kbd>Entf</kbd> (Palette)</td><td>Zeigen, wo ein Treffer liegt / Eintrag anheften / Einstellung auf Standard; „!“ tippen zeigt Geändertes, „alt+e“ schlägt eine Taste nach</td></tr>
   </table>
   <p>Alle Tasten lassen sich ändern: <kbd>b</kbd> im Manager. Die ganze Liste steht in der <a href="https://github.com/db9979/sshtermy/blob/main/README.de.md">README</a> und in der App (<kbd>F1</kbd>).</p>
-</section>
-
-<section id="kurzreferenz">
-  <h2>Kurzreferenz zum Ausdrucken</h2>
-  <p>Alle Tasten, Modi und Funktionen auf zwei A4-Seiten, druckerfreundlich (weißer Hintergrund, wenig Tinte). Am besten neben die Tastatur legen.</p>
-  <div class="buttons">
-    <a class="btn primary" href="../handout/sshtermy-kurzreferenz-de.pdf">⤓ Kurzreferenz (Deutsch, PDF)</a>
-    <a class="btn" href="../handout/sshtermy-quickref-en.pdf">⤓ Quick reference (English, PDF)</a>
-  </div>
-</section>
-
-<section id="updates">
-  <h2>Updates</h2>
-  <p>Ein direkter Download oder der Einzeiler aktualisiert sich selbst: sshTermy fragt einmal am Tag bei GitHub nach, prüft Prüfsumme und Signatur (die auch die Version nennt) und tauscht die Datei aus (<kbd>F12</kbd> → <kbd>u</kbd> oder <code>sshtermy --update</code>).</p>
-  <p>Über eine Paketquelle installiert, aktualisiert die Paketquelle:</p>
-  <table>
-    <tr><td>Homebrew</td><td><code>brew upgrade sshtermy</code></td></tr>
-    <tr><td>apt</td><td><code>sudo apt update && sudo apt upgrade</code></td></tr>
-    <tr><td>winget</td><td><code>winget upgrade db9979.sshTermy</code> (das eingebaute Update geht auch)</td></tr>
-  </table>
-</section>
-
-<section id="faq">
-  <h2>Fragen</h2>
-  <details><summary>Windows meldet „Der Computer wurde durch Windows geschützt“</summary><p>Die <code>.exe</code> ist noch nicht codesigniert, deshalb warnt SmartScreen beim ersten Start. „Weitere Informationen“ → „Trotzdem ausführen“. Mit winget installiert, kommt die Warnung meist nicht.</p></details>
-  <details><summary>macOS meldet, die App „kann nicht geöffnet werden“</summary><p>Mit dem Browser geladene Dateien bekommen eine Quarantäne-Markierung. Nimm Homebrew oder den Einzeiler, oder entferne die Markierung: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
-  <details><summary>Wo liegen meine Daten?</summary><p>Windows: <code>%APPDATA%\sshtermy</code>, macOS: <code>~/Library/Application Support/sshtermy</code>, Linux: <code>~/.config/sshtermy</code>. Die Umgebungsvariable <code>SSHTERMY_HOME</code> verlegt sie, z. B. auf einen USB-Stick.</p></details>
-  <details><summary>Welches Terminal soll ich nehmen?</summary><p>Unter Windows das Windows Terminal, unter macOS Terminal oder iTerm2, unter Linux jedes moderne Terminal. Funktionstasten und Truecolor sollten gehen. Nötig ist gar keins: Doppelklick auf die <code>.exe</code>, die <code>.app</code> oder <code>sshtermy -window</code> öffnet sshTermy im eigenen Fenster, dort kommt jede Taste an.</p></details>
-  <details><summary>Geht das auch auf Englisch?</summary><p>Ja: <kbd>F12</kbd> → <kbd>l</kbd> oder Palette → „Sprache“. Beim ersten Start folgt sshTermy der Systemsprache.</p></details>
-</section>
+</details>
 </main>
 
 <footer>
@@ -327,6 +397,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <span><b>sshTermy</b> · Idee: Dominik Bornhäußer</span>
     <a href="https://github.com/db9979/sshtermy">GitHub</a>
     <a href="https://github.com/db9979/sshtermy/releases">Releases</a>
+    <a href="handbuch.html">Handbuch</a>
     <a href="https://github.com/db9979/sshtermy/blob/main/LICENSE">MIT-Lizenz</a>
     <a href="https://buymeacoffee.com/zquu1xu570">☕ Kaffee spendieren</a>
     <a href="../handout/sshtermy-kurzreferenz-de.pdf">Kurzreferenz (PDF)</a>

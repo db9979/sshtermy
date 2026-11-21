@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>sshTermy – SSH terminal with an AI copilot</title>
-<meta name="description" content="sshTermy is an SSH terminal (TUI) with an AI copilot for Windows, macOS and Linux: connection manager, goal and agent mode, ghost text, split view, SFTP, tunnels, broadcast. Idea: Dominik Bornhäußer.">
+<title>sshTermy – the SSH terminal that thinks along</title>
+<meta name="description" content="sshTermy is a free SSH terminal for Windows, macOS and Linux with an AI copilot: connection manager, goal and agent mode, SFTP, tunnels, broadcast, switches. Dangerous commands always wait for you. Idea: Dominik Bornhäußer.">
 <link rel="alternate" hreflang="de" href="de/">
 <link rel="stylesheet" href="style.css">
 <link rel="icon" type="image/png" href="favicon.png">
@@ -15,39 +15,217 @@
   <div class="bar">
     <a class="logo" href="./"><img src="logo.png" alt="" width="28" height="28"> sshTermy</a>
     <nav>
-      <a href="#install">Install</a>
-      <a href="#tour">Tour</a>
       <a href="#features">Features</a>
-      <a href="#ai">AI setup</a>
+      <a href="#tour">Tour</a>
+      <a href="#install">Install</a>
       <a href="#keys">Keys</a>
-      <a href="#quickref">Quick reference</a>
-      <a href="#updates">Updates</a>
-      <a href="manual.html">Manual</a>
       <a href="#faq">FAQ</a>
+      <a href="manual.html">Manual</a>
       <a href="https://github.com/db9979/sshtermy">GitHub</a>
     </nav>
     <div class="lang"><b>EN</b> · <a href="de/">DE</a></div>
+    <a class="btn sm primary navbtn" href="#install">Install</a>
   </div>
 </header>
 
 <main>
 <section class="hero">
-  <h1>SSH terminal with an <span class="accent">AI copilot</span></h1>
-  <p class="lead">One small file for Windows, macOS and Linux. Connection manager, real terminal, SFTP and tunnels, plus an AI that suggests commands, works towards a goal step by step or on its own as an agent, and explains errors. Dangerous commands always wait for you.</p>
-  <p class="credit">Idea: Dominik Bornhäußer</p>
-  <div class="buttons">
-    <a class="btn primary" href="#install">Install</a>
-    <a class="btn" href="https://github.com/db9979/sshtermy/releases/latest">Download</a>
-    <a class="btn coffee" href="https://buymeacoffee.com/zquu1xu570">☕ Buy me a coffee</a>
+  <div class="intro">
+    <h1>The SSH terminal<br>that <em>thinks along</em>.</h1>
+    <p class="lead">Connections, files and tunnels in one small program, plus an AI that suggests commands and explains errors. Anything dangerous always waits for you.</p>
+    <div class="itabs" data-copy="Copy">
+      <div class="ibar" role="tablist">
+        <button type="button" role="tab" data-os="win">Windows</button>
+        <button type="button" role="tab" data-os="mac">macOS</button>
+        <button type="button" role="tab" data-os="linux">Linux</button>
+      </div>
+      <div class="cmd" data-copy="Copy" data-os="win"><pre>winget install db9979.sshTermy</pre></div>
+      <div class="cmd" data-copy="Copy" data-os="mac" hidden><pre>brew tap db9979/sshtermy https://github.com/db9979/sshtermy
+brew install sshtermy</pre></div>
+      <div class="cmd" data-copy="Copy" data-os="linux" hidden><pre>echo "deb [trusted=yes] https://db9979.github.io/sshtermy/apt ./" | sudo tee /etc/apt/sources.list.d/sshtermy.list
+sudo apt update && sudo apt install sshtermy</pre></div>
+      <p class="small">Or <a href="https://github.com/db9979/sshtermy/releases/latest">download the file</a>, then run <code>sshtermy</code>. <a href="#install">All options</a></p>
+    </div>
+    <div class="buttons">
+      <a class="btn" href="#tour">Take the tour</a>
+      <a class="btn coffee" href="https://buymeacoffee.com/zquu1xu570">☕ Buy me a coffee</a>
+    </div>
+    <p class="credit">Idea: Dominik Bornhäußer · free · MIT License</p>
   </div>
-  <figure>
-    <img src="gifs/goal-en.gif" width="962" height="594" alt="Goal mode: the AI sets up nginx step by step, each command is confirmed with Enter">
-    <figcaption>Goal mode (F2): describe a goal, the AI suggests exactly one command at a time, you confirm. Multi-line content such as config sections arrives as a file (created via SFTP after ⏎), and config files are extended, not replaced. If a command gets stuck at the shell's continuation prompt <code>&gt;</code>, sshTermy cancels it with Ctrl+C and tells the AI, so the next command is not swallowed.</figcaption>
-  </figure>
+  <figure><img src="bilder/03-ziel-modus.png" alt="Goal mode: the AI sets up Docker and Nginx one command at a time, you confirm each step"></figure>
+</section>
+
+<div class="promises">
+  <div><b>One program instead of five</b><span>Terminal, files, tunnels, monitoring and AI in one small file.</span></div>
+  <div><b>AI with brakes</b><span>It suggests and explains. Nothing dangerous runs without you.</span></div>
+  <div><b>Servers and switches</b><span>Linux, Windows, macOS and 48 network operating systems.</span></div>
+</div>
+
+<section id="features">
+  <h2>What sshTermy does</h2>
+  <p class="sub">Six areas, one program. “More” opens every detail.</p>
+  <div class="pillars">
+    <div class="pillar">
+      <span class="ic">>_</span>
+      <h3>Connect & work</h3>
+      <p class="pl">All your servers in one place, a real terminal.</p>
+      <ul><li>Connection manager with folders, tags and jump hosts; import from <code>~/.ssh/config</code>, PuTTY, MobaXterm</li><li>Tabs and split view with up to six sessions</li><li>SSH, Telnet, serial console, PowerShell over WinRM, local shell</li><li>Reconnects on its own after Wi-Fi or VPN drops</li></ul>
+      <a class="more" href="#all-connect">More →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">✦</span>
+      <h3>AI copilot</h3>
+      <p class="pl">Suggests, explains, gets it done. You decide.</p>
+      <ul><li>Ghost text and fitting follow-up commands as you type</li><li>A command failed? <kbd>Alt</kbd>+<kbd>0</kbd> names the cause and the fix</li><li>Goal mode: one command at a time, or on its own as an agent</li><li>Any OpenAI-compatible AI, Claude, local, offline, or none at all</li></ul>
+      <a class="more" href="#all-ai">More →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">!</span>
+      <h3>Safety</h3>
+      <p class="pl">Anything dangerous waits for you.</p>
+      <ul><li>Fixed danger rules, also when pasting</li><li>Every connection counts as production: red PROD badge</li><li>Encrypted store (AES-256, Argon2id) and screen lock</li><li>Signed audit log, AI privacy per connection</li></ul>
+      <a class="more" href="#all-safe">More →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">⇄</span>
+      <h3>Switches & network</h3>
+      <p class="pl">Made for network admins.</p>
+      <ul><li>48 command sets: Cisco, Aruba, Juniper, MikroTik, UniFi and more</li><li>Find device: MAC or IP in, switch, port and VLAN out</li><li>Topology from LLDP/CDP, config backups on a schedule</li><li>Broadcast: one command on every device of a group</li></ul>
+      <a class="more" href="#all-net">More →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">◎</span>
+      <h3>Run servers</h3>
+      <p class="pl">See what is going on, and fix it.</p>
+      <ul><li>Host overview with CPU, RAM, disks and live graphs</li><li>Log view and log watch with AI diagnosis</li><li>Vulnerabilities (OSV), hardening check, patch round</li><li>Files via SFTP like a file manager, tunnels with one click</li></ul>
+      <a class="more" href="#all-ops">More →</a>
+    </div>
+    <div class="pillar">
+      <span class="ic">⇅</span>
+      <h3>Team & on the go</h3>
+      <p class="pl">Set up the same everywhere.</p>
+      <ul><li>End-to-end encrypted sync via OneDrive, Dropbox, iCloud, WebDAV</li><li>Team folders keep everyone's connections up to date</li><li>Share a session live with a short code, watch in the browser</li><li>Move to a new computer with one file</li></ul>
+      <a class="more" href="#all-team">More →</a>
+    </div>
+  </div>
+  <details class="all" id="all">
+    <summary>All 68 features in detail</summary>
+    <h3 id="all-connect"><span class="ic">>_</span> Connect & work</h3>
+    <div class="features">
+    <div class="card"><h3>Connection manager</h3><p>Folders, tags, jump hosts, import from <code>~/.ssh/config</code>, PuTTY and MobaXterm.</p></div>
+    <div class="card"><h3>Forgiving</h3><p>Quitting asks while connections are open, deleting offers undo for 10 s, <kbd>Ctrl</kbd>+<kbd>T</kbd> in the form tests the connection before saving, and failed connections explain in plain language what's wrong (with a key to fix it, e.g. accept a new host key after a reinstall). Simple mode hides the pro features.</p></div>
+    <div class="card"><h3>Keeps running</h3><p>An error in one part (an odd AI answer, strange device output, the file view) no longer takes down sshTermy and all your connections: it is caught, a cleaned report is written and a message appears. <code>sshtermy doctor</code> or Help › Troubleshooting › “Self-check” checks folder, vault, keychain, SSH agent, internet, clock and AI in one go.</p></div>
+    <div class="card"><h3>Own window</h3><p>No terminal needed: double-click the <code>.exe</code>, open the <code>.app</code> or run <code>sshtermy -window</code>. Font, Nerd Font symbols and emoji are built in, every key arrives (Alt+⏎, ⇧F-keys, Ctrl+Space), images show pixel-perfect, dropped files are uploaded, ⇧F10 opens a second window that takes the scrollback along and scrolls with the mouse wheel or <kbd>⇧</kbd>+<kbd>PgUp</kbd>. Starts in full screen (<kbd>F11</kbd> toggles; maximized or “as last time” in the settings), font size and window position are remembered. From a terminal it runs in the terminal as before.</p></div>
+    <div class="card"><h3>Who is waiting for you</h3><p>A tab waiting for a password, a <code>[y/N]</code> question or a pager gets a <code>?</code>; <kbd>Alt</kbd>+<kbd>G</kbd> jumps there. AI coding agents in a tab (Claude Code, Codex, Gemini CLI and more) are recognized: working, waiting for your approval (<code>◆</code> plus desktop notification) or done. A click on the desktop notification opens the right tab.</p></div>
+    <div class="card"><h3>Sessions keep running</h3><p>With the background service, sessions survive closing the terminal window; <code>sshtermy</code> attaches again, <kbd>Ctrl</kbd>+<kbd>Q</kbd> → <kbd>a</kbd> detaches. At start sshTermy offers to reopen the tabs and split view from last time.</p></div>
+    <div class="card"><h3>Panels where you want them</h3><p>The side panel sits on the right, left or bottom, drag its edge to make it wider. In wide windows F5 and the log view sit beside the terminal, so you keep typing while you browse files. In split view every pane shows its folder, last command and load.</p></div>
+    <div class="card"><h3>Type less, find faster</h3><p>Ghost text suggests commands from your history first, instantly and without AI. <kbd>Alt</kbd>+<kbd>Y</kbd> shows what you copied recently and pastes it again. Right-click a selection to search an error message on the web, F5 opens in the folder you are in, and the AI status shows tokens and cost for today, 7 and 30 days.</p></div>
+    <div class="card"><h3>Keyboard &amp; header</h3><p><kbd>Alt</kbd>+<kbd>C</kbd> selects by keyboard (<kbd>v</kbd>, <kbd>V</kbd> lines, <kbd>y</kbd> copies), <kbd>Alt</kbd>+<kbd>X</kbd> clears screen and scrollback but keeps your input. The header can show the time or the output of your own command (git branch, battery …). AI clients can open tabs, type and wait via MCP, with your confirmation.</p></div>
+    <div class="card"><h3>Commands as blocks</h3><p><kbd>Alt</kbd>+<kbd>PgUp</kbd>/<kbd>PgDn</kbd> jumps from command to command in the scrollback. <kbd>Alt</kbd>+<kbd>O</kbd> lists the tab's commands with time, duration and result: copy exactly one output, hand it to the AI or read it in full.</p></div>
+    <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback (mouse wheel or <kbd>⇧</kbd>+<kbd>PgUp</kbd>), tabs, split view, search.</p></div>
+    <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen. After sleep or a network change every line is checked within seconds.</p></div>
+    <div class="card"><h3>Color rules</h3><p>Errors red, warnings yellow, IP blue, MAC purple, switch syslog by severity; your own rules, with <code>!</code> a hidden tab notifies you.</p></div>
+    <div class="card"><h3>Images in the terminal</h3><p>Sixel, kitty graphics and iTerm2 images (img2sixel, icat, viu, imgcat) as colored half blocks, in any terminal; pixel-perfect in kitty, Ghostty and sshTermy's own window.</p></div>
+    <div class="card"><h3>Split view &amp; tabs</h3><p>Seven layouts with up to six sessions, zoom, swap, type into all; tab bar with <code>+</code> (opens the connection manager, the chosen connection starts in an additional tab), <code>×</code>, right-click menu and tab list (<kbd>Alt</kbd>+<kbd>T</kbd>); drag tabs with the mouse, <kbd>Alt</kbd>+<kbd>S</kbd> searches all tabs. Every tab gets a colored frame, its name in the same color; red only for production. The active tab and pane are filled in their color and marked with ▶.</p></div>
+    <div class="card"><h3>Bulk change</h3><p>Mark several connections in the manager (<kbd>Space</kbd>, <kbd>*</kbd> for all hits) and change tags, user, protection or color in one step, move or delete them.</p></div>
+    <div class="card"><h3>Note, start command, Wake-on-LAN</h3><p>Per connection a note just for you, a command typed after login, and waking powered-off machines; sshTermy remembers the MAC address itself.</p></div>
+    <div class="card"><h3>Telnet &amp; serial</h3><p>Telnet and USB console cables (e.g. Aruba switches), cable picked automatically, login typed for you.</p></div>
+    <div class="card"><h3>Remote PowerShell</h3><p>Log into Windows servers like <code>Enter-PSSession</code> over WinRM (NTLM or Kerberos, encrypted, or HTTPS), with history, Tab completion from the server and AI that speaks PowerShell.</p></div>
+    <div class="card"><h3>Local shell</h3><p>Your own PowerShell, cmd, zsh or bash as a tab (<kbd>Alt</kbd>+<kbd>L</kbd>), with AI, agent and plan mode, split view and session log; danger rules apply here too.</p></div>
+    <div class="card"><h3>Pro SSH</h3><p>Agent forwarding, X11 forwarding, FIDO2 security keys, Kerberos/GSSAPI, SSH certificates, persistent tmux/screen sessions. Quantum-safe key exchange (ML-KEM) where the server supports it, and a clear notice when an old device only speaks SHA-1/CBC.</p></div>
+    <div class="card"><h3>Look &amp; keys</h3><p>26 themes with live preview, from Polar night, Synthwave and Ink to Paper and Mint, plus high contrast and color blindness, your own colors, four icon styles, every shortcut can be changed. Server output stays readable in every theme: colors from programs that don't know the theme are lifted to good contrast.</p></div>
+    <div class="card"><h3>Tidy screen</h3><p>One header line with tabs on the left and the session state on the right, a red ▲ PRODUCTION badge instead of a red bar, a function key bar at the bottom (<code>1Help 2Goal 3AI …</code>). The manager shows only what belongs to the selection, a folder its contents with status. Help (<kbd>F1</kbd>) has tabs, typing filters.</p></div>
+    <div class="card"><h3>Lively interface</h3><p>Connecting as a card with steps and a light sweep (text typed meanwhile waits for the prompt), tabs flash on success and errors, a card when hovering a tab, breathing online dots (only visible connections are checked) and load bars, the AI answer types out, palette matches light up, latency curve in the header, a frame gliding between split panes, dialogs with shadows and optional round corners. Full, subtle or off.</p></div>
+    <div class="card"><h3>Accessible &amp; supportable</h3><p>Accessible mode without animations and with shapes instead of color only. Debug log for bug reports (<code>--debug</code>), saved cleaned of hosts, IPs and passwords. Adaptive frame rate when output floods, plus a performance display in the palette that rates draw time in plain words.</p></div>
+    </div>
+    <h3 id="all-ai"><span class="ic">✦</span> AI copilot</h3>
+    <div class="features">
+    <div class="card"><h3>Goal mode in daily use</h3><p><kbd>?</kbd> gives the AI an instruction mid-goal, <kbd>⇧S</kbd> skips a step with a reason. When a command asks <code>[Y/n]</code> or a pager waits, the panel shows answer buttons. Files a step changes are backed up first, <kbd>u</kbd> restores them all; <kbd>f</kbd> starts a follow-up goal, earlier goals are in the history. After a connection drop <kbd>⏎</kbd> continues, and the tab shows when a goal is waiting for you.</p></div>
+    <div class="card"><h3>Tasks, diff and cross-check</h3><p>Open work per connection or folder with a due date (<kbd>u</kbd> in the manager, <kbd>Alt</kbd>+<kbd>A</kbd>): <kbd>⏎</kbd> starts a task as a goal, then it waits for your review. After every goal a second AI checks read-only whether it was really reached, and <kbd>d</kbd> shows every changed file as a diff.</p></div>
+    <div class="card"><h3>AI commands checked on the host</h3><p>Before a card command is inserted or run, sshTermy asks the real host whether the program exists and every option is in its man page or <code>--help</code>. macOS forms on Linux, the wrong package manager and anything the question rules out (“without lsof”) are caught, known slips repaired (<code>grep</code> on a folder gets <code>-r</code>). What stays open is marked <em>unconfirmed</em> and the AI tries again. Idea from lxask.</p></div>
+    <div class="card"><h3>Sentence → command, explain without AI</h3><p>Type what you want at the prompt in plain words, <kbd>Ctrl</kbd>+<kbd>G</kbd> turns the line into a checked command. <kbd>Alt</kbd>+<kbd>H</kbd> explains the typed or last command part by part from the host's man page, offline and without any AI.</p></div>
+    <div class="card"><h3>Small offline AI, or none</h3><p>No AI? Every AI feature is hidden, checks and explanations still work. One button downloads a small offline AI (lxask model via llama.cpp, about 1 GB, Windows, macOS, Linux, every file checked by SHA-256) that steps in when nothing else answers; goal, agent and plan mode stay hidden until a larger AI is connected.</p></div>
+    <div class="card"><h3>AI companion</h3><p>Reads along and comments on its own: quiet (errors, risky lines before Enter, repeats), chatty (every command) or coach (spots your goal, recap with runbook). Your own AI servers, also external, can be registered. If a command from an answer card fails, the card shows the error and a corrected command; <kbd>u</kbd> takes it over and fixes the same mistake in the other cards.</p></div>
+    <div class="card"><h3>Task across windows</h3><p><kbd>Alt</kbd>+<kbd>V</kbd> links the windows of one job (web server, database, switch). The AI sees all of them and says for each step which window it belongs in; route window by window with values carried over, plan in lanes, recap as change log. Before typing, sshTermy checks the target window (host key, prompt, system) and inserts nothing if it does not match.</p></div>
+    <div class="card"><h3>Agent &amp; plan mode</h3><p>The AI works towards a goal on its own, writes and runs scripts; three levels, dangerous steps always wait for you. Plan first: review and approve the whole plan.</p></div>
+    </div>
+    <h3 id="all-safe"><span class="ic">!</span> Safety</h3>
+    <div class="features">
+    <div class="card"><h3>Password manager</h3><p>Passwords and 2FA codes from 1Password, Bitwarden, KeePassXC or <code>pass</code>; only the reference is stored.</p></div>
+    <div class="card"><h3>Danger rules</h3><p>Fixed rules mark risky commands red; they need Enter twice, also when pasted. Every connection counts as production: hold Enter until the bar is full. Turn protection off per connection only, for test and lab systems. All rule groups always apply, so a misdetected switch cannot hide <code>erase</code>.</p></div>
+    <div class="card"><h3>Screen lock</h3><p>Lock now or after 5 to 60 minutes idle; sessions keep running behind the lock. Change the master password or the Windows sign-in any time.</p></div>
+    <div class="card"><h3>Audit log</h3><p>Who did what, when and where: connections, commands, transfers, config backups. Signed and chained, so edited or deleted lines are detected.</p></div>
+    <div class="card"><h3>AI privacy</h3><p>Allow all providers, only local AI on your own network, or no AI at all, globally or per connection by tag. See exactly what was last sent.</p></div>
+    </div>
+    <h3 id="all-net"><span class="ic">⇄</span> Switches & network</h3>
+    <div class="features">
+    <div class="card"><h3>Broadcast</h3><p>One command or runbook on a whole group in parallel, one tile per host: green when done, red on failure, pulsing while running. Changes run on one host first as a trial run and stop after 3 failures.</p></div>
+    <div class="card"><h3>Find device</h3><p>MAC or IP in, switch, port and VLAN out: sshTermy reads the MAC, ARP and LLDP tables of all switches, or only those in one folder if you look after several networks.</p></div>
+    <div class="card"><h3>Network topology</h3><p>LLDP/CDP neighbors become a picture with boxes, lines and port numbers, plus a Mermaid diagram; config rules check every backup.</p></div>
+    <div class="card"><h3>Schedules</h3><p>Broadcast or runbook at a set time on a folder, e.g. nightly <code>show running-config</code> on all switches. New hosts in the folder only join once you confirm them.</p></div>
+    <div class="card"><h3>Network scan</h3><p>Find SSH devices in a subnet and create them as connections.</p></div>
+    <div class="card"><h3>System profile</h3><p>Knows Linux distributions, macOS, Windows and network OS dialects (Aruba, Cisco, Juniper, MikroTik, FortiGate, UniFi …), so the AI suggests matching commands.</p></div>
+    <div class="card"><h3>Command sets</h3><p>48 command sets built in (Cisco, Arista, Aruba, Comware, Huawei, Dell, Extreme, Ruckus, Palo Alto, Sophos, FortiGate, pfSense, Proxmox …). Add your own as YAML, test it on the device or let the AI draft it, synced to your other computers; own and team sets can never weaken the built-in safety rules.</p></div>
+    </div>
+    <h3 id="all-ops"><span class="ic">◎</span> Run servers</h3>
+    <div class="features">
+    <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right. <kbd>e</kbd> opens a server file in VS Code, Notepad++ or TextEdit, saving uploads it back. While copying: percent, MB/s, time left and a speed curve. “Permission denied”? sshTermy offers to repeat it with sudo (<kbd>j</kbd> twice).</p></div>
+    <div class="card"><h3>Files like a file manager</h3><p>In F5: <kbd>d</kbd> moves to the trash, <kbd>Ctrl</kbd>+<kbd>Z</kbd> restores. <kbd>z</kbd>/<kbd>u</kbd> pack and extract right on the server, <kbd>/</kbd> finds files fuzzily in the whole folder tree, <kbd>i</kbd> shows the space hogs, <kbd>⇧I</kbd> duplicate files. <kbd>g</kbd> opens places with bookmarked folders and drives, <kbd>x</kbd>/<kbd>p</kbd> moves, <kbd>⇧F2</kbd> renames many files in your own editor. The preview shows folders, archives, image sizes, Markdown and CSV as a table.</p></div>
+    <div class="card"><h3>Files with the mouse</h3><p>Double-click a file to view it right in sshTermy: colors, search, select and copy, follow like <code>tail -f</code>. Images and PDFs open with your default app. A single click shows a preview, right-click opens a menu with rename, permissions, copy path and <code>cd</code> here. Clickable path, sortable columns, Ctrl/Shift+click to mark. Programs from the server ask before they run.</p></div>
+    <div class="card"><h3>Everything with the mouse</h3><p>Every menu opens and closes with a click: <kbd>Esc</kbd> stays clickable in the footer, the mouse wheel scrolls in all lists and result windows, the mouse back button works like <kbd>Esc</kbd>, a right-click on empty space goes up one level, help tabs switch with a click. In the manager a right-click on empty space offers new connection, new folder, import, scan and tag filter.</p></div>
+    <div class="card"><h3>Containers</h3><p>Docker, Podman and Kubernetes pods in one list: shell in the container, live logs, AI log analysis.</p></div>
+    <div class="card"><h3>Host overview (F6)</h3><p>CPU, load, RAM, every disk and updates for servers, live Braille graphs over 5 min or 1 h with top processes; firmware, ports and VLANs for more than 35 switch, router and firewall systems, with config backup and diff.</p></div>
+    <div class="card"><h3>Tunnels</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) and web services with one click.</p></div>
+    <div class="card"><h3>docker exec without -it</h3><p><code>docker exec gitea vi app.ini</code> would quit at once without a terminal. On Enter sshTermy adds the missing <code>-it</code> (also podman, <code>docker run</code>, <code>kubectl exec</code>); the next Enter runs it.</p></div>
+    <div class="card"><h3>Session log</h3><p>Encrypted, searchable, with AI summary, Markdown export and an AI change report (<kbd>b</kbd>) for tickets or docs. An activity calendar shows which days and hours you worked.</p></div>
+    <div class="card"><h3>AI log diagnosis</h3><p>A selection or the last 400 lines (journalctl, <code>show logging</code>): situation, what stands out with timestamps, cause, commands to check.</p></div>
+    <div class="card"><h3>Log view</h3><p><kbd>Alt</kbd>+<kbd>E</kbd> reads the logs of the system you are on (Linux, Windows, switches, firewalls), read-only, and shows patterns instead of lines: what is new since your last look, a timeline with reboots, updates and your own commands, hide noise per host or folder, and an AI status report from the condensed patterns only.</p></div>
+    <div class="card"><h3>Log watch &amp; folder scan</h3><p>Follows the logs of open tabs in the background and reports only new or critical patterns; receives syslog from switches and firewalls. The folder scan checks every host of a folder at once (also nightly as a schedule) and shows what several hosts share. <kbd>s</kbd> in a switch's log view sets up syslog to sshTermy. Syslog from senders without a saved connection is dropped.</p></div>
+    <div class="card"><h3>Security check (OSV)</h3><p><kbd>F6</kbd> → <kbd>s</kbd> compares the installed packages of a Linux server (and its running containers) with the public OSV database. Shows only what matters: score, fix available, actively exploited (CISA KEV), used by a service with an open port. <kbd>u</kbd> inserts the update command, <kbd>k</kbd> lets the AI explain. Online or fully offline, for a whole folder or weekly as a schedule. Only package names and versions leave your computer.</p></div>
+    <div class="card"><h3>Firmware advisories &amp; patch round</h3><p><kbd>F6</kbd> → <kbd>s</kbd> on a switch or firewall checks the firmware against the NVD (FortiOS, Cisco, Junos, RouterOS, Aruba, PAN-OS …): actively exploited, fixed in which version. The patch round installs updates across a folder in stages: first one host, then after <kbd>w</kbd> the rest, comparing services, ports and logs before and after, rebooting one at a time.</p></div>
+    <div class="card"><h3>Hardening check &amp; key inventory</h3><p><kbd>F6</kbd> → <kbd>h</kbd> checks a server read-only: root and password login, firewall, ports open to everyone (Redis, Docker API …), automatic updates, expiring TLS certificates, with a suggestion for each point. <kbd>F6</kbd> → <kbd>a</kbd> or the palette lists which SSH keys are in which <code>authorized_keys</code> across a folder and removes a former colleague's key host by host, with a backup copy.</p></div>
+    <div class="card"><h3>Inventory, changes &amp; disk forecast</h3><p><kbd>F6</kbd> → <kbd>i</kbd> records packages, users, admins, cron, listening ports, services and kernel, read-only, and shows what changed since last time: a new admin or port shows up at the top. Folder run from the palette, CSV export for audits. F6 also draws small curves for CPU, RAM and disks over 24 hours (<kbd>w</kbd>: 7 days) and warns "disk full in ~N days".</p></div>
+    <div class="card"><h3>Recording player</h3><p>Palette › <em>Play recording</em> plays <code>.cast</code> files right inside sshTermy: pause, speed up to 16×, seek, shorten long pauses, and <kbd>/</kbd> jumps to the moment a text was on screen, such as the first error message.</p></div>
+    <div class="card"><h3>Files in the terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) through <code>sudo su</code> and several hops, clipboard from the server via OSC 52.</p></div>
+    </div>
+    <h3 id="all-team"><span class="ic">⇅</span> Team & on the go</h3>
+    <div class="features">
+    <div class="card"><h3>To your phone when you are away</h3><p>Long command done, schedule ran, an agent waits for approval: when you are not at the computer, the notification goes to your phone via ntfy, Gotify or a webhook, without secrets. A schedule can let the AI check read-only at night (“is nginx running, is a disk full?”). Reopened tabs show the output from last time, dimmed.</p></div>
+    <div class="card"><h3>Share live</h3><p>A short code like <code>7-taube-kompass-ofen</code> is all a colleague needs (sent as a ready-made email if you like): in the same network without a relay, otherwise through yours. They knock, you compare three check words and let them in. Without sshTermy they watch in a browser, phones too via QR code. Ends by itself, pauses at password prompts, typing only on request.</p></div>
+    <div class="card"><h3>Sync</h3><p>End-to-end encrypted via OneDrive, Dropbox, iCloud, Syncthing or WebDAV (Synology, Nextcloud). Keys, shell and serial port can be set per computer, schedules run only on their computer, favorites count across all.</p></div>
+    <div class="card"><h3>Team sharing</h3><p>Encrypted <code>.sshteam</code> packages and team folders that keep everyone's connections up to date, without passwords.</p></div>
+    <div class="card"><h3>MCP server</h3><p>Claude and other AI clients use your saved connections via <code>sshtermy mcp</code>: read-only by default, anything else only after you confirm.</p></div>
+    <div class="card"><h3>Move to a new computer</h3><p>One encrypted file holds everything: connections, keys, logs, switch backups and settings. Restore it on the new machine, the old state stays as a copy.</p></div>
+    </div>
+  </details>
+</section>
+
+<section id="tour">
+  <h2>Tour</h2>
+  <p class="sub">What working with it looks like.</p>
+  <div class="tour">
+    <ol role="tablist">
+      <li><button type="button" role="tab" data-i="0" class="on">Unlock, pick a host, go</button></li>
+      <li><button type="button" role="tab" data-i="1">Ghost text and errors explained</button></li>
+      <li><button type="button" role="tab" data-i="2">One palette for everything</button></li>
+      <li><button type="button" role="tab" data-i="3">Agent mode: reach the goal on its own</button></li>
+      <li><button type="button" role="tab" data-i="4">AI companion: reads along, speaks up</button></li>
+      <li><button type="button" role="tab" data-i="5">Split view, tabs and workspaces</button></li>
+    </ol>
+    <div class="stage">
+      <figure data-i="0"><img src="gifs/start-en.gif" width="962" height="594" alt="Start animation, unlock with the master password, connect to web-01" loading="lazy"><figcaption>Your connections, passwords and keys live in an encrypted store (AES-256-GCM, Argon2id, plus DPAPI on Windows). The manager shows folders, tags and details; Enter connects. The details show load, RAM and disk of the server right away.</figcaption></figure>
+      <figure data-i="1" hidden><img src="gifs/ghost-en.gif" width="962" height="594" alt="Ghost text completes systemctl status nginx, the command fails, Alt+0 explains why and inserts the fix" loading="lazy"><figcaption>While you type, the AI completes the line in gray; Tab accepts. After every command it offers follow-ups (Alt+1…4). When a command fails, Alt+0 asks the AI why, with the output as context, and 1…9 inserts a suggested fix.</figcaption></figure>
+      <figure data-i="2" hidden><img src="gifs/palette-en.gif" width="962" height="594" alt="Command palette filters actions, then a question goes to the AI with terminal context" loading="lazy"><figcaption><kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the command palette: frequent actions and recent connections (with online dot) on top, everything else sorted into folders (AI, session, search &amp; logs, tabs &amp; view, network, team …), typing finds it all at once. Plain text becomes a goal (Enter) or a question to the AI (Tab). A detail column on the right explains the selected entry with a preview; settings have tabs. Search forgives typos and everyday words (German or English), shows where each hit lives (<kbd>→</kbd> jumps there), finds keys (“alt+e”), learns your frequent actions, pins entries with <kbd>*</kbd>, marks new entries NEW for 14 days, lists changed settings with “!” (<kbd>Del</kbd> resets), and asks the AI “where do I find …?” when nothing matches.</figcaption></figure>
+      <figure data-i="3" hidden><img src="bilder/16-agent.png" alt="Agent mode compresses old logs: plan on the right, a script ran as a dry run" loading="lazy"><figcaption>In goal mode (<kbd>F2</kbd>) <kbd>Tab</kbd> switches to the agent. It runs commands, reads their output, writes scripts via SFTP and runs them, dry run first. You pick the level: <em>Careful</em> (default, read-only on its own), <em>Normal</em> (signed in as root every change asks) or <em>Full</em> (sudo too). Dangerous commands and anything that reads secrets always wait for you, <kbd>Esc</kbd> pauses, <kbd>?</kbd> gives an instruction. At the end you get the complete summary: scroll it, copy it with <kbd>c</kbd> or read it in full with <kbd>l</kbd>. Any text in the panel, error messages included, can be selected with the mouse and is copied right away. With <em>Plan first</em> it only looks around read-only, writes a full plan, and you remove or change steps before you approve it with <kbd>⏎</kbd>.</figcaption></figure>
+      <figure data-i="4" hidden><img src="bilder/20-begleiter.png" alt="The companion spotted the intent “set up HTTPS for shop.example.de” and offers the missing steps, plan or agent" loading="lazy"><figcaption><kbd>Alt</kbd>+<kbd>K</kbd> picks the level. <em>Quiet</em> only speaks up when a command fails, a typed line is risky before you press Enter (<kbd>Alt</kbd>+<kbd>1</kbd> swaps in the safer variant) or a command repeats. <em>Chatty</em> comments on every command in the sidebar (<kbd>Alt</kbd>+<kbd>J</kbd>). <em>Coach</em> spots what you are working towards and hands the rest to plan mode or the agent, and recaps the session when you close the tab. Limits per hour and per day, nothing sent at password prompts, and with your own AI the filters can be turned off.</figcaption></figure>
+      <figure data-i="5" hidden><img src="bilder/17-geteilt.png" alt="Split view: a production host large on the left, a database and a switch on the right" loading="lazy"><figcaption><kbd>Ctrl</kbd>+<kbd>T</kbd> shows up to six sessions in seven layouts. Drag dividers with the mouse, zoom a pane with <kbd>Alt</kbd>+<kbd>Z</kbd>, swap panes by dragging their title, and <kbd>Alt</kbd>+<kbd>I</kbd> types into all of them at once. <kbd>w</kbd> in the manager saves the whole arrangement as a workspace.</figcaption></figure>
+    </div>
+  </div>
 </section>
 
 <section id="install">
   <h2>Install</h2>
+
   <p>Pick your system. Every way installs the same release from GitHub.</p>
   <div class="os">
     <div class="card">
@@ -76,138 +254,10 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <p>Then type <code>sshtermy</code>. On first start you choose a master password for your encrypted store.</p>
 </section>
 
-<section id="tour">
-  <h2>Tour</h2>
-  <div class="demo">
-    <div class="text">
-      <h3>Unlock, pick a host, go</h3>
-      <p>Your connections, passwords and keys live in an encrypted store (AES-256-GCM, Argon2id, plus DPAPI on Windows). The manager shows folders, tags and details; Enter connects. The details show load, RAM and disk of the server right away.</p>
-    </div>
-    <figure><img src="gifs/start-en.gif" width="962" height="594" alt="Start animation, unlock with the master password, connect to web-01" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>Ghost text and errors explained</h3>
-      <p>While you type, the AI completes the line in gray; Tab accepts. After every command it offers follow-ups (Alt+1…4). When a command fails, Alt+0 asks the AI why, with the output as context, and 1…9 inserts a suggested fix.</p>
-    </div>
-    <figure><img src="gifs/ghost-en.gif" width="962" height="594" alt="Ghost text completes systemctl status nginx, the command fails, Alt+0 explains why and inserts the fix" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>One palette for everything</h3>
-      <p><kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the command palette: frequent actions and recent connections (with online dot) on top, everything else sorted into folders (AI, session, search &amp; logs, tabs &amp; view, network, team …), typing finds it all at once. Plain text becomes a goal (Enter) or a question to the AI (Tab). A detail column on the right explains the selected entry with a preview; settings have tabs. Search forgives typos and everyday words (German or English), shows where each hit lives (<kbd>→</kbd> jumps there), finds keys (“alt+e”), learns your frequent actions, pins entries with <kbd>*</kbd>, marks new entries NEW for 14 days, lists changed settings with “!” (<kbd>Del</kbd> resets), and asks the AI “where do I find …?” when nothing matches.</p>
-    </div>
-    <figure><img src="gifs/palette-en.gif" width="962" height="594" alt="Command palette filters actions, then a question goes to the AI with terminal context" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>Agent mode: reach the goal on its own</h3>
-      <p>In goal mode (<kbd>F2</kbd>) <kbd>Tab</kbd> switches to the agent. It runs commands, reads their output, writes scripts via SFTP and runs them, dry run first. You pick the level: <em>Careful</em> (default, read-only on its own), <em>Normal</em> (signed in as root every change asks) or <em>Full</em> (sudo too). Dangerous commands and anything that reads secrets always wait for you, <kbd>Esc</kbd> pauses, <kbd>?</kbd> gives an instruction. At the end you get the complete summary: scroll it, copy it with <kbd>c</kbd> or read it in full with <kbd>l</kbd>. Any text in the panel, error messages included, can be selected with the mouse and is copied right away. With <em>Plan first</em> it only looks around read-only, writes a full plan, and you remove or change steps before you approve it with <kbd>⏎</kbd>.</p>
-    </div>
-    <figure><img src="bilder/16-agent.png" alt="Agent mode compresses old logs: plan on the right, a script ran as a dry run" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>AI companion: reads along, speaks up</h3>
-      <p><kbd>Alt</kbd>+<kbd>K</kbd> picks the level. <em>Quiet</em> only speaks up when a command fails, a typed line is risky before you press Enter (<kbd>Alt</kbd>+<kbd>1</kbd> swaps in the safer variant) or a command repeats. <em>Chatty</em> comments on every command in the sidebar (<kbd>Alt</kbd>+<kbd>J</kbd>). <em>Coach</em> spots what you are working towards and hands the rest to plan mode or the agent, and recaps the session when you close the tab. Limits per hour and per day, nothing sent at password prompts, and with your own AI the filters can be turned off.</p>
-    </div>
-    <figure><img src="bilder/20-begleiter.png" alt="The companion spotted the intent “set up HTTPS for shop.example.de” and offers the missing steps, plan or agent" loading="lazy"></figure>
-  </div>
-  <div class="demo">
-    <div class="text">
-      <h3>Split view, tabs and workspaces</h3>
-      <p><kbd>Ctrl</kbd>+<kbd>T</kbd> shows up to six sessions in seven layouts. Drag dividers with the mouse, zoom a pane with <kbd>Alt</kbd>+<kbd>Z</kbd>, swap panes by dragging their title, and <kbd>Alt</kbd>+<kbd>I</kbd> types into all of them at once. <kbd>w</kbd> in the manager saves the whole arrangement as a workspace.</p>
-    </div>
-    <figure><img src="bilder/17-geteilt.png" alt="Split view: a production host large on the left, a database and a switch on the right" loading="lazy"></figure>
-  </div>
-</section>
-
-<section id="features">
-  <h2>Features</h2>
-  <div class="features">
-    <div class="card"><h3>Connection manager</h3><p>Folders, tags, jump hosts, import from <code>~/.ssh/config</code>, PuTTY and MobaXterm.</p></div>
-    <div class="card"><h3>Forgiving</h3><p>Quitting asks while connections are open, deleting offers undo for 10 s, <kbd>Ctrl</kbd>+<kbd>T</kbd> in the form tests the connection before saving, and failed connections explain in plain language what's wrong (with a key to fix it, e.g. accept a new host key after a reinstall). Simple mode hides the pro features.</p></div>
-    <div class="card"><h3>Keeps running</h3><p>An error in one part (an odd AI answer, strange device output, the file view) no longer takes down sshTermy and all your connections: it is caught, a cleaned report is written and a message appears. <code>sshtermy doctor</code> or Help › Troubleshooting › “Self-check” checks folder, vault, keychain, SSH agent, internet, clock and AI in one go.</p></div>
-    <div class="card"><h3>Own window</h3><p>No terminal needed: double-click the <code>.exe</code>, open the <code>.app</code> or run <code>sshtermy -window</code>. Font, Nerd Font symbols and emoji are built in, every key arrives (Alt+⏎, ⇧F-keys, Ctrl+Space), images show pixel-perfect, dropped files are uploaded, ⇧F10 opens a second window that takes the scrollback along and scrolls with the mouse wheel or <kbd>⇧</kbd>+<kbd>PgUp</kbd>. Starts in full screen (<kbd>F11</kbd> toggles; maximized or “as last time” in the settings), font size and window position are remembered. From a terminal it runs in the terminal as before.</p></div>
-    <div class="card"><h3>Goal mode in daily use</h3><p><kbd>?</kbd> gives the AI an instruction mid-goal, <kbd>⇧S</kbd> skips a step with a reason. When a command asks <code>[Y/n]</code> or a pager waits, the panel shows answer buttons. Files a step changes are backed up first, <kbd>u</kbd> restores them all; <kbd>f</kbd> starts a follow-up goal, earlier goals are in the history. After a connection drop <kbd>⏎</kbd> continues, and the tab shows when a goal is waiting for you.</p></div>
-    <div class="card"><h3>Who is waiting for you</h3><p>A tab waiting for a password, a <code>[y/N]</code> question or a pager gets a <code>?</code>; <kbd>Alt</kbd>+<kbd>G</kbd> jumps there. AI coding agents in a tab (Claude Code, Codex, Gemini CLI and more) are recognized: working, waiting for your approval (<code>◆</code> plus desktop notification) or done. A click on the desktop notification opens the right tab.</p></div>
-    <div class="card"><h3>Sessions keep running</h3><p>With the background service, sessions survive closing the terminal window; <code>sshtermy</code> attaches again, <kbd>Ctrl</kbd>+<kbd>Q</kbd> → <kbd>a</kbd> detaches. At start sshTermy offers to reopen the tabs and split view from last time.</p></div>
-    <div class="card"><h3>Tasks, diff and cross-check</h3><p>Open work per connection or folder with a due date (<kbd>u</kbd> in the manager, <kbd>Alt</kbd>+<kbd>A</kbd>): <kbd>⏎</kbd> starts a task as a goal, then it waits for your review. After every goal a second AI checks read-only whether it was really reached, and <kbd>d</kbd> shows every changed file as a diff.</p></div>
-    <div class="card"><h3>Panels where you want them</h3><p>The side panel sits on the right, left or bottom, drag its edge to make it wider. In wide windows F5 and the log view sit beside the terminal, so you keep typing while you browse files. In split view every pane shows its folder, last command and load.</p></div>
-    <div class="card"><h3>To your phone when you are away</h3><p>Long command done, schedule ran, an agent waits for approval: when you are not at the computer, the notification goes to your phone via ntfy, Gotify or a webhook, without secrets. A schedule can let the AI check read-only at night (“is nginx running, is a disk full?”). Reopened tabs show the output from last time, dimmed.</p></div>
-    <div class="card"><h3>Type less, find faster</h3><p>Ghost text suggests commands from your history first, instantly and without AI. <kbd>Alt</kbd>+<kbd>Y</kbd> shows what you copied recently and pastes it again. Right-click a selection to search an error message on the web, F5 opens in the folder you are in, and the AI status shows tokens and cost for today, 7 and 30 days.</p></div>
-    <div class="card"><h3>Keyboard &amp; header</h3><p><kbd>Alt</kbd>+<kbd>C</kbd> selects by keyboard (<kbd>v</kbd>, <kbd>V</kbd> lines, <kbd>y</kbd> copies), <kbd>Alt</kbd>+<kbd>X</kbd> clears screen and scrollback but keeps your input. The header can show the time or the output of your own command (git branch, battery …). AI clients can open tabs, type and wait via MCP, with your confirmation.</p></div>
-    <div class="card"><h3>Commands as blocks</h3><p><kbd>Alt</kbd>+<kbd>PgUp</kbd>/<kbd>PgDn</kbd> jumps from command to command in the scrollback. <kbd>Alt</kbd>+<kbd>O</kbd> lists the tab's commands with time, duration and result: copy exactly one output, hand it to the AI or read it in full.</p></div>
-    <div class="card"><h3>Real terminal</h3><p>xterm-256color, truecolor, vim, htop and tmux, scrollback (mouse wheel or <kbd>⇧</kbd>+<kbd>PgUp</kbd>), tabs, split view, search.</p></div>
-    <div class="card"><h3>Auto-reconnect</h3><p>When Wi-Fi or VPN drops, the session comes back by itself, with tunnels and tmux/screen. After sleep or a network change every line is checked within seconds.</p></div>
-    <div class="card"><h3>Files (F5)</h3><p>SFTP over the same connection: local on the left, server on the right. <kbd>e</kbd> opens a server file in VS Code, Notepad++ or TextEdit, saving uploads it back. While copying: percent, MB/s, time left and a speed curve. “Permission denied”? sshTermy offers to repeat it with sudo (<kbd>j</kbd> twice).</p></div>
-    <div class="card"><h3>Files like a file manager</h3><p>In F5: <kbd>d</kbd> moves to the trash, <kbd>Ctrl</kbd>+<kbd>Z</kbd> restores. <kbd>z</kbd>/<kbd>u</kbd> pack and extract right on the server, <kbd>/</kbd> finds files fuzzily in the whole folder tree, <kbd>i</kbd> shows the space hogs, <kbd>⇧I</kbd> duplicate files. <kbd>g</kbd> opens places with bookmarked folders and drives, <kbd>x</kbd>/<kbd>p</kbd> moves, <kbd>⇧F2</kbd> renames many files in your own editor. The preview shows folders, archives, image sizes, Markdown and CSV as a table.</p></div>
-    <div class="card"><h3>Files with the mouse</h3><p>Double-click a file to view it right in sshTermy: colors, search, select and copy, follow like <code>tail -f</code>. Images and PDFs open with your default app. A single click shows a preview, right-click opens a menu with rename, permissions, copy path and <code>cd</code> here. Clickable path, sortable columns, Ctrl/Shift+click to mark. Programs from the server ask before they run.</p></div>
-    <div class="card"><h3>Everything with the mouse</h3><p>Every menu opens and closes with a click: <kbd>Esc</kbd> stays clickable in the footer, the mouse wheel scrolls in all lists and result windows, the mouse back button works like <kbd>Esc</kbd>, a right-click on empty space goes up one level, help tabs switch with a click. In the manager a right-click on empty space offers new connection, new folder, import, scan and tag filter.</p></div>
-    <div class="card"><h3>Color rules</h3><p>Errors red, warnings yellow, IP blue, MAC purple, switch syslog by severity; your own rules, with <code>!</code> a hidden tab notifies you.</p></div>
-    <div class="card"><h3>Images in the terminal</h3><p>Sixel, kitty graphics and iTerm2 images (img2sixel, icat, viu, imgcat) as colored half blocks, in any terminal; pixel-perfect in kitty, Ghostty and sshTermy's own window.</p></div>
-    <div class="card"><h3>Containers</h3><p>Docker, Podman and Kubernetes pods in one list: shell in the container, live logs, AI log analysis.</p></div>
-    <div class="card"><h3>Host overview (F6)</h3><p>CPU, load, RAM, every disk and updates for servers, live Braille graphs over 5 min or 1 h with top processes; firmware, ports and VLANs for more than 35 switch, router and firewall systems, with config backup and diff.</p></div>
-    <div class="card"><h3>Tunnels</h3><p><code>-L</code>, <code>-R</code>, <code>-D</code> (SOCKS5) and web services with one click.</p></div>
-    <div class="card"><h3>Broadcast</h3><p>One command or runbook on a whole group in parallel, one tile per host: green when done, red on failure, pulsing while running. Changes run on one host first as a trial run and stop after 3 failures.</p></div>
-    <div class="card"><h3>Share live</h3><p>A short code like <code>7-taube-kompass-ofen</code> is all a colleague needs (sent as a ready-made email if you like): in the same network without a relay, otherwise through yours. They knock, you compare three check words and let them in. Without sshTermy they watch in a browser, phones too via QR code. Ends by itself, pauses at password prompts, typing only on request.</p></div>
-    <div class="card"><h3>Find device</h3><p>MAC or IP in, switch, port and VLAN out: sshTermy reads the MAC, ARP and LLDP tables of all switches, or only those in one folder if you look after several networks.</p></div>
-    <div class="card"><h3>Network topology</h3><p>LLDP/CDP neighbors become a picture with boxes, lines and port numbers, plus a Mermaid diagram; config rules check every backup.</p></div>
-    <div class="card"><h3>Schedules</h3><p>Broadcast or runbook at a set time on a folder, e.g. nightly <code>show running-config</code> on all switches. New hosts in the folder only join once you confirm them.</p></div>
-    <div class="card"><h3>Password manager</h3><p>Passwords and 2FA codes from 1Password, Bitwarden, KeePassXC or <code>pass</code>; only the reference is stored.</p></div>
-    <div class="card"><h3>Network scan</h3><p>Find SSH devices in a subnet and create them as connections.</p></div>
-    <div class="card"><h3>Danger rules</h3><p>Fixed rules mark risky commands red; they need Enter twice, also when pasted. Every connection counts as production: hold Enter until the bar is full. Turn protection off per connection only, for test and lab systems. All rule groups always apply, so a misdetected switch cannot hide <code>erase</code>.</p></div>
-    <div class="card"><h3>docker exec without -it</h3><p><code>docker exec gitea vi app.ini</code> would quit at once without a terminal. On Enter sshTermy adds the missing <code>-it</code> (also podman, <code>docker run</code>, <code>kubectl exec</code>); the next Enter runs it.</p></div>
-    <div class="card"><h3>Session log</h3><p>Encrypted, searchable, with AI summary, Markdown export and an AI change report (<kbd>b</kbd>) for tickets or docs. An activity calendar shows which days and hours you worked.</p></div>
-    <div class="card"><h3>AI log diagnosis</h3><p>A selection or the last 400 lines (journalctl, <code>show logging</code>): situation, what stands out with timestamps, cause, commands to check.</p></div>
-    <div class="card"><h3>Log view</h3><p><kbd>Alt</kbd>+<kbd>E</kbd> reads the logs of the system you are on (Linux, Windows, switches, firewalls), read-only, and shows patterns instead of lines: what is new since your last look, a timeline with reboots, updates and your own commands, hide noise per host or folder, and an AI status report from the condensed patterns only.</p></div>
-    <div class="card"><h3>Log watch &amp; folder scan</h3><p>Follows the logs of open tabs in the background and reports only new or critical patterns; receives syslog from switches and firewalls. The folder scan checks every host of a folder at once (also nightly as a schedule) and shows what several hosts share. <kbd>s</kbd> in a switch's log view sets up syslog to sshTermy. Syslog from senders without a saved connection is dropped.</p></div>
-    <div class="card"><h3>Security check (OSV)</h3><p><kbd>F6</kbd> → <kbd>s</kbd> compares the installed packages of a Linux server (and its running containers) with the public OSV database. Shows only what matters: score, fix available, actively exploited (CISA KEV), used by a service with an open port. <kbd>u</kbd> inserts the update command, <kbd>k</kbd> lets the AI explain. Online or fully offline, for a whole folder or weekly as a schedule. Only package names and versions leave your computer.</p></div>
-    <div class="card"><h3>Firmware advisories &amp; patch round</h3><p><kbd>F6</kbd> → <kbd>s</kbd> on a switch or firewall checks the firmware against the NVD (FortiOS, Cisco, Junos, RouterOS, Aruba, PAN-OS …): actively exploited, fixed in which version. The patch round installs updates across a folder in stages: first one host, then after <kbd>w</kbd> the rest, comparing services, ports and logs before and after, rebooting one at a time.</p></div>
-    <div class="card"><h3>Hardening check &amp; key inventory</h3><p><kbd>F6</kbd> → <kbd>h</kbd> checks a server read-only: root and password login, firewall, ports open to everyone (Redis, Docker API …), automatic updates, expiring TLS certificates, with a suggestion for each point. <kbd>F6</kbd> → <kbd>a</kbd> or the palette lists which SSH keys are in which <code>authorized_keys</code> across a folder and removes a former colleague's key host by host, with a backup copy.</p></div>
-    <div class="card"><h3>Inventory, changes &amp; disk forecast</h3><p><kbd>F6</kbd> → <kbd>i</kbd> records packages, users, admins, cron, listening ports, services and kernel, read-only, and shows what changed since last time: a new admin or port shows up at the top. Folder run from the palette, CSV export for audits. F6 also draws small curves for CPU, RAM and disks over 24 hours (<kbd>w</kbd>: 7 days) and warns "disk full in ~N days".</p></div>
-    <div class="card"><h3>Recording player</h3><p>Palette › <em>Play recording</em> plays <code>.cast</code> files right inside sshTermy: pause, speed up to 16×, seek, shorten long pauses, and <kbd>/</kbd> jumps to the moment a text was on screen, such as the first error message.</p></div>
-    <div class="card"><h3>Sync</h3><p>End-to-end encrypted via OneDrive, Dropbox, iCloud, Syncthing or WebDAV (Synology, Nextcloud). Keys, shell and serial port can be set per computer, schedules run only on their computer, favorites count across all.</p></div>
-    <div class="card"><h3>System profile</h3><p>Knows Linux distributions, macOS, Windows and network OS dialects (Aruba, Cisco, Juniper, MikroTik, FortiGate, UniFi …), so the AI suggests matching commands.</p></div>
-    <div class="card"><h3>Command sets</h3><p>48 command sets built in (Cisco, Arista, Aruba, Comware, Huawei, Dell, Extreme, Ruckus, Palo Alto, Sophos, FortiGate, pfSense, Proxmox …). Add your own as YAML, test it on the device or let the AI draft it, synced to your other computers; own and team sets can never weaken the built-in safety rules.</p></div>
-    <div class="card"><h3>AI commands checked on the host</h3><p>Before a card command is inserted or run, sshTermy asks the real host whether the program exists and every option is in its man page or <code>--help</code>. macOS forms on Linux, the wrong package manager and anything the question rules out (“without lsof”) are caught, known slips repaired (<code>grep</code> on a folder gets <code>-r</code>). What stays open is marked <em>unconfirmed</em> and the AI tries again. Idea from lxask.</p></div>
-    <div class="card"><h3>Sentence → command, explain without AI</h3><p>Type what you want at the prompt in plain words, <kbd>Ctrl</kbd>+<kbd>G</kbd> turns the line into a checked command. <kbd>Alt</kbd>+<kbd>H</kbd> explains the typed or last command part by part from the host's man page, offline and without any AI.</p></div>
-    <div class="card"><h3>Small offline AI, or none</h3><p>No AI? Every AI feature is hidden, checks and explanations still work. One button downloads a small offline AI (lxask model via llama.cpp, about 1 GB, Windows, macOS, Linux, every file checked by SHA-256) that steps in when nothing else answers; goal, agent and plan mode stay hidden until a larger AI is connected.</p></div>
-    <div class="card"><h3>AI companion</h3><p>Reads along and comments on its own: quiet (errors, risky lines before Enter, repeats), chatty (every command) or coach (spots your goal, recap with runbook). Your own AI servers, also external, can be registered. If a command from an answer card fails, the card shows the error and a corrected command; <kbd>u</kbd> takes it over and fixes the same mistake in the other cards.</p></div>
-    <div class="card"><h3>Task across windows</h3><p><kbd>Alt</kbd>+<kbd>V</kbd> links the windows of one job (web server, database, switch). The AI sees all of them and says for each step which window it belongs in; route window by window with values carried over, plan in lanes, recap as change log. Before typing, sshTermy checks the target window (host key, prompt, system) and inserts nothing if it does not match.</p></div>
-    <div class="card"><h3>Agent &amp; plan mode</h3><p>The AI works towards a goal on its own, writes and runs scripts; three levels, dangerous steps always wait for you. Plan first: review and approve the whole plan.</p></div>
-    <div class="card"><h3>Split view &amp; tabs</h3><p>Seven layouts with up to six sessions, zoom, swap, type into all; tab bar with <code>+</code> (opens the connection manager, the chosen connection starts in an additional tab), <code>×</code>, right-click menu and tab list (<kbd>Alt</kbd>+<kbd>T</kbd>); drag tabs with the mouse, <kbd>Alt</kbd>+<kbd>S</kbd> searches all tabs. Every tab gets a colored frame, its name in the same color; red only for production. The active tab and pane are filled in their color and marked with ▶.</p></div>
-    <div class="card"><h3>Bulk change</h3><p>Mark several connections in the manager (<kbd>Space</kbd>, <kbd>*</kbd> for all hits) and change tags, user, protection or color in one step, move or delete them.</p></div>
-    <div class="card"><h3>Note, start command, Wake-on-LAN</h3><p>Per connection a note just for you, a command typed after login, and waking powered-off machines; sshTermy remembers the MAC address itself.</p></div>
-    <div class="card"><h3>Telnet &amp; serial</h3><p>Telnet and USB console cables (e.g. Aruba switches), cable picked automatically, login typed for you.</p></div>
-    <div class="card"><h3>Remote PowerShell</h3><p>Log into Windows servers like <code>Enter-PSSession</code> over WinRM (NTLM or Kerberos, encrypted, or HTTPS), with history, Tab completion from the server and AI that speaks PowerShell.</p></div>
-    <div class="card"><h3>Local shell</h3><p>Your own PowerShell, cmd, zsh or bash as a tab (<kbd>Alt</kbd>+<kbd>L</kbd>), with AI, agent and plan mode, split view and session log; danger rules apply here too.</p></div>
-    <div class="card"><h3>Pro SSH</h3><p>Agent forwarding, X11 forwarding, FIDO2 security keys, Kerberos/GSSAPI, SSH certificates, persistent tmux/screen sessions. Quantum-safe key exchange (ML-KEM) where the server supports it, and a clear notice when an old device only speaks SHA-1/CBC.</p></div>
-    <div class="card"><h3>Files in the terminal</h3><p><code>tsz</code>/<code>trz</code> (trzsz) through <code>sudo su</code> and several hops, clipboard from the server via OSC 52.</p></div>
-    <div class="card"><h3>Team sharing</h3><p>Encrypted <code>.sshteam</code> packages and team folders that keep everyone's connections up to date, without passwords.</p></div>
-    <div class="card"><h3>Look &amp; keys</h3><p>26 themes with live preview, from Polar night, Synthwave and Ink to Paper and Mint, plus high contrast and color blindness, your own colors, four icon styles, every shortcut can be changed. Server output stays readable in every theme: colors from programs that don't know the theme are lifted to good contrast.</p></div>
-    <div class="card"><h3>Tidy screen</h3><p>One header line with tabs on the left and the session state on the right, a red ▲ PRODUCTION badge instead of a red bar, a function key bar at the bottom (<code>1Help 2Goal 3AI …</code>). The manager shows only what belongs to the selection, a folder its contents with status. Help (<kbd>F1</kbd>) has tabs, typing filters.</p></div>
-    <div class="card"><h3>Lively interface</h3><p>Connecting as a card with steps and a light sweep (text typed meanwhile waits for the prompt), tabs flash on success and errors, a card when hovering a tab, breathing online dots (only visible connections are checked) and load bars, the AI answer types out, palette matches light up, latency curve in the header, a frame gliding between split panes, dialogs with shadows and optional round corners. Full, subtle or off.</p></div>
-    <div class="card"><h3>Accessible &amp; supportable</h3><p>Accessible mode without animations and with shapes instead of color only. Debug log for bug reports (<code>--debug</code>), saved cleaned of hosts, IPs and passwords. Adaptive frame rate when output floods, plus a performance display in the palette that rates draw time in plain words.</p></div>
-    <div class="card"><h3>Screen lock</h3><p>Lock now or after 5 to 60 minutes idle; sessions keep running behind the lock. Change the master password or the Windows sign-in any time.</p></div>
-    <div class="card"><h3>MCP server</h3><p>Claude and other AI clients use your saved connections via <code>sshtermy mcp</code>: read-only by default, anything else only after you confirm.</p></div>
-    <div class="card"><h3>Audit log</h3><p>Who did what, when and where: connections, commands, transfers, config backups. Signed and chained, so edited or deleted lines are detected.</p></div>
-    <div class="card"><h3>Move to a new computer</h3><p>One encrypted file holds everything: connections, keys, logs, switch backups and settings. Restore it on the new machine, the old state stays as a copy.</p></div>
-    <div class="card"><h3>AI privacy</h3><p>Allow all providers, only local AI on your own network, or no AI at all, globally or per connection by tag. See exactly what was last sent.</p></div>
-  </div>
-  <div class="shots">
-    <figure><img src="bilder/02-manager.png" alt="Connection manager" loading="lazy"><figcaption>Connection manager</figcaption></figure>
-    <figure><img src="bilder/14-host-switch.png" alt="Host overview of a switch" loading="lazy"><figcaption>Host overview of a switch (F6)</figcaption></figure>
-    <figure><img src="bilder/12-dateien.png" alt="Files via SFTP" loading="lazy"><figcaption>Files via SFTP (F5)</figcaption></figure>
-    <figure><img src="bilder/04-gefahr.png" alt="Dangerous command needs confirmation" loading="lazy"><figcaption>Danger rules</figcaption></figure>
-    <figure><img src="bilder/18-tabs.png" alt="Tab list with all open sessions" loading="lazy"><figcaption>Tab list (Alt+T)</figcaption></figure>
-    <figure><img src="bilder/19-protokolle.png" alt="Session logs grouped by day" loading="lazy"><figcaption>Session logs by day or host (l)</figcaption></figure>
-  </div>
-  <p><small>The screenshots show the German interface; the English one looks the same.</small></p>
-</section>
-
+<div class="two">
 <section id="ai">
   <h2>AI setup</h2>
+
   <p>sshTermy talks to any OpenAI-compatible endpoint (<code>/v1/chat/completions</code>): Ollama, vLLM, SGLang, LiteLLM, LocalAI or OpenAI itself, and also Claude (Anthropic). A local model keeps your terminal content on your own hardware.</p>
   <ol>
     <li>In the manager press <kbd>s</kbd> (AI settings).</li>
@@ -220,8 +270,56 @@ sudo apt update && sudo apt install sshtermy</pre></div>
   <p>The dot in the top right shows whether the AI is reachable (green, yellow when slow, red on error). Step by step, the AI only suggests and you decide what runs. In agent mode it runs commands within the level you chose; dangerous ones, and every change on production hosts and network devices, still wait for you. Passwords and secrets are removed from the context before it is sent.</p>
 </section>
 
+<section id="updates">
+  <h2>Updates</h2>
+
+  <p>A direct download or the one-line installer updates itself: sshTermy checks GitHub once a day, verifies the checksum and the signature (which also names the version) and swaps the file (<kbd>F12</kbd> → <kbd>u</kbd>, or <code>sshtermy --update</code>).</p>
+  <p>Installed with a package manager, the package manager updates it:</p>
+  <table>
+    <tr><td>Homebrew</td><td><code>brew upgrade sshtermy</code></td></tr>
+    <tr><td>apt</td><td><code>sudo apt update && sudo apt upgrade</code></td></tr>
+    <tr><td>winget</td><td><code>winget upgrade db9979.sshTermy</code> (the built-in update works as well)</td></tr>
+  </table>
+</section>
+</div>
+
+<div class="two">
 <section id="keys">
-  <h2>Keys</h2>
+  <h2>The most important keys</h2>
+  <p class="sub">Every key can be changed (<kbd>b</kbd> in the manager). <kbd>F1</kbd> shows the rest in the app.</p>
+  <div class="topkeys">
+    <div><span><kbd>Ctrl</kbd>+<kbd>Space</kbd></span><span>Command palette: find everything</span></div>
+    <div><span><kbd>F1</kbd></span><span>Help</span></div>
+    <div><span><kbd>F2</kbd></span><span>Goal mode / agent</span></div>
+    <div><span><kbd>F3</kbd></span><span>Ask the AI</span></div>
+    <div><span><kbd>F5</kbd></span><span>Files (SFTP)</span></div>
+    <div><span><kbd>F6</kbd></span><span>Host overview</span></div>
+    <div><span><kbd>Ctrl</kbd>+<kbd>T</kbd></span><span>Split view</span></div>
+    <div><span><kbd>Alt</kbd>+<kbd>N</kbd></span><span>New tab</span></div>
+    <div><span><kbd>Tab</kbd></span><span>Accept ghost text</span></div>
+    <div><span><kbd>Alt</kbd>+<kbd>0</kbd></span><span>Explain an error</span></div>
+    <div><span><kbd>F10</kbd></span><span>Back to the manager</span></div>
+    <div><span><kbd>Ctrl</kbd>+<kbd>Q</kbd></span><span>Quit</span></div>
+  </div>
+  <div class="buttons" id="quickref">
+    <a class="btn primary" href="handout/sshtermy-quickref-en.pdf">⤓ Quick reference (PDF)</a>
+    <a class="btn" href="handout/sshtermy-kurzreferenz-de.pdf">Kurzreferenz (Deutsch)</a>
+  </div>
+  <p class="small">All keys, modes and features on two A4 pages, printer friendly (white background, little ink). Keep it next to your keyboard.</p>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <details><summary>Windows says “Windows protected your PC”</summary><p>The <code>.exe</code> is not code-signed yet, so SmartScreen warns on the first start. Click “More info” → “Run anyway”. Installing with winget usually avoids the warning.</p></details>
+  <details><summary>macOS says the app “cannot be opened”</summary><p>Files downloaded with the browser get a quarantine mark. Use Homebrew or the one-line installer, or remove the mark: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
+  <details><summary>Where is my data?</summary><p>Windows: <code>%APPDATA%\sshtermy</code>, macOS: <code>~/Library/Application Support/sshtermy</code>, Linux: <code>~/.config/sshtermy</code>. The environment variable <code>SSHTERMY_HOME</code> moves it, e.g. onto a USB stick.</p></details>
+  <details><summary>Which terminal should I use?</summary><p>Windows Terminal on Windows, Terminal or iTerm2 on macOS, any modern terminal on Linux. Function keys and truecolor should work. You do not need one at all: double-clicking the <code>.exe</code>, the <code>.app</code> or <code>sshtermy -window</code> opens sshTermy in its own window, where every key arrives.</p></details>
+  <details><summary>Can I switch to German?</summary><p>Yes: <kbd>F12</kbd> → <kbd>l</kbd> or palette → “Language”. On first start sshTermy follows the system language.</p></details>
+</section>
+</div>
+
+<details class="all" id="allkeys">
+  <summary>All keys</summary>
   <table>
     <tr><th>Key</th><th>Effect</th></tr>
     <tr><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>Command palette</td></tr>
@@ -293,36 +391,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <tr><td><kbd>Ctrl</kbd>+<kbd>Q</kbd></td><td>Quit (asks while connections are open; with the background service <kbd>a</kbd> = detach)</td></tr>
   </table>
   <p>All shortcuts can be changed: <kbd>b</kbd> in the manager. The full list is in the <a href="https://github.com/db9979/sshtermy#usage">README</a> and in the app (<kbd>F1</kbd>).</p>
-</section>
-
-<section id="quickref">
-  <h2>Quick reference to print</h2>
-  <p>All keys, modes and features on two A4 pages, printer friendly (white background, little ink). Keep it next to your keyboard.</p>
-  <div class="buttons">
-    <a class="btn primary" href="handout/sshtermy-quickref-en.pdf">⤓ Quick reference (English, PDF)</a>
-    <a class="btn" href="handout/sshtermy-kurzreferenz-de.pdf">⤓ Kurzreferenz (Deutsch, PDF)</a>
-  </div>
-</section>
-
-<section id="updates">
-  <h2>Updates</h2>
-  <p>A direct download or the one-line installer updates itself: sshTermy checks GitHub once a day, verifies the checksum and the signature (which also names the version) and swaps the file (<kbd>F12</kbd> → <kbd>u</kbd>, or <code>sshtermy --update</code>).</p>
-  <p>Installed with a package manager, the package manager updates it:</p>
-  <table>
-    <tr><td>Homebrew</td><td><code>brew upgrade sshtermy</code></td></tr>
-    <tr><td>apt</td><td><code>sudo apt update && sudo apt upgrade</code></td></tr>
-    <tr><td>winget</td><td><code>winget upgrade db9979.sshTermy</code> (the built-in update works as well)</td></tr>
-  </table>
-</section>
-
-<section id="faq">
-  <h2>FAQ</h2>
-  <details><summary>Windows says “Windows protected your PC”</summary><p>The <code>.exe</code> is not code-signed yet, so SmartScreen warns on the first start. Click “More info” → “Run anyway”. Installing with winget usually avoids the warning.</p></details>
-  <details><summary>macOS says the app “cannot be opened”</summary><p>Files downloaded with the browser get a quarantine mark. Use Homebrew or the one-line installer, or remove the mark: <code>xattr -d com.apple.quarantine sshtermy_darwin_arm64</code>.</p></details>
-  <details><summary>Where is my data?</summary><p>Windows: <code>%APPDATA%\sshtermy</code>, macOS: <code>~/Library/Application Support/sshtermy</code>, Linux: <code>~/.config/sshtermy</code>. The environment variable <code>SSHTERMY_HOME</code> moves it, e.g. onto a USB stick.</p></details>
-  <details><summary>Which terminal should I use?</summary><p>Windows Terminal on Windows, Terminal or iTerm2 on macOS, any modern terminal on Linux. Function keys and truecolor should work. You do not need one at all: double-clicking the <code>.exe</code>, the <code>.app</code> or <code>sshtermy -window</code> opens sshTermy in its own window, where every key arrives.</p></details>
-  <details><summary>Can I switch to German?</summary><p>Yes: <kbd>F12</kbd> → <kbd>l</kbd> or palette → “Language”. On first start sshTermy follows the system language.</p></details>
-</section>
+</details>
 </main>
 
 <footer>
@@ -330,6 +399,7 @@ sudo apt update && sudo apt install sshtermy</pre></div>
     <span><b>sshTermy</b> · Idea: Dominik Bornhäußer</span>
     <a href="https://github.com/db9979/sshtermy">GitHub</a>
     <a href="https://github.com/db9979/sshtermy/releases">Releases</a>
+    <a href="manual.html">Manual</a>
     <a href="https://github.com/db9979/sshtermy/blob/main/LICENSE">MIT License</a>
     <a href="https://buymeacoffee.com/zquu1xu570">☕ Buy me a coffee</a>
     <a href="handout/sshtermy-quickref-en.pdf">Quick reference (PDF)</a>
